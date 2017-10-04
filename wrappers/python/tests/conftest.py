@@ -54,6 +54,17 @@ def seed_my1():
 
 
 @pytest.fixture
+def seed_my2():
+    logger = logging.getLogger(__name__)
+    logger.debug("seed_my2: >>>")
+
+    res = "00000000000000000000000000000My2"
+
+    logger.debug("seed_my2: <<< res: %r", res)
+    return res
+
+
+@pytest.fixture
 def endpoint():
     return "127.0.0.1:9700"
 
@@ -399,4 +410,15 @@ async def identity_my1(wallet_handle, pool_handle, identity_trustee1, seed_my1, 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
+    return (my_did, my_verkey)
+
+
+@pytest.fixture
+async def identity_my2(wallet_handle, identity_trustee1, seed_my2, ):
+    (trustee_did, trustee_verkey) = identity_trustee1
+
+    (my_did, my_verkey, _) = await signus.create_and_store_my_did(wallet_handle,
+                                                                  json.dumps({"seed": seed_my2}))
+
+    await signus.store_their_did(wallet_handle, json.dumps({'did': trustee_did, 'verkey': trustee_verkey}))
     return (my_did, my_verkey)

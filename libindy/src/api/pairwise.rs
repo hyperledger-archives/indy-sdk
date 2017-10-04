@@ -14,8 +14,7 @@ use self::libc::c_char;
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// their_did: encrypting DID
-/// my_did: encrypting DID
+/// their_did: encrypted DID
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -24,7 +23,6 @@ use self::libc::c_char;
 /// #Errors
 /// Common*
 /// Wallet*
-/// Crypto*
 #[no_mangle]
 pub  extern fn indy_is_pairwise_exists(command_handle: i32,
                                        wallet_handle: i32,
@@ -52,29 +50,35 @@ pub  extern fn indy_is_pairwise_exists(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// their_did: encrypting DID
-/// my_did: encrypting DID
+/// their_did: encrypted DID
+/// my_did: encrypted DID
+/// metadata Optional: extra information for pairwise
 /// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error code
 ///
 /// #Errors
 /// Common*
 /// Wallet*
-/// Crypto*
 #[no_mangle]
 pub  extern fn indy_create_pairwise(command_handle: i32,
                                     wallet_handle: i32,
                                     their_did: *const c_char,
                                     my_did: *const c_char,
+                                    metadata: *const c_char,
                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(my_did, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_c_str!(metadata, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
         .send(Command::Pairwise(PairwiseCommand::CreatePairwise(
             wallet_handle,
             their_did,
             my_did,
+            metadata,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
                 cb(command_handle, err)
@@ -84,7 +88,7 @@ pub  extern fn indy_create_pairwise(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Get list of saved pairs.
+/// Get list of saved pairwise.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
@@ -92,32 +96,31 @@ pub  extern fn indy_create_pairwise(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// pairwise_list: list of saved pairs
+/// list_pairwise: list of saved pairwise
 ///
 /// #Errors
 /// Common*
 /// Wallet*
-/// Crypto*
 #[no_mangle]
 pub  extern fn indy_list_pairwise(command_handle: i32,
                                   wallet_handle: i32,
-                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, pairwise_list: *const c_char)>) -> ErrorCode {
+                                  cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, list_pairwise: *const c_char)>) -> ErrorCode {
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
 
     let result = CommandExecutor::instance()
         .send(Command::Pairwise(PairwiseCommand::ListPairwise(
             wallet_handle,
             Box::new(move |result| {
-                let (err, pairwise_list) = result_to_err_code_1!(result, String::new());
-                let pairwise_list = CStringUtils::string_to_cstring(pairwise_list);
-                cb(command_handle, err, pairwise_list.as_ptr())
+                let (err, list_pairwise) = result_to_err_code_1!(result, String::new());
+                let list_pairwise = CStringUtils::string_to_cstring(list_pairwise);
+                cb(command_handle, err, list_pairwise.as_ptr())
             })
         )));
 
     result_to_err_code!(result)
 }
 
-/// Gets my did for specific their did.
+/// Gets pairwise information for specific their_did.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
@@ -126,46 +129,48 @@ pub  extern fn indy_list_pairwise(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// my_did_json: did info associated with their did
+/// pairwise_info_json: did info associated with their did
 ///
 /// #Errors
 /// Common*
 /// Wallet*
-/// Crypto*
 #[no_mangle]
-pub  extern fn indy_pairwise_get_my_did(command_handle: i32,
-                                        wallet_handle: i32,
-                                        their_did: *const c_char,
-                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, my_did: *const c_char)>) -> ErrorCode {
+pub  extern fn indy_get_pairwise(command_handle: i32,
+                                 wallet_handle: i32,
+                                 their_did: *const c_char,
+                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, pairwise_info_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
-        .send(Command::Pairwise(PairwiseCommand::PairwiseGetMyDid(
+        .send(Command::Pairwise(PairwiseCommand::GetPairwise(
             wallet_handle,
             their_did,
             Box::new(move |result| {
-                let (err, my_did) = result_to_err_code_1!(result, String::new());
-                let my_did = CStringUtils::string_to_cstring(my_did);
-                cb(command_handle, err, my_did.as_ptr())
+                let (err, pairwise_info_json) = result_to_err_code_1!(result, String::new());
+                let pairwise_info_json = CStringUtils::string_to_cstring(pairwise_info_json);
+                cb(command_handle, err, pairwise_info_json.as_ptr())
             })
         )));
 
     result_to_err_code!(result)
 }
 
-/// Save some data in the Wallet for a given DID .
+/// Save some data in the Wallet for pairwise associated with Did.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// their_did: encoded Did
+/// metadata: some extra information for pairwise
 /// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error code
 ///
 /// #Errors
 /// Common*
 /// Wallet*
-/// Crypto*
 #[no_mangle]
 pub  extern fn indy_set_pairwise_metadata(command_handle: i32,
                                           wallet_handle: i32,
@@ -184,44 +189,6 @@ pub  extern fn indy_set_pairwise_metadata(command_handle: i32,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
                 cb(command_handle, err)
-            })
-        )));
-
-    result_to_err_code!(result)
-}
-
-/// Get some metadata from the Wallet for a given DID.
-///
-/// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
-/// command_handle: command handle to map callback to user context.
-/// their_did: encoded Did
-/// cb: Callback that takes command result as parameter.
-///
-///
-/// #Returns
-/// metadata
-///
-/// #Errors
-/// Common*
-/// Wallet*
-/// Crypto*
-#[no_mangle]
-pub  extern fn indy_get_pairwise_metadata(command_handle: i32,
-                                          wallet_handle: i32,
-                                          their_did: *const c_char,
-                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, metadata: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
-
-    let result = CommandExecutor::instance()
-        .send(Command::Pairwise(PairwiseCommand::GetPairwiseMetadata(
-            wallet_handle,
-            their_did,
-            Box::new(move |result| {
-                let (err, metadata) = result_to_err_code_1!(result, String::new());
-                let metadata = CStringUtils::string_to_cstring(metadata);
-                cb(command_handle, err, metadata.as_ptr())
             })
         )));
 
