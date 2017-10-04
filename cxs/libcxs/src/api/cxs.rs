@@ -10,24 +10,28 @@ use connection::connect;
 use connection::to_string;
 use connection::get_state;
 use connection::release;
-use error::error_message;
+use std::ffi::CString;
 
 #[no_mangle]
-pub extern fn cxs_init<'a>(pool_name:&str,
-                           config_name:&str,
-                           wallet_name:&str,
-                           wallet_type:&str) -> (Result<i32,&'static str>, Result<i32, &'static str>) {
-    let pool_error = match pool::create_pool_config(pool_name, config_name).code_num {
-        0 => Ok(0),
-        x => Err(error_message(&x)),
+pub extern fn cxs_init (pool_name:*const c_char,
+                           config_name:*const c_char,
+                           wallet_name:*const c_char,
+                           wallet_type:*const c_char) -> u32 {
+    check_useful_c_str!(pool_name,1002);
+    check_useful_c_str!(config_name,1003);
+    check_useful_c_str!(wallet_name,1004);
+    check_useful_c_str!(wallet_type,1005);
+    match pool::create_pool_config(&pool_name, &config_name) {
+        0 => 0,
+        x => return x,
     };
 
-    let wallet_error = match wallet::create_wallet(pool_name, wallet_name, wallet_type).code_num {
-        0 => Ok(0),
-        x => Err(error_message(&x)),
+    match wallet::create_wallet(&pool_name, &wallet_name, &wallet_type) {
+        0 => 0,
+        x => return x,
     };
 
-    (pool_error, wallet_error)
+    return 0
 }
 
 
@@ -156,18 +160,13 @@ pub extern fn cxs_proof_get_state(proof_handle: i32, status: *mut c_char) -> Err
 #[cfg(test)]
 mod tests {
     use super::*;
-    use error::UNKNOWN_ERROR;
     #[test]
     fn test_init() {
-        let pool_name = "pool1";
-        let config_name = "config1";
-        let wallet_name = "wallet1";
-        let wallet_type = "default";
-        let (pool_result, wallet_result ) = cxs_init(&pool_name, &config_name, &wallet_name, &wallet_type);
-        assert_eq!(pool_result.unwrap(), 0);
-        assert_eq!(wallet_result.unwrap(),0);
-        let (pool_result, wallet_result ) = cxs_init("", &config_name, &wallet_name, &wallet_type);
-        assert!(pool_result.is_err(), error_message(&UNKNOWN_ERROR.code_num));
-        assert!(wallet_result.is_err(),error_message(&UNKNOWN_ERROR.code_num));
+        let pool_name = CString::new("pool1").unwrap().into_raw();
+        let config_name = CString::new("config1").unwrap().into_raw();
+        let wallet_name = CString::new("wallet1").unwrap().into_raw();
+        let wallet_type = CString::new("default").unwrap().into_raw();
+        let result = cxs_init(pool_name, config_name, wallet_name, wallet_type);
+        assert_eq!(result,0);
     }
 }

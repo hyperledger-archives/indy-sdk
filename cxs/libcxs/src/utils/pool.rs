@@ -4,10 +4,9 @@ use std::ffi::CString;
 use utils::generate_command_handle;
 use utils::init::indy_error_to_cxs_error_code;
 use indy::api::ErrorCode;
-use error;
 
 
-pub fn create_pool_config<'a>(pool1:&str, config_name:&str)-> &'a error::Error {
+pub fn create_pool_config<'a>(pool1:&str, config_name:&str)-> u32 {
     let pool_name = pool1;
     let config_name = config_name;
     let c_pool_name = CString::new(pool_name).unwrap();
@@ -22,7 +21,7 @@ pub fn create_pool_config<'a>(pool1:&str, config_name:&str)-> &'a error::Error {
                                     c_config_name.as_ptr(),
                                     Some(f));
 
-    indy_error_to_cxs_error_code(indy_err)
+    indy_error_to_cxs_error_code(indy_err).code_num
 
 }
 
@@ -37,9 +36,9 @@ mod tests {
 
     #[test]
     fn test_config() {
-        let pool_name = "pool1";
-        let config_name = "config1";
-        assert_eq!(&SUCCESS.code_num, &create_pool_config(&pool_name, &config_name).code_num);
+        let pool_name = String::from("pool1");
+        let config_name = String::from("config1");
+        assert_eq!(SUCCESS.code_num, create_pool_config(&pool_name, &config_name));
     }
 
 
