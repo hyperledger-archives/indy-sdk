@@ -1,24 +1,26 @@
+extern crate libc;
+
 pub mod cxs;
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
 pub enum Errorcode
 {
     Success = 0,
-    Failure,
-    Waiting,
+    Failure = 1,
+    Waiting = 2,
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
 pub enum CxsStateType
 {
     CxsStateNone = 0,
-    CxsStateInitialized,
-    CxsStateOfferSent,
-    CxsStateRequestReceived,
-    CxsStateAccepted,
-    CxsStateUnfulfilled,
-    CxsStateExpired,
-    CxsStateRevoked,
+    CxsStateInitialized = 1,
+    CxsStateOfferSent = 2,
+    CxsStateRequestReceived = 3,
+    CxsStateAccepted = 4,
+    CxsStateUnfulfilled = 5,
+    CxsStateExpired = 6,
+    CxsStateRevoked = 7,
 }
 
 #[repr(C)]
