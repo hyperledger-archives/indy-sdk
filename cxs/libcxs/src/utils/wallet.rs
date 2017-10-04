@@ -4,39 +4,44 @@ use indy::api::wallet::indy_create_wallet;
 use std::ffi::CString;
 use std::ptr::null;
 use utils::generate_command_handle;
-use utils::init::indy_to_cxs_error_code;
-use api::Errorcode;
+use utils::init::indy_error_to_cxs_error_code;
 use indy::api::ErrorCode;
+use error;
 
 
-pub fn create_wallet(pool_name:&str, wallet_name:&str, wallet_type: &str) -> Errorcode {
+pub fn create_wallet<'a>(pool_name:&str, wallet_name:&str, wallet_type: &str) -> &'a error::Error {
     let handle = generate_command_handle();
     let c_pool_name = CString::new(pool_name).unwrap();
     let pool_name_ptr = c_pool_name.as_ptr();
     let c_listener_wallet_name = CString::new(wallet_name).unwrap().as_ptr();
     let c_wallet_type = CString::new(wallet_type).unwrap().as_ptr();
-
     // currently we have no call backs
     extern "C" fn dummy_callback(_handle: i32, _err: ErrorCode) { }
 
-    indy_to_cxs_error_code(indy_create_wallet(handle, pool_name_ptr,
-                                 c_listener_wallet_name,
-                                 c_wallet_type,
-                                 null(),
-                                 null(),
-                                 Some(dummy_callback)))
+    let indy_err = indy_create_wallet(handle, pool_name_ptr,
+                        c_listener_wallet_name,
+                        c_wallet_type,
+                        null(),
+                        null(),
+                        Some(dummy_callback));
+
+    indy_error_to_cxs_error_code(indy_err)
+
+
 }
 
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    use error;
     #[test]
     fn test_wallet() {
         let pool_name = "pool1";
         let wallet_name = "wallet1";
         let wallet_type = "default";
-        assert_eq!(Errorcode::Success, create_wallet(&pool_name, &wallet_name, &wallet_type ))
+        assert_eq!(&error::SUCCESS.code_num, &create_wallet(&pool_name, &wallet_name, &wallet_type ).code_num);
+        assert_eq!(&error::UNKNOWN_ERROR.code_num, &create_wallet("",&wallet_name, &wallet_type).code_num);
+
     }
 }

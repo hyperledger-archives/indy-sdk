@@ -1,10 +1,11 @@
 use indy::api::ErrorCode as indyError;
-use api::Errorcode as cxsError;
+use error;
 
-pub fn indy_to_cxs_error_code(err:indyError) -> cxsError {
+
+pub fn indy_error_to_cxs_error_code(err:indyError) ->  &'static error::Error {
     match err {
-        indyError::Success => cxsError::Success,
-        _ => cxsError::Failure,
+        indyError::Success => &error::SUCCESS,
+        _ => &error::UNKNOWN_ERROR,
     }
 }
 
@@ -15,8 +16,13 @@ mod tests {
     #[test]
     fn test_handle_error(){
         let indy_error = indyError::Success;
-        let cxs_error = cxsError::Success;
-        assert_eq!(indy_to_cxs_error_code(indy_error),  cxs_error );
+        let cxs_error = &error::SUCCESS;
+        assert_eq!(indy_error_to_cxs_error_code(indy_error).code_num, cxs_error.code_num );
+
+        let indy_error = indyError::WalletAlreadyExistsError;
+        let cxs_error = &error::UNKNOWN_ERROR;
+        assert_eq!(indy_error_to_cxs_error_code(indy_error).code_num, cxs_error.code_num );
+
     }
 
 

@@ -5,15 +5,24 @@ use api::Errorcode;
 use api::Errorcode::Success;
 use api::CxsStatus;
 use utils::{pool, wallet};
+use error::error_message;
 
 #[no_mangle]
-pub extern fn cxs_init() -> Errorcode {
-    let pool_name = "pool1";
-    let config_name = "config1";
-    let wallet_name = "wallet1";
-    let wallet_type = "default";
-    pool::create_pool_config(&pool_name, &config_name);
-    wallet::create_wallet(&pool_name, &wallet_name, &wallet_type)
+pub extern fn cxs_init<'a>(pool_name:&str,
+                           config_name:&str,
+                           wallet_name:&str,
+                           wallet_type:&str) -> (Result<i32,&'static str>, Result<i32, &'static str>) {
+    let pool_error = match pool::create_pool_config(pool_name, config_name).code_num {
+        0 => Ok(0),
+        x => Err(error_message(&x)),
+    };
+
+    let wallet_error = match wallet::create_wallet(pool_name, wallet_name, wallet_type).code_num {
+        0 => Ok(0),
+        x => Err(error_message(&x)),
+    };
+
+    (pool_error, wallet_error)
 }
 
 
@@ -105,10 +114,20 @@ pub extern fn cxs_proof_get_state(proof_handle: i32, status: *mut c_char) -> Err
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    use error::UNKNOWN_ERROR;
     #[test]
     fn test_init() {
-        assert_eq!(Success, cxs_init());
+        let pool_name = "pool1";
+        let config_name = "config1";
+        let wallet_name = "wallet1";
+        let wallet_type = "default";
+        let (pool_result, wallet_result ) = cxs_init(&pool_name, &config_name, &wallet_name, &wallet_type);
+        assert_eq!(pool_result.unwrap(), 0);
+        assert_eq!(wallet_result.unwrap(),0);
+        let (pool_result, wallet_result ) = cxs_init("", &config_name, &wallet_name, &wallet_type);
+        assert!(pool_result.is_err(), error_message(&UNKNOWN_ERROR.code_num));
+        assert!(wallet_result.is_err(),error_message(&UNKNOWN_ERROR.code_num));
+
     }
 
 
