@@ -10,6 +10,7 @@ pub mod ledger;
 pub mod pool;
 pub mod signus;
 pub mod wallet;
+pub mod pairwise;
 
 use commands::agent::{AgentCommand, AgentCommandExecutor};
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
@@ -17,6 +18,7 @@ use commands::ledger::{LedgerCommand, LedgerCommandExecutor};
 use commands::pool::{PoolCommand, PoolCommandExecutor};
 use commands::signus::{SignusCommand, SignusCommandExecutor};
 use commands::wallet::{WalletCommand, WalletCommandExecutor};
+use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 
 use errors::common::CommonError;
 
@@ -40,7 +42,8 @@ pub enum Command {
     Ledger(LedgerCommand),
     Pool(PoolCommand),
     Signus(SignusCommand),
-    Wallet(WalletCommand)
+    Wallet(WalletCommand),
+    Pairwise(PairwiseCommand)
 }
 
 pub struct CommandExecutor {
@@ -80,6 +83,7 @@ impl CommandExecutor {
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
                 let signus_command_executor = SignusCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone(), signus_service.clone(), ledger_service.clone());
                 let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
+                let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
 
                 loop {
                     match receiver.recv() {
@@ -106,6 +110,10 @@ impl CommandExecutor {
                         Ok(Command::Wallet(cmd)) => {
                             info!(target: "command_executor", "WalletCommand command received");
                             wallet_command_executor.execute(cmd);
+                        }
+                        Ok(Command::Pairwise(cmd)) => {
+                            info!(target: "command_executor", "PairwiseCommand command received");
+                            pairwise_command_executor.execute(cmd);
                         }
                         Ok(Command::Exit) => {
                             info!(target: "command_executor", "Exit command received");
