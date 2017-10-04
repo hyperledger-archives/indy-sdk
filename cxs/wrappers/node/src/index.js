@@ -18,7 +18,6 @@ var CXSRuntime = (function () {
     function CXSRuntime(config) {
         config = config || {};
         function _initialize_basepath() {
-            // this needs additional logic
             var basepath = config.basepath;
             if (basepath === undefined) {
                 //This basepath is in the local/appSpecific node_modules

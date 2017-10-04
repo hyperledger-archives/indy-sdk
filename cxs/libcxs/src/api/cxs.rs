@@ -40,17 +40,22 @@ pub extern fn cxs_claimdef_get(claimdef_handle: i32, data: *mut c_char) -> Error
 /**
  * connection object
  */
+#[no_mangle]
+#[allow(unused_variables, unused_mut)]
+pub extern fn cxs_connection_create(recipient_info: *const c_char, connection_handle: *mut i32) -> Errorcode { println!("connection_create"); Success }
 
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_connection_create(recipient_info: *const c_char, connection_handle: *mut i32) -> Errorcode { Success }
+#[no_mangle]
 #[allow(unused_variables)]
-pub extern fn cxs_connection_connect(connection_handle: i32) -> Errorcode { Success }
+pub extern fn cxs_connection_connect(connection_handle: i32) -> Errorcode { println!("connection_connect"); Success }
+#[no_mangle]
 #[allow(unused_variables, unused_mut)]
-pub extern fn cxs_connection_get_data(connection_handle: i32, data: *mut c_char) -> Errorcode { Success }
+pub extern fn cxs_connection_get_data(connection_handle: i32, data: *mut c_char) -> Errorcode { println!("connection_get_data"); Success }
+#[no_mangle]
 #[allow(unused_variables, unused_mut)]
-pub extern fn cxs_connection_get_state(connection_handle: i32, status: *mut c_char) -> Errorcode { Success }
+pub extern fn cxs_connection_get_state(connection_handle: i32, status: *mut c_char) -> Errorcode { println!("connection_get_state"); Success }
+#[no_mangle]
 #[allow(unused_variables, unused_mut)]
-pub extern fn cxs_connection_list_state(status_array: *mut CxsStatus) -> Errorcode { Success }
+pub extern fn cxs_connection_list_state(status_array: *mut CxsStatus) -> Errorcode { println!("connection_list_state"); Success }
 
 
 /**
