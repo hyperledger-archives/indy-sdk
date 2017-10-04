@@ -3,15 +3,39 @@ extern crate libc;
 use self::libc::c_char;
 use api::CxsStatus;
 use utils::cstring::CStringUtils;
+use utils::{pool, wallet};
 use utils::error;
 use connection::build_connection;
 use connection::connect;
 use connection::to_string;
 use connection::get_state;
 use connection::release;
+use std::ffi::CString;
 
 #[no_mangle]
-pub extern fn cxs_init() -> u32 { error::SUCCESS.code_num }
+pub extern fn cxs_init (pool_name:*const c_char,
+                           config_name:*const c_char,
+                           wallet_name:*const c_char,
+                           wallet_type:*const c_char) -> u32 {
+    check_useful_c_str!(pool_name,1001);
+    check_useful_c_str!(config_name,1001);
+    check_useful_c_str!(wallet_name,1001);
+    check_useful_c_str!(wallet_type,1001);
+    match pool::create_pool_config(&pool_name, &config_name) {
+        0 => 0,
+        x => return x,
+    };
+
+    match wallet::create_wallet(&pool_name, &wallet_name, &wallet_type) {
+        0 => 0,
+        x => return x,
+    };
+
+    return 0
+}
+
+
+
 
 /**
  * Schema object
@@ -133,3 +157,20 @@ pub extern fn cxs_proof_validate_response(proof_handle: u32, response_data: *con
 pub extern fn cxs_proof_list_state(status_array: *mut CxsStatus) -> u32 { error::SUCCESS.code_num }
 #[allow(unused_variables, unused_mut)]
 pub extern fn cxs_proof_get_state(proof_handle: u32, status: *mut c_char) -> u32 { error::SUCCESS.code_num }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use utils::error::UNKNOWN_ERROR;
+    #[test]
+    fn test_init() {
+        let pool_name = CString::new("pool1").unwrap().into_raw();
+        let config_name = CString::new("config1").unwrap().into_raw();
+        let wallet_name = CString::new("wallet1").unwrap().into_raw();
+        let wallet_type = CString::new("default").unwrap().into_raw();
+        let empty_str = CString::new("").unwrap().into_raw();
+        let result = cxs_init(pool_name, config_name, wallet_name, wallet_type);
+        assert_eq!(result,0);
+        assert_eq!(UNKNOWN_ERROR.code_num,cxs_init(empty_str, config_name, wallet_name, wallet_type));
+    }
+}
