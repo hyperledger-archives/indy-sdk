@@ -13,6 +13,6 @@ describe('call to cxs_init with provided path', function() {
     path += "/lib/libcxs.so";
     var run = new CXSRuntime(new CXSRuntimeConfig(path));
     it('should return 0', function () {
-        assert.equal(run.ffi.cxs_init(), 'pool1', 'config1', 'wallet1','default')
+        assert.equal(run.ffi.cxs_init('pool1', 'config1', 'wallet1','default'), 0); 
     })
 });
