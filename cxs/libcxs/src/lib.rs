@@ -22,15 +22,3 @@ pub fn create_path(s:&str) -> &Path {
     Path::new(s)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn txn_file_exists(){
-        let p = String::from("/home/mark/genesis.txn");
-        assert!(create_path(&p).exists());
-
-    }
-
-}
