@@ -1018,67 +1018,45 @@ impl CallbackUtils {
         (command_handle, Some(pairwise_list_callback))
     }
 
-    pub fn closure_to_pairwise_get_my_did_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
-                                                                                                Option<extern fn(command_handle: i32,
-                                                                                                                 err: ErrorCode,
-                                                                                                                 my_did: *const c_char)>) {
+    pub fn closure_to_get_pairwise_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                         Option<extern fn(command_handle: i32,
+                                                                                                          err: ErrorCode,
+                                                                                                          pairwise_info_json: *const c_char)>) {
         lazy_static! {
-            static ref PAIRWISE_GET_MY_DID_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+            static ref GET_PAIRWISE_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
         }
 
-        extern "C" fn pairwise_get_my_did_callback(command_handle: i32, err: ErrorCode, my_did: *const c_char) {
-            let mut callbacks = PAIRWISE_GET_MY_DID_CALLBACKS.lock().unwrap();
+        extern "C" fn get_pairwise_callback(command_handle: i32, err: ErrorCode, pairwise_info_json: *const c_char) {
+            let mut callbacks = GET_PAIRWISE_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
-            let my_did = unsafe { CStr::from_ptr(my_did).to_str().unwrap().to_string() };
-            cb(err, my_did)
+            let pairwise_info_json = unsafe { CStr::from_ptr(pairwise_info_json).to_str().unwrap().to_string() };
+            cb(err, pairwise_info_json)
         }
 
-        let mut callbacks = PAIRWISE_GET_MY_DID_CALLBACKS.lock().unwrap();
+        let mut callbacks = GET_PAIRWISE_CALLBACKS.lock().unwrap();
         let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
         callbacks.insert(command_handle, closure);
 
-        (command_handle, Some(pairwise_get_my_did_callback))
+        (command_handle, Some(get_pairwise_callback))
     }
 
-    pub fn closure_to_pairwise_set_metadata_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+    pub fn closure_to_set_pairwise_metadata_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
                                                                                           Option<extern fn(command_handle: i32,
                                                                                                            err: ErrorCode)>) {
         lazy_static! {
-            static ref PAIRWISE_SET_METADATA_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+            static ref SET_PAIRWISE_METADATA_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
         }
 
-        extern "C" fn pairwise_set_metadata_callback(command_handle: i32, err: ErrorCode) {
-            let mut callbacks = PAIRWISE_SET_METADATA_CALLBACKS.lock().unwrap();
+        extern "C" fn set_pairwise_metadata_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = SET_PAIRWISE_METADATA_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             cb(err)
         }
 
-        let mut callbacks = PAIRWISE_SET_METADATA_CALLBACKS.lock().unwrap();
+        let mut callbacks = SET_PAIRWISE_METADATA_CALLBACKS.lock().unwrap();
         let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
         callbacks.insert(command_handle, closure);
 
-        (command_handle, Some(pairwise_set_metadata_callback))
-    }
-
-    pub fn closure_to_pairwise_get_metadata_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
-                                                                                                  Option<extern fn(command_handle: i32,
-                                                                                                                   err: ErrorCode,
-                                                                                                                   metadata: *const c_char)>) {
-        lazy_static! {
-            static ref PAIRWISE_GET_METADATA_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
-        }
-
-        extern "C" fn pairwise_get_metadata_callback(command_handle: i32, err: ErrorCode, metadata: *const c_char) {
-            let mut callbacks = PAIRWISE_GET_METADATA_CALLBACKS.lock().unwrap();
-            let mut cb = callbacks.remove(&command_handle).unwrap();
-            let metadata = unsafe { CStr::from_ptr(metadata).to_str().unwrap().to_string() };
-            cb(err, metadata)
-        }
-
-        let mut callbacks = PAIRWISE_GET_METADATA_CALLBACKS.lock().unwrap();
-        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
-        callbacks.insert(command_handle, closure);
-
-        (command_handle, Some(pairwise_get_metadata_callback))
+        (command_handle, Some(set_pairwise_metadata_callback))
     }
 }

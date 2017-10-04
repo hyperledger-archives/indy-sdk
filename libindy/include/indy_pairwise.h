@@ -10,8 +10,7 @@ extern "C" {
     /// #Params
     /// wallet_handle: wallet handler (created by open_wallet).
     /// command_handle: command handle to map callback to user context.
-    /// their_did: encrypting DID
-    /// my_did: encrypting DID
+    /// their_did: encrypted DID
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -20,7 +19,6 @@ extern "C" {
     /// #Errors
     /// Common*
     /// Wallet*
-    /// Crypto*
 
     extern indy_error_t indy_is_pairwise_exists(indy_handle_t command_handle,
                                                 indy_handle_t wallet_handle,
@@ -28,7 +26,7 @@ extern "C" {
 
                                                 void          (*cb)(indy_handle_t  xcommand_handle,
                                                                     indy_error_t  err,
-                                                                     indy_bool_t   exists)
+                                                                    indy_bool_t   exists)
                                                );
 
 
@@ -38,25 +36,29 @@ extern "C" {
     /// wallet_handle: wallet handler (created by open_wallet).
     /// command_handle: command handle to map callback to user context.
     /// their_did: encrypting DID
-    /// my_did: encrypting DID
+    /// my_did: encrypted DID
+    /// metadata Optional: extra information for pairwise
     /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error code
     ///
     /// #Errors
     /// Common*
     /// Wallet*
-    /// Crypto*
 
     extern indy_error_t indy_create_pairwise(indy_handle_t command_handle,
                                              indy_handle_t wallet_handle,
                                              const char *  their_did,
                                              const char *  my_did,
+                                             const char *  metadata,
 
                                              void          (*cb)(indy_handle_t  xcommand_handle,
                                                                  indy_error_t   err)
                                             );
 
 
-    /// Get list of saved pairs.
+    /// Get list of saved pairwise.
     ///
     /// #Params
     /// wallet_handle: wallet handler (created by open_wallet).
@@ -64,23 +66,22 @@ extern "C" {
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// pairwise_list: list of saved pairs
+    /// list_pairwise: list of saved pairwise
     ///
     /// #Errors
     /// Common*
     /// Wallet*
-    /// Crypto*
 
     extern indy_error_t indy_list_pairwise(indy_handle_t command_handle,
                                            indy_handle_t wallet_handle,
 
                                            void          (*cb)(indy_handle_t  xcommand_handle,
                                                                indy_error_t   err,
-                                                               const char*    pairwise_list)
+                                                               const char*    list_pairwise)
                                           );
 
 
-    /// Gets my did for specific their did.
+    /// Gets pairwise information for specific their_did.
     ///
     /// #Params
     /// wallet_handle: wallet handler (created by open_wallet).
@@ -89,35 +90,37 @@ extern "C" {
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// my_did: did associated with their did
+    /// pairwise_info_json: did info associated with their did
     ///
     /// #Errors
     /// Common*
     /// Wallet*
-    /// Crypto*
 
-    extern indy_error_t indy_pairwise_get_my_did(indy_handle_t command_handle,
-                                                 indy_handle_t wallet_handle,
-                                                 const char *  their_did,
+    extern indy_error_t indy_get_pairwise(indy_handle_t command_handle,
+                                          indy_handle_t wallet_handle,
+                                          const char *  their_did,
 
-                                                 void          (*cb)(indy_handle_t  xcommand_handle,
-                                                                     indy_error_t   err,
-                                                                     const char*    my_did)
-                                                );
+                                          void          (*cb)(indy_handle_t  xcommand_handle,
+                                                              indy_error_t   err,
+                                                              const char*    pairwise_info_json)
+                                         );
 
 
-    /// Save some data in the Wallet for a given DID .
+    /// Save some data in the Wallet for pairwise associated with Did.
     ///
     /// #Params
     /// wallet_handle: wallet handler (created by open_wallet).
     /// command_handle: command handle to map callback to user context.
     /// their_did: encoded Did
+    /// metadata: some extra information for pairwise
     /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error code
     ///
     /// #Errors
     /// Common*
     /// Wallet*
-    /// Crypto*
 
     extern indy_error_t indy_set_pairwise_metadata(indy_handle_t command_handle,
                                                    indy_handle_t wallet_handle,
@@ -128,32 +131,6 @@ extern "C" {
                                                                        indy_error_t   err)
                                                   );
 
-
-    /// Get some metadata from the Wallet for a given DID.
-    ///
-    /// #Params
-    /// wallet_handle: wallet handler (created by open_wallet).
-    /// command_handle: command handle to map callback to user context.
-    /// their_did: encoded Did
-    /// cb: Callback that takes command result as parameter.
-    ///
-    ///
-    /// #Returns
-    /// metadata
-    ///
-    /// #Errors
-    /// Common*
-    /// Wallet*
-    /// Crypto*
-
-    extern indy_error_t indy_get_pairwise_metadata(indy_handle_t command_handle,
-                                                   indy_handle_t wallet_handle,
-                                                   const char *  their_did
-
-                                                   void          (*cb)(indy_handle_t  xcommand_handle,
-                                                                       indy_error_t   err,
-                                                                       const char*    metadata)
-                                                  );
 
 #ifdef __cplusplus
 }
