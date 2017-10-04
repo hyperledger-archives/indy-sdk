@@ -7,7 +7,7 @@
     /// The AgentConnectionEvent is raised asynchronously when an agent establishes a connection on 
     /// an <see cref="AgentListener"/> that is listening for incoming connections.  These
     /// events are queued and events for a specific listener can be obtained by calling the listener's 
-    /// <see cref="AgentListener.WaitForConnection"/> method.   
+    /// <see cref="AgentListener.WaitForConnectionAsync"/> method.   
     /// </remarks>
     public sealed class AgentConnectionEvent : AgentEvent
     {
