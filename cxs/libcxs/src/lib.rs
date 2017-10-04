@@ -15,7 +15,6 @@ extern crate lazy_static;
 mod utils;
 
 pub mod api;
-pub mod error;
 pub mod connection;
 
 pub fn create_path(s:&str) -> &Path {

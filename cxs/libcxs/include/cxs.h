@@ -7,13 +7,6 @@ extern "C" {
 
 typedef enum
 {
-  success = 0,
-  failure,
-  waiting
-} cxs_error_t;
-
-typedef enum
-{
   none = 0,
   initialized,
   offer_sent,
@@ -24,6 +17,7 @@ typedef enum
   revoked,
 } cxs_claim_state_t;
 
+typedef unsigned int cxs_error_t;
 typedef unsigned int cxs_schema_handle_t;
 typedef unsigned int cxs_claimdef_handle_t;
 typedef unsigned int cxs_connection_handle_t;

@@ -12,3 +12,5 @@ pub fn generate_command_handle() -> i32 {
 }
 #[macro_use]
 pub mod cstring;
+
+pub mod error;
