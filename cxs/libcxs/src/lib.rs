@@ -1,9 +1,14 @@
 extern crate indy;
+
+#[macro_use]
+extern crate lazy_static;
+
 use std::ffi::CString;
 use indy::api::ErrorCode;
 use indy::api::pool::indy_create_pool_ledger_config;
 
 pub mod api;
+pub mod error;
 
 pub fn config()-> ErrorCode {
     let pool_name = "pool1";
