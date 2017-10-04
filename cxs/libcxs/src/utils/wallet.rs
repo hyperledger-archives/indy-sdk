@@ -22,7 +22,7 @@ pub fn create_wallet<'a>(pool_name:&str, wallet_name:&str, wallet_type:&str) -> 
                                       null(),
                                       Some(dummy_callback));
 
-    indy_error_to_cxs_error_code(indy_err).code_num
+    indy_error_to_cxs_error_code(indy_err)
 
 }
 

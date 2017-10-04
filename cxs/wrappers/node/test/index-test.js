@@ -15,4 +15,8 @@ describe('call to cxs_init with provided path', function() {
     it('should return 0', function () {
         assert.equal(run.ffi.cxs_init('pool1', 'config1', 'wallet1','default'), 0); 
     })
+
+    it('should return 1002', function() {
+            assert.equal(run.ffi.cxs_init(' ', 'config1', 'wallet1','default'), 0); 
+    })
 });

@@ -21,7 +21,7 @@ pub fn create_pool_config<'a>(pool1:&str, config_name:&str)-> u32 {
                                     c_config_name.as_ptr(),
                                     Some(f));
 
-    indy_error_to_cxs_error_code(indy_err).code_num
+    indy_error_to_cxs_error_code(indy_err)
 
 }
 
