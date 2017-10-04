@@ -17,7 +17,6 @@ use indy::api::ErrorCode;
 use indy::api::pool::indy_create_pool_ledger_config;
 
 pub mod api;
-pub mod error;
 pub mod connection;
 
 pub fn config()-> ErrorCode {

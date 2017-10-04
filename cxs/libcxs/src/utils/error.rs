@@ -9,6 +9,7 @@ use std::fmt;
 // STEP 2: Add Error to the static MAP (used for getting messages to wrappers)
 // STEP 3: create a test making sure that your message can be retrieved
 
+pub static SUCCESS: Error = Error{code_num:0, message:"Success"};
 pub static UNKNOWN_ERROR: Error = Error{code_num:1001, message:"Unknown Error"};
 pub static CONNECTION_ERROR: Error = Error{code_num:1002, message:"Error with Connection"};
 
