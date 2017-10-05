@@ -30,5 +30,5 @@ async def test_is_pairwise_exists_works_for_invalid_handle(wallet_handle, identi
 
     with pytest.raises(IndyError) as e:
         invalid_wallet_handle = wallet_handle + 1
-        await pairwise.list_pairwise(invalid_wallet_handle)
+        await pairwise.is_pairwise_exists(invalid_wallet_handle, their_did)
     assert ErrorCode.WalletInvalidHandle == e.value.error_code
