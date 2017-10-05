@@ -14,5 +14,9 @@ describe('cxs_init', () => {
                 expect(result).to.equal(0)
 
         })
+        it ('should return 1001 when given an invalid argument', () => {
+                result = cxs_init(null, 'config1', 'wallet1', 'default')
+                expect(result).to.equal(1001)
+        })
 });
 
