@@ -18,7 +18,7 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                //FIXME fix and restore 'libindy-redhat-test' : { rhelTesting() }, IS-307
+                'redhat-test' : { rhelTesting() },
                 'windows-test': { windowsTesting() }
         ])
     }
@@ -145,11 +145,11 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test"
-                sh 'chmod -R 777 /home/indy/indy-anoncreds/'
 
                 try {
                     def featuresArgs = ''
                     if (run_interoperability_tests) {
+                        sh 'chmod -R 777 /home/indy/indy-anoncreds/'
                         featuresArgs = '--features "interoperability_tests"'
                     }
 
