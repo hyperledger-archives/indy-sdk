@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var rustlib_1 = require("./rustlib");
 var ffi = require("ffi");
 var path = require("path");
-var CXSRuntimeConfig = (function () {
+var CXSRuntimeConfig = /** @class */ (function () {
     function CXSRuntimeConfig(_basepath) {
         this.basepath = _basepath;
     }
@@ -14,7 +14,7 @@ exports.CXSRuntimeConfig = CXSRuntimeConfig;
 /** FFIConfiguration will contain all the sdk api functions **/
 /** CXSRuntimeConfg is a class that currently only contains a chosen basepath for the .so file
  * I made it a class just in case we think of more needed configs **/
-var CXSRuntime = (function () {
+var CXSRuntime = /** @class */ (function () {
     function CXSRuntime(config) {
         config = config || {};
         function _initialize_basepath() {
@@ -33,3 +33,4 @@ var CXSRuntime = (function () {
     return CXSRuntime;
 }());
 exports.CXSRuntime = CXSRuntime;
+//# sourceMappingURL=index.js.map
