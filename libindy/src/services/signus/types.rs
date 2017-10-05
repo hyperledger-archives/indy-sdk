@@ -117,22 +117,3 @@ impl TheirDid {
 impl JsonEncodable for TheirDid {}
 
 impl<'a> JsonDecodable<'a> for TheirDid {}
-
-#[derive(Serialize, Deserialize)]
-pub struct DidPair {
-    pub my_did: String,
-    pub their_did: String
-}
-
-impl DidPair {
-    pub fn new(my_did: String, their_did: String) -> DidPair {
-        DidPair {
-            my_did: my_did,
-            their_did: their_did
-        }
-    }
-}
-
-impl JsonEncodable for DidPair {}
-
-impl<'a> JsonDecodable<'a> for DidPair {}
