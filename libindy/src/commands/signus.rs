@@ -60,26 +60,43 @@ pub enum SignusCommand {
         Vec<u8>, // signature
         i32, //callback id
         Result<String, IndyError>) /* result json or error)*/,
-    Encrypt(
+    AuthenticatedEncrypt(
         i32, // wallet handle
         i32, // pool handle
         String, // my_did
         String, // did
         Vec<u8>, // msg
         Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>) + Send>),
-    EncryptGetNymAck(
+    AuthenticatedEncryptGetNymAck(
         i32, // wallet handle
         String, // my_did
         Vec<u8>, // msg
         i32, //cb_id
         Result<String, IndyError> //result
     ),
-    Decrypt(
+    AuthenticatedDecrypt(
         i32, // wallet handle
         String, // my_did
         String, // did
         Vec<u8>, // encrypted msg
         Vec<u8>, // nonce
+        Box<Fn(Result<Vec<u8>, IndyError>) + Send>),
+    AnonymousEncrypt(
+        i32, // wallet handle
+        i32, // pool handle
+        String, // did
+        Vec<u8>, // msg
+        Box<Fn(Result<Vec<u8>, IndyError>) + Send>),
+    AnonymousEncryptGetNymAck(
+        i32, // wallet handle
+        Vec<u8>, // msg
+        i32, //cb_id
+        Result<String, IndyError> //result
+    ),
+    AnonymousDecrypt(
+        i32, // wallet handle
+        String, // did
+        Vec<u8>, // msg
         Box<Fn(Result<Vec<u8>, IndyError>) + Send>)
 }
 
@@ -90,7 +107,8 @@ pub struct SignusCommandExecutor {
     signus_service: Rc<SignusService>,
     ledger_service: Rc<LedgerService>,
     verify_callbacks: RefCell<HashMap<i32, Box<Fn(Result<bool, IndyError>)>>>,
-    encrypt_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>)>>>,
+    authenticated_encrypt_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>)>>>,
+    anonymous_encrypt_callbacks: RefCell<HashMap<i32, Box<Fn(Result<Vec<u8>, IndyError>)>>>,
 
 }
 
@@ -107,7 +125,8 @@ impl SignusCommandExecutor {
             signus_service: signus_service,
             ledger_service: ledger_service,
             verify_callbacks: RefCell::new(HashMap::new()),
-            encrypt_callbacks: RefCell::new(HashMap::new()),
+            authenticated_encrypt_callbacks: RefCell::new(HashMap::new()),
+            anonymous_encrypt_callbacks: RefCell::new(HashMap::new()),
         }
     }
 
@@ -141,17 +160,29 @@ impl SignusCommandExecutor {
                 info!(target: "signus_command_executor", "VerifySignatureGetNymAck command received");
                 self.verify_signature_get_nym_ack(wallet_handle, &msg, &signature, cb_id, result);
             }
-            SignusCommand::Encrypt(wallet_handle, pool_handle, my_did, did, msg, cb) => {
+            SignusCommand::AuthenticatedEncrypt(wallet_handle, pool_handle, my_did, did, msg, cb) => {
                 info!(target: "signus_command_executor", "Encrypt command received");
-                self.encrypt(wallet_handle, pool_handle, &my_did, &did, &msg, cb);
+                self.authenticated_encrypt(wallet_handle, pool_handle, &my_did, &did, &msg, cb);
             }
-            SignusCommand::EncryptGetNymAck(wallet_handle, my_did, msg, cb_id, result) => {
-                info!(target: "signus_command_executor", "EncryptGetNymAck command received");
-                self.encrypt_get_nym_ack(wallet_handle, &my_did, &msg, cb_id, result);
+            SignusCommand::AuthenticatedEncryptGetNymAck(wallet_handle, my_did, msg, cb_id, result) => {
+                info!(target: "signus_command_executor", "AuthenticatedEncryptGetNymAck command received");
+                self.authenticated_encrypt_get_nym_ack(wallet_handle, &my_did, &msg, cb_id, result);
             }
-            SignusCommand::Decrypt(wallet_handle, my_did, did, encrypted_msg, nonce, cb) => {
-                info!(target: "signus_command_executor", "Decrypt command received");
-                self.decrypt(wallet_handle, &my_did, &did, &encrypted_msg, &nonce, cb);
+            SignusCommand::AuthenticatedDecrypt(wallet_handle, my_did, did, encrypted_msg, nonce, cb) => {
+                info!(target: "signus_command_executor", "AuthenticatedDecrypt command received");
+                self.authenticated_decrypt(wallet_handle, &my_did, &did, &encrypted_msg, &nonce, cb);
+            }
+            SignusCommand::AnonymousEncrypt(wallet_handle, pool_handle, did, msg, cb) => {
+                info!(target: "signus_command_executor", "AnonymousEncrypt command received");
+                self.anonymous_encrypt(wallet_handle, pool_handle, &did, &msg, cb);
+            }
+            SignusCommand::AnonymousEncryptGetNymAck(wallet_handle, msg, cb_id, result) => {
+                info!(target: "signus_command_executor", "AuthenticatedEncryptGetNymAck command received");
+                self.anonymous_encrypt_get_nym_ack(wallet_handle, &msg, cb_id, result);
+            }
+            SignusCommand::AnonymousDecrypt(wallet_handle, did, encrypted_msg, cb) => {
+                info!(target: "signus_command_executor", "AnonymousDecrypt command received");
+                self.anonymous_decrypt(wallet_handle, &did, &encrypted_msg, cb);
             }
         };
     }
@@ -409,13 +440,13 @@ impl SignusCommandExecutor {
             .map_err(|err| IndyError::SignusError(err))
     }
 
-    fn encrypt(&self,
-               wallet_handle: i32,
-               pool_handle: i32,
-               my_did: &str,
-               did: &str,
-               msg: &[u8],
-               cb: Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>) + Send>) {
+    fn authenticated_encrypt(&self,
+                             wallet_handle: i32,
+                             pool_handle: i32,
+                             my_did: &str,
+                             did: &str,
+                             msg: &[u8],
+                             cb: Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>) + Send>) {
         let load_public_key_from_ledger = move |cb: Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>)>| {
             let msg = msg.to_owned();
             let my_did = my_did.to_string();
@@ -427,7 +458,7 @@ impl SignusCommandExecutor {
             }
             let get_nym_request = get_nym_request.unwrap();
 
-            match self.encrypt_callbacks.try_borrow_mut() {
+            match self.authenticated_encrypt_callbacks.try_borrow_mut() {
                 Ok(mut encrypt_callbacks) => {
                     encrypt_callbacks.insert(cb_id, cb);
 
@@ -437,7 +468,7 @@ impl SignusCommandExecutor {
                             get_nym_request,
                             Box::new(move |result| {
                                 CommandExecutor::instance()
-                                    .send(Command::Signus(SignusCommand::EncryptGetNymAck(
+                                    .send(Command::Signus(SignusCommand::AuthenticatedEncryptGetNymAck(
                                         wallet_handle,
                                         my_did.clone(),
                                         msg.clone(),
@@ -477,7 +508,8 @@ impl SignusCommandExecutor {
                 let my_did: MyDid = my_did.unwrap();
 
                 match their_did.pk {
-                    Some(_) => cb(self.signus_service.encrypt(&my_did, &their_did, msg).map_err(|err| IndyError::SignusError(err))),
+                    Some(_) => cb(self.signus_service.authenticated_encrypt(&my_did, &their_did, msg)
+                        .map_err(|err| IndyError::SignusError(err))),
                     None => load_public_key_from_ledger(cb)
                 }
             }
@@ -486,13 +518,13 @@ impl SignusCommandExecutor {
         }
     }
 
-    fn encrypt_get_nym_ack(&self,
-                           wallet_handle: i32,
-                           my_did: &str,
-                           msg: &[u8],
-                           cb_id: i32,
-                           result: Result<String, IndyError>) {
-        match self.encrypt_callbacks.try_borrow_mut() {
+    fn authenticated_encrypt_get_nym_ack(&self,
+                                         wallet_handle: i32,
+                                         my_did: &str,
+                                         msg: &[u8],
+                                         cb_id: i32,
+                                         result: Result<String, IndyError>) {
+        match self.authenticated_encrypt_callbacks.try_borrow_mut() {
             Ok(mut cbs) => {
                 let cb = cbs.remove(&cb_id);
 
@@ -503,7 +535,7 @@ impl SignusCommandExecutor {
 
                 match result {
                     Ok(get_nym_response) =>
-                        cb(self._encrypt_get_nym_ack(wallet_handle, my_did, &get_nym_response, msg)),
+                        cb(self._authenticated_encrypt_get_nym_ack(wallet_handle, my_did, &get_nym_response, msg)),
                     Err(err) => cb(Err(err))
                 }
             }
@@ -511,11 +543,11 @@ impl SignusCommandExecutor {
         }
     }
 
-    fn _encrypt_get_nym_ack(&self,
-                            wallet_handle: i32,
-                            my_did: &str,
-                            get_nym_response: &str,
-                            msg: &[u8]) -> Result<(Vec<u8>, Vec<u8>), IndyError> {
+    fn _authenticated_encrypt_get_nym_ack(&self,
+                                          wallet_handle: i32,
+                                          my_did: &str,
+                                          get_nym_response: &str,
+                                          msg: &[u8]) -> Result<(Vec<u8>, Vec<u8>), IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did))?;
         let my_did = MyDid::from_json(&my_did_json)
             .map_err(map_err_trace!())
@@ -523,16 +555,16 @@ impl SignusCommandExecutor {
 
         let their_did = self._get_their_did_from_nym(get_nym_response, wallet_handle)?;
 
-        self.signus_service.encrypt(&my_did, &their_did, &msg)
+        self.signus_service.authenticated_encrypt(&my_did, &their_did, &msg)
             .map_err(map_err_trace!())
             .map_err(|err| IndyError::SignusError(err))
     }
 
-    fn _encrypt(&self,
-                wallet_handle: i32,
-                my_did: &str,
-                did: &str,
-                msg: &[u8]) -> Result<(Vec<u8>, Vec<u8>), IndyError> {
+    fn _authenticated_encrypt(&self,
+                              wallet_handle: i32,
+                              my_did: &str,
+                              did: &str,
+                              msg: &[u8]) -> Result<(Vec<u8>, Vec<u8>), IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did))?;
         let my_did = MyDid::from_json(&my_did_json)
             .map_err(map_err_trace!())
@@ -543,27 +575,27 @@ impl SignusCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(err.to_string()))?;
 
-        self.signus_service.encrypt(&my_did, &their_did, msg)
+        self.signus_service.authenticated_encrypt(&my_did, &their_did, msg)
             .map_err(map_err_trace!())
             .map_err(|err| IndyError::SignusError(err))
     }
 
-    fn decrypt(&self,
-               wallet_handle: i32,
-               my_did: &str,
-               did: &str,
-               encrypted_msg: &[u8],
-               nonce: &[u8],
-               cb: Box<Fn(Result<Vec<u8>, IndyError>) + Send>) {
-        cb(self._decrypt(wallet_handle, my_did, did, encrypted_msg, nonce));
+    fn authenticated_decrypt(&self,
+                             wallet_handle: i32,
+                             my_did: &str,
+                             did: &str,
+                             encrypted_msg: &[u8],
+                             nonce: &[u8],
+                             cb: Box<Fn(Result<Vec<u8>, IndyError>) + Send>) {
+        cb(self._authenticated_decrypt(wallet_handle, my_did, did, encrypted_msg, nonce));
     }
 
-    fn _decrypt(&self,
-                wallet_handle: i32,
-                my_did: &str,
-                did: &str,
-                encrypted_msg: &[u8],
-                nonce: &[u8]) -> Result<Vec<u8>, IndyError> {
+    fn _authenticated_decrypt(&self,
+                              wallet_handle: i32,
+                              my_did: &str,
+                              did: &str,
+                              encrypted_msg: &[u8],
+                              nonce: &[u8]) -> Result<Vec<u8>, IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did))?;
         let my_did = MyDid::from_json(&my_did_json)
             .map_err(map_err_trace!())
@@ -574,7 +606,139 @@ impl SignusCommandExecutor {
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(err.to_string()))?;
 
-        self.signus_service.decrypt(&my_did, &their_did, encrypted_msg, nonce)
+        self.signus_service.authenticated_decrypt(&my_did, &their_did, encrypted_msg, nonce)
+            .map_err(|err| IndyError::SignusError(err))
+    }
+
+    fn anonymous_encrypt(&self,
+                         wallet_handle: i32,
+                         pool_handle: i32,
+                         did: &str,
+                         msg: &[u8],
+                         cb: Box<Fn(Result<Vec<u8>, IndyError>) + Send>) {
+        let load_public_key_from_ledger = move |cb: Box<Fn(Result<Vec<u8>, IndyError>)>| {
+            let msg = msg.to_owned();
+            let cb_id: i32 = SequenceUtils::get_next_id();
+            let get_nym_request = self.ledger_service.build_get_nym_request(did, did); //TODO we need pass my_did as identifier
+            if get_nym_request.is_err() {
+                return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid Get Num Request")))));
+            }
+            let get_nym_request = get_nym_request.unwrap();
+
+            match self.anonymous_encrypt_callbacks.try_borrow_mut() {
+                Ok(mut encrypt_callbacks) => {
+                    encrypt_callbacks.insert(cb_id, cb);
+
+                    CommandExecutor::instance()
+                        .send(Command::Ledger(LedgerCommand::SubmitRequest(
+                            pool_handle,
+                            get_nym_request,
+                            Box::new(move |result| {
+                                CommandExecutor::instance()
+                                    .send(Command::Signus(SignusCommand::AnonymousEncryptGetNymAck(
+                                        wallet_handle,
+                                        msg.clone(),
+                                        cb_id,
+                                        result
+                                    ))).unwrap();
+                            })
+                        ))).unwrap();
+                }
+                Err(err) => cb(Err(
+                    IndyError::CommonError(
+                        CommonError::InvalidState(format!("{:?}", err)))))
+            }
+        };
+
+
+        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                   wallet_handle, pool_handle, cb);
+
+        match self.wallet_service.get_not_expired(wallet_handle, &format!("their_did::{}", did)) {
+            Ok(their_did_json) => {
+                let their_did = TheirDid::from_json(&their_did_json);
+                if their_did.is_err() {
+                    return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid their did json")))));
+                }
+                let their_did: TheirDid = their_did.unwrap();
+
+                match their_did.pk {
+                    Some(_) => cb(self.signus_service.anonymous_encrypt(&their_did, msg)
+                        .map_err(|err| IndyError::SignusError(err))),
+                    None => load_public_key_from_ledger(cb)
+                }
+            }
+            Err(WalletError::NotFound(_)) => load_public_key_from_ledger(cb),
+            Err(err) => cb(Err(IndyError::WalletError(err)))
+        }
+    }
+
+    fn anonymous_encrypt_get_nym_ack(&self,
+                                     wallet_handle: i32,
+                                     msg: &[u8],
+                                     cb_id: i32,
+                                     result: Result<String, IndyError>) {
+        match self.anonymous_encrypt_callbacks.try_borrow_mut() {
+            Ok(mut cbs) => {
+                let cb = cbs.remove(&cb_id);
+
+                if cb.is_none() {
+                    return error!("Can't process Signus::AnonymousEncryptGetNymAck for handle {} - appropriate callback not found!", cb_id);
+                }
+                let cb = cb.unwrap();
+
+                match result {
+                    Ok(get_nym_response) =>
+                        cb(self._anonymous_encrypt_get_nym_ack(wallet_handle, &get_nym_response, msg)),
+                    Err(err) => cb(Err(err))
+                }
+            }
+            Err(err) => error!("{:?}", err)
+        }
+    }
+
+    fn _anonymous_encrypt_get_nym_ack(&self,
+                                      wallet_handle: i32,
+                                      get_nym_response: &str,
+                                      msg: &[u8]) -> Result<Vec<u8>, IndyError> {
+        let did = self._get_their_did_from_nym(get_nym_response, wallet_handle)?;
+
+        self.signus_service.anonymous_encrypt(&did, &msg)
+            .map_err(map_err_trace!())
+            .map_err(|err| IndyError::SignusError(err))
+    }
+
+    fn _anonymous_encrypt(&self,
+                          wallet_handle: i32,
+                          did: &str,
+                          msg: &[u8]) -> Result<Vec<u8>, IndyError> {
+        let did_json = self.wallet_service.get(wallet_handle, &format!("their_did::{}", did))?;
+        let did = TheirDid::from_json(&did_json)
+            .map_err(map_err_trace!())
+            .map_err(|err| CommonError::InvalidState(err.to_string()))?;
+
+        self.signus_service.anonymous_encrypt(&did, msg)
+            .map_err(|err| IndyError::SignusError(err))
+    }
+
+    fn anonymous_decrypt(&self,
+                         wallet_handle: i32,
+                         did: &str,
+                         msg: &[u8],
+                         cb: Box<Fn(Result<Vec<u8>, IndyError>) + Send>) {
+        cb(self._anonymous_decrypt(wallet_handle, did, msg));
+    }
+
+    fn _anonymous_decrypt(&self,
+                          wallet_handle: i32,
+                          did: &str,
+                          encrypted_msg: &[u8]) -> Result<Vec<u8>, IndyError> {
+        let did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", did))?;
+        let did = MyDid::from_json(&did_json)
+            .map_err(map_err_trace!())
+            .map_err(|err| CommonError::InvalidState(err.to_string()))?;
+
+        self.signus_service.anonymous_decrypt(&did, encrypted_msg)
             .map_err(|err| IndyError::SignusError(err))
     }
 }

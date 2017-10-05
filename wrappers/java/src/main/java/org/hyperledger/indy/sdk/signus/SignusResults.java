@@ -70,10 +70,10 @@ public final class SignusResults {
 	/**
 	 * Result from calling encrypt.
 	 */
-	public static class EncryptResult extends IndyJava.Result {
+	public static class AuthenticatedEncryptResult extends IndyJava.Result {
 
 		private byte[] encryptedMessage, nonce;
-		EncryptResult(byte[] encryptedMessage, byte[] nonce) { this.encryptedMessage = encryptedMessage; this.nonce = nonce; }
+		AuthenticatedEncryptResult(byte[] encryptedMessage, byte[] nonce) { this.encryptedMessage = encryptedMessage; this.nonce = nonce; }
 
 		/**
 		 * Gets the encrypted message.

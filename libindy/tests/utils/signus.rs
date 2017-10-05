@@ -271,27 +271,27 @@ impl SignusUtils {
         Ok(valid)
     }
 
-    pub fn encrypt(wallet_handle: i32, pool_handle: i32, my_did: &str, did: &str, msg: &[u8]) -> Result<(Vec<u8>, Vec<u8>), ErrorCode> {
+    pub fn authenticated_encrypt(wallet_handle: i32, pool_handle: i32, my_did: &str, did: &str, msg: &[u8]) -> Result<(Vec<u8>, Vec<u8>), ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, encrypted_msg, nonce| {
             sender.send((err, encrypted_msg, nonce)).unwrap();
         });
 
-        let (command_handle, cb) = CallbackUtils::closure_to_encrypt_cb(cb);
+        let (command_handle, cb) = CallbackUtils::closure_to_authenticated_encrypt_cb(cb);
 
         let my_did = CString::new(my_did).unwrap();
         let did = CString::new(did).unwrap();
 
         let err =
-            indy_encrypt(command_handle,
-                         wallet_handle,
-                         pool_handle,
-                         my_did.as_ptr(),
-                         did.as_ptr(),
-                         msg.as_ptr() as *const u8,
-                         msg.len() as u32,
-                         cb);
+            indy_authenticated_encrypt(command_handle,
+                                       wallet_handle,
+                                       pool_handle,
+                                       my_did.as_ptr(),
+                                       did.as_ptr(),
+                                       msg.as_ptr() as *const u8,
+                                       msg.len() as u32,
+                                       cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -306,28 +306,93 @@ impl SignusUtils {
         Ok((encrypted_msg, nonce))
     }
 
-    pub fn decrypt(wallet_handle: i32, my_did: &str, did: &str, encrypted_msg: &[u8], nonce: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+    pub fn authenticated_decrypt(wallet_handle: i32, my_did: &str, did: &str, encrypted_msg: &[u8], nonce: &[u8]) -> Result<Vec<u8>, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, decrypted_msg| {
             sender.send((err, decrypted_msg)).unwrap();
         });
 
-        let (command_handle, cb) = CallbackUtils::closure_to_decrypt_cb(cb);
+        let (command_handle, cb) = CallbackUtils::closure_to_authenticated_decrypt_cb(cb);
 
         let my_did = CString::new(my_did).unwrap();
         let did = CString::new(did).unwrap();
 
         let err =
-            indy_decrypt(command_handle,
-                         wallet_handle,
-                         my_did.as_ptr(),
-                         did.as_ptr(),
-                         encrypted_msg.as_ptr() as *const u8,
-                         encrypted_msg.len() as u32,
-                         nonce.as_ptr() as *const u8,
-                         nonce.len() as u32,
-                         cb);
+            indy_authenticated_decrypt(command_handle,
+                                       wallet_handle,
+                                       my_did.as_ptr(),
+                                       did.as_ptr(),
+                                       encrypted_msg.as_ptr() as *const u8,
+                                       encrypted_msg.len() as u32,
+                                       nonce.as_ptr() as *const u8,
+                                       nonce.len() as u32,
+                                       cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, decrypted_msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(decrypted_msg)
+    }
+
+    pub fn anonymous_encrypt(wallet_handle: i32, pool_handle: i32, did: &str, msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, encrypted_msg| {
+            sender.send((err, encrypted_msg)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_anonymous_encrypt_cb(cb);
+
+        let did = CString::new(did).unwrap();
+
+        let err =
+            indy_anonymous_encrypt(command_handle,
+                                   wallet_handle,
+                                   pool_handle,
+                                   did.as_ptr(),
+                                   msg.as_ptr() as *const u8,
+                                   msg.len() as u32,
+                                   cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, encrypted_msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(encrypted_msg)
+    }
+
+    pub fn anonymous_decrypt(wallet_handle: i32, did: &str, encrypted_msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, decrypted_msg| {
+            sender.send((err, decrypted_msg)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_anonymous_decrypt_cb(cb);
+
+        let did = CString::new(did).unwrap();
+
+        let err =
+            indy_anonymous_decrypt(command_handle,
+                                   wallet_handle,
+                                   did.as_ptr(),
+                                   encrypted_msg.as_ptr() as *const u8,
+                                   encrypted_msg.len() as u32,
+                                   cb);
 
         if err != ErrorCode::Success {
             return Err(err);

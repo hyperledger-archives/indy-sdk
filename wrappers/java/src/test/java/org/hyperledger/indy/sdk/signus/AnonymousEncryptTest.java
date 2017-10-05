@@ -17,12 +17,10 @@ import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertNotNull;
 
-public class EncryptTest extends IndyIntegrationTest {
+public class AnonymousEncryptTest extends IndyIntegrationTest {
 
 	private Pool pool;
 	private Wallet wallet;
-	private String trusteeDid;
-	private String trusteeVerkey;
 	private String did;
 	private String verkey;
 	private String walletName = "signusWallet";
@@ -42,8 +40,7 @@ public class EncryptTest extends IndyIntegrationTest {
 				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, false);
 
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(wallet, didJson.toJson()).get();
-		trusteeDid = result.getDid();
-		trusteeVerkey = result.getVerkey();
+		String trusteeDid = result.getDid();
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson2 =
 				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, null, null);
@@ -64,47 +61,36 @@ public class EncryptTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	public void testEncryptWorksForPkCachedInWallet() throws Exception {
+	public void testAnonymousEncryptWorksForPkCachedInWallet() throws Exception {
 		String identityJson = String.format("{\"did\":\"%s\",\"verkey\":\"%s\"}", did, verkey);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
-		SignusResults.EncryptResult encryptResult = Signus.encrypt(wallet, pool, trusteeDid, did, msg).get();
+		byte[] encryptResult = Signus.anonymousEncrypt(wallet, pool, did, msg).get();
 		assertNotNull(encryptResult);
 	}
 
 	@Test
-	public void testEncryptWorksForGetPkFromLedger() throws Exception {
+	public void testAnonymousEncryptWorksForGetPkFromLedger() throws Exception {
 		String identityJson = String.format("{\"did\":\"%s\"}", did);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
-		SignusResults.EncryptResult encryptResult = Signus.encrypt(wallet, pool, trusteeDid, did, msg).get();
+		byte[] encryptResult = Signus.anonymousEncrypt(wallet, pool, did, msg).get();
 		assertNotNull(encryptResult);
 	}
 
 	@Test
-	public void testEncryptWorksForGetNymFromLedger() throws Exception {
-		SignusResults.EncryptResult encryptResult = Signus.encrypt(wallet, pool, trusteeDid, did, msg).get();
+	public void testAnonymousEncryptWorksForGetNymFromLedger() throws Exception {
+		byte[] encryptResult = Signus.anonymousEncrypt(wallet, pool, did, msg).get();
 		assertNotNull(encryptResult);
 	}
 
 	@Test
-	public void testEncryptWorksForUnknownMyDid() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletNotFoundError));
-
-		String identityJson = String.format("{\"did\":\"%s\",\"verkey\":\"%s\"}", trusteeDid, trusteeVerkey);
-		Signus.storeTheirDid(wallet, identityJson).get();
-
-		Signus.encrypt(wallet, pool, "unknownDid", trusteeDid, msg).get();
-	}
-
-	@Test
-	public void testEncryptWorksForNotFoundNym() throws Exception {
+	public void testAnonymousEncryptWorksForNotFoundNym() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidState));
 
 		CreateAndStoreMyDidResult nym = Signus.createAndStoreMyDid(wallet, "{}").get();
 
-		Signus.encrypt(wallet, pool, trusteeDid, nym.getDid(), msg).get();
+		Signus.anonymousEncrypt(wallet, pool, nym.getDid(), msg).get();
 	}
 }

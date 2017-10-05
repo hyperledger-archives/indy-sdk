@@ -19,7 +19,7 @@ import static org.hyperledger.indy.sdk.utils.PoolUtils.DEFAULT_POOL_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class DecryptTest extends IndyIntegrationTest {
+public class AuthenticatedDecryptTest extends IndyIntegrationTest {
 
 	private Pool pool;
 	private Wallet wallet;
@@ -67,17 +67,17 @@ public class DecryptTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	public void testDecryptWorks() throws Exception {
+	public void testAnonymousDecryptWorks() throws Exception {
 		String identityJson = String.format(identityJsonTemplate, trusteeDid, trusteeVerkey);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
-		byte[] decryptedMessage = Signus.decrypt(wallet, myDid, trusteeDid, encryptedMessage, nonce).get();
+		byte[] decryptedMessage = Signus.authenticatedDecrypt(wallet, myDid, trusteeDid, encryptedMessage, nonce).get();
 		assertTrue(Arrays.equals(msg, decryptedMessage));
 
 	}
 
 	@Test
-	public void testDecryptWorksForOtherCoder() throws Exception {
+	public void testAuthenticatedDecryptWorksForOtherCoder() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
 
@@ -87,13 +87,13 @@ public class DecryptTest extends IndyIntegrationTest {
 		identityJson = String.format(identityJsonTemplate, myDid, myVerkey);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
-		SignusResults.EncryptResult encryptResult = Signus.encrypt(wallet, pool, myDid, myDid, msg).get();
+		SignusResults.AuthenticatedEncryptResult encryptResult = Signus.authenticatedEncrypt(wallet, pool, myDid, myDid, msg).get();
 
-		Signus.decrypt(wallet, myDid, trusteeDid, encryptResult.getEncryptedMessage(), encryptResult.getNonce()).get();
+		Signus.authenticatedDecrypt(wallet, myDid, trusteeDid, encryptResult.getEncryptedMessage(), encryptResult.getNonce()).get();
 	}
 
 	@Test
-	public void testDecryptWorksForNonceNotCorrespondMessage() throws Exception {
+	public void testAuthenticatedDecryptWorksForNonceNotCorrespondMessage() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
 
@@ -102,17 +102,17 @@ public class DecryptTest extends IndyIntegrationTest {
 
 		byte[] nonce = {46, 33, -4, 67, 1, 44, 57, -46, -91, 87, 14, 41, -39, 48, 42, -126, -121, 84, -58, 59, -27, 51, -32, -23};
 
-		Signus.decrypt(wallet, myDid, trusteeDid, encryptedMessage, nonce).get();
+		Signus.authenticatedDecrypt(wallet, myDid, trusteeDid, encryptedMessage, nonce).get();
 	}
 
 	@Test
-	public void testDecryptWorksForUnknownMyDid() throws Exception {
+	public void testAuthenticatedDecryptWorksForUnknownMyDid() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletNotFoundError));
 
 		String identityJson = String.format(identityJsonTemplate, trusteeDid, trusteeVerkey);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
-		Signus.decrypt(wallet, "unknowDid", trusteeDid, encryptedMessage, nonce).get();
+		Signus.authenticatedDecrypt(wallet, "unknowDid", trusteeDid, encryptedMessage, nonce).get();
 	}
 }
