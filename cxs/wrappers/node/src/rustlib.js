@@ -17,7 +17,7 @@ exports.ffi_string_data = 'string';
 exports.ffi_connection_handle_ptr = ref.refType(exports.ffi_connection_handle);
 exports.ffi_CxsStatus = ref.refType(CxsStatus);
 exports.FFIConfiguration = {
-    'cxs_init': [exports.ffi_error_code, []],
+    'cxs_init': ['int', ['string', 'string', 'string', 'string']],
     //connection.rs
     'cxs_connection_create': [exports.ffi_error_code, [exports.ffi_string_data, exports.ffi_connection_handle_ptr]],
     'cxs_connection_connect': [exports.ffi_error_code, [exports.ffi_connection_handle]],

@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::fmt;
 
-
-
 // **** DEFINE NEW ERRORS HERE ****
 // STEP 1: create new public static instance of Error, assign it a new unused number and
 // give it a human readable error message
@@ -11,10 +9,11 @@ use std::fmt;
 
 pub static UNKNOWN_ERROR: Error = Error{code_num:1001, message:"Unknown Error"};
 pub static CONNECTION_ERROR: Error = Error{code_num:1002, message:"Error with Connection"};
-
+pub static SUCCESS: Error = Error{code_num:0, message:"Success"};
 lazy_static! {
     static ref ERROR_MESSAGES: HashMap<u32, &'static str> = {
         let mut m = HashMap::new();
+        insert_message(&mut m, &SUCCESS);
         insert_message(&mut m, &UNKNOWN_ERROR);
         insert_message(&mut m, &CONNECTION_ERROR);
         m
@@ -80,7 +79,7 @@ mod tests {
 
     #[test]
     fn test_error_message(){
-        let msg = error_message(&0);
+        let msg = error_message(&1);
         assert_eq!(msg, "Unknown Error");
 
         let msg = error_message(&1002);
@@ -95,5 +94,10 @@ mod tests {
     #[test]
     fn test_connection_error(){
         assert_eq!(error_message(&CONNECTION_ERROR.code_num), CONNECTION_ERROR.message);
+    }
+
+    #[test]
+    fn test_success_error(){
+        assert_eq!(error_message(&SUCCESS.code_num), SUCCESS.message);
     }
 }

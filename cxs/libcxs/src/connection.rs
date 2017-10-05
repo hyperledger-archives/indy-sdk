@@ -1,9 +1,9 @@
 extern crate rand;
 extern crate serde_json;
 
+use utils::error;
 use std::collections::HashMap;
 use api::CxsStateType;
-use api::Errorcode;
 use rand::Rng;
 use std::sync::Mutex;
 
@@ -40,7 +40,7 @@ pub fn build_connection (info_string: String) -> u32 {
 }
 
 impl Connection {
-    fn connect(&mut self) -> Errorcode { self.state = CxsStateType::CxsStateOfferSent; Errorcode::Success }
+    fn connect(&mut self) -> u32 { self.state = CxsStateType::CxsStateOfferSent; error::SUCCESS.code_num }
     fn get_state(&self) -> u32 { let state = self.state as u32; state }
 }
 
@@ -60,13 +60,13 @@ pub fn get_state(handle: u32) -> u32 {
     rc
 }
 
-pub fn connect(handle: u32) -> Errorcode {
+pub fn connect(handle: u32) -> u32 {
     let mut m = CONNECTION_MAP.lock().unwrap();
     let result = m.get_mut(&handle);
 
     let rc = match result {
        Some(t) => t.connect(),
-       None => Errorcode::Failure,
+       None => error::UNKNOWN_ERROR.code_num,
     };
 
     rc
@@ -85,13 +85,13 @@ pub fn to_string(handle:u32) -> String {
 }
 
 #[allow(unused_variables)]
-pub fn release(handle:u32) -> Errorcode {
+pub fn release(handle:u32) -> u32 {
     let mut m = CONNECTION_MAP.lock().unwrap();
     let result = m.remove(&handle);
 
     let rc = match result {
-        Some(t) => Errorcode::Success,
-        None => Errorcode::Failure,
+        Some(t) => error::SUCCESS.code_num,
+        None => error::UNKNOWN_ERROR.code_num,
     };
 
     rc
@@ -119,7 +119,7 @@ mod tests {
 
         let rc = release(handle);
 
-        assert_eq!(rc, Errorcode::Success);
+        assert_eq!(rc, error::SUCCESS.code_num);
     }
 
     #[test]
@@ -130,7 +130,7 @@ mod tests {
 
         let rc = connect(handle);
 
-        assert_eq!(rc, Errorcode::Success);
+        assert_eq!(rc, error::SUCCESS.code_num);
 
         let state = get_state(handle);
 
@@ -148,7 +148,7 @@ mod tests {
     fn test_connection_release_fails() {
         let rc = release(1);
         
-        assert_eq!(rc, Errorcode::Failure);    
+        assert_eq!(rc, error::UNKNOWN_ERROR.code_num);
     }
 
     #[test]

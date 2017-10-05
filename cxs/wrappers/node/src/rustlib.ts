@@ -35,7 +35,7 @@ export interface FFIInterfaceConfig {
 
 
 export const FFIConfiguration = {
-    'cxs_init': [ffi_error_code, []],
+    'cxs_init': ['int', ['string', 'string', 'string', 'string']],
 
     //connection.rs
     'cxs_connection_create': [ffi_error_code, [ffi_string_data, ffi_connection_handle_ptr]],
