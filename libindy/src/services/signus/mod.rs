@@ -19,16 +19,16 @@ use std::str;
 const DEFAULT_CRYPTO_TYPE: &'static str = "ed25519";
 
 trait CryptoType {
-    fn authenticated_encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError>;
-    fn authenticated_decrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError>;
+    fn encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError>;
+    fn decrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError>;
     fn gen_nonce(&self) -> Vec<u8>;
     fn create_key_pair_for_signature(&self, seed: Option<&[u8]>) -> Result<(Vec<u8>, Vec<u8>), CommonError>;
     fn sign(&self, private_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
     fn verify(&self, public_key: &[u8], doc: &[u8], signature: &[u8]) -> Result<bool, CommonError>;
     fn verkey_to_public_key(&self, vk: &[u8]) -> Result<Vec<u8>, CommonError>;
     fn signkey_to_private_key(&self, sk: &[u8]) -> Result<Vec<u8>, CommonError>;
-    fn anonymous_encrypt(&self, public_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
-    fn anonymous_decrypt(&self, public_key: &[u8], private_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
+    fn encrypt_sealed(&self, public_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
+    fn decrypt_sealed(&self, public_key: &[u8], private_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
 }
 
 pub struct SignusService {
@@ -138,7 +138,7 @@ impl SignusService {
         Ok(signus.verify(&verkey, msg, signature)?)
     }
 
-    pub fn authenticated_encrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), SignusError> {
+    pub fn encrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), SignusError> {
         if !self.crypto_types.contains_key(&my_did.crypto_type.as_str()) {
             return Err(SignusError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", my_did.crypto_type)));
         }
@@ -156,11 +156,11 @@ impl SignusService {
         let secret_key = Base58::decode(&my_did.sk)?;
         let public_key = Base58::decode(&public_key)?;
 
-        let encrypted_doc = signus.authenticated_encrypt(&secret_key, &public_key, doc, &nonce)?;
+        let encrypted_doc = signus.encrypt(&secret_key, &public_key, doc, &nonce)?;
         Ok((encrypted_doc, nonce))
     }
 
-    pub fn authenticated_decrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, SignusError> {
+    pub fn decrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, SignusError> {
         if !self.crypto_types.contains_key(&my_did.crypto_type.as_str()) {
             return Err(SignusError::UnknownCryptoError(format!("MyDid crypto is unknown: {}, {}", my_did.did, my_did.crypto_type)));
         }
@@ -177,12 +177,12 @@ impl SignusService {
         let secret_key = Base58::decode(&my_did.sk)?;
         let public_key = Base58::decode(&public_key)?;
 
-        let decrypted_doc = signus.authenticated_decrypt(&secret_key, &public_key, &doc, &nonce)?;
+        let decrypted_doc = signus.decrypt(&secret_key, &public_key, &doc, &nonce)?;
 
         Ok(decrypted_doc)
     }
 
-    pub fn anonymous_encrypt(&self, their_did: &TheirDid, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
+    pub fn encrypt_sealed(&self, their_did: &TheirDid, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
         if !self.crypto_types.contains_key(&their_did.crypto_type.as_str()) {
             return Err(SignusError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", their_did.crypto_type)));
         }
@@ -196,11 +196,11 @@ impl SignusService {
         let public_key = their_did.pk.clone().unwrap();
         let public_key = Base58::decode(&public_key)?;
 
-        let encrypted_doc = signus.anonymous_encrypt(&public_key, doc)?;
+        let encrypted_doc = signus.encrypt_sealed(&public_key, doc)?;
         Ok(encrypted_doc)
     }
 
-    pub fn anonymous_decrypt(&self, my_did: &MyDid, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
+    pub fn decrypt_sealed(&self, my_did: &MyDid, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
         if !self.crypto_types.contains_key(&my_did.crypto_type.as_str()) {
             return Err(SignusError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", my_did.crypto_type)));
         }
@@ -210,7 +210,7 @@ impl SignusService {
         let public_key = Base58::decode(&my_did.pk)?;
         let private_key = Base58::decode(&my_did.sk)?;
 
-        let decrypted_doc = signus.anonymous_decrypt(&public_key, &private_key, doc)?;
+        let decrypted_doc = signus.decrypt_sealed(&public_key, &private_key, doc)?;
         Ok(decrypted_doc)
     }
 }
@@ -373,7 +373,7 @@ mod tests {
     }
 
     #[test]
-    fn authenticated_encrypt_works() {
+    fn encrypt_works() {
         let service = SignusService::new();
 
         let msg = "some message";
@@ -392,11 +392,11 @@ mod tests {
             verkey: Some(their_did.verkey)
         };
 
-        service.authenticated_encrypt(&my_did, &their_did, msg.as_bytes()).unwrap();
+        service.encrypt(&my_did, &their_did, msg.as_bytes()).unwrap();
     }
 
     #[test]
-    fn authenticated_encrypt_decrypt_works() {
+    fn encrypt_decrypt_works() {
         let service = SignusService::new();
 
         let msg = "some message";
@@ -427,15 +427,15 @@ mod tests {
             verkey: Some(their_did.verkey)
         };
 
-        let (encrypted_message, noce) = service.authenticated_encrypt(&my_did_for_encrypt, &their_did_for_encrypt, msg.as_bytes()).unwrap();
+        let (encrypted_message, noce) = service.encrypt(&my_did_for_encrypt, &their_did_for_encrypt, msg.as_bytes()).unwrap();
 
-        let decrypted_message = service.authenticated_decrypt(&my_did_for_decrypt, &their_did_for_decrypt, &encrypted_message, &noce).unwrap();
+        let decrypted_message = service.decrypt(&my_did_for_decrypt, &their_did_for_decrypt, &encrypted_message, &noce).unwrap();
 
         assert_eq!(msg.as_bytes().to_vec(), decrypted_message);
     }
 
     #[test]
-    fn anonymous_encrypt_works() {
+    fn encrypt_sealed_works() {
         let service = SignusService::new();
 
         let msg = "some message";
@@ -452,11 +452,11 @@ mod tests {
             verkey: Some(did.verkey)
         };
 
-        service.anonymous_encrypt(&did, msg.as_bytes()).unwrap();
+        service.encrypt_sealed(&did, msg.as_bytes()).unwrap();
     }
 
     #[test]
-    fn anonymous_encrypt_decrypt_works() {
+    fn encrypt_decrypt_sealed_works() {
         let service = SignusService::new();
 
         let msg = "some message".as_bytes();
@@ -473,8 +473,8 @@ mod tests {
             verkey: Some(did.verkey.clone())
         };
 
-        let encrypted_message = service.anonymous_encrypt(&encrypt_did, msg).unwrap();
-        let decrypted_message = service.anonymous_decrypt(&did, &encrypted_message).unwrap();
+        let encrypted_message = service.encrypt_sealed(&encrypt_did, msg).unwrap();
+        let decrypted_message = service.decrypt_sealed(&did, &encrypted_message).unwrap();
         assert_eq!(msg, decrypted_message.as_slice());
     }
 }

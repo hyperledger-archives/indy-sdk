@@ -229,21 +229,21 @@ extern "C" {
     /// Ledger*
     /// Crypto*
     
-    extern indy_error_t indy_authenticated_encrypt(indy_handle_t      command_handle,
-                                                   indy_handle_t      wallet_handle,
-                                                   indy_handle_t      pool_handle,
-                                                   const char *       my_did,
-                                                   const char *       did,
-                                                   const indy_u8_t *  message_raw,
-                                                   indy_u32_t         message_len,
+    extern indy_error_t indy_encrypt(indy_handle_t      command_handle,
+                                     indy_handle_t      wallet_handle,
+                                     indy_handle_t      pool_handle,
+                                     const char *       my_did,
+                                     const char *       did,
+                                     const indy_u8_t *  message_raw,
+                                     indy_u32_t         message_len,
 
-                                                   void           (*cb)(indy_handle_t     xcommand_handle,
-                                                                        indy_error_t      err,
-                                                                        const indy_u8_t* encrypted_msg_raw,
-                                                                        indy_u32_t        encrypted_msg_len,
-                                                                        const indy_u8_t*  nonce_raw,
-                                                                        indy_u32_t        nonce_len)
-                                                  );
+                                     void           (*cb)(indy_handle_t     xcommand_handle,
+                                                          indy_error_t      err,
+                                                          const indy_u8_t* encrypted_msg_raw,
+                                                          indy_u32_t        encrypted_msg_len,
+                                                          const indy_u8_t*  nonce_raw,
+                                                          indy_u32_t        nonce_len)
+                                     );
 
     /// Decrypts a message by public-key authenticated-encryption scheme using nonce.
     /// The DID with a secret key must be already created and
@@ -268,20 +268,20 @@ extern "C" {
     /// Wallet*
     /// Crypto*
     
-    extern indy_error_t indy_authenticated_decrypt(indy_handle_t      command_handle,
-                                                   indy_handle_t      wallet_handle,
-                                                   const char *       my_did,
-                                                   const char *       did,
-                                                   const indy_u8_t*   encrypted_msg_raw,
-                                                   indy_u32_t         encrypted_msg_len,
-                                                   const indy_u8_t*   nonce_raw,
-                                                   indy_u32_t         nonce_len,
+    extern indy_error_t indy_decrypt(indy_handle_t      command_handle,
+                                     indy_handle_t      wallet_handle,
+                                     const char *       my_did,
+                                     const char *       did,
+                                     const indy_u8_t*   encrypted_msg_raw,
+                                     indy_u32_t         encrypted_msg_len,
+                                     const indy_u8_t*   nonce_raw,
+                                     indy_u32_t         nonce_len,
 
-                                                   void           (*cb)(indy_handle_t     xcommand_handle,
-                                                                        indy_error_t      err,
-                                                                        const indy_u8_t*  decrypted_msg_raw,
-                                                                        indy_u32_t        decrypted_msg_len)
-                                                  );
+                                     void           (*cb)(indy_handle_t     xcommand_handle,
+                                                          indy_error_t      err,
+                                                          const indy_u8_t*  decrypted_msg_raw,
+                                                          indy_u32_t        decrypted_msg_len)
+                                    );
 
 
     /// Encrypts a message by public-key (associated with did) anonymous-encryption scheme.
@@ -309,17 +309,17 @@ extern "C" {
     /// Ledger*
     /// Crypto*
 
-    extern indy_error_t indy_anonymous_encrypt(indy_handle_t      command_handle,
-                                               indy_handle_t      wallet_handle,
-                                               const char *       did,
-                                               const indy_u8_t *  message_raw,
-                                               indy_u32_t         message_len,
+    extern indy_error_t indy_encrypt_sealed(indy_handle_t      command_handle,
+                                            indy_handle_t      wallet_handle,
+                                            const char *       did,
+                                            const indy_u8_t *  message_raw,
+                                            indy_u32_t         message_len,
 
-                                               void           (*cb)(indy_handle_t     xcommand_handle,
-                                                                    indy_error_t      err,
-                                                                    const indy_u8_t*  encrypted_msg_raw,
-                                                                    indy_u32_t        encrypted_msg_len)
-                                              );
+                                            void           (*cb)(indy_handle_t     xcommand_handle,
+                                                                 indy_error_t      err,
+                                                                 const indy_u8_t*  encrypted_msg_raw,
+                                                                 indy_u32_t        encrypted_msg_len)
+                                           );
 
     /// Decrypts a message by public-key anonymous-encryption scheme.
     /// The DID with a secret key must be already created and
@@ -341,17 +341,17 @@ extern "C" {
     /// Wallet*
     /// Crypto*
 
-    extern indy_error_t indy_anonymous_decrypt(indy_handle_t      command_handle,
-                                               indy_handle_t      wallet_handle,
-                                               const char *       did,
-                                               const indy_u8_t*   encrypted_msg_raw,
-                                               indy_u32_t         encrypted_msg_len,
+    extern indy_error_t indy_decrypt_sealed(indy_handle_t      command_handle,
+                                            indy_handle_t      wallet_handle,
+                                            const char *       did,
+                                            const indy_u8_t*   encrypted_msg_raw,
+                                            indy_u32_t         encrypted_msg_len,
 
-                                               void           (*cb)(indy_handle_t     xcommand_handle,
-                                                                    indy_error_t      err,
-                                                                    const indy_u8_t*  decrypted_msg_raw,
-                                                                    indy_u32_t        decrypted_msg_len)
-                                              );
+                                            void           (*cb)(indy_handle_t     xcommand_handle,
+                                                                 indy_error_t      err,
+                                                                 const indy_u8_t*  decrypted_msg_raw,
+                                                                 indy_u32_t        decrypted_msg_len)
+                                           );
 
 #ifdef __cplusplus
 }

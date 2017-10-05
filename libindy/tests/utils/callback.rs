@@ -842,50 +842,50 @@ impl CallbackUtils {
         (command_handle, Some(replace_keys_apply_callback))
     }
 
-    pub fn closure_to_authenticated_encrypt_cb(closure: Box<FnMut(ErrorCode, Vec<u8>, Vec<u8>) + Send>) -> (i32,
-                                                                                                            Option<extern fn(command_handle: i32,
-                                                                                                                             err: ErrorCode,
-                                                                                                                             encrypted_msg_raw: *const u8, encrypted_msg_len: u32,
-                                                                                                                             nonce_raw: *const u8, nonce_len: u32)>) {
+    pub fn closure_to_encrypt_cb(closure: Box<FnMut(ErrorCode, Vec<u8>, Vec<u8>) + Send>) -> (i32,
+                                                                                              Option<extern fn(command_handle: i32,
+                                                                                                               err: ErrorCode,
+                                                                                                               encrypted_msg_raw: *const u8, encrypted_msg_len: u32,
+                                                                                                               nonce_raw: *const u8, nonce_len: u32)>) {
         lazy_static! {
-            static ref AUTHENTICATED_ENCRYPT_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>, Vec<u8>) + Send > >> = Default::default();
+            static ref ENCRYPT_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>, Vec<u8>) + Send > >> = Default::default();
         }
 
-        extern "C" fn authenticated_encrypt_callback(command_handle: i32, err: ErrorCode, encrypted_msg_raw: *const u8, encrypted_msg_len: u32, nonce_raw: *const u8, nonce_len: u32) {
-            let mut callbacks = AUTHENTICATED_ENCRYPT_CALLBACKS.lock().unwrap();
+        extern "C" fn encrypt_callback(command_handle: i32, err: ErrorCode, encrypted_msg_raw: *const u8, encrypted_msg_len: u32, nonce_raw: *const u8, nonce_len: u32) {
+            let mut callbacks = ENCRYPT_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let encrypted_msg = unsafe { slice::from_raw_parts(encrypted_msg_raw, encrypted_msg_len as usize) };
             let nonce = unsafe { slice::from_raw_parts(nonce_raw, nonce_len as usize) };
             cb(err, encrypted_msg.to_vec(), nonce.to_vec());
         }
 
-        let mut callbacks = AUTHENTICATED_ENCRYPT_CALLBACKS.lock().unwrap();
+        let mut callbacks = ENCRYPT_CALLBACKS.lock().unwrap();
         let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
         callbacks.insert(command_handle, closure);
 
-        (command_handle, Some(authenticated_encrypt_callback))
+        (command_handle, Some(encrypt_callback))
     }
 
-    pub fn closure_to_authenticated_decrypt_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (i32,
-                                                                                                   Option<extern fn(command_handle: i32,
-                                                                                                                    err: ErrorCode,
-                                                                                                                    decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) {
+    pub fn closure_to_decrypt_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (i32,
+                                                                                     Option<extern fn(command_handle: i32,
+                                                                                                      err: ErrorCode,
+                                                                                                      decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) {
         lazy_static! {
-            static ref AUTHENTICATED_DECRYPT_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
+            static ref DECRYPT_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
         }
 
-        extern "C" fn authenticated_decrypt_callback(command_handle: i32, err: ErrorCode, decrypted_msg_raw: *const u8, decrypted_msg_len: u32) {
-            let mut callbacks = AUTHENTICATED_DECRYPT_CALLBACKS.lock().unwrap();
+        extern "C" fn decrypt_callback(command_handle: i32, err: ErrorCode, decrypted_msg_raw: *const u8, decrypted_msg_len: u32) {
+            let mut callbacks = DECRYPT_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let decrypted_msg = unsafe { slice::from_raw_parts(decrypted_msg_raw, decrypted_msg_len as usize) };
             cb(err, decrypted_msg.to_vec())
         }
 
-        let mut callbacks = AUTHENTICATED_DECRYPT_CALLBACKS.lock().unwrap();
+        let mut callbacks = DECRYPT_CALLBACKS.lock().unwrap();
         let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
         callbacks.insert(command_handle, closure);
 
-        (command_handle, Some(authenticated_decrypt_callback))
+        (command_handle, Some(decrypt_callback))
     }
 
     pub fn closure_to_sign_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
@@ -955,47 +955,47 @@ impl CallbackUtils {
         (command_handle, Some(issuer_create_and_store_revoc_reg_callback))
     }
 
-    pub fn closure_to_anonymous_encrypt_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (i32,
-                                                                                               Option<extern fn(command_handle: i32,
-                                                                                                                err: ErrorCode,
-                                                                                                                encrypted_msg_raw: *const u8, encrypted_msg_len: u32)>) {
+    pub fn closure_to_encrypt_sealed_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (i32,
+                                                                                            Option<extern fn(command_handle: i32,
+                                                                                                             err: ErrorCode,
+                                                                                                             encrypted_msg_raw: *const u8, encrypted_msg_len: u32)>) {
         lazy_static! {
-            static ref ANONYMOUS_ENCRYPT_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
+            static ref ENCRYPT_SEALED_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
         }
 
-        extern "C" fn anonymous_encrypt_callback(command_handle: i32, err: ErrorCode, encrypted_msg_raw: *const u8, encrypted_msg_len: u32) {
-            let mut callbacks = ANONYMOUS_ENCRYPT_CALLBACKS.lock().unwrap();
+        extern "C" fn encrypt_sealed_callback(command_handle: i32, err: ErrorCode, encrypted_msg_raw: *const u8, encrypted_msg_len: u32) {
+            let mut callbacks = ENCRYPT_SEALED_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let encrypted_msg = unsafe { slice::from_raw_parts(encrypted_msg_raw, encrypted_msg_len as usize) };
             cb(err, encrypted_msg.to_vec())
         }
 
-        let mut callbacks = ANONYMOUS_ENCRYPT_CALLBACKS.lock().unwrap();
+        let mut callbacks = ENCRYPT_SEALED_CALLBACKS.lock().unwrap();
         let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
         callbacks.insert(command_handle, closure);
 
-        (command_handle, Some(anonymous_encrypt_callback))
+        (command_handle, Some(encrypt_sealed_callback))
     }
 
-    pub fn closure_to_anonymous_decrypt_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (i32,
-                                                                                               Option<extern fn(command_handle: i32,
-                                                                                                                err: ErrorCode,
-                                                                                                                decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) {
+    pub fn closure_to_decrypt_sealed_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (i32,
+                                                                                            Option<extern fn(command_handle: i32,
+                                                                                                             err: ErrorCode,
+                                                                                                             decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) {
         lazy_static! {
-            static ref ANONYMOUS_DECRYPT_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
+            static ref DECRYPT_SEALED_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
         }
 
-        extern "C" fn anonymous_encrypt_callback(command_handle: i32, err: ErrorCode, decrypted_msg_raw: *const u8, decrypted_msg_len: u32) {
-            let mut callbacks = ANONYMOUS_DECRYPT_CALLBACKS.lock().unwrap();
+        extern "C" fn encrypt_sealed_callback(command_handle: i32, err: ErrorCode, decrypted_msg_raw: *const u8, decrypted_msg_len: u32) {
+            let mut callbacks = DECRYPT_SEALED_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let decrypted_msg = unsafe { slice::from_raw_parts(decrypted_msg_raw, decrypted_msg_len as usize) };
             cb(err, decrypted_msg.to_vec())
         }
 
-        let mut callbacks = ANONYMOUS_DECRYPT_CALLBACKS.lock().unwrap();
+        let mut callbacks = DECRYPT_SEALED_CALLBACKS.lock().unwrap();
         let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
         callbacks.insert(command_handle, closure);
 
-        (command_handle, Some(anonymous_encrypt_callback))
+        (command_handle, Some(encrypt_sealed_callback))
     }
 }

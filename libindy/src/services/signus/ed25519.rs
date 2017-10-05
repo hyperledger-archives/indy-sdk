@@ -13,11 +13,11 @@ impl ED25519Signus {
 }
 
 impl CryptoType for ED25519Signus {
-    fn authenticated_encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError> {
+    fn encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError> {
         CryptoBox::encrypt(private_key, public_key, doc, nonce)
     }
 
-    fn authenticated_decrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError> {
+    fn decrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError> {
         CryptoBox::decrypt(private_key, public_key, doc, nonce)
     }
 
@@ -44,11 +44,11 @@ impl CryptoType for ED25519Signus {
     fn signkey_to_private_key(&self, sk: &[u8]) -> Result<Vec<u8>, CommonError> {
         CryptoBox::sk_to_curve25519(sk)
     }
-    fn anonymous_encrypt(&self, public_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError> {
+    fn encrypt_sealed(&self, public_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError> {
         Sealbox::encrypt(public_key, doc)
     }
 
-    fn anonymous_decrypt(&self, public_key: &[u8], private_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError> {
+    fn decrypt_sealed(&self, public_key: &[u8], private_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError> {
         Sealbox::decrypt(public_key, private_key, doc)
     }
 }

@@ -16,9 +16,10 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
 import static org.hyperledger.indy.sdk.utils.PoolUtils.DEFAULT_POOL_NAME;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class AnonymousDecryptTest extends IndyIntegrationTest {
+public class DecryptTest extends IndyIntegrationTest {
 
 	private Pool pool;
 	private Wallet wallet;
@@ -28,6 +29,8 @@ public class AnonymousDecryptTest extends IndyIntegrationTest {
 	private String myVerkey;
 	private String walletName = "signusWallet";
 	private byte[] msg = "{\"reqId\":1496822211362017764}".getBytes();
+	private byte[] encryptedMessage = {- 105, 30, 89, 75, 76, 28, - 59, - 45, 105, - 46, 20, 124, - 85, - 13, 109, 29, - 88, - 82, - 8, - 6, - 50, - 84, - 53, - 48, - 49, 56, 124, 114, 82, 126, 74, 99, - 72, - 78, - 117, 96, 60, 119, 50, - 40, 121, 21, 57, - 68, 89};
+	private byte[] nonce = {- 14, 102, - 41, - 57, 1, 4, 75, - 46, - 91, 87, 14, 41, - 39, 48, 42, - 126, - 121, 84, - 58, 59, - 27, 51, - 32, - 23};
 	private String identityJsonTemplate = "{\"did\":\"%s\",\"verkey\":\"%s\"}";
 
 	@Before
@@ -64,17 +67,17 @@ public class AnonymousDecryptTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	public void testAnonymousDecryptWorks() throws Exception {
+	public void testDecryptWorks() throws Exception {
 		String identityJson = String.format(identityJsonTemplate, trusteeDid, trusteeVerkey);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
-		byte[] encryptedMessage = Signus.anonymousEncrypt(wallet, pool, trusteeDid, msg).get();
-		byte[] decryptedMessage = Signus.anonymousDecrypt(wallet, trusteeDid, encryptedMessage).get();
+		byte[] decryptedMessage = Signus.decrypt(wallet, myDid, trusteeDid, encryptedMessage, nonce).get();
 		assertTrue(Arrays.equals(msg, decryptedMessage));
+
 	}
 
 	@Test
-	public void testAnonymousDecryptWorksForOtherCoder() throws Exception {
+	public void testDecryptWorksForOtherCoder() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
 
@@ -84,17 +87,32 @@ public class AnonymousDecryptTest extends IndyIntegrationTest {
 		identityJson = String.format(identityJsonTemplate, myDid, myVerkey);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
-		byte[] encryptResult = Signus.anonymousEncrypt(wallet, pool, myDid, msg).get();
+		SignusResults.EncryptResult encryptResult = Signus.encrypt(wallet, pool, myDid, myDid, msg).get();
 
-		Signus.anonymousDecrypt(wallet, trusteeDid, encryptResult).get();
+		Signus.decrypt(wallet, myDid, trusteeDid, encryptResult.getEncryptedMessage(), encryptResult.getNonce()).get();
 	}
 
 	@Test
-	public void testAnonymousDecryptWorksForUnknownMyDid() throws Exception {
+	public void testDecryptWorksForNonceNotCorrespondMessage() throws Exception {
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+
+		String identityJson = String.format(identityJsonTemplate, trusteeDid, trusteeVerkey);
+		Signus.storeTheirDid(wallet, identityJson).get();
+
+		byte[] nonce = {46, 33, - 4, 67, 1, 44, 57, - 46, - 91, 87, 14, 41, - 39, 48, 42, - 126, - 121, 84, - 58, 59, - 27, 51, - 32, - 23};
+
+		Signus.decrypt(wallet, myDid, trusteeDid, encryptedMessage, nonce).get();
+	}
+
+	@Test
+	public void testDecryptWorksForUnknownMyDid() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletNotFoundError));
 
-		byte[] encryptedMessage = {- 105, 30, 89, 75, 76, 28, - 59, - 45, 105, - 46, 20};
-		Signus.anonymousDecrypt(wallet, "unknowDid", encryptedMessage).get();
+		String identityJson = String.format(identityJsonTemplate, trusteeDid, trusteeVerkey);
+		Signus.storeTheirDid(wallet, identityJson).get();
+
+		Signus.decrypt(wallet, "unknowDid", trusteeDid, encryptedMessage, nonce).get();
 	}
 }

@@ -323,23 +323,23 @@ pub  extern fn indy_verify_signature(command_handle: i32,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_authenticated_encrypt(command_handle: i32,
-                                          wallet_handle: i32,
-                                          pool_handle: i32,
-                                          my_did: *const c_char,
-                                          their_did: *const c_char,
-                                          message_raw: *const u8,
-                                          message_len: u32,
-                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                               encrypted_msg_raw: *const u8, encrypted_msg_len: u32,
-                                                               nonce_raw: *const u8, nonce_len: u32)>) -> ErrorCode {
+pub  extern fn indy_encrypt(command_handle: i32,
+                            wallet_handle: i32,
+                            pool_handle: i32,
+                            my_did: *const c_char,
+                            their_did: *const c_char,
+                            message_raw: *const u8,
+                            message_len: u32,
+                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                 encrypted_msg_raw: *const u8, encrypted_msg_len: u32,
+                                                 nonce_raw: *const u8, nonce_len: u32)>) -> ErrorCode {
     check_useful_c_str!(my_did, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam5);
     check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam6, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let result = CommandExecutor::instance()
-        .send(Command::Signus(SignusCommand::AuthenticatedEncrypt(
+        .send(Command::Signus(SignusCommand::Encrypt(
             wallet_handle,
             pool_handle,
             my_did,
@@ -379,16 +379,16 @@ pub  extern fn indy_authenticated_encrypt(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_authenticated_decrypt(command_handle: i32,
-                                          wallet_handle: i32,
-                                          my_did: *const c_char,
-                                          their_did: *const c_char,
-                                          encrypted_msg_raw: *const u8,
-                                          encrypted_msg_len: u32,
-                                          nonce_raw: *const u8,
-                                          nonce_len: u32,
-                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                               decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) -> ErrorCode {
+pub  extern fn indy_decrypt(command_handle: i32,
+                            wallet_handle: i32,
+                            my_did: *const c_char,
+                            their_did: *const c_char,
+                            encrypted_msg_raw: *const u8,
+                            encrypted_msg_len: u32,
+                            nonce_raw: *const u8,
+                            nonce_len: u32,
+                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                 decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) -> ErrorCode {
     check_useful_c_str!(my_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam4);
     check_useful_c_byte_array!(encrypted_msg_raw, encrypted_msg_len, ErrorCode::CommonInvalidParam5, ErrorCode::CommonInvalidParam6);
@@ -396,7 +396,7 @@ pub  extern fn indy_authenticated_decrypt(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
     let result = CommandExecutor::instance()
-        .send(Command::Signus(SignusCommand::AuthenticatedDecrypt(
+        .send(Command::Signus(SignusCommand::Decrypt(
             wallet_handle,
             my_did,
             their_did,
@@ -437,20 +437,20 @@ pub  extern fn indy_authenticated_decrypt(command_handle: i32,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_anonymous_encrypt(command_handle: i32,
-                                      wallet_handle: i32,
-                                      pool_handle: i32,
-                                      did: *const c_char,
-                                      message_raw: *const u8,
-                                      message_len: u32,
-                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                           encrypted_msg_raw: *const u8, encrypted_msg_len: u32)>) -> ErrorCode {
+pub  extern fn indy_encrypt_sealed(command_handle: i32,
+                                   wallet_handle: i32,
+                                   pool_handle: i32,
+                                   did: *const c_char,
+                                   message_raw: *const u8,
+                                   message_len: u32,
+                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                        encrypted_msg_raw: *const u8, encrypted_msg_len: u32)>) -> ErrorCode {
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
     check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Signus(SignusCommand::AnonymousEncrypt(
+        .send(Command::Signus(SignusCommand::EncryptSealed(
             wallet_handle,
             pool_handle,
             did,
@@ -485,19 +485,19 @@ pub  extern fn indy_anonymous_encrypt(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-pub  extern fn indy_anonymous_decrypt(command_handle: i32,
-                                      wallet_handle: i32,
-                                      did: *const c_char,
-                                      encrypted_msg_raw: *const u8,
-                                      encrypted_msg_len: u32,
-                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                           decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) -> ErrorCode {
+pub  extern fn indy_decrypt_sealed(command_handle: i32,
+                                   wallet_handle: i32,
+                                   did: *const c_char,
+                                   encrypted_msg_raw: *const u8,
+                                   encrypted_msg_len: u32,
+                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                        decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) -> ErrorCode {
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
     check_useful_c_byte_array!(encrypted_msg_raw, encrypted_msg_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Signus(SignusCommand::AnonymousDecrypt(
+        .send(Command::Signus(SignusCommand::DecryptSealed(
             wallet_handle,
             did,
             encrypted_msg_raw,
