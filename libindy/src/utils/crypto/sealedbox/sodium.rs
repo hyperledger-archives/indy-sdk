@@ -39,9 +39,9 @@ mod tests {
 
         let doc = randombytes::randombytes(16);
 
-        let encrypted_data = Sealbox::encrypt(&pk, &doc);
+        let encrypted_data = Sealbox::encrypt(&pk, &doc).unwrap();
         let decrypt_result = Sealbox::decrypt(&pk, &sk, &encrypted_data).unwrap();
 
-        assert_eq!(data, decrypt_result);
+        assert_eq!(doc, decrypt_result);
     }
 }

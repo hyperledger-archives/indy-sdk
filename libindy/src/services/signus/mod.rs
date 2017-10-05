@@ -373,7 +373,7 @@ mod tests {
     }
 
     #[test]
-    fn encrypt_works() {
+    fn authenticated_encrypt_works() {
         let service = SignusService::new();
 
         let msg = "some message";
@@ -392,11 +392,11 @@ mod tests {
             verkey: Some(their_did.verkey)
         };
 
-        service.encrypt(&my_did, &their_did, msg.as_bytes()).unwrap();
+        service.authenticated_encrypt(&my_did, &their_did, msg.as_bytes()).unwrap();
     }
 
     #[test]
-    fn encrypt_decrypt_works() {
+    fn authenticated_encrypt_decrypt_works() {
         let service = SignusService::new();
 
         let msg = "some message";
@@ -415,7 +415,6 @@ mod tests {
             verkey: Some(my_did.verkey)
         };
 
-
         let their_did = service.create_my_did(&did_info.clone()).unwrap();
 
         let my_did_for_decrypt = their_did.clone();
@@ -428,10 +427,54 @@ mod tests {
             verkey: Some(their_did.verkey)
         };
 
-        let (encrypted_message, noce) = service.encrypt(&my_did_for_encrypt, &their_did_for_encrypt, msg.as_bytes()).unwrap();
+        let (encrypted_message, noce) = service.authenticated_encrypt(&my_did_for_encrypt, &their_did_for_encrypt, msg.as_bytes()).unwrap();
 
-        let decrypted_message = service.decrypt(&my_did_for_decrypt, &their_did_for_decrypt, &encrypted_message, &noce).unwrap();
+        let decrypted_message = service.authenticated_decrypt(&my_did_for_decrypt, &their_did_for_decrypt, &encrypted_message, &noce).unwrap();
 
         assert_eq!(msg.as_bytes().to_vec(), decrypted_message);
+    }
+
+    #[test]
+    fn anonymous_encrypt_works() {
+        let service = SignusService::new();
+
+        let msg = "some message";
+
+        let did_info = MyDidInfo::new(None, None, None, None);
+
+        let did = service.create_my_did(&did_info.clone()).unwrap();
+
+        let did = TheirDid {
+            did: did.did,
+            crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
+            pk: Some(did.pk),
+            endpoint: None,
+            verkey: Some(did.verkey)
+        };
+
+        service.anonymous_encrypt(&did, msg.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn anonymous_encrypt_decrypt_works() {
+        let service = SignusService::new();
+
+        let msg = "some message".as_bytes();
+
+        let did_info = MyDidInfo::new(None, None, None, None);
+
+        let did = service.create_my_did(&did_info.clone()).unwrap();
+
+        let encrypt_did = TheirDid {
+            did: did.did.clone(),
+            crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
+            pk: Some(did.pk.clone()),
+            endpoint: None,
+            verkey: Some(did.verkey.clone())
+        };
+
+        let encrypted_message = service.anonymous_encrypt(&encrypt_did, msg).unwrap();
+        let decrypted_message = service.anonymous_decrypt(&did, &encrypted_message).unwrap();
+        assert_eq!(msg, decrypted_message.as_slice());
     }
 }
