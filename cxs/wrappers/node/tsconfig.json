@@ -1,14 +1,12 @@
 {
     "compilerOptions": {
-        "target": "es5",
+        "target": "es2016",
         "module": "commonjs",
         "sourceMap": true,
         "outDir": "./dist"
     },
-    
     "include": [
-        "src/**/*",
-        "test/**/*"
+        "src/**/*"
     ],
     "exclude": [
         "node_modules"

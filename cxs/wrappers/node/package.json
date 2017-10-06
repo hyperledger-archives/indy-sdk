@@ -6,7 +6,8 @@
   "description": "Node wrapper for cxs",
   "main": "dist/index.js",
   "scripts": {
-    "test": "mocha dist/test/**/*.js test/**/*.js"
+    "build": "tsc -p ./tsconfig.json",
+    "test": "mocha test/**/*.js"
   },
   "repository": {
     "type": "git",
