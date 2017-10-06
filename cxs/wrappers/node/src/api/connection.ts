@@ -1,71 +1,53 @@
-import * as index from '../index'
+import * as ffi from 'ffi'
 import * as ref from 'ref'
 import * as Struct from 'ref-struct'
+import { CXSRuntime } from '../index'
+import { CXSRuntimeConfig, CxsStatus, FFI_CXS_STATUS_PTR } from '../rustlib'
+
 import {
-    Connections
+    IConnections
 } from './api'
-import {
-    Errorcode,
-}from './mod'
 
-export class Connection implements Connections{
+export class Connection implements IConnections {
+  public connectionHandle: ref.types.uint32
+  public state: ref.types.uint32
+  public statusList: any
+  readonly RUST_API: ffi
 
-    readonly RustAPI : any
-    connection_handle : any
+  constructor ( path: string ) {
+    this.RUST_API = new CXSRuntime(new CXSRuntimeConfig(path)).ffi
+  }
 
-    constructor(path?: string){
-        this.RustAPI = new index.CXSRuntime(new index.CXSRuntimeConfig(path)).ffi
-    }
+  create ( recipientInfo: string ): number {
+    const connectionHandlePtr = ref.alloc(ref.types.uint32)
+    const result = this.RUST_API.cxs_connection_create(recipientInfo, connectionHandlePtr)
+    this.connectionHandle = ref.deref(connectionHandlePtr, ref.types.uint32)
+    return result
+  }
 
-    connection_create(recipient_info: string, connection_handle: number) : number{
-        let connection_handle_ptr = connection_handle
-        if(typeof connection_handle == "number"){
-            // console.log(connection_handle)
-            connection_handle_ptr = ref.alloc(ref.types.int, connection_handle)
-            var old_handle = ref.alloc(ref.types.int, connection_handle)
-            // console.log(connection_handle_ptr)
-        }
+  connect (): number {
+    return this.RUST_API.cxs_connection_connect(this.connectionHandle)
+  }
 
-        var result = this.RustAPI.cxs_connection_create(recipient_info, connection_handle_ptr)
-        // console.log(old_handle)
-        // console.log(connection_handle_ptr)
-        // console.log(connection_handle_ptr == old_handle)
-        this.connection_handle = ref.deref(connection_handle_ptr)
-        return result
-    }
+  get_data (): string {
+    return this.RUST_API.cxs_connection_get_data(this.connectionHandle)
+  }
 
-    connection_connect(connection_handle: number): Errorcode{
-        return this.RustAPI.cxs_connection_connect(connection_handle)
-    }
+  get_state (): number {
+    const statusPtr = ref.alloc(ref.types.uint32)
+    const result = this.RUST_API.cxs_connection_get_state(this.connectionHandle, statusPtr)
+    this.state = ref.deref(statusPtr, ref.types.uint32)
+    return result
+  }
 
-    connection_get_data(connection_handle: number): string{
+  release (): number {
+    return this.RUST_API.cxs_connection_release(this.connectionHandle)
+  }
 
-       return this.RustAPI.cxs_connection_get_data(connection_handle)
-    }
+  list_state (): number {
+    const CxsStatusPtr = ref.alloc(FFI_CXS_STATUS_PTR)
+    const result = this.RUST_API.cxs_connection_list_state(CxsStatusPtr)
+    this.statusList = ref.deref(CxsStatusPtr, FFI_CXS_STATUS_PTR)
+    return result
+  }
 }
-//
-//
-// export function connection_create(): Errorcode{
-//
-//     return Errorcode.Failure
-// }
-//
-// export function connection_connect(): Errorcode{
-//
-//     return Errorcode.Failure
-// }
-//
-// export function connection_get_data(): Errorcode{
-//
-//     return Errorcode.Failure
-// }
-//
-// export function connection_get_state(): Errorcode{
-//
-//     return Errorcode.Failure
-// }
-//
-// export function connection_list_state(): Errorcode{
-//
-//     return Errorcode.Failure
-// }

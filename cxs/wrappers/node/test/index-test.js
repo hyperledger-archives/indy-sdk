@@ -1,10 +1,11 @@
-var chai = require('chai');
-var fs = require('fs-extra');
-var index = require('../src/index.js');
+require('chai');
+require('fs-extra');
+var index = require('../dist/index');
+var rustlib = require('../dist/rustlib');
 var assert = require('assert');
 var parentDir = require('path');
 var CXSRuntime = index.CXSRuntime;
-var CXSRuntimeConfig = index.CXSRuntimeConfig;
+var CXSRuntimeConfig = rustlib.CXSRuntimeConfig;
 var currentDir = parentDir.dirname(module.filename);
 var ref = require('ref')
 var Struct = require('ref-struct')
@@ -39,7 +40,7 @@ describe('call to cxs_connection_connect without the ability to connect', functi
     path += "/lib/libcxs.so";
     var run = new CXSRuntime(new CXSRuntimeConfig(path));
     it('should return 1', function () {
-        assert.equal(run.ffi.cxs_connection_connect(2), 1)
+        assert.equal(run.ffi.cxs_connection_connect(2), 1001)
     })
 });
 
@@ -67,7 +68,7 @@ describe('call to cxs_connection_release without ability to release ', function(
     path += "/lib/libcxs.so";
     var run = new CXSRuntime(new CXSRuntimeConfig(path));
     it('should return 1', function () {
-        assert.equal(run.ffi.cxs_connection_release(2), 1)
+        assert.equal(run.ffi.cxs_connection_release(2), 1001)
     })
 });
 

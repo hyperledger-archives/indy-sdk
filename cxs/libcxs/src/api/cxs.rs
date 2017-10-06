@@ -89,7 +89,6 @@ pub extern fn cxs_connection_connect(connection_handle: u32) -> u32 {
 
 #[no_mangle]
 pub extern fn cxs_connection_get_data(connection_handle: u32) -> *mut c_char {
-
     let json_string = to_string(connection_handle);
     let msg = CStringUtils::string_to_cstring(json_string);
 
@@ -113,6 +112,7 @@ pub extern fn cxs_connection_release(connection_handle: u32) -> u32 {
     release(connection_handle)
 }
 
+#[no_mangle]
 #[allow(unused_variables, unused_mut)]
 pub extern fn cxs_connection_list_state(status_array: *mut CxsStatus) -> u32 { error::SUCCESS.code_num }
 

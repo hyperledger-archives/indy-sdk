@@ -4,7 +4,7 @@
   "author": "evernym",
   "license": "ISC",
   "description": "Node wrapper for cxs",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "mocha test/**/*.js"
   },

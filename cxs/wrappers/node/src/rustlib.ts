@@ -1,23 +1,24 @@
 import * as ref from 'ref'
-import * as Struct from 'ref-struct'
+import * as StructType from 'ref-struct'
 
 export type FFIEntryPoint = any
 
-var CxsStatus = Struct({
-    'handle': 'int',
-    'status': 'int',
-    'msg': 'string',
+/* tslint: disable */
+export let CxsStatus = StructType({
+  handle: 'int',
+  msg: 'string',
+  status: 'int'
 })
 
-//FFI Type Strings
-export const ffi_error_code = 'int'
-export const ffi_connection_handle = 'uint32'
-export const ffi_unsigned_int = 'uint32'
-export const ffi_unsigned_int_ptr = ref.refType('uint32')
-export const ffi_string = 'string'
-export const ffi_string_data = 'string'
-export const ffi_connection_handle_ptr = ref.refType(ffi_connection_handle)
-export const ffi_CxsStatus = ref.refType(CxsStatus)
+// FFI Type Strings
+export const FFI_ERROR_CODE = 'int'
+export const FFI_CONNECTION_HANDLE = 'uint32'
+export const FFI_UNSIGNED_INT = 'uint32'
+export const FFI_UNSIGNED_INT_PTR = ref.refType('uint32')
+export const FFI_STRING = 'string'
+export const FFI_STRING_DATA = 'string'
+export const FFI_CONNECTION_HANDLE_PTR = ref.refType(FFI_CONNECTION_HANDLE)
+export const FFI_CXS_STATUS_PTR = ref.refType(CxsStatus)
 
 // Rust Lib Native Types
 export type rust_did = string
@@ -29,20 +30,27 @@ export type rust_wallet_handle = rust_object_handle
 export type rust_listener_handle = rust_object_handle
 export type rust_connection_handle = rust_object_handle
 
-export interface FFIInterfaceConfig {
-    libraryPath?:string
+export interface IFFIInterfaceConfig {
+  libraryPath?: string
 }
 
+export class CXSRuntimeConfig {
+  basepath?: string
+  constructor (_basepath?: string) {
+    this.basepath = _basepath
+  }
+}
 
 export const FFIConfiguration = {
-    'cxs_init': ['int', ['string', 'string', 'string', 'string']],
 
-    //connection.rs
-    'cxs_connection_create': [ffi_error_code, [ffi_string_data, ffi_connection_handle_ptr]],
-    'cxs_connection_connect': [ffi_error_code, [ffi_connection_handle]],
-    'cxs_connection_get_data': [ffi_string_data, [ffi_connection_handle]],
-    'cxs_connection_get_state': [ffi_error_code, [ffi_connection_handle, ffi_unsigned_int_ptr]],
-    'cxs_connection_release': [ffi_error_code, [ffi_connection_handle]],
-    // 'cxs_connection_list_state': [ffi_error_code, [ffi_CxsStatus]],
+// connection.rs
+  cxs_connection_connect: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE]],
+  cxs_connection_create: [FFI_ERROR_CODE, [FFI_STRING_DATA, FFI_CONNECTION_HANDLE_PTR]],
+  cxs_connection_get_data: [FFI_STRING_DATA, [FFI_CONNECTION_HANDLE]],
+  cxs_connection_get_state: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE, FFI_UNSIGNED_INT_PTR]],
+  cxs_connection_list_state: [FFI_ERROR_CODE, [FFI_CXS_STATUS_PTR]],
+  cxs_connection_release: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE]],
+
+  cxs_init: ['int', ['string', 'string', 'string', 'string']]
 
 }
