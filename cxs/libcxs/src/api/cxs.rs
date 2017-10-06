@@ -5,22 +5,42 @@ use api::CxsStatus;
 use utils::cstring::CStringUtils;
 use utils::{pool, wallet};
 use utils::error;
-use connection::build_connection;
-use connection::connect;
-use connection::to_string;
-use connection::get_state;
-use connection::release;
-use std::ffi::CString;
+use settings;
+use connection::{build_connection, connect, to_string, get_state, release};
 
 #[no_mangle]
-pub extern fn cxs_init (pool_name:*const c_char,
-                           config_name:*const c_char,
-                           wallet_name:*const c_char,
-                           wallet_type:*const c_char) -> u32 {
-    check_useful_c_str!(pool_name,1001);
-    check_useful_c_str!(config_name,1001);
-    check_useful_c_str!(wallet_name,1001);
-    check_useful_c_str!(wallet_type,1001);
+pub extern fn cxs_init (config_path:*const c_char) -> u32 {
+
+    settings::set_defaults();
+
+    if !config_path.is_null() {
+        check_useful_c_str!(config_path,error::UNKNOWN_ERROR.code_num);
+
+        if settings::process_config_file(&config_path) != error::SUCCESS.code_num {
+            return error::UNKNOWN_ERROR.code_num;
+        }
+    }
+
+    let config_name = match settings::get_config_value(settings::CONFIG_POOL_CONFIG_NAME) {
+        Err(x) => return x,
+        Ok(v) => v,
+    };
+
+    let pool_name = match settings::get_config_value(settings::CONFIG_POOL_NAME) {
+        Err(x) => return x,
+        Ok(v) => v,
+    };
+
+    let wallet_name = match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
+        Err(x) => return x,
+        Ok(v) => v,
+    };
+
+    let wallet_type = match settings::get_config_value(settings::CONFIG_WALLET_TYPE) {
+        Err(x) => return x,
+        Ok(v) => v,
+    };
+
     match pool::create_pool_config(&pool_name, &config_name) {
         0 => 0,
         x => return x,
@@ -31,7 +51,7 @@ pub extern fn cxs_init (pool_name:*const c_char,
         x => return x,
     };
 
-    return 0
+    return error::SUCCESS.code_num
 }
 
 
@@ -75,7 +95,7 @@ pub extern fn cxs_connection_create(recipient_info: *const c_char, connection_ha
 
     if connection_handle.is_null() {return error::UNKNOWN_ERROR.code_num}
 
-    let handle = build_connection("Whatever.".to_owned());
+    let handle = build_connection(recipient_info.to_owned());
 
     unsafe { *connection_handle = handle }
 
@@ -158,19 +178,51 @@ pub extern fn cxs_proof_list_state(status_array: *mut CxsStatus) -> u32 { error:
 #[allow(unused_variables, unused_mut)]
 pub extern fn cxs_proof_get_state(proof_handle: u32, status: *mut c_char) -> u32 { error::SUCCESS.code_num }
 
+
+
+
 #[cfg(test)]
 mod tests {
+
     use super::*;
-    use utils::error::UNKNOWN_ERROR;
+    use std::path::Path;
+    use std::ffi::CString;
+    use std::ptr;
+    use std::error::Error;
+    use std::io::prelude::*;
+    use std::fs;
+
     #[test]
-    fn test_init() {
-        let pool_name = CString::new("pool1").unwrap().into_raw();
-        let config_name = CString::new("config1").unwrap().into_raw();
-        let wallet_name = CString::new("wallet1").unwrap().into_raw();
-        let wallet_type = CString::new("default").unwrap().into_raw();
-        let empty_str = CString::new("").unwrap().into_raw();
-        let result = cxs_init(pool_name, config_name, wallet_name, wallet_type);
+    fn test_init_with_file() {
+        let config_path = "/tmp/test_init.json";
+        let path = Path::new(config_path);
+
+        let mut file = match fs::File::create(&path) {
+            Err(why) => panic!("couldn't create sample config file: {}", why.description()),
+            Ok(file) => file,
+        };
+
+        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"my_config\", \"wallet_name\":\"my_wallet\", \"wallet_type\":\"default\" }";
+        match file.write_all(content.as_bytes()) {
+            Err(why) => panic!("couldn't write to sample config file: {}", why.description()),
+            Ok(_) => println!("sample config ready"),
+        }
+
+        let result = cxs_init(CString::new(config_path).unwrap().into_raw());
         assert_eq!(result,0);
-        assert_eq!(UNKNOWN_ERROR.code_num,cxs_init(empty_str, config_name, wallet_name, wallet_type));
+        // Leave file around or other concurrent tests will fail
+        //fs::remove_file(config_path).unwrap();
+    }
+
+    #[test]
+    fn test_init_bad_path() {
+        let empty_str = CString::new("").unwrap().into_raw();
+        assert_eq!(error::UNKNOWN_ERROR.code_num,cxs_init(empty_str));
+    }
+
+    #[test]
+    fn test_init_no_config_path() {
+        let result = cxs_init(ptr::null());
+        assert_eq!(result,0);
     }
 }
