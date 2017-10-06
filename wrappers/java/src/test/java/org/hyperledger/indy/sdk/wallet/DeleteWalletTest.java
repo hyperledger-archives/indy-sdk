@@ -65,12 +65,9 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testDeleteWalletWorksForPlugged() throws Exception {
-		String type = "inmem";
-		String walletName = "wallet";
-
-		Wallet.createWallet(POOL, walletName, type, null, null).get();
-		Wallet.deleteWallet(walletName, null).get();
-		Wallet.createWallet(POOL, walletName, type, null, null).get();
+		Wallet.createWallet(POOL, "pluggedWalletDelete", "inmem", null, null).get();
+		Wallet.deleteWallet("pluggedWalletDelete", null).get();
+		Wallet.createWallet(POOL, "pluggedWalletDelete", "inmem", null, null).get();
 	}
 
 	@Test

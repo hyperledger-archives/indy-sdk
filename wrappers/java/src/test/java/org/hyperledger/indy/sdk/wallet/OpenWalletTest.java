@@ -15,30 +15,24 @@ public class OpenWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testOpenWalletWorks() throws Exception {
-		String walletName = "deleteWalletWorks";
+		Wallet.createWallet(POOL, "walletOpen", TYPE, null, null).get();
 
-		Wallet.createWallet(POOL, walletName, TYPE, null, null).get();
-
-		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
+		Wallet wallet = Wallet.openWallet("walletOpen", null, null).get();
 		assertNotNull(wallet);
 	}
 
 	@Test
 	public void testOpenWalletWorksForConfig() throws Exception {
-		String walletName = "openWalletWorksForConfig";
+		Wallet.createWallet(POOL, "openWalletWorksForConfig", TYPE, null, null).get();
 
-		Wallet.createWallet(POOL, walletName, TYPE, null, null).get();
-
-		Wallet wallet = Wallet.openWallet(walletName, "{\"freshness_time\":1000}", null).get();
+		Wallet wallet = Wallet.openWallet("openWalletWorksForConfig", "{\"freshness_time\":1000}", null).get();
 		assertNotNull(wallet);
 	}
 
 	@Test
 	public void testOpenWalletWorksForPlugged() throws Exception {
-		String walletName = "testOpenWalletWorksForPlugged";
-
-		Wallet.createWallet(POOL, walletName, "inmem", null, null).get();
-		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
+		Wallet.createWallet(POOL, "testOpenWalletWorksForPlugged", "inmem", null, null).get();
+		Wallet wallet = Wallet.openWallet("testOpenWalletWorksForPlugged", null, null).get();
 		assertNotNull(wallet);
 	}
 
@@ -55,11 +49,9 @@ public class OpenWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletAlreadyOpenedError));
 
-		String walletName = "openWalletWorksForTwice";
+		Wallet.createWallet(POOL, "openWalletWorksForTwice", TYPE, null, null).get();
 
-		Wallet.createWallet(POOL, walletName, TYPE, null, null).get();
-
-		Wallet.openWallet(walletName, null, null).get();
-		Wallet.openWallet(walletName, null, null).get();
+		Wallet.openWallet("openWalletWorksForTwice", null, null).get();
+		Wallet.openWallet("openWalletWorksForTwice", null, null).get();
 	}
 }

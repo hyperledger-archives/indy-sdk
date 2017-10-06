@@ -12,22 +12,22 @@ public class CreateWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCreateWalletWorks() throws Exception {
-		Wallet.createWallet(POOL, "createWalletWorks", TYPE, null, null).get();
+		Wallet.createWallet(POOL, WALLET, TYPE, null, null).get();
 	}
 
 	@Test
 	public void testCreateWalletWorksForPlugged() throws Exception {
-		Wallet.createWallet(POOL, "createWalletWorks", "inmem", null, null).get();
+		Wallet.createWallet(POOL, "pluggedWalletCreate", "inmem", null, null).get();
 	}
 
 	@Test
 	public void testCreateWalletWorksForEmptyType() throws Exception {
-		Wallet.createWallet(POOL, "createWalletWorks", null, null, null).get();
+		Wallet.createWallet(POOL, WALLET, null, null, null).get();
 	}
 
 	@Test
 	public void testCreateWalletWorksForConfigJson() throws Exception {
-		Wallet.createWallet(POOL, "createWalletWorks", null, "{\"freshness_time\":1000}", null).get();
+		Wallet.createWallet(POOL, WALLET, null, "{\"freshness_time\":1000}", null).get();
 	}
 
 	@Test
@@ -35,7 +35,7 @@ public class CreateWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletUnknownTypeError));
 
-		Wallet.createWallet(POOL, "createWalletWorks", "unknow_type", null, null).get();
+		Wallet.createWallet(POOL, WALLET, "unknow_type", null, null).get();
 	}
 
 	@Test
@@ -50,7 +50,7 @@ public class CreateWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletAlreadyExistsError));
 
-		Wallet.createWallet(POOL, "deleteWalletWorks", TYPE, null, null).get();
-		Wallet.createWallet(POOL, "deleteWalletWorks", TYPE, null, null).get();
+		Wallet.createWallet(POOL, WALLET, TYPE, null, null).get();
+		Wallet.createWallet(POOL, WALLET, TYPE, null, null).get();
 	}
 }

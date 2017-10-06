@@ -19,20 +19,20 @@ import java.util.concurrent.TimeUnit;
 
 public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
+	private String type = "inmem";
+
 	@Test
 	@Ignore //The wallet is already registered by the base class!
 	public void testRegisterWalletTypeWorks() throws Exception {
-
-		Wallet.registerWalletType("inmem", new InMemWalletType()).get();
+		Wallet.registerWalletType(type, new InMemWalletType()).get();
 	}
 
 	@Test
 	public void testRegisterWalletTypeDoesNotWorkForTwiceWithSameName() throws Exception {
-
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletTypeAlreadyRegisteredError));
 
-		Wallet.registerWalletType("inmem", new InMemWalletType()).get();
+		Wallet.registerWalletType(type, new InMemWalletType()).get();
 	}
 
 	@Rule
@@ -45,7 +45,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
 		String walletName = "inmemWorkoutWallet";
 
-		Wallet.createWallet(POOL, walletName, "inmem", null, null).get();
+		Wallet.createWallet(POOL, walletName, type, null, null).get();
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 
 		String schema = "{\"seqNo\":1,\"data\": {\"name\":\"gvt\",\"version\":\"1.0\",\"keys\":[\"age\",\"sex\",\"height\",\"name\"]}}";
