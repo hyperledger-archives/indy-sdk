@@ -42,9 +42,6 @@ export class CXSRuntimeConfig {
 }
 
 export const FFIConfiguration = {
-<<<<<<< HEAD
-    'cxs_init': ['int', ['string']]
-=======
 
 // connection.rs
   cxs_connection_connect: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE]],
@@ -56,5 +53,4 @@ export const FFIConfiguration = {
 
   cxs_init: ['int', ['string']]
 
->>>>>>> wrap_connection
 }

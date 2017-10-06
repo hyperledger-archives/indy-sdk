@@ -6,7 +6,7 @@
   "description": "Node wrapper for cxs",
   "main": "dist/index.js",
   "scripts": {
-    "test": "mocha dist/test/**/*.js"
+    "test": "mocha dist/test/**/*.js test/**/*.js"
   },
   "repository": {
     "type": "git",
