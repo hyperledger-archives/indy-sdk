@@ -51,6 +51,6 @@ export const FFIConfiguration = {
   cxs_connection_list_state: [FFI_ERROR_CODE, [FFI_CXS_STATUS_PTR]],
   cxs_connection_release: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE]],
 
-  cxs_init: ['int', ['string', 'string', 'string', 'string']]
+  cxs_init: ['int', ['string']]
 
 }
