@@ -44,7 +44,7 @@ typedef struct {
  * Initialize the SDK
  */
 
-cxs_error_t cxs_init();
+cxs_error_t cxs_init(const char *config_path);
 
 
 /**
