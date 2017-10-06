@@ -34,7 +34,7 @@ impl XSalsa20 {
             &secretbox::Nonce(_clone_into_array(nonce)),
             &secretbox::Key(_clone_into_array(key))
         )
-            .map_err(|_| CommonError::InvalidStructure("Unable to decrypt data".to_string()))
+            .map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))
     }
 }
 

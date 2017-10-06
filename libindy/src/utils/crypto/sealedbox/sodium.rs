@@ -22,7 +22,7 @@ impl Sealbox {
         sealedbox::open(&doc,
                         &box_::PublicKey(_clone_into_array(pk)),
                         &box_::SecretKey(_clone_into_array(sk)))
-            .map_err(|_| CommonError::InvalidStructure("Unable to decrypt data".to_string()))
+            .map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))
     }
 }
 

@@ -48,7 +48,7 @@ impl CryptoBox {
             &box_::PublicKey(_clone_into_array(public_key)),
             &box_::SecretKey(_clone_into_array(private_key))
         )
-            .map_err(|_| CommonError::InvalidStructure("Unable to decrypt data".to_string()))
+            .map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))
     }
 
     pub fn gen_nonce() -> Vec<u8> {
