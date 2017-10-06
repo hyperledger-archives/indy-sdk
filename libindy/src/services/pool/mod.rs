@@ -431,7 +431,7 @@ impl TransactionHandler {
                 }
                 _ => {
                     trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Unknown transaction");
-                    return None
+                    return None;
                 }
             };
 
@@ -640,7 +640,14 @@ impl PoolWorker {
         //TODO firstly try to deserialize merkle tree
         p.push(pool_name);
         p.set_extension("txn");
+
         let f = fs::File::open(p).map_err(map_err_trace!())?;
+
+        if f.metadata()?.len() == 0 {
+            return Err(PoolError::CommonError(
+                CommonError::InvalidState("Invalid Genesis Transaction file".to_string())));
+        }
+
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
             let line: String = line.map_err(map_err_trace!())?;
@@ -824,6 +831,11 @@ impl PoolService {
 
         if path.as_path().exists() {
             return Err(PoolError::AlreadyExists(format!("Pool ledger config file with name \"{}\" already exists", name)));
+        }
+
+        if fs::metadata(pool_config.genesis_txn.clone())?.len() == 0 {
+            return Err(PoolError::CommonError(
+                CommonError::InvalidStructure("Empty Genesis Transaction file".to_string())));
         }
 
         fs::create_dir_all(path.as_path()).map_err(map_err_trace!())?;
