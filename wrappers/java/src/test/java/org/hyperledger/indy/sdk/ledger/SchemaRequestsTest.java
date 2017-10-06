@@ -66,7 +66,9 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();
 
-		String schemaRequest = Ledger.buildSchemaRequest(did, SCHEMA_DATA).get();
+		String schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"attr_names\": [\"name\", \"male\"]}";
+
+		String schemaRequest = Ledger.buildSchemaRequest(did, schemaData).get();
 		Ledger.signAndSubmitRequest(pool, wallet, did, schemaRequest).get();
 
 		String getSchemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
