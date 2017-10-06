@@ -16,5 +16,5 @@ export interface FFIInterfaceConfig {
 
 
 export const FFIConfiguration = {
-    'cxs_init': ['int', ['string', 'string', 'string', 'string']]
+    'cxs_init': ['int', ['string']]
 }
