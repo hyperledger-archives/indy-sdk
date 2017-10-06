@@ -9,7 +9,7 @@ mocha_1.describe('cxs_init', function () {
         chai_1.expect(result).to.equal(0);
     });
     mocha_1.it('should return 1001 when given an invalid argument', function () {
-        var result = init_1.init_cxs(null, 'config1', 'wallet1', 'default');
+        var result = init_1.init_cxs(null, 'config1', 'wallet2', 'default');
         chai_1.expect(result).to.equal(1001);
     });
 });

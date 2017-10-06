@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var index = require("../index");
 var posix = require("path");
 function init_cxs(poolName, configName, walletName, walletType) {
-    var currentDir = posix.dirname(this.filename);
+    var currentDir = posix.dirname(".");
     var path = currentDir + '/../node/lib/libcxs.so';
     var config = new index.CXSRuntimeConfig(path);
     var rust = new index.CXSRuntime(config);
