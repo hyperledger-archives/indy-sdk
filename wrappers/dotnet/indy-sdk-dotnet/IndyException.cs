@@ -42,6 +42,8 @@ namespace Hyperledger.Indy
                     return new InvalidParameterException(errorCode);
                 case ErrorCode.CommonInvalidState:
                     return new InvalidStateException(errorCode);
+                case ErrorCode.CommonInvalidStructure:
+                    return new InvalidStructureException(errorCode);
                 case ErrorCode.CommonIOError:
                     return new IOException(errorCode);
                 case ErrorCode.WalletInvalidHandle:
