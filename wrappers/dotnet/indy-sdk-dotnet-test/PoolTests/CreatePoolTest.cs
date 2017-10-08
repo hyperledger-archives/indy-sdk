@@ -36,22 +36,6 @@ namespace Hyperledger.Indy.Test.PoolTests
         }
 
         [TestMethod]
-        public async Task TestCreatePoolWorksForEmptyName()
-        {
-
-            var genesisTxnFile = PoolUtils.CreateGenesisTxnFile("genesis.txn");
-            var path = Path.GetFullPath(genesisTxnFile).Replace('\\', '/');
-
-            var configJson = string.Format("{{\"genesis_txn\":\"{0}\"}}", path);
-
-            var ex = await Assert.ThrowsExceptionAsync<InvalidParameterException>(() =>
-                Pool.CreatePoolLedgerConfigAsync("", configJson)
-            );
-
-            Assert.AreEqual(2, ex.ParameterIndex);
-        }
-
-        [TestMethod]
         public async Task TestCreatePoolWorksForTwice()
         {
 

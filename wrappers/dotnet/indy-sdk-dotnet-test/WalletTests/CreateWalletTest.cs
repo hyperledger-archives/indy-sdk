@@ -34,17 +34,7 @@ namespace Hyperledger.Indy.Test.WalletTests
         }
 
         [TestMethod]
-        public async Task TestCreateWalletWorksForEmptyName()
-        {
-            var ex = await Assert.ThrowsExceptionAsync<InvalidParameterException>(() =>
-                Wallet.CreateWalletAsync(string.Empty, "createWalletWorks", "default", null, null)
-            );
-
-            Assert.AreEqual(2, ex.ParameterIndex);
-        }
-
-        [TestMethod]
-        public async Task TestCreateWalletWorksForDuplicateName()
+        public async Task TestCreateWalletFailsForDuplicateName()
         {
             var poolName = "default";
             var walletName = "deleteWalletWorks";

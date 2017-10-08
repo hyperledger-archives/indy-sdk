@@ -1,6 +1,7 @@
 ﻿using Hyperledger.Indy.LedgerApi;
 using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
+using System;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.IndyNativeMethods;
 
@@ -166,6 +167,15 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// JSON string containing the claim definition.</returns>
         public static Task<string> IssuerCreateAndStoreClaimDefAsync(Wallet wallet, string issuerDid, string schemaJson, string signatureType, bool createNonRevoc)
         {
+            if (wallet == null)
+                throw new ArgumentNullException("wallet");
+
+            if (string.IsNullOrWhiteSpace(issuerDid))
+                throw new ArgumentException("A value must be provided.", "issuerDid");
+
+            if (string.IsNullOrWhiteSpace(schemaJson))
+                throw new ArgumentException("A value must be provided.", "schemaJson");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -199,6 +209,12 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to a JSON string containing the revocation registry.</returns>
         public static Task<string> IssuerCreateAndStoreRevocRegAsync(Wallet wallet, string issuerDid, int schemaSeqNo, int maxClaimNum)
         {
+            if (wallet == null)
+                throw new ArgumentNullException("wallet");
+
+            if (string.IsNullOrWhiteSpace(issuerDid))
+                throw new ArgumentException("A value must be provided.", "issuerDid");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -269,6 +285,15 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// an <see cref="IssuerCreateClaimResult"/>.</returns>
         public static Task<IssuerCreateClaimResult> IssuerCreateClaimAsync(Wallet wallet, string claimReqJson, string claimJson, int userRevocIndex)
         {
+            if (wallet == null)
+                throw new ArgumentNullException("wallet");
+
+            if (string.IsNullOrWhiteSpace(claimReqJson))
+                throw new ArgumentException("A value must be provided.", "claimReqJson");
+
+            if (string.IsNullOrWhiteSpace(claimJson))
+                throw new ArgumentException("A value must be provided.", "claimJson");
+
             var taskCompletionSource = new TaskCompletionSource<IssuerCreateClaimResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -303,6 +328,12 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to a revocation registry update JSON with a revoked claim.</returns>
         public static Task<string> IssuerRevokeClaimAsync(Wallet wallet, string issuerDid, int schemaSequenceNumber, int userRevocIndex)
         {
+            if (wallet == null)
+                throw new ArgumentNullException("wallet");
+
+            if (string.IsNullOrWhiteSpace(issuerDid))
+                throw new ArgumentException("A value must be provided.", "issuerDid");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -339,6 +370,12 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <returns>An asynchronous <see cref="Task"/> that completes when the operation has completed.</returns>
         public static Task ProverStoreClaimOfferAsync(Wallet wallet, string claimOfferJson)
         {
+            if (wallet == null)
+                throw new ArgumentNullException("wallet");
+
+            if (string.IsNullOrWhiteSpace(claimOfferJson))
+                throw new ArgumentException("A value must be provided.", "claimOfferJson");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -392,6 +429,12 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to a JSON string with a list of claim offers matching the filter.</returns>
         public static Task<string> ProverGetClaimOffersAsync(Wallet wallet, string filterJson)
         {
+            if (wallet == null)
+                throw new ArgumentNullException("wallet");
+
+            if (string.IsNullOrWhiteSpace(filterJson))
+                throw new ArgumentException("A value must be provided.", "filterJson");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -418,6 +461,12 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <returns>An asynchronous <see cref="Task"/> that completes when the operation has completed.</returns>
         public static Task ProverCreateMasterSecretAsync(Wallet wallet, string masterSecretName)
         {
+            if (wallet == null)
+                throw new ArgumentNullException("wallet");
+
+            if (string.IsNullOrWhiteSpace(masterSecretName))
+                throw new ArgumentException("A value must be provided.", "masterSecretName");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -471,6 +520,21 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to a JSON string containing the claim request.</returns>
         public static Task<string> ProverCreateAndStoreClaimReqAsync(Wallet wallet, string proverDid, string claimOfferJson, string claimDefJson, string masterSecretName)
         {
+            if (wallet == null)
+                throw new ArgumentNullException("wallet");
+
+            if (string.IsNullOrWhiteSpace(proverDid))
+                throw new ArgumentException("A value must be provided.", "proverDid");
+
+            if (string.IsNullOrWhiteSpace(claimOfferJson))
+                throw new ArgumentException("A value must be provided.", "claimOfferJson");
+
+            if (string.IsNullOrWhiteSpace(claimDefJson))
+                throw new ArgumentException("A value must be provided.", "claimDefJson");
+
+            if (string.IsNullOrWhiteSpace(masterSecretName))
+                throw new ArgumentException("A value must be provided.", "masterSecretName");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -520,6 +584,12 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <returns>An asynchronous <see cref="Task"/> that completes when the operation has completed.</returns>
         public static Task ProverStoreClaimAsync(Wallet wallet, string claimsJson)
         {
+            if (wallet == null)
+                throw new ArgumentNullException("wallet");
+
+            if (string.IsNullOrWhiteSpace(claimsJson))
+                throw new ArgumentException("A value must be provided.", "claimsJson");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -574,6 +644,12 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to a JSON string containing the claim request.</returns>
         public static Task<string> ProverGetClaimsAsync(Wallet wallet, string filterJson)
         {
+            if (wallet == null)
+                throw new ArgumentNullException("wallet");
+
+            if (string.IsNullOrWhiteSpace(filterJson))
+                throw new ArgumentException("A value must be provided.", "filterJson");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -636,6 +712,12 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to a JSON string containing the claims for the proof request.</returns>
         public static Task<string> ProverGetClaimsForProofReqAsync(Wallet wallet, string proofRequestJson)
         {
+            if (wallet == null)
+                throw new ArgumentNullException("wallet");
+
+            if (string.IsNullOrWhiteSpace(proofRequestJson))
+                throw new ArgumentException("A value must be provided.", "proofRequestJson");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -764,6 +846,27 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to a JSON string containing the proof.</returns>
         public static Task<string> ProverCreateProofAsync(Wallet wallet, string proofReqJson, string requestedClaimsJson, string schemasJson, string masterSecretName, string claimDefsJson, string revocRegsJson)
         {
+            if (wallet == null)
+                throw new ArgumentNullException("wallet");
+
+            if (string.IsNullOrWhiteSpace(proofReqJson))
+                throw new ArgumentException("A value must be provided.", "proofReqJson");
+
+            if (string.IsNullOrWhiteSpace(requestedClaimsJson))
+                throw new ArgumentException("A value must be provided.", "requestedClaimsJson");
+
+            if (string.IsNullOrWhiteSpace(schemasJson))
+                throw new ArgumentException("A value must be provided.", "schemasJson");
+
+            if (string.IsNullOrWhiteSpace(masterSecretName))
+                throw new ArgumentException("A value must be provided.", "masterSecretName");
+
+            if (string.IsNullOrWhiteSpace(claimDefsJson))
+                throw new ArgumentException("A value must be provided.", "claimDefsJson");
+
+            if (string.IsNullOrWhiteSpace(revocRegsJson))
+                throw new ArgumentException("A value must be provided.", "revocRegsJson");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -873,6 +976,21 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to true if the proof is valid, otherwise false.</returns>
         public static Task<bool> VerifierVerifyProofAsync(string proofRequestJson, string proofJson, string schemasJson, string claimDefsJson, string revocRegsJson)
         {
+            if (string.IsNullOrWhiteSpace(proofRequestJson))
+                throw new ArgumentException("A value must be provided.", "proofRequestJson");
+
+            if (string.IsNullOrWhiteSpace(proofJson))
+                throw new ArgumentException("A value must be provided.", "proofJson");
+
+            if (string.IsNullOrWhiteSpace(schemasJson))
+                throw new ArgumentException("A value must be provided.", "schemasJson");
+
+            if (string.IsNullOrWhiteSpace(claimDefsJson))
+                throw new ArgumentException("A value must be provided.", "claimDefsJson");
+
+            if (string.IsNullOrWhiteSpace(revocRegsJson))
+                throw new ArgumentException("A value must be provided.", "revocRegsJson");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 

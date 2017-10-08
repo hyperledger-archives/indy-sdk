@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -38,6 +39,9 @@ namespace Hyperledger.Indy.Utils
         /// <returns>The command handle to use for tracking the task completion source.</returns>
         public static int Add<T>(TaskCompletionSource<T> taskCompletionSource)
         {
+            if (taskCompletionSource == null)
+                throw new ArgumentNullException("taskCompletionSource");
+
             var commandHandle = GetNextCommandHandle();
             _taskCompletionSources.Add(commandHandle, taskCompletionSource);
             return commandHandle;

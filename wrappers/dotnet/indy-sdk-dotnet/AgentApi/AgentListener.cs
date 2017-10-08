@@ -73,6 +73,9 @@ namespace Hyperledger.Indy.AgentApi
         /// once the listener has been created.</returns>
         public static Task<AgentListener> ListenAsync(string endpoint)
         {
+            if (string.IsNullOrWhiteSpace(endpoint))
+                throw new ArgumentException("A value must be provided.", "endpoint");
+
             var listener = new AgentListener();
 
             var taskCompletionSource = new TaskCompletionSource<AgentListener>(listener);
@@ -206,6 +209,15 @@ namespace Hyperledger.Indy.AgentApi
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public Task AddIdentityAsync(Pool pool, Wallet wallet, string did)
         {
+            if (pool == null)
+                throw new ArgumentNullException("pool");
+
+            if (wallet == null)
+                throw new ArgumentNullException("wallet");
+
+            if (string.IsNullOrWhiteSpace(did))
+                throw new ArgumentException("A value must be provided.", "did");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -237,6 +249,12 @@ namespace Hyperledger.Indy.AgentApi
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public Task RemoveIdentityAsync(Wallet wallet, string did)
         {
+            if (wallet == null)
+                throw new ArgumentNullException("wallet");
+
+            if (string.IsNullOrWhiteSpace(did))
+                throw new ArgumentException("A value must be provided.", "did");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 

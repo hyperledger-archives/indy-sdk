@@ -49,7 +49,13 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An asynchronous <see cref="Task"/> with no return value that completes when
         /// the registration is complete.</returns>
         public static Task RegisterWalletTypeAsync(string typeName, WalletType walletType)
-        {            
+        {
+            if (string.IsNullOrWhiteSpace(typeName))
+                throw new ArgumentException("A value must be provided.", typeName);
+
+            if (walletType == null)
+                throw new ArgumentNullException("walletType");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -116,6 +122,12 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An asynchronous <see cref="Task"/> with no return value the completes when the operation has finished.</returns>
         public static Task CreateWalletAsync(string poolName, string name, string type, string config, string credentials)
         {
+            if (string.IsNullOrWhiteSpace(poolName))
+                throw new ArgumentException("A value must be provided.", poolName);
+
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("A value must be provided.", name);
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -160,6 +172,9 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="Wallet"/> instance when the operation completes.</returns>
         public static Task<Wallet> OpenWalletAsync(string name, string runtimeConfig, string credentials)
         {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("A value must be provided.", name);
+
             var taskCompletionSource = new TaskCompletionSource<Wallet>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -193,6 +208,9 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An asynchronous <see cref="Task"/> with no return value that completes when the operation completes.</returns>
         public static Task DeleteWalletAsync(string name, string credentials)
         {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("A value must be provided.", name);
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 

@@ -1,4 +1,6 @@
-﻿namespace Hyperledger.Indy.AnonCredsApi
+﻿using System;
+
+namespace Hyperledger.Indy.AnonCredsApi
 {
     /// <summary>
     /// Result of an issuer creating a claim.
@@ -12,8 +14,8 @@
         /// <param name="claimJson">The claim JSON.</param>
         public IssuerCreateClaimResult(string revocRegUpdateJson, string claimJson)
         {
-            RevocRegUpdateJson = revocRegUpdateJson;
-            ClaimJson = claimJson;
+            RevocRegUpdateJson = revocRegUpdateJson ?? throw new ArgumentNullException("revocRegUpdateJson");
+            ClaimJson = claimJson ?? throw new ArgumentNullException("claimJson"); 
         }
 
         /// <summary>
