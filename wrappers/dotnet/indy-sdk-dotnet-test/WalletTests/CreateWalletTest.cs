@@ -28,21 +28,19 @@ namespace Hyperledger.Indy.Test.WalletTests
         [TestMethod]
         public async Task TestCreateWalletWorksForUnknownType()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<UnknownWalletTypeException>(() =>
                 Wallet.CreateWalletAsync("default", "createWalletWorks", "unknown_type", null, null)
             );
-
-            Assert.AreEqual(ErrorCode.WalletUnknownTypeError, ex.ErrorCode);
         }
 
         [TestMethod]
         public async Task TestCreateWalletWorksForEmptyName()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidParameterException>(() =>
                 Wallet.CreateWalletAsync(string.Empty, "createWalletWorks", "default", null, null)
             );
 
-            Assert.AreEqual(ErrorCode.CommonInvalidParam2, ex.ErrorCode);
+            Assert.AreEqual(2, ex.ParameterIndex);
         }
 
         [TestMethod]
@@ -54,11 +52,9 @@ namespace Hyperledger.Indy.Test.WalletTests
 
             await Wallet.CreateWalletAsync(poolName, walletName, type, null, null);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletExistsException>(() =>
                 Wallet.CreateWalletAsync(poolName, walletName, type, null, null)
             );
-
-            Assert.AreEqual(ErrorCode.WalletAlreadyExistsError, ex.ErrorCode);
         }
 
         [TestMethod]

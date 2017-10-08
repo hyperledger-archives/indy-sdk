@@ -28,11 +28,9 @@ namespace Hyperledger.Indy.Test.AgentTests
 
             await connection.CloseAsync();
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 connection.SendAsync("msg")
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -58,11 +56,9 @@ namespace Hyperledger.Indy.Test.AgentTests
 
             await serverToClientConnection.CloseAsync();
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 serverToClientConnection.SendAsync("msg")
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
     }

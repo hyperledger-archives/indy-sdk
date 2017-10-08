@@ -77,11 +77,9 @@ namespace Hyperledger.Indy.Test.AgentTests
             var connection = await AgentConnection.ConnectAsync(_pool, _wallet, myDid.Did, myDid.Did);
             connection.Dispose();
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 connection.CloseAsync()
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
     }
 }

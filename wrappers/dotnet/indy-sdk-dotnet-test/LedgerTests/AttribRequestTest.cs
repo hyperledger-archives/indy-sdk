@@ -59,11 +59,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestBuildAttribRequestWorksForMissedAttribute()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 Ledger.BuildAttribRequestAsync(_identifier, _dest, null, null, null)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -93,11 +91,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var attribRequest = await Ledger.BuildAttribRequestAsync(trusteeDid, trusteeDid, null, _endpoint, null);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
                 Ledger.SubmitRequestAsync(_pool, attribRequest)
             );
-
-            Assert.AreEqual(ErrorCode.LedgerInvalidTransaction, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -129,11 +125,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestBuildAttribRequestWorksForInvalidIdentifier()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 Ledger.BuildAttribRequestAsync("invalid_base58_identifier", _dest, null, _endpoint, null)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
     }
 }

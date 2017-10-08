@@ -44,11 +44,11 @@ namespace Hyperledger.Indy.Test.PoolTests
 
             var configJson = string.Format("{{\"genesis_txn\":\"{0}\"}}", path);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidParameterException>(() =>
                 Pool.CreatePoolLedgerConfigAsync("", configJson)
             );
 
-            Assert.AreEqual(ErrorCode.CommonInvalidParam2, ex.ErrorCode);
+            Assert.AreEqual(2, ex.ParameterIndex);
         }
 
         [TestMethod]
@@ -63,11 +63,9 @@ namespace Hyperledger.Indy.Test.PoolTests
 
             await Pool.CreatePoolLedgerConfigAsync("pool1", configJson);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<PoolLedgerConfigExistsException>(() =>
                 Pool.CreatePoolLedgerConfigAsync("pool1", configJson)
-            );
-
-            Assert.AreEqual(ErrorCode.PoolLedgerConfigAlreadyExistsError, ex.ErrorCode);
+            );;
         }
     }
 }

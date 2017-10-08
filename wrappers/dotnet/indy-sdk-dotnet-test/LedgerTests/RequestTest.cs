@@ -88,11 +88,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var nymRequest = await Ledger.BuildNymRequestAsync(signerDid, myDid, null, null, null);            
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
                Ledger.SignAndSubmitRequestAsync(_pool, _wallet, signerDid, nymRequest)
             );
-
-            Assert.AreEqual(ErrorCode.LedgerInvalidTransaction, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -112,11 +110,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, null, null, null);            
             
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WrongWalletForPoolException>(() =>
                 Ledger.SignAndSubmitRequestAsync(_pool, wallet, trusteeDid, nymRequest)
-            );
-
-            Assert.AreEqual(ErrorCode.WalletIncompatiblePoolError, ex.ErrorCode);
+            );            
         }
     }
 }

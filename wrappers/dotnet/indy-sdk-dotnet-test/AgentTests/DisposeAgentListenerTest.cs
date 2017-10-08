@@ -63,11 +63,9 @@ namespace Hyperledger.Indy.Test.AgentTests
             var listener = await AgentListener.ListenAsync(endpoint);
             listener.Dispose();
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletExistsException>(() =>
                 listener.CloseAsync()
             );
-
-            Assert.AreEqual(ErrorCode.WalletAlreadyExistsError, ex.ErrorCode);
         }
     }
 }

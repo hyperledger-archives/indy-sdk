@@ -47,11 +47,9 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestReplaceKeysWorksForInvalidDid()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 Signus.ReplaceKeysAsync(_wallet, "invalid_base58_string", "{}")
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]

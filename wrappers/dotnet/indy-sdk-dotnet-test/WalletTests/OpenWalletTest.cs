@@ -32,11 +32,9 @@ namespace Hyperledger.Indy.Test.WalletTests
         [TestMethod]
         public async Task TestOpenWalletWorksForNotCreatedWallet()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
                 Wallet.OpenWalletAsync("openWalletWorksForNotCreatedWallet", null, null)
             );
-
-            Assert.AreEqual(ErrorCode.CommonIOError, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -48,21 +46,17 @@ namespace Hyperledger.Indy.Test.WalletTests
 
             var wallet1 = Wallet.OpenWalletAsync(walletName, null, null);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletAlreadyOpenedException>(() =>
                Wallet.OpenWalletAsync(walletName, null, null)
             );
-
-            Assert.AreEqual(ErrorCode.WalletAlreadyOpenedError, ex.ErrorCode);
         }
 
         [TestMethod]
         public async Task TestOpenWalletWorksForNotCreated()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
                Wallet.OpenWalletAsync("testOpenWalletWorksForNotCreated", null, null)
             );
-
-            Assert.AreEqual(ErrorCode.CommonIOError, ex.ErrorCode);
         }
 
         [TestMethod]

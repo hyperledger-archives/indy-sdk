@@ -76,11 +76,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var nodeRequest = await Ledger.BuildNodeRequestAsync(did, did, data);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
                 Ledger.SubmitRequestAsync(_pool, nodeRequest)
             );
-
-            Assert.AreEqual(ErrorCode.LedgerInvalidTransaction, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -93,11 +91,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
                     "\"alias\":\"some\"," +
                     "\"services\":[\"SERVICE\"]}";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 Ledger.BuildNodeRequestAsync(_identifier, _dest, data)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -109,11 +105,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
                     "\"client_port\":911," +
                     "\"services\":[\"VALIDATOR\"]}";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 Ledger.BuildNodeRequestAsync(_identifier, _dest, data)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -133,11 +127,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var nodeRequest = await Ledger.BuildNodeRequestAsync(did, did, data);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
                 Ledger.SignAndSubmitRequestAsync(_pool, _wallet, did, nodeRequest)
             );
-
-            Assert.AreEqual(ErrorCode.LedgerInvalidTransaction, ex.ErrorCode);
         }
 
         [TestMethod]
