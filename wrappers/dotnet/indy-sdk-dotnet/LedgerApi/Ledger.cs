@@ -93,14 +93,9 @@ namespace Hyperledger.Indy.LedgerApi
         /// message.</returns>
         public static Task<string> SignRequestAsync(Wallet wallet, string submitterDid, string requestJson)
         {
-            if (wallet == null)
-                throw new ArgumentNullException("wallet");
-
-            if (string.IsNullOrWhiteSpace(submitterDid))
-                throw new ArgumentException("A value must be provided.", "submitterDid");
-
-            if (string.IsNullOrWhiteSpace(requestJson))
-                throw new ArgumentException("A value must be provided.", "requestJson");
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(requestJson, "requestJson");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -134,14 +129,10 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the result of submission when the operation completes.</returns>
         public static Task<string> SignAndSubmitRequestAsync(Pool pool, Wallet wallet, string submitterDid, string requestJson)
         {
-            if (pool == null)
-                throw new ArgumentNullException("pool");
-
-            if (string.IsNullOrWhiteSpace(submitterDid))
-                throw new ArgumentException("A value must be provided.", "submitterDid");
-
-            if (string.IsNullOrWhiteSpace(requestJson))
-                throw new ArgumentException("A value must be provided.", "requestJson");
+            ParamGuard.NotNull(pool, "pool");
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(requestJson, "requestJson");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -171,16 +162,13 @@ namespace Hyperledger.Indy.LedgerApi
         /// method.
         /// </remarks>
         /// <param name="pool">The validator pool to submit the request to.</param>
-        /// <param name="requstJson">The request to submit.</param>
+        /// <param name="requestJson">The request to submit.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a JSON <see cref="string"/> 
         /// containing the results when the operation completes.</returns>
-        public static Task<string> SubmitRequestAsync(Pool pool, string requstJson)
+        public static Task<string> SubmitRequestAsync(Pool pool, string requestJson)
         {
-            if (pool == null)
-                throw new ArgumentNullException("pool");
-
-            if (string.IsNullOrWhiteSpace(requstJson))
-                throw new ArgumentException("A value must be provided.", "requstJson");
+            ParamGuard.NotNull(pool, "pool");
+            ParamGuard.NotNullOrWhiteSpace(requestJson, "requestJson");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -188,7 +176,7 @@ namespace Hyperledger.Indy.LedgerApi
             var result = IndyNativeMethods.indy_submit_request(
                 commandHandle,
                 pool.Handle,
-                requstJson,
+                requestJson,
                 _submitRequestCallback);
 
             CallbackHelper.CheckResult(result);
@@ -215,11 +203,8 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON.</returns>
         public static Task<string> BuildGetDdoRequestAsync(string submitterDid, string targetDid)
         {
-            if (string.IsNullOrWhiteSpace(submitterDid))
-                throw new ArgumentException("A value must be provided.", "submitterDid");
-
-            if (string.IsNullOrWhiteSpace(targetDid))
-                throw new ArgumentException("A value must be provided.", "targetDid");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(targetDid, "targetDid");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -263,11 +248,8 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildNymRequestAsync(string submitterDid, string targetDid, string verKey, string alias, string role)
         {
-            if (string.IsNullOrWhiteSpace(submitterDid))
-                throw new ArgumentException("A value must be provided.", "submitterDid");
-
-            if (string.IsNullOrWhiteSpace(targetDid))
-                throw new ArgumentException("A value must be provided.", "targetDid");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(targetDid, "targetDid");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -309,14 +291,11 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildAttribRequestAsync(string submitterDid, string targetDid, string hash, string raw, string enc)
         {
-            if (string.IsNullOrWhiteSpace(submitterDid))
-                throw new ArgumentException("A value must be provided.", "submitterDid");
-
-            if (string.IsNullOrWhiteSpace(targetDid))
-                throw new ArgumentException("A value must be provided.", "targetDid");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(targetDid, "targetDid");
 
             if (string.IsNullOrWhiteSpace(hash) && string.IsNullOrWhiteSpace(submitterDid) && string.IsNullOrWhiteSpace(enc))
-                throw new ArgumentException("At least one of the hash, submitterDid or enc parameters must have a value.");
+                throw new ArgumentException("At least one of the 'hash', 'submitterDid' or 'enc' parameters must have a value.");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -352,15 +331,10 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildGetAttribRequestAsync(string submitterDid, string targetDid, string data)
         {
-            if (string.IsNullOrWhiteSpace(submitterDid))
-                throw new ArgumentException("A value must be provided.", "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(targetDid, "targetDid");
+            ParamGuard.NotNullOrWhiteSpace(data, "data");
 
-            if (string.IsNullOrWhiteSpace(targetDid))
-                throw new ArgumentException("A value must be provided.", "targetDid");
-
-            if (string.IsNullOrWhiteSpace(data))
-                throw new ArgumentException("A value must be provided.", "data");
-            
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -392,11 +366,8 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildGetNymRequestAsync(string submitterDid, string targetDid)
         {
-            if (string.IsNullOrWhiteSpace(submitterDid))
-                throw new ArgumentException("A value must be provided.", "submitterDid");
-
-            if (string.IsNullOrWhiteSpace(targetDid))
-                throw new ArgumentException("A value must be provided.", "targetDid");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(targetDid, "targetDid");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -441,11 +412,8 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildSchemaRequestAsync(string submitterDid, string data)
         {
-            if (string.IsNullOrWhiteSpace(submitterDid))
-                throw new ArgumentException("A value must be provided.", "submitterDid");
-
-            if (string.IsNullOrWhiteSpace(data))
-                throw new ArgumentException("A value must be provided.", "data");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(data, "data");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -488,15 +456,9 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildGetSchemaRequestAsync(string submitterDid, string dest, string data)
         {
-            if (string.IsNullOrWhiteSpace(submitterDid))
-                throw new ArgumentException("A value must be provided.", "submitterDid");
-
-            if (string.IsNullOrWhiteSpace(dest))
-                throw new ArgumentException("A value must be provided.", "dest");
-
-            if (string.IsNullOrWhiteSpace(data))
-                throw new ArgumentException("A value must be provided.", "data");
-
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(dest, "dest");
+            ParamGuard.NotNullOrWhiteSpace(data, "data");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -555,14 +517,9 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildClaimDefTxnAsync(string submitterDid, int xref, string signatureType, string data)
         {
-            if (string.IsNullOrWhiteSpace(submitterDid))
-                throw new ArgumentException("A value must be provided.", "submitterDid");
-
-            if (string.IsNullOrWhiteSpace(signatureType))
-                throw new ArgumentException("A value must be provided.", "signatureType");
-
-            if (string.IsNullOrWhiteSpace(data))
-                throw new ArgumentException("A value must be provided.", "data");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(signatureType, "signatureType");
+            ParamGuard.NotNullOrWhiteSpace(data, "data");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -597,14 +554,9 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildGetClaimDefTxnAsync(string submitterDid, int xref, string signatureType, string origin)
         {
-            if (string.IsNullOrWhiteSpace(submitterDid))
-                throw new ArgumentException("A value must be provided.", "submitterDid");
-
-            if (string.IsNullOrWhiteSpace(signatureType))
-                throw new ArgumentException("A value must be provided.", "signatureType");
-
-            if (string.IsNullOrWhiteSpace(origin))
-                throw new ArgumentException("A value must be provided.", "origin");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(signatureType, "signatureType");
+            ParamGuard.NotNullOrWhiteSpace(origin, "origin");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -633,14 +585,9 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildNodeRequestAsync(string submitterDid, string targetDid, string data)
         {
-            if (string.IsNullOrWhiteSpace(submitterDid))
-                throw new ArgumentException("A value must be provided.", "submitterDid");
-
-            if (string.IsNullOrWhiteSpace(targetDid))
-                throw new ArgumentException("A value must be provided.", "targetDid");
-
-            if (string.IsNullOrWhiteSpace(data))
-                throw new ArgumentException("A value must be provided.", "data");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(targetDid, "targetDid");
+            ParamGuard.NotNullOrWhiteSpace(data, "data");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -667,8 +614,7 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildGetTxnRequestAsync(string submitterDid, int data)
         {
-            if (string.IsNullOrWhiteSpace(submitterDid))
-                throw new ArgumentException("A value must be provided.", "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);

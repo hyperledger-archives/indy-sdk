@@ -147,11 +147,8 @@ namespace Hyperledger.Indy.SignusApi
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="CreateAndStoreMyDidResult"/> when the operation completes.</returns>
         public static Task<CreateAndStoreMyDidResult> CreateAndStoreMyDidAsync(Wallet wallet, string didJson)
         {
-            if (wallet == null)
-                throw new ArgumentNullException("wallet");
-
-            if (string.IsNullOrWhiteSpace(didJson))
-                throw new ArgumentException("A value must be provided.", didJson);
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(didJson, "didJson");
 
             var taskCompletionSource = new TaskCompletionSource<CreateAndStoreMyDidResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -235,11 +232,8 @@ namespace Hyperledger.Indy.SignusApi
         /// <returns>An asynchronous <see cref="Task"/> that  with no return value the completes when the operation completes.</returns>
         public static Task StoreTheirDidAsync(Wallet wallet, string identityJson)
         {
-            if (wallet == null)
-                throw new ArgumentNullException("wallet");
-
-            if (string.IsNullOrWhiteSpace(identityJson))
-                throw new ArgumentException("A value must be provided.", identityJson);
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(identityJson, "identityJson");
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -270,14 +264,9 @@ namespace Hyperledger.Indy.SignusApi
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array that contains signed message when signing is complete.</returns>
         public static Task<byte[]> SignAsync(Wallet wallet, string did, byte[] msg)
         {
-            if (wallet == null)
-                throw new ArgumentNullException("wallet");
-
-            if (string.IsNullOrWhiteSpace(did))
-                throw new ArgumentException("A value must be provided.", did);
-
-            if (msg == null)
-                throw new ArgumentNullException("msg");
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(did, "did");
+            ParamGuard.NotNull(msg, "msg");
 
             var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -323,20 +312,11 @@ namespace Hyperledger.Indy.SignusApi
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to true if the message is valid, otherwise false.</returns>
         public static Task<bool> VerifySignatureAsync(Wallet wallet, Pool pool, string did, byte[] msg, byte[]signature)
         {
-            if (wallet == null)
-                throw new ArgumentNullException("wallet");
-
-            if (pool == null)
-                throw new ArgumentNullException("pool");
-
-            if (string.IsNullOrWhiteSpace(did))
-                throw new ArgumentException("A value must be provided.", did);
-
-            if (msg == null)
-                throw new ArgumentNullException("msg");
-
-            if (signature == null)
-                throw new ArgumentNullException("signature");
+            ParamGuard.NotNull(wallet, "wallet");            
+            ParamGuard.NotNull(pool, "pool");
+            ParamGuard.NotNullOrWhiteSpace(did, "did");
+            ParamGuard.NotNull(msg, "msg");
+            ParamGuard.NotNull(signature, "signature");
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -384,20 +364,11 @@ namespace Hyperledger.Indy.SignusApi
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to an <see cref="EncryptResult"/> once encryption is complete.</returns>
         public static Task<EncryptResult> EncryptAsync(Wallet wallet, Pool pool, string myDid, string did, byte[] msg)
         {
-            if (wallet == null)
-                throw new ArgumentNullException("wallet");
-
-            if (pool == null)
-                throw new ArgumentNullException("pool");
-
-            if (string.IsNullOrWhiteSpace(myDid))
-                throw new ArgumentException("A value must be provided.", myDid);
-
-            if (string.IsNullOrWhiteSpace(did))
-                throw new ArgumentException("A value must be provided.", did);
-
-            if (msg == null)
-                throw new ArgumentNullException("msg");
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNull(pool, "pool");
+            ParamGuard.NotNullOrWhiteSpace(myDid, "myDid");
+            ParamGuard.NotNullOrWhiteSpace(did, "did");
+            ParamGuard.NotNull(msg, "msg");
 
             var taskCompletionSource = new TaskCompletionSource<EncryptResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -438,20 +409,11 @@ namespace Hyperledger.Indy.SignusApi
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the decrypted message.</returns>
         public static Task<byte[]> DecryptAsync(Wallet wallet, string myDid, string did, byte[] encryptedMsg, byte[] nonce)
         {
-            if (wallet == null)
-                throw new ArgumentNullException("wallet");
-
-            if (string.IsNullOrWhiteSpace(myDid))
-                throw new ArgumentException("A value must be provided.", myDid);
-
-            if (string.IsNullOrWhiteSpace(did))
-                throw new ArgumentException("A value must be provided.", did);
-
-            if (encryptedMsg == null)
-                throw new ArgumentNullException("encryptedMsg");
-
-            if (nonce == null)
-                throw new ArgumentNullException("nonce");
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(myDid, "myDid");
+            ParamGuard.NotNullOrWhiteSpace(did, "did");
+            ParamGuard.NotNull(encryptedMsg, "encryptedMsg");
+            ParamGuard.NotNull(nonce, "nonce");
 
             var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);

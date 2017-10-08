@@ -88,17 +88,10 @@ namespace Hyperledger.Indy.AgentApi
         /// when the connection has been established.</returns>
         public static Task<AgentConnection> ConnectAsync(Pool pool, Wallet wallet, string senderDid, string receiverDid)
         {
-            if (pool == null)
-                throw new ArgumentNullException("pool");
-
-            if (wallet == null)
-                throw new ArgumentNullException("wallet");
-
-            if (string.IsNullOrWhiteSpace(senderDid))
-                throw new ArgumentException("A value must be provided.", "senderDid");
-
-            if (string.IsNullOrWhiteSpace(receiverDid))
-                throw new ArgumentException("A value must be provided.", "receiverDid");
+            ParamGuard.NotNull(pool, "pool");
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(senderDid, "senderDid");
+            ParamGuard.NotNullOrWhiteSpace(receiverDid, "receiverDid");
 
             var connection = new AgentConnection();
 
@@ -201,8 +194,7 @@ namespace Hyperledger.Indy.AgentApi
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public Task SendAsync(string message)
         {
-            if (message == null)
-                throw new ArgumentNullException("message");
+            ParamGuard.NotNull(message, "message");
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);

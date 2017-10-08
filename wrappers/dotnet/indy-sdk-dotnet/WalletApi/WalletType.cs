@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Hyperledger.Indy.Utils;
+using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using static Hyperledger.Indy.IndyNativeMethods;
@@ -87,8 +88,7 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An ErrorCode indicating the outcome of the operation.</returns>
         private ErrorCode CreateHandler(string name, string config, string credentials)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("A value must be provided.", name);
+            ParamGuard.NotNullOrWhiteSpace(name, "name");
 
             try
             {
@@ -112,8 +112,7 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An ErrorCode indicating the outcome of the operation.</returns>
         private ErrorCode OpenHandler(string name, string config, string runtimeConfig, string credentials, ref int handle)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("A value must be provided.", name);
+            ParamGuard.NotNullOrWhiteSpace(name, "name");
 
             try
             {
@@ -134,11 +133,7 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An ErrorCode indicating the outcome of the operation.</returns>
         private ErrorCode SetHandler(int handle, string key, string value)
         {
-            if (string.IsNullOrWhiteSpace(key))
-                throw new ArgumentException("A value must be provided.", key);
-
-            if (value == null)
-                throw new ArgumentNullException("A value must be provided.", value);
+            ParamGuard.NotNullOrWhiteSpace(key, "key");
 
             try
             {
@@ -160,9 +155,7 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An ErrorCode indicating the outcome of the operation.</returns>
         private ErrorCode GetHandler(int handle, string key, ref IntPtr value_ptr)
         {
-            if (string.IsNullOrWhiteSpace(key))
-                throw new ArgumentException("A value must be provided.", key);
-
+            ParamGuard.NotNullOrWhiteSpace(key, "key");
 
             try
             {
@@ -193,9 +186,7 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An ErrorCode indicating the outcome of the operation.</returns>
         private ErrorCode GetNotExpiredHandler(int handle, string key, ref IntPtr value_ptr)
         {
-            if (string.IsNullOrWhiteSpace(key))
-                throw new ArgumentException("A value must be provided.", key);
-
+            ParamGuard.NotNullOrWhiteSpace(key, "key");
 
             try
             {
@@ -272,8 +263,7 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An ErrorCode indicating the outcome of the operation.</returns>
         private ErrorCode DeleteHandler(string name, string config, string credentials)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("A value must be provided.", name);
+            ParamGuard.NotNullOrWhiteSpace(name, "name");
 
             try
             {

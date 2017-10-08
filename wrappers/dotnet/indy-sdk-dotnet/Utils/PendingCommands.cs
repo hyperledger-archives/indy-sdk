@@ -39,8 +39,7 @@ namespace Hyperledger.Indy.Utils
         /// <returns>The command handle to use for tracking the task completion source.</returns>
         public static int Add<T>(TaskCompletionSource<T> taskCompletionSource)
         {
-            if (taskCompletionSource == null)
-                throw new ArgumentNullException("taskCompletionSource");
+            Debug.Assert(taskCompletionSource == null, "A task completion source is required.");
 
             var commandHandle = GetNextCommandHandle();
             _taskCompletionSources.Add(commandHandle, taskCompletionSource);

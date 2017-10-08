@@ -49,8 +49,7 @@ namespace Hyperledger.Indy.PoolApi
         /// the configuration is created.</returns>
         public static Task CreatePoolLedgerConfigAsync(string configName, string config)
         {
-            if (string.IsNullOrWhiteSpace(configName))
-                throw new ArgumentException("A value must be provided.", configName);
+            ParamGuard.NotNullOrWhiteSpace(configName, "configName");
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -76,8 +75,7 @@ namespace Hyperledger.Indy.PoolApi
         /// the configuration is deleted.</returns>
         public static Task DeletePoolLedgerConfigAsync(string configName)
         {
-            if (string.IsNullOrWhiteSpace(configName))
-                throw new ArgumentException("A value must be provided.", configName);
+            ParamGuard.NotNullOrWhiteSpace(configName, "configName");
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -123,8 +121,7 @@ namespace Hyperledger.Indy.PoolApi
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a Pool instance once the pool is opened.</returns>
         public static Task<Pool> OpenPoolLedgerAsync(string configName, string config)
         {
-            if (string.IsNullOrWhiteSpace(configName))
-                throw new ArgumentException("A value must be provided.", configName);
+            ParamGuard.NotNullOrWhiteSpace(configName, "configName");
 
             var taskCompletionSource = new TaskCompletionSource<Pool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
