@@ -196,7 +196,7 @@ mod tests {
         let identifier = "identifier";
         let dest = "dest";
 
-        let expected_result = r#""identifier":"identifier","operation":{"dest":"dest","type":"1"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"dest":"dest","type":"1"},"protocolVersion":1"#;
 
         let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, None);
         assert!(nym_request.is_ok());
@@ -210,7 +210,7 @@ mod tests {
         let identifier = "identifier";
         let dest = "dest";
 
-        let expected_result = r#""identifier":"identifier","operation":{"dest":"dest","role":null,"type":"1"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"dest":"dest","role":null,"type":"1"},"protocolVersion":1"#;
 
         let nym_request = ledger_service.build_nym_request(identifier, dest, None, None, Some("")).unwrap();
         assert!(nym_request.contains(expected_result));
@@ -224,7 +224,7 @@ mod tests {
         let verkey = "verkey";
         let alias = "some_alias";
 
-        let expected_result = r#""identifier":"identifier","operation":{"alias":"some_alias","dest":"dest","role":null,"type":"1","verkey":"verkey"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"alias":"some_alias","dest":"dest","role":null,"type":"1","verkey":"verkey"},"protocolVersion":1"#;
 
         let nym_request = ledger_service.build_nym_request(identifier, dest, Some(verkey), Some(alias), Some(""));
         assert!(nym_request.is_ok());
@@ -238,7 +238,7 @@ mod tests {
         let identifier = "identifier";
         let dest = "dest";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"105","dest":"dest"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"105","dest":"dest"},"protocolVersion":1"#;
 
         let get_nym_request = ledger_service.build_get_nym_request(identifier, dest);
         assert!(get_nym_request.is_ok());
@@ -252,7 +252,7 @@ mod tests {
         let identifier = "identifier";
         let dest = "dest";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"120","dest":"dest"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"120","dest":"dest"},"protocolVersion":1"#;
 
         let get_ddo_request = ledger_service.build_get_ddo_request(identifier, dest);
         assert!(get_ddo_request.is_ok());
@@ -277,7 +277,7 @@ mod tests {
         let dest = "dest";
         let hash = "hash";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"100","dest":"dest","hash":"hash"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"100","dest":"dest","hash":"hash"},"protocolVersion":1"#;
 
         let attrib_request = ledger_service.build_attrib_request(identifier, dest, Some(hash), None, None);
         assert!(attrib_request.is_ok());
@@ -292,7 +292,7 @@ mod tests {
         let dest = "dest";
         let raw = "raw";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","raw":"raw"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","raw":"raw"},"protocolVersion":1"#;
 
         let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, raw);
         assert!(get_attrib_request.is_ok());
@@ -316,7 +316,7 @@ mod tests {
         let identifier = "identifier";
         let data = r#"{"name":"name", "version":"1.0", "attr_names":["name","male"]}"#;
 
-        let expected_result = r#""operation":{"type":"101","data":{"name":"name","version":"1.0","attr_names":["name","male"]"#;
+        let expected_result = r#""operation":{"type":"101","data":{"name":"name","version":"1.0","attr_names":["name","male"]}},"protocolVersion":1"#;
 
         let schema_request = ledger_service.build_schema_request(identifier, data);
         let schema_request = schema_request.unwrap();
@@ -339,7 +339,7 @@ mod tests {
         let identifier = "identifier";
         let data = r#"{"name":"name","version":"1.0"}"#;
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"107","dest":"identifier","data":{"name":"name","version":"1.0"}}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"107","dest":"identifier","data":{"name":"name","version":"1.0"}},"protocolVersion":1"#;
 
         let get_schema_request = ledger_service.build_get_schema_request(identifier, identifier, data);
         assert!(get_schema_request.is_ok());
@@ -355,7 +355,7 @@ mod tests {
         let signature_type = "signature_type";
         let origin = "origin";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"origin"}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"origin"},"protocolVersion":1"#;
 
         let get_claim_def_request = ledger_service.build_get_claim_def_request(identifier, _ref, signature_type, origin);
         assert!(get_claim_def_request.is_ok());
@@ -370,7 +370,7 @@ mod tests {
         let dest = "dest";
         let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1, "alias":"some", "services": ["VALIDATOR"], "blskey":"blskey"}"#;
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"ip","node_port":1,"client_ip":"ip","client_port":1,"alias":"some","services":["VALIDATOR"],"blskey":"blskey"}}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"ip","node_port":1,"client_ip":"ip","client_port":1,"alias":"some","services":["VALIDATOR"],"blskey":"blskey"}},"protocolVersion":1"#;
 
         let node_request = ledger_service.build_node_request(identifier, dest, data);
         assert!(node_request.is_ok());
@@ -394,7 +394,7 @@ mod tests {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1},"protocolVersion":1"#;
 
         let get_txn_request = ledger_service.build_get_txn_request(identifier, 1);
         assert!(get_txn_request.is_ok());
