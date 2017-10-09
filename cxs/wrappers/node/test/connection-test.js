@@ -51,7 +51,6 @@ describe('A Connection object with ', function () {
         connection.create("dog, cat, man")
         var data = connection.getData()
         var jsonData = JSON.parse(data)
-        console.log(jsonData)
         assert.notEqual(data, "")
         assert.equal(jsonData.handle, connection.connectionHandle)
     })
@@ -85,8 +84,10 @@ describe('A Connection object with ', function () {
     })
 
 
-    it('call to get_sate where connection exists but not connected should have a state value of 1', function () {
-        connection.create("info")
+    it('call to get_state where connection exists but not connected should have a state value of 1', function () {
+        var connection = new Connection(path)
+
+        connection.create("info2")
         assert.equal(connection.getState(), 0)
         assert.equal(connection.state, 1)
     })
