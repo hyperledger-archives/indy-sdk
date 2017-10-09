@@ -3,6 +3,5 @@ export interface IConnections {
   connect (): number
   get_data (): string
   get_state (): number
-  // static release (): number
-  list_state (): number
+  release (): number
 }

@@ -11,6 +11,16 @@ var assert = chai.assert;
 
 // console.log(release(handle)) // tslint:disable-line
 
+const sleep = (time) => new Promise((res) => setTimeout(res, time))
+
+const waitFor = async (predicate) => {
+    if (!predicate()) {
+        await sleep(1000)
+        return waitFor(predicate)
+    }
+    return predicate()
+}
+
 
 describe('A Connection object with ', function () {
     let connection;
@@ -101,19 +111,11 @@ describe('A Connection object with ', function () {
         assert.equal(connection.get_data(), "")
     })
 
+
     it('call to connection_release with no connection should return unknown error', function () {
         assert.equal(connection.release(), 1001)
     })
 
-    const sleep = (time) => new Promise((res) => setTimeout(res, time))
-
-    const waitFor = async (predicate) => {
-        if (!predicate()) {
-            await sleep(1000)
-            return waitFor(predicate)
-        }
-        return predicate()
-    }
 
     it('connection and GC deletes object should return empty whet get_data is called ', function () {
         const connection = new Connection(path)
