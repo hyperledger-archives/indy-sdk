@@ -96,7 +96,7 @@ describe('call to get_state with connection already created ', function() {
     })
 });
 
-describe('call to get_sate with no connection created ', function() {
+describe('call to get_state with no connection created ', function() {
     var connection = new Connection(path)
     it('should have a state value of 0', function () {
         assert.equal(connection.get_state(), 0)

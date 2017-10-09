@@ -10,10 +10,6 @@ RUN apt-get update -y && apt-get install -y default-jre \
     gcc \
     pkg-config \
     build-essential \
-    git 
-
-# libsodium installation
-RUN apt-get install -y \
     libsodium-dev \
     libssl-dev \
     libgmp3-dev \
@@ -23,14 +19,14 @@ RUN apt-get install -y \
     apt-transport-https \
     ca-certificates \
     debhelper \
-    wget
+    wget \
+    git \
+    curl
 
-# Install curl
-RUN apt-get update && apt-get install -y curl
 
 # Install Nodejs 
-RUN apt-get install -y \ 
-    npm 
+#RUN apt-get install -y \ 
+#    npm 
 
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
     && apt-get install -y nodejs

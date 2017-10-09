@@ -225,4 +225,10 @@ mod tests {
         let result = cxs_init(ptr::null());
         assert_eq!(result,0);
     }
+
+
+    #[test]
+    fn test_state_connection_not_connected() {
+        cxs_connection_connect(
+    }
 }

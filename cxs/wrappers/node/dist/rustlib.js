@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var ref = require("ref");
-var StructType = require("ref-struct");
+const ref = require("ref");
+const StructType = require("ref-struct");
 /* tslint: disable */
 exports.CxsStatus = StructType({
     handle: 'int',
@@ -17,12 +17,11 @@ exports.FFI_STRING = 'string';
 exports.FFI_STRING_DATA = 'string';
 exports.FFI_CONNECTION_HANDLE_PTR = ref.refType(exports.FFI_CONNECTION_HANDLE);
 exports.FFI_CXS_STATUS_PTR = ref.refType(exports.CxsStatus);
-var CXSRuntimeConfig = /** @class */ (function () {
-    function CXSRuntimeConfig(_basepath) {
+class CXSRuntimeConfig {
+    constructor(_basepath) {
         this.basepath = _basepath;
     }
-    return CXSRuntimeConfig;
-}());
+}
 exports.CXSRuntimeConfig = CXSRuntimeConfig;
 exports.FFIConfiguration = {
     // connection.rs

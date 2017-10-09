@@ -153,6 +153,14 @@ mod tests {
     }
 
     #[test]
+    fn test_state_not_connected() {
+        let handle = build_connection("Whatever".to_owned());
+        let state = get_state(handle);
+        assert_eq!(state, CxsStateType::CxsStateInitialized as u32);
+        release(handle);
+    }
+
+    #[test]
     fn test_connect() {
         let handle = build_connection("Whatever".to_owned());
 
