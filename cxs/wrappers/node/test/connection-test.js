@@ -56,7 +56,7 @@ describe('A Connection object with ', function () {
     })
 
     it('a call to get_data where connection doesnt exist should return an empty string', function () {
-        assert.equal(connection.getData(), "")
+        assert.equal(connection.getData(), null)
     })
 
     it('a call to get_data where connection with connection released should return an empty string', function () {
@@ -66,7 +66,7 @@ describe('A Connection object with ', function () {
         assert.notEqual(data, "")
         assert.equal(connection.release(), 0)
         data = connection.getData()
-        assert.equal(data, "")
+        assert.equal(data, null)
     })
 
 // connection_getState tests
@@ -100,7 +100,7 @@ describe('A Connection object with ', function () {
         assert.equal(connection.connect(), 0)
         assert.equal(connection.release(), 0)
         assert.equal(connection.connect(), 1001)
-        assert.equal(connection.getData(), "")
+        assert.equal(connection.getData(), null)
     })
 
     it('call to connection_release with no connection should return unknown error', function () {

@@ -49,7 +49,7 @@ describe('call to cxs_connection_get_data ', function() {
     path += "/lib/libcxs.so";
     var run = new CXSRuntime(new CXSRuntimeConfig(path));
     it('should return 0', function () {
-        assert.equal(run.ffi.cxs_connection_get_data(2), 0)
+        assert.equal(run.ffi.cxs_connection_get_data(2), null)
     })
 });
 
