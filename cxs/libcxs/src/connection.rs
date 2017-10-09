@@ -21,7 +21,25 @@ struct Connection {
     state: CxsStateType,
 }
 
+fn find_connection(info_string: &str) -> u32 {
+    let connection_table = CONNECTION_MAP.lock().unwrap();
+
+    for (handle, connection) in connection_table.iter() {
+        if connection.info == info_string {
+            return *handle;
+        }
+    };
+
+    return 0;
+}
+
 pub fn build_connection (info_string: String) -> u32 {
+    // Check to make sure info_string is unique
+    let new_handle = find_connection(&info_string);
+
+    if new_handle > 0 {return new_handle}
+
+    // This is a new connection
     let new_handle = rand::thread_rng().gen::<u32>();
 
     let c = Box::new(Connection {
@@ -40,7 +58,12 @@ pub fn build_connection (info_string: String) -> u32 {
 }
 
 impl Connection {
-    fn connect(&mut self) -> u32 { self.state = CxsStateType::CxsStateOfferSent; error::SUCCESS.code_num }
+    fn connect(&mut self) -> u32 {
+        //TODO: check current state is valid for initiating connection
+        self.state = CxsStateType::CxsStateOfferSent;
+        error::SUCCESS.code_num
+    }
+
     fn get_state(&self) -> u32 { let state = self.state as u32; state }
 }
 
@@ -109,6 +132,13 @@ mod tests {
         assert!(handle > 0);
 
         release(handle);
+    }
+
+    #[test]
+    fn test_create_idempotency() {
+        let handle = build_connection("Whatever".to_owned());
+        let handle2 = build_connection("Whatever".to_owned());
+        assert_eq!(handle,handle2);
     }
 
     #[test]
