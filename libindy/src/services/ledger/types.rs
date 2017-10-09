@@ -27,13 +27,17 @@ pub struct Request<T: JsonEncodable> {
 }
 
 impl<T: JsonEncodable> Request<T> {
-    pub fn new(req_id: u64, identifier: String, operation: T) -> Request<T> {
+    fn new(req_id: u64, identifier: String, operation: T) -> Request<T> {
         Request {
             req_id: req_id,
             identifier: identifier,
             operation: operation,
             signature: None
         }
+    }
+
+    pub fn build_request(identifier: String, operation: T) -> Result<String, serde_json::Error> {
+        Request::new(super::LedgerService::get_req_id(), identifier, operation).to_json()
     }
 }
 
