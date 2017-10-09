@@ -768,7 +768,7 @@ fn ledger_demo_works() {
             dest: my_did.clone(),
             type_: "1".to_string(),
         },
-        protocolVersion: 1,
+        protocol_version: 1,
         req_id: nym_req_id,
         signature: None,
     };
@@ -800,7 +800,7 @@ fn ledger_demo_works() {
             type_: "105".to_string(),
             dest: my_did.clone(),
         },
-        protocolVersion: 1,
+        protocol_version: 1,
     };
 
     let request = serde_json::to_string(&get_nym_txn).unwrap();
@@ -826,7 +826,7 @@ fn ledger_demo_works() {
         req_id: u64,
         identifier: String,
         operation: Operation,
-        protocolVersion: u64,
+        protocol_version: u64,
         #[serde(skip_serializing_if = "Option::is_none")]
         signature: Option<String>,
     }
