@@ -9,6 +9,7 @@ use self::types::{
     TheirDid
 };
 use utils::crypto::base58::Base58;
+use utils::crypto::verkey_builder::build_full_verkey;
 
 use errors::common::CommonError;
 use errors::signus::SignusError;
@@ -91,9 +92,12 @@ impl SignusService {
         Base58::decode(&their_did_info.did)?;
 
         let (verkey, pk) = match their_did_info.verkey {
-            Some(ref verkey) => (
-                Some(verkey.clone()),
-                Some(Base58::encode(&signus.verkey_to_public_key(&Base58::decode(verkey)?)?))),
+            Some(ref verkey) => {
+                let full_verkey = build_full_verkey(&their_did_info.did, &Some(verkey.clone()))
+                    .map_err(|err| CommonError::InvalidState(format!("Invalid verkey {:?}", err)))?;
+                (Some(Base58::encode(&full_verkey)),
+                 Some(Base58::encode(&signus.verkey_to_public_key(&full_verkey)?)))
+            }
             None => (None, None)
         };
 
