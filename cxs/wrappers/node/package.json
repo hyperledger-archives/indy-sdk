@@ -4,9 +4,9 @@
   "author": "evernym",
   "license": "ISC",
   "description": "Node wrapper for cxs",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "mocha test/**/*.js"
+    "test": "mocha -gc --expose-gc test/**/*.js"
   },
   "repository": {
     "type": "git",
@@ -21,7 +21,9 @@
     "ffi": "^2.2.0",
     "fs-extra": "^4.0.2",
     "mocha": "^3.5.0",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "tslint": "^5.7.0",
+    "weak": "^1.0.1"
   },
   "directories": {
     "test": "test",
@@ -29,6 +31,7 @@
     "build": "dist"
   },
   "devDependencies": {
+    "tslint-config-standard": "^6.0.1",
     "typescript": "^2.5.3"
   }
 }
