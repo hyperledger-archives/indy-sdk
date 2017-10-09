@@ -58,6 +58,8 @@ export class Connection implements IConnections {
     this.RUST_API = new CXSRuntime(new CXSRuntimeConfig(path)).ffi
   }
 
+  // clearOnExit creates a callback that will release the Rust Object
+  // when the node Connection object is Garbage collected
   private clearOnExit () {
     const weakRef = weak(this)
     const release = this.RUST_API.cxs_connection_release
