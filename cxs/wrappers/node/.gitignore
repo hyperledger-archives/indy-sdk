@@ -1,4 +1,7 @@
-Created by https://www.gitignore.io/api/node
+dist/
+lib/
+
+# Created by https://www.gitignore.io/api/node
 
 ### Node ###
 # Logs
@@ -40,7 +43,11 @@ node_modules/
 jspm_packages/
 
 # Typescript v1 declaration files
+<<<<<<< HEAD
 typings/
+=======
+
+>>>>>>> origin/compile-ts
 
 # Optional npm cache directory
 .npm
@@ -62,7 +69,3 @@ typings/
 
 
 # End of https://www.gitignore.io/api/node
-
-/dist
-/lib
-.vscode
