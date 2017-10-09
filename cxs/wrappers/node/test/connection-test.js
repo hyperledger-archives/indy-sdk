@@ -132,10 +132,4 @@ describe('A Connection object with ', function () {
         return waitFor(() => !get_data(handle))
     })
 
-
-// connection_list_state
-        it('call to list_state should return success', function () {
-            assert.equal(connection.list_state(), 0)
-        })
-
 })

@@ -47,13 +47,6 @@ export class Connection implements IConnections {
     return this.RUST_API.cxs_connection_release(this.connectionHandle)
   }
 
-  list_state (): number {
-    const CxsStatusPtr = ref.alloc(FFI_CXS_STATUS_PTR)
-    const result = this.RUST_API.cxs_connection_list_state(CxsStatusPtr)
-    this.statusList = ref.deref(CxsStatusPtr, FFI_CXS_STATUS_PTR)
-    return result
-  }
-
   private initRustApi (path?) {
     this.RUST_API = new CXSRuntime(new CXSRuntimeConfig(path)).ffi
   }
