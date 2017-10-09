@@ -505,8 +505,14 @@ impl PoolWorker {
     }
 
     fn init_catchup(&mut self, refresh_cmd_id: Option<i32>) -> Result<(), PoolError> {
+        let mt = PoolWorker::_restore_merkle_tree(self.name.as_str())?;
+        if mt.count() == 0 {
+            return Err(PoolError::CommonError(
+                CommonError::InvalidState("Invalid Genesis Transaction file".to_string())));
+        }
+
         let catchup_handler = CatchupHandler {
-            merkle_tree: PoolWorker::_restore_merkle_tree(self.name.as_str())?,
+            merkle_tree: mt,
             initiate_cmd_id: refresh_cmd_id.unwrap_or(self.open_cmd_id),
             is_refresh: refresh_cmd_id.is_some(),
             pool_id: self.pool_id,
@@ -649,11 +655,6 @@ impl PoolWorker {
             let genesis_txn: serde_json::Value = serde_json::from_str(line.as_str()).unwrap(); /* FIXME resolve unwrap */
             let bytes = rmp_serde::encode::to_vec_named(&genesis_txn).unwrap(); /* FIXME resolve unwrap */
             mt.append(bytes).map_err(map_err_trace!())?;
-        }
-
-        if mt.count() == 0 {
-            return Err(PoolError::CommonError(
-                CommonError::InvalidState("Invalid Genesis Transaction file".to_string())));
         }
 
         Ok(mt)
@@ -835,9 +836,10 @@ impl PoolService {
         }
 
         // check that we can build MerkeleTree from genesis transaction file
-        let restore_result = PoolWorker::_restore_merkle_tree(&pool_config.genesis_txn);
-        if restore_result.is_err() {
-            return Err(restore_result.unwrap_err());
+        let mt = PoolWorker::_restore_merkle_tree(&pool_config.genesis_txn)?;
+        if mt.count() == 0 {
+            return Err(PoolError::CommonError(
+                CommonError::InvalidStructure("Invalid Genesis Transaction file".to_string())));
         }
 
         fs::create_dir_all(path.as_path()).map_err(map_err_trace!())?;
