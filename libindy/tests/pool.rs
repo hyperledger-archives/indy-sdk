@@ -21,6 +21,7 @@ use utils::environment::EnvironmentUtils;
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 
+pub const POOL: &'static str = "pool_1";
 
 mod high_cases {
     use super::*;
@@ -32,9 +33,10 @@ mod high_cases {
         fn create_pool_ledger_config_works() {
             TestUtils::cleanup_storage();
 
-            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool("pool_create", None, None);
+            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(POOL, None, None);
             let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
-            PoolUtils::create_pool_ledger_config("pool_create", Some(pool_config.as_str())).unwrap();
+
+            PoolUtils::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -54,11 +56,10 @@ mod high_cases {
         fn create_pool_ledger_config_works_for_config_json() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "create_pool_ledger_config_works_for_config_json";
-            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
+            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(POOL, None, None);
             let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
 
-            PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
+            PoolUtils::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -68,12 +69,11 @@ mod high_cases {
         fn create_pool_ledger_config_works_for_specific_config() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "create_pool_ledger_config_works_for_specific_config";
             let txn_file_path = EnvironmentUtils::tmp_file_path("specific_filename.txn");
-            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, Some(txn_file_path.as_path()));
+            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(POOL, None, Some(txn_file_path.as_path()));
             let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
 
-            PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
+            PoolUtils::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -123,7 +123,7 @@ mod high_cases {
             PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
 
             let res = PoolUtils::open_pool_ledger(pool_name, None);
-            assert_match!(Err(ErrorCode::PoolLedgerInvalidPoolHandle), res);
+            assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, res.unwrap_err());
 
             TestUtils::cleanup_storage();
         }
@@ -167,9 +167,9 @@ mod high_cases {
         fn indy_refresh_pool_ledger_works() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("indy_refresh_pool_ledger_works").unwrap();
-
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             PoolUtils::refresh(pool_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -183,9 +183,7 @@ mod high_cases {
         fn indy_close_pool_ledger_works() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "indy_close_pool_ledger_works";
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
-
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
@@ -196,8 +194,7 @@ mod high_cases {
         fn indy_close_pool_ledger_works_for_twice() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "indy_close_pool_ledger_works_twice";
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
             assert_eq!(PoolUtils::close(pool_handle).unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
@@ -210,11 +207,11 @@ mod high_cases {
         fn indy_close_pool_ledger_works_for_reopen_after_close() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "indy_close_pool_ledger_works";
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
-            PoolUtils::open_pool_ledger(pool_name, None).unwrap();
+            let pool_handle = PoolUtils::open_pool_ledger(POOL, None).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -227,12 +224,11 @@ mod high_cases {
         fn indy_delete_pool_ledger_config_works() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "indy_remove_pool_ledger_config_works";
-            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
+            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(POOL, None, None);
             let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
-            PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
+            PoolUtils::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
 
-            PoolUtils::delete(pool_name).unwrap();
+            PoolUtils::delete(POOL).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -242,10 +238,11 @@ mod high_cases {
         fn indy_delete_pool_ledger_config_works_for_opened() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "indy_remove_pool_ledger_config_works_for_opened";
-            PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            assert_eq!(PoolUtils::delete(pool_name).unwrap_err(), ErrorCode::CommonInvalidState);
+            assert_eq!(PoolUtils::delete(POOL).unwrap_err(), ErrorCode::CommonInvalidState);
+
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -254,10 +251,9 @@ mod high_cases {
         fn indy_delete_pool_ledger_config_works_for_closed() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "indy_delete_pool_ledger_config_works_for_closed";
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             PoolUtils::close(pool_handle).unwrap();
-            PoolUtils::delete(pool_name).unwrap();
+            PoolUtils::delete(POOL).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -274,10 +270,9 @@ mod medium_cases {
         fn create_pool_ledger_config_works_for_invalid_config_json() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "create_pool_ledger_config_works_for_invalid_config";
             let config = r#"{}"#.to_string();
 
-            let res = PoolUtils::create_pool_ledger_config(pool_name, Some(config.as_str()));
+            let res = PoolUtils::create_pool_ledger_config(POOL, Some(config.as_str()));
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             TestUtils::cleanup_storage();
@@ -287,10 +282,9 @@ mod medium_cases {
         fn create_pool_ledger_config_works_for_invalid_genesis_txn_path() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "create_pool_ledger_config_works_for_invalid_genesis_txn_path";
             let config = r#"{"genesis_txn": "path"}"#.to_string();
 
-            let res = PoolUtils::create_pool_ledger_config(pool_name, Some(config.as_str()));
+            let res = PoolUtils::create_pool_ledger_config(POOL, Some(config.as_str()));
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
             TestUtils::cleanup_storage();
@@ -300,12 +294,11 @@ mod medium_cases {
         fn create_pool_ledger_config_works_for_twice() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "pool_create";
-            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
+            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(POOL, None, None);
             let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
 
-            PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
-            let res = PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str()));
+            PoolUtils::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
+            let res = PoolUtils::create_pool_ledger_config(POOL, Some(pool_config.as_str()));
 
             assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerConfigAlreadyExistsError);
 
@@ -405,8 +398,7 @@ mod medium_cases {
         fn indy_delete_pool_ledger_config_works_for_not_created() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "indy_delete_pool_ledger_config_works_for_invalid_name";
-            let res = PoolUtils::delete(pool_name);
+            let res = PoolUtils::delete(POOL);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
             TestUtils::cleanup_storage();
@@ -416,11 +408,10 @@ mod medium_cases {
         fn indy_delete_pool_ledger_config_works_for_twice() {
             TestUtils::cleanup_storage();
 
-            let pool_name = "indy_delete_pool_ledger_config_works_for_twice";
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             PoolUtils::close(pool_handle).unwrap();
-            PoolUtils::delete(pool_name).unwrap();
-            let res = PoolUtils::delete(pool_name);
+            PoolUtils::delete(POOL).unwrap();
+            let res = PoolUtils::delete(POOL);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
             TestUtils::cleanup_storage();
@@ -435,11 +426,13 @@ mod medium_cases {
         fn indy_refresh_pool_ledger_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger("indy_refresh_pool_ledger_works_for_invalid_handle").unwrap();
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
             let pool_handle = pool_handle + 1;
             let res = PoolUtils::refresh(pool_handle);
             assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
+
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
