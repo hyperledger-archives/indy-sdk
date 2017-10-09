@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 exec > /tmp/${PROJECT_NAME}_archive.log 2>&1
 
 UNIVERSAL_OUTPUTFOLDER=${BUILD_DIR}/${CONFIGURATION}-universal
@@ -22,22 +21,12 @@ else
 xcodebuild -workspace "${WORKSPACE_PATH}" -scheme "${TARGET_NAME}" -configuration ${CONFIGURATION} -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 6' ONLY_ACTIVE_ARCH=NO ARCHS='i386 x86_64' BUILD_DIR="${BUILD_DIR}" BUILD_ROOT="${BUILD_ROOT}" ENABLE_BITCODE=YES OTHER_CFLAGS="-fembed-bitcode" BITCODE_GENERATION_MODE=bitcode clean build
 fi
 
-if [ -d "${BUILD_DIR}/${CONFIGURATION}-iphoneos/${TARGET_NAME}.framework/${TARGET_NAME}" ]; then
-echo "iphoneos exists 1"
-fi
-
 open "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/"
 
 
 # Step 1. Copy the framework structure (from iphoneos build) to the universal folder
 echo "Copying to output folder: ${UNIVERSAL_OUTPUTFOLDER}/ from ${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME} "
 cp -R "${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}" "${UNIVERSAL_OUTPUTFOLDER}/"
-
-# Step 2. Copy Swift modules from iphonesimulator build (if it exists) to the copied framework directory
-
-if [ -d "${BUILD_DIR}/${CONFIGURATION}-iphoneos/${TARGET_NAME}.framework/${TARGET_NAME}" ]; then
-echo "iphoneos exists 2"
-fi
 
 echo "will copy files"
 
@@ -65,8 +54,7 @@ open "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/"
 # Step 5. Convenience step to copy the framework to the project's directory
 echo "Copying to project dir"
 
-yes | cp -Rf "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/"  "${PROJECT_DIR}"
-#yes | cp -Rf "${UNIVERSAL_OUTPUTFOLDER}/${FULL_PRODUCT_NAME}" "${PROJECT_DIR}"
+yes | cp -vRfL "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework"  "${PROJECT_DIR}"
 
 open "${PROJECT_DIR}"
 

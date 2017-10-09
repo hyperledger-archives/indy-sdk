@@ -74,16 +74,15 @@
     NSError *ret;
 
 
-    ret = [IndySignus signWithWalletHandle:walletHandle
-                                       did:theirDid
-                                   message:message
-                                completion:^(NSError *error, NSData *blockSignature)
+    ret = [IndySignus signMessage:message
+                              did:theirDid
+                     walletHandle:walletHandle
+                       completion:^(NSError *error, NSData *blockSignature)
            {
                err = error;
                if (signature) { *signature = blockSignature; }
                [completionExpectation fulfill];
            }];
-
     
     if( ret.code != Success)
     {
@@ -110,9 +109,9 @@
     __block NSString *pk = nil;
     NSError *ret;
 
-    ret = [IndySignus createAndStoreMyDidWithWalletHandle:walletHandle
-                                                    didJSON:myDidJson
-                                                 completion:^(NSError *error, NSString *blockDid, NSString *blockVerKey, NSString *blockPk)
+    ret = [IndySignus createAndStoreMyDid:myDidJson
+                             walletHandle:walletHandle
+                               completion:^(NSError *error, NSString *blockDid, NSString *blockVerKey, NSString *blockPk)
     {
         err = error;
         did = blockDid;
@@ -152,9 +151,9 @@
     
     NSString *myDidJson = (seed) ? [NSString stringWithFormat:@"{\"seed\":\"%@\"}", seed] : @"{}";
     
-    ret = [IndySignus createAndStoreMyDidWithWalletHandle:walletHandle
-                                                    didJSON:myDidJson
-                                                 completion:^(NSError *error, NSString *blockDid, NSString *blockVerKey, NSString *blockPk)
+    ret = [IndySignus createAndStoreMyDid:myDidJson
+                             walletHandle:walletHandle
+                               completion:^(NSError *error, NSString *blockDid, NSString *blockVerKey, NSString *blockPk)
            {
                err = error;
                did = blockDid;
@@ -187,13 +186,13 @@
     __block NSError *err = nil;
     NSError *ret;
     
-    ret = [IndySignus storeTheirDidWithWalletHandle:walletHandle
-                                         identityJSON:identityJson
-                                           completion:^(NSError *error)
-    {
-        err = error;
-        [completionExpectation fulfill];
-    }];
+    ret = [IndySignus storeTheirDid:identityJson
+                       walletHandle:walletHandle
+                         completion:^(NSError *error)
+           {
+               err = error;
+               [completionExpectation fulfill];
+           }];
     
     if( ret.code != Success)
     {
@@ -213,15 +212,15 @@
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
-    // WARNING: PublicKey is removed from Rust API, hovewer it is not a final decision.
+    
     NSString *theirIdentityJson = [NSString stringWithFormat:@"{"
                                    "\"did\":\"%@\","
                                    "\"verkey\":\"%@\","
                                    "\"endpoint\":\"\%@\"}", theirDid, theirVerkey, endpoint];
     
-    NSError *ret = [IndySignus storeTheirDidWithWalletHandle:walletHandle
-                                                  identityJSON:theirIdentityJson
-                                                    completion:^(NSError *error)
+    NSError *ret = [IndySignus storeTheirDid:theirIdentityJson
+                                walletHandle:walletHandle
+                                  completion:^(NSError *error)
     {
         err = error;
         [completionExpectation fulfill];
@@ -237,30 +236,29 @@
     return err;
 }
 
-- (NSError *)replaceKeysWithWalletHandle:(IndyHandle)walletHandle
-                                     did:(NSString *)did
-                            identityJson:(NSString *)identityJson
-                             outMyVerKey:(NSString **)myVerKey
-                                 outMyPk:(NSString **)myPk
+- (NSError *)replaceKeysStartForDid:(NSString *)did
+                       identityJson:(NSString *)identityJson
+                       walletHandle:(IndyHandle)walletHandle
+                        outMyVerKey:(NSString **)myVerKey
+                            outMyPk:(NSString **)myPk
 {
-    
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *verkey;
     __block NSString *pk;
     NSError *ret;
     
-    ret = [IndySignus replaceKeysWithWalletHandle:walletHandle
-                                                did:did
-                                       identityJSON:identityJson
-                                         completion: ^(NSError *error, NSString *blockVerkey, NSString *blockPk)
-    {
-        err = error;
-        verkey = blockVerkey;
-        pk = blockPk;
-        [completionExpectation fulfill];
-    }];
- 
+    ret = [IndySignus replaceKeysStartForDid:did
+                                identityJson:identityJson
+                                walletHandle:walletHandle
+                                  completion: ^(NSError *error, NSString *blockVerkey, NSString *blockPk)
+           {
+               err = error;
+               verkey = blockVerkey;
+               pk = blockPk;
+               [completionExpectation fulfill];
+           }];
+    
     if( ret.code != Success)
     {
         return ret;
@@ -274,6 +272,84 @@
     return err;
 }
 
+- (NSError *)replaceKeysApplyForDid:(NSString *)did
+                       walletHandle:(IndyHandle)walletHandle
+{
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block NSError *err = nil;
+    NSError *ret;
+    
+    ret = [IndySignus replaceKeysApplyForDid:did
+                                walletHandle:walletHandle
+                                  completion:^(NSError *error)
+           {
+               err = error;
+               [completionExpectation fulfill];
+           }];
+
+    if( ret.code != Success)
+    {
+        return ret;
+    }
+    
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+    
+    return err;
+ }
+    
+- (NSError *)replaceKeysForDid:(NSString *)did
+                  identityJson:(NSString *)identityJson
+                  walletHandle:(IndyHandle)walletHandle
+                    poolHandle:(IndyHandle)poolHandle
+                   outMyVerKey:(NSString **)myVerKey
+                       outMyPk:(NSString **)myPk
+{
+    NSError *ret;
+    
+    NSString *verkey;
+    NSString *pk;
+    
+    ret = [self replaceKeysStartForDid:did
+                          identityJson:identityJson
+                          walletHandle:walletHandle
+                           outMyVerKey:&verkey
+                               outMyPk:&pk];
+    
+    if( ret.code != Success)
+    {
+        return ret;
+    }
+    
+    NSString *nymRequest;
+    ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:did
+                                                              targetDid:did
+                                                                 verkey:verkey
+                                                                  alias:nil
+                                                                   role:nil
+                                                             outRequest:&nymRequest];
+    if (ret.code != Success)
+    {
+        return ret;
+    }
+    
+    NSString *nymResponce;
+    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
+                                                              walletHandle:walletHandle
+                                                              submitterDid:did
+                                                               requestJson:nymRequest
+                                                           outResponseJson:&nymResponce];
+    
+    if (ret.code != Success)
+    {
+        return ret;
+    }
+    
+    ret = [self replaceKeysApplyForDid:did
+                          walletHandle:walletHandle];
+    
+    return ret;
+}
+
 - (NSError *)verifyWithWalletHandle:(IndyHandle)walletHandle
                          poolHandle:(IndyHandle)poolHandle
                                 did:(NSString *)did
@@ -285,17 +361,17 @@
     __block NSError *err = nil;
     NSError *ret;
     
-    ret = [IndySignus verifySignatureWithWalletHandle:walletHandle
-                                           poolHandle:poolHandle
-                                                  did:did
-                                              message:message
-                                            signature:signature
-                                           completion:^(NSError *error, BOOL valid)
-                                                {
-                                                   err = error;
-                                                    if (verified) { *verified = valid; }
-                                                   [completionExpectation fulfill];
-                                               }];
+    ret = [IndySignus verifySignature:signature
+                           forMessage:message
+                                  did:did
+                         walletHandle:walletHandle
+                           poolHandle:poolHandle
+                           completion:^(NSError *error, BOOL valid)
+           {
+               err = error;
+               if (verified) { *verified = valid; }
+               [completionExpectation fulfill];
+           }];
     
     if( ret.code != Success)
     {
@@ -319,12 +395,12 @@
     __block NSError *err = nil;
     NSError *ret;
     
-    ret = [IndySignus encryptWithWalletHandle:walletHandle
-                                         pool:poolHandle
-                                        myDid:myDid
-                                          did:did
-                                      message:message
-                                   completion:^(NSError *error, NSData *encryptedMsg, NSData *closureNonce)
+    ret = [IndySignus encryptMessage:message
+                               myDid:myDid
+                                 did:did
+                        walletHandle:walletHandle
+                                pool:poolHandle
+                          completion:^(NSError *error, NSData *encryptedMsg, NSData *closureNonce)
            {
                err = error;
                if (encryptedMessage) { *encryptedMessage = encryptedMsg; }
@@ -353,12 +429,12 @@
     __block NSError *err = nil;
     NSError *ret;
     
-    ret = [IndySignus decryptWithWalletHandle:walletHandle
-                                        myDid:myDid
-                                          did:did
-                             encryptedMessage:encryptedMessage
-                                        nonce:nonce
-                                   completion:^(NSError *error, NSData *decryptedMsg)
+    ret = [IndySignus decryptMessage:encryptedMessage
+                               myDid:myDid
+                                 did:did
+                               nonce:nonce
+                        walletHandle:walletHandle
+                          completion:^(NSError *error, NSData *decryptedMsg)
            {
                err = error;
                if (decryptedMessage) { *decryptedMessage = decryptedMsg; }
