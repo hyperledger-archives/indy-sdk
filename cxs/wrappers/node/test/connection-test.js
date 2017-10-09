@@ -11,16 +11,6 @@ var assert = chai.assert;
 
 // console.log(release(handle)) // tslint:disable-line
 
-const sleep = (time) => new Promise((res) => setTimeout(res, time))
-
-const waitFor = async (predicate) => {
-    if (!predicate()) {
-        await sleep(1000)
-        return waitFor(predicate)
-    }
-    return predicate()
-}
-
 
 describe('A Connection object with ', function () {
     let connection;
@@ -59,44 +49,45 @@ describe('A Connection object with ', function () {
 
     it('a call to get_data where connection exists should return back the connections data', function () {
         connection.create("dog, cat, man")
-        var data = connection.get_data()
+        var data = connection.getData()
         var jsonData = JSON.parse(data)
+        console.log(jsonData)
         assert.notEqual(data, "")
         assert.equal(jsonData.handle, connection.connectionHandle)
     })
 
     it('a call to get_data where connection doesnt exist should return an empty string', function () {
-        assert.equal(connection.get_data(), "")
+        assert.equal(connection.getData(), "")
     })
 
     it('a call to get_data where connection with connection released should return an empty string', function () {
         connection.create("info")
         assert.equal(connection.connect(), 0)
-        var data = connection.get_data()
+        var data = connection.getData()
         assert.notEqual(data, "")
         assert.equal(connection.release(), 0)
-        data = connection.get_data()
+        data = connection.getData()
         assert.equal(data, "")
     })
 
-// connection_get_state tests
+// connection_getState tests
 
-    it('call to get_state where connection exists should return success', function () {
+    it('call to getState where connection exists should return success', function () {
         connection.create("info")
         connection.connect()
-        assert.equal(connection.get_state(), 0)
+        assert.equal(connection.getState(), 0)
         assert.equal(connection.state, 2)
     })
 
-    it('call to get_state where no connection exists should have a state value of 0', function () {
-        assert.equal(connection.get_state(), 0)
+    it('call to getState where no connection exists should have a state value of 0', function () {
+        assert.equal(connection.getState(), 0)
         assert.equal(connection.state, 0)
     })
 
 
     it('call to get_sate where connection exists but not connected should have a state value of 1', function () {
         connection.create("info")
-        assert.equal(connection.get_state(), 0)
+        assert.equal(connection.getState(), 0)
         assert.equal(connection.state, 1)
     })
 
@@ -108,22 +99,30 @@ describe('A Connection object with ', function () {
         assert.equal(connection.connect(), 0)
         assert.equal(connection.release(), 0)
         assert.equal(connection.connect(), 1001)
-        assert.equal(connection.get_data(), "")
+        assert.equal(connection.getData(), "")
     })
-
 
     it('call to connection_release with no connection should return unknown error', function () {
         assert.equal(connection.release(), 1001)
     })
 
+    const sleep = (time) => new Promise((res) => setTimeout(res, time))
+
+    const waitFor = async (predicate) => {
+        if (!predicate()) {
+            await sleep(1000)
+            return waitFor(predicate)
+        }
+        return predicate()
+    }
 
     it('connection and GC deletes object should return empty whet get_data is called ', function () {
         const connection = new Connection(path)
         connection.create("msg")
         connection.connect()
-        const get_data = connection.RUST_API.cxs_connection_get_data
+        const getData = connection.RUST_API.cxs_connection_get_data
         const handle = connection.connectionHandle
-        assert.notEqual(get_data(handle), "")
+        assert.notEqual(connection.getData(handle), "")
 
         this.timeout(30000)
         delete connection
@@ -131,7 +130,7 @@ describe('A Connection object with ', function () {
 
         // this will timeout if condition is never met
         // get_data will return "" because the connection object was released
-        return waitFor(() => !get_data(handle))
+        return waitFor(() => !getData(handle))
     })
 
 })
