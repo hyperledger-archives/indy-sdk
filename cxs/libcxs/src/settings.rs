@@ -41,6 +41,8 @@ pub fn process_config_file(path: &str) -> u32 {
         Ok(mut y) => y.merge(config::File::with_name(path)).unwrap(),
     };
 
+    //TODO: checks parameters
+
     error::SUCCESS.code_num
 }
 

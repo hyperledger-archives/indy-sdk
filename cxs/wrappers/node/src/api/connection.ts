@@ -1,6 +1,7 @@
 import * as ffi from 'ffi'
 import * as ref from 'ref'
 import * as Struct from 'ref-struct'
+import * as weak from 'weak'
 import { CXSRuntime } from '../index'
 import { CXSRuntimeConfig, CxsStatus, FFI_CXS_STATUS_PTR } from '../rustlib'
 
@@ -12,16 +13,18 @@ export class Connection implements IConnections {
   public connectionHandle: ref.types.uint32
   public state: ref.types.uint32
   public statusList: any
-  readonly RUST_API: ffi
+  private RUST_API: ffi
 
-  constructor ( path: string ) {
-    this.RUST_API = new CXSRuntime(new CXSRuntimeConfig(path)).ffi
+  constructor ( path?: string ) {
+    this.initRustApi(path)
   }
 
   create ( recipientInfo: string ): number {
     const connectionHandlePtr = ref.alloc(ref.types.uint32)
     const result = this.RUST_API.cxs_connection_create(recipientInfo, connectionHandlePtr)
     this.connectionHandle = ref.deref(connectionHandlePtr, ref.types.uint32)
+    this.clearOnExit()
+
     return result
   }
 
@@ -29,11 +32,11 @@ export class Connection implements IConnections {
     return this.RUST_API.cxs_connection_connect(this.connectionHandle)
   }
 
-  get_data (): string {
+  getData (): string {
     return this.RUST_API.cxs_connection_get_data(this.connectionHandle)
   }
 
-  get_state (): number {
+  getState (): number {
     const statusPtr = ref.alloc(ref.types.uint32)
     const result = this.RUST_API.cxs_connection_get_state(this.connectionHandle, statusPtr)
     this.state = ref.deref(statusPtr, ref.types.uint32)
@@ -44,10 +47,18 @@ export class Connection implements IConnections {
     return this.RUST_API.cxs_connection_release(this.connectionHandle)
   }
 
-  list_state (): number {
-    const CxsStatusPtr = ref.alloc(FFI_CXS_STATUS_PTR)
-    const result = this.RUST_API.cxs_connection_list_state(CxsStatusPtr)
-    this.statusList = ref.deref(CxsStatusPtr, FFI_CXS_STATUS_PTR)
-    return result
+  private initRustApi (path?) {
+    this.RUST_API = new CXSRuntime(new CXSRuntimeConfig(path)).ffi
+  }
+
+  // clearOnExit creates a callback that will release the Rust Object
+  // when the node Connection object is Garbage collected
+  private clearOnExit () {
+    const weakRef = weak(this)
+    const release = this.RUST_API.cxs_connection_release
+    const handle = this.connectionHandle
+    weak.addCallback(weakRef, () => {
+      release(handle)
+    })
   }
 }
