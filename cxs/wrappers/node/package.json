@@ -23,7 +23,8 @@
     "fs-extra": "^4.0.2",
     "mocha": "^3.5.0",
     "path": "^0.12.7",
-    "tslint": "^5.7.0"
+    "tslint": "^5.7.0",
+    "weak": "^1.0.1"
   },
   "directories": {
     "test": "test",
