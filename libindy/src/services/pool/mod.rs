@@ -41,6 +41,7 @@ use utils::environment::EnvironmentUtils;
 use utils::json::{JsonDecodable, JsonEncodable};
 use utils::sequence::SequenceUtils;
 use self::indy_crypto::bls::{Generator, VerKey};
+use std::path::PathBuf;
 
 pub struct PoolService {
     pools: RefCell<HashMap<i32, Pool>>,
@@ -505,7 +506,7 @@ impl PoolWorker {
     }
 
     fn init_catchup(&mut self, refresh_cmd_id: Option<i32>) -> Result<(), PoolError> {
-        let mt = PoolWorker::_restore_merkle_tree(self.name.as_str())?;
+        let mt = PoolWorker::_restore_merkle_tree_from_pool_name(self.name.as_str())?;
         if mt.count() == 0 {
             return Err(PoolError::CommonError(
                 CommonError::InvalidState("Invalid Genesis Transaction file".to_string())));
@@ -640,14 +641,23 @@ impl PoolWorker {
     }
 
 
-    fn _restore_merkle_tree(pool_name: &str) -> Result<MerkleTree, PoolError> {
+    fn _restore_merkle_tree_from_file(txn_file: &str) -> Result<MerkleTree, PoolError> {
+        PoolWorker::_restore_merkle_tree(&PathBuf::from(txn_file))
+    }
+
+    fn _restore_merkle_tree_from_pool_name(pool_name: &str) -> Result<MerkleTree, PoolError> {
         let mut p = EnvironmentUtils::pool_path(pool_name);
-        let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
+        let mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
         //TODO firstly try to deserialize merkle tree
         p.push(pool_name);
         p.set_extension("txn");
 
-        let f = fs::File::open(p).map_err(map_err_trace!())?;
+        PoolWorker::_restore_merkle_tree(&p)
+    }
+
+    fn _restore_merkle_tree(file_mame: &PathBuf) -> Result<MerkleTree, PoolError> {
+        let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
+        let f = fs::File::open(file_mame).map_err(map_err_trace!())?;
 
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
@@ -656,7 +666,6 @@ impl PoolWorker {
             let bytes = rmp_serde::encode::to_vec_named(&genesis_txn).unwrap(); /* FIXME resolve unwrap */
             mt.append(bytes).map_err(map_err_trace!())?;
         }
-
         Ok(mt)
     }
 
@@ -836,7 +845,7 @@ impl PoolService {
         }
 
         // check that we can build MerkeleTree from genesis transaction file
-        let mt = PoolWorker::_restore_merkle_tree(&pool_config.genesis_txn)?;
+        let mt = PoolWorker::_restore_merkle_tree_from_file(&pool_config.genesis_txn)?;
         if mt.count() == 0 {
             return Err(PoolError::CommonError(
                 CommonError::InvalidStructure("Invalid Genesis Transaction file".to_string())));
@@ -1166,7 +1175,7 @@ mod tests {
         f.flush().unwrap();
         f.sync_all().unwrap();
 
-        let merkle_tree = PoolWorker::_restore_merkle_tree("test").unwrap();
+        let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
 
         assert_eq!(merkle_tree.count(), 4, "test restored MT size");
         assert_eq!(merkle_tree.root_hash_hex(), "7c7e209a5bee34e467f7a2b6e233b8c61b74ddfd099bd9ad8a9a764cdf671981", "test restored MT root hash");
