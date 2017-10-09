@@ -643,11 +643,6 @@ impl PoolWorker {
 
         let f = fs::File::open(p).map_err(map_err_trace!())?;
 
-        if f.metadata()?.len() == 0 {
-            return Err(PoolError::CommonError(
-                CommonError::InvalidState("Invalid Genesis Transaction file".to_string())));
-        }
-
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
             let line: String = line.map_err(map_err_trace!())?;
@@ -655,6 +650,12 @@ impl PoolWorker {
             let bytes = rmp_serde::encode::to_vec_named(&genesis_txn).unwrap(); /* FIXME resolve unwrap */
             mt.append(bytes).map_err(map_err_trace!())?;
         }
+
+        if mt.count() == 0 {
+            return Err(PoolError::CommonError(
+                CommonError::InvalidState("Invalid Genesis Transaction file".to_string())));
+        }
+
         Ok(mt)
     }
 
@@ -822,7 +823,7 @@ impl PoolService {
     pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
         trace!("PoolService::create {} with config {:?}", name, config);
         let mut path = EnvironmentUtils::pool_path(name);
-        let pool_config = match config {
+        let pool_config: PoolConfig = match config {
             Some(config) => PoolConfig::from_json(config)
                 .map_err(|err|
                     CommonError::InvalidStructure(format!("Invalid pool config format: {}", err.description())))?,
@@ -833,9 +834,10 @@ impl PoolService {
             return Err(PoolError::AlreadyExists(format!("Pool ledger config file with name \"{}\" already exists", name)));
         }
 
-        if fs::metadata(pool_config.genesis_txn.clone())?.len() == 0 {
-            return Err(PoolError::CommonError(
-                CommonError::InvalidStructure("Empty Genesis Transaction file".to_string())));
+        // check that we can build MerkeleTree from genesis transaction file
+        let restore_result = PoolWorker::_restore_merkle_tree(&pool_config.genesis_txn);
+        if restore_result.is_err() {
+            return Err(restore_result.unwrap_err());
         }
 
         fs::create_dir_all(path.as_path()).map_err(map_err_trace!())?;
@@ -1085,19 +1087,23 @@ mod tests {
         use utils::logger::LoggerUtils;
         use utils::test::TestUtils;
         use std::time;
+        use utils::environment::EnvironmentUtils;
 
         TestUtils::cleanup_storage();
         LoggerUtils::init();
 
         fn drop_test() {
             let pool_name = "pool_drop_works";
+            let test_pool_ip = EnvironmentUtils::test_pool_ip();
+            let gen_txn = format!("{{\"data\":{{\"alias\":\"Node1\",\"blskey\":\"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba\",\"client_ip\":\"{}\",\"client_port\":9702,\"node_ip\":\"{}\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]}},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"Th7MpTaRZVRYnPiabds81Y\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip);
 
             // create minimal fs config stub before Pool::new()
             let mut pool_path = EnvironmentUtils::pool_path(pool_name);
             fs::create_dir_all(&pool_path).unwrap();
             pool_path.push(pool_name);
-            pool_path.set_extension("txn"); //empty genesis txns file - pool will not try to connect to somewhere
-            fs::File::create(pool_path).unwrap();
+            pool_path.set_extension("txn");
+            let mut file = fs::File::create(pool_path).unwrap();
+            file.write(&gen_txn.as_bytes()).unwrap();
 
             let pool = Pool::new(pool_name, -1).unwrap();
             thread::sleep(time::Duration::from_secs(1));
