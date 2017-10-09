@@ -23,7 +23,7 @@ use self::types::{
     GetTxnOperation
 };
 use errors::common::CommonError;
-use utils::json::{JsonEncodable, JsonDecodable};
+use utils::json::JsonDecodable;
 use utils::crypto::base58::Base58;
 use serde_json::Value;
 use services::ledger::constants::NYM;
@@ -73,15 +73,8 @@ impl LedgerService {
             }
         }
 
-        let mut request: Value = Value::Object(serde_json::map::Map::new());
-        request["reqId"] = Value::Number(serde_json::Number::from(req_id));
-        request["identifier"] = Value::String(identifier.to_string());
-        request["operation"] = operation;
-
-        let request_json = serde_json::to_string(&request)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid nym request json: {}", err.to_string())))?;
-
-        Ok(request_json)
+        Request::build_request(identifier.to_string(), operation)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid nym request json: {}", err.to_string())))
     }
 
     pub fn build_get_nym_request(&self, identifier: &str, dest: &str) -> Result<String, CommonError> {
