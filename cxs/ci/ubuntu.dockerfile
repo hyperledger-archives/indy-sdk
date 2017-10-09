@@ -6,7 +6,7 @@ ARG uid=1000
 
 # Update environment
 # JRE installation and gcc
-RUN apt-get update -y && apt-get install -y default-jre \
+RUN apt-get update -y && apt-get install -y \
     gcc \
     pkg-config \
     build-essential \
@@ -25,9 +25,6 @@ RUN apt-get update -y && apt-get install -y default-jre \
 
 
 # Install Nodejs 
-#RUN apt-get install -y \ 
-#    npm 
-
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
     && apt-get install -y nodejs
 
