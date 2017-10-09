@@ -28,6 +28,8 @@ RUN apt-get update -y && apt-get install -y \
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
     && apt-get install -y nodejs
 
+RUN npm install typescript-compiler
+
 
 # Install Rust
 ENV RUST_ARCHIVE=rust-1.20.0-x86_64-unknown-linux-gnu.tar.gz
