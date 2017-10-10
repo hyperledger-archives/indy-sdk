@@ -5,6 +5,7 @@ use api::CxsStatus;
 use utils::cstring::CStringUtils;
 use utils::{pool, wallet};
 use utils::error;
+use std::ptr;
 use settings;
 use connection::{build_connection, connect, to_string, get_state, release};
 
@@ -109,11 +110,16 @@ pub extern fn cxs_connection_connect(connection_handle: u32) -> u32 {
 
 #[no_mangle]
 pub extern fn cxs_connection_get_data(connection_handle: u32) -> *mut c_char {
-
     let json_string = to_string(connection_handle);
-    let msg = CStringUtils::string_to_cstring(json_string);
 
-    msg.into_raw()
+    if json_string.is_empty() {
+        return ptr::null_mut()
+    }
+    else {
+        let msg = CStringUtils::string_to_cstring(json_string);
+
+        msg.into_raw()
+    }
 }
 
 #[no_mangle]
@@ -133,6 +139,7 @@ pub extern fn cxs_connection_release(connection_handle: u32) -> u32 {
     release(connection_handle)
 }
 
+#[no_mangle]
 #[allow(unused_variables, unused_mut)]
 pub extern fn cxs_connection_list_state(status_array: *mut CxsStatus) -> u32 { error::SUCCESS.code_num }
 
@@ -185,9 +192,9 @@ pub extern fn cxs_proof_get_state(proof_handle: u32, status: *mut c_char) -> u32
 mod tests {
 
     use super::*;
+    use api::CxsStateType;
     use std::path::Path;
     use std::ffi::CString;
-    use std::ptr;
     use std::error::Error;
     use std::io::prelude::*;
     use std::fs;
@@ -224,5 +231,107 @@ mod tests {
     fn test_init_no_config_path() {
         let result = cxs_init(ptr::null());
         assert_eq!(result,0);
+    }
+
+
+    #[test]
+    fn test_cxs_connection_create() {
+        let mut handle: u32 = 0;
+        let rc = cxs_connection_create(CString::new("test_create").unwrap().into_raw(), &mut handle);
+        assert_eq!(rc, error::SUCCESS.code_num);
+        assert!(handle > 0);
+    }
+
+    #[test]
+    fn test_cxs_connection_create_fails() {
+        let rc = cxs_connection_create(CString::new("test_create_fails").unwrap().into_raw(), ptr::null_mut());
+        assert_eq!(rc, error::UNKNOWN_ERROR.code_num);
+
+        let rc = cxs_connection_create(ptr::null(),ptr::null_mut());
+        assert_eq!(rc, error::UNKNOWN_ERROR.code_num);
+    }
+
+    #[test]
+    fn test_cxs_connection_connect() {
+        let mut handle: u32 = 0;
+        let rc = cxs_connection_create(CString::new("test_connect").unwrap().into_raw(), &mut handle);
+        assert_eq!(rc, error::SUCCESS.code_num);
+        assert!(handle > 0);
+
+        let rc = cxs_connection_connect(handle);
+        assert_eq!(rc, error::SUCCESS.code_num);
+    }
+
+    #[test]
+    fn test_cxs_connection_connect_fails() {
+        let rc = cxs_connection_connect(0);
+        assert_eq!(rc, error::UNKNOWN_ERROR.code_num);
+    }
+
+    #[test]
+    fn test_cxs_connection_get_state() {
+        let mut handle: u32 = 0;
+        let rc = cxs_connection_create(CString::new("test_get_state").unwrap().into_raw(), &mut handle);
+        assert_eq!(rc, error::SUCCESS.code_num);
+        assert!(handle > 0);
+
+        let mut state: u32 = 0;
+        let rc = cxs_connection_get_state(handle, &mut state);
+        assert_eq!(rc, error::SUCCESS.code_num);
+        assert_eq!(state,CxsStateType::CxsStateInitialized as u32);
+    }
+
+    #[test]
+    fn test_cxs_connection_get_state_fails() {
+        let mut handle: u32 = 0;
+        let rc = cxs_connection_create(CString::new("test_get_state_fails").unwrap().into_raw(), &mut handle);
+        assert_eq!(rc, error::SUCCESS.code_num);
+        assert!(handle > 0);
+
+        let rc = cxs_connection_get_state(handle, ptr::null_mut());
+        assert_eq!(rc, error::UNKNOWN_ERROR.code_num);
+
+        let rc = cxs_connection_get_state(0, ptr::null_mut());
+        assert_eq!(rc, error::UNKNOWN_ERROR.code_num);
+    }
+
+    #[test]
+    #[allow(unused_assignments)]
+    fn test_cxs_connection_get_data() {
+        let mut handle: u32 = 0;
+        let rc = cxs_connection_create(CString::new("test_get_data").unwrap().into_raw(), &mut handle);
+        assert_eq!(rc, error::SUCCESS.code_num);
+        assert!(handle > 0);
+
+        let data = cxs_connection_get_data(handle);
+        let mut final_string = String::new();
+
+        unsafe {
+            let c_string = CString::from_raw(data);
+            final_string = c_string.into_string().unwrap();
+        }
+
+        assert!(final_string.len() > 0);
+    }
+
+    #[test]
+    #[allow(unused_assignments)]
+    fn test_cxs_connection_get_data_fails() {
+        let data = cxs_connection_get_data(0);
+
+        assert_eq!(data, ptr::null_mut());
+    }
+
+    #[test]
+    fn test_cxs_connection_release() {
+        let mut handle: u32 = 0;
+        let rc = cxs_connection_create(CString::new("test_release").unwrap().into_raw(), &mut handle);
+        assert_eq!(rc, error::SUCCESS.code_num);
+        assert!(handle > 0);
+
+        let rc = cxs_connection_release(handle);
+        assert_eq!(rc, error::SUCCESS.code_num);
+        let rc = cxs_connection_connect(handle);
+        assert_eq!(rc, error::UNKNOWN_ERROR.code_num);
     }
 }

@@ -143,7 +143,7 @@ mod tests {
 
     #[test]
     fn test_connection_release() {
-        let handle = build_connection("Whatever".to_owned());
+        let handle = build_connection("test_release".to_owned());
 
         assert!(handle > 0);
 
@@ -153,8 +153,16 @@ mod tests {
     }
 
     #[test]
-    fn test_connect() {
+    fn test_state_not_connected() {
         let handle = build_connection("Whatever".to_owned());
+        let state = get_state(handle);
+        assert_eq!(state, CxsStateType::CxsStateInitialized as u32);
+        release(handle);
+    }
+
+    #[test]
+    fn test_connect() {
+        let handle = build_connection("test_connect".to_owned());
 
         assert!(handle > 0);
 
@@ -183,7 +191,7 @@ mod tests {
 
     #[test]
     fn test_get_state() {
-        let handle = build_connection("Whatever".to_owned());
+        let handle = build_connection("test_state".to_owned());
 
         let state = get_state(handle);
 

@@ -12,7 +12,7 @@ def build(name, file = 'cxs/ci/ubuntu.dockerfile cxs/ci', customParams = '') {
     return docker.build("$name-test", "--build-arg uid=${getUserUid()} -f $file")
 }
 
-node {
+node('ubuntu') {
     stage ('Checkout'){
         checkout scm
     }
@@ -49,6 +49,7 @@ def testNodeWrapper(env) {
             env.inside {
                 sh 'npm -v'
                 sh 'npm install'
+                sh 'node_modules/.bin/tsc -p tsconfig.json'
                 sh 'npm test'
             }
         }
