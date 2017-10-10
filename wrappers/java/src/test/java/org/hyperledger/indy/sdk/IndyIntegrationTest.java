@@ -1,6 +1,7 @@
 package org.hyperledger.indy.sdk;
 
 import org.hyperledger.indy.sdk.pool.Pool;
+import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
 import org.hyperledger.indy.sdk.wallet.InMemWalletType;
@@ -18,8 +19,20 @@ import java.util.concurrent.TimeUnit;
 
 public class IndyIntegrationTest {
 
-	public static final String TRUSTEE_SEED = "000000000000000000000000Trustee1";
-	public static final String MY1_SEED = "00000000000000000000000000000My1";
+	protected static final String TRUSTEE_SEED = "000000000000000000000000Trustee1";
+	protected static final String MY1_SEED = "00000000000000000000000000000My1";
+	protected static final String DID1 = "8wZcEriaNLNKtteJvx7f8i";
+	protected static final String IDENTITY_JSON_TEMPLATE = "{\"did\":\"%s\",\"verkey\":\"%s\"}";
+	protected static final byte[] MESSAGE = "{\"reqId\":1496822211362017764}".getBytes();
+	protected static final String SCHEMA_DATA = "{\"name\":\"gvt2\",\"version\":\"3.0\",\"attr_names\": [\"name\", \"male\"]}";
+	protected static final String POOL = "Pool1";
+	protected static final String WALLET = "Wallet1";
+	protected static final String TYPE = "default";
+	protected static final String TRUSTEE_IDENTITY_JSON =
+			new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null).toJson();
+
+	protected static final String MY1_IDENTITY_JSON =
+			new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, null, null).toJson();
 
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
@@ -33,7 +46,7 @@ public class IndyIntegrationTest {
 	public void setUp() throws IOException, InterruptedException, ExecutionException, IndyException {
 		InitHelper.init();
 		StorageUtils.cleanupStorage();
-		if (!isWalletRegistered){
+		if (! isWalletRegistered) {
 			Wallet.registerWalletType("inmem", new InMemWalletType()).get();
 		}
 		isWalletRegistered = true;

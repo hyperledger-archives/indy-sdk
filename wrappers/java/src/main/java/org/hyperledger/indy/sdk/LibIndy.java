@@ -91,6 +91,15 @@ public abstract class LibIndy {
 		public int indy_agent_send(int command_handle, int connection_handle, String message, Callback cb);
 		public int indy_agent_close_connection(int command_handle, int connection_handle, Callback cb);
 		public int indy_agent_close_listener(int command_handle, int listener_handle, Callback cb);
+
+		// pairwise.rs
+
+		public int indy_is_pairwise_exists(int command_handle, int wallet_handle, String their_did, Callback cb);
+		public int indy_create_pairwise(int command_handle, int wallet_handle, String their_did, String my_did, String metadata, Callback cb);
+		public int indy_list_pairwise(int command_handle, int wallet_handle, Callback cb);
+		public int indy_get_pairwise(int command_handle, int wallet_handle, String their_did, Callback cb);
+		public int indy_set_pairwise_metadata(int command_handle, int wallet_handle, String their_did, String metadata, Callback cb);
+
 	}
 
 	/*
