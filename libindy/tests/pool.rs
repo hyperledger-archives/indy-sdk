@@ -77,6 +77,17 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn create_pool_ledger_config_works_for_empty_genesis_txns() {
+            TestUtils::cleanup_storage();
+
+            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool("pool_create", Some(0), None);
+            let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
+            assert_eq!(ErrorCode::CommonInvalidStructure, PoolUtils::create_pool_ledger_config("pool_create", Some(pool_config.as_str())).unwrap_err());
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod open {
