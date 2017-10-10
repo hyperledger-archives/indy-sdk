@@ -463,20 +463,14 @@
     __block NSError *err = nil;
     __block NSString* outResponse = nil;
     
-    
-    ret = [IndyLedger submitRequestWithPoolHandle:poolHandle
-                                        requestJSON:request
-                                         completion:^(NSError* error, NSString* result)
-    {
-        err = error;
-        outResponse = result;
-        [completionExpectation fulfill];
-    }];
-    
-    if( ret.code != Success )
-    {
-        return ret;
-    }
+    [IndyLedger submitRequest:request
+                   poolHandle:poolHandle
+                   completion:^(NSError* error, NSString* result)
+     {
+         err = error;
+         outResponse = result;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     

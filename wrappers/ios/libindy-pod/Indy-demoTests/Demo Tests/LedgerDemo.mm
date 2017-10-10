@@ -201,20 +201,10 @@
                                "}", theirDid, myDid, [nymReqId intValue]];
 
     // 11. Send NYM request with signing
-    __block NSString *nymTxnResponse;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [IndyLedger signAndSubmitRequestWithWalletHandle:theirWalletHandle
-                                                poolHandle:poolHandle
-                                              submitterDID:theirDid
-                                               requestJSON:nymTxnRequest
-                                                completion:^(NSError *error, NSString *requestResult)
-            {
-                XCTAssertEqual(error.code, Success, "signAndSubmitRequestWithWalletHandle() got error in completion");
-                nymTxnResponse = requestResult;
-                [completionExpectation fulfill];
-            }];
-  //  XCTAssertEqual(ret.code, Success, @"signAndSubmitRequestWithWalletHandle() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    NSString *nymTxnResponse;
+    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
+                                                              walletHandle:myWalletHandle submitterDid:theirDid requestJson:nymTxnRequest outResponseJson:&nymTxnResponse];
+    XCTAssertEqual(ret.code, Success, @"signAndSubmitRequestWithWalletHandle() failed!");
     
     // 12. Prepare and send GET_NYM request
     NSNumber *getNymRequestId = [[PoolUtils sharedInstance] getRequestId];
@@ -227,16 +217,10 @@
                                   "}", [getNymRequestId intValue] , myVerkey, myDid];
     
     __block NSString *getNymTxnResponseJson;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [IndyLedger submitRequestWithPoolHandle:poolHandle
-                                        requestJSON:getNymTxnRequest
-                                         completion:^(NSError *error, NSString *requestResult)
-           {
-               XCTAssertEqual(error.code, Success, "submitRequestWithPoolHandle() got error in completion");
-               getNymTxnResponseJson = requestResult;
-               [completionExpectation fulfill];
-           }];
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+   
+    ret = [[LedgerUtils sharedInstance] submitRequest:getNymTxnRequest
+                                       withPoolHandle:poolHandle
+                                           resultJson:&getNymTxnResponseJson];
     XCTAssertEqual(ret.code, Success, @"submitRequestWithPoolHandle() failed!");
     
     NSDictionary *getNymTxnResponse = [NSDictionary fromString:getNymTxnResponseJson];
@@ -430,20 +414,13 @@
                                "}", theirDid, myDid, [nymReqId intValue]];
     
     // 11. Send NYM request with signing
-    __block NSString *nymTxnResponse;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [IndyLedger signAndSubmitRequestWithWalletHandle:theirWalletHandle
-                                                poolHandle:poolHandle
-                                              submitterDID:theirDid
-                                               requestJSON:nymTxnRequest
-                                                completion:^(NSError *error, NSString *requestResult)
-           {
-               XCTAssertEqual(error.code, Success, "signAndSubmitRequestWithWalletHandle() got error in completion");
-               nymTxnResponse = requestResult;
-               [completionExpectation fulfill];
-           }];
-    //  XCTAssertEqual(ret.code, Success, @"signAndSubmitRequestWithWalletHandle() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    NSString *nymTxnResponse;
+    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
+                                                              walletHandle:theirWalletHandle
+                                                              submitterDid:theirDid
+                                                               requestJson:nymTxnRequest
+                                                           outResponseJson:&nymTxnResponse];
+    XCTAssertEqual(ret.code, Success, @"signAndSubmitRequestWithWalletHandle() failed!");
     
     // 12. Prepare and send GET_NYM request
     NSNumber *getNymRequestId = [[PoolUtils sharedInstance] getRequestId];
@@ -455,17 +432,11 @@
                                   "\"dest\":\"%@\"}"\
                                   "}", [getNymRequestId intValue] , myVerkey, myDid];
     
-    __block NSString *getNymTxnResponseJson;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [IndyLedger submitRequestWithPoolHandle:poolHandle
-                                      requestJSON:getNymTxnRequest
-                                       completion:^(NSError *error, NSString *requestResult)
-           {
-               XCTAssertEqual(error.code, Success, "submitRequestWithPoolHandle() got error in completion");
-               getNymTxnResponseJson = requestResult;
-               [completionExpectation fulfill];
-           }];
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    NSString *getNymTxnResponseJson;
+    
+    ret = [[LedgerUtils sharedInstance] submitRequest:getNymTxnRequest
+                                       withPoolHandle:poolHandle
+                                           resultJson:&getNymTxnResponseJson];
     XCTAssertEqual(ret.code, Success, @"submitRequestWithPoolHandle() failed!");
     
     NSDictionary *getNymTxnResponse = [NSDictionary fromString:getNymTxnResponseJson];
