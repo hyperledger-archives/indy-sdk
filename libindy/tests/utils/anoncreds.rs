@@ -16,13 +16,14 @@ use std::sync::mpsc::channel;
 use std::collections::HashSet;
 use std::sync::{Once, ONCE_INIT};
 use std::mem;
+use utils::constants::*;
 
 
 pub struct AnoncredsUtils {}
 
 static mut WALLET_HANDLE: i32 = 0;
 static mut CLAIM_DEF_JSON: &'static str = "";
-pub const ISSUER_DID: &'static str = "NcYxiDXkpYi6ov5FcYDi1e";
+pub const COMMON_MASTER_SECRET: &'static str = "common_master_secret_name";
 
 impl AnoncredsUtils {
     pub fn issuer_create_claim_definition(wallet_handle: i32, issuer_did: &str, schema: &str, signature_type: Option<&str>, create_non_revoc: bool) -> Result<String, ErrorCode> {
@@ -554,7 +555,7 @@ impl AnoncredsUtils {
                 WALLET_HANDLE = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
                 //2. Create GVT ClaimDefinition
-                let schema = AnoncredsUtils::get_gvt_schema_json(COMMON_SCHEMA_SEQ_NO);
+                let schema = AnoncredsUtils::get_gvt_schema_json(SEQ_NO);
                 //TODO Fix it.....Convert String to &'static str
                 let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE, ISSUER_DID, &schema, None, false).unwrap();
                 let res = mem::transmute(&claim_def_json as &str);
@@ -562,9 +563,9 @@ impl AnoncredsUtils {
                 CLAIM_DEF_JSON = res;
 
                 //3. Store three claim offers
-                let claim_offer_json_1 = AnoncredsUtils::get_claim_offer(ISSUER_DID, COMMON_SCHEMA_SEQ_NO);
+                let claim_offer_json_1 = AnoncredsUtils::get_claim_offer(ISSUER_DID, SEQ_NO);
                 let claim_offer_json_2 = AnoncredsUtils::get_claim_offer(ISSUER_DID, 2);
-                let claim_offer_json_3 = AnoncredsUtils::get_claim_offer("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", 2);
+                let claim_offer_json_3 = AnoncredsUtils::get_claim_offer(DID, 2);
 
                 AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &claim_offer_json_1).unwrap();
                 AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &claim_offer_json_2).unwrap();
@@ -592,7 +593,3 @@ impl AnoncredsUtils {
         }
     }
 }
-
-pub const COMMON_CLAIM_DEF_SEQ_NO: i32 = 1;
-pub const COMMON_SCHEMA_SEQ_NO: i32 = 1;
-pub const COMMON_MASTER_SECRET: &'static str = "common_master_secret_name";

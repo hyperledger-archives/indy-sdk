@@ -20,8 +20,8 @@ use indy::api::ErrorCode;
 use utils::environment::EnvironmentUtils;
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
+use utils::constants::*;
 
-pub const POOL: &'static str = "pool_1";
 
 mod high_cases {
     use super::*;
@@ -428,8 +428,8 @@ mod medium_cases {
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let pool_handle = pool_handle + 1;
-            let res = PoolUtils::refresh(pool_handle);
+            let invalid_pool_handle = pool_handle + 1;
+            let res = PoolUtils::refresh(invalid_pool_handle);
             assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
 
             PoolUtils::close(pool_handle).unwrap();

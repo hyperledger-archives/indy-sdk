@@ -28,22 +28,14 @@ use utils::signus::SignusUtils;
 #[cfg(feature = "local_nodes_pool")]
 use utils::anoncreds::AnoncredsUtils;
 use utils::types::*;
+use utils::constants::*;
 
 
-pub const POOL: &'static str = "pool_1";
-pub const TRUSTEE_SEED: &'static str = "000000000000000000000000Trustee1";
-pub const STEWARD_SEED: &'static str = "000000000000000000000000Steward1";
-pub const DID: &'static str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 pub const MESSAGE: &'static str = r#"{"reqId":1495034346617224651}"#;
-pub const IDENTIFIER: &'static str = "Th7MpTaRZVRYnPiabds81Y";
-pub const DEST: &'static str = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
-pub const SEQ_NO: i32 = 1;
-pub const SCHEMA_DATA: &'static str = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#;
 pub const GET_SCHEMA_DATA: &'static str = r#"{"name":"name","version":"1.0"}"#;
-pub const SIGNATURE_TYPE: &'static str = "CL";
-pub const INVALID_IDENTIFIER: &'static str = "invalid_base58_identifier";
 pub const ATTRIB_RAW_DATA: &'static str = r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#;
 pub const NODE_DATA: &'static str = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1, "alias":"some", "services": ["VALIDATOR"], "blskey": "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}"#;
+
 
 mod high_cases {
     use super::*;
@@ -768,7 +760,8 @@ mod high_cases {
 
             let get_txn_schema_result: SchemaResult = serde_json::from_value(get_txn_response.result.data.unwrap()).unwrap();
 
-            assert_eq!(SCHEMA_DATA, serde_json::to_string(&get_txn_schema_result.data.unwrap()).unwrap());
+            let expected_schema_data: SchemaData = serde_json::from_str(SCHEMA_DATA).unwrap();
+            assert_eq!(expected_schema_data, get_txn_schema_result.data.unwrap());
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1123,7 +1116,7 @@ mod medium_cases {
 
             let (did, _, _) = SignusUtils::create_my_did(wallet_handle, r#"{}"#).unwrap();
 
-            let get_attrib_request = LedgerUtils::build_get_attrib_request(&did, &did.clone(), "endpoint").unwrap();
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(&did, &did, "endpoint").unwrap();
             let get_attrib_response = PoolUtils::send_request(pool_handle, &get_attrib_request).unwrap();
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
             assert!(get_attrib_response.result.data.is_none());
@@ -1144,7 +1137,7 @@ mod medium_cases {
 
             let (did, _, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
-            let get_attrib_request = LedgerUtils::build_get_attrib_request(&did.clone(), &did.clone(), "some_attribute").unwrap();
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(&did, &did, "some_attribute").unwrap();
             let get_attrib_response = PoolUtils::send_request(pool_handle, &get_attrib_request).unwrap();
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
             assert!(get_attrib_response.result.data.is_none());

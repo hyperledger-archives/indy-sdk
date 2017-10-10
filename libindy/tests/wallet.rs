@@ -17,13 +17,11 @@ mod utils;
 use utils::inmem_wallet::InmemWallet;
 use utils::wallet::WalletUtils;
 use utils::test::TestUtils;
+use utils::constants::*;
 
 use indy::api::ErrorCode;
 
-pub const TYPE: &'static str = "default";
-pub const INMEM_TYPE: &'static str = "inmem";
-pub const POOL: &'static str = "pool_1";
-pub const WALLET: &'static str = "wallet_1";
+pub const CONFIG: &'static str = r#"{"freshness_time":1000}"#;
 
 
 mod high_cases {
@@ -72,8 +70,7 @@ mod high_cases {
         fn indy_create_wallet_works_for_unknown_type() {
             TestUtils::cleanup_storage();
 
-            let xtype = "type";
-            let res = WalletUtils::create_wallet(POOL, WALLET, Some(xtype), None);
+            let res = WalletUtils::create_wallet(POOL, WALLET, Some("unknown_type"), None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletUnknownTypeError);
 
             TestUtils::cleanup_storage();
@@ -92,8 +89,7 @@ mod high_cases {
         fn indy_create_wallet_works_for_config() {
             TestUtils::cleanup_storage();
 
-            let config = r#"{"freshness_time":1000}"#;
-            WalletUtils::create_wallet(POOL, WALLET, Some(TYPE), Some(config)).unwrap();
+            WalletUtils::create_wallet(POOL, WALLET, Some(TYPE), Some(CONFIG)).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -127,12 +123,11 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore]//TODO FUX BUG. We can delete only closed wallet
+        #[ignore] //TODO FUX BUG. We can delete only closed wallet
         fn indy_delete_wallet_works_for_opened() {
             TestUtils::cleanup_storage();
 
-            WalletUtils::create_wallet(POOL, WALLET, None, None).unwrap();
-            let wallet_handle = WalletUtils::open_wallet(WALLET, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let res = WalletUtils::delete_wallet(WALLET);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
@@ -190,10 +185,8 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let wallet_name = "indy_open_wallet_works_for_config";
-            let config = r#"{"freshness_time":1000}"#;
-
             WalletUtils::create_wallet(POOL, wallet_name, None, None).unwrap();
-            WalletUtils::open_wallet(wallet_name, Some(config)).unwrap();
+            WalletUtils::open_wallet(wallet_name, Some(CONFIG)).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -207,7 +200,6 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             WalletUtils::create_wallet(POOL, WALLET, None, None).unwrap();
-
             let wallet_handle = WalletUtils::open_wallet(WALLET, None).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
             let wallet_handle = WalletUtils::open_wallet(WALLET, None).unwrap();
@@ -226,7 +218,8 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::open_wallet(WALLET, None).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
-            WalletUtils::open_wallet(WALLET, None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(WALLET, None).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
             InmemWallet::cleanup();
@@ -236,6 +229,7 @@ mod high_cases {
 
 mod medium_cases {
     extern crate libc;
+
     use super::*;
     use std::ffi::CString;
     use self::libc::c_char;
@@ -362,7 +356,6 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let wallet_name = "";
-
             let res = WalletUtils::create_wallet(POOL, wallet_name, None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidParam3);
 
