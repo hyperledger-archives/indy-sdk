@@ -5,6 +5,7 @@ import java.util.concurrent.CompletableFuture;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
+import org.hyperledger.indy.sdk.ParamGuard;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.signus.SignusResults.EncryptResult;
@@ -183,6 +184,9 @@ public class Signus extends IndyJava.API {
 			Wallet wallet,
 			String didJson) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");	
+		ParamGuard.notNullOrWhiteSpace(didJson, "didJson");	
+		
 		CompletableFuture<CreateAndStoreMyDidResult> future = new CompletableFuture<CreateAndStoreMyDidResult>();
 		int commandHandle = addFuture(future);
 
@@ -213,6 +217,10 @@ public class Signus extends IndyJava.API {
 			String did,
 			String identityJson) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");	
+		ParamGuard.notNullOrWhiteSpace(did, "did");	
+		ParamGuard.notNullOrWhiteSpace(identityJson, "identityJson");	
+		
 		CompletableFuture<ReplaceKeysStartResult> future = new CompletableFuture<ReplaceKeysStartResult>();
 		int commandHandle = addFuture(future);
 
@@ -242,6 +250,9 @@ public class Signus extends IndyJava.API {
 			Wallet wallet,
 			String did) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");	
+		ParamGuard.notNullOrWhiteSpace(did, "did");	
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -270,6 +281,9 @@ public class Signus extends IndyJava.API {
 			Wallet wallet,
 			String identityJson) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");	
+		ParamGuard.notNullOrWhiteSpace(identityJson, "identityJson");	
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -300,6 +314,10 @@ public class Signus extends IndyJava.API {
 			String did,
 			byte[] message) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");	
+		ParamGuard.notNullOrWhiteSpace(did, "did");	
+		ParamGuard.notNull(message, "message");	
+		
 		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
 		int commandHandle = addFuture(future);
 
@@ -335,6 +353,12 @@ public class Signus extends IndyJava.API {
 			String did,
 			byte[] message,
 			byte[] signature) throws IndyException {
+		
+		ParamGuard.notNull(wallet, "wallet");	
+		ParamGuard.notNull(pool, "pool");	
+		ParamGuard.notNullOrWhiteSpace(did, "did");	
+		ParamGuard.notNull(message, "message");	
+		ParamGuard.notNull(signature, "signature");	
 
 		CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
 		int commandHandle = addFuture(future);
@@ -375,6 +399,12 @@ public class Signus extends IndyJava.API {
 			String myDid,
 			String did,
 			byte[] message) throws IndyException {
+		
+		ParamGuard.notNull(wallet, "wallet");	
+		ParamGuard.notNull(pool, "pool");	
+		ParamGuard.notNullOrWhiteSpace(myDid, "myDid");	
+		ParamGuard.notNullOrWhiteSpace(did, "did");	
+		ParamGuard.notNull(message, "message");	
 
 		CompletableFuture<EncryptResult> future = new CompletableFuture<EncryptResult>();
 		int commandHandle = addFuture(future);
@@ -415,6 +445,12 @@ public class Signus extends IndyJava.API {
 			byte[] encryptedMsg,
 			byte[] nonce) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");	
+		ParamGuard.notNullOrWhiteSpace(myDid, "myDid");	
+		ParamGuard.notNullOrWhiteSpace(did, "did");	
+		ParamGuard.notNull(encryptedMsg, "encryptedMsg");	
+		ParamGuard.notNull(nonce, "nonce");
+		
 		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
 		int commandHandle = addFuture(future);
 
