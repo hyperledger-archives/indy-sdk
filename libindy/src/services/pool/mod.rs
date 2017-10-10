@@ -459,9 +459,22 @@ impl TransactionHandler {
                     hasher.process(data.as_bytes());
                     value["val"] = SJsonValue::String(hasher.fixed_result().to_hex());
                 }
-                constants::GET_SCHEMA |
                 constants::GET_CLAIM_DEF => {
                     value["val"] = parsed_data;
+                }
+                constants::GET_SCHEMA => {
+                    if let Some(map) = parsed_data.as_object() {
+                        let mut map = map.clone();
+                        map.remove("name");
+                        map.remove("version");
+                        if map.is_empty() {
+                            return Ok(None); // TODO FIXME remove after INDY-699 will be fixed
+                        } else {
+                            value["val"] = SJsonValue::from(map)
+                        }
+                    } else {
+                        return Err("Invalid data for GET_SCHEMA".to_string());
+                    };
                 }
                 _ => {
                     return Err("Unknown transaction".to_string());
