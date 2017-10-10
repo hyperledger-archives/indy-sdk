@@ -16,22 +16,6 @@ public class AgentCloseConnectionTest extends AgentIntegrationTest {
 
 	private static CompletableFuture<Connection> serverToClientConnectionFuture = new CompletableFuture<Connection>();
 
-	private static final AgentObservers.MessageObserver messageObserver = new AgentObservers.MessageObserver() {
-
-		public void onMessage(Connection connection, String message) {
-
-			System.out.println("Received message '" + message + "' on connection " + connection);
-		}
-	};
-
-	private static final AgentObservers.MessageObserver messageObserverForIncoming = new AgentObservers.MessageObserver() {
-
-		public void onMessage(Connection connection, String message) {
-
-			System.out.println("Received message '" + message + "' on incoming connection " + connection);
-		}
-	};
-
 	private static final AgentObservers.ConnectionObserver incomingConnectionObserver = new AgentObservers.ConnectionObserver() {
 
 		public AgentObservers.MessageObserver onConnection(Listener listener, Connection connection, String senderDid, String receiverDid) {
@@ -54,8 +38,7 @@ public class AgentCloseConnectionTest extends AgentIntegrationTest {
 
 		SignusResults.CreateAndStoreMyDidResult myDid = Signus.createAndStoreMyDid(wallet, "{}").get();
 
-		String identityJson = String.format("{\"did\":\"%s\", \"pk\":\"%s\", \"verkey\":\"%s\", \"endpoint\":\"%s\"}",
-				myDid.getDid(), myDid.getPk(), myDid.getVerkey(), endpoint);
+		String identityJson = String.format(AGENT_IDENTITY_JSON_TEMPLATE, myDid.getDid(), myDid.getPk(), myDid.getVerkey(), endpoint);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
 		Listener activeListener = Agent.agentListen(endpoint, incomingConnectionObserver).get();
@@ -79,8 +62,7 @@ public class AgentCloseConnectionTest extends AgentIntegrationTest {
 
 		SignusResults.CreateAndStoreMyDidResult myDid = Signus.createAndStoreMyDid(wallet, "{}").get();
 
-		String identityJson = String.format("{\"did\":\"%s\", \"pk\":\"%s\", \"verkey\":\"%s\", \"endpoint\":\"%s\"}",
-				myDid.getDid(), myDid.getPk(), myDid.getVerkey(), endpoint);
+		String identityJson = String.format(AGENT_IDENTITY_JSON_TEMPLATE, myDid.getDid(), myDid.getPk(), myDid.getVerkey(), endpoint);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
 		Listener activeListener = Agent.agentListen(endpoint, incomingConnectionObserver).get();

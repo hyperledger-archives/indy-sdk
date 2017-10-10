@@ -2,47 +2,18 @@ package org.hyperledger.indy.sdk.demo;
 
 import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.ErrorCodeMatcher;
-import org.hyperledger.indy.sdk.IndyIntegrationTest;
+import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.ledger.Ledger;
-import org.hyperledger.indy.sdk.pool.Pool;
-import org.hyperledger.indy.sdk.pool.PoolJSONParameters;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
-import org.hyperledger.indy.sdk.utils.PoolUtils;
-import org.hyperledger.indy.sdk.wallet.Wallet;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
 
-public class ReplaceKeysDemoTest extends IndyIntegrationTest {
-
-	private Pool pool;
-	private Wallet wallet;
-	private String walletName = "signusWallet";
-	private String schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"attr_names\": [\"name\", \"male\"]}";
-
-
-	@Before
-	public void createWalletWithDid() throws Exception {
-		String poolName = PoolUtils.createPoolLedgerConfig();
-		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null, null);
-		pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
-
-		Wallet.createWallet(poolName, walletName, "default", null, null).get();
-		wallet = Wallet.openWallet(walletName, null, null).get();
-	}
-
-	@After
-	public void deleteWallet() throws Exception {
-		wallet.closeWallet().get();
-		Wallet.deleteWallet(walletName, null).get();
-		pool.closePoolLedger().get();
-	}
+public class ReplaceKeysDemoTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
 	@Test
 	public void testReplaceKeysDemoWorks() throws Exception {
@@ -74,7 +45,7 @@ public class ReplaceKeysDemoTest extends IndyIntegrationTest {
 		Signus.replaceKeysApply(wallet, myDid).get();
 
 		// 7. Send schema request
-		String schemaRequest = Ledger.buildSchemaRequest(myDid, schemaData).get();
+		String schemaRequest = Ledger.buildSchemaRequest(myDid, SCHEMA_DATA).get();
 		Ledger.signAndSubmitRequest(pool, wallet, myDid, schemaRequest).get();
 	}
 
@@ -106,7 +77,7 @@ public class ReplaceKeysDemoTest extends IndyIntegrationTest {
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
 
 		// 6. Send schema request
-		String schemaRequest = Ledger.buildSchemaRequest(myDid, schemaData).get();
+		String schemaRequest = Ledger.buildSchemaRequest(myDid, SCHEMA_DATA).get();
 		Ledger.signAndSubmitRequest(pool, wallet, myDid, schemaRequest).get();
 	}
 }
