@@ -55,7 +55,6 @@ impl PoolUtils {
                                                  nodes_count: Option<u8>,
                                                  txn_file_path: Option<&Path>) -> PathBuf {
         let nodes_count = nodes_count.unwrap_or(4);
-        assert!(nodes_count > 0 && nodes_count <= 4);
 
         let test_pool_ip = EnvironmentUtils::test_pool_ip();
 
