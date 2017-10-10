@@ -20,7 +20,7 @@ use self::digest::{FixedOutput, Input};
 use self::hex::ToHex;
 use self::rust_base58::FromBase58;
 use serde_json;
-use serde_json::Value;
+use serde_json::Value as SJsonValue;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::{fmt, fs, io, thread};
@@ -35,6 +35,7 @@ use errors::pool::PoolError;
 use errors::common::CommonError;
 use self::catchup::CatchupHandler;
 use self::types::*;
+use services::ledger::constants;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::crypto::ed25519::ED25519;
 use utils::environment::EnvironmentUtils;
@@ -245,7 +246,7 @@ impl TransactionHandler {
 
     fn try_send_request(&mut self, cmd: &str, cmd_id: i32) -> Result<(), PoolError> {
         info!("cmd {:?}", cmd);
-        let request: Value = serde_json::from_str(cmd)
+        let request: SJsonValue = serde_json::from_str(cmd)
             .map_err(|err|
                 CommonError::InvalidStructure(
                     format!("Invalid request json: {}", err.description())))?;
@@ -294,7 +295,7 @@ impl TransactionHandler {
         }
     }
 
-    fn parse_reply_for_proof_checking(json_msg: &serde_json::Value)
+    fn parse_reply_for_proof_checking(json_msg: &SJsonValue)
                                       -> Option<(&str, &str, Vec<u8>, Option<String>)> {
         trace!("TransactionHandler::parse_reply_for_proof_checking: >>> json_msg: {:?}", json_msg);
 
@@ -305,6 +306,12 @@ impl TransactionHandler {
             trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No type field");
             return None;
         };
+
+        if ![constants::GET_NYM, constants::GET_SCHEMA, constants::GET_CLAIM_DEF, constants::GET_ATTR].contains(&xtype) {
+            //TODO GET_DDO, GET_TXN
+            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< type not supported");
+            return None;
+        }
 
         let proof = if let Some(proof) = json_msg["state_proof"]["proof_nodes"].as_str() {
             trace!("TransactionHandler::parse_reply_for_proof_checking: proof: {:?}", proof);
@@ -326,23 +333,34 @@ impl TransactionHandler {
         // If node returns marshaled json it can contain spaces and it can cause invalid hash.
         // So we have to save the original string too.
         // See https://jira.hyperledger.org/browse/INDY-699
-        let (data, parsed_data): (String, serde_json::Value) = if let Some(data) = json_msg["data"].as_str() {
-            trace!("TransactionHandler::parse_reply_for_proof_checking: Data is string");
-            if let Ok(parsed_data) = serde_json::from_str(data) {
-                (data.to_owned(), parsed_data)
-            } else {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Data field is invalid json");
+        let (data, parsed_data): (Option<String>, SJsonValue) = match json_msg["data"] {
+            SJsonValue::Null => {
+                trace!("TransactionHandler::parse_reply_for_proof_checking: Data is null");
+                (None, SJsonValue::Null)
+            }
+            SJsonValue::String(ref str) => {
+                trace!("TransactionHandler::parse_reply_for_proof_checking: Data is string");
+                if let Ok(parsed_data) = serde_json::from_str(str) {
+                    (Some(str.to_owned()), parsed_data)
+                } else {
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Data field is invalid json");
+                    return None;
+                }
+            }
+            SJsonValue::Object(ref map) => {
+                trace!("TransactionHandler::parse_reply_for_proof_checking: Data is object");
+                (Some(json_msg["data"].to_string()), SJsonValue::from(map.clone()))
+            }
+            _ => {
+                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Data field is invalid type");
                 return None;
             }
-        } else {
-            trace!("TransactionHandler::parse_reply_for_proof_checking: Data is non-string");
-            (json_msg["data"].to_string(), json_msg["data"].clone())
         };
 
         trace!("TransactionHandler::parse_reply_for_proof_checking: data: {:?}, parsed_data: {:?}", data, parsed_data);
 
         let key_suffix: String = match xtype {
-            super::ledger::constants::GET_ATTR => {
+            constants::GET_ATTR => {
                 if let Some(attr_name) = json_msg["raw"].as_str()
                     .or(json_msg["enc"].as_str())
                     .or(json_msg["hash"].as_str()) {
@@ -356,7 +374,7 @@ impl TransactionHandler {
                     return None;
                 }
             }
-            super::ledger::constants::GET_CLAIM_DEF => {
+            constants::GET_CLAIM_DEF => {
                 if let (Some(sign_type), Some(sch_seq_no)) = (json_msg["signature_type"].as_str(),
                                                               json_msg["ref"].as_u64()) {
                     trace!("TransactionHandler::parse_reply_for_proof_checking: GET_CLAIM_DEF sign_type {:?}, sch_seq_no: {:?}", sign_type, sch_seq_no);
@@ -366,11 +384,11 @@ impl TransactionHandler {
                     return None;
                 }
             }
-            super::ledger::constants::GET_NYM => {
+            constants::GET_NYM => {
                 trace!("TransactionHandler::parse_reply_for_proof_checking: GET_NYM");
                 "".to_string()
             }
-            super::ledger::constants::GET_SCHEMA => {
+            constants::GET_SCHEMA => {
                 if let (Some(name), Some(ver)) = (parsed_data["name"].as_str(),
                                                   parsed_data["version"].as_str()) {
                     trace!("TransactionHandler::parse_reply_for_proof_checking: GET_SCHEMA name {:?}, ver: {:?}", name, ver);
@@ -386,8 +404,8 @@ impl TransactionHandler {
             }
         };
 
-        let dest = if let Some(dest) = json_msg["dest"].as_str().or(json_msg["origin"].as_str()) {
-            let mut dest = if xtype == super::ledger::constants::GET_NYM {
+        let key = if let Some(dest) = json_msg["dest"].as_str().or(json_msg["origin"].as_str()) {
+            let mut dest = if xtype == constants::GET_NYM {
                 let mut hasher = sha2::Sha256::default();
                 hasher.process(dest.as_bytes());
                 hasher.fixed_result().to_vec()
@@ -404,53 +422,80 @@ impl TransactionHandler {
             return None;
         };
 
-        let value = {
+        let value: Option<String> = match TransactionHandler::parse_reply_for_proof_value(json_msg, data, parsed_data, xtype) {
+            Ok(value) => value,
+            Err(err_str) => {
+                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< {}", err_str);
+                return None;
+            }
+        };
+
+        trace!("parse_reply_for_proof_checking: <<< proof {:?}, root_hash: {:?}, dest: {:?}, value: {:?}", proof, root_hash, key, value);
+        Some((proof, root_hash, key, value))
+    }
+
+    fn parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, parsed_data: SJsonValue, xtype: &str) -> Result<Option<String>, String> {
+        if let Some(data) = data {
             let mut value = json!({});
 
+            let (seq_no, time) = (json_msg["seqNo"].clone(), json_msg["txnTime"].clone());
+            if xtype.eq(constants::GET_NYM) {
+                value["seqNo"] = seq_no;
+                value["txnTime"] = time;
+            } else {
+                value["lsn"] = seq_no;
+                value["lut"] = time;
+            }
+
             match xtype {
-                //TODO super::ledger::constants::GET_TXN => check ledger MerkleTree proofs?
-                //TODO super::ledger::constants::GET_DDO => support DDO
-                super::ledger::constants::GET_NYM => {
+                //TODO constants::GET_TXN => check ledger MerkleTree proofs?
+                //TODO constants::GET_DDO => support DDO
+                constants::GET_NYM => {
                     value["identifier"] = parsed_data["identifier"].clone();
                     value["role"] = parsed_data["role"].clone();
                     value["verkey"] = parsed_data["verkey"].clone();
-                    value["seqNo"] = json_msg["seqNo"].clone();
-                    value["txnTime"] = json_msg["txnTime"].clone();
                 }
-                super::ledger::constants::GET_ATTR => {
+                constants::GET_ATTR => {
                     let mut hasher = sha2::Sha256::default();
                     hasher.process(data.as_bytes());
-                    value["val"] = serde_json::Value::String(hasher.fixed_result().to_hex());
-                    value["lsn"] = json_msg["seqNo"].clone();
-                    value["lut"] = json_msg["txnTime"].clone();
+                    value["val"] = SJsonValue::String(hasher.fixed_result().to_hex());
                 }
-                super::ledger::constants::GET_CLAIM_DEF |
-                super::ledger::constants::GET_SCHEMA => {
+                constants::GET_CLAIM_DEF => {
                     value["val"] = parsed_data;
-                    value["lsn"] = json_msg["seqNo"].clone();
-                    value["lut"] = json_msg["txnTime"].clone();
+                }
+                constants::GET_SCHEMA => {
+                    if let Some(map) = parsed_data.as_object() {
+                        let mut map = map.clone();
+                        map.remove("name");
+                        map.remove("version");
+                        if map.is_empty() {
+                            return Ok(None); // TODO FIXME remove after INDY-699 will be fixed
+                        } else {
+                            value["val"] = SJsonValue::from(map)
+                        }
+                    } else {
+                        return Err("Invalid data for GET_SCHEMA".to_string());
+                    };
                 }
                 _ => {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Unknown transaction");
-                    return None;
+                    return Err("Unknown transaction".to_string());
                 }
-            };
+            }
 
-            value.to_string()
-        };
-
-        trace!("parse_reply_for_proof_checking: <<< proof {:?}, root_hash: {:?}, dest: {:?}, value: {:?}", proof, root_hash, dest, value);
-        Some((proof, root_hash, dest, Some(value)))
+            Ok(Some(value.to_string()))
+        } else {
+            Ok(None)
+        }
     }
 
-    fn parse_reply_for_proof_signature_checking(json_msg: &serde_json::Value) -> Option<(&str, Vec<&str>, &str)> {
+    fn parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option<(&str, Vec<&str>, &str)> {
         match (json_msg["state_proof"]["multi_signature"]["signature"].as_str(),
                json_msg["state_proof"]["multi_signature"]["participants"].as_array(),
                json_msg["state_proof"]["multi_signature"]["pool_state_root"].as_str()) {
             (Some(signature), Some(participants), Some(pool_state_root)) => {
                 let participants_unwrap: Vec<&str> = participants
                     .iter()
-                    .flat_map(Value::as_str)
+                    .flat_map(SJsonValue::as_str)
                     .collect();
 
                 if participants.len() == participants_unwrap.len() {
@@ -662,7 +707,7 @@ impl PoolWorker {
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
             let line: String = line.map_err(map_err_trace!())?;
-            let genesis_txn: serde_json::Value = serde_json::from_str(line.as_str()).unwrap(); /* FIXME resolve unwrap */
+            let genesis_txn: SJsonValue = serde_json::from_str(line.as_str()).unwrap(); /* FIXME resolve unwrap */
             let bytes = rmp_serde::encode::to_vec_named(&genesis_txn).unwrap(); /* FIXME resolve unwrap */
             mt.append(bytes).map_err(map_err_trace!())?;
         }
