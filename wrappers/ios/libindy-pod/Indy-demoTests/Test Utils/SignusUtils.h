@@ -42,11 +42,21 @@
                                         theirVerkey:(NSString *)theirVerkey
                                            endpoint:(NSString *)endpoint;
 
-- (NSError *)replaceKeysWithWalletHandle:(IndyHandle)walletHandle
-                                     did:(NSString *)did
-                            identityJson:(NSString *)identityJson
-                             outMyVerKey:(NSString **)myVerKey
-                                 outMyPk:(NSString **)myPk;
+- (NSError *)replaceKeysStartForDid:(NSString *)did
+                       identityJson:(NSString *)identityJson
+                       walletHandle:(IndyHandle)walletHandle
+                        outMyVerKey:(NSString **)myVerKey
+                            outMyPk:(NSString **)myPk;
+
+- (NSError *)replaceKeysApplyForDid:(NSString *)did
+                       walletHandle:(IndyHandle)walletHandle;
+
+- (NSError *)replaceKeysForDid:(NSString *)did
+                  identityJson:(NSString *)identityJson
+                  walletHandle:(IndyHandle)walletHandle
+                    poolHandle:(IndyHandle)poolHandle
+                   outMyVerKey:(NSString **)myVerKey
+                       outMyPk:(NSString **)myPk;
 
 - (NSError *)verifyWithWalletHandle:(IndyHandle)walletHandle
                          poolHandle:(IndyHandle)poolHandle

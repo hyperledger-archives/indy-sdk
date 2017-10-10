@@ -56,6 +56,6 @@
 
 - (NSString *)toJson
 {
-    return [NSString stringWithFormat:@"{freshness_time: %lu }", (unsigned long)self.freshnessTime];
+    return [NSString stringWithFormat:@"{\"freshness_time\": %lu }", (unsigned long)self.freshnessTime];
 }
 @end

@@ -278,7 +278,12 @@ mod high_cases {
             PairwiseUtils::create_pairwise(wallet_handle, &their_did, &my_did, Some(METADATA)).unwrap();
 
             let pairwise_info_json = PairwiseUtils::get_pairwise(wallet_handle, &their_did).unwrap();
+
             assert_eq!(format!(r#"{{"my_did":"{}","metadata":"{}"}}"#, my_did, METADATA), pairwise_info_json);
+
+            assert_eq!(my_did, my_did_info.did);
+            assert_eq!(my_verkey, my_did_info.verkey);
+            assert_eq!(my_pk, my_did_info.pk);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 

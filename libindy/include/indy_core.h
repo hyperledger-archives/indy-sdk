@@ -8,5 +8,6 @@
 #include "indy_ledger.h"
 #include "indy_signus.h"
 #include "indy_agent.h"
+#include "indy_pairwise.h"
 
 #endif

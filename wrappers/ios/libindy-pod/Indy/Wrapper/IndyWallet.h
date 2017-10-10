@@ -6,9 +6,6 @@
 #import <Foundation/Foundation.h>
 #import "IndyTypes.h"
 #import "IndyWalletProtocols.h"
-#import <stdio.h>
-
-
 
 
 @interface IndyWallet : NSObject
