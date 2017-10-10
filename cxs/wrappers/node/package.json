@@ -6,7 +6,7 @@
   "description": "Node wrapper for cxs",
   "main": "dist/index.js",
   "scripts": {
-    "test": "mocha -gc --expose-gc test/**/*.js"
+    "test": "mocha -gc --expose-gc test/**/*.js",
     "doc-gen": "./node_modules/.bin/jsdoc -d doc src/*"
   },
   "repository": {
