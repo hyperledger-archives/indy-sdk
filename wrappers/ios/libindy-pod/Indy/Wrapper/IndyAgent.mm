@@ -89,7 +89,6 @@
     }
     
     return [NSError errorFromIndyError: ret];
-
 }
 
 + (NSError *)removeIdentity:(NSString *)did
