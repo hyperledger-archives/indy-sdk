@@ -1,3 +1,5 @@
+extern crate cxs;
+
 #[cfg(test)]
 mod tests {
     #[test]
