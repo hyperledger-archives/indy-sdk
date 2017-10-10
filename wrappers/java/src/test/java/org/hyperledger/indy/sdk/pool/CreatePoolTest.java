@@ -7,7 +7,6 @@ import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertTrue;
 
@@ -15,7 +14,11 @@ public class CreatePoolTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCreatePoolWorksForNullConfig() throws Exception {
-		PoolUtils.createGenesisTxnFile("testCreatePoolWorks.txn");
+		File file = new File("testCreatePoolWorks.txn");
+		file.deleteOnExit();
+		assertTrue(file.createNewFile());
+		PoolUtils.writeTransactions(file, 1);
+
 		Pool.createPoolLedgerConfig("testCreatePoolWorks", null).get();
 	}
 
