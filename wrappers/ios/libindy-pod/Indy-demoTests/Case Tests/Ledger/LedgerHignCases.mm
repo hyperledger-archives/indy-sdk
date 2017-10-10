@@ -1242,7 +1242,8 @@
     NSString *getSchemaRequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildGetSchemaRequestWithSubmitterDid:identifier
                                                                                   dest:identifier
-                                                                                  data:data resultJson:&getSchemaRequestJson];
+                                                                                  data:data
+                                                                            resultJson:&getSchemaRequestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetSchemaRequestWithSubmitterDid() failed");
     NSDictionary *request = [NSDictionary fromString:getSchemaRequestJson];
     XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");

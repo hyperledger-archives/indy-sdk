@@ -10,13 +10,13 @@
 @implementation IndyPairwise
 
 
-+ (NSError *)isPairwiseExistsForDid:(NSString *)theirDid
-                       walletHandle:(IndyHandle)walletHandle
-                         completion:(void (^)(NSError *error, BOOL exists ))handler
++ (void)isPairwiseExistsForDid:(NSString *)theirDid
+                  walletHandle:(IndyHandle)walletHandle
+                    completion:(void (^)(NSError *error, BOOL exists ))completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_is_pairwise_exists(handle,
                                   walletHandle,
@@ -26,12 +26,14 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], false);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)createPairwiseForTheirDid:(NSString *)theirDid
++ (void)createPairwiseForTheirDid:(NSString *)theirDid
                                  myDid:(NSString *)myDid
                               metadata:(NSString *)metadata
                           walletHandle:(IndyHandle)walletHandle
@@ -52,14 +54,16 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret]);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
 
-+ (NSError *)listPairwiseFromWalletHandle:(IndyHandle)walletHandle
-                               completion:(void (^)(NSError *error, NSString * listPairwise))completion
++ (void)listPairwiseFromWalletHandle:(IndyHandle)walletHandle
+                          completion:(void (^)(NSError *error, NSString * listPairwise))completion
 {
     indy_error_t ret;
     
@@ -72,14 +76,16 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)getPairwiseForTheirDid:(NSString *)theirDid
-                       walletHandle:(IndyHandle)walletHandle
-                         completion:(void (^)(NSError *error, NSString * pairwiseInfoJson))completion
++ (void)getPairwiseForTheirDid:(NSString *)theirDid
+                  walletHandle:(IndyHandle)walletHandle
+                    completion:(void (^)(NSError *error, NSString *pairwiseInfoJson))completion
 {
     indy_error_t ret;
     
@@ -93,15 +99,17 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)setPairwiseMetadata:(NSString *)metadata
-                     forTheirDid:(NSString *)theirDid
-                    walletHandle:(IndyHandle)walletHandle
-                      completion:(void (^)(NSError *error))completion
++ (void)setPairwiseMetadata:(NSString *)metadata
+                forTheirDid:(NSString *)theirDid
+               walletHandle:(IndyHandle)walletHandle
+                 completion:(void (^)(NSError *error))completion
 {
     indy_error_t ret;
     
@@ -116,8 +124,10 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret]);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 @end
