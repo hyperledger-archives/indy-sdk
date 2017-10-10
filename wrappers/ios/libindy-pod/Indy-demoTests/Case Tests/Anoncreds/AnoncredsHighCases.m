@@ -346,8 +346,8 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed with code:%ld", (long)ret.code);
     
     // 2. create master secret
-    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:walletHandle
-                                                   masterSecretName:@"master_secret_name1"];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:@"master_secret_name1"
+                                                            walletHandle:walletHandle];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret failed with code:%ld", (long)ret.code);
      
 }
@@ -365,8 +365,8 @@
 
     // 2. create master secret
     IndyHandle invalidWalletHandle = walletHandle + 1;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:invalidWalletHandle
-                                                   masterSecretName:@"master_secret_name2"];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:@"master_secret_name2"
+                                                            walletHandle:walletHandle];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverCreateMasterSecret returned not WalletInvalidHandle code:%ld", (long)ret.code);
      
 }
@@ -392,11 +392,12 @@
     // 3. get claim request
     NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
     NSString *claimRequestJson;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
+    
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDef
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
-                                                           claimDefJson:claimDef
                                                        masterSecretName:[TestUtils commonMasterSecretName]
+                                                           walletHandle:walletHandle
                                                         outClaimReqJson:&claimRequestJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed with code:%ld", (long)ret.code);
     XCTAssertTrue([claimRequestJson isValid], @"invalid claimRequestJson: %@", claimRequestJson);
@@ -428,11 +429,11 @@
     IndyHandle invalidWalletHandle = walletHandle + 1;
     NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
     NSString *claimRequestJson;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:invalidWalletHandle
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDef
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
-                                                           claimDefJson:claimDef
                                                        masterSecretName:[TestUtils commonMasterSecretName]
+                                                           walletHandle:invalidWalletHandle
                                                         outClaimReqJson:&claimRequestJson];
      XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed");
      
@@ -459,11 +460,13 @@
     // 3. create and store claim requets
     NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
     NSString *claimRequestJson;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
+    
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDef
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
-                                                           claimDefJson:claimDef
-                                                       masterSecretName:[TestUtils commonMasterSecretName]outClaimReqJson:&claimRequestJson];
+                                                       masterSecretName:[TestUtils commonMasterSecretName]
+                                                           walletHandle:walletHandle
+                                                        outClaimReqJson:&claimRequestJson];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverCreateAndStoreClaimReq returned wrong code");
 }
 
@@ -488,11 +491,13 @@
     // 3. create and store claim requets
     NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
     NSString *claimRequestJson;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
+    
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDef
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
-                                                           claimDefJson:claimDef
-                                                       masterSecretName:[TestUtils commonMasterSecretName]outClaimReqJson:&claimRequestJson];
+                                                       masterSecretName:[TestUtils commonMasterSecretName]
+                                                           walletHandle:walletHandle
+                                                        outClaimReqJson:&claimRequestJson];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverCreateAndStoreClaimReq returned wrong code");
 }
 
@@ -618,11 +623,11 @@
     // 3. get claim request
     NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
     NSString *claimRequest;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOfferJson
-                                                           claimDefJson:claimDefJson
                                                        masterSecretName:[TestUtils commonMasterSecretName]
+                                                           walletHandle:walletHandle
                                                         outClaimReqJson:&claimRequest];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed");
     XCTAssertTrue([claimRequest isValid], @"claimRequest is wrong:%@", claimRequest);
@@ -666,12 +671,13 @@
     // 3. get claim request
     NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
     NSString *claimRequest;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOfferJson
-                                                           claimDefJson:claimDefJson
                                                        masterSecretName:[TestUtils commonMasterSecretName]
+                                                           walletHandle:walletHandle
                                                         outClaimReqJson:&claimRequest];
+    
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed");
     XCTAssertTrue([claimRequest isValid], @"claimRequest is wrong:%@", claimRequest);
     
