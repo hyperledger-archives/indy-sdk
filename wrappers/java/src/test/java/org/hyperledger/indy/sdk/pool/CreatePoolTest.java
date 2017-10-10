@@ -15,13 +15,7 @@ public class CreatePoolTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCreatePoolWorksForNullConfig() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
-
-		File file = new File("testCreatePoolWorks.txn");
-		file.deleteOnExit();
-		assertTrue(file.createNewFile());
-
+		PoolUtils.createGenesisTxnFile("testCreatePoolWorks.txn");
 		Pool.createPoolLedgerConfig("testCreatePoolWorks", null).get();
 	}
 
