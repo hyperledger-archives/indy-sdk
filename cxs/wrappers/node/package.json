@@ -7,6 +7,7 @@
   "main": "dist/index.js",
   "scripts": {
     "test": "mocha -gc --expose-gc test/**/*.js"
+    "doc-gen": "./node_modules/.bin/jsdoc -d doc src/*"
   },
   "repository": {
     "type": "git",
@@ -32,6 +33,7 @@
   },
   "devDependencies": {
     "tslint-config-standard": "^6.0.1",
+    "jsdoc": "^3.5.5",
     "typescript": "^2.5.3"
   }
 }
