@@ -42,11 +42,11 @@ public class AgentDemoTest extends IndyIntegrationTest {
 		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
 		//2. Create and Open Listener Wallet
-		Wallet.createWallet(poolName, listenerWalletName, "default", null, null).get();
+		Wallet.createWallet(poolName, listenerWalletName, TYPE, null, null).get();
 		Wallet listenerWallet = Wallet.openWallet(listenerWalletName, null, null).get();
 
 		//3. Create and Open Trustee Wallet
-		Wallet.createWallet(poolName, trusteeWalletName, "default", null, null).get();
+		Wallet.createWallet(poolName, trusteeWalletName, TYPE, null, null).get();
 		Wallet trusteeWallet = Wallet.openWallet(trusteeWalletName, null, null).get();
 		Wallet senderWallet = trusteeWallet;
 
