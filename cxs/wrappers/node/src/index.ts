@@ -33,3 +33,4 @@ export class CXSRuntime implements ICXSAcessType {
     this.ffi = ffi.Library(libraryPath, FFIConfiguration)
   }
 }
+export { init_cxs } from './api/init'
