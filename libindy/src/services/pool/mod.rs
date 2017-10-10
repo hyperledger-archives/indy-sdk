@@ -42,6 +42,7 @@ use utils::environment::EnvironmentUtils;
 use utils::json::{JsonDecodable, JsonEncodable};
 use utils::sequence::SequenceUtils;
 use self::indy_crypto::bls::{Generator, VerKey};
+use std::path::PathBuf;
 
 pub struct PoolService {
     pools: RefCell<HashMap<i32, Pool>>,
@@ -550,8 +551,14 @@ impl PoolWorker {
     }
 
     fn init_catchup(&mut self, refresh_cmd_id: Option<i32>) -> Result<(), PoolError> {
+        let mt = PoolWorker::_restore_merkle_tree_from_pool_name(self.name.as_str())?;
+        if mt.count() == 0 {
+            return Err(PoolError::CommonError(
+                CommonError::InvalidState("Invalid Genesis Transaction file".to_string())));
+        }
+
         let catchup_handler = CatchupHandler {
-            merkle_tree: PoolWorker::_restore_merkle_tree(self.name.as_str())?,
+            merkle_tree: mt,
             initiate_cmd_id: refresh_cmd_id.unwrap_or(self.open_cmd_id),
             is_refresh: refresh_cmd_id.is_some(),
             pool_id: self.pool_id,
@@ -679,13 +686,24 @@ impl PoolWorker {
     }
 
 
-    fn _restore_merkle_tree(pool_name: &str) -> Result<MerkleTree, PoolError> {
+    fn _restore_merkle_tree_from_file(txn_file: &str) -> Result<MerkleTree, PoolError> {
+        PoolWorker::_restore_merkle_tree(&PathBuf::from(txn_file))
+    }
+
+    fn _restore_merkle_tree_from_pool_name(pool_name: &str) -> Result<MerkleTree, PoolError> {
         let mut p = EnvironmentUtils::pool_path(pool_name);
-        let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
+        let mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
         //TODO firstly try to deserialize merkle tree
         p.push(pool_name);
         p.set_extension("txn");
-        let f = fs::File::open(p).map_err(map_err_trace!())?;
+
+        PoolWorker::_restore_merkle_tree(&p)
+    }
+
+    fn _restore_merkle_tree(file_mame: &PathBuf) -> Result<MerkleTree, PoolError> {
+        let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
+        let f = fs::File::open(file_mame).map_err(map_err_trace!())?;
+
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
             let line: String = line.map_err(map_err_trace!())?;
@@ -860,7 +878,7 @@ impl PoolService {
     pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
         trace!("PoolService::create {} with config {:?}", name, config);
         let mut path = EnvironmentUtils::pool_path(name);
-        let pool_config = match config {
+        let pool_config: PoolConfig = match config {
             Some(config) => PoolConfig::from_json(config)
                 .map_err(|err|
                     CommonError::InvalidStructure(format!("Invalid pool config format: {}", err.description())))?,
@@ -869,6 +887,13 @@ impl PoolService {
 
         if path.as_path().exists() {
             return Err(PoolError::AlreadyExists(format!("Pool ledger config file with name \"{}\" already exists", name)));
+        }
+
+        // check that we can build MerkeleTree from genesis transaction file
+        let mt = PoolWorker::_restore_merkle_tree_from_file(&pool_config.genesis_txn)?;
+        if mt.count() == 0 {
+            return Err(PoolError::CommonError(
+                CommonError::InvalidStructure("Invalid Genesis Transaction file".to_string())));
         }
 
         fs::create_dir_all(path.as_path()).map_err(map_err_trace!())?;
@@ -1118,19 +1143,23 @@ mod tests {
         use utils::logger::LoggerUtils;
         use utils::test::TestUtils;
         use std::time;
+        use utils::environment::EnvironmentUtils;
 
         TestUtils::cleanup_storage();
         LoggerUtils::init();
 
         fn drop_test() {
             let pool_name = "pool_drop_works";
+            let test_pool_ip = EnvironmentUtils::test_pool_ip();
+            let gen_txn = format!("{{\"data\":{{\"alias\":\"Node1\",\"blskey\":\"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba\",\"client_ip\":\"{}\",\"client_port\":9702,\"node_ip\":\"{}\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]}},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"Th7MpTaRZVRYnPiabds81Y\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip);
 
             // create minimal fs config stub before Pool::new()
             let mut pool_path = EnvironmentUtils::pool_path(pool_name);
             fs::create_dir_all(&pool_path).unwrap();
             pool_path.push(pool_name);
-            pool_path.set_extension("txn"); //empty genesis txns file - pool will not try to connect to somewhere
-            fs::File::create(pool_path).unwrap();
+            pool_path.set_extension("txn");
+            let mut file = fs::File::create(pool_path).unwrap();
+            file.write(&gen_txn.as_bytes()).unwrap();
 
             let pool = Pool::new(pool_name, -1).unwrap();
             thread::sleep(time::Duration::from_secs(1));
@@ -1191,7 +1220,7 @@ mod tests {
         f.flush().unwrap();
         f.sync_all().unwrap();
 
-        let merkle_tree = PoolWorker::_restore_merkle_tree("test").unwrap();
+        let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
 
         assert_eq!(merkle_tree.count(), 4, "test restored MT size");
         assert_eq!(merkle_tree.root_hash_hex(), "7c7e209a5bee34e467f7a2b6e233b8c61b74ddfd099bd9ad8a9a764cdf671981", "test restored MT root hash");
