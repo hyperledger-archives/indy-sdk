@@ -49,6 +49,7 @@ def testNodeWrapper(env) {
             env.inside {
                 sh 'npm -v'
                 sh 'npm install'
+                sh 'node_modules/.bin/tsc -p tsconfig.json'
                 sh 'npm test'
             }
         }
