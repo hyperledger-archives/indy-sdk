@@ -1,7 +1,4 @@
 var chai = require('chai');
-var fs = require('fs-extra');
-var ref = require('ref')
-var Struct = require('ref-struct')
 var parentDir = require('path');
 var currentDir = parentDir.dirname(module.filename);
 var Connection = require(parentDir.dirname(currentDir) + '/dist/api/connection').Connection
@@ -51,19 +48,19 @@ describe('A Connection object with ', function () {
         connection.create("dog, cat, man")
         var data = connection.getData()
         var jsonData = JSON.parse(data)
-        assert.notEqual(data, "")
+        assert.notEqual(data, null)
         assert.equal(jsonData.handle, connection.connectionHandle)
     })
 
-    it('a call to get_data where connection doesnt exist should return an empty string', function () {
+    it('a call to get_data where connection doesnt exist should return a null value', function () {
         assert.equal(connection.getData(), null)
     })
 
-    it('a call to get_data where connection with connection released should return an empty string', function () {
+    it('a call to get_data where connection was released should return a null value', function () {
         connection.create("info")
         assert.equal(connection.connect(), 0)
         var data = connection.getData()
-        assert.notEqual(data, "")
+        assert.notEqual(data, null)
         assert.equal(connection.release(), 0)
         data = connection.getData()
         assert.equal(data, null)
@@ -117,13 +114,13 @@ describe('A Connection object with ', function () {
         return predicate()
     }
 
-    it('connection and GC deletes object should return empty whet get_data is called ', function () {
+    it('connection and GC deletes object should return null whet get_data is called ', function () {
         const connection = new Connection(path)
         connection.create("msg")
         connection.connect()
         const getData = connection.RUST_API.cxs_connection_get_data
         const handle = connection.connectionHandle
-        assert.notEqual(connection.getData(handle), "")
+        assert.notEqual(connection.getData(handle), null)
 
         this.timeout(30000)
         delete connection

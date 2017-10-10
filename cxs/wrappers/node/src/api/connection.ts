@@ -1,9 +1,8 @@
 import * as ffi from 'ffi'
 import * as ref from 'ref'
-import * as Struct from 'ref-struct'
 import * as weak from 'weak'
 import { CXSRuntime } from '../index'
-import { CXSRuntimeConfig, CxsStatus, FFI_CXS_STATUS_PTR } from '../rustlib'
+import { CXSRuntimeConfig } from '../rustlib'
 
 import {
     IConnections
@@ -12,7 +11,6 @@ import {
 export class Connection implements IConnections {
   public connectionHandle: ref.types.uint32
   public state: ref.types.uint32
-  public statusList: any
   private RUST_API: ffi
 
   constructor ( path?: string ) {
