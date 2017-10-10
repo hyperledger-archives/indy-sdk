@@ -3,6 +3,7 @@ extern crate serde_json;
 use utils::json::{JsonDecodable, JsonEncodable};
 use errors::common::CommonError;
 use errors::indy::IndyError;
+use errors::wallet::WalletError;
 use services::wallet::WalletService;
 
 use std::error::Error;
