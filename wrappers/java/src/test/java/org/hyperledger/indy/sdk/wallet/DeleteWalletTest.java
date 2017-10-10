@@ -16,82 +16,65 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testDeleteWalletWorks() throws Exception {
-
-		String poolName = "default";
-		String walletName = "deleteWalletWorks";
-		String type = "default";
-
-		Wallet.createWallet(poolName, walletName, type, null, null).get();
-		Wallet.deleteWallet(walletName, null).get();
-		Wallet.createWallet(poolName, walletName, type, null, null).get();
+		Wallet.createWallet(POOL, WALLET, TYPE, null, null).get();
+		Wallet.deleteWallet(WALLET, null).get();
+		Wallet.createWallet(POOL, WALLET, TYPE, null, null).get();
+		Wallet.deleteWallet(WALLET, null).get();
 	}
 
 	@Test
 	public void testDeleteWalletWorksForClosed() throws Exception {
+		Wallet.createWallet(POOL, WALLET, null, null, null).get();
 
-		String poolName = "default";
-		String walletName = "deleteWalletWorksForOpened";
-
-		Wallet.createWallet(poolName, walletName, null, null, null).get();
-
-		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
+		Wallet wallet = Wallet.openWallet(WALLET, null, null).get();
 		assertNotNull(wallet);
 
 		wallet.closeWallet().get();
-		Wallet.deleteWallet(walletName, null).get();
-		Wallet.createWallet(poolName, walletName, null, null, null).get();
+		Wallet.deleteWallet(WALLET, null).get();
+		Wallet.createWallet(POOL, WALLET, null, null, null).get();
+		Wallet.deleteWallet(WALLET, null).get();
 	}
 
 	@Test
 	@Ignore//TODO THERE IS BUG IN INDY
 	public void testDeleteWalletWorksForOpened() throws Exception {
-
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonIOError));
 
 		String walletName = "deleteWalletWorksForOpened";
 
-		Wallet.createWallet("default", walletName, null, null, null).get();
+		Wallet.createWallet(POOL, walletName, null, null, null).get();
 		Wallet.openWallet(walletName, null, null).get();
 		Wallet.deleteWallet(walletName, null).get();
 	}
 
 	@Test
 	public void testDeleteWalletWorksForTwice() throws Exception {
-
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonIOError));
 
-		String walletName = "deleteWalletWorksForTwice";
+		Wallet.createWallet(POOL, WALLET, null, null, null).get();
 
-		Wallet.createWallet("default", walletName, null, null, null).get();
-
-		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
-		assertNotNull(wallet);
+		Wallet wallet = Wallet.openWallet(WALLET, null, null).get();
 
 		wallet.closeWallet().get();
 
-		Wallet.deleteWallet(walletName, null).get();
-		Wallet.deleteWallet(walletName, null).get();
+		Wallet.deleteWallet(WALLET, null).get();
+		Wallet.deleteWallet(WALLET, null).get();
 	}
 
 	@Test
 	public void testDeleteWalletWorksForPlugged() throws Exception {
-		String type = "inmem";
-		String poolName = "default";
-		String walletName = "wallet";
-
-		Wallet.createWallet(poolName, walletName, type, null, null).get();
-		Wallet.deleteWallet(walletName, null).get();
-		Wallet.createWallet(poolName, walletName, type, null, null).get();
+		Wallet.createWallet(POOL, "pluggedWalletDelete", "inmem", null, null).get();
+		Wallet.deleteWallet("pluggedWalletDelete", null).get();
+		Wallet.createWallet(POOL, "pluggedWalletDelete", "inmem", null, null).get();
 	}
 
 	@Test
 	public void testDeleteWalletWorksForNotCreated() throws Exception {
-
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonIOError));
 
-		Wallet.deleteWallet("deleteWalletWorksForTwice", null).get();
+		Wallet.deleteWallet(WALLET, null).get();
 	}
 }

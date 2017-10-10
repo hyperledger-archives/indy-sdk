@@ -3,13 +3,9 @@ package org.hyperledger.indy.sdk.agent;
 import org.hyperledger.indy.sdk.agent.Agent.Listener;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.junit.Test;
-
-import static org.hyperledger.indy.sdk.IndyIntegrationTest.TRUSTEE_SEED;
-
 
 public class AgentConnectTest extends AgentIntegrationTest {
 
@@ -19,10 +15,10 @@ public class AgentConnectTest extends AgentIntegrationTest {
 		String listenerWalletName = "listenerWallet";
 		String trusteeWalletName = "trusteeWallet";
 
-		Wallet.createWallet(poolName, listenerWalletName, "default", null, null).get();
+		Wallet.createWallet(poolName, listenerWalletName, TYPE, null, null).get();
 		Wallet listenerWallet = Wallet.openWallet(listenerWalletName, null, null).get();
 
-		Wallet.createWallet(poolName, trusteeWalletName, "default", null, null).get();
+		Wallet.createWallet(poolName, trusteeWalletName, TYPE, null, null).get();
 		Wallet trusteeWallet = Wallet.openWallet(trusteeWalletName, null, null).get();
 		Wallet senderWallet = trusteeWallet;
 
@@ -31,10 +27,7 @@ public class AgentConnectTest extends AgentIntegrationTest {
 		String listenerVerkey = createMyDidResult.getVerkey();
 		String listenerPk = createMyDidResult.getPk();
 
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
-
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(trusteeWallet, trusteeDidJson.toJson()).get();
+		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(trusteeWallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 		String senderDid = trusteeDid;
 
@@ -64,8 +57,7 @@ public class AgentConnectTest extends AgentIntegrationTest {
 
 		SignusResults.CreateAndStoreMyDidResult myDid = Signus.createAndStoreMyDid(wallet, "{}").get();
 
-		String identityJson = String.format("{\"did\":\"%s\", \"pk\":\"%s\", \"verkey\":\"%s\", \"endpoint\":\"%s\"}",
-				myDid.getDid(), myDid.getPk(), myDid.getVerkey(), endpoint);
+		String identityJson = String.format(AGENT_IDENTITY_JSON_TEMPLATE, myDid.getDid(), myDid.getPk(), myDid.getVerkey(), endpoint);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
 		Listener activeListener = Agent.agentListen(endpoint, incomingConnectionObserver).get();
