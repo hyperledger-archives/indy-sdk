@@ -34,11 +34,11 @@ public class LedgerDemoTest extends IndyIntegrationTest {
 		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
 		// 2. Create and Open My Wallet
-		Wallet.createWallet(poolName, "myWallet", "default", null, null).get();
+		Wallet.createWallet(poolName, "myWallet", TYPE, null, null).get();
 		Wallet myWallet = Wallet.openWallet("myWallet", null, null).get();
 
 		// 3. Create and Open Trustee Wallet
-		Wallet.createWallet(poolName, "theirWallet", "default", null, null).get();
+		Wallet.createWallet(poolName, "theirWallet", TYPE, null, null).get();
 		Wallet trusteeWallet = Wallet.openWallet("theirWallet", null, null).get();
 
 		// 4. Create My Did

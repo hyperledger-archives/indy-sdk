@@ -2,12 +2,10 @@ package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.ErrorCodeMatcher;
-import org.hyperledger.indy.sdk.IndyIntegrationTest;
-import org.hyperledger.indy.sdk.pool.Pool;
+import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults;
-import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONObject;
 import org.junit.*;
@@ -16,32 +14,10 @@ import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertNotNull;
 
-public class RequestsTest extends IndyIntegrationTest {
-
-	private Pool pool;
-	private Wallet wallet;
-	private String walletName = "ledgerWallet";
-
-	@Before
-	public void openPool() throws Exception {
-		String poolName = PoolUtils.createPoolLedgerConfig();
-		pool = Pool.openPoolLedger(poolName, null).get();
-
-		Wallet.createWallet(poolName, walletName, "default", null, null).get();
-		wallet = Wallet.openWallet(walletName, null, null).get();
-	}
-
-	@After
-	public void closePool() throws Exception {
-		pool.closePoolLedger().get();
-
-		wallet.closeWallet().get();
-		Wallet.deleteWallet(walletName, null).get();
-	}
+public class RequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
 	@Test
 	public void testSubmitRequestWorks() throws Exception {
-
 		String request = "{\"reqId\":1491566332010860,\n" +
 				"          \"identifier\":\"Th7MpTaRZVRYnPiabds81Y\",\n" +
 				"          \"operation\":{\n" +
@@ -64,11 +40,7 @@ public class RequestsTest extends IndyIntegrationTest {
 
 	@Test
 	public void testSignAndSubmitRequestWorks() throws Exception {
-
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
-
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
+		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
 		SignusResults.CreateAndStoreMyDidResult myDidResult = Signus.createAndStoreMyDid(wallet, "{}").get();
@@ -81,27 +53,21 @@ public class RequestsTest extends IndyIntegrationTest {
 
 	@Test
 	public void testSignAndSubmitRequestWorksForNotFoundSigner() throws Exception {
-
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
 
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
+		SignusJSONParameters.CreateAndStoreMyDidJSONParameter signerDidJson =
 				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "00000000000000000000UnknowSigner", null, null);
 
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
+		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, signerDidJson.toJson()).get();
 		String signerDid = trusteeDidResult.getDid();
 
-		SignusResults.CreateAndStoreMyDidResult myDidResult = Signus.createAndStoreMyDid(wallet, "{}").get();
-		String myDid = myDidResult.getDid();
-
-		String nymRequest = Ledger.buildNymRequest(signerDid, myDid, null, null, null).get();
-		String nymResponse = Ledger.signAndSubmitRequest(pool, wallet, signerDid, nymRequest).get();
-		assertNotNull(nymResponse);
+		String schemaRequest = Ledger.buildSchemaRequest(signerDid, SCHEMA_DATA).get();
+		Ledger.signAndSubmitRequest(pool, wallet, signerDid, schemaRequest).get();
 	}
 
 	@Test
 	public void testSignAndSubmitRequestWorksForIncompatibleWalletAndPool() throws Exception {
-
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletIncompatiblePoolError));
 
@@ -110,19 +76,10 @@ public class RequestsTest extends IndyIntegrationTest {
 		Wallet.createWallet("otherPoolName", walletName, "default", null, null).get();
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
-
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
+		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
-		SignusResults.CreateAndStoreMyDidResult myDidResult = Signus.createAndStoreMyDid(wallet, "{}").get();
-		String myDid = myDidResult.getDid();
-
-		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, null, null, null).get();
-		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
-
-		wallet.closeWallet().get();
-		Wallet.deleteWallet(walletName, null).get();
+		String schemaRequest = Ledger.buildSchemaRequest(trusteeDid, SCHEMA_DATA).get();
+		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, schemaRequest).get();
 	}
 }

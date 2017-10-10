@@ -2,39 +2,18 @@ package org.hyperledger.indy.sdk.signus;
 
 import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.ErrorCodeMatcher;
-import org.hyperledger.indy.sdk.IndyIntegrationTest;
-import org.hyperledger.indy.sdk.wallet.Wallet;
-import org.junit.After;
-import org.junit.Before;
+import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
-public class StoreTheirDidTest extends IndyIntegrationTest {
+public class StoreTheirDidTest extends IndyIntegrationTestWithSingleWallet {
 
-
-	private Wallet wallet;
-	private String walletName = "signusWallet";
-	private String did = "8wZcEriaNLNKtteJvx7f8i";
 	private String verkey = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
-
-	@Before
-	public void createWallet() throws Exception {
-		Wallet.createWallet("default", walletName, "default", null, null).get();
-		this.wallet = Wallet.openWallet(walletName, null, null).get();
-
-	}
-
-	@After
-	public void deleteWallet() throws Exception {
-
-		this.wallet.closeWallet().get();
-		Wallet.deleteWallet(walletName, null).get();
-	}
 
 	@Test
 	public void testStoreTheirDidWorks() throws Exception {
-		Signus.storeTheirDid(this.wallet, String.format("{\"did\":\"%s\"}", did)).get();
+		Signus.storeTheirDid(this.wallet, String.format("{\"did\":\"%s\"}", DID1)).get();
 	}
 
 	@Test
@@ -47,7 +26,7 @@ public class StoreTheirDidTest extends IndyIntegrationTest {
 
 	@Test
 	public void testStoreTheirDidWorksWithVerkey() throws Exception {
-		Signus.storeTheirDid(this.wallet, String.format("{\"did\":\"%s\", \"verkey\":\"%s\"}", did, verkey)).get();
+		Signus.storeTheirDid(this.wallet, String.format(IDENTITY_JSON_TEMPLATE, DID1, verkey)).get();
 	}
 
 	@Test
@@ -60,7 +39,7 @@ public class StoreTheirDidTest extends IndyIntegrationTest {
 
 	@Test
 	public void testStoreTheirDidWorksForCorrectCryptoType() throws Exception {
-		Signus.storeTheirDid(this.wallet, String.format("{\"did\":\"%s\", \"verkey\":\"%s\", \"crypto_type\": \"ed25519\"}", did, verkey)).get();
+		Signus.storeTheirDid(this.wallet, String.format("{\"did\":\"%s\", \"verkey\":\"%s\", \"crypto_type\": \"ed25519\"}", DID1, verkey)).get();
 	}
 
 	@Test
@@ -68,6 +47,6 @@ public class StoreTheirDidTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.SignusUnknownCryptoError));
 
-		Signus.storeTheirDid(this.wallet, String.format("{\"did\":\"%s\", \"verkey\":\"%s\", \"crypto_type\": \"some_type\"}", did, verkey)).get();
+		Signus.storeTheirDid(this.wallet, String.format("{\"did\":\"%s\", \"verkey\":\"%s\", \"crypto_type\": \"some_type\"}", DID1, verkey)).get();
 	}
 }
