@@ -252,7 +252,7 @@ mod high_cases {
             PairwiseUtils::create_pairwise(wallet_handle, &their_did, &my_did, None).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 1;
-            assert!(!PairwiseUtils::pairwise_exists(invalid_wallet_handle, &their_did).unwrap());
+            assert_eq!(ErrorCode::WalletInvalidHandle, PairwiseUtils::pairwise_exists(invalid_wallet_handle, &their_did).unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 

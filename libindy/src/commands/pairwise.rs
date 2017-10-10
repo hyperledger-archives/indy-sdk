@@ -3,6 +3,7 @@ extern crate serde_json;
 use utils::json::{JsonDecodable, JsonEncodable};
 use errors::common::CommonError;
 use errors::indy::IndyError;
+use errors::wallet::WalletError;
 use services::wallet::WalletService;
 
 use std::error::Error;
@@ -74,7 +75,11 @@ impl PairwiseCommandExecutor {
                        wallet_handle: i32,
                        their_did: &str,
                        cb: Box<Fn(Result<bool, IndyError>) + Send>) {
-        cb(Ok(self.wallet_service.get(wallet_handle, &format!("pairwise::{}", their_did)).is_ok()));
+        cb(match self.wallet_service.get(wallet_handle, &format!("pairwise::{}", their_did)) {
+            Ok(_) => Ok(true),
+            Err(WalletError::NotFound(_)) => Ok(false),
+            Err(err) => Err(IndyError::WalletError(err)),
+        });
     }
 
     fn create_pairwise(&self,
