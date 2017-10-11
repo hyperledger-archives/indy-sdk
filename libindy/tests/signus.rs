@@ -327,6 +327,20 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_store_their_did_works_for_abbreviated_verkey() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let identity_json = r#"{"did":"8wZcEriaNLNKtteJvx7f8i", "verkey":"~NcYxiDXkpYi6ov5FcYDi1e"}"#;
+            SignusUtils::store_their_did(wallet_handle, identity_json).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
         fn indy_store_their_did_works_without_did() {
             TestUtils::cleanup_storage();
 
