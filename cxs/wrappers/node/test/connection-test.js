@@ -38,7 +38,7 @@ describe('A Connection object with ', function () {
     })
 
     it(' a call to create with no connection created should return unknown error', function () {
-        assert.equal(connection.connect(), 1001)
+        assert.equal(connection.connect(), 1003)
     })
 
 
@@ -96,12 +96,12 @@ describe('A Connection object with ', function () {
         connection.create("info")
         assert.equal(connection.connect(), 0)
         assert.equal(connection.release(), 0)
-        assert.equal(connection.connect(), 1001)
+        assert.equal(connection.connect(), 1003)
         assert.equal(connection.getData(), null)
     })
 
     it('call to connection_release with no connection should return unknown error', function () {
-        assert.equal(connection.release(), 1001)
+        assert.equal(connection.release(), 1003)
     })
 
     const sleep = (time) => new Promise((res) => setTimeout(res, time))

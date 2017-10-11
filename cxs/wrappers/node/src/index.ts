@@ -20,9 +20,9 @@ export class CXSRuntime implements ICXSAcessType {
     function _initialize_basepath (): string {
       let basepath = config.basepath
 
-      if (basepath === undefined) {
+      if (basepath === undefined || basepath === null) {
       // This basepath is in the local/appSpecific node_modules
-        basepath = path.resolve('../node_modules/cxs/lib/libcxs.so')
+        basepath = path.resolve(__dirname, '../lib/libcxs.so')
       }
 
       return basepath
@@ -34,3 +34,5 @@ export class CXSRuntime implements ICXSAcessType {
   }
 }
 export { init_cxs } from './api/init'
+export { Connection } from './api/connection'
+export { CXSRuntimeConfig } from './rustlib'
