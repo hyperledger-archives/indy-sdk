@@ -20,7 +20,7 @@ namespace Hyperledger.Indy.AgentApi
     /// </para>
     /// <para>Messages received on a connection result in an <see cref="AgentMessageEvent"/> being raised
     /// asynchronously for each message and these events can be obtained by calling the 
-    /// <see cref="WaitForMessageAsync"/> method, which will return a <see cref="Task{AgentMessageEvent}"/> that will resolve to
+    /// <see cref="WaitForMessageAsync"/> method, which will return a <see cref="Task{T}"/> that will resolve to
     /// the first received event.  
     /// </para>
     /// <para>When a connection is no longer required it must be closed using its <see cref="CloseAsync"/> 
@@ -67,14 +67,14 @@ namespace Hyperledger.Indy.AgentApi
         /// initiating the connection) and the other for the receiver identity (who the connection is being 
         /// established with).
         /// </para>
-        /// <para>The <see cref="Wallet"/> provided when creating the connection must contain information about
+        /// <para>The <paramref name="wallet"/> provided when creating the connection must contain information about
         /// the sender identity which must have been added using the <see cref="Signus.CreateAndStoreMyDidAsync(Wallet, string)"/> 
         /// method prior to attempting to create the connection.
         /// </para>
         /// <para>The identity information for the receiver can also be stored in the wallet using
         /// the <see cref="Signus.StoreTheirDidAsync(Wallet, string)"/> method, however if no record is
         /// present in the wallet the identity information will be established from the ledger in the 
-        /// provided node <see cref="Pool"/> and will automatically be cached in the provided wallet.
+        /// provided <paramref name="pool"/> and will automatically be cached in the provided wallet.
         /// </para>
         /// </remarks>
         /// <seealso cref="Pool"/>

@@ -1,16 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.16
+VisualStudioVersion = 15.0.27004.2002
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "indy-sdk-dotnet", "indy-sdk-dotnet\indy-sdk-dotnet.csproj", "{5C97C715-D7E2-42B7-A363-4A54C11DC8B3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "indy-sdk-dotnet-test", "indy-sdk-dotnet-test\indy-sdk-dotnet-test.csproj", "{D5DF480F-45B3-47D8-8C30-65A4DF0007D7}"
 EndProject
-Project("{7CF6DF6D-3B04-46F8-A40B-537D21BCA0B4}") = "indy-sdk-dotnet-doc", "indy-sdk-dotnet-doc\indy-sdk-dotnet-doc.shfbproj", "{8F726903-1E9F-4BEC-8CE9-911C050E08DB}"
-	ProjectSection(ProjectDependencies) = postProject
-		{5C97C715-D7E2-42B7-A363-4A54C11DC8B3} = {5C97C715-D7E2-42B7-A363-4A54C11DC8B3}
-	EndProjectSection
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "indy-sdk-dotnet-doc", "indy-sdk-dotnet-doc\indy-sdk-dotnet-doc.csproj", "{9FAB78CF-D983-49A2-9ED3-EA53A6E0A40F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,9 +23,10 @@ Global
 		{D5DF480F-45B3-47D8-8C30-65A4DF0007D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D5DF480F-45B3-47D8-8C30-65A4DF0007D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5DF480F-45B3-47D8-8C30-65A4DF0007D7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8F726903-1E9F-4BEC-8CE9-911C050E08DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8F726903-1E9F-4BEC-8CE9-911C050E08DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8F726903-1E9F-4BEC-8CE9-911C050E08DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9FAB78CF-D983-49A2-9ED3-EA53A6E0A40F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FAB78CF-D983-49A2-9ED3-EA53A6E0A40F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FAB78CF-D983-49A2-9ED3-EA53A6E0A40F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FAB78CF-D983-49A2-9ED3-EA53A6E0A40F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
