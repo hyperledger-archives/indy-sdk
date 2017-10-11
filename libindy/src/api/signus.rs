@@ -220,7 +220,7 @@ pub  extern fn indy_sign(command_handle: i32,
                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                               signature_raw: *const u8, signature_len: u32)>) -> ErrorCode {
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
-    get_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam4);
+    check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam3, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
@@ -249,7 +249,7 @@ pub  extern fn indy_sign(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// pool_handle: pool handle.
-/// did: DID that signed the message
+/// their_did: DID that signed the message
 /// message_raw: a pointer to first byte of message to be signed
 /// message_len: a message length
 /// signature_raw: a a pointer to first byte of signature to be verified
@@ -276,8 +276,8 @@ pub  extern fn indy_verify_signature(command_handle: i32,
                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                           valid: bool)>) -> ErrorCode {
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
-    get_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam5);
-    get_byte_array!(signature_raw, signature_len, ErrorCode::CommonInvalidParam7);
+    check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam5, ErrorCode::CommonInvalidParam6);
+    check_useful_c_byte_array!(signature_raw, signature_len, ErrorCode::CommonInvalidParam7, ErrorCode::CommonInvalidParam8);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
     let result = CommandExecutor::instance()
@@ -296,7 +296,8 @@ pub  extern fn indy_verify_signature(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Encrypts a message by a public key associated with a DID.
+/// Encrypts a message by public-key (associated with their did) authenticated-encryption scheme
+/// using nonce.
 /// If a secure wallet doesn't contain a public key associated with the given DID,
 /// then the public key is read from the Ledger.
 /// Otherwise either an existing public key from wallet is used (see wallet_store_their_identity),
@@ -307,8 +308,8 @@ pub  extern fn indy_verify_signature(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// pool_handle: pool handle.
-/// my_did: encrypting DID
-/// did: encrypting DID
+/// my_did: encrypted DID
+/// their_did: encrypted DID
 /// message_raw: a pointer to first byte of message that to be encrypted
 /// message_len: a message length
 /// cb: Callback that takes command result as parameter.
@@ -326,15 +327,15 @@ pub  extern fn indy_encrypt(command_handle: i32,
                             wallet_handle: i32,
                             pool_handle: i32,
                             my_did: *const c_char,
-                            did: *const c_char,
+                            their_did: *const c_char,
                             message_raw: *const u8,
                             message_len: u32,
                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                  encrypted_msg_raw: *const u8, encrypted_msg_len: u32,
                                                  nonce_raw: *const u8, nonce_len: u32)>) -> ErrorCode {
     check_useful_c_str!(my_did, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam5);
-    get_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam5);
+    check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam6, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let result = CommandExecutor::instance()
@@ -342,7 +343,7 @@ pub  extern fn indy_encrypt(command_handle: i32,
             wallet_handle,
             pool_handle,
             my_did,
-            did,
+            their_did,
             message_raw,
             Box::new(move |result| {
                 let (err, encrypted_msg, nonce) = result_to_err_code_2!(result, Vec::new(), Vec::new());
@@ -355,15 +356,15 @@ pub  extern fn indy_encrypt(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Decrypts a message encrypted by a public key associated with my DID.
+/// Decrypts a message by public-key authenticated-encryption scheme using nonce.
 /// The DID with a secret key must be already created and
 /// stored in a secured wallet (see wallet_create_and_store_my_identity)
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// my_did: DID
-/// did: DID that signed the message
+/// my_did: encrypted DID
+/// their_did: encrypted DID that signed the message
 /// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
 /// encrypted_msg_len: a message length
 /// nonce_raw: a pointer to first byte of nonce that encrypted message
@@ -381,7 +382,7 @@ pub  extern fn indy_encrypt(command_handle: i32,
 pub  extern fn indy_decrypt(command_handle: i32,
                             wallet_handle: i32,
                             my_did: *const c_char,
-                            did: *const c_char,
+                            their_did: *const c_char,
                             encrypted_msg_raw: *const u8,
                             encrypted_msg_len: u32,
                             nonce_raw: *const u8,
@@ -389,18 +390,117 @@ pub  extern fn indy_decrypt(command_handle: i32,
                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                  decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) -> ErrorCode {
     check_useful_c_str!(my_did, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
-    get_byte_array!(encrypted_msg_raw, encrypted_msg_len, ErrorCode::CommonInvalidParam5);
-    get_byte_array!(nonce_raw, nonce_len, ErrorCode::CommonInvalidParam7);
+    check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam4);
+    check_useful_c_byte_array!(encrypted_msg_raw, encrypted_msg_len, ErrorCode::CommonInvalidParam5, ErrorCode::CommonInvalidParam6);
+    check_useful_c_byte_array!(nonce_raw, nonce_len, ErrorCode::CommonInvalidParam7, ErrorCode::CommonInvalidParam8);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::Decrypt(
             wallet_handle,
             my_did,
-            did,
+            their_did,
             encrypted_msg_raw,
             nonce_raw,
+            Box::new(move |result| {
+                let (err, decrypted_msg) = result_to_err_code_1!(result, Vec::new());
+                let (decrypted_msg_raw, decrypted_msg_len) = vec_to_pointer(&decrypted_msg);
+                cb(command_handle, err, decrypted_msg_raw, decrypted_msg_len)
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+/// Encrypts a message by public-key (associated with did) anonymous-encryption scheme.
+/// If a secure wallet doesn't contain a public key associated with the given DID,
+/// then the public key is read from the Ledger.
+/// Otherwise either an existing public key from wallet is used (see wallet_store_their_identity),
+/// or it checks the Ledger (according to freshness settings set during initialization)
+/// whether public key is still the same and updates public key for the DID if needed.
+///
+/// #Params
+/// wallet_handle: wallet handler (created by open_wallet).
+/// pool_handle: pool handle.
+/// command_handle: command handle to map callback to user context.
+/// did: encrypted DID
+/// message_raw: a pointer to first byte of message that to be encrypted
+/// message_len: a message length
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// an encrypted message
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Ledger*
+/// Crypto*
+#[no_mangle]
+pub  extern fn indy_encrypt_sealed(command_handle: i32,
+                                   wallet_handle: i32,
+                                   pool_handle: i32,
+                                   did: *const c_char,
+                                   message_raw: *const u8,
+                                   message_len: u32,
+                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                        encrypted_msg_raw: *const u8, encrypted_msg_len: u32)>) -> ErrorCode {
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_byte_array!(message_raw, message_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::EncryptSealed(
+            wallet_handle,
+            pool_handle,
+            did,
+            message_raw,
+            Box::new(move |result| {
+                let (err, encrypted_msg) = result_to_err_code_1!(result, Vec::new());
+                let (encrypted_msg_raw, encrypted_msg_len) = vec_to_pointer(&encrypted_msg);
+                cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+/// Decrypts a message by public-key anonymous-encryption scheme.
+/// The DID with a secret key must be already created and
+/// stored in a secured wallet (see wallet_create_and_store_my_identity)
+///
+/// #Params
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
+/// did: DID that signed the message
+/// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
+/// encrypted_msg_len: a message length
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// decrypted message
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Crypto*
+#[no_mangle]
+pub  extern fn indy_decrypt_sealed(command_handle: i32,
+                                   wallet_handle: i32,
+                                   did: *const c_char,
+                                   encrypted_msg_raw: *const u8,
+                                   encrypted_msg_len: u32,
+                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                        decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) -> ErrorCode {
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_byte_array!(encrypted_msg_raw, encrypted_msg_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::DecryptSealed(
+            wallet_handle,
+            did,
+            encrypted_msg_raw,
             Box::new(move |result| {
                 let (err, decrypted_msg) = result_to_err_code_1!(result, Vec::new());
                 let (decrypted_msg_raw, decrypted_msg_len) = vec_to_pointer(&decrypted_msg);

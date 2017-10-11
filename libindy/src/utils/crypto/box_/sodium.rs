@@ -7,7 +7,7 @@ use self::libc::c_int;
 use self::sodiumoxide::crypto::box_;
 use self::sodiumoxide::crypto::sign;
 use self::sodiumoxide::randombytes;
-use std::convert::AsMut;
+use utils::byte_array::_clone_into_array;
 
 extern {
     // TODO: fix hack:
@@ -21,9 +21,9 @@ extern {
         ed25519_sk: *const [u8; 64]) -> c_int;
 }
 
-pub struct ED25519 {}
+pub struct CryptoBox {}
 
-impl ED25519 {
+impl CryptoBox {
     pub fn encrypt(private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError> {
         if nonce.len() != 24 {
             return Err(CommonError::InvalidStructure(format!("Invalid nonce")))
@@ -31,9 +31,9 @@ impl ED25519 {
 
         Ok(box_::seal(
             doc,
-            &box_::Nonce(ED25519::_clone_into_array(nonce)),
-            &box_::PublicKey(ED25519::_clone_into_array(public_key)),
-            &box_::SecretKey(ED25519::_clone_into_array(private_key))
+            &box_::Nonce(_clone_into_array(nonce)),
+            &box_::PublicKey(_clone_into_array(public_key)),
+            &box_::SecretKey(_clone_into_array(private_key))
         ))
     }
 
@@ -44,11 +44,11 @@ impl ED25519 {
 
         box_::open(
             doc,
-            &box_::Nonce(ED25519::_clone_into_array(nonce)),
-            &box_::PublicKey(ED25519::_clone_into_array(public_key)),
-            &box_::SecretKey(ED25519::_clone_into_array(private_key))
+            &box_::Nonce(_clone_into_array(nonce)),
+            &box_::PublicKey(_clone_into_array(public_key)),
+            &box_::SecretKey(_clone_into_array(private_key))
         )
-            .map_err(|_| CommonError::InvalidStructure("Unable to decrypt data".to_string()))
+            .map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))
     }
 
     pub fn gen_nonce() -> Vec<u8> {
@@ -63,7 +63,7 @@ impl ED25519 {
         let (public_key, private_key) =
             sign::keypair_from_seed(
                 &sign::Seed(
-                    ED25519::_clone_into_array(
+                    _clone_into_array(
                         seed.unwrap_or(&randombytes::randombytes(32)[..])
                     )
                 )
@@ -101,7 +101,7 @@ impl ED25519 {
         Ok(sign::verify_detached(
             &sign::Signature(signature),
             doc,
-            &sign::PublicKey(ED25519::_clone_into_array(public_key))
+            &sign::PublicKey(_clone_into_array(public_key))
         ))
     }
 
@@ -132,16 +132,6 @@ impl ED25519 {
         }
         Ok(to.iter().cloned().collect())
     }
-
-    // TODO: FIXME: I don't like how we convert slices to array.
-    // TODO: FIXME: Size checking and keys validation.
-    fn _clone_into_array<A, T>(slice: &[T]) -> A
-        where A: Sized + Default + AsMut<[T]>, T: Clone
-    {
-        let mut a = Default::default();
-        <A as AsMut<[T]>>::as_mut(&mut a).clone_from_slice(slice);
-        a
-    }
 }
 
 
@@ -152,24 +142,24 @@ mod tests {
     #[test]
     fn encrypt_decrypt_works() {
         let text = randombytes::randombytes(16);
-        let nonce = ED25519::gen_nonce();
+        let nonce = CryptoBox::gen_nonce();
         let seed = randombytes::randombytes(32);
 
-        let (alice_ver_key, alice_sign_key) = ED25519::create_key_pair_for_signature(Some(&seed)).unwrap();
-        let alice_pk = ED25519::vk_to_curve25519(&alice_ver_key).unwrap();
-        let alice_sk = ED25519::sk_to_curve25519(&alice_sign_key).unwrap();
+        let (alice_ver_key, alice_sign_key) = CryptoBox::create_key_pair_for_signature(Some(&seed)).unwrap();
+        let alice_pk = CryptoBox::vk_to_curve25519(&alice_ver_key).unwrap();
+        let alice_sk = CryptoBox::sk_to_curve25519(&alice_sign_key).unwrap();
 
-        let (bob_ver_key, bob_sign_key) = ED25519::create_key_pair_for_signature(Some(&seed)).unwrap();
-        let bob_pk = ED25519::vk_to_curve25519(&bob_ver_key).unwrap();
-        let bob_sk = ED25519::sk_to_curve25519(&bob_sign_key).unwrap();
+        let (bob_ver_key, bob_sign_key) = CryptoBox::create_key_pair_for_signature(Some(&seed)).unwrap();
+        let bob_pk = CryptoBox::vk_to_curve25519(&bob_ver_key).unwrap();
+        let bob_sk = CryptoBox::sk_to_curve25519(&bob_sign_key).unwrap();
 
-        let bob_encrypted_text = ED25519::encrypt(&bob_sk, &alice_pk, &text, &nonce).unwrap();
-        let bob_decrypt_result = ED25519::decrypt(&alice_sk, &bob_pk, &bob_encrypted_text, &nonce);
+        let bob_encrypted_text = CryptoBox::encrypt(&bob_sk, &alice_pk, &text, &nonce).unwrap();
+        let bob_decrypt_result = CryptoBox::decrypt(&alice_sk, &bob_pk, &bob_encrypted_text, &nonce);
         assert!(bob_decrypt_result.is_ok());
         assert_eq!(text, bob_decrypt_result.unwrap());
 
-        let alice_encrypted_text = ED25519::encrypt(&alice_sk, &bob_pk, &text, &nonce).unwrap();
-        let alice_decrypted_text = ED25519::decrypt(&bob_sk, &alice_pk, &alice_encrypted_text, &nonce);
+        let alice_encrypted_text = CryptoBox::encrypt(&alice_sk, &bob_pk, &text, &nonce).unwrap();
+        let alice_decrypted_text = CryptoBox::decrypt(&bob_sk, &alice_pk, &alice_encrypted_text, &nonce);
         assert!(alice_decrypted_text.is_ok());
         assert_eq!(text, alice_decrypted_text.unwrap());
     }
@@ -179,9 +169,9 @@ mod tests {
         let seed = randombytes::randombytes(32);
         let text = randombytes::randombytes(16);
 
-        let (public_key, secret_key) = ED25519::create_key_pair_for_signature(Some(&seed)).unwrap();
-        let alice_signed_text = ED25519::sign(&secret_key, &text).unwrap();
-        let verified = ED25519::verify(&public_key, &text, &alice_signed_text).unwrap();
+        let (public_key, secret_key) = CryptoBox::create_key_pair_for_signature(Some(&seed)).unwrap();
+        let alice_signed_text = CryptoBox::sign(&secret_key, &text).unwrap();
+        let verified = CryptoBox::verify(&public_key, &text, &alice_signed_text).unwrap();
 
         assert!(verified);
     }
@@ -189,7 +179,7 @@ mod tests {
     #[test]
     fn pk_to_curve25519_works() {
         let pk = vec!(236, 191, 114, 144, 108, 87, 211, 244, 148, 23, 20, 175, 122, 6, 159, 254, 85, 99, 145, 152, 178, 133, 230, 236, 192, 69, 35, 136, 141, 194, 243, 134);
-        let pkc_test = ED25519::vk_to_curve25519(&pk).unwrap();
+        let pkc_test = CryptoBox::vk_to_curve25519(&pk).unwrap();
         let pkc_exp = vec!(8, 45, 124, 147, 248, 201, 112, 171, 11, 51, 29, 248, 34, 127, 197, 241, 60, 158, 84, 47, 4, 176, 238, 166, 110, 39, 207, 58, 127, 110, 76, 42);
         assert_eq!(pkc_exp, pkc_test);
     }
@@ -197,7 +187,7 @@ mod tests {
     #[test]
     fn sk_to_curve25519_works() {
         let sk = vec!(78, 67, 205, 99, 150, 131, 75, 110, 56, 154, 76, 61, 27, 142, 36, 141, 44, 223, 122, 199, 14, 230, 12, 163, 4, 255, 94, 230, 21, 242, 97, 200, 236, 191, 114, 144, 108, 87, 211, 244, 148, 23, 20, 175, 122, 6, 159, 254, 85, 99, 145, 152, 178, 133, 230, 236, 192, 69, 35, 136, 141, 194, 243, 134);
-        let skc_test = ED25519::sk_to_curve25519(&sk).unwrap();
+        let skc_test = CryptoBox::sk_to_curve25519(&sk).unwrap();
         let skc_exp = vec!(144, 112, 64, 101, 69, 167, 61, 44, 220, 148, 58, 187, 108, 73, 11, 247, 130, 161, 158, 40, 100, 1, 40, 27, 76, 148, 209, 240, 195, 35, 153, 121);
         assert_eq!(skc_exp, skc_test);
     }

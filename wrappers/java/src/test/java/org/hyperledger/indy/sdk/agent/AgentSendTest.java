@@ -54,8 +54,7 @@ public class AgentSendTest extends AgentIntegrationTest {
 
 		SignusResults.CreateAndStoreMyDidResult myDid = Signus.createAndStoreMyDid(wallet, "{}").get();
 
-		String identityJson = String.format("{\"did\":\"%s\", \"pk\":\"%s\", \"verkey\":\"%s\", \"endpoint\":\"%s\"}",
-				myDid.getDid(), myDid.getPk(), myDid.getVerkey(), endpoint);
+		String identityJson = String.format(AGENT_IDENTITY_JSON_TEMPLATE, myDid.getDid(), myDid.getPk(), myDid.getVerkey(), endpoint);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
 		Listener activeListener = Agent.agentListen(endpoint, incomingConnectionObserver).get();

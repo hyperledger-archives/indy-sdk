@@ -4,6 +4,7 @@
 2. Install required native libraries and utilities
 
    ```
+   brew install pkg-config
    brew install libsodium
    brew install automake 
    brew install autoconf
