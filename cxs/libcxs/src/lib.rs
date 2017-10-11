@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-extern crate indy;
 extern crate serde;
 extern crate serde_json;
 extern crate rand;

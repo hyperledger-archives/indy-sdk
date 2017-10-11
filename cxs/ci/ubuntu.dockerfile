@@ -15,6 +15,7 @@ RUN apt-get update -y && apt-get install -y \
     libgmp3-dev \
     build-essential \
     libsqlite3-dev \
+    libsqlite0 \
     cmake \
     apt-transport-https \
     ca-certificates \
@@ -31,6 +32,16 @@ RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
 
 RUN npm install typescript-compiler
 
+# Install libindy
+RUN mkdir -p /libindy
+WORKDIR /libindy
+
+ENV LIBINDY_DEB=libindy_1.0.0_amd64.deb
+ENV LIBINDY_DOWNLOAD_URL=https://repo.evernym.com/libindy/ubuntu/stable/1.0.0/$LIBINDY_DEB
+
+RUN curl -fsOSL $LIBINDY_DOWNLOAD_URL \
+    && dpkg -i $LIBINDY_DEB \
+    && apt-get -f install
 
 # Install Rust
 ENV RUST_ARCHIVE=rust-1.20.0-x86_64-unknown-linux-gnu.tar.gz
