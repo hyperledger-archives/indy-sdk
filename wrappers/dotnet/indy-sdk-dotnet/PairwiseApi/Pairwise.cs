@@ -94,7 +94,7 @@ namespace Hyperledger.Indy.PairwiseApi
                 theirDid,
                 myDid,
                 metadata,
-                CallbackHelper.NoValueCallback);
+                CallbackHelper.TaskCompletingNoValueCallback);
 
             CallbackHelper.CheckResult(result);
 
@@ -150,9 +150,9 @@ namespace Hyperledger.Indy.PairwiseApi
         /// <param name="theirDid"></param>
         /// <param name="metadata"></param>
         /// <returns></returns>
-        public static Task<string> SetMetadataAsync(Wallet wallet, string theirDid, string metadata)
+        public static Task SetMetadataAsync(Wallet wallet, string theirDid, string metadata)
         {
-            var taskCompletionSource = new TaskCompletionSource<string>();
+            var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
             int result = IndyNativeMethods.indy_set_pairwise_metadata(
@@ -160,7 +160,7 @@ namespace Hyperledger.Indy.PairwiseApi
                 wallet.Handle,
                 theirDid,
                 metadata,
-                CallbackHelper.NoValueCallback);
+                CallbackHelper.TaskCompletingNoValueCallback);
 
             CallbackHelper.CheckResult(result);
 

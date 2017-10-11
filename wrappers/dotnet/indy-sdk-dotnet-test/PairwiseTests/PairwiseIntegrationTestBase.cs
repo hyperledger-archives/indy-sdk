@@ -14,8 +14,8 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         protected string _myDid;
         protected string _theirDid;
         protected const string METADATA = "some metadata";
-        protected const string PAIRWISE_TEMPLATE = "{\"my_did\":\"%s\",\"metadata\":\"%s\"}";
-        protected const string PAIR_TEMPLATE = "{\"my_did\":\"%s\",\"their_did\":\"%s\"}";
+        protected const string PAIRWISE_TEMPLATE = "{{\"my_did\":\"{0}\",\"metadata\":\"{1}\"}}";
+        protected const string PAIR_TEMPLATE = "{{\"my_did\":\"{0}\",\"their_did\":\"{1}\"}}";
 
         [TestInitialize]
         public async Task CreateDids()
