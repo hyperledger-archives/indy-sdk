@@ -24,6 +24,18 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         }
 
         [TestMethod]
+        public async Task TestGetPairwiseWorksWhenNoMetadataIsPresent()
+        {
+            await Pairwise.CreateAsync(_wallet, _theirDid, _myDid, null);
+
+            var pairwiseInfoJson = await Pairwise.GetAsync(_wallet, _theirDid);
+            var pairwiseInfo = JObject.Parse(pairwiseInfoJson);
+
+            Assert.AreEqual(_myDid, pairwiseInfo.Value<string>("my_did"));
+            Assert.IsNull(pairwiseInfo["metadata"]);
+        }
+
+        [TestMethod]
         public async Task TestGetPairwiseWorksForNotCreated()
         {
             var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
