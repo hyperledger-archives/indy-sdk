@@ -233,6 +233,7 @@ fn agent_demo_works() {
             "verkey": listener_vk,
             "type": "1",
         },
+        "protocolVersion": 1,
         "reqId": nym_req_id,
     });
 
@@ -261,6 +262,7 @@ fn agent_demo_works() {
             "raw": format!("{{\"endpoint\":{{\"ha\":\"{}\", \"verkey\":\"{}\"}}}}", endpoint, listener_pk),
             "type": "100",
         },
+        "protocolVersion": 1,
         "reqId": req_id
     });
     let listener_attrib_json = serde_json::to_string(&listener_attrib_json).unwrap();
@@ -806,6 +808,7 @@ fn ledger_demo_works() {
             dest: my_did.clone(),
             type_: "1".to_string(),
         },
+        protocol_version: 1,
         req_id: nym_req_id,
         signature: None,
     };
@@ -837,6 +840,7 @@ fn ledger_demo_works() {
             type_: "105".to_string(),
             dest: my_did.clone(),
         },
+        protocol_version: 1,
     };
 
     let request = serde_json::to_string(&get_nym_txn).unwrap();
@@ -880,6 +884,7 @@ fn ledger_demo_works() {
         req_id: u64,
         identifier: String,
         operation: Operation,
+        protocol_version: u64,
         #[serde(skip_serializing_if = "Option::is_none")]
         signature: Option<String>,
     }
