@@ -8,6 +8,7 @@ pub mod signus;
 pub mod ledger;
 pub mod pool;
 pub mod wallet;
+pub mod pairwise;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]

@@ -56,7 +56,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
             Assert.AreEqual("REPLY", (string)responseObject["op"]);
             Assert.AreEqual("105", (string)responseObject["result"]["type"]);
             Assert.AreEqual(1491566332010860L, (long)responseObject["result"]["reqId"]);
-            Assert.AreEqual("{\"dest\":\"Th7MpTaRZVRYnPiabds81Y\",\"identifier\":\"V4SGRU86Z58d6TV7PBUe6f\",\"role\":\"2\",\"verkey\":\"~7TYfekw4GUagBnBVCqPjiC\"}", (string)responseObject["result"]["data"]);
+            Assert.AreEqual("{\"dest\":\"Th7MpTaRZVRYnPiabds81Y\",\"identifier\":\"V4SGRU86Z58d6TV7PBUe6f\",\"role\":\"2\",\"seqNo\":2,\"txnTime\":null,\"verkey\":\"~7TYfekw4GUagBnBVCqPjiC\"}", (string)responseObject["result"]["data"]);
             Assert.AreEqual("Th7MpTaRZVRYnPiabds81Y", (string)responseObject["result"]["identifier"]);
             Assert.AreEqual("Th7MpTaRZVRYnPiabds81Y", (string)responseObject["result"]["dest"]);
         }

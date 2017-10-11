@@ -52,9 +52,9 @@ async def create_and_store_my_did(wallet_handle: int,
     return res
 
 
-async def replace_keys(wallet_handle: int,
-                       did: str,
-                       identity_json: str) -> (str, str):
+async def replace_keys_start(wallet_handle: int,
+                             did: str,
+                             identity_json: str) -> (str, str):
     """
     Generated new keys (signing and encryption keys) for an existing
     DID (owned by the caller of the library).
@@ -71,29 +71,59 @@ async def replace_keys(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("replace_keys: >>> wallet_handle: %r, did: %r, identity_json: %r",
+    logger.debug("replace_keys_start: >>> wallet_handle: %r, did: %r, identity_json: %r",
                  wallet_handle,
                  did,
                  identity_json)
 
-    if not hasattr(replace_keys, "cb"):
-        logger.debug("replace_keys: Creating callback")
-        replace_keys.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+    if not hasattr(replace_keys_start, "cb"):
+        logger.debug("replace_keys_start: Creating callback")
+        replace_keys_start.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
     c_did = c_char_p(did.encode('utf-8'))
     c_identity_json = c_char_p(identity_json.encode('utf-8'))
 
-    verkey, pk = await do_call('indy_replace_keys',
+    verkey, pk = await do_call('indy_replace_keys_start',
                                c_wallet_handle,
                                c_did,
                                c_identity_json,
-                               replace_keys.cb)
+                               replace_keys_start.cb)
 
     res = (verkey.decode(), pk.decode())
 
-    logger.debug("replace_keys: <<< res: %r", res)
+    logger.debug("replace_keys_start: <<< res: %r", res)
     return res
+
+
+async def replace_keys_apply(wallet_handle: int,
+                             did: str) -> (str, str):
+    """
+    Apply temporary keys as main for an existing DID (owned by the caller of the library).
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param did: DID
+    :return: Error code
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("replace_keys_apply: >>> wallet_handle: %r, did: %r, identity_json: %r",
+                 wallet_handle,
+                 did)
+
+    if not hasattr(replace_keys_apply, "cb"):
+        logger.debug("replace_keys_apply: Creating callback")
+        replace_keys_apply.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_did = c_char_p(did.encode('utf-8'))
+
+    await do_call('indy_replace_keys_apply',
+                  c_wallet_handle,
+                  c_did,
+                  replace_keys_apply.cb)
+
+    logger.debug("replace_keys_apply: <<<")
 
 
 async def store_their_did(wallet_handle: int,
@@ -234,7 +264,7 @@ async def encrypt(wallet_handle: int,
                   did: str,
                   msg: bytes) -> (bytes, bytes):
     """
-    Encrypts a message by a public key associated with a DID.
+    Encrypts a message by public-key (associated with their did) authenticated-encryption scheme using nonce.
     If a secure wallet doesn't contain a public key associated with the given DID,
     then the public key is read from the Ledger.
     Otherwise either an existing public key from wallet is used (see wallet_store_their_identity),
@@ -250,7 +280,7 @@ async def encrypt(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("encrypt: >>> wallet_handle: %r, pool_handle: %r, my_did: %r, did: %r, msg: %r",
+    logger.debug("aencrypt: >>> wallet_handle: %r, pool_handle: %r, my_did: %r, did: %r, msg: %r",
                  wallet_handle,
                  pool_handle,
                  my_did,
@@ -261,9 +291,10 @@ async def encrypt(wallet_handle: int,
         return bytes(arr_ptr[:arr_len]), bytes(arr_ptr2[:arr_len2])
 
     if not hasattr(encrypt, "cb"):
-        logger.debug("encrypt: Creating callback")
-        encrypt.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32, POINTER(c_uint8),
-                                         c_uint32), transform_cb)
+        logger.debug("authenticated_encrypt: Creating callback")
+        encrypt.cb = create_cb(
+            CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32, POINTER(c_uint8),
+                      c_uint32), transform_cb)
 
     c_wallet_handle = c_int32(wallet_handle)
     c_pool_handle = c_int32(pool_handle)
@@ -291,7 +322,7 @@ async def decrypt(wallet_handle: int,
                   encrypted_msg: bytes,
                   nonce: bytes) -> bytes:
     """
-    Decrypts a message encrypted by a public key associated with my DID.
+    Decrypts a message by public-key authenticated-encryption scheme using nonce.
     The DID with a secret key must be already created and
     stored in a secured wallet (see wallet_create_and_store_my_identity)
 
@@ -316,7 +347,8 @@ async def decrypt(wallet_handle: int,
 
     if not hasattr(decrypt, "cb"):
         logger.debug("decrypt: Creating callback")
-        decrypt.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
+        decrypt.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32),
+                               transform_cb)
 
     c_wallet_handle = c_int32(wallet_handle)
     c_my_did = c_char_p(my_did.encode('utf-8'))
@@ -328,11 +360,101 @@ async def decrypt(wallet_handle: int,
                                       c_wallet_handle,
                                       c_my_did,
                                       c_did,
-                                      encrypted_msg,
+                                      bytes(encrypted_msg),
                                       c_encrypted_msg_len,
-                                      nonce,
+                                      bytes(nonce),
                                       c_nonce_len,
                                       decrypt.cb)
 
     logger.debug("decrypt: <<< res: %r", decrypted_message)
+    return decrypted_message
+
+
+async def encrypt_sealed(wallet_handle: int,
+                         pool_handle: int,
+                         did: str,
+                         msg: bytes) -> (bytes, bytes):
+    """
+    Encrypts a message by public-key (associated with their did) anonymous-encryption scheme.
+    If a secure wallet doesn't contain a public key associated with the given DID,
+    then the public key is read from the Ledger.
+    Otherwise either an existing public key from wallet is used (see wallet_store_their_identity),
+    or it checks the Ledger (according to freshness settings set during initialization)
+    whether public key is still the same and updates public key for the DID if needed.
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param pool_handle: pool handle.
+    :param did: encrypting DID
+    :param msg: a message to be signed
+    :return: an encrypted message and nonce
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("encrypt_sealed: >>> wallet_handle: %r, pool_handle: %r, did: %r, msg: %r",
+                 wallet_handle,
+                 pool_handle,
+                 did,
+                 msg)
+
+    def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
+        return bytes(arr_ptr[:arr_len])
+
+    if not hasattr(encrypt_sealed, "cb"):
+        logger.debug("sealed: Creating callback")
+        encrypt_sealed.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_pool_handle = c_int32(pool_handle)
+    c_did = c_char_p(did.encode('utf-8'))
+    c_msg_len = c_uint32(len(msg))
+
+    encrypted_message = await do_call('indy_encrypt_sealed',
+                                      c_wallet_handle,
+                                      c_pool_handle,
+                                      c_did,
+                                      msg,
+                                      c_msg_len,
+                                      encrypt_sealed.cb)
+    res = encrypted_message
+    logger.debug("encrypt_sealed: <<< res: %r", res)
+    return res
+
+
+async def decrypt_sealed(wallet_handle: int,
+                         did: str,
+                         encrypted_msg: bytes) -> bytes:
+    """
+    Decrypts a message by public-key anonymous-encryption scheme.
+    The DID with a secret key must be already created and
+    stored in a secured wallet (see wallet_create_and_store_my_identity)
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param did: DID that signed the message
+    :param encrypted_msg: encrypted message
+    :return: decrypted message
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("decrypt_sealed: >>> wallet_handle: %r, did: %r, encrypted_msg: %r",
+                 wallet_handle,
+                 did,
+                 encrypted_msg)
+
+    def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
+        return bytes(arr_ptr[:arr_len]),
+
+    if not hasattr(decrypt_sealed, "cb"):
+        logger.debug("decrypt_sealed: Creating callback")
+        decrypt_sealed.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_did = c_char_p(did.encode('utf-8'))
+    c_encrypted_msg_len = c_uint32(len(encrypted_msg))
+    decrypted_message = await do_call('indy_decrypt_sealed',
+                                      c_wallet_handle,
+                                      c_did,
+                                      bytes(encrypted_msg),
+                                      c_encrypted_msg_len,
+                                      decrypt_sealed.cb)
+    logger.debug("decrypt_sealed: <<< res: %r", decrypted_message)
     return decrypted_message

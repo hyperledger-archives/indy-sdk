@@ -45,7 +45,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestBuildNymRequestWorksForOnlyRequiredFields()
         {
-            var expectedResult = string.Format("\"identifier\":\"{0}\",\"operation\":{{\"type\":\"1\",\"dest\":\"{1}\"}}", _identifier, _dest);
+            var expectedResult = string.Format("\"identifier\":\"{0}\",\"operation\":{{\"type\":\"1\",\"dest\":\"{1}\",\"role\":null}}", _identifier, _dest);
 
             var nymRequest = await Ledger.BuildNymRequestAsync(_identifier, _dest, null, null, null);
 

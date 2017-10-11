@@ -56,12 +56,15 @@ public abstract class LibIndy {
 		// signus.rs
 
 		public int indy_create_and_store_my_did(int command_handle, int wallet_handle, String did_json, Callback cb);
-		public int indy_replace_keys(int command_handle, int wallet_handle, String did, String identity_json, Callback cb);
+		public int indy_replace_keys_start(int command_handle, int wallet_handle, String did, String identity_json, Callback cb);
+		public int indy_replace_keys_apply(int command_handle, int wallet_handle, String did, Callback cb);
 		public int indy_store_their_did(int command_handle, int wallet_handle, String identity_json, Callback cb);
 		public int indy_sign(int command_handle, int wallet_handle, String did, byte[] message_raw, int message_len, Callback cb);
 		public int indy_verify_signature(int command_handle, int wallet_handle, int pool_handle, String did, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
 		public int indy_encrypt(int command_handle, int wallet_handle, int pool_handle, String my_did, String did, byte[] message_raw, int message_len, Callback cb);
 		public int indy_decrypt(int command_handle, int wallet_handle, String myDid, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, Callback cb);
+		public int indy_encrypt_sealed(int command_handle, int wallet_handle, int pool_handle, String did, byte[] message_raw, int message_len, Callback cb);
+		public int indy_decrypt_sealed(int command_handle, int wallet_handle, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
 
 		// anoncreds.rs
 
@@ -88,6 +91,15 @@ public abstract class LibIndy {
 		public int indy_agent_send(int command_handle, int connection_handle, String message, Callback cb);
 		public int indy_agent_close_connection(int command_handle, int connection_handle, Callback cb);
 		public int indy_agent_close_listener(int command_handle, int listener_handle, Callback cb);
+
+		// pairwise.rs
+
+		public int indy_is_pairwise_exists(int command_handle, int wallet_handle, String their_did, Callback cb);
+		public int indy_create_pairwise(int command_handle, int wallet_handle, String their_did, String my_did, String metadata, Callback cb);
+		public int indy_list_pairwise(int command_handle, int wallet_handle, Callback cb);
+		public int indy_get_pairwise(int command_handle, int wallet_handle, String their_did, Callback cb);
+		public int indy_set_pairwise_metadata(int command_handle, int wallet_handle, String their_did, String metadata, Callback cb);
+
 	}
 
 	/*
