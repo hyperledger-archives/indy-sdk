@@ -22,7 +22,7 @@ use services::ledger::types::{Reply, GetNymResultData, GetNymReplyResult};
 use services::pool::PoolService;
 use services::signus::types::{MyDid, TheirDid};
 use services::wallet::WalletService;
-use utils::crypto::ed25519::ED25519;
+use utils::crypto::box_::CryptoBox;
 use utils::json::JsonDecodable;
 use utils::sequence::SequenceUtils;
 use utils::crypto::verkey_builder::build_full_verkey;
@@ -465,7 +465,7 @@ impl AgentCommandExecutor {
 
             trace!("parsed get_nym_result_data {:?}", gen_nym_result_data);
 
-            let pk = ED25519::vk_to_curve25519(
+            let pk = CryptoBox::vk_to_curve25519(
                 build_full_verkey(&gen_nym_result_data.dest, &gen_nym_result_data.verkey)
                     .unwrap()
                     .as_slice())
