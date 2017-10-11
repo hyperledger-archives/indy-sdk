@@ -18,8 +18,8 @@ describe('call to cxs_init with provided path', function() {
         assert.equal(run.ffi.cxs_init(null), 0);
     })
 
-    it('should return 1001', function() {
-            assert.equal(run.ffi.cxs_init('garbage'), 1001);
+    it('should return 1004', function() {
+            assert.equal(run.ffi.cxs_init('garbage'), 1004);
     })
 });
 
@@ -36,7 +36,7 @@ describe('Using the cxs ffi directly ', function() {
     })
 
     it('a to cxs_connection_connect without the ability to connect should return 1', function () {
-        assert.equal(run.ffi.cxs_connection_connect(2), 1001)
+        assert.equal(run.ffi.cxs_connection_connect(2), 1003)
     })
 
     it('a call to cxs_connection_get_data should return 0', function () {
@@ -49,7 +49,7 @@ describe('Using the cxs ffi directly ', function() {
     })
 
     it('a call to cxs_connection_release without ability to release should return 1', function() {
-        assert.equal(run.ffi.cxs_connection_release(2), 1001)
+        assert.equal(run.ffi.cxs_connection_release(2), 1003)
     })
 
 });

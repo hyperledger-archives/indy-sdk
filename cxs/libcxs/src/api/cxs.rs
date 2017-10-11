@@ -17,9 +17,10 @@ pub extern fn cxs_init (config_path:*const c_char) -> u32 {
     if !config_path.is_null() {
         check_useful_c_str!(config_path,error::UNKNOWN_ERROR.code_num);
 
-        if settings::process_config_file(&config_path) != error::SUCCESS.code_num {
-            return error::UNKNOWN_ERROR.code_num;
-        }
+        match settings::process_config_file(&config_path) {
+            Err(_) => return error::INVALID_CONFIGURATION.code_num,
+            Ok(_) => {},
+        };
     }
 
     let config_name = match settings::get_config_value(settings::CONFIG_POOL_CONFIG_NAME) {
@@ -209,7 +210,7 @@ mod tests {
             Ok(file) => file,
         };
 
-        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"my_config\", \"wallet_name\":\"my_wallet\", \"wallet_type\":\"default\" }";
+        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"my_config\", \"wallet_name\":\"my_wallet\"}";
         match file.write_all(content.as_bytes()) {
             Err(why) => panic!("couldn't write to sample config file: {}", why.description()),
             Ok(_) => println!("sample config ready"),
@@ -265,7 +266,7 @@ mod tests {
     #[test]
     fn test_cxs_connection_connect_fails() {
         let rc = cxs_connection_connect(0);
-        assert_eq!(rc, error::UNKNOWN_ERROR.code_num);
+        assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
     }
 
     #[test]
@@ -315,7 +316,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(unused_assignments)]
     fn test_cxs_connection_get_data_fails() {
         let data = cxs_connection_get_data(0);
 
@@ -332,6 +332,6 @@ mod tests {
         let rc = cxs_connection_release(handle);
         assert_eq!(rc, error::SUCCESS.code_num);
         let rc = cxs_connection_connect(handle);
-        assert_eq!(rc, error::UNKNOWN_ERROR.code_num);
+        assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
     }
 }
