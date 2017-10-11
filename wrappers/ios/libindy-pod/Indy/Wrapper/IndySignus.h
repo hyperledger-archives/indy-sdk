@@ -34,15 +34,13 @@
  @param didJson Identity information as json. See example above.
  @param walletHandle Wallet handler (created by IndyWallet::OpenWalletWithName).
  @param completion Callback that takes command result as parameter. Returns DID, verkey (for verification of signature) and public_key (for decryption).
-
- @return Error Code
  */
-+ (NSError *)createAndStoreMyDid:(NSString *)didJson
-                    walletHandle:(IndyHandle)walletHandle
-                      completion:(void (^)(NSError *error,
-                                           NSString *did,
-                                           NSString *verkey,
-                                           NSString *pk)) completion;
++ (void)createAndStoreMyDid:(NSString *)didJson
+               walletHandle:(IndyHandle)walletHandle
+                 completion:(void (^)(NSError *error,
+                                      NSString *did,
+                                      NSString *verkey,
+                                      NSString *pk)) completion;
 
 /**
  Generates temporary keys (signing and encryption keys) for an existing DID (owned by the caller of the library).
@@ -62,12 +60,12 @@
  @param walletHandle Wallet handle.
  @param completion Completion block, returns error, verkey (for verification of signature) and public_key (for decryption).
  */
-+ (NSError *)replaceKeysStartForDid:(NSString *)did
-                       identityJson:(NSString *)identityJson
-                       walletHandle:(IndyHandle)walletHandle
-                         completion:(void (^)(NSError *error,
-                                              NSString *verkey,
-                                              NSString *pk)) completion;
++ (void)replaceKeysStartForDid:(NSString *)did
+                  identityJson:(NSString *)identityJson
+                  walletHandle:(IndyHandle)walletHandle
+                    completion:(void (^)(NSError *error,
+                                         NSString *verkey,
+                                         NSString *pk)) completion;
 
 /**
  Apply temporary keys as main for an existing DID (owned by the caller of the library).
@@ -76,9 +74,9 @@
  @param walletHandle Wallet handle.
  @param completion Completion block, returns error.
  */
-+ (NSError *)replaceKeysApplyForDid:(NSString *)did
-                       walletHandle:(IndyHandle)walletHandle
-                         completion:(void (^)(NSError *error)) completion;
++ (void)replaceKeysApplyForDid:(NSString *)did
+                  walletHandle:(IndyHandle)walletHandle
+                    completion:(void (^)(NSError *error)) completion;
 
 /**
  Saves their DID for a pairwise connection in a secured Wallet, so that it can be used to verify transaction.
@@ -94,13 +92,11 @@
  
  @param identityJSON Identity information as json. See example above.
  @param walletHandle Wallet handler (created by IndyWallet::OpenWalletWithName).
- @param handler Callback that takes command result as parameter.Returns error code.
-
- @return Error Code
+ @param completion Callback that takes command result as parameter.Returns error code.
  */
-+ (NSError *)storeTheirDid:(NSString *)identityJSON
-              walletHandle:(IndyHandle)walletHandle
-                completion:(void (^)(NSError *error)) handler;
++ (void)storeTheirDid:(NSString *)identityJSON
+         walletHandle:(IndyHandle)walletHandle
+           completion:(void (^)(NSError *error)) completion;
 
 /**
  Signs a message by a signing key associated with my DID.  
@@ -111,15 +107,13 @@
  @param message Message to be signed as NSData
  @param did Signing DID
  @param walletHandle Wallet handler (created by IndyWallet::OpenWalletWithName).
- @param handler Callback that takes command result as parameter. Returns a signature string.
-
- @return Error Code
+ @param completion Callback that takes command result as parameter. Returns a signature string.
  */
-+ (NSError *)signMessage:(NSData*)message
-                     did:(NSString *)did
-            walletHandle:(IndyHandle)walletHandle
-              completion:(void (^)(NSError *error,
-                                   NSData *signature)) handler;
++ (void)signMessage:(NSData*)message
+                did:(NSString *)did
+       walletHandle:(IndyHandle)walletHandle
+         completion:(void (^)(NSError *error,
+                              NSData *signature)) completion;
 
 /**
  Verify a signature created by a key associated with a DID.  
@@ -135,18 +129,15 @@
  @param message Message that was signed by did.
  @param walletHandle Wallet handler (created by IndyWallet::OpenWalletWithName).
  @param poolHandle Pool handle.
- @param handler Callback that takes command result as parameter. Returns flag valid: true - if signature is valid, false - otherwise
-
- @return Error Code
-
+ @param completion Callback that takes command result as parameter. Returns flag valid: true - if signature is valid, false - otherwise
  */
-+ (NSError *)verifySignature:(NSData *)signature
-                  forMessage:(NSData *)message
-                         did:(NSString *)did
-                walletHandle:(IndyHandle)walletHandle
-                  poolHandle:(IndyHandle)poolHandle
-                  completion:(void (^)(NSError *error,
-                                       BOOL valid)) handler;
++ (void)verifySignature:(NSData *)signature
+             forMessage:(NSData *)message
+                    did:(NSString *)did
+           walletHandle:(IndyHandle)walletHandle
+             poolHandle:(IndyHandle)poolHandle
+             completion:(void (^)(NSError *error,
+                                  BOOL valid)) completion;
 
 /**
  Encrypts a message by a public key associated with a DID.
@@ -162,18 +153,16 @@
  @param myDid Encrypting DID
  @param did Encrypting DID
  @param message Message that is to be encrypted.
- @param handler Callback that takes command result as parameter. Returns an encrypted message and nonce.
- 
- @return Error Code
+ @param completion Callback that takes command result as parameter. Returns an encrypted message and nonce.
  */
-+ (NSError *)encryptMessage:(NSData *)message
-                      myDid:(NSString *)myDid
-                        did:(NSString *)did
-               walletHandle:(IndyHandle)walletHandle
-                       pool:(IndyHandle)poolHandle
-                 completion:(void (^)(NSError *error,
-                                      NSData *encryptedMsg,
-                                      NSData *nonce)) handler;
++ (void)encryptMessage:(NSData *)message
+                 myDid:(NSString *)myDid
+                   did:(NSString *)did
+          walletHandle:(IndyHandle)walletHandle
+                  pool:(IndyHandle)poolHandle
+            completion:(void (^)(NSError *error,
+                                 NSData *encryptedMsg,
+                                 NSData *nonce)) completion;
 
 /**
  Decrypts a message encrypted by a public key associated with my DID.
@@ -186,16 +175,14 @@
  @param did DID that signed the message
  @param nonce Nonce
  @param walletHandle Wallet handler (created by IndyWallet::OpenWalletWithName).
- @param handler Callback that takes command result as parameter. Returns decrypted message.
- 
- @return Error Code
+ @param completion Callback that takes command result as parameter. Returns decrypted message.
 */
-+ (NSError *)decryptMessage:(NSData *)encryptedMessage
-                      myDid:(NSString *)myDid
-                        did:(NSString *)did
-                      nonce:(NSData *)nonce
-               walletHandle:(IndyHandle)walletHandle
-                 completion:(void (^)(NSError *error,
-                                      NSData *decryptedMessage)) handler;
++ (void)decryptMessage:(NSData *)encryptedMessage
+                 myDid:(NSString *)myDid
+                   did:(NSString *)did
+                 nonce:(NSData *)nonce
+          walletHandle:(IndyHandle)walletHandle
+            completion:(void (^)(NSError *error,
+                                 NSData *decryptedMessage)) completion;
 
 @end
