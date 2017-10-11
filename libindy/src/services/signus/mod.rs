@@ -9,6 +9,7 @@ use self::types::{
     TheirDid
 };
 use utils::crypto::base58::Base58;
+use utils::crypto::verkey_builder::build_full_verkey;
 
 use errors::common::CommonError;
 use errors::signus::SignusError;
@@ -91,9 +92,12 @@ impl SignusService {
         Base58::decode(&their_did_info.did)?;
 
         let (verkey, pk) = match their_did_info.verkey {
-            Some(ref verkey) => (
-                Some(verkey.clone()),
-                Some(Base58::encode(&signus.verkey_to_public_key(&Base58::decode(verkey)?)?))),
+            Some(ref verkey) => {
+                let full_verkey = build_full_verkey(&their_did_info.did, &Some(verkey.clone()))
+                    .map_err(|err| CommonError::InvalidState(format!("Invalid verkey {:?}", err)))?;
+                (Some(Base58::encode(&full_verkey)),
+                 Some(Base58::encode(&signus.verkey_to_public_key(&full_verkey)?)))
+            }
             None => (None, None)
         };
 
@@ -231,6 +235,40 @@ mod tests {
         let res_without_seed = service.create_my_did(&did_info_without_seed).unwrap();
 
         assert_ne!(res_with_seed.verkey, res_without_seed.verkey)
+    }
+
+    #[test]
+    fn create_their_did_works_without_verkey() {
+        let service = SignusService::new();
+        let did = "8wZcEriaNLNKtteJvx7f8i";
+        let their_did_info = TheirDidInfo::new(did.to_string(), None, None, None);
+        let their_did: TheirDid = service.create_their_did(&their_did_info).unwrap();
+
+        assert_eq!(did.to_string(), their_did.did);
+        assert_eq!(None, their_did.verkey);
+    }
+
+    #[test]
+    fn create_their_did_works_for_full_verkey() {
+        let service = SignusService::new();
+        let did = "8wZcEriaNLNKtteJvx7f8i";
+        let verkey = "5L2HBnzbu6Auh2pkDRbFt5f4prvgE2LzknkuYLsKkacp";
+        let their_did_info = TheirDidInfo::new(did.to_string(), None, Some(verkey.to_string()), None);
+        let their_did: TheirDid = service.create_their_did(&their_did_info).unwrap();
+
+        assert_eq!(did.to_string(), their_did.did);
+        assert_eq!(verkey, their_did.verkey.unwrap());
+    }
+
+    #[test]
+    fn create_their_did_works_for_abbreviated_verkey() {
+        let service = SignusService::new();
+        let did = "8wZcEriaNLNKtteJvx7f8i";
+        let their_did_info = TheirDidInfo::new(did.to_string(), None, Some("~NcYxiDXkpYi6ov5FcYDi1e".to_string()), None);
+        let their_did: TheirDid = service.create_their_did(&their_did_info).unwrap();
+
+        assert_eq!(did.to_string(), their_did.did);
+        assert_eq!("5L2HBnzbu6Auh2pkDRbFt5f4prvgE2LzknkuYLsKkacp", their_did.verkey.unwrap());
     }
 
     #[test]
