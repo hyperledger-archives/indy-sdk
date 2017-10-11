@@ -11,13 +11,16 @@ extern crate rust_base58;
 extern crate sha2;
 extern crate zmq_pw as zmq;
 extern crate rmp_serde;
+extern crate indy_crypto;
+extern crate base64;
+
 
 use self::byteorder::{ByteOrder, LittleEndian};
 use self::digest::{FixedOutput, Input};
 use self::hex::ToHex;
 use self::rust_base58::FromBase58;
 use serde_json;
-use serde_json::Value;
+use serde_json::Value as SJsonValue;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::{fmt, fs, io, thread};
@@ -32,11 +35,14 @@ use errors::pool::PoolError;
 use errors::common::CommonError;
 use self::catchup::CatchupHandler;
 use self::types::*;
+use services::ledger::constants;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::crypto::ed25519::ED25519;
 use utils::environment::EnvironmentUtils;
 use utils::json::{JsonDecodable, JsonEncodable};
 use utils::sequence::SequenceUtils;
+use self::indy_crypto::bls::{Generator, VerKey};
+use std::path::PathBuf;
 
 pub struct PoolService {
     pools: RefCell<HashMap<i32, Pool>>,
@@ -64,6 +70,7 @@ enum PoolWorkerHandler {
 }
 
 struct TransactionHandler {
+    gen: Generator,
     f: usize,
     nodes: Vec<RemoteNode>,
     pending_commands: HashMap<u64 /* requestId */, CommandProcess>,
@@ -127,10 +134,10 @@ impl TransactionHandler {
     fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         match msg {
             Message::Reply(reply) => {
-                self.process_reply(reply.result.req_id, raw_msg);
+                self.process_reply(reply.result.req_id, raw_msg)?;
             }
             Message::PoolLedgerTxns(response) => {
-                self.process_reply(response.txn.req_id, raw_msg);
+                self.process_reply(response.txn.req_id, raw_msg)?;
             }
             Message::Reject(response) | Message::ReqNACK(response) => {
                 self.process_reject(&response, raw_msg);
@@ -142,43 +149,77 @@ impl TransactionHandler {
         Ok(None)
     }
 
-    fn process_reply(&mut self, req_id: u64, raw_msg: &String) {
-        let mut remove = false;
-        if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
-            let pend_cmd: &mut CommandProcess = pend_cmd;
-            let mut json_msg: HashableValue = HashableValue { inner: serde_json::from_str(raw_msg).unwrap() };
-            if let Some(str) = json_msg.inner["result"]["data"].clone().as_str() {
-                let tmp_obj: serde_json::Value = serde_json::from_str(str).unwrap();
-                json_msg.inner["result"]["data"] = tmp_obj;
-            }
-            let reply_cnt: usize = *pend_cmd.replies.get(&json_msg).unwrap_or(&0usize);
-            let consensus_reached = {
-                let data_to_check_proof = TransactionHandler::parse_reply_for_proof_checking(&json_msg.inner["result"]);
-                if let Some((proofs, root_hash, key, value)) = data_to_check_proof {
-                    debug!("TransactionHandler::process_reply try to verify proofs in reply");
-                    self::state_proof::verify_proof(proofs.from_base58().unwrap().as_slice(),
-                                                    root_hash.from_base58().unwrap().as_slice(),
-                                                    key.as_slice(),
-                                                    value.as_ref().map(String::as_str))
-                } else {
-                    debug!("TransactionHandler::process_reply not enough data to verify proofs in reply, collect replies");
-                    reply_cnt == self.f //already have f same replies and receive f+1 now
-                }
+    fn process_reply(&mut self, req_id: u64, raw_msg: &str) -> Result<(), PoolError> {
+        trace!("TransactionHandler::process_reply: >>> req_id: {:?}, raw_msg: {:?}", req_id, raw_msg);
+
+        if !self.pending_commands.contains_key(&req_id) {
+            warn!("TransactionHandler::process_reply: <<< No pending command for request");
+            return Ok(());
+        }
+
+        let json_msg: HashableValue =
+            HashableValue {
+                inner: serde_json::from_str(raw_msg)
+                    .map_err(|err| CommonError::InvalidStructure("Invalid message structure".to_string()))?
             };
-            debug!("TransactionHandler::process_reply consensus_reached {}", consensus_reached);
-            if consensus_reached {
-                for &cmd_id in &pend_cmd.cmd_ids {
-                    CommandExecutor::instance().send(
-                        Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.clone())))).unwrap();
+
+        let reply_cnt = *self.pending_commands
+            .get(&req_id).unwrap()
+            .replies.get(&json_msg).unwrap_or(&0usize);
+        trace!("TransactionHandler::process_reply: reply_cnt: {:?}, f: {:?}", reply_cnt, self.f);
+
+        let consensus_reached = reply_cnt >= self.f || {
+            debug!("TransactionHandler::process_reply: Try to verify proof and signature");
+
+            let data_to_check_proof = TransactionHandler::parse_reply_for_proof_checking(&json_msg.inner["result"]);
+            let data_to_check_proof_signature = TransactionHandler::parse_reply_for_proof_signature_checking(&json_msg.inner["result"]);
+
+            data_to_check_proof.is_some() && data_to_check_proof_signature.is_some() && {
+                debug!("TransactionHandler::process_reply: Proof and signature are present");
+
+                let (proofs, root_hash, key, value) = data_to_check_proof.unwrap();
+
+                let proof_valid = self::state_proof::verify_proof(
+                    base64::decode(proofs).unwrap().as_slice(),
+                    root_hash.from_base58().unwrap().as_slice(),
+                    key.as_slice(),
+                    value.as_ref().map(String::as_str));
+
+
+                debug!("TransactionHandler::process_reply: proof_valid: {:?}", proof_valid);
+
+                proof_valid && {
+                    let (signature, participants, pool_state_root) = data_to_check_proof_signature.unwrap();
+                    let signature_valid = self::state_proof::verify_proof_signature(
+                        signature,
+                        participants.as_slice(),
+                        root_hash,
+                        pool_state_root,
+                        self.nodes.as_slice(), self.f, &self.gen);
+                    debug!("TransactionHandler::process_reply: signature_valid: {:?}", signature_valid);
+                    signature_valid
                 }
-                remove = true;
-            } else {
-                pend_cmd.replies.insert(json_msg, reply_cnt + 1);
             }
-        }
-        if remove {
+        };
+
+        debug!("TransactionHandler::process_reply: consensus_reached {}", consensus_reached);
+
+        if consensus_reached {
+            let cmd_ids = self.pending_commands.get(&req_id).unwrap().cmd_ids.clone();
+
+            for cmd_id in cmd_ids {
+                CommandExecutor::instance().send(
+                    Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.to_owned())))).unwrap();
+            }
+
             self.pending_commands.remove(&req_id);
+        } else {
+            let pend_cmd: &mut CommandProcess = self.pending_commands.get_mut(&req_id).unwrap();
+            pend_cmd.replies.insert(json_msg, reply_cnt + 1);
         }
+
+        trace!("TransactionHandler::process_reply: <<<");
+        Ok(())
     }
 
     //TODO correct handling of Reject
@@ -205,7 +246,7 @@ impl TransactionHandler {
 
     fn try_send_request(&mut self, cmd: &str, cmd_id: i32) -> Result<(), PoolError> {
         info!("cmd {:?}", cmd);
-        let request: Value = serde_json::from_str(cmd)
+        let request: SJsonValue = serde_json::from_str(cmd)
             .map_err(|err|
                 CommonError::InvalidStructure(
                     format!("Invalid request json: {}", err.description())))?;
@@ -254,85 +295,216 @@ impl TransactionHandler {
         }
     }
 
-    fn parse_reply_for_proof_checking(json_msg: &serde_json::Value)
+    fn parse_reply_for_proof_checking(json_msg: &SJsonValue)
                                       -> Option<(&str, &str, Vec<u8>, Option<String>)> {
-        let raw = match json_msg["type"].as_str() {
-            Some(super::ledger::constants::GET_ATTR) |
-            Some(super::ledger::constants::GET_CLAIM_DEF) |
-            Some(super::ledger::constants::GET_NYM) |
-            Some(super::ledger::constants::GET_SCHEMA) => {
-                (json_msg["state_proof"]["proof_nodes"].as_str(),
-                 json_msg["state_proof"]["root_hash"].as_str(),
-                 json_msg["dest"].as_str().or(json_msg["origin"].as_str())
-                     .map(|v: &str| v.as_bytes().to_vec()))
-            }
-            //TODO Some(super::ledger::constants::GET_TXN) => check ledger MerkleTree proofs?
-            //TODO Some(super::ledger::constants::GET_DDO) => support DDO
-            _ => return None
-        };
-        if let (Some(proof), Some(root_hash), Some(mut dest)) = raw {
-            let mut value = json_msg.get("data").map(Clone::clone);
-            let key_suffix: String = match json_msg["type"].as_str() {
-                Some(super::ledger::constants::GET_ATTR) => {
-                    value = json_msg.get("data").map(|data| {
-                        let mut hasher = sha2::Sha256::default();
-                        hasher.process(serde_json::to_string(data).unwrap().as_bytes());
-                        serde_json::Value::String(hasher.fixed_result().to_hex())
-                    });
-                    if let Some(attr_name) = json_msg["raw"].as_str()
-                        .or(json_msg["enc"].as_str())
-                        .or(json_msg["hash"].as_str()) {
-                        let mut hasher = sha2::Sha256::default();
-                        hasher.process(attr_name.as_bytes());
-                        format!(":\x01:{}", hasher.fixed_result().to_hex())
-                    } else {
-                        return None;
-                    }
-                }
-                Some(super::ledger::constants::GET_CLAIM_DEF) => {
-                    if let (Some(sign_type), Some(sch_seq_no)) = (json_msg["signature_type"].as_str(),
-                                                                  json_msg["ref"].as_u64()) {
-                        format!(":\x03:{}:{}", sign_type, sch_seq_no)
-                    } else {
-                        return None;
-                    }
-                }
-                Some(super::ledger::constants::GET_NYM) => {
-                    let mut hasher = sha2::Sha256::default();
-                    hasher.process(dest.as_slice());
-                    dest = hasher.fixed_result().to_vec();
-                    "".to_string()
-                }
-                Some(super::ledger::constants::GET_SCHEMA) => {
-                    if let (Some(name), Some(ver)) = (json_msg["data"]["name"].as_str(),
-                                                      json_msg["data"]["version"].as_str()) {
-                        format!(":\x02:{}:{}", name, ver)
-                    } else {
-                        return None;
-                    }
-                }
-                _ => return None
-            };
-            let mut out_value: Option<serde_json::Value> = None;
-            if json_msg["type"].as_str().eq(&Some(::services::ledger::constants::GET_NYM)) {
-                out_value = value.map(|mut value| {
-                    value["seqNo"] = json_msg["seqNo"].clone();
-                    if value["role"].as_str() == Some("") {
-                        value["role"] = serde_json::Value::Null; //FIXME should be fixed on node side
-                    }
-                    let mut value = value.as_object_mut().unwrap().clone();
-                    value.remove("dest");
-                    serde_json::Value::from(value)
-                });
-            } else {
-                if let (Some(data), Some(seq_no)) = (value, json_msg["seqNo"].as_u64()) {
-                    out_value = Some(json!({ "lsn": seq_no, "val": data }));
-                }
-            }
-            dest.extend_from_slice(key_suffix.as_bytes());
-            Some((proof, root_hash, dest, out_value.map(|v| v.to_string())))
+        trace!("TransactionHandler::parse_reply_for_proof_checking: >>> json_msg: {:?}", json_msg);
+
+        let xtype = if let Some(xtype) = json_msg["type"].as_str() {
+            trace!("TransactionHandler::parse_reply_for_proof_checking: xtype: {:?}", xtype);
+            xtype
         } else {
-            None
+            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No type field");
+            return None;
+        };
+
+        if ![constants::GET_NYM, constants::GET_SCHEMA, constants::GET_CLAIM_DEF, constants::GET_ATTR].contains(&xtype) {
+            //TODO GET_DDO, GET_TXN
+            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< type not supported");
+            return None;
+        }
+
+        let proof = if let Some(proof) = json_msg["state_proof"]["proof_nodes"].as_str() {
+            trace!("TransactionHandler::parse_reply_for_proof_checking: proof: {:?}", proof);
+            proof
+        } else {
+            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No proof");
+            return None;
+        };
+
+        let root_hash = if let Some(root_hash) = json_msg["state_proof"]["root_hash"].as_str() {
+            trace!("TransactionHandler::parse_reply_for_proof_checking: root_hash: {:?}", root_hash);
+            root_hash
+        } else {
+            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No root hash");
+            return None;
+        };
+
+        // TODO: FIXME: It is a workaround for Node's problem. Node returns some transactions as strings and some as objects.
+        // If node returns marshaled json it can contain spaces and it can cause invalid hash.
+        // So we have to save the original string too.
+        // See https://jira.hyperledger.org/browse/INDY-699
+        let (data, parsed_data): (Option<String>, SJsonValue) = match json_msg["data"] {
+            SJsonValue::Null => {
+                trace!("TransactionHandler::parse_reply_for_proof_checking: Data is null");
+                (None, SJsonValue::Null)
+            }
+            SJsonValue::String(ref str) => {
+                trace!("TransactionHandler::parse_reply_for_proof_checking: Data is string");
+                if let Ok(parsed_data) = serde_json::from_str(str) {
+                    (Some(str.to_owned()), parsed_data)
+                } else {
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Data field is invalid json");
+                    return None;
+                }
+            }
+            SJsonValue::Object(ref map) => {
+                trace!("TransactionHandler::parse_reply_for_proof_checking: Data is object");
+                (Some(json_msg["data"].to_string()), SJsonValue::from(map.clone()))
+            }
+            _ => {
+                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Data field is invalid type");
+                return None;
+            }
+        };
+
+        trace!("TransactionHandler::parse_reply_for_proof_checking: data: {:?}, parsed_data: {:?}", data, parsed_data);
+
+        let key_suffix: String = match xtype {
+            constants::GET_ATTR => {
+                if let Some(attr_name) = json_msg["raw"].as_str()
+                    .or(json_msg["enc"].as_str())
+                    .or(json_msg["hash"].as_str()) {
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_ATTR attr_name {:?}", attr_name);
+
+                    let mut hasher = sha2::Sha256::default();
+                    hasher.process(attr_name.as_bytes());
+                    format!(":\x01:{}", hasher.fixed_result().to_hex())
+                } else {
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_ATTR No key suffix");
+                    return None;
+                }
+            }
+            constants::GET_CLAIM_DEF => {
+                if let (Some(sign_type), Some(sch_seq_no)) = (json_msg["signature_type"].as_str(),
+                                                              json_msg["ref"].as_u64()) {
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_CLAIM_DEF sign_type {:?}, sch_seq_no: {:?}", sign_type, sch_seq_no);
+                    format!(":\x03:{}:{}", sign_type, sch_seq_no)
+                } else {
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_CLAIM_DEF No key suffix");
+                    return None;
+                }
+            }
+            constants::GET_NYM => {
+                trace!("TransactionHandler::parse_reply_for_proof_checking: GET_NYM");
+                "".to_string()
+            }
+            constants::GET_SCHEMA => {
+                if let (Some(name), Some(ver)) = (parsed_data["name"].as_str(),
+                                                  parsed_data["version"].as_str()) {
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_SCHEMA name {:?}, ver: {:?}", name, ver);
+                    format!(":\x02:{}:{}", name, ver)
+                } else {
+                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_SCHEMA No key suffix");
+                    return None;
+                }
+            }
+            _ => {
+                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Unknown transaction");
+                return None;
+            }
+        };
+
+        let key = if let Some(dest) = json_msg["dest"].as_str().or(json_msg["origin"].as_str()) {
+            let mut dest = if xtype == constants::GET_NYM {
+                let mut hasher = sha2::Sha256::default();
+                hasher.process(dest.as_bytes());
+                hasher.fixed_result().to_vec()
+            } else {
+                dest.as_bytes().to_vec()
+            };
+
+            dest.extend_from_slice(key_suffix.as_bytes());
+
+            trace!("TransactionHandler::parse_reply_for_proof_checking: dest: {:?}", dest);
+            dest
+        } else {
+            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No dest");
+            return None;
+        };
+
+        let value: Option<String> = match TransactionHandler::parse_reply_for_proof_value(json_msg, data, parsed_data, xtype) {
+            Ok(value) => value,
+            Err(err_str) => {
+                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< {}", err_str);
+                return None;
+            }
+        };
+
+        trace!("parse_reply_for_proof_checking: <<< proof {:?}, root_hash: {:?}, dest: {:?}, value: {:?}", proof, root_hash, key, value);
+        Some((proof, root_hash, key, value))
+    }
+
+    fn parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, parsed_data: SJsonValue, xtype: &str) -> Result<Option<String>, String> {
+        if let Some(data) = data {
+            let mut value = json!({});
+
+            let (seq_no, time) = (json_msg["seqNo"].clone(), json_msg["txnTime"].clone());
+            if xtype.eq(constants::GET_NYM) {
+                value["seqNo"] = seq_no;
+                value["txnTime"] = time;
+            } else {
+                value["lsn"] = seq_no;
+                value["lut"] = time;
+            }
+
+            match xtype {
+                //TODO constants::GET_TXN => check ledger MerkleTree proofs?
+                //TODO constants::GET_DDO => support DDO
+                constants::GET_NYM => {
+                    value["identifier"] = parsed_data["identifier"].clone();
+                    value["role"] = parsed_data["role"].clone();
+                    value["verkey"] = parsed_data["verkey"].clone();
+                }
+                constants::GET_ATTR => {
+                    let mut hasher = sha2::Sha256::default();
+                    hasher.process(data.as_bytes());
+                    value["val"] = SJsonValue::String(hasher.fixed_result().to_hex());
+                }
+                constants::GET_CLAIM_DEF => {
+                    value["val"] = parsed_data;
+                }
+                constants::GET_SCHEMA => {
+                    if let Some(map) = parsed_data.as_object() {
+                        let mut map = map.clone();
+                        map.remove("name");
+                        map.remove("version");
+                        if map.is_empty() {
+                            return Ok(None); // TODO FIXME remove after INDY-699 will be fixed
+                        } else {
+                            value["val"] = SJsonValue::from(map)
+                        }
+                    } else {
+                        return Err("Invalid data for GET_SCHEMA".to_string());
+                    };
+                }
+                _ => {
+                    return Err("Unknown transaction".to_string());
+                }
+            }
+
+            Ok(Some(value.to_string()))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option<(&str, Vec<&str>, &str)> {
+        match (json_msg["state_proof"]["multi_signature"]["signature"].as_str(),
+               json_msg["state_proof"]["multi_signature"]["participants"].as_array(),
+               json_msg["state_proof"]["multi_signature"]["pool_state_root"].as_str()) {
+            (Some(signature), Some(participants), Some(pool_state_root)) => {
+                let participants_unwrap: Vec<&str> = participants
+                    .iter()
+                    .flat_map(SJsonValue::as_str)
+                    .collect();
+
+                if participants.len() == participants_unwrap.len() {
+                    Some((signature, participants_unwrap, pool_state_root))
+                } else {
+                    None
+                }
+            }
+            _ => None
         }
     }
 }
@@ -340,6 +512,7 @@ impl TransactionHandler {
 impl Default for TransactionHandler {
     fn default() -> Self {
         TransactionHandler {
+            gen: Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),
             pending_commands: HashMap::new(),
             f: 0,
             nodes: Vec::new(),
@@ -378,8 +551,14 @@ impl PoolWorker {
     }
 
     fn init_catchup(&mut self, refresh_cmd_id: Option<i32>) -> Result<(), PoolError> {
+        let mt = PoolWorker::_restore_merkle_tree_from_pool_name(self.name.as_str())?;
+        if mt.count() == 0 {
+            return Err(PoolError::CommonError(
+                CommonError::InvalidState("Invalid Genesis Transaction file".to_string())));
+        }
+
         let catchup_handler = CatchupHandler {
-            merkle_tree: PoolWorker::_restore_merkle_tree(self.name.as_str())?,
+            merkle_tree: mt,
             initiate_cmd_id: refresh_cmd_id.unwrap_or(self.open_cmd_id),
             is_refresh: refresh_cmd_id.is_some(),
             pool_id: self.pool_id,
@@ -507,17 +686,28 @@ impl PoolWorker {
     }
 
 
-    fn _restore_merkle_tree(pool_name: &str) -> Result<MerkleTree, PoolError> {
+    fn _restore_merkle_tree_from_file(txn_file: &str) -> Result<MerkleTree, PoolError> {
+        PoolWorker::_restore_merkle_tree(&PathBuf::from(txn_file))
+    }
+
+    fn _restore_merkle_tree_from_pool_name(pool_name: &str) -> Result<MerkleTree, PoolError> {
         let mut p = EnvironmentUtils::pool_path(pool_name);
-        let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
+        let mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
         //TODO firstly try to deserialize merkle tree
         p.push(pool_name);
         p.set_extension("txn");
-        let f = fs::File::open(p).map_err(map_err_trace!())?;
+
+        PoolWorker::_restore_merkle_tree(&p)
+    }
+
+    fn _restore_merkle_tree(file_mame: &PathBuf) -> Result<MerkleTree, PoolError> {
+        let mut mt = MerkleTree::from_vec(Vec::new()).map_err(map_err_trace!())?;
+        let f = fs::File::open(file_mame).map_err(map_err_trace!())?;
+
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
             let line: String = line.map_err(map_err_trace!())?;
-            let genesis_txn: serde_json::Value = serde_json::from_str(line.as_str()).unwrap(); /* FIXME resolve unwrap */
+            let genesis_txn: SJsonValue = serde_json::from_str(line.as_str()).unwrap(); /* FIXME resolve unwrap */
             let bytes = rmp_serde::encode::to_vec_named(&genesis_txn).unwrap(); /* FIXME resolve unwrap */
             mt.append(bytes).map_err(map_err_trace!())?;
         }
@@ -617,12 +807,19 @@ impl RemoteNode {
     fn new(txn: &GenTransaction) -> Result<RemoteNode, PoolError> {
         let node_verkey = txn.dest.as_str().from_base58()
             .map_err(|e| { CommonError::InvalidStructure("Invalid field dest in genesis transaction".to_string()) })?;
+
+        let blskey = txn.data.blskey.as_str().from_base58()
+            .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?;
+        let blskey = VerKey::from_bytes(blskey.as_slice())
+            .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?;
+
         Ok(RemoteNode {
             public_key: ED25519::vk_to_curve25519(&node_verkey)?,
             zaddr: format!("tcp://{}:{}", txn.data.client_ip, txn.data.client_port),
             zsock: None,
             name: txn.data.alias.clone(),
             is_blacklisted: false,
+            blskey: blskey
         })
     }
 
@@ -681,7 +878,7 @@ impl PoolService {
     pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
         trace!("PoolService::create {} with config {:?}", name, config);
         let mut path = EnvironmentUtils::pool_path(name);
-        let pool_config = match config {
+        let pool_config: PoolConfig = match config {
             Some(config) => PoolConfig::from_json(config)
                 .map_err(|err|
                     CommonError::InvalidStructure(format!("Invalid pool config format: {}", err.description())))?,
@@ -690,6 +887,13 @@ impl PoolService {
 
         if path.as_path().exists() {
             return Err(PoolError::AlreadyExists(format!("Pool ledger config file with name \"{}\" already exists", name)));
+        }
+
+        // check that we can build MerkeleTree from genesis transaction file
+        let mt = PoolWorker::_restore_merkle_tree_from_file(&pool_config.genesis_txn)?;
+        if mt.count() == 0 {
+            return Err(PoolError::CommonError(
+                CommonError::InvalidStructure("Invalid Genesis Transaction file".to_string())));
         }
 
         fs::create_dir_all(path.as_path()).map_err(map_err_trace!())?;
@@ -939,19 +1143,23 @@ mod tests {
         use utils::logger::LoggerUtils;
         use utils::test::TestUtils;
         use std::time;
+        use utils::environment::EnvironmentUtils;
 
         TestUtils::cleanup_storage();
         LoggerUtils::init();
 
         fn drop_test() {
             let pool_name = "pool_drop_works";
+            let test_pool_ip = EnvironmentUtils::test_pool_ip();
+            let gen_txn = format!("{{\"data\":{{\"alias\":\"Node1\",\"blskey\":\"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba\",\"client_ip\":\"{}\",\"client_port\":9702,\"node_ip\":\"{}\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]}},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"Th7MpTaRZVRYnPiabds81Y\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip);
 
             // create minimal fs config stub before Pool::new()
             let mut pool_path = EnvironmentUtils::pool_path(pool_name);
             fs::create_dir_all(&pool_path).unwrap();
             pool_path.push(pool_name);
-            pool_path.set_extension("txn"); //empty genesis txns file - pool will not try to connect to somewhere
-            fs::File::create(pool_path).unwrap();
+            pool_path.set_extension("txn");
+            let mut file = fs::File::create(pool_path).unwrap();
+            file.write(&gen_txn.as_bytes()).unwrap();
 
             let pool = Pool::new(pool_name, -1).unwrap();
             thread::sleep(time::Duration::from_secs(1));
@@ -1012,7 +1220,7 @@ mod tests {
         f.flush().unwrap();
         f.sync_all().unwrap();
 
-        let merkle_tree = PoolWorker::_restore_merkle_tree("test").unwrap();
+        let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
 
         assert_eq!(merkle_tree.count(), 4, "test restored MT size");
         assert_eq!(merkle_tree.root_hash_hex(), "7c7e209a5bee34e467f7a2b6e233b8c61b74ddfd099bd9ad8a9a764cdf671981", "test restored MT root hash");
@@ -1089,7 +1297,7 @@ mod tests {
         let req_id = 1;
         th.pending_commands.insert(req_id, pc);
 
-        th.process_reply(req_id, &json.to_string());
+        th.process_reply(req_id, &json.to_string()).unwrap();
 
         assert_eq!(th.pending_commands.len(), 0);
     }
@@ -1109,7 +1317,7 @@ mod tests {
         let req_id = 1;
         th.pending_commands.insert(req_id, pc);
 
-        th.process_reply(req_id, &json2.to_string());
+        th.process_reply(req_id, &json2.to_string()).unwrap();
 
         assert_eq!(th.pending_commands.len(), 1);
         assert_eq!(th.pending_commands.get(&req_id).unwrap().replies.len(), 2);
@@ -1177,6 +1385,7 @@ mod tests {
         use services::pool::rust_base58::ToBase58;
         use std::thread;
         use super::*;
+        use self::indy_crypto::bls::{Generator, SignKey, VerKey};
 
         pub static POLL_TIMEOUT: i64 = 1000; /* in ms */
 
@@ -1186,10 +1395,15 @@ mod tests {
             let skc = ED25519::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
             let ctx = zmq::Context::new();
             let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
+
+            let blskey = VerKey::new(&Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),
+                                     &SignKey::new(None).unwrap()).unwrap().as_bytes().to_base58();
+
             let gt = GenTransaction {
                 identifier: "".to_string(),
                 data: NodeData {
                     alias: "n1".to_string(),
+                    blskey,
                     services: Vec::new(),
                     client_port: 9700,
                     client_ip: "127.0.0.1".to_string(),

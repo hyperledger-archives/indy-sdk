@@ -18,7 +18,7 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                //FIXME fix and restore 'libindy-redhat-test' : { rhelTesting() }, IS-307
+                'redhat-test' : { rhelTesting() },
                 'windows-test': { windowsTesting() }
         ])
     }
@@ -132,7 +132,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
         echo "${env_name} Test: Checkout csm"
         checkout scm
 
-        poolInst = openPool(env_name, network_name, 'stable', 'stable33', '1.1.24', '1.0.10', '1.1.33')
+        poolInst = openPool(env_name, network_name, 'master', 'master159', '1.1.143', '1.0.32', '1.1.159')
 
         def testEnv
 
@@ -142,16 +142,16 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test"
-                sh 'chmod -R 777 /home/indy/indy-anoncreds/'
 
                 try {
                     def featuresArgs = ''
                     if (run_interoperability_tests) {
+                        sh 'chmod -R 777 /home/indy/indy-anoncreds/'
                         featuresArgs = '--features "interoperability_tests"'
                     }
 
                     echo "${env_name} Test: Build"
-                    sh "RUST_BACKTRACE=1 cargo test $testParams --no-run"
+                    sh "RUST_BACKTRACE=1 cargo test $featuresArgs --no-run"
 
                     echo "${env_name} Test: Run tests"
                     sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release $featuresArgs"
@@ -201,7 +201,7 @@ def windowsTesting() {
 
             try {
                 echo "Windows Test: Run Indy pool"
-                poolVerOptions = getBuildPoolVerOptions('stable', '1.1.24', '1.0.10', '1.1.33')
+                poolVerOptions = getBuildPoolVerOptions('master', '1.1.143', '1.0.32', '1.1.159')
                 bat "docker -H $INDY_SDK_SERVER_IP build --build-arg pool_ip=$INDY_SDK_SERVER_IP ${poolVerOptions} -f ci/indy-pool.dockerfile -t indy_pool ci"
                 bat "docker -H $INDY_SDK_SERVER_IP run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 

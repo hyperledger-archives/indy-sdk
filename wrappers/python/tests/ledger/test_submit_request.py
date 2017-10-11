@@ -1,8 +1,9 @@
-from indy import ledger, signus
-from indy.error import ErrorCode, IndyError
-
 import json
+
 import pytest
+
+from indy import ledger
+from indy.error import ErrorCode, IndyError
 
 
 @pytest.mark.asyncio
@@ -23,13 +24,18 @@ async def test_submit_request_works(pool_handle):
             "identifier": "Th7MpTaRZVRYnPiabds81Y",
             "dest": "Th7MpTaRZVRYnPiabds81Y",
             "data": "{\"dest\":\"Th7MpTaRZVRYnPiabds81Y\",\"identifier\":\"V4SGRU86Z58d6TV7PBUe6f\",\"role\":\"2\""
-                    ",\"verkey\":\"~7TYfekw4GUagBnBVCqPjiC\"}",
+                    ",\"seqNo\":2,\"txnTime\":null,\"verkey\":\"~7TYfekw4GUagBnBVCqPjiC\"}",
             "type": "105",
         },
         "op": "REPLY"
     }
     response = json.loads(await ledger.submit_request(pool_handle, json.dumps(request)))
-    assert response == expected_response
+    assert response["op"] == expected_response["op"]
+    assert response["result"]["identifier"] == expected_response["result"]["identifier"]
+    assert response["result"]["dest"] == expected_response["result"]["dest"]
+    assert response["result"]["data"] == expected_response["result"]["data"]
+    assert response["result"]["type"] == expected_response["result"]["type"]
+
 
 
 @pytest.mark.asyncio
@@ -162,7 +168,8 @@ async def test_send_node_request_works_without_signature(pool_handle, identity_m
         "client_ip": "10.0.0.100",
         "client_port": 9709,
         "alias": "Node5",
-        "services": ["VALIDATOR"]
+        "services": ["VALIDATOR"],
+        "blskey": "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
     }
 
     node_request = await ledger.build_node_request(my_did, my_did, json.dumps(node_data))
@@ -219,7 +226,7 @@ async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_tru
 
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, claim_def_request)
     get_claim_def_request = await ledger.build_get_claim_def_txn(
-        my_did, get_schema_response['result']['seqNo'], "CL", get_schema_response['result']['data']['origin'])
+        my_did, get_schema_response['result']['seqNo'], "CL", get_schema_response['result']['dest'])
     get_claim_def_response = json.loads(
         (await ledger.submit_request(pool_handle, get_claim_def_request)))
     claim_def["revocation"] = {}  # FIXME workaround for ledger
