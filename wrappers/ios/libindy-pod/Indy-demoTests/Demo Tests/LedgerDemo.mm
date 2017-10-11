@@ -48,17 +48,9 @@
     
     // 2. Open pool ledger
     __block IndyHandle poolHandle = 0;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [IndyPool openPoolLedgerWithName:poolName
-                                poolConfig:nil
-                                completion:^(NSError *error, IndyHandle h)
-            {
-                XCTAssertEqual(error.code, Success, "openPoolLedgerWithName got error in completion");
-                poolHandle = h;
-                [completionExpectation fulfill];
-            }];
+    
+    ret = [[PoolUtils sharedInstance] openPoolLedger:poolName config:nil poolHandler:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"openPoolLedgerWithName() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 3. Create my wallet
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -261,17 +253,9 @@
     
     // 2. Open pool ledger
     __block IndyHandle poolHandle = 0;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [IndyPool openPoolLedgerWithName:poolName
-                                poolConfig:nil
-                                completion:^(NSError *error, IndyHandle h)
-           {
-               XCTAssertEqual(error.code, Success, "openPoolLedgerWithName got error in completion");
-               poolHandle = h;
-               [completionExpectation fulfill];
-           }];
+    
+    ret = [[PoolUtils sharedInstance] openPoolLedger:poolName config:nil poolHandler:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"openPoolLedgerWithName() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 3. Create my wallet
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];

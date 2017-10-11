@@ -6,13 +6,13 @@
 
 @implementation IndyPool
 
-+ (NSError *)createPoolLedgerConfigWithPoolName:(NSString *)name
-                                     poolConfig:(NSString *)poolConfig
-                                     completion:(void (^)(NSError *error)) handler
++ (void)createPoolLedgerConfigWithPoolName:(NSString *)name
+                                poolConfig:(NSString *)poolConfig
+                                completion:(void (^)(NSError *error)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_create_pool_ledger_config(handle,
                                          [name UTF8String],
@@ -22,18 +22,20 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret]);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)openPoolLedgerWithName:(NSString *)name
-                         poolConfig:(NSString *)poolConfig
-                         completion:(void (^)(NSError *error, IndyHandle poolHandle)) handler
++ (void)openPoolLedgerWithName:(NSString *)name
+                    poolConfig:(NSString *)poolConfig
+                    completion:(void (^)(NSError *error, IndyHandle poolHandle)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_open_pool_ledger(handle,
                                 [name UTF8String],
@@ -43,17 +45,19 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], 0);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)refreshPoolLedgerWithHandle:(IndyHandle)poolHandle
-                              completion:(void (^)(NSError *error)) handler
++ (void)refreshPoolLedgerWithHandle:(IndyHandle)poolHandle
+                         completion:(void (^)(NSError *error)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_refresh_pool_ledger(handle,
                                    (indy_handle_t) poolHandle,
@@ -62,17 +66,19 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret]);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)closePoolLedgerWithHandle:(IndyHandle)poolHandle
-                            completion:(void (^)(NSError *error)) handler
++ (void)closePoolLedgerWithHandle:(IndyHandle)poolHandle
+                       completion:(void (^)(NSError *error)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_close_pool_ledger(handle,
                                  (indy_handle_t) poolHandle,
@@ -81,17 +87,19 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret]);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)deletePoolLedgerConfigWithName:(NSString *)name
-                                 completion:(void (^)(NSError *error)) handler
++ (void)deletePoolLedgerConfigWithName:(NSString *)name
+                            completion:(void (^)(NSError *error)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_delete_pool_ledger_config(handle,
                                          [name UTF8String],
@@ -100,9 +108,11 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret]);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
 @end
