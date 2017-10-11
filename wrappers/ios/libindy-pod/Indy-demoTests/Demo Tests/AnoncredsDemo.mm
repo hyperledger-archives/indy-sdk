@@ -204,17 +204,9 @@
     XCTAssertEqual(ret.code, Success, @"verifierVerifyProof() failed!");
     
     // 12. close wallet
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    ret = [[IndyWallet sharedInstance] closeWalletWithHandle: walletHandle
-                                                    completion: ^ (NSError *error)
-           {
-               XCTAssertEqual(error.code, Success, "closeWallet got error in completion");
-               [completionExpectation fulfill];
-           }];
-    
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
     XCTAssertEqual(ret.code, Success, @"closeWallet() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
     [TestUtils cleanupStorage];
 }
 
@@ -398,15 +390,9 @@
     XCTAssertEqual(valid, true, "verifierVerifyProof() got error in completion");
     
     // 12. close wallet
-    ret = [[IndyWallet sharedInstance] closeWalletWithHandle: walletHandle
-                                                  completion: ^ (NSError *error)
-           {
-               XCTAssertEqual(error.code, Success, "closeWallet got error in completion");
-               [completionExpectation fulfill];
-           }];
     
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
     XCTAssertEqual(ret.code, Success, @"closeWallet() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [TestUtils cleanupStorage];

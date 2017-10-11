@@ -158,7 +158,6 @@
     NSString *theirWalletName = @"their_wallet6";
     NSString *xtype = @"keychain";
     NSError *ret = nil;
-    XCTestExpectation* completionExpectation = nil;
     
     IndyHandle myWalletHandle = 0;
     IndyHandle theirWalletHandle = 0;
@@ -199,7 +198,6 @@
     
     // 5. Create My DID
     
-    NSString *myDidJson = @"{}";
     NSString *myDid = nil;
     NSString *myVerkey = nil;
     NSString *myPk = nil;
@@ -212,8 +210,6 @@
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 6. Create Their DID
-    
-    NSString *theirDidJson = @"{}";
     
     NSString *theirDid = nil;
     NSString *theirVerkey = nil;

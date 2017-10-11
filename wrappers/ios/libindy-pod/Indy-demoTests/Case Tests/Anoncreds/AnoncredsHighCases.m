@@ -366,7 +366,7 @@
     // 2. create master secret
     IndyHandle invalidWalletHandle = walletHandle + 1;
     ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:@"master_secret_name2"
-                                                            walletHandle:walletHandle];
+                                                            walletHandle:invalidWalletHandle];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverCreateMasterSecret returned not WalletInvalidHandle code:%ld", (long)ret.code);
      
 }
