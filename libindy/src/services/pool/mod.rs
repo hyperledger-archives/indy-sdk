@@ -37,7 +37,7 @@ use self::catchup::CatchupHandler;
 use self::types::*;
 use services::ledger::constants;
 use services::ledger::merkletree::merkletree::MerkleTree;
-use utils::crypto::ed25519::ED25519;
+use utils::crypto::box_::CryptoBox;
 use utils::environment::EnvironmentUtils;
 use utils::json::{JsonDecodable, JsonEncodable};
 use utils::sequence::SequenceUtils;
@@ -814,7 +814,7 @@ impl RemoteNode {
             .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?;
 
         Ok(RemoteNode {
-            public_key: ED25519::vk_to_curve25519(&node_verkey)?,
+            public_key: CryptoBox::vk_to_curve25519(&node_verkey)?,
             zaddr: format!("tcp://{}:{}", txn.data.client_ip, txn.data.client_port),
             zsock: None,
             name: txn.data.alias.clone(),
@@ -1391,8 +1391,8 @@ mod tests {
 
         pub fn start() -> (GenTransaction, thread::JoinHandle<Vec<String>>) {
             let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
-            let pkc = ED25519::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
-            let skc = ED25519::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
+            let pkc = CryptoBox::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
+            let skc = CryptoBox::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
             let ctx = zmq::Context::new();
             let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
 

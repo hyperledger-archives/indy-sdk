@@ -874,7 +874,7 @@ impl CallbackUtils {
             static ref DECRYPT_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
         }
 
-        extern "C" fn closure_to_decrypt_callback(command_handle: i32, err: ErrorCode, decrypted_msg_raw: *const u8, decrypted_msg_len: u32) {
+        extern "C" fn decrypt_callback(command_handle: i32, err: ErrorCode, decrypted_msg_raw: *const u8, decrypted_msg_len: u32) {
             let mut callbacks = DECRYPT_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let decrypted_msg = unsafe { slice::from_raw_parts(decrypted_msg_raw, decrypted_msg_len as usize) };
@@ -885,7 +885,7 @@ impl CallbackUtils {
         let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
         callbacks.insert(command_handle, closure);
 
-        (command_handle, Some(closure_to_decrypt_callback))
+        (command_handle, Some(decrypt_callback))
     }
 
     pub fn closure_to_sign_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
@@ -896,7 +896,7 @@ impl CallbackUtils {
             static ref SIGN_REQUEST_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
         }
 
-        extern "C" fn closure_to_sign_request_callback(command_handle: i32, err: ErrorCode, signed_request_json: *const c_char) {
+        extern "C" fn sign_request_callback(command_handle: i32, err: ErrorCode, signed_request_json: *const c_char) {
             let mut callbacks = SIGN_REQUEST_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let signed_request_json = unsafe { CStr::from_ptr(signed_request_json).to_str().unwrap().to_string() };
@@ -907,7 +907,7 @@ impl CallbackUtils {
         let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
         callbacks.insert(command_handle, closure);
 
-        (command_handle, Some(closure_to_sign_request_callback))
+        (command_handle, Some(sign_request_callback))
     }
 
 
@@ -953,6 +953,50 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(issuer_create_and_store_revoc_reg_callback))
+    }
+
+    pub fn closure_to_encrypt_sealed_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (i32,
+                                                                                            Option<extern fn(command_handle: i32,
+                                                                                                             err: ErrorCode,
+                                                                                                             encrypted_msg_raw: *const u8, encrypted_msg_len: u32)>) {
+        lazy_static! {
+            static ref ENCRYPT_SEALED_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
+        }
+
+        extern "C" fn encrypt_sealed_callback(command_handle: i32, err: ErrorCode, encrypted_msg_raw: *const u8, encrypted_msg_len: u32) {
+            let mut callbacks = ENCRYPT_SEALED_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let encrypted_msg = unsafe { slice::from_raw_parts(encrypted_msg_raw, encrypted_msg_len as usize) };
+            cb(err, encrypted_msg.to_vec())
+        }
+
+        let mut callbacks = ENCRYPT_SEALED_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(encrypt_sealed_callback))
+    }
+
+    pub fn closure_to_decrypt_sealed_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (i32,
+                                                                                            Option<extern fn(command_handle: i32,
+                                                                                                             err: ErrorCode,
+                                                                                                             decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) {
+        lazy_static! {
+            static ref DECRYPT_SEALED_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
+        }
+
+        extern "C" fn encrypt_sealed_callback(command_handle: i32, err: ErrorCode, decrypted_msg_raw: *const u8, decrypted_msg_len: u32) {
+            let mut callbacks = DECRYPT_SEALED_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let decrypted_msg = unsafe { slice::from_raw_parts(decrypted_msg_raw, decrypted_msg_len as usize) };
+            cb(err, decrypted_msg.to_vec())
+        }
+
+        let mut callbacks = DECRYPT_SEALED_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(encrypt_sealed_callback))
     }
 
     pub fn closure_to_pairwise_exists_cb(closure: Box<FnMut(ErrorCode, bool) + Send>) -> (i32,
