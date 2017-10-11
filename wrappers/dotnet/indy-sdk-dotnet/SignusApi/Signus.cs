@@ -110,6 +110,43 @@ namespace Hyperledger.Indy.SignusApi
             taskCompletionSource.SetResult(decryptedMsgBytes);
         };
 
+        /// <summary>
+        /// Gets the callback to use when the command for EncryptAsync has completed.
+        /// </summary>
+        private static EncryptResultDelegate _encryptSealedCallback = (xcommand_handle, err, encrypted_msg_raw, encrypted_msg_len, nonce_raw, nonce_len) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<EncryptResult>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            var encryptedMessageBytes = new byte[encrypted_msg_len];
+            Marshal.Copy(encrypted_msg_raw, encryptedMessageBytes, 0, encrypted_msg_len);
+
+            var nonceBytes = new byte[nonce_len];
+            Marshal.Copy(nonce_raw, nonceBytes, 0, nonce_len);
+
+            var callbackResult = new EncryptResult(encryptedMessageBytes, nonceBytes);
+
+            taskCompletionSource.SetResult(callbackResult);
+        };
+
+        /// <summary>
+        /// Gets the callback to use when the command for DecryptAsync has completed.
+        /// </summary>
+        private static DecryptResultDelegate _decryptSealedCallback = (xcommand_handle, err, decrypted_msg_raw, decrypted_msg_len) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            var decryptedMsgBytes = new byte[decrypted_msg_len];
+            Marshal.Copy(decrypted_msg_raw, decryptedMsgBytes, 0, decrypted_msg_len);
+
+            taskCompletionSource.SetResult(decryptedMsgBytes);
+        };
+
 
         /// <summary>
         /// Creates signing and encryption keys in specified wallet for a new DID owned by the caller.
@@ -450,6 +487,85 @@ namespace Hyperledger.Indy.SignusApi
                 nonce,
                 nonce.Length,
                 _decryptCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Encrypts the provided message with the public key of the specified DID using the anonymous-encryption scheme.
+        /// </summary>
+        /// <remarks>
+        /// <para>If the wallet specified in the <paramref name="wallet"/> parameter contains the public key
+        /// associated with the DID specified in the <paramref name="did"/> parameter and the value has
+        /// not expired then this key will be used for encryption.
+        /// </para>
+        /// <para>On the other hand, if the public key is not present in the wallet or has expired the public
+        /// key will be read from the ledger in the node pool specified in the <paramref name="pool"/> 
+        /// parameter and the wallet will be updated with the new public key if required.
+        /// </para>
+        /// <para>For further information on registering a public key for a DID see the 
+        /// <see cref="StoreTheirDidAsync(Wallet, string)"/>method and for information on the expiry of 
+        /// values in a wallet see the <see cref="Wallet.CreateWalletAsync(string, string, string, string, string)"/>
+        /// and <see cref="Wallet.OpenWalletAsync(string, string, string)"/> methods.
+        /// </para>
+        /// </remarks>
+        /// <param name="wallet">The wallet containing the DID to use for encryption.</param>
+        /// <param name="pool">The node pool to read the public key from if required.</param>
+        /// <param name="myDid">The DID used to encrypt the message.</param>
+        /// <param name="did">The DID the message is to be encrypted for.</param>
+        /// <param name="msg">The message to encrypt.</param>
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to an <see cref="EncryptResult"/> once encryption is complete.</returns>
+        public static Task<EncryptResult> EncryptSealedAsync(Wallet wallet, Pool pool, string did, byte[] msg)
+        {
+            var taskCompletionSource = new TaskCompletionSource<EncryptResult>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = IndyNativeMethods.indy_encrypt_sealed(
+                commandHandle,
+                wallet.Handle,
+                pool.Handle,
+                did,
+                msg,
+                msg.Length,
+                _encryptSealedCallback);
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Decrypts the provided message using the public key associated with my DID using the anonymous-encryption scheme.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The DID specified in the <paramref name="myDid"/> parameter must have been previously created 
+        /// with a secret key and stored in the wallet specified in the <paramref name="wallet"/> parameter.
+        /// </para>
+        /// <para>
+        /// For further information on storing a DID and its secret key see the 
+        /// <see cref="CreateAndStoreMyDidAsync(Wallet, string)"/> method.
+        /// </para>
+        /// </remarks>
+        /// <param name="wallet">The wallet containing the DID and associated secret key to use for decryption.</param>
+        /// <param name="did">The DID of the encrypting party to use for verification.</param>
+        /// <param name="encryptedMsg">The message to decrypt.</param>
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the decrypted message.</returns>
+        public static Task<byte[]> DecryptSealedAsync(Wallet wallet, string did, byte[] encryptedMsg)
+        {
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = IndyNativeMethods.indy_decrypt_sealed(
+                commandHandle,
+                wallet.Handle,
+                did,
+                encryptedMsg,
+                encryptedMsg.Length,
+                _decryptSealedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);

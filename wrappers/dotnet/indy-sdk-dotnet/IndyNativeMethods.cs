@@ -598,6 +598,34 @@ namespace Hyperledger.Indy
         /// <param name="decrypted_msg_len">The length of the decrypted message byte array.</param>
         internal delegate void DecryptResultDelegate(int xcommand_handle, int err, IntPtr decrypted_msg_raw, int decrypted_msg_len);
 
+        /// <summary>
+        /// Encrypts a message by a public key associated with a DID.
+        /// </summary>
+        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
+        /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
+        /// <param name="pool_handle"></param>
+        /// <param name="did">encrypting DID (??)</param>
+        /// <param name="message_raw">The message to encrypt.</param>
+        /// <param name="message_len">The length of the message byte array.</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_encrypt_sealed(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string did, byte[] message_raw, int message_len, EncryptResultDelegate cb);
+
+        /// <summary>
+        /// Decrypts a message encrypted by a public key associated with my DID.
+        /// </summary>
+        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
+        /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
+        /// <param name="did">DID that encrypted the message</param>
+        /// <param name="encrypted_msg_raw">encrypted message as a byte array.</param>
+        /// <param name="encrypted_msg_len">The length of the message byte array.</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_decrypt_sealed(int command_handle, IntPtr wallet_handle, string did, byte[] encrypted_msg_raw, int encrypted_msg_len, DecryptResultDelegate cb);
+
+
         // anoncreds.rs
 
         /// <summary>
