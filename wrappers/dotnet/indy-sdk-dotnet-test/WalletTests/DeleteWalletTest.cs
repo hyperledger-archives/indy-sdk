@@ -68,9 +68,11 @@ namespace Hyperledger.Indy.Test.WalletTests
         [TestMethod]
         public async Task TestDeleteWalletWorksForPlugged()
         {
-            await Wallet.CreateWalletAsync(POOL, WALLET, "inmem", null, null);
-            await Wallet.DeleteWalletAsync(WALLET, null);
-            await Wallet.CreateWalletAsync(POOL, WALLET, "inmem", null, null);
+            var walletName = "pluggedWalletDelete";
+
+            await Wallet.CreateWalletAsync(POOL, walletName, "inmem", null, null);
+            await Wallet.DeleteWalletAsync(walletName, null);
+            await Wallet.CreateWalletAsync(POOL, walletName, "inmem", null, null);
         }
     }
 }
