@@ -79,7 +79,7 @@
                                                                    outMyDid:&listenerDid
                                                                 outMyVerkey:&listenerVerKey
                                                                     outMyPk:&listenerPubKey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed listener did");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed listener did");
     
     // 5. obtain trustee did
     
@@ -89,7 +89,7 @@
                                                                    outMyDid:&senderDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed sender did");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed sender did");
     
     // 6. store their did from parts
     
@@ -105,12 +105,13 @@
     NSString *listenerNewVerKey;
     NSString *listenerNewPubKey;
     
-    ret = [[SignusUtils sharedInstance] replaceKeysWithWalletHandle:listenerWallet
-                                                                did:listenerDid
-                                                       identityJson:@"{}"
-                                                        outMyVerKey:&listenerNewVerKey
-                                                            outMyPk:&listenerNewPubKey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::replaceKeysWithWalletHandle() failed");
+    ret = [[SignusUtils sharedInstance] replaceKeysForDid:listenerDid
+                                             identityJson:@"{}"
+                                             walletHandle:listenerWallet
+                                               poolHandle:poolHandle
+                                              outMyVerKey:&listenerNewVerKey
+                                                  outMyPk:&listenerNewPubKey];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::replaceKeysForDid() failed");
     
     XCTAssertFalse([listenerVerKey isEqualToString:listenerNewVerKey], @"listener's verKey is the same!");
     XCTAssertFalse([listenerPubKey isEqualToString:listenerNewPubKey], @"listener's pub key is the same!");

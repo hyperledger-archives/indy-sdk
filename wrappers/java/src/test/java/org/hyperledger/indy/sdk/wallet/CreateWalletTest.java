@@ -40,7 +40,7 @@ public class CreateWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCreateWalletWorksForEmptyName() throws Exception {
-		thrown.expect(new ErrorCodeMatcher(ErrorCode.CommonInvalidParam3));
+		thrown.expect(IllegalArgumentException.class);
 
 		Wallet.createWallet(POOL, "", TYPE, null, null).get();
 	}

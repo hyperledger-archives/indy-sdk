@@ -60,11 +60,11 @@
     NSString *listenerVerKey;
     NSString *listenerPubKey;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:listenerWalletHandle
-                                                                       seed:nil
+                                                                       seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&listenerDid
                                                                 outMyVerkey:&listenerVerKey
                                                                     outMyPk:&listenerPubKey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for listener");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for listener");
     
     // 5. create trustee did
     
@@ -74,7 +74,7 @@
                                                                   outMyDid:&trusteeDid
                                                                outMyVerkey:nil
                                                                    outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for trustee");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
     NSString *senderDid = [NSString stringWithString:trusteeDid];
     IndyHandle senderWallet = trusteeWalletHandle;
     
@@ -216,7 +216,7 @@
                                                                    outMyDid:&receiverDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     
     // 3. listen
     IndyHandle listenerHandle = 0;
@@ -268,7 +268,7 @@
                                                                    outMyDid:&did
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     
     // 4. add identity 1
     ret = [[AgentUtils sharedInstance] addIdentityForListenerHandle:listenerHandle
@@ -317,7 +317,7 @@
                                                                    outMyDid:&did
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     
     // 4. obtain did 2
     NSString *did2;
@@ -326,7 +326,7 @@
                                                                    outMyDid:&did2
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndStoreMyDidWithWalletHandle() failed for did2");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for did2");
     
     // 5. add first identity
     ret = [[AgentUtils sharedInstance] addIdentityForListenerHandle:listenerHandle
@@ -377,7 +377,7 @@
                                                                    outMyDid:&receiverDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     
     // 5. add identity
     IndyHandle invalidWalletHandle = walletHandle + 1;
@@ -421,7 +421,7 @@
                                                                    outMyDid:&did
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndStoreMyDid() failed");
     
     // 4. add identity
     ret = [[AgentUtils sharedInstance] addIdentityForListenerHandle:listenerHandle

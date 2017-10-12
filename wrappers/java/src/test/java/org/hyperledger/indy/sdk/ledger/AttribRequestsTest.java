@@ -35,8 +35,7 @@ public class AttribRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 
 	@Test
 	public void testBuildAttribRequestWorksForMissedAttribute() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expect(IllegalArgumentException.class);
 
 		Ledger.buildAttribRequest(identifier, dest, null, null, null).get();
 	}

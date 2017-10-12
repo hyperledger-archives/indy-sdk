@@ -44,11 +44,9 @@ namespace Hyperledger.Indy.Test.WalletTests
             await Wallet.CreateWalletAsync("default", walletName, null, null, null);
             var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
                 Wallet.DeleteWalletAsync(walletName, null)
-            );
-
-            Assert.AreEqual(ErrorCode.CommonIOError, ex.ErrorCode);            
+            );           
         }
 
         [TestMethod]
@@ -66,22 +64,17 @@ namespace Hyperledger.Indy.Test.WalletTests
 
             await Wallet.DeleteWalletAsync(walletName, null);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
                  Wallet.DeleteWalletAsync(walletName, null)
-            );
-
-            Assert.AreEqual(ErrorCode.CommonIOError, ex.ErrorCode);
-        
+            );        
         }
 
         [TestMethod]
         public async Task TestDeleteWalletWorksForNotCreated()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
                 Wallet.DeleteWalletAsync("DeleteWalletAsyncWorksForNotCreated", null)
             );
-
-            Assert.AreEqual(ErrorCode.CommonIOError, ex.ErrorCode);
         }
 
         [TestMethod]
