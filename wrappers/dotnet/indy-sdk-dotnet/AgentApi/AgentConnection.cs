@@ -88,6 +88,11 @@ namespace Hyperledger.Indy.AgentApi
         /// when the connection has been established.</returns>
         public static Task<AgentConnection> ConnectAsync(Pool pool, Wallet wallet, string senderDid, string receiverDid)
         {
+            ParamGuard.NotNull(pool, "pool");
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(senderDid, "senderDid");
+            ParamGuard.NotNullOrWhiteSpace(receiverDid, "receiverDid");
+
             var connection = new AgentConnection();
 
             var taskCompletionSource = new TaskCompletionSource<AgentConnection>(connection);
@@ -189,6 +194,8 @@ namespace Hyperledger.Indy.AgentApi
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public Task SendAsync(string message)
         {
+            ParamGuard.NotNull(message, "message");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 

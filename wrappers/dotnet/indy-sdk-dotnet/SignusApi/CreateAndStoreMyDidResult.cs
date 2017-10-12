@@ -1,4 +1,6 @@
-﻿namespace Hyperledger.Indy.SignusApi
+﻿using System;
+
+namespace Hyperledger.Indy.SignusApi
 {
     /// <summary>
     /// Result of creating and storing my DID.
@@ -13,9 +15,9 @@
         /// <param name="pk">The primary key to use for encryption</param>
         internal CreateAndStoreMyDidResult(string did, string verKey, string pk)
         {
-            Did = did;
-            VerKey = verKey;
-            Pk = pk;
+            Did = did ?? throw new ArgumentNullException("did"); 
+            VerKey = verKey ?? throw new ArgumentNullException("verKey"); 
+            Pk = pk ?? throw new ArgumentNullException("pk");
         }
 
         /// <summary>

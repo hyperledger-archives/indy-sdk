@@ -89,11 +89,9 @@ namespace Hyperledger.Indy.Test.SignusTests
             var identityJson = string.Format("{{\"did\":\"{0}\",\"verkey\":\"{1}\"}}", _trusteeDid, _trusteeVerkey);
             await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
                 Signus.EncryptAsync(_wallet, _pool, "unknownDid", _trusteeDid, _msg)
             );
-
-            Assert.AreEqual(ErrorCode.WalletNotFoundError, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -101,11 +99,9 @@ namespace Hyperledger.Indy.Test.SignusTests
         {
             var nym = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStateException>(() =>
                Signus.EncryptAsync(_wallet, _pool, _trusteeDid, nym.Did, _msg)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidState, ex.ErrorCode);
         }
     }
 }

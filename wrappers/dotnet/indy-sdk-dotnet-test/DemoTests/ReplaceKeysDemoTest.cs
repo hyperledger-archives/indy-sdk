@@ -96,11 +96,9 @@ namespace Hyperledger.Indy.Test.DemoTests
             // 6. Send schema request
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(myDid, _schemaData);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
                Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, schemaRequest)
             );
-
-            Assert.AreEqual(ErrorCode.LedgerInvalidTransaction, ex.ErrorCode);
         }
     }
 }

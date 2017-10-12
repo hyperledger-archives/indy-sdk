@@ -78,11 +78,9 @@ namespace Hyperledger.Indy.Test.WalletTests
         {
             var type = "inmem";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<DuplicateWalletTypeException>(() =>
                 Wallet.RegisterWalletTypeAsync(type, new InMemWalletType())
             );
-
-            Assert.AreEqual(ErrorCode.WalletTypeAlreadyRegisteredError, ex.ErrorCode);
         }
     }
 }

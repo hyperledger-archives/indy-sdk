@@ -101,11 +101,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var nymRequest = await Ledger.BuildNymRequestAsync(did, did, null, null, null);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
                 Ledger.SubmitRequestAsync(_pool, nymRequest)
             );
-
-            Assert.AreEqual(ErrorCode.LedgerInvalidTransaction, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -178,11 +176,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var nymRequest2 = await Ledger.BuildNymRequestAsync(myDid, myDid2, null, null, null);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
                 Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, nymRequest2)
             );
-
-            Assert.AreEqual(ErrorCode.LedgerInvalidTransaction, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -198,11 +194,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, null, null, null);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
                 Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest)
             );
-
-            Assert.AreEqual(ErrorCode.LedgerInvalidTransaction, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -232,11 +226,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestSendNymRequestsWorksForWrongRole()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 Ledger.BuildNymRequestAsync(_identifier, _dest, null, null, "WRONG_ROLE")
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
     }
 }

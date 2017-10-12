@@ -31,11 +31,9 @@ namespace Hyperledger.Indy.Test.AgentTests
 
             await activeListener.CloseAsync();
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 serverToClientConnection.SendAsync("msg")
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
     }
 }

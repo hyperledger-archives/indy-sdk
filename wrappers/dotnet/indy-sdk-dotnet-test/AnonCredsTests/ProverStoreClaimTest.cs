@@ -51,11 +51,10 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "                          \"signature\":{{\"primary_claim\":{{\"m2\":\"1\",\"a\":\"1\",\"e\":\"2\",\"v\":\"3\"}}," +
                 "                          \"non_revocation_claim\":null}}}}", _issuerDid2);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
                 AnonCreds.ProverStoreClaimAsync(_commonWallet, claimJson)
             );
 
-            Assert.AreEqual(ErrorCode.WalletNotFoundError, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -72,11 +71,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                     "            \"revoc_reg_seq_no\":null,\n" +
                     "            \"schema_seq_no\":1}";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 AnonCreds.ProverStoreClaimAsync(_commonWallet, claimJson)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
     }
 }
