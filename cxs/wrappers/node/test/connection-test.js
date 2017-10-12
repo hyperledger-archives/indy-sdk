@@ -2,6 +2,7 @@ var chai = require('chai');
 var parentDir = require('path');
 var currentDir = parentDir.dirname(module.filename);
 var Connection = require(parentDir.dirname(currentDir) + '/dist/api/connection').Connection
+var StateType = require(parentDir.dirname(currentDir) + '/dist/api/api').StateType
 var path = parentDir.dirname(currentDir) + "/lib/libcxs.so";
 var expect = chai.expect;
 var assert = chai.assert;
@@ -72,12 +73,12 @@ describe('A Connection object with ', function () {
         connection.create("info")
         connection.connect()
         assert.equal(connection.getState(), 0)
-        assert.equal(connection.state, 2)
+        assert.equal(connection.state, StateType.OfferSent)
     })
 
     it('call to getState where no connection exists should have a state value of 0', function () {
         assert.equal(connection.getState(), 0)
-        assert.equal(connection.state, 0)
+        assert.equal(connection.state, StateType.None)
     })
 
 
@@ -86,7 +87,7 @@ describe('A Connection object with ', function () {
 
         connection.create("info2")
         assert.equal(connection.getState(), 0)
-        assert.equal(connection.state, 1)
+        assert.equal(connection.state, StateType.Initialized)
     })
 
 
