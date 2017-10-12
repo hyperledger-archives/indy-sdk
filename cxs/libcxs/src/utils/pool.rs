@@ -1,10 +1,16 @@
+extern crate libc;
 
-use indy::api::pool::indy_create_pool_ledger_config;
+use self::libc::c_char;
 use std::ffi::CString;
 use utils::generate_command_handle;
 use utils::init::indy_error_to_cxs_error_code;
-use indy::api::ErrorCode;
 
+extern {
+    fn indy_create_pool_ledger_config(command_handle: i32,
+                                             config_name: *const c_char,
+                                             config: *const c_char,
+                                             cb: Option<extern fn(xcommand_handle: i32, err: i32)>) -> i32;
+}
 
 pub fn create_pool_config<'a>(pool1:&str, config_name:&str)-> u32 {
     let pool_name = pool1;
@@ -14,15 +20,15 @@ pub fn create_pool_config<'a>(pool1:&str, config_name:&str)-> u32 {
     let command_handle: i32 = generate_command_handle();
 
     // currently we have no call backs
-    extern "C" fn f(_handle: i32, _err: ErrorCode) { }
+    extern "C" fn f(_handle: i32, _err: i32) { }
 
-    let indy_err = indy_create_pool_ledger_config(command_handle,
-                                    c_pool_name.as_ptr(),
-                                    c_config_name.as_ptr(),
-                                    Some(f));
-
-    indy_error_to_cxs_error_code(indy_err)
-
+    unsafe {
+        let indy_err = indy_create_pool_ledger_config(command_handle,
+                                                      c_pool_name.as_ptr(),
+                                                      c_config_name.as_ptr(),
+                                                      Some(f));
+        indy_error_to_cxs_error_code(indy_err)
+    }
 }
 
 
