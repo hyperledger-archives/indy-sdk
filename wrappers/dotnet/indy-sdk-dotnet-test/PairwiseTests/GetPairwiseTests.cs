@@ -38,11 +38,9 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         [TestMethod]
         public async Task TestGetPairwiseWorksForNotCreated()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
                 Pairwise.GetAsync(_wallet, _theirDid)
-            );
-
-            Assert.AreEqual(ErrorCode.WalletNotFoundError, ex.ErrorCode);            
+            );          
         }
     }
 }
