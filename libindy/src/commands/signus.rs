@@ -1,3 +1,5 @@
+extern crate serde_json;
+
 use utils::json::{JsonDecodable, JsonEncodable};
 use errors::signus::SignusError;
 use errors::common::CommonError;

@@ -2,10 +2,6 @@
 //  AgentMediumConnect.m
 //  Indy-demo
 //
-//  Created by Anastasia Tarasova on 18/08/2017.
-//  Copyright © 2017 Kirill Neznamov. All rights reserved.
-//
-
 
 #import <Foundation/Foundation.h>
 #import <XCTest/XCTest.h>
@@ -67,7 +63,7 @@
                                                                    outMyDid:&listenerDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed listener did");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed listener did");
     
     // 5. obtain sender did
     
@@ -77,7 +73,7 @@
                                                                    outMyDid:&senderDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed sender did");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed sender did");
     
     // 6. listen
     
@@ -96,17 +92,19 @@
     XCTAssertEqual(ret.code, Success, @"AgentUtils::addIdentityForListenerHandle() failed");
     
     // 8. connect
+    IndyHandle connectHandle = 0;
     ret = [[AgentUtils sharedInstance] connectWithPoolHandle:poolHandle
                                                 walletHandle:senderWallet
                                                    senderDid:senderDid
                                                  receiverDid:listenerDid
                                              messageCallback:nil
-                                         outConnectionHandle:nil];
+                                         outConnectionHandle:&connectHandle];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AgentUtils::connectWithPoolHandle() returned wrong error code");
     
     // 9. close everything
     
     [[AgentUtils sharedInstance] closeListener:listenerHandle];
+    [[AgentUtils sharedInstance] closeConnection:connectHandle];
     [[WalletUtils sharedInstance] closeWalletWithHandle:listenerWallet];
     [[WalletUtils sharedInstance] closeWalletWithHandle:senderWallet];
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
@@ -149,11 +147,11 @@
     NSString *listenerVerKey;
     NSString *listenerPubKey;
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:listenerWallet
-                                                                       seed:nil
+                                                                       seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&listenerDid
                                                                 outMyVerkey:&listenerVerKey
                                                                     outMyPk:&listenerPubKey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed listener did");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed listener did");
     
     // 5. obtain trustee did
     
@@ -163,7 +161,7 @@
                                                                    outMyDid:&trusteeDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed trustee did");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed trustee did");
     
     NSString *senderDid = [NSString stringWithString:trusteeDid];
     
@@ -266,11 +264,11 @@
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for listener wallet");
     
     // 3. sender wallet
-    IndyHandle senderWallet = 0;
+    IndyHandle trusteeWallet = 0;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
                                                                   xtype:nil
-                                                                 handle:&senderWallet];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for sender wallet");
+                                                                 handle:&trusteeWallet];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for trusteeWallet");
     
     // 4. obtain listener did
     
@@ -282,19 +280,41 @@
                                                                    outMyDid:&listenerDid
                                                                 outMyVerkey:&listenerVerKey
                                                                     outMyPk:&listenerPubKey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed listener did");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed listener did");
     
     // 5. obtain trustee did
     
-    NSString *senderDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:senderWallet
+    NSString *trusteeDid;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:trusteeWallet
                                                                        seed:[TestUtils trusteeSeed]
-                                                                   outMyDid:&senderDid
+                                                                   outMyDid:&trusteeDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed sender did");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trusteeDid");
+
     
-    // 6. store their did from parts
+    NSString *senderDid = [NSString stringWithString:trusteeDid];
+    IndyHandle senderWallet = trusteeWallet;
+    
+    // 6. Build  and submit nym request
+    
+    NSString *listenerNymRequest;
+    ret = [[LedgerUtils sharedInstance] buildNymRequestWithSubmitterDid:trusteeDid
+                                                              targetDid:listenerDid
+                                                                 verkey:listenerVerKey
+                                                                  alias:nil
+                                                                   role:nil
+                                                             outRequest:&listenerNymRequest];
+     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildNymRequestWithSubmitterDid() failed");
+    
+    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
+                                                              walletHandle:trusteeWallet
+                                                              submitterDid:trusteeDid
+                                                               requestJson:listenerNymRequest
+                                                           outResponseJson:nil];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() failed");
+    
+    // 7. store their did from parts
     
     ret = [[SignusUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:senderWallet
                                                                       theirDid:listenerDid
@@ -303,22 +323,23 @@
                                                                       endpoint:[TestUtils endpoint]];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::storeTheirDidFromPartsWithWalletHandle() failed");
     
-    // 7. replace keys
+    // 8. replace keys
     
     NSString *listenerNewVerKey;
     NSString *listenerNewPubKey;
     
-    ret = [[SignusUtils sharedInstance] replaceKeysWithWalletHandle:listenerWallet
-                                                                did:listenerDid
-                                                       identityJson:@"{}"
-                                                        outMyVerKey:&listenerNewVerKey
-                                                            outMyPk:&listenerNewPubKey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::replaceKeysWithWalletHandle() failed");
+    ret = [[SignusUtils sharedInstance] replaceKeysForDid:listenerDid
+                                             identityJson:@"{}"
+                                             walletHandle:listenerWallet
+                                               poolHandle:poolHandle
+                                              outMyVerKey:&listenerNewVerKey
+                                                  outMyPk:&listenerNewPubKey];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::replaceKeysForDid() failed");
     
     XCTAssertFalse([listenerVerKey isEqualToString:listenerNewVerKey], @"listener's verKey is the same!");
     XCTAssertFalse([listenerPubKey isEqualToString:listenerNewPubKey], @"listener's pub key is the same!");
     
-    // 8. listen
+    // 9. listen
     
     IndyHandle listenerHandle = 0;
     ret = [[AgentUtils sharedInstance] listenForEndpoint:[TestUtils endpoint]
@@ -327,14 +348,14 @@
                                        outListenerHandle:&listenerHandle];
     XCTAssertEqual(ret.code, Success, @"AgentUtils::listenForEndpoint() failed");
     
-    // 9. add identity
+    // 10. add identity
     ret = [[AgentUtils sharedInstance] addIdentityForListenerHandle:listenerHandle
                                                          poolHandle:poolHandle
                                                        walletHandle:listenerWallet
                                                                 did:listenerDid];
     XCTAssertEqual(ret.code, Success, @"AgentUtils::addIdentityForListenerHandle() failed");
     
-    // 10. connect hang up expected
+    // 11. connect hang up expected
     
     BOOL isTimeout = NO;
     ret = [[AgentUtils sharedInstance] connectHangUpExpectedForPoolHandle:poolHandle
@@ -380,7 +401,6 @@
                                                                   xtype:nil
                                                                  handle:&trusteeWallet];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for trustee wallet");
-    IndyHandle senderWallet = trusteeWallet;
     
     // 4. obtain listener did
     
@@ -392,7 +412,7 @@
                                                                    outMyDid:&listenerDid
                                                                 outMyVerkey:&listenerVerKey
                                                                     outMyPk:&listenerPubKey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed listener did");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed listener did");
     
     // 5. obtain trustee did
     
@@ -402,9 +422,10 @@
                                                                    outMyDid:&trusteeDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed trustee did");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed trustee did");
     
     NSString *senderDid = [NSString stringWithString:trusteeDid];
+    IndyHandle senderWallet = trusteeWallet;
     
     // 6. Build & submit nym request
     
@@ -448,12 +469,15 @@
     NSString *listenerNewVerKey;
     NSString *listenerNewPubKey;
     
-    ret = [[SignusUtils sharedInstance] replaceKeysWithWalletHandle:listenerWallet
-                                                                did:listenerDid
-                                                       identityJson:@"{}"
-                                                        outMyVerKey:&listenerNewVerKey
-                                                            outMyPk:&listenerNewPubKey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::replaceKeysWithWalletHandle() failed");
+    ret = [[SignusUtils sharedInstance] replaceKeysForDid:listenerDid
+                                             identityJson:@"{}"
+                                             walletHandle:listenerWallet
+                                               poolHandle:poolHandle
+                                              outMyVerKey:&listenerNewVerKey
+                                                  outMyPk:&listenerNewPubKey];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::replaceKeysForDid() failed");
+    
+    
     
     XCTAssertFalse([listenerVerKey isEqualToString:listenerNewVerKey], @"listener's verKey is the same!");
     XCTAssertFalse([listenerPubKey isEqualToString:listenerNewPubKey], @"listener's pub key is the same!");
@@ -521,7 +545,7 @@
                                                                    outMyDid:&did
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     
     // 4. listen
     
@@ -588,7 +612,7 @@
                                                                    outMyDid:&did
                                                                 outMyVerkey:&verkey
                                                                     outMyPk:&pubkey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     
     // 4. store their did from parts
     
@@ -657,7 +681,7 @@
                                                                    outMyDid:&did
                                                                 outMyVerkey:&verkey
                                                                     outMyPk:&pubkey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     
     // 3. store their did from parts
     
@@ -707,7 +731,7 @@
                                                                    outMyDid:&did
                                                                 outMyVerkey:&verkey
                                                                     outMyPk:&pubkey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     
     // 3. store their did from parts
     
@@ -778,7 +802,7 @@
                                                                    outMyDid:&did
                                                                 outMyVerkey:&verkey
                                                                     outMyPk:&pubkey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     
     // 3. store their did from parts
     
@@ -838,7 +862,7 @@
                                                                    outMyDid:&did
                                                                 outMyVerkey:&verkey
                                                                     outMyPk:&pubkey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     
     // 3. store their did from parts
     
@@ -920,7 +944,7 @@
                                                                    outMyDid:&did
                                                                 outMyVerkey:&verkey
                                                                     outMyPk:&pubkey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     
     // 4. store their did from parts
     
@@ -1035,7 +1059,7 @@
                                                                    outMyDid:&listenerDid
                                                                 outMyVerkey:&listenerVerkey
                                                                     outMyPk:&listenerPubkey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for listener did");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for listener did");
     
     // 5. obtain sender did
     
@@ -1045,7 +1069,7 @@
                                                                    outMyDid:&senderDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for sender did");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for sender did");
     
     // 6. store their did from parts
     
@@ -1099,7 +1123,5 @@
     
     [TestUtils cleanupStorage];
 }
-
-
 
 @end
