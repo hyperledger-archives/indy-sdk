@@ -1,4 +1,6 @@
-﻿namespace Hyperledger.Indy.SignusApi
+﻿using System;
+
+namespace Hyperledger.Indy.SignusApi
 {
     /// <summary>
     /// The result of encryption.
@@ -12,8 +14,8 @@
         /// <param name="nonce">The nonce.</param>
         internal EncryptResult(byte[] encryptedMsg, byte[] nonce)
         {
-            EncryptedMsg = encryptedMsg;
-            Nonce = nonce;
+            EncryptedMsg = encryptedMsg ?? throw new ArgumentNullException("encryptedMsg");
+            Nonce = nonce ?? throw new ArgumentNullException("nonce");
         }
 
         /// <summary>

@@ -341,4 +341,69 @@ impl SignusUtils {
 
         Ok(decrypted_msg)
     }
+
+    pub fn encrypt_sealed(wallet_handle: i32, pool_handle: i32, did: &str, msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, encrypted_msg| {
+            sender.send((err, encrypted_msg)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_encrypt_sealed_cb(cb);
+
+        let did = CString::new(did).unwrap();
+
+        let err =
+            indy_encrypt_sealed(command_handle,
+                                wallet_handle,
+                                pool_handle,
+                                did.as_ptr(),
+                                msg.as_ptr() as *const u8,
+                                msg.len() as u32,
+                                cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, encrypted_msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(encrypted_msg)
+    }
+
+    pub fn decrypt_sealed(wallet_handle: i32, did: &str, encrypted_msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, decrypted_msg| {
+            sender.send((err, decrypted_msg)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_decrypt_sealed_cb(cb);
+
+        let did = CString::new(did).unwrap();
+
+        let err =
+            indy_decrypt_sealed(command_handle,
+                                wallet_handle,
+                                did.as_ptr(),
+                                encrypted_msg.as_ptr() as *const u8,
+                                encrypted_msg.len() as u32,
+                                cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, decrypted_msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(decrypted_msg)
+    }
 }

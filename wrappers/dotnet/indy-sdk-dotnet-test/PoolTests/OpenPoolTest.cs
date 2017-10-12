@@ -40,12 +40,9 @@ namespace Hyperledger.Indy.Test.PoolTests
             Assert.IsNotNull(pool);
             _openedPools.Add(pool);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<PoolClosedException>(() =>
                Pool.OpenPoolLedgerAsync(poolName, null)
             );
-
-            Assert.AreEqual(ErrorCode.PoolLedgerInvalidPoolHandle, ex.ErrorCode);
-
         }
 
         [TestMethod]

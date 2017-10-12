@@ -48,11 +48,9 @@ namespace Hyperledger.Indy.Test.SignusTests
         {
             var msg = Encoding.UTF8.GetBytes("{\"reqId\":1496822211362017764}");
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
                 Signus.SignAsync(_wallet, "8wZcEriaNLNKtteJvx7f8i", msg)
             );
-
-            Assert.AreEqual(ErrorCode.WalletNotFoundError, ex.ErrorCode);
         }       
     }
 }

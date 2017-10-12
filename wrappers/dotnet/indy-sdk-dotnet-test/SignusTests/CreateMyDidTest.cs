@@ -95,11 +95,9 @@ namespace Hyperledger.Indy.Test.SignusTests
         {
             var json = "{\"seed\":\"aaaaaaaaaaa\"}";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 Signus.CreateAndStoreMyDidAsync(_wallet, json)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -107,11 +105,9 @@ namespace Hyperledger.Indy.Test.SignusTests
         {
             var json = "{\"crypto_type\":\"crypto_type\"}";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<UnknownCryptoException>(() =>
                 Signus.CreateAndStoreMyDidAsync(_wallet, json)
             );
-
-            Assert.AreEqual(ErrorCode.SignusUnknownCryptoError, ex.ErrorCode);
         }
 
         [TestMethod]

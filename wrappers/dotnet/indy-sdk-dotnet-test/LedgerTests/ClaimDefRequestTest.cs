@@ -110,11 +110,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
             var schema_seq_no = 1;
             var data = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"}}}";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 Ledger.BuildClaimDefTxnAsync(_identifier, schema_seq_no, _signature_type, data)
-            );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
+            );            
         }
 
         [TestMethod] 
@@ -216,12 +214,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var claimDefRequest = await Ledger.BuildClaimDefTxnAsync(myDid, schemaSeqNo, _signatureType, claimDefJson);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
                 Ledger.SubmitRequestAsync(_pool, claimDefRequest)
             );
-
-            Assert.AreEqual(ErrorCode.LedgerInvalidTransaction, ex.ErrorCode);
-
         }
     }
 }

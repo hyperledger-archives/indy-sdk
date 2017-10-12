@@ -28,11 +28,9 @@ namespace Hyperledger.Indy.Test.PoolTests
             await pool.CloseAsync();
             _openedPools.Remove(pool);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<PoolClosedException>(() =>
                 pool.CloseAsync()
             );
-
-            Assert.AreEqual(ErrorCode.PoolLedgerInvalidPoolHandle, ex.ErrorCode);
         }
 
         [TestMethod]
