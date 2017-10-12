@@ -416,7 +416,7 @@ impl ProverCommandExecutor {
             let mut attrs: HashMap<String, String> = HashMap::new();
 
             for (attr, values) in claim_json.claim {
-                attrs.insert(attr.clone(), values[1].clone());
+                attrs.insert(attr.clone(), values[0].clone());
             }
 
             claims_info.push(ClaimInfo::new(uuid.clone(), attrs, claim_json.schema_seq_no.clone(),

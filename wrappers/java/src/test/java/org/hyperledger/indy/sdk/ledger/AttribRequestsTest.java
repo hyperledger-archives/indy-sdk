@@ -2,13 +2,9 @@ package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.ErrorCodeMatcher;
-import org.hyperledger.indy.sdk.IndyIntegrationTest;
-import org.hyperledger.indy.sdk.pool.Pool;
+import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults;
-import org.hyperledger.indy.sdk.utils.PoolUtils;
-import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONObject;
 import org.junit.*;
 
@@ -17,34 +13,14 @@ import java.util.concurrent.ExecutionException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class AttribRequestsTest extends IndyIntegrationTest {
+public class AttribRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
-	private Pool pool;
-	private Wallet wallet;
-	private String walletName = "ledgerWallet";
 	private String identifier = "Th7MpTaRZVRYnPiabds81Y";
 	private String dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
 	private String endpoint = "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}";
 
-	@Before
-	public void openPool() throws Exception {
-		String poolName = PoolUtils.createPoolLedgerConfig();
-		pool = Pool.openPoolLedger(poolName, null).get();
-
-		Wallet.createWallet(poolName, walletName, "default", null, null).get();
-		wallet = Wallet.openWallet(walletName, null, null).get();
-	}
-
-	@After
-	public void closePool() throws Exception {
-		pool.closePoolLedger().get();
-		wallet.closeWallet().get();
-		Wallet.deleteWallet(walletName, null).get();
-	}
-
 	@Test
 	public void testBuildAttribRequestWorksForRawData() throws Exception {
-
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{" +
 				"\"type\":\"100\"," +
@@ -59,7 +35,6 @@ public class AttribRequestsTest extends IndyIntegrationTest {
 
 	@Test
 	public void testBuildAttribRequestWorksForMissedAttribute() throws Exception {
-
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
 
@@ -68,7 +43,6 @@ public class AttribRequestsTest extends IndyIntegrationTest {
 
 	@Test
 	public void testBuildGetAttribRequestWorks() throws Exception {
-
 		String raw = "endpoint";
 
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
@@ -85,27 +59,19 @@ public class AttribRequestsTest extends IndyIntegrationTest {
 
 	@Test
 	public void testSendAttribRequestWorksWithoutSignature() throws Exception {
-
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
 
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
-
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
+		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
-		String attribRequest = Ledger.buildAttribRequest(trusteeDid, trusteeDid, null, endpoint, null).get();
+		String attribRequest = Ledger.buildAttribRequest(trusteeDidResult.getDid(), trusteeDid, null, endpoint, null).get();
 		Ledger.submitRequest(pool, attribRequest).get();
 	}
 
 	@Test
 	public void testAttribRequestsWorks() throws Exception {
-
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
-
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
+		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
 		SignusResults.CreateAndStoreMyDidResult myDidResult = Signus.createAndStoreMyDid(wallet, "{}").get();
@@ -128,7 +94,6 @@ public class AttribRequestsTest extends IndyIntegrationTest {
 
 	@Test
 	public void testBuildAttribRequestWorksForInvalidIdentifier() throws Exception {
-
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
 
