@@ -8,24 +8,22 @@ namespace Hyperledger.Indy
     /// </summary>
     public class IndyException : Exception
     {
-        internal IndyException(String message, ErrorCode errorCode) : base(message)
+        internal IndyException(String message, int sdkErrorCode) : base(message)
         {
-            ErrorCode = errorCode;
+            SdkErrorCode = sdkErrorCode;
         }
 
         /// <summary>
         /// Generates an IndyException from the provided error code.
         /// </summary>
-        /// <param name="err">The error code.</param>
+        /// <param name="sdkErrorCode">The error code.</param>
         /// <returns>An IndyException instance.</returns>
-        public static IndyException FromErrorCode(int err)
+        public static IndyException FromErrorCode(int sdkErrorCode)
         {
-            if (!Enum.IsDefined(typeof(ErrorCode), err))
-                throw new InvalidCastException(string.Format("The error #{0} does not have a corresponding ErrorCode value.", err));
+            if (!Enum.IsDefined(typeof(ErrorCode), sdkErrorCode))
+                return MakeExceptionForUnknownError(sdkErrorCode);
 
-            var errorCode = (ErrorCode)err;
-
-            switch (errorCode)
+            switch ((ErrorCode)sdkErrorCode)
             {
                 case ErrorCode.CommonInvalidParam1:
                 case ErrorCode.CommonInvalidParam2:
@@ -39,68 +37,72 @@ namespace Hyperledger.Indy
                 case ErrorCode.CommonInvalidParam10:
                 case ErrorCode.CommonInvalidParam11:
                 case ErrorCode.CommonInvalidParam12:
-                    return new InvalidParameterException(errorCode);
+                    return new InvalidParameterException(sdkErrorCode);
                 case ErrorCode.CommonInvalidState:
-                    return new InvalidStateException(errorCode);
+                    return new InvalidStateException(sdkErrorCode);
                 case ErrorCode.CommonInvalidStructure:
-                    return new InvalidStructureException(errorCode);
+                    return new InvalidStructureException(sdkErrorCode);
                 case ErrorCode.CommonIOError:
-                    return new IOException(errorCode);
+                    return new IOException(sdkErrorCode);
                 case ErrorCode.WalletInvalidHandle:
-                    return new WalletClosedException(errorCode); 
+                    return new WalletClosedException(sdkErrorCode); 
                 case ErrorCode.WalletUnknownTypeError:
-                    return new UnknownWalletTypeException(errorCode); 
+                    return new UnknownWalletTypeException(sdkErrorCode); 
                 case ErrorCode.WalletTypeAlreadyRegisteredError:
-                    return new DuplicateWalletTypeException(errorCode);
+                    return new DuplicateWalletTypeException(sdkErrorCode);
                 case ErrorCode.WalletAlreadyExistsError:
-                    return new WalletExistsException(errorCode);
+                    return new WalletExistsException(sdkErrorCode);
                 case ErrorCode.WalletNotFoundError:
-                    return new WalletValueNotFoundException(errorCode);
+                    return new WalletValueNotFoundException(sdkErrorCode);
                 case ErrorCode.WalletIncompatiblePoolError:
-                    return new WrongWalletForPoolException(errorCode);
+                    return new WrongWalletForPoolException(sdkErrorCode);
                 case ErrorCode.WalletAlreadyOpenedError:
-                    return new WalletAlreadyOpenedException(errorCode);
+                    return new WalletAlreadyOpenedException(sdkErrorCode);
                 case ErrorCode.PoolLedgerNotCreatedError:
-                    return new PoolConfigNotCreatedException(errorCode);
+                    return new PoolConfigNotCreatedException(sdkErrorCode);
                 case ErrorCode.PoolLedgerInvalidPoolHandle:
-                    return new PoolClosedException(errorCode);
+                    return new PoolClosedException(sdkErrorCode);
                 case ErrorCode.PoolLedgerTerminated:
-                    return new PoolLedgerTerminatedException(errorCode);
+                    return new PoolLedgerTerminatedException(sdkErrorCode);
                 case ErrorCode.LedgerNoConsensusError:
-                    return new LedgerConsensusException(errorCode);
+                    return new LedgerConsensusException(sdkErrorCode);
                 case ErrorCode.LedgerInvalidTransaction:
-                    return new InvalidLedgerTransactionException(errorCode);
+                    return new InvalidLedgerTransactionException(sdkErrorCode);
                 case ErrorCode.LedgerSecurityError:
-                    return new LedgerSecurityException(errorCode);
+                    return new LedgerSecurityException(sdkErrorCode);
                 case ErrorCode.PoolLedgerConfigAlreadyExistsError:
-                    return new PoolLedgerConfigExistsException(errorCode);
+                    return new PoolLedgerConfigExistsException(sdkErrorCode);
                 case ErrorCode.AnoncredsRevocationRegistryFullError:
-                    return new RevocationRegistryFullException(errorCode);
+                    return new RevocationRegistryFullException(sdkErrorCode);
                 case ErrorCode.AnoncredsInvalidUserRevocIndex:
-                    return new InvalidUserRevocIndexException(errorCode);
+                    return new InvalidUserRevocIndexException(sdkErrorCode);
                 case ErrorCode.AnoncredsAccumulatorIsFull:
-                    return new AnoncredsAccumulatorFullException(errorCode);
+                    return new AnoncredsAccumulatorFullException(sdkErrorCode);
                 case ErrorCode.AnoncredsNotIssuedError:
-                    return new AnoncredsNotIssuedException(errorCode);
+                    return new AnoncredsNotIssuedException(sdkErrorCode);
                 case ErrorCode.AnoncredsMasterSecretDuplicateNameError:
-                    return new DuplicateMasterSecretNameException(errorCode);
+                    return new DuplicateMasterSecretNameException(sdkErrorCode);
                 case ErrorCode.AnoncredsProofRejected:
-                    return new ProofRejectedException(errorCode);
+                    return new ProofRejectedException(sdkErrorCode);
                 case ErrorCode.AnoncredsClaimRevoked:
-                    return new ClaimRevokedException(errorCode);
+                    return new ClaimRevokedException(sdkErrorCode);
                 case ErrorCode.SignusUnknownCryptoError:
-                    return new UnknownCryptoException(errorCode);
+                    return new UnknownCryptoException(sdkErrorCode);
+                default:
+                    return MakeExceptionForUnknownError(sdkErrorCode);
+            }      
+        }
 
-            }
-
-            var message = string.Format("{0}:{1}", Enum.GetName(typeof(ErrorCode), err), err);
-            return new IndyException(message, (ErrorCode)err);            
+        private static IndyException MakeExceptionForUnknownError(int sdkErrorCode)
+        {
+            var message = string.Format("An unmapped error with the code '{0}' was returned by the SDK.", sdkErrorCode);
+            return new IndyException(message, sdkErrorCode);
         }
 
         /// <summary>
         /// Gets the error code for the exception.
         /// </summary>
-        public ErrorCode ErrorCode { get; private set; }
+        public int SdkErrorCode { get; private set; }
     }
 
     /// <summary>
@@ -108,21 +110,21 @@ namespace Hyperledger.Indy
     /// </summary>
     public class InvalidParameterException : IndyException
     {
-        private static int GetParamIndex(ErrorCode errorCode)
+        private static int GetParamIndex(int sdkErrorCode)
         {
-            Debug.Assert((int)errorCode >= 100 && (int)errorCode <= 111);
+            Debug.Assert((int)sdkErrorCode >= 100 && (int)sdkErrorCode <= 111);
 
-            return (int)errorCode - 99;
+            return (int)sdkErrorCode - 99;
         }
 
-        private static string BuildMessage(ErrorCode errorCode)
+        private static string BuildMessage(int sdkErrorCode)
         {
-            return string.Format("The value passed to parameter {0} is not valid.", GetParamIndex(errorCode));
+            return string.Format("The value passed to parameter {0} is not valid.", GetParamIndex(sdkErrorCode));
         }
 
-        internal InvalidParameterException(ErrorCode errorCode) : base(BuildMessage(errorCode), errorCode)
+        internal InvalidParameterException(int sdkErrorCode) : base(BuildMessage(sdkErrorCode), sdkErrorCode)
         {
-            ParameterIndex = GetParamIndex(errorCode);
+            ParameterIndex = GetParamIndex(sdkErrorCode);
         }
 
         /// <summary>
@@ -138,7 +140,7 @@ namespace Hyperledger.Indy
     {
         private const string message = "The SDK library experienced an unexpected internal error.";
 
-        internal InvalidStateException(ErrorCode errorCode) : base(message, errorCode)
+        internal InvalidStateException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
         }
     }
@@ -150,7 +152,7 @@ namespace Hyperledger.Indy
     {
         const string message = "A value being processed is not valid.";
 
-        internal InvalidStructureException(ErrorCode errorCode) : base(message, errorCode)
+        internal InvalidStructureException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -163,7 +165,7 @@ namespace Hyperledger.Indy
     {
         const string message = "An IO error occurred.";
 
-        internal IOException(ErrorCode errorCode) : base(message, errorCode)
+        internal IOException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -176,7 +178,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The wallet is closed and cannot be used.";
 
-        internal WalletClosedException(ErrorCode errorCode) : base(message, errorCode)
+        internal WalletClosedException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -189,7 +191,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The wallet type specified has not been registered.";
 
-        internal UnknownWalletTypeException(ErrorCode errorCode) : base(message, errorCode)
+        internal UnknownWalletTypeException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -202,7 +204,7 @@ namespace Hyperledger.Indy
     {
         const string message = "A wallet type with the specified name has already been registered.";
 
-        internal DuplicateWalletTypeException(ErrorCode errorCode) : base(message, errorCode)
+        internal DuplicateWalletTypeException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -215,7 +217,7 @@ namespace Hyperledger.Indy
     {
         const string message = "A wallet with the specified name already exists.";
 
-        internal WalletExistsException(ErrorCode errorCode) : base(message, errorCode)
+        internal WalletExistsException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -228,7 +230,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The no value with the specified key exists in the wallet from which it was requested.";
 
-        internal WalletValueNotFoundException(ErrorCode errorCode) : base(message, errorCode)
+        internal WalletValueNotFoundException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -241,7 +243,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The wallet specified is not compatible with the open pool.";
 
-        internal WrongWalletForPoolException(ErrorCode errorCode) : base(message, errorCode)
+        internal WrongWalletForPoolException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -254,7 +256,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The wallet is already open.";
 
-        internal WalletAlreadyOpenedException(ErrorCode errorCode) : base(message, errorCode)
+        internal WalletAlreadyOpenedException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -267,7 +269,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The requested pool cannot be opened because it does not have an existing configuration.";
 
-        internal PoolConfigNotCreatedException(ErrorCode errorCode) : base(message, errorCode)
+        internal PoolConfigNotCreatedException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -280,7 +282,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The pool is closed and cannot be used.";
 
-        internal PoolClosedException(ErrorCode errorCode) : base(message, errorCode)
+        internal PoolClosedException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -293,7 +295,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The pool ledger was terminated.";
 
-        internal PoolLedgerTerminatedException(ErrorCode errorCode) : base(message, errorCode)
+        internal PoolLedgerTerminatedException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -306,7 +308,7 @@ namespace Hyperledger.Indy
     {
         const string message = "No consensus was reached during the ledger operation";
 
-        internal LedgerConsensusException(ErrorCode errorCode) : base(message, errorCode)
+        internal LedgerConsensusException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -319,7 +321,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The ledger message is unknown or malformed.";
 
-        internal InvalidLedgerTransactionException(ErrorCode errorCode) : base(message, errorCode)
+        internal InvalidLedgerTransactionException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -332,7 +334,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The transaction cannot be sent as the privileges for the current pool connection don't allow it.";
 
-        internal LedgerSecurityException(ErrorCode errorCode) : base(message, errorCode)
+        internal LedgerSecurityException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -345,7 +347,7 @@ namespace Hyperledger.Indy
     {
         const string message = "A pool ledger configuration already exists with the specified name.";
 
-        internal PoolLedgerConfigExistsException(ErrorCode errorCode) : base(message, errorCode)
+        internal PoolLedgerConfigExistsException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -358,7 +360,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The specified revocation registry is full.  Another revocation registry must be created.";
 
-        internal RevocationRegistryFullException(ErrorCode errorCode) : base(message, errorCode)
+        internal RevocationRegistryFullException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -371,7 +373,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The user revocation registry index specified is invalid.";
 
-        internal InvalidUserRevocIndexException(ErrorCode errorCode) : base(message, errorCode)
+        internal InvalidUserRevocIndexException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -384,7 +386,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The anoncreds accumulator is full.";
 
-        internal AnoncredsAccumulatorFullException(ErrorCode errorCode) : base(message, errorCode)
+        internal AnoncredsAccumulatorFullException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -397,7 +399,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The anoncreds is not issued.";
 
-        internal AnoncredsNotIssuedException(ErrorCode errorCode) : base(message, errorCode)
+        internal AnoncredsNotIssuedException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -410,7 +412,7 @@ namespace Hyperledger.Indy
     {
         const string message = "Another master-secret with the specified name already exists.";
 
-        internal DuplicateMasterSecretNameException(ErrorCode errorCode) : base(message, errorCode)
+        internal DuplicateMasterSecretNameException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -423,7 +425,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The proof has been rejected.";
 
-        internal ProofRejectedException(ErrorCode errorCode) : base(message, errorCode)
+        internal ProofRejectedException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -436,7 +438,7 @@ namespace Hyperledger.Indy
     {
         const string message = "The claim has been revoked.";
 
-        internal ClaimRevokedException(ErrorCode errorCode) : base(message, errorCode)
+        internal ClaimRevokedException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
@@ -449,7 +451,7 @@ namespace Hyperledger.Indy
     {
         const string message = "An unknown crypto format has been used for a DID entity key.";
 
-        internal UnknownCryptoException(ErrorCode errorCode) : base(message, errorCode)
+        internal UnknownCryptoException(int sdkErrorCode) : base(message, sdkErrorCode)
         {
 
         }
