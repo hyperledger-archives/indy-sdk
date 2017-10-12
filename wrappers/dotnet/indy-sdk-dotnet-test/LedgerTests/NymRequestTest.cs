@@ -45,12 +45,22 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestBuildNymRequestWorksForOnlyRequiredFields()
         {
-            var expectedResult = string.Format("\"identifier\":\"{0}\",\"operation\":{{\"type\":\"1\",\"dest\":\"{1}\",\"role\":null}}", _identifier, _dest);
+            var expectedResult = string.Format("\"identifier\":\"{0}\",\"operation\":{{\"dest\":\"{1}\",\"type\":\"1\"}}", _identifier, _dest);
 
             var nymRequest = await Ledger.BuildNymRequestAsync(_identifier, _dest, null, null, null);
 
             Assert.IsTrue(nymRequest.Contains(expectedResult));
         }
+
+        [TestMethod]
+        public async Task TestBuildNymRequestWorksForEmptyRole()
+        {
+            var expectedResult = string.Format("\"identifier\":\"{0}\",\"operation\":{{\"dest\":\"{1}\",\"role\":null,\"type\":\"1\"}}", _identifier, _dest);
+
+            var nymRequest = await Ledger.BuildNymRequestAsync(_identifier, _dest, null, null, string.Empty);
+            Assert.IsTrue(nymRequest.Contains(expectedResult));
+        }
+ 
 
         [TestMethod]
         public async Task TestBuildNymRequestWorksForOnlyOptionalFields()
@@ -61,12 +71,12 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var expectedResult = string.Format("\"identifier\":\"{0}\"," +
                     "\"operation\":{{" +
-                    "\"type\":\"1\"," +
-                    "\"dest\":\"{1}\"," +
-                    "\"verkey\":\"{2}\"," +
-                    "\"alias\":\"{3}\"," +
-                    "\"role\":\"2\"" +
-                    "}}", _identifier, _dest, verkey, alias);
+                    "\"alias\":\"{1}\"," +
+                    "\"dest\":\"{2}\"," +
+                    "\"role\":\"2\"," + 
+                    "\"type\":\"1\"," +                    
+                    "\"verkey\":\"{3}\"" +
+                    "}}", _identifier, alias, _dest, verkey);
 
             var nymRequest = await Ledger.BuildNymRequestAsync(_identifier, _dest, verkey, alias, role);
 
