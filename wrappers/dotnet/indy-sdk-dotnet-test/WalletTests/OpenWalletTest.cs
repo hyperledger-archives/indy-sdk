@@ -12,7 +12,7 @@ namespace Hyperledger.Indy.Test.WalletTests
         {
             var walletName = "openWalletWorks";
 
-            await Wallet.CreateWalletAsync("default", walletName, "default", null, null);
+            await Wallet.CreateWalletAsync(POOL, walletName, TYPE, null, null);
             var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
 
             Assert.IsNotNull(wallet);
@@ -23,34 +23,22 @@ namespace Hyperledger.Indy.Test.WalletTests
         {
             var walletName = "openWalletWorksForConfig";
 
-            await Wallet.CreateWalletAsync("default", walletName, "default", null, null);
+            await Wallet.CreateWalletAsync(POOL, walletName, TYPE, null, null);
             var wallet = await Wallet.OpenWalletAsync(walletName, "{\"freshness_time\":1000}", null);
 
             Assert.IsNotNull(wallet);
         }
 
         [TestMethod]
-        public async Task TestOpenWalletWorksForNotCreatedWallet()
+        public async Task TestOpenWalletWorksForPlugged()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
-                Wallet.OpenWalletAsync("openWalletWorksForNotCreatedWallet", null, null)
-            );
+            var walletName = "testOpenWalletWorksForPlugged";
+
+            await Wallet.CreateWalletAsync(POOL, walletName, "inmem", null, null);
+            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
+            Assert.IsNotNull(wallet);
         }
-
-        [TestMethod]
-        public async Task TestOpenWalletWorksForTwice()
-        {
-            var walletName = "openWalletWorksForTwice";
-
-            await Wallet.CreateWalletAsync("default", walletName, "default", null, null);
-
-            var wallet1 = Wallet.OpenWalletAsync(walletName, null, null);
-
-            var ex = await Assert.ThrowsExceptionAsync<WalletAlreadyOpenedException>(() =>
-               Wallet.OpenWalletAsync(walletName, null, null)
-            );
-        }
-
+        
         [TestMethod]
         public async Task TestOpenWalletWorksForNotCreated()
         {
@@ -58,17 +46,20 @@ namespace Hyperledger.Indy.Test.WalletTests
                Wallet.OpenWalletAsync("testOpenWalletWorksForNotCreated", null, null)
             );
         }
-
+        
         [TestMethod]
-        public async Task TestOpenWalletWorksForPlugged()
+        public async Task TestOpenWalletWorksForTwice()
         {
-            var type = "inmem";
-            var poolName = "default";
-            var walletName = "testOpenWalletWorksForPlugged";
+            var walletName = "openWalletWorksForTwice";
 
-            await Wallet.CreateWalletAsync(poolName, walletName, type, null, null);
+            await Wallet.CreateWalletAsync(POOL, walletName, TYPE, null, null);
             var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
-            Assert.IsNotNull(wallet);
+
+            var ex = await Assert.ThrowsExceptionAsync<WalletAlreadyOpenedException>(() =>
+               Wallet.OpenWalletAsync(walletName, null, null)
+            );
         }
+
+        
     }
 }
