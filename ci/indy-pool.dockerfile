@@ -91,7 +91,7 @@ RUN init_indy_keys --name Node2 --seed 111111111111111111111111111Node2 --force
 RUN init_indy_keys --name Node3 --seed 111111111111111111111111111Node3 --force
 RUN init_indy_keys --name Node4 --seed 111111111111111111111111111Node4 --force
 
-ARG pool_ip=10.0.0.2
+ARG pool_ip=127.0.0.1
 
 RUN generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 1 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"
 RUN generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 2 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"
