@@ -28,6 +28,8 @@ trait CryptoType {
     fn verify(&self, public_key: &[u8], doc: &[u8], signature: &[u8]) -> Result<bool, CommonError>;
     fn verkey_to_public_key(&self, vk: &[u8]) -> Result<Vec<u8>, CommonError>;
     fn signkey_to_private_key(&self, sk: &[u8]) -> Result<Vec<u8>, CommonError>;
+    fn encrypt_sealed(&self, public_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
+    fn decrypt_sealed(&self, public_key: &[u8], private_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
 }
 
 pub struct SignusService {
@@ -181,6 +183,38 @@ impl SignusService {
 
         let decrypted_doc = signus.decrypt(&secret_key, &public_key, &doc, &nonce)?;
 
+        Ok(decrypted_doc)
+    }
+
+    pub fn encrypt_sealed(&self, their_did: &TheirDid, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
+        if !self.crypto_types.contains_key(&their_did.crypto_type.as_str()) {
+            return Err(SignusError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", their_did.crypto_type)));
+        }
+
+        let signus = self.crypto_types.get(&their_did.crypto_type.as_str()).unwrap();
+
+        if their_did.pk.is_none() {
+            return Err(SignusError::CommonError(CommonError::InvalidStructure(format!("TheirDid doesn't contain pk: {}", their_did.did))));
+        }
+
+        let public_key = their_did.pk.clone().unwrap();
+        let public_key = Base58::decode(&public_key)?;
+
+        let encrypted_doc = signus.encrypt_sealed(&public_key, doc)?;
+        Ok(encrypted_doc)
+    }
+
+    pub fn decrypt_sealed(&self, my_did: &MyDid, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
+        if !self.crypto_types.contains_key(&my_did.crypto_type.as_str()) {
+            return Err(SignusError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", my_did.crypto_type)));
+        }
+
+        let signus = self.crypto_types.get(&my_did.crypto_type.as_str()).unwrap();
+
+        let public_key = Base58::decode(&my_did.pk)?;
+        let private_key = Base58::decode(&my_did.sk)?;
+
+        let decrypted_doc = signus.decrypt_sealed(&public_key, &private_key, doc)?;
         Ok(decrypted_doc)
     }
 }
@@ -419,7 +453,6 @@ mod tests {
             verkey: Some(my_did.verkey)
         };
 
-
         let their_did = service.create_my_did(&did_info.clone()).unwrap();
 
         let my_did_for_decrypt = their_did.clone();
@@ -437,5 +470,49 @@ mod tests {
         let decrypted_message = service.decrypt(&my_did_for_decrypt, &their_did_for_decrypt, &encrypted_message, &noce).unwrap();
 
         assert_eq!(msg.as_bytes().to_vec(), decrypted_message);
+    }
+
+    #[test]
+    fn encrypt_sealed_works() {
+        let service = SignusService::new();
+
+        let msg = "some message";
+
+        let did_info = MyDidInfo::new(None, None, None, None);
+
+        let did = service.create_my_did(&did_info.clone()).unwrap();
+
+        let did = TheirDid {
+            did: did.did,
+            crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
+            pk: Some(did.pk),
+            endpoint: None,
+            verkey: Some(did.verkey)
+        };
+
+        service.encrypt_sealed(&did, msg.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn encrypt_decrypt_sealed_works() {
+        let service = SignusService::new();
+
+        let msg = "some message".as_bytes();
+
+        let did_info = MyDidInfo::new(None, None, None, None);
+
+        let did = service.create_my_did(&did_info.clone()).unwrap();
+
+        let encrypt_did = TheirDid {
+            did: did.did.clone(),
+            crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
+            pk: Some(did.pk.clone()),
+            endpoint: None,
+            verkey: Some(did.verkey.clone())
+        };
+
+        let encrypted_message = service.encrypt_sealed(&encrypt_did, msg).unwrap();
+        let decrypted_message = service.decrypt_sealed(&did, &encrypted_message).unwrap();
+        assert_eq!(msg, decrypted_message.as_slice());
     }
 }

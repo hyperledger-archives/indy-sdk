@@ -3,14 +3,14 @@
     /// <summary>
     /// Result of replacing keys.
     /// </summary>
-    public class ReplaceKeysResult
+    public class ReplaceKeysStartResult
     {
         /// <summary>
         /// Initializes a new ReplaceKeysResult.
         /// </summary>
         /// <param name="verKey">The verification key.</param>
         /// <param name="pk">The primary key.</param>
-        internal ReplaceKeysResult(string verKey, string pk)
+        internal ReplaceKeysStartResult(string verKey, string pk)
         {
             VerKey = verKey;
             Pk = pk;
