@@ -113,9 +113,9 @@ namespace Hyperledger.Indy.SignusApi
         /// <summary>
         /// Gets the callback to use when the command for EncryptAsync has completed.
         /// </summary>
-        private static EncryptResultDelegate _encryptSealedCallback = (xcommand_handle, err, encrypted_msg_raw, encrypted_msg_len, nonce_raw, nonce_len) =>
+        private static EncryptSealedResultDelegate _encryptSealedCallback = (xcommand_handle, err, encrypted_msg_raw, encrypted_msg_len) =>
         {
-            var taskCompletionSource = PendingCommands.Remove<EncryptResult>(xcommand_handle);
+            var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
@@ -123,12 +123,7 @@ namespace Hyperledger.Indy.SignusApi
             var encryptedMessageBytes = new byte[encrypted_msg_len];
             Marshal.Copy(encrypted_msg_raw, encryptedMessageBytes, 0, encrypted_msg_len);
 
-            var nonceBytes = new byte[nonce_len];
-            Marshal.Copy(nonce_raw, nonceBytes, 0, nonce_len);
-
-            var callbackResult = new EncryptResult(encryptedMessageBytes, nonceBytes);
-
-            taskCompletionSource.SetResult(callbackResult);
+            taskCompletionSource.SetResult(encryptedMessageBytes);
         };
 
         /// <summary>
@@ -514,13 +509,12 @@ namespace Hyperledger.Indy.SignusApi
         /// </remarks>
         /// <param name="wallet">The wallet containing the DID to use for encryption.</param>
         /// <param name="pool">The node pool to read the public key from if required.</param>
-        /// <param name="myDid">The DID used to encrypt the message.</param>
         /// <param name="did">The DID the message is to be encrypted for.</param>
         /// <param name="msg">The message to encrypt.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to an <see cref="EncryptResult"/> once encryption is complete.</returns>
-        public static Task<EncryptResult> EncryptSealedAsync(Wallet wallet, Pool pool, string did, byte[] msg)
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the encrypted message once encryption is complete.</returns>
+        public static Task<byte[]> EncryptSealedAsync(Wallet wallet, Pool pool, string did, byte[] msg)
         {
-            var taskCompletionSource = new TaskCompletionSource<EncryptResult>();
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
             var commandResult = IndyNativeMethods.indy_encrypt_sealed(
@@ -538,18 +532,8 @@ namespace Hyperledger.Indy.SignusApi
         }
 
         /// <summary>
-        /// Decrypts the provided message using the public key associated with my DID using the anonymous-encryption scheme.
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// The DID specified in the <paramref name="myDid"/> parameter must have been previously created 
-        /// with a secret key and stored in the wallet specified in the <paramref name="wallet"/> parameter.
-        /// </para>
-        /// <para>
-        /// For further information on storing a DID and its secret key see the 
-        /// <see cref="CreateAndStoreMyDidAsync(Wallet, string)"/> method.
-        /// </para>
-        /// </remarks>
+        /// Decrypts the provided message using the public key associated with the specified DID using the anonymous-encryption scheme.
+        /// </summary>        
         /// <param name="wallet">The wallet containing the DID and associated secret key to use for decryption.</param>
         /// <param name="did">The DID of the encrypting party to use for verification.</param>
         /// <param name="encryptedMsg">The message to decrypt.</param>
