@@ -5,6 +5,7 @@ import java.util.concurrent.CompletableFuture;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
+import org.hyperledger.indy.sdk.ParamGuard;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.signus.SignusResults.EncryptResult;
@@ -126,7 +127,10 @@ public class Pairwise extends IndyJava.API {
 	public static CompletableFuture<Boolean> isPairwiseExists(
 			Wallet wallet,
 			String theirDid) throws IndyException {
-
+		
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(theirDid, "theirDid");
+		
 		CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
 		int commandHandle = addFuture(future);
 
@@ -159,6 +163,10 @@ public class Pairwise extends IndyJava.API {
 			String myDid,
 			String metadata) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(theirDid, "theirDid");
+		ParamGuard.notNullOrWhiteSpace(myDid, "myDid");	
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -187,6 +195,8 @@ public class Pairwise extends IndyJava.API {
 	public static CompletableFuture<String> listPairwise(
 			Wallet wallet) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+	
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -214,6 +224,9 @@ public class Pairwise extends IndyJava.API {
 			Wallet wallet,
 			String theirDid) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(theirDid, "theirDid");
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -244,6 +257,10 @@ public class Pairwise extends IndyJava.API {
 			String theirDid,
 			String metadata) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(theirDid, "theirDid");
+		ParamGuard.notNullOrWhiteSpace(metadata, "metadata");		
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
