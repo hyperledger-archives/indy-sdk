@@ -46,4 +46,9 @@
 + (NSString *)issuerDid;
 + (IndyHandle)walletHandle;
 
++ (NSString *)mySeed1;
++ (NSString *)mySeed2;
++ (NSString *)someMetadata;
++ (NSString *)unknownDid;
+
 @end

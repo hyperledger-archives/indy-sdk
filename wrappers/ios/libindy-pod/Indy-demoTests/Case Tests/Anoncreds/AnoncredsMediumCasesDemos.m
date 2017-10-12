@@ -72,10 +72,10 @@
                                                                       schemaSeqNo:schemaSeqNo];
     NSString *claimRequest;
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
-                                                                                 proverDid:proverDid
-                                                                            claimOfferJson:claimOfferJson
-                                                                              claimDefJson:claimDefJson
-                                                                          masterSecretName:masterSecretName
+                                                              proverDid:proverDid
+                                                         claimOfferJson:claimOfferJson
+                                                           claimDefJson:claimDefJson
+                                                       masterSecretName:masterSecretName
                                                         outClaimReqJson:&claimRequest];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed");
     XCTAssertTrue([claimRequest isValid], @"invalid claimRequest");

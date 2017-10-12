@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5D413F201F850DFF00E04D7D /* PairwiseHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D413F1F1F850DFF00E04D7D /* PairwiseHighCases.m */; };
+		5D413F231F850F2E00E04D7D /* PairwiseUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D413F221F850F2E00E04D7D /* PairwiseUtils.m */; };
 		5DB57A701F71201200EB4C90 /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A661F71201200EB4C90 /* AppDelegate.mm */; };
 		5DB57A711F71201200EB4C90 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5DB57A671F71201200EB4C90 /* Assets.xcassets */; };
 		5DB57A721F71201200EB4C90 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5DB57A681F71201200EB4C90 /* LaunchScreen.storyboard */; };
@@ -100,6 +102,9 @@
 		3E2A7F851EC36186006194EC /* Indy-demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Indy-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E2A7F9E1EC36187006194EC /* Indy-demoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Indy-demoTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		49682051B863F7784F1A8CAE /* libPods-Indy-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Indy-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5D413F1F1F850DFF00E04D7D /* PairwiseHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PairwiseHighCases.m; sourceTree = "<group>"; };
+		5D413F211F850F2E00E04D7D /* PairwiseUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PairwiseUtils.h; sourceTree = "<group>"; };
+		5D413F221F850F2E00E04D7D /* PairwiseUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PairwiseUtils.m; sourceTree = "<group>"; };
 		5D78D0155F3E8AF26D9FBE34 /* libPods-Indy-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Indy-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5DB57A651F71201200EB4C90 /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		5DB57A661F71201200EB4C90 /* AppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
@@ -217,6 +222,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		5D413F1E1F850DCF00E04D7D /* Pairwise */ = {
+			isa = PBXGroup;
+			children = (
+				5D413F1F1F850DFF00E04D7D /* PairwiseHighCases.m */,
+			);
+			path = Pairwise;
+			sourceTree = "<group>";
+		};
 		5DB57A641F71201200EB4C90 /* Indy-demo */ = {
 			isa = PBXGroup;
 			children = (
@@ -249,6 +262,7 @@
 		5DB57B101F712A5100EB4C90 /* Case Tests */ = {
 			isa = PBXGroup;
 			children = (
+				5D413F1E1F850DCF00E04D7D /* Pairwise */,
 				5DB57B111F712A5100EB4C90 /* Agent */,
 				5DB57B1B1F712A5100EB4C90 /* Anoncreds */,
 				5DB57B1F1F712A5200EB4C90 /* Ledger */,
@@ -365,6 +379,8 @@
 				5DB57B461F712A5200EB4C90 /* TestUtils.m */,
 				5DB57B471F712A5200EB4C90 /* WalletUtils.h */,
 				5DB57B481F712A5200EB4C90 /* WalletUtils.m */,
+				5D413F211F850F2E00E04D7D /* PairwiseUtils.h */,
+				5D413F221F850F2E00E04D7D /* PairwiseUtils.m */,
 			);
 			path = "Test Utils";
 			sourceTree = "<group>";
@@ -637,6 +653,7 @@
 				5DB57B6C1F712A5200EB4C90 /* AgentUtils.m in Sources */,
 				5DB57B551F712A5200EB4C90 /* AgentMediumConnect.m in Sources */,
 				5DB57B771F712A5200EB4C90 /* NSDictionary+JSON.m in Sources */,
+				5D413F201F850DFF00E04D7D /* PairwiseHighCases.m in Sources */,
 				5DB57B6D1F712A5200EB4C90 /* AnoncredsUtils.m in Sources */,
 				5DB57B751F712A5200EB4C90 /* WalletUtils.m in Sources */,
 				5DB57B6F1F712A5200EB4C90 /* Environment.m in Sources */,
@@ -665,6 +682,7 @@
 				5DB57B611F712A5200EB4C90 /* PoolHighCases.m in Sources */,
 				5DB57B731F712A5200EB4C90 /* SignusUtils.mm in Sources */,
 				5DB57B571F712A5200EB4C90 /* AgentMediumRemoveIdentity.m in Sources */,
+				5D413F231F850F2E00E04D7D /* PairwiseUtils.m in Sources */,
 				5DB57B701F712A5200EB4C90 /* LedgerUtils.mm in Sources */,
 				5DB57B541F712A5200EB4C90 /* AgentMediumCloseListener.m in Sources */,
 				5DB57B621F712A5200EB4C90 /* PoolMediumCases.m in Sources */,
