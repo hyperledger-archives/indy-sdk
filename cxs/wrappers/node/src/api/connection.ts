@@ -5,12 +5,13 @@ import { CXSRuntime } from '../index'
 import { CXSRuntimeConfig } from '../rustlib'
 
 import {
-    IConnections
+    IConnections,
+    StateType
 } from './api'
 
 export class Connection implements IConnections {
   public connectionHandle: ref.types.uint32
-  public state: ref.types.uint32
+  public state: StateType
   private RUST_API: ffi
 
   constructor ( path?: string ) {
@@ -34,7 +35,7 @@ export class Connection implements IConnections {
     return this.RUST_API.cxs_connection_get_data(this.connectionHandle)
   }
 
-  getState (): number {
+  getState (): StateType {
     const statusPtr = ref.alloc(ref.types.uint32)
     const result = this.RUST_API.cxs_connection_get_state(this.connectionHandle, statusPtr)
     this.state = ref.deref(statusPtr, ref.types.uint32)

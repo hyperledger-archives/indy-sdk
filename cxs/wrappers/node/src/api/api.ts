@@ -5,3 +5,14 @@ export interface IConnections {
   getState (): number
   release (): number
 }
+
+export enum StateType{
+    None = 0,
+    Initialized = 1,
+    OfferSent = 2,
+    RequestReceived = 3,
+    Accepted = 4,
+    Unfulfilled = 5,
+    Expired = 6,
+    Revoked = 7,
+}
