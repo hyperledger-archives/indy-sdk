@@ -100,7 +100,7 @@
  
  Performs wallet lookup to find corresponding receiver Identity information.
  Information about receiver Identity must be saved in the wallet with
- IndySignus::createAndStoreMyDidWithWalletHandle call before this call.
+ IndySignus::createAndStoreMyDid call before this call.
  
  After successfull addIdentity call listener will start to accept incoming connection to added DID.
  

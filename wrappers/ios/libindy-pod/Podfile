@@ -1,5 +1,6 @@
 source 'https://github.com/CocoaPods/Specs.git'
 source 'https://github.com/hyperledger/indy-sdk.git'
+source  'https://anastasiya_tarasova@bitbucket.org/anastasiya_tarasova/privatespecs.git'
 platform :ios, '10.2'
 
 workspace 'Indy.xcworkspace'
@@ -9,7 +10,7 @@ def appPods
     pod 'libzmq-pw',"4.2.2"
     pod 'OpenSSL'
     pod 'milagro', "3.0.0"
-    pod 'libindy-core', "0.1.1"
+    pod 'libindy-private', "0.1.2"
 end
 
 target 'Indy-demo' do
