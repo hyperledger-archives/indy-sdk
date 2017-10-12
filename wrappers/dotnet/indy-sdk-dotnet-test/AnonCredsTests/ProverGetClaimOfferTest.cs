@@ -89,12 +89,10 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
             var filter = string.Format("{{\"schema_seq_no\":\"{0}\"}}", 1);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 AnonCreds.ProverGetClaimOffersAsync(_commonWallet, filter)
 
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]

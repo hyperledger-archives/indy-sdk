@@ -1,4 +1,6 @@
-﻿namespace Hyperledger.Indy.SignusApi
+﻿using System;
+
+namespace Hyperledger.Indy.SignusApi
 {
     /// <summary>
     /// Result of replacing keys.
@@ -12,8 +14,8 @@
         /// <param name="pk">The primary key.</param>
         internal ReplaceKeysStartResult(string verKey, string pk)
         {
-            VerKey = verKey;
-            Pk = pk;
+            VerKey = verKey ?? throw new ArgumentNullException("verKey"); 
+            Pk = pk ?? throw new ArgumentNullException("pk"); 
         }
 
         /// <summary>

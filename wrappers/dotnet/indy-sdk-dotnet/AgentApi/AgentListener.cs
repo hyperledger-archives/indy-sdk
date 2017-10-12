@@ -74,6 +74,8 @@ namespace Hyperledger.Indy.AgentApi
         /// once the listener has been created.</returns>
         public static Task<AgentListener> ListenAsync(string endpoint)
         {
+            ParamGuard.NotNullOrWhiteSpace(endpoint, "endpoint");
+
             var listener = new AgentListener();
 
             var taskCompletionSource = new TaskCompletionSource<AgentListener>(listener);
@@ -207,6 +209,10 @@ namespace Hyperledger.Indy.AgentApi
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public Task AddIdentityAsync(Pool pool, Wallet wallet, string did)
         {
+            ParamGuard.NotNull(pool, "pool");
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(did, "did");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -238,6 +244,9 @@ namespace Hyperledger.Indy.AgentApi
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public Task RemoveIdentityAsync(Wallet wallet, string did)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(did, "did");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
