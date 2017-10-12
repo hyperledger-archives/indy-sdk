@@ -49,7 +49,10 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An asynchronous <see cref="Task"/> with no return value that completes when
         /// the registration is complete.</returns>
         public static Task RegisterWalletTypeAsync(string typeName, WalletType walletType)
-        {            
+        {
+            ParamGuard.NotNullOrWhiteSpace(typeName, "typeName");
+            ParamGuard.NotNull(walletType, "walletType");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -116,6 +119,9 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An asynchronous <see cref="Task"/> with no return value the completes when the operation has finished.</returns>
         public static Task CreateWalletAsync(string poolName, string name, string type, string config, string credentials)
         {
+            ParamGuard.NotNullOrWhiteSpace(poolName, "poolName");
+            ParamGuard.NotNullOrWhiteSpace(name, "name");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -160,6 +166,8 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="Wallet"/> instance when the operation completes.</returns>
         public static Task<Wallet> OpenWalletAsync(string name, string runtimeConfig, string credentials)
         {
+            ParamGuard.NotNullOrWhiteSpace(name, "name");
+
             var taskCompletionSource = new TaskCompletionSource<Wallet>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -193,6 +201,8 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An asynchronous <see cref="Task"/> with no return value that completes when the operation completes.</returns>
         public static Task DeleteWalletAsync(string name, string credentials)
         {
+            ParamGuard.NotNullOrWhiteSpace(name, "name");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -211,7 +221,7 @@ namespace Hyperledger.Indy.WalletApi
         /// <summary>
         /// Whether or not the close function has been called.
         /// </summary>
-        private bool _closeRequested = false;
+        private bool _requiresClose = false;
 
         /// <summary>
         /// Gets the SDK handle for the Wallet instance.
@@ -225,6 +235,7 @@ namespace Hyperledger.Indy.WalletApi
         private Wallet(IntPtr handle)
         {
             Handle = handle;
+            _requiresClose = true;
         }
 
         /// <summary>
@@ -233,6 +244,8 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An asynchronous <see cref="Task"/> with no return value that completes when the operation completes.</returns>
         public Task CloseAsync()
         {
+            _requiresClose = false;
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -243,7 +256,6 @@ namespace Hyperledger.Indy.WalletApi
 
             CallbackHelper.CheckResult(result);
 
-            _closeRequested = true;
             GC.SuppressFinalize(this);
 
             return taskCompletionSource.Task;
@@ -254,7 +266,7 @@ namespace Hyperledger.Indy.WalletApi
         /// </summary>
         public async void Dispose()
         {
-            if (!_closeRequested)
+            if (_requiresClose)
                 await CloseAsync();
         }
 
@@ -263,7 +275,7 @@ namespace Hyperledger.Indy.WalletApi
         /// </summary>
         ~Wallet()
         {
-            if (!_closeRequested)
+            if (_requiresClose)
             {
                 IndyNativeMethods.indy_close_wallet(
                    -1,

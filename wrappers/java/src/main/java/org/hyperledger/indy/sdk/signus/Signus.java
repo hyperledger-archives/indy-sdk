@@ -168,6 +168,41 @@ public class Signus extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when sealed encrypt completes.
+	 */
+	private static Callback encryptSealedCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, Pointer encrypted_msg_raw, int encrypted_msg_len) {
+
+			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			byte[] encryptedMsg = new byte[encrypted_msg_len];
+			encrypted_msg_raw.read(0, encryptedMsg, 0, encrypted_msg_len);
+
+			future.complete(encryptedMsg);
+		}
+	};
+
+	/**
+	 * Callback used when sealed decrypt completes.
+	 */
+	private static Callback decryptSealedCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, Pointer decrypted_msg_raw, int decrypted_msg_len) {
+
+			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			byte[] result = new byte[decrypted_msg_len];
+			decrypted_msg_raw.read(0, result, 0, decrypted_msg_len);
+			future.complete(result);
+		}
+	};
+
 	/*
 	 * STATIC METHODS
 	 */
@@ -383,7 +418,7 @@ public class Signus extends IndyJava.API {
 	}
 
 	/**
-	 * Encrypts a message by a public key associated with a DID.
+	 * Encrypts a message by public-key (associated with their did) authenticated-encryption scheme
 	 *
 	 * @param wallet  The wallet.
 	 * @param pool    The pool.
@@ -428,7 +463,7 @@ public class Signus extends IndyJava.API {
 	}
 
 	/**
-	 * Decrypts a message encrypted by a public key associated with my DID.
+	 * Decrypts a message by public-key authenticated-encryption scheme using nonce.
 	 *
 	 * @param wallet       The wallet.
 	 * @param myDid        DID
@@ -466,6 +501,74 @@ public class Signus extends IndyJava.API {
 				nonce,
 				nonce.length,
 				decryptCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Encrypts a message by public-key (associated with did) anonymous-encryption scheme.
+	 *
+	 * @param wallet  The wallet.
+	 * @param pool    The pool.
+	 * @param did     encrypted DID
+	 * @param message a message to be signed
+	 * @return A future that resolves to a JSON string containing an encrypted message and nonce.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<byte[]> encryptSealed(
+			Wallet wallet,
+			Pool pool,
+			String did,
+			byte[] message) throws IndyException {
+
+		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+		int poolHandle = pool.getPoolHandle();
+
+		int result = LibIndy.api.indy_encrypt_sealed(
+				commandHandle,
+				walletHandle,
+				poolHandle,
+				did,
+				message,
+				message.length,
+				encryptSealedCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Decrypts a message by public-key anonymous-encryption scheme.
+	 *
+	 * @param wallet       The wallet.
+	 * @param did          DID that signed the message
+	 * @param encryptedMsg encrypted message
+	 * @return A future that resolves to a JSON string containing the decrypted message.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<byte[]> decryptSealed(
+			Wallet wallet,
+			String did,
+			byte[] encryptedMsg) throws IndyException {
+
+		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_decrypt_sealed(
+				commandHandle,
+				walletHandle,
+				did,
+				encryptedMsg,
+				encryptedMsg.length,
+				decryptSealedCb);
 
 		checkResult(result);
 

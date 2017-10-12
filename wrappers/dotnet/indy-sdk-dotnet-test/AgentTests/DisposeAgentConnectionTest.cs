@@ -15,36 +15,36 @@ namespace Hyperledger.Indy.Test.AgentTests
     [TestClass]
     public class DisposeAgentConnectionTest : AgentIntegrationTestBase
     {
-        private CreateAndStoreMyDidResult myDid;
-        private AgentListener activeListener;
+        private CreateAndStoreMyDidResult _myDid;
+        private AgentListener _activeListener;
 
-        [TestInitialize]
-        public async Task PrepareForConnection()
+        public async Task PrepareForConnection(string endpoint)
         {
-           var endpoint = "127.0.0.1:9603";
-
-            myDid = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
+            _myDid = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
 
             var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
-                    myDid.Did, myDid.Pk, myDid.VerKey, endpoint);
+                    _myDid.Did, _myDid.Pk, _myDid.VerKey, endpoint);
 
             await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
-            activeListener = await AgentListener.ListenAsync(endpoint);
+            _activeListener = await AgentListener.ListenAsync(endpoint);
 
-            await activeListener.AddIdentityAsync(_pool, _wallet, myDid.Did);
+            await _activeListener.AddIdentityAsync(_pool, _wallet, _myDid.Did);
         }
 
         [TestCleanup]
         public async Task Cleanup()
         {
-            await activeListener.CloseAsync();
+            if (_activeListener != null)
+                await _activeListener.CloseAsync();
         }
 
         [TestMethod]
         public async Task CanDisposeClosedConnection()
         {
-            using (var connection = await AgentConnection.ConnectAsync(_pool, _wallet, myDid.Did, myDid.Did))
+            await PrepareForConnection("127.0.0.1:9610");
+
+            using (var connection = await AgentConnection.ConnectAsync(_pool, _wallet, _myDid.Did, _myDid.Did))
             {
                 await connection.CloseAsync();
             }
@@ -53,7 +53,9 @@ namespace Hyperledger.Indy.Test.AgentTests
         [TestMethod]
         public async Task DisposeCanBeCalledRepeatedly()
         {
-            var connection = await AgentConnection.ConnectAsync(_pool, _wallet, myDid.Did, myDid.Did);
+            await PrepareForConnection("127.0.0.1:9611");
+
+            var connection = await AgentConnection.ConnectAsync(_pool, _wallet, _myDid.Did, _myDid.Did);
             connection.Dispose();
             connection.Dispose();
         }
@@ -62,11 +64,13 @@ namespace Hyperledger.Indy.Test.AgentTests
         [Ignore] //Appears endpoint cannot be re-connected to.  Requires further testing.
         public async Task EndpointCanBeReUsedAfterDispose()
         {
-            var connection = await AgentConnection.ConnectAsync(_pool, _wallet, myDid.Did, myDid.Did);
+            await PrepareForConnection("127.0.0.1:9612");
+
+            var connection = await AgentConnection.ConnectAsync(_pool, _wallet, _myDid.Did, _myDid.Did);
             await connection.CloseAsync();
             connection.Dispose();
 
-            using (var newConnection = await AgentConnection.ConnectAsync(_pool, _wallet, myDid.Did, myDid.Did))
+            using (var newConnection = await AgentConnection.ConnectAsync(_pool, _wallet, _myDid.Did, _myDid.Did))
             {
             }
         }
@@ -74,14 +78,11 @@ namespace Hyperledger.Indy.Test.AgentTests
         [TestMethod]
         public async Task CanCloseAfterDispose()
         {
-            var connection = await AgentConnection.ConnectAsync(_pool, _wallet, myDid.Did, myDid.Did);
+            await PrepareForConnection("127.0.0.1:9618");
+
+            var connection = await AgentConnection.ConnectAsync(_pool, _wallet, _myDid.Did, _myDid.Did);
             connection.Dispose();
-
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                connection.CloseAsync()
-            );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
+            await connection.CloseAsync();
         }
     }
 }

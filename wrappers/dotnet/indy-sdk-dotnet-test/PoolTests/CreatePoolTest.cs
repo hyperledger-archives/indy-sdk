@@ -36,22 +36,6 @@ namespace Hyperledger.Indy.Test.PoolTests
         }
 
         [TestMethod]
-        public async Task TestCreatePoolWorksForEmptyName()
-        {
-
-            var genesisTxnFile = PoolUtils.CreateGenesisTxnFile("genesis.txn");
-            var path = Path.GetFullPath(genesisTxnFile).Replace('\\', '/');
-
-            var configJson = string.Format("{{\"genesis_txn\":\"{0}\"}}", path);
-
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                Pool.CreatePoolLedgerConfigAsync("", configJson)
-            );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidParam2, ex.ErrorCode);
-        }
-
-        [TestMethod]
         public async Task TestCreatePoolWorksForTwice()
         {
 
@@ -63,11 +47,9 @@ namespace Hyperledger.Indy.Test.PoolTests
 
             await Pool.CreatePoolLedgerConfigAsync("pool1", configJson);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<PoolLedgerConfigExistsException>(() =>
                 Pool.CreatePoolLedgerConfigAsync("pool1", configJson)
-            );
-
-            Assert.AreEqual(ErrorCode.PoolLedgerConfigAlreadyExistsError, ex.ErrorCode);
+            );;
         }
     }
 }

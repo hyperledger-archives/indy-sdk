@@ -40,22 +40,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         {
             await AnonCreds.ProverCreateMasterSecretAsync(_wallet, "master_secret_name_duplicate");
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<DuplicateMasterSecretNameException>(() =>
                AnonCreds.ProverCreateMasterSecretAsync(_wallet, "master_secret_name_duplicate")
            );
-
-            Assert.AreEqual(ErrorCode.AnoncredsMasterSecretDuplicateNameError, ex.ErrorCode);
         }
-
-        [TestMethod]
-        public async Task TestProverCreateMasterSecretWorksForEmptyName()
-        {
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                AnonCreds.ProverStoreClaimOfferAsync(_wallet, "")
-            );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidParam3, ex.ErrorCode);
-        }
-
     }
 }

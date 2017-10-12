@@ -73,12 +73,10 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var claimDefsJson = string.Format("{{\"{0}\":{1}}}", claimUuid, _claimDef);
             var revocRegsJson = "{}";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 AnonCreds.ProverCreateProofAsync(_commonWallet, proofRequest, requestedClaimsJson, schemasJson,
                     _masterSecretName, claimDefsJson, revocRegsJson)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -111,12 +109,10 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var claimDefsJson = string.Format("{{\"{0}\":{1}}}", claimUuid, _claimDef);
             var revocRegsJson = "{}";
             
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
                 AnonCreds.ProverCreateProofAsync(_commonWallet, proofRequest, requestedClaimsJson, schemasJson, "wrong_master_secret", claimDefsJson, revocRegsJson)
 
             );
-
-            Assert.AreEqual(ErrorCode.WalletNotFoundError, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -149,12 +145,10 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var claimDefsJson = string.Format("{{\"{0}\":{1}}}", claimUuid, _claimDef);
             var revocRegsJson = "{}";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 AnonCreds.ProverCreateProofAsync(_commonWallet, proofRequest, requestedClaimsJson, schemasJson, _masterSecretName, claimDefsJson, revocRegsJson)
 
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -185,12 +179,10 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var claimDefsJson = string.Format("{{\"{0}\":{1}}}", claimUuid, _claimDef);
             var revocRegsJson = "{}";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 AnonCreds.ProverCreateProofAsync(_commonWallet, proofRequest, requestedClaimsJson, schemasJson, "wrong_master_secret", claimDefsJson, revocRegsJson)
 
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
     }

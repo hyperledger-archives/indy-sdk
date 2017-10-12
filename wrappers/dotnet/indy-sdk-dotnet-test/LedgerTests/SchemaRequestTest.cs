@@ -84,11 +84,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, schemaData);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
                 Ledger.SubmitRequestAsync(_pool, schemaRequest)
             );
-
-            Assert.AreEqual(ErrorCode.LedgerInvalidTransaction, ex.ErrorCode);
         }
 
         [TestMethod] //Name of this test is bad.
@@ -134,11 +132,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
         {
             var data = "{\"name\":\"name\",\"version\":\"1.0\"}";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 Ledger.BuildSchemaRequestAsync(_identifier, data)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
     }

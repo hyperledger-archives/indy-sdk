@@ -1,4 +1,6 @@
-﻿namespace Hyperledger.Indy.AgentApi
+﻿using System;
+
+namespace Hyperledger.Indy.AgentApi
 {
     /// <summary>
     /// Event raised when a connection is established on an <see cref="AgentListener"/>.
@@ -22,10 +24,10 @@
         internal AgentConnectionEvent(AgentListener listener, ErrorCode result, AgentConnection connection, string senderDid, string receiverDid) :
             base(listener.Handle, result)
         {
-            Connection = connection;
+            Listener = listener ?? throw new ArgumentNullException("listener");
+            Connection = connection ?? throw new ArgumentNullException("connection"); ;
             SenderDid = senderDid;
             ReceiverDid = receiverDid;
-            Listener = listener;
         }
 
         /// <summary>

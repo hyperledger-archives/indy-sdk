@@ -81,11 +81,9 @@ namespace Hyperledger.Indy.Test.SignusTests
 
             var encryptResult = await Signus.EncryptAsync(_wallet, _pool, _myDid, _myDid, _msg);            
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 Signus.DecryptAsync(_wallet, _myDid, _trusteeDid, encryptResult.EncryptedMsg, encryptResult.Nonce)
-            );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
+            );;
         }
 
         [TestMethod]
@@ -96,11 +94,9 @@ namespace Hyperledger.Indy.Test.SignusTests
 
             var nonce = (byte[])(Array)new sbyte[] { 46, 33, -4, 67, 1, 44, 57, -46, -91, 87, 14, 41, -39, 48, 42, -126, -121, 84, -58, 59, -27, 51, -32, -23 };
                         
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                Signus.DecryptAsync(_wallet, _myDid, _trusteeDid, _encryptedMessage, nonce)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -109,11 +105,9 @@ namespace Hyperledger.Indy.Test.SignusTests
             var identityJson = string.Format(_identityJsonTemplate, _trusteeDid, _trusteeVerkey);
             await Signus.StoreTheirDidAsync(_wallet, identityJson);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
                Signus.DecryptAsync(_wallet, "unknowDid", _trusteeDid, _encryptedMessage, _nonce)
            );
-
-            Assert.AreEqual(ErrorCode.WalletNotFoundError, ex.ErrorCode);
         }
     }
 }
