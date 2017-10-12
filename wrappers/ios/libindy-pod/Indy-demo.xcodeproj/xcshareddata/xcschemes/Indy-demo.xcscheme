@@ -59,6 +59,9 @@
                   Identifier = "AgentHignCases/testSequence">
                </Test>
                <Test
+                  Identifier = "AgentMediumConnect/testSequence">
+               </Test>
+               <Test
                   Identifier = "AgentMediumSend/testAgentSendWorksForRemovedIdentity">
                </Test>
                <Test
@@ -75,18 +78,6 @@
                </Test>
                <Test
                   Identifier = "PoolMediumCases/testOpenPoolLedgerWorksForInvalidConfig">
-               </Test>
-               <Test
-                  Identifier = "WalletHignCases/testCloseWalletWorksForPlugged">
-               </Test>
-               <Test
-                  Identifier = "WalletHignCases/testCreateWalletWorksForPlugged">
-               </Test>
-               <Test
-                  Identifier = "WalletHignCases/testDeleteWalletWorksForPlugged">
-               </Test>
-               <Test
-                  Identifier = "WalletHignCases/testOpenWalletWorksForPlugged">
                </Test>
                <Test
                   Identifier = "WalletHignCases/testWalletSetSeqNoWorksForPlugged">
