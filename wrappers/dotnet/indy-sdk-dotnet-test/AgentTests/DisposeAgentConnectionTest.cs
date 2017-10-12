@@ -76,6 +76,7 @@ namespace Hyperledger.Indy.Test.AgentTests
         }
 
         [TestMethod]
+        [Ignore] //Wait until proper error is implemented in SDK and handle.
         public async Task CanCloseAfterDispose()
         {
             await PrepareForConnection("127.0.0.1:9618");
