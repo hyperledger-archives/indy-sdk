@@ -20,7 +20,7 @@ namespace Hyperledger.Indy.Test
         protected static string TRUSTEE_IDENTITY_JSON = string.Format("{{\"seed\":\"{0}\"}}", TRUSTEE_SEED);
         protected static string MY1_IDENTITY_JSON = string.Format("{{\"seed\":\"{0}\"}}", MY1_SEED);
 
-        protected HashSet<Pool> _openedPools = new HashSet<Pool>();
+        protected HashSet<Pool> openedPools = new HashSet<Pool>();
 
         [TestInitialize]
         public async Task SetUp()
@@ -32,13 +32,13 @@ namespace Hyperledger.Indy.Test
         [TestCleanup]
         public async Task TearDown()
         {
-            foreach (var pool in _openedPools)
+            foreach (var pool in openedPools)
             {
                 if (pool != null)
                     await pool.CloseAsync();
             }
 
-            _openedPools.Clear();
+            openedPools.Clear();
             StorageUtils.CleanupStorage();
         }
     }
