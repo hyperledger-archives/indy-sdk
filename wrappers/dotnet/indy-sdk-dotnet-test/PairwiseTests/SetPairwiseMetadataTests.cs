@@ -1,9 +1,6 @@
 ﻿using Hyperledger.Indy.PairwiseApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.PairwiseTests
@@ -14,27 +11,27 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         [TestMethod]
         public async Task TestSetPairwiseMetadataWorks()
         {
-            await Pairwise.CreateAsync(wallet, _theirDid, _myDid, null);
+            await Pairwise.CreateAsync(wallet, theirDid, myDid, null);
 
-            var pairwiseWithoutMetadata = await Pairwise.GetAsync(wallet, _theirDid);
+            var pairwiseWithoutMetadata = await Pairwise.GetAsync(wallet, theirDid);
 
-            await Pairwise.SetMetadataAsync(wallet, _theirDid, METADATA);
-            var pairwiseWithMetadata = await Pairwise.GetAsync(wallet, _theirDid);
+            await Pairwise.SetMetadataAsync(wallet, theirDid, METADATA);
+            var pairwiseWithMetadata = await Pairwise.GetAsync(wallet, theirDid);
 
             Assert.AreNotEqual(pairwiseWithoutMetadata, pairwiseWithMetadata);
-            Assert.AreEqual(string.Format(PAIRWISE_TEMPLATE, _myDid, METADATA), pairwiseWithMetadata);
+            Assert.AreEqual(string.Format(PAIRWISE_TEMPLATE, myDid, METADATA), pairwiseWithMetadata);
         }
 
         [TestMethod]
         [Ignore] //Bug in SDK?
         public async Task TestSetPairwiseMetadataWorksWithNull()
         {
-            await Pairwise.CreateAsync(wallet, _theirDid, _myDid, METADATA);
+            await Pairwise.CreateAsync(wallet, theirDid, myDid, METADATA);
 
-            var pairwiseWithMetadata = await Pairwise.GetAsync(wallet, _theirDid);
+            var pairwiseWithMetadata = await Pairwise.GetAsync(wallet, theirDid);
 
-            await Pairwise.SetMetadataAsync(wallet, _theirDid, null);
-            var pairwiseWithoutMetadata = await Pairwise.GetAsync(wallet, _theirDid);
+            await Pairwise.SetMetadataAsync(wallet, theirDid, null);
+            var pairwiseWithoutMetadata = await Pairwise.GetAsync(wallet, theirDid);
             var pairwiseInfo = JObject.Parse(pairwiseWithoutMetadata);
 
             Assert.AreNotEqual(pairwiseWithoutMetadata, pairwiseWithMetadata);
@@ -45,12 +42,12 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         [Ignore] //Bug in SDK?
         public async Task TestSetPairwiseMetadataWorksWithEmptyString()
         {
-            await Pairwise.CreateAsync(wallet, _theirDid, _myDid, METADATA);
+            await Pairwise.CreateAsync(wallet, theirDid, myDid, METADATA);
 
-            var pairwiseWithMetadata = await Pairwise.GetAsync(wallet, _theirDid);
+            var pairwiseWithMetadata = await Pairwise.GetAsync(wallet, theirDid);
 
-            await Pairwise.SetMetadataAsync(wallet, _theirDid, string.Empty);
-            var pairwiseWithoutMetadata = await Pairwise.GetAsync(wallet, _theirDid);
+            await Pairwise.SetMetadataAsync(wallet, theirDid, string.Empty);
+            var pairwiseWithoutMetadata = await Pairwise.GetAsync(wallet, theirDid);
             var pairwiseInfo = JObject.Parse(pairwiseWithoutMetadata);
 
             Assert.AreNotEqual(pairwiseWithoutMetadata, pairwiseWithMetadata);
@@ -61,7 +58,7 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         public async Task TestSetPairwiseMetadataWorksForNotCreatedPairwise()
         {
             var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-                Pairwise.SetMetadataAsync(wallet, _theirDid, METADATA)
+                Pairwise.SetMetadataAsync(wallet, theirDid, METADATA)
             );
         }
 

@@ -1,9 +1,6 @@
 ﻿using Hyperledger.Indy.PairwiseApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.PairwiseTests
@@ -14,13 +11,13 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         [TestMethod]
         public async Task TestListPairwiseWorks()
         {
-            await Pairwise.CreateAsync(wallet, _theirDid, _myDid, null);
+            await Pairwise.CreateAsync(wallet, theirDid, myDid, null);
 
             var listPairwise = await Pairwise.ListAsync(wallet);
             var listPairwiseArray = JArray.Parse(listPairwise);
 
             Assert.AreEqual(1, listPairwiseArray.Count);
-            Assert.AreEqual(listPairwiseArray[0].ToString(), string.Format(PAIR_TEMPLATE, _myDid, _theirDid));
+            Assert.AreEqual(listPairwiseArray[0].ToString(), string.Format(PAIR_TEMPLATE, myDid, theirDid));
         }
 
         [TestMethod]
