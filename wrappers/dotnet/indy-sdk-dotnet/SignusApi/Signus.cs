@@ -1,7 +1,6 @@
 ﻿using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
-using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.IndyNativeMethods;

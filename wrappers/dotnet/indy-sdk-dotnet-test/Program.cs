@@ -1,7 +1,4 @@
 ﻿using Hyperledger.Indy.Test.PoolTests;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Hyperledger.Indy.Test
 {

@@ -20,8 +20,8 @@ namespace Hyperledger.Indy.Test
             var file = File.Create(path);
 
             WriteTransactions(file, nodesCnt);
-		    return file;
-	    }
+            return file;
+        }
 
         public static void WriteTransactions(FileStream file, int nodesCnt)
         {

@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test
 {
-
     public abstract class IndyIntegrationTestWithSingleWallet : IndyIntegrationTestBase
     {
         protected Wallet wallet;

@@ -1,9 +1,4 @@
-﻿using Hyperledger.Indy.PoolApi;
-using Hyperledger.Indy.WalletApi;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Threading.Tasks;
-
-namespace Hyperledger.Indy.Test.AgentTests
+﻿namespace Hyperledger.Indy.Test.AgentTests
 {
     public abstract class AgentIntegrationTestBase : IndyIntegrationTestWithPoolAndSingleWallet
     {
