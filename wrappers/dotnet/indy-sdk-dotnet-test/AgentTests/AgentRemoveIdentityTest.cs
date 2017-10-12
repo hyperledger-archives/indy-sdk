@@ -13,13 +13,12 @@ namespace Hyperledger.Indy.Test.AgentTests
         {
             var endpoint = "127.0.0.1:9608";
 
-            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
 
             var activeListener = await AgentListener.ListenAsync(endpoint);
+            await activeListener.AddIdentityAsync(pool, wallet, myDidResult.Did);
 
-            await activeListener.AddIdentityAsync(_pool, _wallet, myDidResult.Did);
-
-            await activeListener.RemoveIdentityAsync(_wallet, myDidResult.Did);
+            await activeListener.RemoveIdentityAsync(wallet, myDidResult.Did);
         }
     }
 }
