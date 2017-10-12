@@ -467,16 +467,27 @@ namespace Hyperledger.Indy
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_replace_keys(int command_handle, IntPtr wallet_handle, string did, string identity_json, ReplaceKeysResultDelegate cb);
-
+        internal static extern int indy_replace_keys_start(int command_handle, IntPtr wallet_handle, string did, string identity_json, ReplaceKeysStartResultDelegate cb);
+        
         /// <summary>
-        /// Delegate for the function called back to by the indy_replace_keys function.
+        /// Delegate for the function called back to by the indy_replace_keys_start function.
         /// </summary>
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="verkey">The key for verification of signature.</param>
         /// <param name="pk">The public key for decryption.</param>
-        internal delegate void ReplaceKeysResultDelegate(int xcommand_handle, int err, string verkey, string pk);
+        internal delegate void ReplaceKeysStartResultDelegate(int xcommand_handle, int err, string verkey, string pk);
+
+        /// <summary>
+        /// Apply temporary keys as main for an existing DID (owned by the caller of the library).
+        /// </summary>
+        /// <param name="command_handle">command handle to map callback to user context.</param>
+        /// <param name="wallet_handle">wallet handler (created by open_wallet).</param>
+        /// <param name="did">Id of Identity stored in secured Wallet.</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_replace_keys_apply(int command_handle, IntPtr wallet_handle, string did, NoValueDelegate cb);
 
         /// <summary>
         /// Saves their DID for a pairwise connection in a secured Wallet,
