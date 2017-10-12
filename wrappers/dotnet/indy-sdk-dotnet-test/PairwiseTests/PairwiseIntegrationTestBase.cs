@@ -20,13 +20,13 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         [TestInitialize]
         public async Task CreateDids()
         {
-            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
+            var result = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
             _myDid = result.Did;
 
-            result = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
+            result = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
             _theirDid = result.Did;
 
-            await Signus.StoreTheirDidAsync(_wallet, string.Format("{{\"did\":\"{0}\"}}", _theirDid));
+            await Signus.StoreTheirDidAsync(wallet, string.Format("{{\"did\":\"{0}\"}}", _theirDid));
         }
     }
 }

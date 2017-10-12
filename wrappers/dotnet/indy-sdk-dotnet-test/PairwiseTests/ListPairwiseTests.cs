@@ -14,9 +14,9 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         [TestMethod]
         public async Task TestListPairwiseWorks()
         {
-            await Pairwise.CreateAsync(_wallet, _theirDid, _myDid, null);
+            await Pairwise.CreateAsync(wallet, _theirDid, _myDid, null);
 
-            var listPairwise = await Pairwise.ListAsync(_wallet);
+            var listPairwise = await Pairwise.ListAsync(wallet);
             var listPairwiseArray = JArray.Parse(listPairwise);
 
             Assert.AreEqual(1, listPairwiseArray.Count);
@@ -26,7 +26,7 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         [TestMethod]
         public async Task TestListPairwiseWorksForEmptyResult()
         {
-            var listPairwise = await Pairwise.ListAsync(_wallet);
+            var listPairwise = await Pairwise.ListAsync(wallet);
             var listPairwiseArray = JArray.Parse(listPairwise);
             Assert.AreEqual(0, listPairwiseArray.Count);
         }

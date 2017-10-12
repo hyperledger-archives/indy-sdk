@@ -13,20 +13,20 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         [TestMethod]
         public async Task TestCreatePairwiseWorks()
         {
-            await Pairwise.CreateAsync(_wallet, _theirDid, _myDid, METADATA);
+            await Pairwise.CreateAsync(wallet, _theirDid, _myDid, METADATA);
         }
 
         [TestMethod]
         public async Task TestCreatePairwiseWorksForEmptyMetadata()
         {
-            await Pairwise.CreateAsync(_wallet, _theirDid, _myDid, null);
+            await Pairwise.CreateAsync(wallet, _theirDid, _myDid, null);
         }
 
         [TestMethod]
         public async Task TestCreatePairwiseWorksForNotFoundMyDid()
         {
             var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-                Pairwise.CreateAsync(_wallet, _theirDid, DID1, null)
+                Pairwise.CreateAsync(wallet, _theirDid, DID1, null)
             );
         }
 
@@ -34,7 +34,7 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         public async Task TestCreatePairwiseWorksForNotFoundTheirDid()
         {
             var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-                Pairwise.CreateAsync(_wallet, DID1, _myDid, null)
+                Pairwise.CreateAsync(wallet, DID1, _myDid, null)
             );
         }
     }
