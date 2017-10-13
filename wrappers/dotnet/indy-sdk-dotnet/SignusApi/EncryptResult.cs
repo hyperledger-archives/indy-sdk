@@ -5,7 +5,7 @@ namespace Hyperledger.Indy.SignusApi
     /// <summary>
     /// The result of encryption.
     /// </summary>
-    public class EncryptResult
+    public sealed class EncryptResult
     {
         /// <summary>
         /// Initializes a new EncryptionResult.

@@ -9,7 +9,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
     [TestClass]
     public class ClaimDefRequestTest : IndyIntegrationTestWithPoolAndSingleWallet
     {
-        private string _claimDefTemplate = "{{\n" +
+        private const string _claimDefTemplate = "{{\n" +
         "            \"ref\":{0},\n" +
         "            \"signature_type\":\"CL\",\n" +
         "            \"origin\":\"{1}\",\n" +
@@ -30,8 +30,8 @@ namespace Hyperledger.Indy.Test.LedgerTests
         "            }}\n" +
         "        }}";
 
-        private string _signatureType = "CL";
-        private int _seqNo = 1;
+        private const string _signatureType = "CL";
+        private const int _seqNo = 1;
 
         [TestMethod]
         public async Task TestBuildClaimDefRequestWorks()

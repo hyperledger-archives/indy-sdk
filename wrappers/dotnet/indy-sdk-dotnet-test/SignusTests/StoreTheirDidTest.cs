@@ -7,7 +7,7 @@ namespace Hyperledger.Indy.Test.SignusTests
     [TestClass]
     public class StoreTheirDidTest : IndyIntegrationTestWithSingleWallet
     {
-        private string _verkey = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
+        private const string _verkey = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
              
         [TestMethod]
         public async Task TestStoreTheirDidWorks()

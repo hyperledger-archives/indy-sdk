@@ -9,8 +9,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
     public class ProverCreateMasterSecretTest : AnonCredsIntegrationTestBase
     {
         private Wallet _wallet;
-        private string _walletName = "createMasterSecretWallet";
-        
+        private string _walletName = "createMasterSecretWallet";        
 
         [TestInitialize]
         public async Task CreateWallet()

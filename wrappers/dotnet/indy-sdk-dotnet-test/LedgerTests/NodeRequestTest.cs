@@ -8,8 +8,8 @@ namespace Hyperledger.Indy.Test.LedgerTests
     [TestClass]
     public class NodeRequestTest : IndyIntegrationTestWithPoolAndSingleWallet
     {
-        private string _dest = "A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y";
-        private string _data = "{\"node_ip\":\"10.0.0.100\"," +
+        private const string _dest = "A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y";
+        private const string _data = "{\"node_ip\":\"10.0.0.100\"," +
                 "\"node_port\":910," +
                 "\"client_ip\":\"10.0.0.100\"," +
                 "\"client_port\":911," +

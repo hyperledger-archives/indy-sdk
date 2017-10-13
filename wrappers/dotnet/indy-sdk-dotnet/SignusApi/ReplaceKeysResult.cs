@@ -5,7 +5,7 @@ namespace Hyperledger.Indy.SignusApi
     /// <summary>
     /// Result of replacing keys.
     /// </summary>
-    public class ReplaceKeysStartResult
+    public sealed class ReplaceKeysStartResult
     {
         /// <summary>
         /// Initializes a new ReplaceKeysResult.

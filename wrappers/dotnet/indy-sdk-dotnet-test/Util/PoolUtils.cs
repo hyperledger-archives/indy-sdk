@@ -6,7 +6,7 @@ namespace Hyperledger.Indy.Test
 {
     class PoolUtils
     {
-        public static string DEFAULT_POOL_NAME = "default_pool";
+        public const string DEFAULT_POOL_NAME = "default_pool";
 
         public static FileStream CreateGenesisTxnFile(string filename)
         {

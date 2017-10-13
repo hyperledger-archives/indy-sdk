@@ -7,10 +7,10 @@ namespace Hyperledger.Indy.Test.SignusTests
 {
     [TestClass]
     public class CreateMyDidTest : IndyIntegrationTestWithSingleWallet
-    {        
-        private string _expectedDid = "VsKV7grR1BUE29mG2Fm2kX";
-        private string _expectedVerkey = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
-        private string _existsCryptoType = "ed25519";
+    {
+        private const string _expectedDid = "VsKV7grR1BUE29mG2Fm2kX";
+        private const string _expectedVerkey = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
+        private const string _existsCryptoType = "ed25519";
         
         [TestMethod]
         public async Task TestCreateMyDidWorksForEmptyJson()

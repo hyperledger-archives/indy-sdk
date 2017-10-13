@@ -10,9 +10,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
     [TestClass]
     public class NymRequestTest : IndyIntegrationTestWithPoolAndSingleWallet
     {
-        private string _dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
-        private string _role = "STEWARD";
-        private string _alias = "some_alias";       
+        private const string _dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
+        private const string _role = "STEWARD";
+        private const string _alias = "some_alias";       
 
         [TestMethod]
         public async Task TestBuildNymRequestWorksForOnlyRequiredFields()

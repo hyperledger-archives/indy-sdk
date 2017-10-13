@@ -9,9 +9,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
     [TestClass]
     public class AttribRequestTest : IndyIntegrationTestWithPoolAndSingleWallet
     {        
-        private string _identifier = "Th7MpTaRZVRYnPiabds81Y";
-        private string _dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
-        private string _endpoint = "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}";
+        private const string _identifier = "Th7MpTaRZVRYnPiabds81Y";
+        private const string _dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
+        private const string _endpoint = "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}";
                
         [TestMethod]
         public async Task TestBuildAttribRequestWorksForRawData()

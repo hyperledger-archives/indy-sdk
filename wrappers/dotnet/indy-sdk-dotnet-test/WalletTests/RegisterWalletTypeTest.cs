@@ -9,7 +9,7 @@ namespace Hyperledger.Indy.Test.WalletTests
     [TestClass]
     public class RegisterWalletTypeTest : IndyIntegrationTestBase
     {
-        private string _type = "inmem";               
+        private const string _type = "inmem";               
 
         [TestMethod]
         [Ignore] //Not a valid test since the wallet type is registered on init!

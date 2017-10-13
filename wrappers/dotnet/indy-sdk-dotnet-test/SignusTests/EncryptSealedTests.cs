@@ -9,8 +9,8 @@ namespace Hyperledger.Indy.Test.SignusTests
     [TestClass]
     public class EncryptSealedTests : IndyIntegrationTestWithPoolAndSingleWallet
     {
-        private String did;
-        private String verkey;
+        private string _did;
+        private string _verkey;
 
         [TestInitialize]
         public async Task Before()
@@ -19,37 +19,37 @@ namespace Hyperledger.Indy.Test.SignusTests
             var trusteeDid = result.Did;
 
             var nym = await Signus.CreateAndStoreMyDidAsync(wallet, MY1_IDENTITY_JSON);
-            did = nym.Did;
-            verkey = nym.VerKey;
+            _did = nym.Did;
+            _verkey = nym.VerKey;
 
-            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, did, verkey, null, null);
+            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, _did, _verkey, null, null);
             await Ledger.SignAndSubmitRequestAsync(pool, wallet, trusteeDid, nymRequest);
         }
 
         [TestMethod]
         public async Task TestEncryptSealedWorksForPkCachedInWallet()
         {
-            var identityJson = string.Format(IDENTITY_JSON_TEMPLATE, did, verkey);
+            var identityJson = string.Format(IDENTITY_JSON_TEMPLATE, _did, _verkey);
             await Signus.StoreTheirDidAsync(wallet, identityJson);
 
-            var encryptResult = await Signus.EncryptSealedAsync(wallet, pool, did, MESSAGE);
+            var encryptResult = await Signus.EncryptSealedAsync(wallet, pool, _did, MESSAGE);
             Assert.IsNotNull(encryptResult);
         }
 
         [TestMethod]
         public async Task TestEncryptSealedWorksForGetPkFromLedger()
         {
-            var identityJson = string.Format("{{\"did\":\"{0}\"}}", did);
+            var identityJson = string.Format("{{\"did\":\"{0}\"}}", _did);
             await Signus.StoreTheirDidAsync(wallet, identityJson);
 
-            var encryptResult = await Signus.EncryptSealedAsync(wallet, pool, did, MESSAGE);
+            var encryptResult = await Signus.EncryptSealedAsync(wallet, pool, _did, MESSAGE);
             Assert.IsNotNull(encryptResult);
         }
 
         [TestMethod]
         public async Task TestEncryptSealedWorksForGetNymFromLedger()
         {
-            var encryptResult = await Signus.EncryptSealedAsync(wallet, pool, did, MESSAGE);
+            var encryptResult = await Signus.EncryptSealedAsync(wallet, pool, _did, MESSAGE);
             Assert.IsNotNull(encryptResult);
         }
 
