@@ -14,11 +14,11 @@ namespace Hyperledger.Indy
         }
 
         /// <summary>
-        /// Generates an IndyException from the provided error code.
+        /// Generates an IndyException or one of its subclasses from the provided SDK error code.
         /// </summary>
         /// <param name="sdkErrorCode">The error code.</param>
-        /// <returns>An IndyException instance.</returns>
-        public static IndyException FromErrorCode(int sdkErrorCode)
+        /// <returns>An IndyException or subclass instance.</returns>
+        internal static IndyException FromSdkError(int sdkErrorCode)
         {
             if (!Enum.IsDefined(typeof(ErrorCode), sdkErrorCode))
                 return MakeExceptionForUnknownError(sdkErrorCode);
