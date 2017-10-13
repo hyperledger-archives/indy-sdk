@@ -87,7 +87,7 @@ public class IndyJava {
 		protected static boolean checkCallback(CompletableFuture<?> future, int err) {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(new IndyException(errorCode)); return false; }
+			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(IndyException.fromSdkError(err)); return false; }
 
 			return true;
 		}
@@ -102,7 +102,7 @@ public class IndyJava {
 		protected static void checkCallback(int err) throws IndyException {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) throw new IndyException(errorCode);
+			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromSdkError(err);
 		}
 
 		/**
@@ -114,7 +114,7 @@ public class IndyJava {
 		protected static void checkResult(int err) throws IndyException {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) throw new IndyException(errorCode);
+			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromSdkError(err);
 		}
 
 		/*
