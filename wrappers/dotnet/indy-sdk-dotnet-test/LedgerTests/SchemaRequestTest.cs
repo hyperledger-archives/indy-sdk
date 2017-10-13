@@ -1,7 +1,5 @@
 ﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.SignusApi;
-using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
@@ -9,35 +7,8 @@ using System.Threading.Tasks;
 namespace Hyperledger.Indy.Test.LedgerTests
 {
     [TestClass]
-    public class SchemaRequestTest : IndyIntegrationTestBase
-    {
-        private Pool _pool;
-        private Wallet _wallet;
-        private string _walletName = "ledgerWallet";
-        private string _identifier = "Th7MpTaRZVRYnPiabds81Y";
-
-        [TestInitialize]
-        public async Task OpenPool()
-        {
-            string poolName = PoolUtils.CreatePoolLedgerConfig();
-            _pool = await Pool.OpenPoolLedgerAsync(poolName, null);
-
-            await Wallet.CreateWalletAsync(poolName, _walletName, "default", null, null);
-            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
-        }
-
-        [TestCleanup]
-        public async Task ClosePool()
-        {
-            if(_pool != null)
-                await _pool.CloseAsync();
-
-            if(_wallet != null)
-                await _wallet.CloseAsync();
-
-            await Wallet.DeleteWalletAsync(_walletName, null);
-        }
-
+    public class SchemaRequestTest : IndyIntegrationTestWithPoolAndSingleWallet
+    {       
         [TestMethod]
         public async Task TestBuildSchemaRequestWorks()
         {
@@ -47,9 +18,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
                     "\"operation\":{{" +
                     "\"type\":\"101\"," +
                     "\"data\":{1}" +
-                    "}}", _identifier, data);
+                    "}}", DID1, data);
 
-            var schemaRequest = await Ledger.BuildSchemaRequestAsync(_identifier, data);
+            var schemaRequest = await Ledger.BuildSchemaRequestAsync(DID1, data);
 
             Assert.IsTrue(schemaRequest.Replace("\\", "").Contains(expectedResult));
         }
@@ -64,9 +35,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
                     "\"type\":\"107\"," +
                     "\"dest\":\"{1}\"," +
                     "\"data\":{2}" +
-                    "}}", _identifier, _identifier, data);
+                    "}}", DID1, DID1, data);
 
-            var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(_identifier, _identifier, data);
+            var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(DID1, DID1, data);
 
             Assert.IsTrue(getSchemaRequest.Contains(expectedResult));
         }
@@ -74,36 +45,30 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestBuildSchemaRequestWorksWithoutSignature()
         {
-            var didJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-            var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
+            var didResult = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var did = didResult.Did;
 
-            var schemaData = "{\"name\":\"gvt2\",\n" +
-                    "             \"version\":\"2.0\",\n" +
-                    "             \"attr_names\": [\"name\", \"male\"]}";
-
-            var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, schemaData);
+            var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, SCHEMA_DATA);
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
-                Ledger.SubmitRequestAsync(_pool, schemaRequest)
+                Ledger.SubmitRequestAsync(pool, schemaRequest)
             );
         }
 
         [TestMethod] //Name of this test is bad.
         public async Task TestSchemaRequestWorks()
         {
-            var didJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-            var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
+            var didResult = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var did = didResult.Did;
 
             var schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"attr_names\": [\"name\", \"male\"]}";
 
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, schemaData);
-            await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, did, schemaRequest);
+            await Ledger.SignAndSubmitRequestAsync(pool, wallet, did, schemaRequest);
 
             var getSchemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
             var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(did, did, getSchemaData);
-            var getSchemaResponse = await Ledger.SubmitRequestAsync(_pool, getSchemaRequest);
+            var getSchemaResponse = await Ledger.SubmitRequestAsync(pool, getSchemaRequest);
 
             var getSchemaResponseObject = JObject.Parse(getSchemaResponse);
 
@@ -114,13 +79,12 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestGetSchemaRequestsWorksForUnknownSchema()
         {
-            var didJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-            var didResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
+            var didResult = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var did = didResult.Did;
 
             var getSchemaData = "{\"name\":\"schema_name\",\"version\":\"2.0\"}";
             var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(did, did, getSchemaData);
-            var getSchemaResponse = await Ledger.SubmitRequestAsync(_pool, getSchemaRequest);
+            var getSchemaResponse = await Ledger.SubmitRequestAsync(pool, getSchemaRequest);
 
             var getSchemaResponseObject = JObject.Parse(getSchemaResponse);
 
@@ -133,7 +97,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
             var data = "{\"name\":\"name\",\"version\":\"1.0\"}";
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                Ledger.BuildSchemaRequestAsync(_identifier, data)
+                Ledger.BuildSchemaRequestAsync(DID1, data)
             );
         }
 

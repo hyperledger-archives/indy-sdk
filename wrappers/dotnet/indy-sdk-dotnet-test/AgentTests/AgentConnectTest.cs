@@ -17,10 +17,10 @@ namespace Hyperledger.Indy.Test.AgentTests
             var listenerWalletName = "listenerWallet";
             var trusteeWalletName = "trusteeWallet";
 
-            await Wallet.CreateWalletAsync(_poolName, listenerWalletName, "default", null, null);
+            await Wallet.CreateWalletAsync(poolName, listenerWalletName, TYPE, null, null);
             var listenerWallet = await Wallet.OpenWalletAsync(listenerWalletName, null, null);
 
-            await Wallet.CreateWalletAsync(_poolName, trusteeWalletName, "default", null, null);
+            await Wallet.CreateWalletAsync(poolName, trusteeWalletName, TYPE, null, null);
             var trusteeWallet = await Wallet.OpenWalletAsync(trusteeWalletName, null, null);
             var senderWallet = trusteeWallet;
 
@@ -29,24 +29,22 @@ namespace Hyperledger.Indy.Test.AgentTests
             var listenerVerkey = createMyDidResult.VerKey;
             var listenerPk = createMyDidResult.Pk;
 
-            var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-
-            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(trusteeWallet, trusteeDidJson);
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(trusteeWallet, TRUSTEE_IDENTITY_JSON);
             var trusteeDid = trusteeDidResult.Did;
             var senderDid = trusteeDid;
 
             var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, listenerDid, listenerVerkey, null, null);
-            await Ledger.SignAndSubmitRequestAsync(_pool, trusteeWallet, trusteeDid, nymRequest);
+            await Ledger.SignAndSubmitRequestAsync(pool, trusteeWallet, trusteeDid, nymRequest);
 
             var attribRequest = await Ledger.BuildAttribRequestAsync(listenerDid, listenerDid, null,
                     string.Format("{{\"endpoint\":{{\"ha\":\"{0}\",\"verkey\":\"{1}\"}}}}", endpoint, listenerPk), null);
-            await Ledger.SignAndSubmitRequestAsync(_pool, listenerWallet, listenerDid, attribRequest);
+            await Ledger.SignAndSubmitRequestAsync(pool, listenerWallet, listenerDid, attribRequest);
 
             var activeListener = await AgentListener.ListenAsync(endpoint);
 
-            await activeListener.AddIdentityAsync(_pool, listenerWallet, listenerDid);
+            await activeListener.AddIdentityAsync(pool, listenerWallet, listenerDid);
 
-            await AgentConnection.ConnectAsync(_pool, senderWallet, senderDid, listenerDid);
+            await AgentConnection.ConnectAsync(pool, senderWallet, senderDid, listenerDid);
 
             await listenerWallet.CloseAsync();
             await Wallet.DeleteWalletAsync(listenerWalletName, null);
@@ -60,17 +58,15 @@ namespace Hyperledger.Indy.Test.AgentTests
         {
             var endpoint = "127.0.0.1:9606";
 
-            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
 
-            var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
-                    myDidResult.Did, myDidResult.Pk, myDidResult.VerKey, endpoint);
-            await Signus.StoreTheirDidAsync(_wallet, identityJson);
+            var identityJson = string.Format(AGENT_IDENTITY_JSON_TEMPLATE, myDidResult.Did, myDidResult.Pk, myDidResult.VerKey, endpoint);
+            await Signus.StoreTheirDidAsync(wallet, identityJson);
 
             var activeListener = await AgentListener.ListenAsync(endpoint);
+            await activeListener.AddIdentityAsync(pool, wallet, myDidResult.Did);
 
-            await activeListener.AddIdentityAsync(_pool, _wallet, myDidResult.Did);
-
-            await AgentConnection.ConnectAsync(_pool, _wallet, myDidResult.Did, myDidResult.Did);
+            await AgentConnection.ConnectAsync(pool, wallet, myDidResult.Did, myDidResult.Did);
         }
     }
 }

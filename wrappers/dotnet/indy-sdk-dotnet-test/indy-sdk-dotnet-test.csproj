@@ -4,6 +4,7 @@
     <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
     <AssemblyName>Hyperledger.Indy.Sdk.Test</AssemblyName>
     <RootNamespace>Hyperledger.Indy.Test</RootNamespace>
+    <StartupObject>Hyperledger.Indy.Test.Program</StartupObject>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net45|AnyCPU'">

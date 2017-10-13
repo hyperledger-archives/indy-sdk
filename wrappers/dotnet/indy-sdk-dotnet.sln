@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.15
+VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "indy-sdk-dotnet", "indy-sdk-dotnet\indy-sdk-dotnet.csproj", "{5C97C715-D7E2-42B7-A363-4A54C11DC8B3}"
 EndProject

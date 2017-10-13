@@ -10,10 +10,8 @@ namespace Hyperledger.Indy.Test.WalletTests
         [TestMethod]
         public async Task TestCloseWalletWorks()
         {
-            var walletName = "closeWalletWorks";
-            await Wallet.CreateWalletAsync("default", walletName, "default", null, null);
-
-            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
+            await Wallet.CreateWalletAsync(POOL, WALLET, TYPE, null, null);
+            var wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
 
             Assert.IsNotNull(wallet);
 
@@ -23,11 +21,8 @@ namespace Hyperledger.Indy.Test.WalletTests
         [TestMethod]
         public async Task TestCloseWalletWorksForTwice()
         {
-            var walletName = "closeWalletWorksForTwice";
-
-            await Wallet.CreateWalletAsync("default", walletName, "default", null, null);
-
-            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
+            await Wallet.CreateWalletAsync(POOL, WALLET, TYPE, null, null);
+            var wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
 
             Assert.IsNotNull(wallet);
 
@@ -41,12 +36,9 @@ namespace Hyperledger.Indy.Test.WalletTests
         [TestMethod]
         public async Task TestCloseWalletWorksForPlugged()
         {
-            var type = "inmem";
-            var walletName = "testCloseWalletWorksForPlugged";
+            await Wallet.CreateWalletAsync(POOL, WALLET, "inmem", null, null);
 
-            await Wallet.CreateWalletAsync("default", walletName, type, null, null);
-
-            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
+            var wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
             await wallet.CloseAsync();
         }
     }

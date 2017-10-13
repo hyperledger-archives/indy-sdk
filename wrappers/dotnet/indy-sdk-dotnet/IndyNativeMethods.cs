@@ -3,8 +3,6 @@ using System.Runtime.InteropServices;
 
 namespace Hyperledger.Indy
 {
-    
-
     /// <summary>
     /// PInvoke import of C-Callable SDK library functions and associated delegates.
     /// </summary>

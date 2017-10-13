@@ -24,11 +24,11 @@ namespace Hyperledger.Indy.Test.DemoTests
             var pool = await Pool.OpenPoolLedgerAsync(poolName, "{}");
 
             //2. Create and Open Listener Wallet
-            await Wallet.CreateWalletAsync(poolName, listenerWalletName, "default", null, null);
+            await Wallet.CreateWalletAsync(poolName, listenerWalletName, TYPE, null, null);
             var listenerWallet = await Wallet.OpenWalletAsync(listenerWalletName, null, null);
 
             //3. Create and Open Trustee Wallet
-            await Wallet.CreateWalletAsync(poolName, trusteeWalletName, "default", null, null);
+            await Wallet.CreateWalletAsync(poolName, trusteeWalletName, TYPE, null, null);
             var trusteeWallet = await Wallet.OpenWalletAsync(trusteeWalletName, null, null);
             var senderWallet = trusteeWallet;
 
@@ -39,9 +39,7 @@ namespace Hyperledger.Indy.Test.DemoTests
             var listenerPk = createMyDidResult.Pk;
 
             //5. Create Their Did from Trustee seed
-            var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-
-            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(trusteeWallet, trusteeDidJson);
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(trusteeWallet, TRUSTEE_IDENTITY_JSON);
             var trusteeDid = trusteeDidResult.Did;
             var senderDid = trusteeDid;
 

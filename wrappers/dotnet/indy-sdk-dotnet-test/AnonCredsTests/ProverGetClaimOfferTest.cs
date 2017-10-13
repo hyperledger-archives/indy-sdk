@@ -5,7 +5,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 
-
 namespace Hyperledger.Indy.Test.AnonCredsTests
 {
     [TestClass]
@@ -16,7 +15,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         {
             await InitCommonWallet();
 
-            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(_commonWallet, "{}");
+            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(commonWallet, "{}");
             var claimOffersArray = JArray.Parse(claimOffers);
 
             Assert.AreEqual(3, claimOffersArray.Count);
@@ -27,15 +26,15 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         {
             await InitCommonWallet();
 
-            var filter = string.Format("{{\"issuer_did\":\"{0}\"}}", _issuerDid);
+            var filter = string.Format("{{\"issuer_did\":\"{0}\"}}", issuerDid);
 
-            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(_commonWallet, filter);
+            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(commonWallet, filter);
             var claimOffersArray = JArray.Parse(claimOffers);
 
             Assert.AreEqual(2, claimOffersArray.Count);
 
-            Assert.IsTrue(claimOffers.Contains(string.Format(_claimOfferTemplate, _issuerDid, 1)));
-            Assert.IsTrue(claimOffers.Contains(string.Format(_claimOfferTemplate, _issuerDid, 2)));
+            Assert.IsTrue(claimOffers.Contains(string.Format(claimOfferTemplate, issuerDid, 1)));
+            Assert.IsTrue(claimOffers.Contains(string.Format(claimOfferTemplate, issuerDid, 2)));
         }
 
         [TestMethod] 
@@ -45,13 +44,13 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
             var filter = string.Format("{{\"schema_seq_no\":{0}}}", 2);
 
-            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(_commonWallet, filter);
+            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(commonWallet, filter);
             var claimOffersArray = JArray.Parse(claimOffers);
 
             Assert.AreEqual(2, claimOffersArray.Count);
 
-            Assert.IsTrue(claimOffers.Contains(string.Format(_claimOfferTemplate, _issuerDid, 2)));
-            Assert.IsTrue(claimOffers.Contains(string.Format(_claimOfferTemplate, _issuerDid2, 2)));
+            Assert.IsTrue(claimOffers.Contains(string.Format(claimOfferTemplate, issuerDid, 2)));
+            Assert.IsTrue(claimOffers.Contains(string.Format(claimOfferTemplate, issuerDid2, 2)));
         }
 
         [TestMethod] 
@@ -59,14 +58,14 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         {
             await InitCommonWallet();
 
-            var filter = string.Format("{{\"issuer_did\":\"{0}\",\"schema_seq_no\":{1}}}", _issuerDid, 1);
+            var filter = string.Format("{{\"issuer_did\":\"{0}\",\"schema_seq_no\":{1}}}", issuerDid, 1);
 
-            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(_commonWallet, filter);
+            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(commonWallet, filter);
             var claimOffersArray = JArray.Parse(claimOffers);
 
             Assert.AreEqual(1, claimOffersArray.Count);
 
-            Assert.IsTrue(claimOffers.Contains(string.Format(_claimOfferTemplate, _issuerDid, 1)));
+            Assert.IsTrue(claimOffers.Contains(string.Format(claimOfferTemplate, issuerDid, 1)));
         }
 
         [TestMethod]
@@ -76,7 +75,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
             var filter = string.Format("{{\"schema_seq_no\":{0}}}", 3);
 
-            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(_commonWallet, filter);
+            var claimOffers = await AnonCreds.ProverGetClaimOffersAsync(commonWallet, filter);
             var claimOffersArray = JArray.Parse(claimOffers);
 
             Assert.AreEqual(0, claimOffersArray.Count);
@@ -90,7 +89,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var filter = string.Format("{{\"schema_seq_no\":\"{0}\"}}", 1);
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.ProverGetClaimOffersAsync(_commonWallet, filter)
+                AnonCreds.ProverGetClaimOffersAsync(commonWallet, filter)
 
             );
         }
@@ -108,9 +107,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             string claimOffers;
             Wallet wallet = null;
 
-            var claimOffer = string.Format(_claimOfferTemplate, _issuerDid, 1);
-            var claimOffer2 = string.Format(_claimOfferTemplate, _issuerDid, 2);
-            var claimOffer3 = string.Format(_claimOfferTemplate, _issuerDid2, 2);
+            var claimOffer = string.Format(claimOfferTemplate, issuerDid, 1);
+            var claimOffer2 = string.Format(claimOfferTemplate, issuerDid, 2);
+            var claimOffer3 = string.Format(claimOfferTemplate, issuerDid2, 2);
 
             try
             {
@@ -120,7 +119,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 await AnonCreds.ProverStoreClaimOfferAsync(wallet, claimOffer2);
                 await AnonCreds.ProverStoreClaimOfferAsync(wallet, claimOffer3);
 
-                var filter = string.Format("{{\"issuer_did\":\"{0}\"}}", _issuerDid);
+                var filter = string.Format("{{\"issuer_did\":\"{0}\"}}", issuerDid);
 
                 claimOffers = await AnonCreds.ProverGetClaimOffersAsync(wallet, filter);
             }

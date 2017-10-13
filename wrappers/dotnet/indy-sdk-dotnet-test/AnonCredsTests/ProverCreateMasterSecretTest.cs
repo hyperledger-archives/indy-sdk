@@ -3,15 +3,13 @@ using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-
 namespace Hyperledger.Indy.Test.AnonCredsTests
 {
     [TestClass]
     public class ProverCreateMasterSecretTest : AnonCredsIntegrationTestBase
     {
         private Wallet _wallet;
-        private string _walletName = "createMasterSecretWallet";
-        
+        private string _walletName = "createMasterSecretWallet";        
 
         [TestInitialize]
         public async Task CreateWallet()

@@ -6,16 +6,25 @@ namespace Hyperledger.Indy.Test
 {
     class PoolUtils
     {
-        public static string DEFAULT_POOL_NAME = "default_pool";
+        public const string DEFAULT_POOL_NAME = "default_pool";
 
-        public static string CreateGenesisTxnFile(string filename)
+        public static FileStream CreateGenesisTxnFile(string filename)
         {
             return CreateGenesisTxnFile(filename, 4);
         }
 
-        public static string CreateGenesisTxnFile(string filename, int nodesCnt)
+        private static FileStream CreateGenesisTxnFile(string filename, int nodesCnt) 
         {
-            var file = EnvironmentUtils.GetTmpPath(filename);
+            var path = EnvironmentUtils.GetTmpPath(filename);
+            Directory.CreateDirectory(Path.GetDirectoryName(path ));
+            var file = File.Create(path);
+
+            WriteTransactions(file, nodesCnt);
+            return file;
+        }
+
+        public static void WriteTransactions(FileStream file, int nodesCnt)
+        {
             var testPoolIp = EnvironmentUtils.GetTestPoolIP();
 
             var defaultTxns = new string[]{
@@ -25,7 +34,7 @@ namespace Hyperledger.Indy.Test
                 string.Format("{{\"data\":{{\"alias\":\"Node4\",\"blskey\":\"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw\",\"client_ip\":\"{0}\",\"client_port\":9708,\"node_ip\":\"{0}\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]}},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"TWwCRQRZ2ZHMJFn9TzLp7W\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}}", testPoolIp)
              };
 
-            Directory.CreateDirectory(Path.GetDirectoryName(file));
+           
             var stream = new StreamWriter(file);
 
             for (int i = 0; i < nodesCnt; i++)
@@ -34,8 +43,6 @@ namespace Hyperledger.Indy.Test
             }
 
             stream.Close();
-
-            return file;
         }
 
         public static string CreatePoolLedgerConfig()
@@ -54,7 +61,7 @@ namespace Hyperledger.Indy.Test
         public static void CreatePoolLedgerConfig(string poolName, int nodesCnt)
         {
             var genesisTxnFile = CreateGenesisTxnFile("temp.txn", nodesCnt);
-            var path = Path.GetFullPath(genesisTxnFile).Replace('\\', '/');
+            var path = Path.GetFullPath(genesisTxnFile.Name).Replace('\\', '/');
             var createPoolLedgerConfig = string.Format("{{\"genesis_txn\":\"{0}\"}}", path);
 
             Pool.CreatePoolLedgerConfigAsync(poolName, createPoolLedgerConfig);

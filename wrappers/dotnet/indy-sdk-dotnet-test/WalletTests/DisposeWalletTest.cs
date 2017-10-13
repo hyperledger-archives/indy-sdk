@@ -1,10 +1,5 @@
-﻿using Hyperledger.Indy.PoolApi;
-using Hyperledger.Indy.WalletApi;
+﻿using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.WalletTests
@@ -12,24 +7,22 @@ namespace Hyperledger.Indy.Test.WalletTests
     [TestClass]
     public class DisposeWalletTest : IndyIntegrationTestBase
     {
-        private string _walletName = "disposableWallet";
-
         [TestInitialize]
         public async Task CreateWallet()
         {
-            await Wallet.CreateWalletAsync("default", _walletName, "default", null, null);
+            await Wallet.CreateWalletAsync(POOL, WALLET, TYPE, null, null);
         }
 
         [TestCleanup]
         public async Task DeleteWallet()
         {
-            await Wallet.DeleteWalletAsync(_walletName, null);
+            await Wallet.DeleteWalletAsync(WALLET, null);
         }
 
         [TestMethod]
         public async Task CanDisposeClosedWallet()
         {
-            using (var wallet = await Wallet.OpenWalletAsync(_walletName, null, null))
+            using (var wallet = await Wallet.OpenWalletAsync(WALLET, null, null))
             {
                 await wallet.CloseAsync();
             }
@@ -38,7 +31,7 @@ namespace Hyperledger.Indy.Test.WalletTests
         [TestMethod]
         public async Task DisposeCanBeCalledRepeatedly()
         {
-            var wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
+            var wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
             wallet.Dispose();
             wallet.Dispose();
         }
@@ -46,10 +39,10 @@ namespace Hyperledger.Indy.Test.WalletTests
         [TestMethod]
         public async Task WalletCanBeReOpenedAfterDispose()
         {
-            var wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
+            var wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
             wallet.Dispose();
 
-            using (var newWallet = await Wallet.OpenWalletAsync(_walletName, null, null))
+            using (var newWallet = await Wallet.OpenWalletAsync(WALLET, null, null))
             {
             }
         }
@@ -57,7 +50,7 @@ namespace Hyperledger.Indy.Test.WalletTests
         [TestMethod]
         public async Task ClosingDisposedWalletStillProvidesSDKError()
         {
-            var wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
+            var wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
             wallet.Dispose();
 
             var ex = await Assert.ThrowsExceptionAsync<WalletClosedException>(() =>

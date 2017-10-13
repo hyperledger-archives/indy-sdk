@@ -5,7 +5,7 @@ namespace Hyperledger.Indy.SignusApi
     /// <summary>
     /// Result of creating and storing my DID.
     /// </summary>
-    public class CreateAndStoreMyDidResult
+    public sealed class CreateAndStoreMyDidResult
     {
         /// <summary>
         /// Initializes a new CreateAndStoreMyDidResult.
