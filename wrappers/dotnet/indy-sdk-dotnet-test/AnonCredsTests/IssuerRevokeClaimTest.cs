@@ -31,6 +31,8 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         [TestInitialize]
         public async Task Before()
         {
+            StorageUtils.CleanupStorage();
+
             //1. Create Issuer wallet, get wallet handle
             await Wallet.CreateWalletAsync("default", _walletName, "default", null, null);
             _issuerWallet = await Wallet.OpenWalletAsync(_walletName, null, null);
