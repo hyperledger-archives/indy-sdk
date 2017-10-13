@@ -157,8 +157,8 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     ret = [[IndyWallet sharedInstance] deleteWalletWithName:walletName
-                                                  credentials:nil
-                                                   completion:^(NSError *error)
+                                                credentials:nil
+                                                 completion:^(NSError *error)
            {
                err = error;
                [completionExpectation fulfill];

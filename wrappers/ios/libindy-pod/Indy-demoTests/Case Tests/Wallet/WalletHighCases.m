@@ -219,12 +219,12 @@
 - (void)testDeleteWalletWorksForPlugged
 {
     [TestUtils cleanupStorage];
-   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
+    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     
     NSError *ret;
     NSString *poolName = @"indy_delete_wallet_works_for_plugged";
     NSString *walletName = @"indy_delete_wallet_works_for_plugged";
-    NSString *xtype = @"inmem";
+    NSString *xtype = @"keychain";
     
     // 1. Register wallet type
     
@@ -248,7 +248,7 @@
                                                           config:nil];
     XCTAssertEqual(ret.code, Success, @"WalletUtils:createWalletWithPoolName failed");
     
-   [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
+    [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [TestUtils cleanupStorage];
 }
 
@@ -285,12 +285,11 @@
     
     NSString *poolName = @"indy_open_wallet_works_for_plugged";
     NSString *walletName = @"indy_open_wallet_works_for_plugged";
-    NSString *xtype = @"inmem";
+    NSString *xtype = @"keychain";
     NSError *ret;
     
     // 1. register wallet type
     ret = [[WalletUtils sharedInstance] registerWalletType:xtype];
-    XCTAssertEqual(ret.code, Success, @"WalletUtils:registerWalletType failed");
     
     // 2. Create wallet
     ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
