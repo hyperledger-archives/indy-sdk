@@ -1,10 +1,12 @@
+#![allow(unused_variables)]
 #![allow(dead_code)]
 extern crate serde;
 extern crate serde_json;
 extern crate rand;
 extern crate config;
 
-use std::path::Path;
+#[macro_use]
+extern crate log;
 
 #[macro_use]
 extern crate serde_derive;
@@ -15,6 +17,8 @@ extern crate lazy_static;
 #[macro_use]
 mod utils;
 mod settings;
+
+use std::path::Path;
 
 pub mod api;
 pub mod connection;

@@ -12,14 +12,19 @@ use connection::{build_connection, connect, to_string, get_state, release};
 #[no_mangle]
 pub extern fn cxs_init (config_path:*const c_char) -> u32 {
 
+    ::utils::logger::LoggerUtils::init();
+
     settings::set_defaults();
 
     if !config_path.is_null() {
         check_useful_c_str!(config_path,error::UNKNOWN_ERROR.code_num);
 
         match settings::process_config_file(&config_path) {
-            Err(_) => return error::INVALID_CONFIGURATION.code_num,
-            Ok(_) => {},
+            Err(_) => {
+                error!("Invalid configuration specified");
+                return error::INVALID_CONFIGURATION.code_num;
+            },
+            Ok(_) => info!("Successfully parsed config: {}",config_path),
         };
     }
 
