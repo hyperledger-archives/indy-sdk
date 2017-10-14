@@ -1,7 +1,6 @@
 package org.hyperledger.indy.sdk.agent;
 
 import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.junit.Test;
 

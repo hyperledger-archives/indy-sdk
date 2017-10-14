@@ -99,7 +99,7 @@ public class Agent extends IndyJava.API {
 	 */
 	private static Callback agentConnectConnectionCb = new Callback() {
 
-		@SuppressWarnings("unused")
+		@SuppressWarnings({ "unused", "unchecked" })
 		public void callback(int xcommand_handle, int err, int connection_handle) throws IndyException {
 
 			CompletableFuture<Connection> future = (CompletableFuture<Connection>) removeFuture(xcommand_handle);
@@ -138,7 +138,7 @@ public class Agent extends IndyJava.API {
 	 */
 	private static Callback agentListenListenerCb = new Callback() {
 
-		@SuppressWarnings("unused")
+		@SuppressWarnings({ "unused", "unchecked" })
 		public void callback(int xcommand_handle, int err, int listener_handle) throws IndyException {
 
 			CompletableFuture<Listener> future = (CompletableFuture<Listener>) removeFuture(xcommand_handle);
