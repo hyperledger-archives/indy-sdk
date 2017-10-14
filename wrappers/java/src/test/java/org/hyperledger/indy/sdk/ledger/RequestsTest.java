@@ -1,7 +1,6 @@
 package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
-import org.hyperledger.indy.sdk.pool.InvalidLedgerTransactionException;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults;

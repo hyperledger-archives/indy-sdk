@@ -1,4 +1,4 @@
-package org.hyperledger.indy.sdk.pool;
+package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.IndyException;
 
