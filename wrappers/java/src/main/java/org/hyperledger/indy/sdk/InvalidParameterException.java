@@ -1,11 +1,11 @@
 package org.hyperledger.indy.sdk;
 
 public class InvalidParameterException extends IndyException {
-	
+
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -1802344846222826490L;
 	private int parameterIndex;
 	
 	private static int getParamIndex(int sdkErrorCode)
@@ -19,7 +19,7 @@ public class InvalidParameterException extends IndyException {
         return String.format("The value passed to parameter %s is not valid.", getParamIndex(sdkErrorCode));
     }
 
-    InvalidParameterException(int sdkErrorCode)
+    public InvalidParameterException(int sdkErrorCode)
     {
     	super(buildMessage(sdkErrorCode), sdkErrorCode);
         parameterIndex = getParamIndex(sdkErrorCode);

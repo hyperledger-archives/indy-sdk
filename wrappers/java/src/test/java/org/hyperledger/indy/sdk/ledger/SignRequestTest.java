@@ -1,15 +1,16 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
+import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
+import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertTrue;
 
 public class SignRequestTest extends IndyIntegrationTestWithSingleWallet {
@@ -43,7 +44,7 @@ public class SignRequestTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testSignWorksForUnknowDid() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletNotFoundError));
+		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
 		String msg = "{\"reqId\":1496822211362017764}";
 		Ledger.signRequest(this.wallet, DID1, msg).get();
@@ -52,7 +53,7 @@ public class SignRequestTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testSignWorksForInvalidMessageFormat() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
 		String did = result.getDid();

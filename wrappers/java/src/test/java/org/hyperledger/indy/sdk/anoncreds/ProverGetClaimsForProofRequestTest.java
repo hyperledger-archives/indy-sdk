@@ -1,13 +1,13 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
+import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 
 public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest {
@@ -212,7 +212,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		initCommonWallet();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +
@@ -229,7 +229,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		initCommonWallet();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +

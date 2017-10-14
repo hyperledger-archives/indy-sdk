@@ -1,5 +1,27 @@
 package org.hyperledger.indy.sdk;
 
+import org.hyperledger.indy.sdk.anoncreds.AccumulatorFullException;
+import org.hyperledger.indy.sdk.anoncreds.NotIssuedException;
+import org.hyperledger.indy.sdk.anoncreds.DuplicateMasterSecretNameException;
+import org.hyperledger.indy.sdk.anoncreds.InvalidUserRevocIndexException;
+import org.hyperledger.indy.sdk.anoncreds.ProofRejectedException;
+import org.hyperledger.indy.sdk.anoncreds.RevocationRegistryFullException;
+import org.hyperledger.indy.sdk.pool.InvalidLedgerTransactionException;
+import org.hyperledger.indy.sdk.pool.ConsensusException;
+import org.hyperledger.indy.sdk.pool.LedgerSecurityException;
+import org.hyperledger.indy.sdk.pool.PoolClosedException;
+import org.hyperledger.indy.sdk.pool.PoolConfigNotCreatedException;
+import org.hyperledger.indy.sdk.pool.PoolLedgerConfigExistsException;
+import org.hyperledger.indy.sdk.pool.PoolLedgerTerminatedException;
+import org.hyperledger.indy.sdk.signus.UnknownCryptoException;
+import org.hyperledger.indy.sdk.wallet.DuplicateWalletTypeException;
+import org.hyperledger.indy.sdk.wallet.UnknownWalletTypeException;
+import org.hyperledger.indy.sdk.wallet.WalletAlreadyOpenedException;
+import org.hyperledger.indy.sdk.wallet.WalletClosedException;
+import org.hyperledger.indy.sdk.wallet.WalletExistsException;
+import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
+import org.hyperledger.indy.sdk.wallet.WrongWalletForPoolException;
+
 /**
  * Indy specific exception.
  */
@@ -77,7 +99,7 @@ public class IndyException extends Exception {
 			case PoolLedgerTerminated:
 				return new PoolLedgerTerminatedException(sdkErrorCode);
 			case LedgerNoConsensusError:
-				return new LedgerConsensusException(sdkErrorCode);
+				return new ConsensusException(sdkErrorCode);
 			case LedgerInvalidTransaction:
 				return new InvalidLedgerTransactionException(sdkErrorCode);
 			case LedgerSecurityError:
@@ -89,9 +111,9 @@ public class IndyException extends Exception {
 			case AnoncredsInvalidUserRevocIndex:
 				return new InvalidUserRevocIndexException(sdkErrorCode);
 			case AnoncredsAccumulatorIsFull:
-				return new AnoncredsAccumulatorFullException(sdkErrorCode);
+				return new AccumulatorFullException(sdkErrorCode);
 			case AnoncredsNotIssuedError:
-				return new AnoncredsNotIssuedException(sdkErrorCode);
+				return new NotIssuedException(sdkErrorCode);
 			case AnoncredsMasterSecretDuplicateNameError:
 				return new DuplicateMasterSecretNameException(sdkErrorCode);
 			case AnoncredsProofRejected:

@@ -1,15 +1,16 @@
 package org.hyperledger.indy.sdk.signus;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
+import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
+import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertTrue;
 
 public class DecryptSealedTest extends IndyIntegrationTestWithPoolAndSingleWallet {
@@ -46,7 +47,7 @@ public class DecryptSealedTest extends IndyIntegrationTestWithPoolAndSingleWalle
 	@Test
 	public void testSealedDecryptSealedWorksForOtherCoder() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String identityJson = String.format(IDENTITY_JSON_TEMPLATE, myDid, myVerkey);
 		Signus.storeTheirDid(wallet, identityJson).get();
@@ -59,7 +60,7 @@ public class DecryptSealedTest extends IndyIntegrationTestWithPoolAndSingleWalle
 	@Test
 	public void testDecryptSealedWorksForUnknownMyDid() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletNotFoundError));
+		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
 		byte[] encryptedMessage = {- 105, 30, 89, 75, 76, 28, - 59, - 45, 105, - 46, 20};
 		Signus.decryptSealed(wallet, "unknowDid", encryptedMessage).get();
