@@ -7,7 +7,10 @@
     {
         const string message = "A value being processed is not valid.";
 
-        internal InvalidStructureException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new InvalidStructureException.
+        /// </summary>
+        internal InvalidStructureException() : base(message, (int)ErrorCode.CommonInvalidStructure)
         {
 
         }

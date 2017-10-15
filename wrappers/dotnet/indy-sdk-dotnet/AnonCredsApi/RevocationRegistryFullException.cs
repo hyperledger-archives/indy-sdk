@@ -7,7 +7,10 @@
     {
         const string message = "The specified revocation registry is full.  Another revocation registry must be created.";
 
-        internal RevocationRegistryFullException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new RevocationRegistryFullException.
+        /// </summary>
+        internal RevocationRegistryFullException() : base(message, (int)ErrorCode.AnoncredsRevocationRegistryFullError)
         {
 
         }

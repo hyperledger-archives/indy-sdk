@@ -7,7 +7,10 @@
     {
         const string message = "The requested pool cannot be opened because it does not have an existing configuration.";
 
-        internal PoolConfigNotCreatedException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new PoolConfigNotCreatedException.
+        /// </summary>
+        internal PoolConfigNotCreatedException() : base(message, (int)ErrorCode.PoolLedgerNotCreatedError)
         {
 
         }

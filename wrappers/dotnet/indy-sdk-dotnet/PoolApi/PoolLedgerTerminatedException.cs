@@ -7,7 +7,10 @@
     {
         const string message = "The pool ledger was terminated.";
 
-        internal PoolLedgerTerminatedException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new PoolLedgerTerminatedException.
+        /// </summary>
+        internal PoolLedgerTerminatedException() : base(message, (int)ErrorCode.PoolLedgerTerminated)
         {
 
         }

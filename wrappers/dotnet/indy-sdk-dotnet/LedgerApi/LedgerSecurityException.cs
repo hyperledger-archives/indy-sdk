@@ -7,7 +7,10 @@
     {
         const string message = "The transaction cannot be sent as the privileges for the current pool connection don't allow it.";
 
-        internal LedgerSecurityException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new LedgerSecurityException.
+        /// </summary>
+        internal LedgerSecurityException() : base(message, (int)ErrorCode.LedgerSecurityError)
         {
 
         }

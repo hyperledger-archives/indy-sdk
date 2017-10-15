@@ -7,7 +7,10 @@
     {
         const string message = "The claim has been revoked.";
 
-        internal ClaimRevokedException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new ClaimRevokedException.
+        /// </summary>
+        internal ClaimRevokedException() : base(message, (int)ErrorCode.AnoncredsClaimRevoked)
         {
 
         }

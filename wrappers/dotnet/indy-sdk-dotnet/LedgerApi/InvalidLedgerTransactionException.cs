@@ -7,7 +7,10 @@
     {
         const string message = "The ledger message is unknown or malformed.";
 
-        internal InvalidLedgerTransactionException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new InvalidLedgerTransactionException.
+        /// </summary>
+        internal InvalidLedgerTransactionException() : base(message, (int)ErrorCode.LedgerInvalidTransaction)
         {
 
         }

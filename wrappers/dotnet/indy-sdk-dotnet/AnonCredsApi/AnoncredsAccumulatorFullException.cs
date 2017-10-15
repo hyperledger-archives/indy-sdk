@@ -1,13 +1,16 @@
 ﻿namespace Hyperledger.Indy.AnonCredsApi
 {
     /// <summary>
-    /// Exception thrown when an anoncreds accululator is full.
+    /// Exception thrown when an anoncreds accumulator is full.
     /// </summary>
     public class AnoncredsAccumulatorFullException : IndyException
     {
         const string message = "The anoncreds accumulator is full.";
 
-        internal AnoncredsAccumulatorFullException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new AnoncredsAccumulatorFullException.
+        /// </summary>
+        internal AnoncredsAccumulatorFullException() : base(message, (int)ErrorCode.AnoncredsAccumulatorIsFull)
         {
 
         }

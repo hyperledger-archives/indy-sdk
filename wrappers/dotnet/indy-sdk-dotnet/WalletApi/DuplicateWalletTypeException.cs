@@ -7,7 +7,10 @@
     {
         const string message = "A wallet type with the specified name has already been registered.";
 
-        internal DuplicateWalletTypeException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new DuplicateWalletTypeException.
+        /// </summary>
+        internal DuplicateWalletTypeException() : base(message, (int)ErrorCode.WalletTypeAlreadyRegisteredError)
         {
 
         }

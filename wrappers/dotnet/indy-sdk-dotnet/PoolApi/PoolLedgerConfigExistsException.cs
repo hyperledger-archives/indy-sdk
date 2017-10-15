@@ -7,7 +7,10 @@
     {
         const string message = "A pool ledger configuration already exists with the specified name.";
 
-        internal PoolLedgerConfigExistsException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new PoolLedgerConfigExistsException.
+        /// </summary>
+        internal PoolLedgerConfigExistsException() : base(message, (int)ErrorCode.PoolLedgerConfigAlreadyExistsError)
         {
 
         }

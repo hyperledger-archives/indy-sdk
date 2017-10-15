@@ -7,7 +7,10 @@
     {
         const string message = "No consensus was reached during the ledger operation";
 
-        internal LedgerConsensusException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new LedgerConsensusException.
+        /// </summary>
+        internal LedgerConsensusException() : base(message, (int)ErrorCode.LedgerNoConsensusError)
         {
 
         }

@@ -7,7 +7,10 @@
     {
         const string message = "A wallet with the specified name already exists.";
 
-        internal WalletExistsException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new WalletExistsException.
+        /// </summary>
+        internal WalletExistsException() : base(message, (int)ErrorCode.WalletAlreadyExistsError)
         {
 
         }

@@ -7,7 +7,10 @@
     {
         const string message = "The wallet specified is not compatible with the open pool.";
 
-        internal WrongWalletForPoolException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new WrongWalletForPoolException.
+        /// </summary>
+        internal WrongWalletForPoolException() : base(message, (int)ErrorCode.WalletIncompatiblePoolError)
         {
 
         }

@@ -7,7 +7,10 @@
     {
         const string message = "Another master-secret with the specified name already exists.";
 
-        internal DuplicateMasterSecretNameException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new DuplicateMasterSecretNameException.
+        /// </summary>
+        internal DuplicateMasterSecretNameException() : base(message, (int)ErrorCode.AnoncredsMasterSecretDuplicateNameError)
         {
 
         }

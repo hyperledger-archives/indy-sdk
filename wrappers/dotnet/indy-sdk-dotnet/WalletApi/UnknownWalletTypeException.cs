@@ -7,7 +7,10 @@
     {
         const string message = "The wallet type specified has not been registered.";
 
-        internal UnknownWalletTypeException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new UnknownWalletTypeException.
+        /// </summary>
+        internal UnknownWalletTypeException() : base(message, (int)ErrorCode.WalletUnknownTypeError)
         {
 
         }

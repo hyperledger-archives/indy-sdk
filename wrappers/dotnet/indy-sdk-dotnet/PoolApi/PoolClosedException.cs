@@ -7,7 +7,10 @@
     {
         const string message = "The pool is closed and cannot be used.";
 
-        internal PoolClosedException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new PoolClosedException.
+        /// </summary>
+        internal PoolClosedException() : base(message, (int)ErrorCode.PoolLedgerInvalidPoolHandle)
         {
 
         }

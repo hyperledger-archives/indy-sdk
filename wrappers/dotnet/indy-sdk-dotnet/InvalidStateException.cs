@@ -7,7 +7,10 @@
     {
         private const string message = "The SDK library experienced an unexpected internal error.";
 
-        internal InvalidStateException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new InvalidStateException.
+        /// </summary>
+        internal InvalidStateException() : base(message, (int)ErrorCode.CommonInvalidState)
         {
         }
     }

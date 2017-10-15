@@ -7,7 +7,10 @@
     {
         const string message = "The anoncreds is not issued.";
 
-        internal AnoncredsNotIssuedException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new AnoncredsNotIssuedException.
+        /// </summary>
+        internal AnoncredsNotIssuedException() : base(message, (int)ErrorCode.AnoncredsNotIssuedError)
         {
 
         }

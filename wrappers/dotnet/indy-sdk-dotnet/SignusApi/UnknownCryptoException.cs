@@ -7,7 +7,10 @@
     {
         const string message = "An unknown crypto format has been used for a DID entity key.";
 
-        internal UnknownCryptoException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new UnknownCryptoException.
+        /// </summary>
+        internal UnknownCryptoException() : base(message, (int)ErrorCode.SignusUnknownCryptoError)
         {
 
         }

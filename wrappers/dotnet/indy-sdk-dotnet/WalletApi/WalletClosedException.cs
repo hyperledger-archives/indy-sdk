@@ -7,7 +7,10 @@
     {
         const string message = "The wallet is closed and cannot be used.";
 
-        internal WalletClosedException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new WalletClosedException.
+        /// </summary>
+        internal WalletClosedException() : base(message, (int)ErrorCode.WalletInvalidHandle)
         {
 
         }

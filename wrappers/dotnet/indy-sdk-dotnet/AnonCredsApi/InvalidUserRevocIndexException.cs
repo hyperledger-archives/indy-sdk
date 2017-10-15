@@ -7,7 +7,10 @@
     {
         const string message = "The user revocation registry index specified is invalid.";
 
-        internal InvalidUserRevocIndexException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new InvalidUserRevocIndexException.
+        /// </summary>
+        internal InvalidUserRevocIndexException() : base(message, (int)ErrorCode.AnoncredsInvalidUserRevocIndex)
         {
 
         }

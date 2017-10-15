@@ -7,7 +7,10 @@
     {
         const string message = "The wallet is already open.";
 
-        internal WalletAlreadyOpenedException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new WalletAlreadyOpenedException.
+        /// </summary>
+        internal WalletAlreadyOpenedException() : base(message, (int)ErrorCode.WalletAlreadyOpenedError)
         {
 
         }

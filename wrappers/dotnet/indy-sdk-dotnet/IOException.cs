@@ -7,7 +7,10 @@
     {
         const string message = "An IO error occurred.";
 
-        internal IOException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new IOException.
+        /// </summary>
+        internal IOException() : base(message, (int)ErrorCode.CommonIOError)
         {
 
         }

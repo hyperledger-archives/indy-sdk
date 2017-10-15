@@ -7,7 +7,10 @@
     {
         const string message = "The proof has been rejected.";
 
-        internal ProofRejectedException(int sdkErrorCode) : base(message, sdkErrorCode)
+        /// <summary>
+        /// Initializes a new ProofRejectedException.
+        /// </summary>
+        internal ProofRejectedException() : base(message, (int)ErrorCode.AnoncredsProofRejected)
         {
 
         }
