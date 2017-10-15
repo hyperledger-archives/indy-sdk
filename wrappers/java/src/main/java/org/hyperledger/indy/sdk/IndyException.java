@@ -1,6 +1,7 @@
 package org.hyperledger.indy.sdk;
 
 import org.hyperledger.indy.sdk.anoncreds.AccumulatorFullException;
+import org.hyperledger.indy.sdk.anoncreds.ClaimRevokedException;
 import org.hyperledger.indy.sdk.anoncreds.NotIssuedException;
 import org.hyperledger.indy.sdk.anoncreds.DuplicateMasterSecretNameException;
 import org.hyperledger.indy.sdk.anoncreds.InvalidUserRevocIndexException;
@@ -23,7 +24,7 @@ import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
 import org.hyperledger.indy.sdk.wallet.WrongWalletForPoolException;
 
 /**
- * Indy specific exception.
+ * Thrown when an Indy specific error has occurred.
  */
 public class IndyException extends Exception {
 
@@ -41,18 +42,18 @@ public class IndyException extends Exception {
 	}
 
 	/**
-	 * Gets the ErrorCode for the exception.
+	 * Gets the SDK error code for the exception.
 	 * 
-	 * @return The ErrorCode used to construct the exception.
+	 * @return The SDK error code used to construct the exception.
 	 */
 	public int getSdkErrorCode() {
 		return sdkErrorCode;
 	}
 	
 	/**
-	 * Initializes a new IndyException using the specified ErrorCode.
+	 * Initializes a new IndyException using the specified SDK error code.
 	 * 
-	 * @param errorCode The error code for the exception.
+	 * @param sdkErrorCode The SDK error code to construct the exception from.
 	 */
 	public static IndyException fromSdkError(int sdkErrorCode) {
 		
@@ -73,53 +74,55 @@ public class IndyException extends Exception {
 			case CommonInvalidParam12:
 				return new InvalidParameterException(sdkErrorCode);
 			case CommonInvalidState:
-				return new InvalidStateException(sdkErrorCode);
+				return new InvalidStateException();
 			case CommonInvalidStructure:
-				return new InvalidStructureException(sdkErrorCode);
+				return new InvalidStructureException();
 			case CommonIOError:
-				return new IOException(sdkErrorCode);
+				return new IOException();
 			case WalletInvalidHandle:
-				return new WalletClosedException(sdkErrorCode);
+				return new WalletClosedException();
 			case WalletUnknownTypeError:
-				return new UnknownWalletTypeException(sdkErrorCode);
+				return new UnknownWalletTypeException();
 			case WalletTypeAlreadyRegisteredError:
-				return new DuplicateWalletTypeException(sdkErrorCode);
+				return new DuplicateWalletTypeException();
 			case WalletAlreadyExistsError:
-				return new WalletExistsException(sdkErrorCode);
+				return new WalletExistsException();
 			case WalletNotFoundError:
-				return new WalletValueNotFoundException(sdkErrorCode);
+				return new WalletValueNotFoundException();
 			case WalletIncompatiblePoolError:
-				return new WrongWalletForPoolException(sdkErrorCode);
+				return new WrongWalletForPoolException();
 			case WalletAlreadyOpenedError:
-				return new WalletAlreadyOpenedException(sdkErrorCode);
+				return new WalletAlreadyOpenedException();
 			case PoolLedgerNotCreatedError:
-				return new PoolConfigNotCreatedException(sdkErrorCode);
+				return new PoolConfigNotCreatedException();
 			case PoolLedgerInvalidPoolHandle:
-				return new PoolClosedException(sdkErrorCode);
+				return new PoolClosedException();
 			case PoolLedgerTerminated:
-				return new PoolLedgerTerminatedException(sdkErrorCode);
+				return new PoolLedgerTerminatedException();
 			case LedgerNoConsensusError:
-				return new ConsensusException(sdkErrorCode);
+				return new ConsensusException();
 			case LedgerInvalidTransaction:
-				return new InvalidLedgerTransactionException(sdkErrorCode);
+				return new InvalidLedgerTransactionException();
 			case LedgerSecurityError:
-				return new LedgerSecurityException(sdkErrorCode);
+				return new LedgerSecurityException();
 			case PoolLedgerConfigAlreadyExistsError:
-				return new PoolLedgerConfigExistsException(sdkErrorCode);
+				return new PoolLedgerConfigExistsException();
 			case AnoncredsRevocationRegistryFullError:
-				return new RevocationRegistryFullException(sdkErrorCode);
+				return new RevocationRegistryFullException();
 			case AnoncredsInvalidUserRevocIndex:
-				return new InvalidUserRevocIndexException(sdkErrorCode);
+				return new InvalidUserRevocIndexException();
 			case AnoncredsAccumulatorIsFull:
-				return new AccumulatorFullException(sdkErrorCode);
+				return new AccumulatorFullException();
 			case AnoncredsNotIssuedError:
-				return new NotIssuedException(sdkErrorCode);
+				return new NotIssuedException();
 			case AnoncredsMasterSecretDuplicateNameError:
-				return new DuplicateMasterSecretNameException(sdkErrorCode);
+				return new DuplicateMasterSecretNameException();
 			case AnoncredsProofRejected:
-				return new ProofRejectedException(sdkErrorCode);
+				return new ProofRejectedException();
+			case AnoncredsClaimRevoked:
+				return new ClaimRevokedException();
 			case SignusUnknownCryptoError:
-				return new UnknownCryptoException(sdkErrorCode);
+				return new UnknownCryptoException();
 			default:
 				String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
 				return new IndyException(message, sdkErrorCode);			
