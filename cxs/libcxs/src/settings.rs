@@ -34,6 +34,15 @@ pub fn set_defaults() -> u32 {
     settings.set_default(CONFIG_WALLET_NAME,"wallet1");
     settings.set_default(CONFIG_WALLET_TYPE,"default");
     settings.set_default(CONFIG_AGENT_ENDPOINT,"http://127.0.0.1:8080");
+    settings.set_default(CONFIG_AGENCY_PAIRWISE_DID,"default");
+    settings.set_default(CONFIG_AGENCY_PAIRWISE_VERKEY,"default");
+    settings.set_default(CONFIG_AGENT_PAIRWISE_DID,"default");
+    settings.set_default(CONFIG_AGENT_PAIRWISE_VERKEY,"default");
+    settings.set_default(CONFIG_ENTERPRISE_DID_AGENCY,"default");
+    settings.set_default(CONFIG_ENTERPRISE_DID_AGENT,"default");
+    settings.set_default(CONFIG_ENTERPRISE_NAME,"default");
+    settings.set_default(CONFIG_LOGO_URL,"default");
+
 
     error::SUCCESS.code_num
 }
