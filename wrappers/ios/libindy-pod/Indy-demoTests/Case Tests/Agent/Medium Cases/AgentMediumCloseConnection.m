@@ -51,7 +51,7 @@
                                                                    outMyDid:&did
                                                                 outMyVerkey:&verKey
                                                                     outMyPk:&pubKey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     
     
     // 3. store their did from parts
@@ -136,7 +136,7 @@
                                                                    outMyDid:&did
                                                                 outMyVerkey:&verKey
                                                                     outMyPk:&pubKey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     
     
     // 3. store their did from parts

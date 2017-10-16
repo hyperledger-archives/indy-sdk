@@ -3,15 +3,13 @@ using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-
 namespace Hyperledger.Indy.Test.AnonCredsTests
 {
     [TestClass]
     public class ProverCreateMasterSecretTest : AnonCredsIntegrationTestBase
     {
         private Wallet _wallet;
-        private string _walletName = "createMasterSecretWallet";
-        
+        private string _walletName = "createMasterSecretWallet";        
 
         [TestInitialize]
         public async Task CreateWallet()
@@ -40,22 +38,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         {
             await AnonCreds.ProverCreateMasterSecretAsync(_wallet, "master_secret_name_duplicate");
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<DuplicateMasterSecretNameException>(() =>
                AnonCreds.ProverCreateMasterSecretAsync(_wallet, "master_secret_name_duplicate")
            );
-
-            Assert.AreEqual(ErrorCode.AnoncredsMasterSecretDuplicateNameError, ex.ErrorCode);
         }
-
-        [TestMethod]
-        public async Task TestProverCreateMasterSecretWorksForEmptyName()
-        {
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
-                AnonCreds.ProverStoreClaimOfferAsync(_wallet, "")
-            );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidParam3, ex.ErrorCode);
-        }
-
     }
 }

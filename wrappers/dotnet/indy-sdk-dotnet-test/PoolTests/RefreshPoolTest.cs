@@ -13,7 +13,7 @@ namespace Hyperledger.Indy.Test.PoolTests
             var pool = await PoolUtils.CreateAndOpenPoolLedgerAsync();
 
             Assert.IsNotNull(pool);
-            _openedPools.Add(pool);
+            openedPools.Add(pool);
 
             await pool.RefreshAsync();
         }       

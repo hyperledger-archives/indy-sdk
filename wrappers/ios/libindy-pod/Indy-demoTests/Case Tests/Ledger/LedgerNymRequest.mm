@@ -59,7 +59,7 @@
                                                                    outMyDid:&trusteeDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for trustee");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
     XCTAssertNotNil(trusteeDid, @"trusteeDid is nil!");
     
     // 4. Obtain my did
@@ -69,7 +69,7 @@
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for myDid");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
     // 5. Build nym request
@@ -124,7 +124,7 @@
                                                                    outMyDid:&trusteeDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for trustee");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
     XCTAssertNotNil(trusteeDid, @"trusteeDid is nil!");
     
     // 4. Obtain my did
@@ -135,7 +135,7 @@
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:&myVerKey
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for myDid");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     XCTAssertNotNil(myVerKey, @"myVerKey is nil!");
     
@@ -215,7 +215,7 @@
                                                                    outMyDid:&trusteeDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for trustee");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
     XCTAssertNotNil(trusteeDid, @"trusteeDid is nil!");
     
     // 4. Obtain my did
@@ -327,7 +327,7 @@
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed for myDid");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
     // 5. Build nym request

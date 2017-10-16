@@ -1,4 +1,6 @@
-﻿namespace Hyperledger.Indy.AgentApi
+﻿using System;
+
+namespace Hyperledger.Indy.AgentApi
 {
     /// <summary>
     /// Event raised when a message is received on an <see cref="AgentConnection"/>.
@@ -24,8 +26,8 @@
         internal AgentMessageEvent(AgentConnection connection, ErrorCode result, string message) :
             base(connection.Handle, result)
         {
-            Connection = connection;
-            Message = message;
+            Connection = connection ?? throw new ArgumentNullException("connection");
+            Message = message ?? throw new ArgumentNullException("message");
         }
 
         /// <summary>

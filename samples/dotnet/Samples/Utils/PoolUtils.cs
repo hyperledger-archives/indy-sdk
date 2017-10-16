@@ -43,10 +43,9 @@ namespace Hyperledger.Indy.Samples.Utils
             {
                 await Pool.CreatePoolLedgerConfigAsync(DEFAULT_POOL_NAME, createPoolLedgerConfig);
             }
-            catch (IndyException e)
+            catch (PoolLedgerConfigExistsException)
             {
-                if (e.ErrorCode != ErrorCode.PoolLedgerConfigAlreadyExistsError)
-                    throw;
+                //Swallow expected exception if it happens.
             }
         }
 
@@ -56,10 +55,9 @@ namespace Hyperledger.Indy.Samples.Utils
             {
                 await Pool.DeletePoolLedgerConfigAsync(name);
             }
-            catch(IndyException e)
+            catch(IOException) //TODO: This should be a more specific error when implemented
             {
-                if (e.ErrorCode != ErrorCode.CommonIOError) //TODO: This should be a more specific error when implemented
-                    throw;
+                //Swallow expected exception if it happens.                
             }
         }
     }

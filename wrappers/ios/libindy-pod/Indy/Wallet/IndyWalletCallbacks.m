@@ -427,7 +427,6 @@ indy_error_t CustomWalletGetCallback(indy_handle_t handle,
     
     *value_ptr = copied;
 
-    
     return Success;
 }
 
