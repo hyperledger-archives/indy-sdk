@@ -1,0 +1,16 @@
+pub const SEQ_NO: i32 = 1;
+pub const POOL: &'static str = "pool_1";
+pub const WALLET: &'static str = "wallet_1";
+pub const TYPE: &'static str = "default";
+pub const INMEM_TYPE: &'static str = "inmem";
+pub const SIGNATURE_TYPE: &'static str = "CL";
+pub const TRUSTEE_SEED: &'static str = "000000000000000000000000Trustee1";
+pub const STEWARD_SEED: &'static str = "000000000000000000000000Steward1";
+pub const MY1_SEED: &'static str = "00000000000000000000000000000My1";
+pub const MY2_SEED: &'static str = "00000000000000000000000000000My2";
+pub const ISSUER_DID: &'static str = "NcYxiDXkpYi6ov5FcYDi1e";
+pub const DID: &'static str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
+pub const IDENTIFIER: &'static str = "Th7MpTaRZVRYnPiabds81Y";
+pub const INVALID_IDENTIFIER: &'static str = "invalid_base58_identifier";
+pub const DEST: &'static str = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
+pub const SCHEMA_DATA: &'static str = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#;

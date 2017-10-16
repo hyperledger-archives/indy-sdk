@@ -11,10 +11,9 @@ namespace Hyperledger.Indy.Samples.Utils
             {
                 await Wallet.CreateWalletAsync(poolName, name, type, config, credentials);
             }
-            catch (IndyException e)
+            catch (WalletExistsException)
             {
-                if (e.ErrorCode != ErrorCode.WalletAlreadyExistsError)
-                    throw;
+                //Swallow expected exception if it happens.
             }
         }
 
@@ -24,10 +23,10 @@ namespace Hyperledger.Indy.Samples.Utils
             {
                 await Wallet.DeleteWalletAsync(name, credentials);
             }
-            catch (IndyException e)
+            catch (IOException) //TODO: This should be a more specific error when implemented
             {
-                if (e.ErrorCode != ErrorCode.CommonIOError) //TODO: This should be a more specific error when implemented
-                    throw;
+                //Swallow expected exception if it happens.
+                
             }
         }
 

@@ -14,8 +14,8 @@ namespace Hyperledger.Indy.Test
 
         public static void CleanupStorage()
         {
-            string tmpDir = EnvironmentUtils.GetTmpPath();
-            string homeDir = EnvironmentUtils.GetIndyHomePath();
+            var tmpDir = EnvironmentUtils.GetTmpPath();
+            var homeDir = EnvironmentUtils.GetIndyHomePath();
 
             CleanDirectory(tmpDir);
             CleanDirectory(homeDir);

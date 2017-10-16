@@ -3,7 +3,6 @@ using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-
 namespace Hyperledger.Indy.Test.AnonCredsTests
 {
     [TestClass]
@@ -43,11 +42,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         {
             var claimOffer = "{\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\"}";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 AnonCreds.ProverStoreClaimOfferAsync(_wallet, claimOffer)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -55,11 +52,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         {
             var claimOffer = "{\"issuer_did\":\"invalid_base58_string\",\"schema_seq_no\":1}";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 AnonCreds.ProverStoreClaimOfferAsync(_wallet, claimOffer)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
     }

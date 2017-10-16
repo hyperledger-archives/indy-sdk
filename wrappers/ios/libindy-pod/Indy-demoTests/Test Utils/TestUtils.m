@@ -32,7 +32,7 @@
 
 +(NSTimeInterval) defaultTimeout
 {
-    return  10;
+    return  15;
 }
 
 +(NSTimeInterval) shortTimeout
@@ -125,4 +125,23 @@
     return 0;
 }
 
++ (NSString *)mySeed1
+{
+    return @"00000000000000000000000000000My1";
+}
+
++ (NSString *)mySeed2
+{
+    return @"00000000000000000000000000000My2";
+}
+
++ (NSString *)someMetadata
+{
+    return @"some metadata";
+}
+
++ (NSString *)unknownDid
+{
+    return @"NcYxiDXkpYi6ov5FcYDi1e";
+}
 @end
