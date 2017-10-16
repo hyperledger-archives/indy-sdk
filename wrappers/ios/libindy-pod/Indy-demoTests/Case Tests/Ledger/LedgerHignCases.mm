@@ -1655,7 +1655,7 @@
     [TestUtils cleanupStorage];
     NSString *identifier = @"identifier";
     NSString *signatureType = @"CL";
-    NSString *schemaSeqNo = @"1";
+    NSNumber *schemaSeqNo = @(1);
     NSString *data = @"{"\
     "\"primary\":{"\
     "\"n\":\"1\","\
@@ -2017,7 +2017,7 @@
     // 12. Build claim def request
     NSString *claimDefRequestJson;
     ret = [[LedgerUtils sharedInstance] buildClaimDefTxnWithSubmitterDid:myDid
-                                                                    xref:[seqNo stringValue]
+                                                                    xref:seqNo
                                                            signatureType:claimDef[@"signature_type"]
                                                                     data:claimDefDataJson
                                                               resultJson:&claimDefRequestJson];
