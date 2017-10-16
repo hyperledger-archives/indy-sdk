@@ -1,11 +1,12 @@
 extern crate config;
-//extern crate url;
+extern crate url;
 
 use std::collections::HashMap;
 use config::Config;
 use std::sync::RwLock;
 use utils::error;
 use std::path::Path;
+use url::{Url, ParseError};
 
 
 pub static CONFIG_POOL_NAME: &'static str = "pool_name";
@@ -42,7 +43,7 @@ pub fn set_defaults() -> u32 {
     settings.set_default(CONFIG_ENTERPRISE_DID_AGENCY,"default");
     settings.set_default(CONFIG_ENTERPRISE_DID_AGENT,"default");
     settings.set_default(CONFIG_ENTERPRISE_NAME,"default");
-    settings.set_default(CONFIG_LOGO_URL,"default");
+    settings.set_default(CONFIG_LOGO_URL,"http://www.evernym.com");
 
 
     error::SUCCESS.code_num
@@ -70,7 +71,10 @@ fn validate_config() -> Result<u32, String> {
         } else if setting.0 == CONFIG_WALLET_NAME && !is_valid(setting.1) {
             valid = false;
         } else if setting.0 == CONFIG_AGENT_ENDPOINT {
-            //TODO: validate settings for URL
+            match Url::parse(setting.1) {
+                Err(x) => valid = false,
+                Ok(_) => valid = true,
+            }
         } else if setting.0 == CONFIG_ENTERPRISE_DID_AGENCY && !is_valid(setting.1) {
             valid = false;
         } else if setting.0 == CONFIG_ENTERPRISE_DID_AGENT && !is_valid(setting.1) {
@@ -86,7 +90,10 @@ fn validate_config() -> Result<u32, String> {
         } else if setting.0 == CONFIG_ENTERPRISE_NAME && !is_valid(setting.1) {
             valid = false;
         } else if setting.0 == CONFIG_LOGO_URL {
-            //TODO: validate settings for logo url
+            match Url::parse(setting.1) {
+                Err(x) => valid = false,
+                Ok(_) => valid = true,
+            }
         } else {
             //TODO: determine whether we should ignore invalid parameters
             //error.push_str(setting.0);
@@ -197,6 +204,33 @@ pub mod tests {
 
         // Leave file around or other concurrent tests will fail
         //fs::remove_file(config_path).unwrap();
+    }
+
+    #[test]
+    fn test_invalid_url() {
+        let a = "logo_url";
+
+        let config_path = "/tmp/test_settings.json";
+        let path = Path::new(config_path);
+
+        let mut file = match fs::File::create(&path) {
+            Err(why) => panic!("couldn't create sample config file: {}", why.description()),
+            Ok(file) => file,
+        };
+
+        //throw in some invalid content to test the validation code
+        let content = "{ \"logo_url\" : \"wrong_url\" }";
+
+        match file.write_all(content.as_bytes()) {
+            Err(why) => panic!("couldn't write to sample config file: {}", why.description()),
+            Ok(_) => println!("sample config ready"),
+        }
+
+        match process_config_file(&config_path) {
+            Err(v) => assert_eq!(v, "logo_url has invalid setting: wrong_url"),
+            Ok(_) => println!("expected invalid URL"), //fail if we get here
+        }
+//        assert!(process_config_file(&config_path) == Err(ParseError::InvalidIpv6Address));
     }
 
     #[test]

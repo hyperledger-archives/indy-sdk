@@ -4,6 +4,7 @@ extern crate serde;
 extern crate serde_json;
 extern crate rand;
 extern crate config;
+extern crate url;
 
 #[macro_use]
 extern crate log;
