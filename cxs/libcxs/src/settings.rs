@@ -12,6 +12,14 @@ pub static CONFIG_POOL_CONFIG_NAME: &'static str = "config_name";
 pub static CONFIG_WALLET_NAME: &'static str = "wallet_name";
 pub static CONFIG_WALLET_TYPE: &'static str = "wallet_type";
 pub static CONFIG_AGENT_ENDPOINT: &'static str = "agent_endpoint";
+pub static CONFIG_AGENCY_PAIRWISE_DID: &'static str = "agency_pairwise_did";
+pub static CONFIG_AGENCY_PAIRWISE_VERKEY: &'static str = "agency_pairwise_verkey";
+pub static CONFIG_AGENT_PAIRWISE_DID: &'static str = "agent_pairwise_did";
+pub static CONFIG_AGENT_PAIRWISE_VERKEY: &'static str = "agent_pairwise_verkey";
+pub static CONFIG_ENTERPRISE_DID_AGENCY: &'static str = "enterprise_did_agency";
+pub static CONFIG_ENTERPRISE_DID_AGENT: &'static str = "enterprise_did_agent";
+pub static CONFIG_ENTERPRISE_NAME: &'static str = "enterprise_name";
+pub static CONFIG_LOGO_URL: &'static str = "logo_url";
 
 lazy_static! {
     static ref SETTINGS: RwLock<Config> = RwLock::new(Config::default());
@@ -53,6 +61,22 @@ fn validate_config() -> Result<u32, String> {
             valid = false;
         } else if setting.0 == CONFIG_AGENT_ENDPOINT {
             //TODO: validate settings for URL
+        } else if setting.0 == CONFIG_ENTERPRISE_DID_AGENCY && !is_valid(setting.1) {
+            valid = false;
+        } else if setting.0 == CONFIG_ENTERPRISE_DID_AGENT && !is_valid(setting.1) {
+            valid = false;
+        } else if setting.0 == CONFIG_AGENCY_PAIRWISE_VERKEY && !is_valid(setting.1) {
+            valid = false;
+        } else if setting.0 == CONFIG_AGENT_PAIRWISE_VERKEY && !is_valid(setting.1) {
+            valid = false;
+        } else if setting.0 == CONFIG_AGENCY_PAIRWISE_DID && !is_valid(setting.1) {
+            valid = false;
+        } else if setting.0 == CONFIG_AGENT_PAIRWISE_DID && !is_valid(setting.1) {
+            valid = false;
+        } else if setting.0 == CONFIG_ENTERPRISE_NAME && !is_valid(setting.1) {
+            valid = false;
+        } else if setting.0 == CONFIG_LOGO_URL {
+            //TODO: validate settings for logo url
         } else {
             //TODO: determine whether we should ignore invalid parameters
             //error.push_str(setting.0);
