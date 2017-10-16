@@ -56,8 +56,7 @@ open "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/"
 # Step 5. Convenience step to copy the framework to the project's directory
 echo "Copying to project dir"
 
-yes | cp -Rf "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/"  "${PROJECT_DIR}"
-#yes | cp -Rf "${UNIVERSAL_OUTPUTFOLDER}/${FULL_PRODUCT_NAME}" "${PROJECT_DIR}"
+yes | cp -vRfL "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework"  "${PROJECT_DIR}"
 
 open "${PROJECT_DIR}"
 

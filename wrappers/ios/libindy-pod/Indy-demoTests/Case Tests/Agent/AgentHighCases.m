@@ -294,31 +294,54 @@
     [TestUtils cleanupStorage];
     NSError *ret;
     
-    // 1. Obtain wallet handle
-    IndyHandle walletHandle;
+    // 1. Obtain pool handle
+    IndyHandle poolHandle = 0;
+    ret = [[PoolUtils sharedInstance] createAndOpenPoolLedgerWithPoolName:[TestUtils pool]
+                                                               poolHandle:&poolHandle];
+    XCTAssertEqual(ret.code, Success, @"PoolUtils::createAndOpenPoolLedgerWithPoolName() failed");
+    
+    // 2. Obtain listener wallet handle
+    IndyHandle listenerWallet;
     ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
                                                                   xtype:nil
                                                                  handle:&listenerWallet];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for listener");
     
-    // 2. Obtain did
-    NSString *seed = @"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    NSString *did;
-    NSString *verKey;
-    NSString *pubKey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                       seed:seed
-                                                                   outMyDid:&did
-                                                                outMyVerkey:&verKey
-                                                                    outMyPk:&pubKey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
+    // 3. Obtain sender wallet handle
+    IndyHandle senderWallet = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
+                                                                  xtype:nil
+                                                                 handle:&senderWallet];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed for sender");
     
-    // 3. Store their did from parts
+    // 4. Obtain listener did
+    NSString *listenerDid;
+    NSString *listenerVerKey;
+    NSString *listenerPubKey;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:listenerWallet
+                                                                       seed:[TestUtils trusteeSeed]
+                                                                   outMyDid:&listenerDid
+                                                                outMyVerkey:&listenerVerKey
+                                                                    outMyPk:&listenerPubKey];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for listener");
+    
+    // 5. Obtain sender did
+    NSString *senderDid;
+    NSString *senderVerKey;
+    NSString *senderPubKey;
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:listenerWallet
+                                                                       seed:nil
+                                                                   outMyDid:&senderDid
+                                                                outMyVerkey:&senderVerKey
+                                                                    outMyPk:&senderPubKey];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for sender");
+    
+    // 6. Store their did from parts
     NSString *endpoint = [TestUtils endpoint];
-    ret = [[SignusUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:walletHandle
-                                                                      theirDid:did
-                                                                       theirPk:pubKey
-                                                                   theirVerkey:verKey
+    ret = [[SignusUtils sharedInstance] storeTheirDidFromPartsWithWalletHandle:listenerWallet
+                                                                      theirDid:senderDid
+                                                                       theirPk:senderPubKey
+                                                                   theirVerkey:senderVerKey
                                                                       endpoint:endpoint];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::storeTheirDidFromPartsWithWalletHandle() failed");
     
