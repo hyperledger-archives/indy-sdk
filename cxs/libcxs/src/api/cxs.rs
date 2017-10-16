@@ -9,6 +9,22 @@ use std::ptr;
 use settings;
 use connection::{build_connection, connect, to_string, get_state, release};
 
+/// Possible values in the Config file:
+///
+/// pool_name:
+/// config_name
+/// wallet_name:
+/// wallet_type
+/// agent_endpoint: the url to interact with the agent
+/// enterprise_did_agency: did for enterprise pairwise relationship with an agency
+/// agency_pairwise_did: did for the agency pairwise relationship with an enterprise
+/// agency_pairwise_verkey: verkey for the agency pairwise relationship with an enterprise
+/// enterprise_did_agent: did for enterprise pairwise relationship with an agent
+/// agent_pairwise_did: did for the agent pairwise relationship with an enterprise
+/// agent_pairwise_verkey: verkey for the agent pairwise relationship with an enterprise
+/// enterprise_name: enterprise's name
+/// logo_url: url for enterprise's logo
+/// A example file is at libcxs/sample_config/config.json
 #[no_mangle]
 pub extern fn cxs_init (config_path:*const c_char) -> u32 {
 
