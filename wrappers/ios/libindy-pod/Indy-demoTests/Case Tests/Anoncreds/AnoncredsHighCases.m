@@ -393,7 +393,7 @@
     NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
     NSString *claimRequestJson;
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDef
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDef
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
                                                        masterSecretName:[TestUtils commonMasterSecretName]
@@ -429,7 +429,7 @@
     IndyHandle invalidWalletHandle = walletHandle + 1;
     NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
     NSString *claimRequestJson;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDef
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDef
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
                                                        masterSecretName:[TestUtils commonMasterSecretName]
@@ -461,7 +461,7 @@
     NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
     NSString *claimRequestJson;
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDef
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDef
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
                                                        masterSecretName:[TestUtils commonMasterSecretName]
@@ -492,7 +492,7 @@
     NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
     NSString *claimRequestJson;
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDef
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDef
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
                                                        masterSecretName:[TestUtils commonMasterSecretName]
@@ -623,7 +623,7 @@
     // 3. get claim request
     NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
     NSString *claimRequest;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDefJson
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOfferJson
                                                        masterSecretName:[TestUtils commonMasterSecretName]
@@ -671,7 +671,7 @@
     // 3. get claim request
     NSString *proverDid = @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
     NSString *claimRequest;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDefJson
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOfferJson
                                                        masterSecretName:[TestUtils commonMasterSecretName]

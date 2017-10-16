@@ -251,7 +251,7 @@
     // 2. create and store claim request
     NSString *claimOfferJson = @"{\"schema_seq_no\":1}";
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDefJson
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                                          claimOfferJson:claimOfferJson
                                                        masterSecretName:[TestUtils commonMasterSecretName]
@@ -282,7 +282,7 @@
                 "\"s\":\"432192\","\
             "}}";
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDefJson
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                                          claimOfferJson:claimOfferJson
                                                        masterSecretName:[TestUtils commonMasterSecretName]
@@ -306,7 +306,7 @@
     NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[TestUtils issuerDid]
                                                                       schemaSeqNo:@(1)];
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDefJson
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                                          claimOfferJson:claimOfferJson
                                                        masterSecretName:@"invalid_master_secret_name"
@@ -431,7 +431,7 @@
     NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[TestUtils issuerDid]
                                                                       schemaSeqNo:@(1)];
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDefJson
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                                          claimOfferJson:claimOfferJson
                                                        masterSecretName:@"common_master_secter_name"

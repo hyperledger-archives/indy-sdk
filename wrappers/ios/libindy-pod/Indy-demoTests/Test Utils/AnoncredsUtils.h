@@ -50,7 +50,7 @@
                        filterJson:(NSString *)filterJson
                outClaimOffersJSON:(NSString **)outJson;
 
-- (NSError *)proverCreateAndStoreClaimDef:(NSString *)claimDefJSON
+- (NSError *)proverCreateAndStoreClaimReqWithDef:(NSString *)claimDefJSON
                                 proverDid:(NSString *)proverDid
                            claimOfferJson:(NSString *)claimOfferJSON
                          masterSecretName:(NSString *)name

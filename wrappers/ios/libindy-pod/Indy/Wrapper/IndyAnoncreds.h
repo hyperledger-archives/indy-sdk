@@ -80,7 +80,7 @@
  
  @endcode
 
- @param claimRequestJSON Claim request with a blinded secret from the user (returned by IndyAnoncreds::proverCreateAndStoreClaimReqWithWalletHandle).
+ @param claimRequestJSON Claim request with a blinded secret from the user (returned by IndyAnoncreds::proverCreateAndStoreClaimReqWithClaimDef).
         Also contains schema_seq_no and issuer_DID.
  
  @param claimJSON Claim containing attribute values for each of requested attribute names.
@@ -212,12 +212,12 @@
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter. Returns Claim request json.
  */
-+ (void)proverCreateAndStoreClaimDef:(NSString *)claimDefJSON
-                           proverDID:(NSString *)proverDID
-                      claimOfferJSON:(NSString *)claimOfferJSON
-                    masterSecretName:(NSString *)masterSecretName
-                        walletHandle:(IndyHandle)walletHandle
-                          completion:(void (^)(NSError *error, NSString *claimReqJSON)) completion;
++ (void)proverCreateAndStoreClaimReqWithClaimDef:(NSString *)claimDefJSON
+                                       proverDID:(NSString *)proverDID
+                                  claimOfferJSON:(NSString *)claimOfferJSON
+                                masterSecretName:(NSString *)masterSecretName
+                                    walletHandle:(IndyHandle)walletHandle
+                                      completion:(void (^)(NSError *error, NSString *claimReqJSON)) completion;
 
 /**
  Updates the claim by a master secret and stores in a secure wallet.  

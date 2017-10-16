@@ -72,7 +72,7 @@
                                                                       schemaSeqNo:schemaSeqNo];
     NSString *claimRequest;
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDefJson
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOfferJson
                                                        masterSecretName:masterSecretName
@@ -246,7 +246,7 @@
     NSString* proverDid = @"BzfFCYk";
     NSString* claimReq = nil;
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:claimDefJSON
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJSON
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOfferJson
                                                        masterSecretName:masterSecretName
@@ -493,7 +493,7 @@
     
     NSString* gvtClaimReq;
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:gvtClaimDefJson
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:gvtClaimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
                                                        masterSecretName:masterSecretName1
@@ -523,7 +523,7 @@
     
     claimOffer = [claimOffer2_issuerDid isEqual: issuer2Did] ? claimOffer2Json : claimOffer1Json;
     NSString* xyzClaimReq;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:xyzClaimDefJson
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:xyzClaimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
                                                        masterSecretName:masterSecretName1
@@ -833,7 +833,7 @@
     
     NSString* gvtClaimReq = nil;
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:gvtClaimDefJson
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:gvtClaimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
                                                        masterSecretName:masterSecretName
@@ -866,7 +866,7 @@
     claimOffer = [claimOffer2_schemaSeqNo isEqual: xyzSchemaSeqNo] ? claimOffer2Json : claimOffer1Json;
     NSString* xyzClaimReq = nil;
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:xyzClaimDefJson
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:xyzClaimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
                                                        masterSecretName:masterSecretName

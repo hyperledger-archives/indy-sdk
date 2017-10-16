@@ -284,7 +284,7 @@
     return err;
 }
 
-- (NSError *)proverCreateAndStoreClaimDef:(NSString *)claimDefJSON
+- (NSError *)proverCreateAndStoreClaimReqWithDef:(NSString *)claimDefJSON
                                 proverDid:(NSString *)proverDid
                            claimOfferJson:(NSString *)claimOfferJSON
                          masterSecretName:(NSString *)name
@@ -297,12 +297,12 @@
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    [IndyAnoncreds proverCreateAndStoreClaimDef:claimDefJSON
-                                      proverDID:proverDid
-                                 claimOfferJSON:claimOfferJSON
-                               masterSecretName:name
-                                   walletHandle:walletHandle
-                                     completion:^(NSError* error, NSString* claimReqJSON)
+    [IndyAnoncreds proverCreateAndStoreClaimReqWithClaimDef:claimDefJSON
+                                                  proverDID:proverDid
+                                             claimOfferJSON:claimOfferJSON
+                                           masterSecretName:name
+                                               walletHandle:walletHandle
+                                                 completion:^(NSError* error, NSString* claimReqJSON)
      {
          err = error;
          json = claimReqJSON;
@@ -527,7 +527,7 @@
     
     //5. Create and Store Claim Request
     NSString *claimRequest;
-    ret = [self proverCreateAndStoreClaimDef:tempClaimDefJson
+    ret = [self proverCreateAndStoreClaimReqWithDef:tempClaimDefJson
                                    proverDid:@"HEJ9gvWX64wW7UD"
                               claimOfferJson:claimOfferJson1
                             masterSecretName:[TestUtils commonMasterSecretName]

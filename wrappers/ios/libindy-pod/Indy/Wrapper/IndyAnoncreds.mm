@@ -191,12 +191,12 @@
     }
 }
 
-+ (void)proverCreateAndStoreClaimDef:(NSString *)claimDefJSON
-                           proverDID:(NSString *)proverDID
-                      claimOfferJSON:(NSString *)claimOfferJSON
-                    masterSecretName:(NSString *)masterSecretName
-                        walletHandle:(IndyHandle)walletHandle
-                          completion:(void (^)(NSError *error, NSString *claimReqJSON)) completion
++ (void)proverCreateAndStoreClaimReqWithClaimDef:(NSString *)claimDefJSON
+                                       proverDID:(NSString *)proverDID
+                                  claimOfferJSON:(NSString *)claimOfferJSON
+                                masterSecretName:(NSString *)masterSecretName
+                                    walletHandle:(IndyHandle)walletHandle
+                                      completion:(void (^)(NSError *error, NSString *claimReqJSON)) completion
 {
     indy_error_t ret;
     

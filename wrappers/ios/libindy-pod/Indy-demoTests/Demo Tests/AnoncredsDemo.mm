@@ -99,7 +99,7 @@
                                  "\"schema_seq_no\": %@}", schemaSeqNo ];
     __block NSString *claimReqJSON = nil;
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:[NSDictionary toString:claimDef]
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:[NSDictionary toString:claimDef]
                                                               proverDid:proverDiD
                                                          claimOfferJson:claimOfferJSON
                                                        masterSecretName:masterSecretName
@@ -120,7 +120,11 @@
     
     
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:walletHandle
-                                                                claimReqJson:claimReqJSON claimJson:testClaimJson userRevocIndex:nil outClaimJson:&xClaimJSON outRevocRegUpdateJSON:nil];
+                                                                claimReqJson:claimReqJSON
+                                                                   claimJson:testClaimJson
+                                                              userRevocIndex:nil
+                                                                outClaimJson:&xClaimJSON
+                                                       outRevocRegUpdateJSON:nil];
     XCTAssertEqual( ret.code, Success, @"issuerCreateClaim() failed!");
     
     // 8. Prover process and store Claim
@@ -154,7 +158,8 @@
     __block NSString *claimsJson = nil;
     
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
-                                                                     proofRequestJson:proofReqJSON outClaimsJson:&claimsJson];
+                                                                     proofRequestJson:proofReqJSON
+                                                                        outClaimsJson:&claimsJson];
     XCTAssertEqual( ret.code, Success, @"proverGetClaimsForProofReq() failed!");
     
     NSDictionary *claims = [ NSDictionary fromString: claimsJson];
@@ -283,7 +288,7 @@
                                  "\"schema_seq_no\": %@}", schemaSeqNo ];
     __block NSString *claimReqJSON = nil;
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimDef:[NSDictionary toString:claimDef]
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:[NSDictionary toString:claimDef]
                                                               proverDid:proverDiD
                                                          claimOfferJson:claimOfferJSON
                                                        masterSecretName:masterSecretName
