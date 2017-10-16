@@ -23,6 +23,8 @@ fi
 
 open "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/"
 
+open "${UNIVERSAL_OUTPUTFOLDER}/${TARGET_NAME}.framework/"
+
 
 # Step 1. Copy the framework structure (from iphoneos build) to the universal folder
 echo "Copying to output folder: ${UNIVERSAL_OUTPUTFOLDER}/ from ${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME} "
