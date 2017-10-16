@@ -12,14 +12,11 @@ namespace Hyperledger.Indy.Test.AgentTests
         public async Task TestAgentListenWorks()
         {
             var endpoint = "127.0.0.1:9607";
-
-            var didJson = "{\"seed\":\"indy_agent_connect_works_for_aaa\"}";
        
-            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, didJson);
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
 
-            var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
-                    myDidResult.Did, myDidResult.Pk, myDidResult.VerKey, endpoint);
-            await Signus.StoreTheirDidAsync(_wallet, identityJson);
+            var identityJson = string.Format(AGENT_IDENTITY_JSON_TEMPLATE, myDidResult.Did, myDidResult.Pk, myDidResult.VerKey, endpoint);
+            await Signus.StoreTheirDidAsync(wallet, identityJson);
 
             await AgentListener.ListenAsync(endpoint);
         }

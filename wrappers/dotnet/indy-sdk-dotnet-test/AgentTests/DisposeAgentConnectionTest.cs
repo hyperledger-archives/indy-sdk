@@ -1,13 +1,6 @@
 ﻿using Hyperledger.Indy.AgentApi;
-using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.SignusApi;
-using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.AgentTests
@@ -15,21 +8,19 @@ namespace Hyperledger.Indy.Test.AgentTests
     [TestClass]
     public class DisposeAgentConnectionTest : AgentIntegrationTestBase
     {
-        private CreateAndStoreMyDidResult _myDid;
+        private string _myDid;
         private AgentListener _activeListener;
 
         public async Task PrepareForConnection(string endpoint)
         {
-            _myDid = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
+            _myDid = myDidResult.Did;
 
-            var identityJson = string.Format("{{\"did\":\"{0}\", \"pk\":\"{1}\", \"verkey\":\"{2}\", \"endpoint\":\"{3}\"}}",
-                    _myDid.Did, _myDid.Pk, _myDid.VerKey, endpoint);
-
-            await Signus.StoreTheirDidAsync(_wallet, identityJson);
+            var identityJson = string.Format(AGENT_IDENTITY_JSON_TEMPLATE, _myDid, myDidResult.Pk, myDidResult.VerKey, endpoint);
+            await Signus.StoreTheirDidAsync(wallet, identityJson);
 
             _activeListener = await AgentListener.ListenAsync(endpoint);
-
-            await _activeListener.AddIdentityAsync(_pool, _wallet, _myDid.Did);
+            await _activeListener.AddIdentityAsync(pool, wallet, _myDid);
         }
 
         [TestCleanup]
@@ -44,7 +35,7 @@ namespace Hyperledger.Indy.Test.AgentTests
         {
             await PrepareForConnection("127.0.0.1:9610");
 
-            using (var connection = await AgentConnection.ConnectAsync(_pool, _wallet, _myDid.Did, _myDid.Did))
+            using (var connection = await AgentConnection.ConnectAsync(pool, wallet, _myDid, _myDid))
             {
                 await connection.CloseAsync();
             }
@@ -55,7 +46,7 @@ namespace Hyperledger.Indy.Test.AgentTests
         {
             await PrepareForConnection("127.0.0.1:9611");
 
-            var connection = await AgentConnection.ConnectAsync(_pool, _wallet, _myDid.Did, _myDid.Did);
+            var connection = await AgentConnection.ConnectAsync(pool, wallet, _myDid, _myDid);
             connection.Dispose();
             connection.Dispose();
         }
@@ -66,21 +57,22 @@ namespace Hyperledger.Indy.Test.AgentTests
         {
             await PrepareForConnection("127.0.0.1:9612");
 
-            var connection = await AgentConnection.ConnectAsync(_pool, _wallet, _myDid.Did, _myDid.Did);
+            var connection = await AgentConnection.ConnectAsync(pool, wallet, _myDid, _myDid);
             await connection.CloseAsync();
             connection.Dispose();
 
-            using (var newConnection = await AgentConnection.ConnectAsync(_pool, _wallet, _myDid.Did, _myDid.Did))
+            using (var newConnection = await AgentConnection.ConnectAsync(pool, wallet, _myDid, _myDid))
             {
             }
         }
 
         [TestMethod]
+        [Ignore] //Wait until proper error is implemented in SDK and handle.
         public async Task CanCloseAfterDispose()
         {
             await PrepareForConnection("127.0.0.1:9618");
 
-            var connection = await AgentConnection.ConnectAsync(_pool, _wallet, _myDid.Did, _myDid.Did);
+            var connection = await AgentConnection.ConnectAsync(pool, wallet, _myDid, _myDid);
             connection.Dispose();
             await connection.CloseAsync();
         }

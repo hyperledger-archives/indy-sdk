@@ -25,11 +25,11 @@ namespace Hyperledger.Indy.Test.DemoTests
             _pool = await Pool.OpenPoolLedgerAsync(_poolName, "{}");
 
             //2. Issuer Create and Open Wallet
-            await Wallet.CreateWalletAsync(_poolName, "issuerWallet", "default", null, null);
+            await Wallet.CreateWalletAsync(_poolName, "issuerWallet", TYPE, null, null);
             _issuerWallet = await Wallet.OpenWalletAsync("issuerWallet", null, null);
 
             //3. Prover Create and Open Wallet
-            await Wallet.CreateWalletAsync(_poolName, "proverWallet", "default", null, null);
+            await Wallet.CreateWalletAsync(_poolName, "proverWallet", TYPE, null, null);
             _proverWallet = await Wallet.OpenWalletAsync("proverWallet", null, null);
         }
 
@@ -171,7 +171,7 @@ namespace Hyperledger.Indy.Test.DemoTests
             var issuerGvtWallet = _issuerWallet;
 
             //1. Issuer2 Create and Open Wallet
-            await Wallet.CreateWalletAsync(_poolName, "issuer2Wallet", "default", null, null);
+            await Wallet.CreateWalletAsync(_poolName, "issuer2Wallet", TYPE, null, null);
             var issuerXyzWallet = await Wallet.OpenWalletAsync("issuer2Wallet", null, null);
 
             //2. Issuer create ClaimDef
@@ -578,11 +578,9 @@ namespace Hyperledger.Indy.Test.DemoTests
                     "                    \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}\n" +
                     "           }";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
               AnonCreds.VerifierVerifyProofAsync(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
     }
 }

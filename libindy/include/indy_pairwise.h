@@ -1,5 +1,8 @@
-#ifndef __indy__signus__included__
-#define __indy__signus__included__
+#ifndef __indy__pairwise__included__
+#define __indy__pairwise__included__
+
+#include "indy_types.h"
+#include "indy_mod.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -49,7 +49,10 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An asynchronous <see cref="Task"/> with no return value that completes when
         /// the registration is complete.</returns>
         public static Task RegisterWalletTypeAsync(string typeName, WalletType walletType)
-        {            
+        {
+            ParamGuard.NotNullOrWhiteSpace(typeName, "typeName");
+            ParamGuard.NotNull(walletType, "walletType");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -116,6 +119,9 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An asynchronous <see cref="Task"/> with no return value the completes when the operation has finished.</returns>
         public static Task CreateWalletAsync(string poolName, string name, string type, string config, string credentials)
         {
+            ParamGuard.NotNullOrWhiteSpace(poolName, "poolName");
+            ParamGuard.NotNullOrWhiteSpace(name, "name");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -160,6 +166,8 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="Wallet"/> instance when the operation completes.</returns>
         public static Task<Wallet> OpenWalletAsync(string name, string runtimeConfig, string credentials)
         {
+            ParamGuard.NotNullOrWhiteSpace(name, "name");
+
             var taskCompletionSource = new TaskCompletionSource<Wallet>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -193,6 +201,8 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>An asynchronous <see cref="Task"/> with no return value that completes when the operation completes.</returns>
         public static Task DeleteWalletAsync(string name, string credentials)
         {
+            ParamGuard.NotNullOrWhiteSpace(name, "name");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 

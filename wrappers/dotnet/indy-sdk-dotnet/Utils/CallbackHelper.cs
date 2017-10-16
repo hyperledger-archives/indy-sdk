@@ -34,7 +34,7 @@ namespace Hyperledger.Indy.Utils
         public static void CheckResult(int result)
         {
             if (result != (int)ErrorCode.Success)
-                throw IndyException.FromErrorCode(result);
+                throw IndyException.FromSdkError(result);
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace Hyperledger.Indy.Utils
         {
             if (errorCode != (int)ErrorCode.Success)
             {
-                taskCompletionSource.SetException(IndyException.FromErrorCode(errorCode));
+                taskCompletionSource.SetException(IndyException.FromSdkError(errorCode));
                 return false;
             }
 
@@ -64,7 +64,7 @@ namespace Hyperledger.Indy.Utils
         public static void CheckCallback(int errorCode)
         {
             if (errorCode != (int)ErrorCode.Success)
-                throw IndyException.FromErrorCode(errorCode);
+                throw IndyException.FromSdkError(errorCode);
         }
     }
 }

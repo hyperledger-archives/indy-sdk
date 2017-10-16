@@ -1,8 +1,5 @@
 ﻿using Hyperledger.Indy.Test.WalletTests;
 using Hyperledger.Indy.WalletApi;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test

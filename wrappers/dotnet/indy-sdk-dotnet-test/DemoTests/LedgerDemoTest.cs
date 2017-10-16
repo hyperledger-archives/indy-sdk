@@ -16,15 +16,14 @@ namespace Hyperledger.Indy.Test.DemoTests
         {
             // 1. Create ledger config from genesis txn file
             var poolName = PoolUtils.CreatePoolLedgerConfig();
-
             var pool = await Pool.OpenPoolLedgerAsync(poolName, "{}");
 
             // 2. Create and Open My Wallet
-            await Wallet.CreateWalletAsync(poolName, "myWallet", "default", null, null);
+            await Wallet.CreateWalletAsync(poolName, "myWallet", TYPE, null, null);
             var myWallet = await Wallet.OpenWalletAsync("myWallet", null, null);
 
             // 3. Create and Open Trustee Wallet
-            await Wallet.CreateWalletAsync(poolName, "theirWallet", "default", null, null);
+            await Wallet.CreateWalletAsync(poolName, "theirWallet", TYPE, null, null);
             var trusteeWallet = await Wallet.OpenWalletAsync("theirWallet", null, null);
 
             // 4. Create My Did
@@ -34,9 +33,7 @@ namespace Hyperledger.Indy.Test.DemoTests
             var myVerkey = createMyDidResult.VerKey;
 
             // 5. Create Did from Trustee1 seed
-            var theirDidJson = "{\"seed\":\"000000000000000000000000Trustee1\"}"; 
-
-            var createTheirDidResult = await Signus.CreateAndStoreMyDidAsync(trusteeWallet, theirDidJson);
+            var createTheirDidResult = await Signus.CreateAndStoreMyDidAsync(trusteeWallet, TRUSTEE_IDENTITY_JSON);
             Assert.IsNotNull(createTheirDidResult);
             var trusteeDid = createTheirDidResult.Did;
 

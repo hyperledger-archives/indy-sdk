@@ -33,7 +33,7 @@ public class CreatePoolTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCreatePoolWorksForEmptyName() throws Exception {
-		thrown.expect(new ErrorCodeMatcher(ErrorCode.CommonInvalidParam2));
+		thrown.expect(IllegalArgumentException.class);
 
 		File genesisTxnFile = PoolUtils.createGenesisTxnFile("genesis.txn");
 
