@@ -9,6 +9,22 @@ use std::ptr;
 use settings;
 use connection::{build_connection, connect, to_string, get_state, release};
 
+/// Possible values in the Config file:
+///
+/// pool_name:
+/// config_name
+/// wallet_name:
+/// wallet_type
+/// agent_endpoint: the url to interact with the agent
+/// enterprise_did_agency: did for enterprise pairwise relationship with an agency
+/// agency_pairwise_did: did for the agency pairwise relationship with an enterprise
+/// agency_pairwise_verkey: verkey for the agency pairwise relationship with an enterprise
+/// enterprise_did_agent: did for enterprise pairwise relationship with an agent
+/// agent_pairwise_did: did for the agent pairwise relationship with an enterprise
+/// agent_pairwise_verkey: verkey for the agent pairwise relationship with an enterprise
+/// enterprise_name: enterprise's name
+/// logo_url: url for enterprise's logo
+/// A example file is at libcxs/sample_config/config.json
 #[no_mangle]
 pub extern fn cxs_init (config_path:*const c_char) -> u32 {
 
@@ -57,6 +73,47 @@ pub extern fn cxs_init (config_path:*const c_char) -> u32 {
         0 => 0,
         x => return x,
     };
+
+
+    let agency_pairwise_did = match settings::get_config_value(settings::CONFIG_AGENCY_PAIRWISE_DID) {
+        Err(x) => return x,
+        Ok(v) => v,
+    };
+
+    let agent_pairwise_did = match settings::get_config_value(settings::CONFIG_AGENT_PAIRWISE_DID) {
+        Err(x) => return x,
+        Ok(v) => v,
+    };
+
+    let agency_ver_key = match settings::get_config_value(settings::CONFIG_AGENCY_PAIRWISE_VERKEY) {
+        Err(x) => return x,
+        Ok(v) => v,
+    };
+
+    let agent_ver_key = match settings::get_config_value(settings::CONFIG_AGENT_PAIRWISE_VERKEY) {
+        Err(x) => return x,
+        Ok(v) => v,
+    };
+
+    let enterprise_did_agency = match settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENCY) {
+        Err(x) => return x,
+        Ok(v) => v,
+    };
+
+    let enterprise_did_agent = match settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT) {
+        Err(x) => return x,
+        Ok(v) => v,
+    };
+
+    let enterprise_name = match settings::get_config_value(settings::CONFIG_ENTERPRISE_NAME) {
+        Err(x) => return x,
+        Ok(v) => v,
+    };
+    //
+//        let logo_url = match settings::get_config_value(settings::CONFIG_LOGO_URL) {
+//            Err(x) => return x,
+//            Ok(v) => v,
+//        };
 
     return error::SUCCESS.code_num
 }
@@ -215,7 +272,10 @@ mod tests {
             Ok(file) => file,
         };
 
-        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"my_config\", \"wallet_name\":\"my_wallet\"}";
+        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"my_config\", \"wallet_name\":\"my_wallet\", \
+        \"agency_pairwise_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"agent_pairwise_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
+        \"enterprise_did_agency\" : \"RF3JM851T4EQmhh8CdagSP\", \"enterprise_did_agent\" : \"AB3JM851T4EQmhh8CdagSP\", \"enterprise_name\" : \"enterprise\",\
+        \"agency_pairwise_verkey\" : \"7118p4HubxzUK1dwxcc5FU\", \"agent_pairwise_verkey\" : \"U22jM6Cea2YVixjWwHN9wq\"}";
         match file.write_all(content.as_bytes()) {
             Err(why) => panic!("couldn't write to sample config file: {}", why.description()),
             Ok(_) => println!("sample config ready"),
@@ -224,8 +284,9 @@ mod tests {
         let result = cxs_init(CString::new(config_path).unwrap().into_raw());
         assert_eq!(result,0);
         // Leave file around or other concurrent tests will fail
-        //fs::remove_file(config_path).unwrap();
+//        fs::remove_file(config_path).unwrap();
     }
+
 
     #[test]
     fn test_init_bad_path() {

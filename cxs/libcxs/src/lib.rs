@@ -6,6 +6,7 @@ extern crate rand;
 extern crate reqwest;
 extern crate mockito;
 extern crate config;
+extern crate url;
 
 #[macro_use]
 extern crate log;
