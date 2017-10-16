@@ -250,9 +250,7 @@ mod tests {
             Ok(file) => file,
         };
 
-        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"my_config\", \"wallet_name\":\"my_wallet\", \
-        \"agency_pairwise_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"agent_pairwise_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \"enterprise_did_agency\" : \"RF3JM851T4EQmhh8CdagSP\", \
-        \"enterprise_did_agent\" : \"AB3JM851T4EQmhh8CdagSP\", \"enterprise_name\" : \"enterprise\",  \"logo_url\" : \"https://s19.postimg.org/ykyz4x8jn/evernym.png\"}";
+        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"my_config\", \"wallet_name\":\"my_wallet\"}";
         match file.write_all(content.as_bytes()) {
             Err(why) => panic!("couldn't write to sample config file: {}", why.description()),
             Ok(_) => println!("sample config ready"),
@@ -263,6 +261,7 @@ mod tests {
         // Leave file around or other concurrent tests will fail
         //fs::remove_file(config_path).unwrap();
     }
+
 
     #[test]
     fn test_init_bad_path() {

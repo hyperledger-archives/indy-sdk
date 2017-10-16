@@ -187,4 +187,45 @@ pub mod tests {
         // Leave file around or other concurrent tests will fail
         //fs::remove_file(config_path).unwrap();
     }
+
+    #[test]
+    fn test_process_file_with_pairwise_configs() {
+        let a = "agency_pairwise_did";
+        let a_rtn = "72x8p4HubxzUK1dwxcc5FU";
+        let b = "agent_pairwise_verkey";
+        let b_rtn = "U22jM6Cea2YVixjWwHN9wq";
+        let config_path = "/tmp/test_init.json";
+        let path = Path::new(config_path);
+
+        let mut file = match fs::File::create(&path) {
+            Err(why) => panic!("couldn't create sample config file: {}", why.description()),
+            Ok(file) => file,
+        };
+
+        let content = "{ \"agency_pairwise_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"agent_pairwise_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
+        \"enterprise_did_agency\" : \"RF3JM851T4EQmhh8CdagSP\", \"enterprise_did_agent\" : \"AB3JM851T4EQmhh8CdagSP\", \"enterprise_name\" : \"enterprise\",\
+        \"logo_url\" : \"https://s19.postimg.org/ykyz4x8jn/evernym.png\", \"agency_pairwise_verkey\" : \"7118p4HubxzUK1dwxcc5FU\",\
+        \"agent_pairwise_verkey\" : \"U22jM6Cea2YVixjWwHN9wq\"}";
+
+        match file.write_all(content.as_bytes()) {
+            Err(why) => panic!("couldn't write to sample config file: {}", why.description()),
+            Ok(_) => println!("sample config ready"),
+        }
+
+        match process_config_file(&config_path) {
+            Err(_) => println!("expected invalid setting"),
+            Ok(v) => assert_eq!(v, error::SUCCESS.code_num), //fail if we get here
+        }
+
+        match get_config_value(&a) {
+            Err(x) => assert_eq!(x, error::SUCCESS.code_num), //fail if we get here
+            Ok(v) =>  assert_eq!(v,a_rtn),
+
+        };
+
+        match get_config_value(&b) {
+            Err(x) => assert_eq!(x, error::SUCCESS.code_num), //fail if we get here
+            Ok(v) =>  assert_eq!(v,b_rtn),
+        };
+    }
 }
