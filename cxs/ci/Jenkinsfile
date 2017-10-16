@@ -37,7 +37,7 @@ node('ubuntu') {
     stage ('Testing'){
         sh "echo Testing"
         app.inside {
-            sh "cd cxs/libcxs; cargo test"
+            sh "cd cxs/libcxs; cargo test -- --test-threads=1"
         }
     }
     testNodeWrapper(app)
