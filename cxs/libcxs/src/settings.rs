@@ -131,7 +131,6 @@ pub fn process_config_file(path: &str) -> Result<u32, String> {
 
 pub fn get_config_value(key: &str) -> Result<String, u32> {
     // if this fails the program should exit
-    println!("here");
     let config = SETTINGS.read().unwrap();
 
     match config.get_str(key) {
