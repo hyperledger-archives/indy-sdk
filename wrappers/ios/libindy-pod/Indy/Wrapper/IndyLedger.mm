@@ -248,7 +248,7 @@
 // MARK: - ClaimDefTxn request
 
 + (void)buildClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                    xref:(NSString *)xref
+                                    xref:(NSNumber *)xref
                            signatureType:(NSString *)signatureType
                                     data:(NSString *)data
                               completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
@@ -259,7 +259,7 @@
     
     ret = indy_build_claim_def_txn( handle,
                                    [submitterDid UTF8String],
-                                   [xref UTF8String],
+                                   [xref intValue],
                                    [signatureType UTF8String],
                                    [data UTF8String],
                                    IndyWrapperCommon3PSCallback );
@@ -275,7 +275,7 @@
 
 
 + (void)buildGetClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                       xref:(NSString *)xref
+                                       xref:(NSNumber *)xref
                               signatureType:(NSString *)signatureType
                                      origin:(NSString *)origin
                                  completion:(void (^)(NSError *error, NSString *requestJSON)) completion
@@ -284,19 +284,9 @@
     
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
-    NSString *xrefStr;
-    if ([xref isKindOfClass:[NSNumber class]])
-    {
-        xrefStr = [(NSNumber *)xref stringValue];
-    }
-    else
-    {
-        xrefStr = xref;
-    }
-    
     ret = indy_build_get_claim_def_txn(handle,
                                        [submitterDid UTF8String],
-                                       [xrefStr UTF8String],
+                                       [xref intValue],
                                        [signatureType UTF8String],
                                        [origin UTF8String],
                                        IndyWrapperCommon3PSCallback);

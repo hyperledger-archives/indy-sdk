@@ -156,7 +156,7 @@
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                    xref:(NSString *)xref
+                                    xref:(NSNumber *)xref
                            signatureType:(NSString *)signatureType
                                     data:(NSString *)data
                               completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
@@ -171,10 +171,10 @@
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildGetClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                            xref:(NSString *)xref
-                                   signatureType:(NSString *)signatureType
-                                          origin:(NSString *)origin
-                                      completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
+                                       xref:(NSNumber *)xref
+                              signatureType:(NSString *)signatureType
+                                     origin:(NSString *)origin
+                                 completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
 
 // MARK: - Ddo request
 

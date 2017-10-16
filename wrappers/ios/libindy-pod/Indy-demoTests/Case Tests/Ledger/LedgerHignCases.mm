@@ -1706,7 +1706,7 @@
 {
     [TestUtils cleanupStorage];
     NSString *identifier = @"identifier";
-    NSString *xref = @"1";
+    NSNumber *xref = @(1);
     NSString *signatureType = @"signature_type";
     NSString *origin = @"origin";
     
@@ -1865,7 +1865,7 @@
     // 12. Build claim def request
     NSString *claimDefRequestJson;
     ret = [[LedgerUtils sharedInstance] buildClaimDefTxnWithSubmitterDid:myDid
-                                                                    xref:[seqNo stringValue]
+                                                                    xref:seqNo
                                                            signatureType:claimDef[@"signature_type"]
                                                                     data:claimDefDataJson
                                                               resultJson:&claimDefRequestJson];
@@ -2118,7 +2118,7 @@
     NSMutableDictionary *schemaData = [NSMutableDictionary new];
     schemaData[@"name"] = @"gvt3";
     schemaData[@"version"] = @"3.0";
-    schemaData[@"keys"] = keys;
+    schemaData[@"attr_names"] = keys;
     
     NSString *schemaDataJson = [NSDictionary toString:schemaData];
     
