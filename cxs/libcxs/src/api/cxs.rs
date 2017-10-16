@@ -53,6 +53,11 @@ pub extern fn cxs_init (config_path:*const c_char) -> u32 {
         Ok(v) => v,
     };
 
+    let agent_pairwise_did = match settings::get_config_value(settings::CONFIG_AGENT_PAIRWISE_DID) {
+        Err(x) => return x,
+        Ok(v) => v,
+    };
+
     let agency_ver_key = match settings::get_config_value(settings::CONFIG_AGENCY_PAIRWISE_VERKEY) {
         Err(x) => return x,
         Ok(v) => v,
