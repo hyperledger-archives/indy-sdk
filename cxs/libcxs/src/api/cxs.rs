@@ -48,6 +48,17 @@ pub extern fn cxs_init (config_path:*const c_char) -> u32 {
         Ok(v) => v,
     };
 
+    match pool::create_pool_config(&pool_name, &config_name) {
+        0 => 0,
+        x => return x,
+    };
+
+    match wallet::create_wallet(&pool_name, &wallet_name, &wallet_type) {
+        0 => 0,
+        x => return x,
+    };
+
+
     let agency_pairwise_did = match settings::get_config_value(settings::CONFIG_AGENCY_PAIRWISE_DID) {
         Err(x) => return x,
         Ok(v) => v,
@@ -58,45 +69,35 @@ pub extern fn cxs_init (config_path:*const c_char) -> u32 {
         Ok(v) => v,
     };
 
-    let agency_ver_key = match settings::get_config_value(settings::CONFIG_AGENCY_PAIRWISE_VERKEY) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
+        let agency_ver_key = match settings::get_config_value(settings::CONFIG_AGENCY_PAIRWISE_VERKEY) {
+            Err(x) => return x,
+            Ok(v) => v,
+        };
 
-    let agent_ver_key = match settings::get_config_value(settings::CONFIG_AGENT_PAIRWISE_VERKEY) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
+        let agent_ver_key = match settings::get_config_value(settings::CONFIG_AGENT_PAIRWISE_VERKEY) {
+            Err(x) => return x,
+            Ok(v) => v,
+        };
 
-    let enterprise_did_agency = match settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENCY) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
+        let enterprise_did_agency = match settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENCY) {
+            Err(x) => return x,
+            Ok(v) => v,
+        };
 
-    let enterprise_did_agent = match settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
+        let enterprise_did_agent = match settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT) {
+            Err(x) => return x,
+            Ok(v) => v,
+        };
 
-    let enterprise_name = match settings::get_config_value(settings::CONFIG_ENTERPRISE_NAME) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
-//
-//    let logo_url = match settings::get_config_value(settings::CONFIG_LOGO_URL) {
-//        Err(x) => return x,
-//        Ok(v) => v,
-//    };
-
-    match pool::create_pool_config(&pool_name, &config_name) {
-        0 => 0,
-        x => return x,
-    };
-
-    match wallet::create_wallet(&pool_name, &wallet_name, &wallet_type) {
-        0 => 0,
-        x => return x,
-    };
+        let enterprise_name = match settings::get_config_value(settings::CONFIG_ENTERPRISE_NAME) {
+            Err(x) => return x,
+            Ok(v) => v,
+        };
+    //
+//        let logo_url = match settings::get_config_value(settings::CONFIG_LOGO_URL) {
+//            Err(x) => return x,
+//            Ok(v) => v,
+//        };
 
     return error::SUCCESS.code_num
 }
@@ -255,7 +256,11 @@ mod tests {
             Ok(file) => file,
         };
 
-        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"my_config\", \"wallet_name\":\"my_wallet\"}";
+        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"my_config\", \"wallet_name\":\"my_wallet\", \
+        \"agency_pairwise_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"agent_pairwise_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
+        \"enterprise_did_agency\" : \"RF3JM851T4EQmhh8CdagSP\", \"enterprise_did_agent\" : \"AB3JM851T4EQmhh8CdagSP\", \"enterprise_name\" : \"enterprise\",\
+        \"agency_pairwise_verkey\" : \"7118p4HubxzUK1dwxcc5FU\",\
+        \"agent_pairwise_verkey\" : \"U22jM6Cea2YVixjWwHN9wq\"}";
         match file.write_all(content.as_bytes()) {
             Err(why) => panic!("couldn't write to sample config file: {}", why.description()),
             Ok(_) => println!("sample config ready"),

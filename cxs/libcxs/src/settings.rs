@@ -35,7 +35,7 @@ pub fn set_defaults() -> u32 {
     settings.set_default(CONFIG_WALLET_NAME,"wallet1");
     settings.set_default(CONFIG_WALLET_TYPE,"default");
     settings.set_default(CONFIG_AGENT_ENDPOINT,"http://127.0.0.1:8080");
-    settings.set_default(CONFIG_AGENCY_PAIRWISE_DID,"default");
+    settings.set_default(CONFIG_AGENCY_PAIRWISE_DID,"default1");
     settings.set_default(CONFIG_AGENCY_PAIRWISE_VERKEY,"default");
     settings.set_default(CONFIG_AGENT_PAIRWISE_DID,"default");
     settings.set_default(CONFIG_AGENT_PAIRWISE_VERKEY,"default");
@@ -124,6 +124,7 @@ pub fn process_config_file(path: &str) -> Result<u32, String> {
 
 pub fn get_config_value(key: &str) -> Result<String, u32> {
     // if this fails the program should exit
+    println!("here");
     let config = SETTINGS.read().unwrap();
 
     match config.get_str(key) {
