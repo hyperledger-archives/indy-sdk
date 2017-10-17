@@ -67,13 +67,13 @@
                                    resultJson:(NSString **)resultJson;
 // MARK: - ClaimDefTxn
 - (NSError *)buildClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                         xref:(NSString *)xref
+                                         xref:(NSNumber *)xref
                                 signatureType:(NSString *)signatureType
                                          data:(NSString *)data
                                    resultJson:(NSString**)resultJson;
 
 - (NSError *)buildGetClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                            xref:(NSString *)xref
+                                            xref:(NSNumber *)xref
                                    signatureType:(NSString *)signatureType
                                           origin:(NSString *)origin
                                       resultJson:(NSString**)resultJson;

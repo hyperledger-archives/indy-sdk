@@ -22,24 +22,20 @@
         Wallet type name associated with provided implementation.
  @param implementation 
         Class which conforms to protocol IndyWalletProtocol.
- @param handler Completion callback with errord code indicating result.
- 
- @return Error code
- 
+ @param completion Completion callback with errord code indicating result.
 */
-- (NSError *)registerWalletType:(NSString *)type
-             withImplementation:(Class<IndyWalletProtocol>)implementation
-                     completion:(void (^)(NSError *error)) handler;
+- (void)registerWalletType:(NSString *)type
+        withImplementation:(Class<IndyWalletProtocol>)implementation
+                completion:(void (^)(NSError *error)) completion;
 
 /**
  Register Keychain Wallet type with default implementation
 
  @param type Wallet type name associated with provided implementation.
- @param handler Completion callback with errord code indicating result.
- @return Error code
+ @param completion Completion callback with errord code indicating result.
 */
-- (NSError *)registerIndyKeychainWalletType:(NSString *)type
-                     completion:(void (^)(NSError *error)) handler;
+- (void)registerIndyKeychainWalletType:(NSString *)type
+                            completion:(void (^)(NSError *error)) completion;
 /**
  Creates a new secure wallet with the given unique name.
  
@@ -52,21 +48,19 @@
 
  @paran credentials Wallet credentials json. List of supported keys are defined by wallet type.
                     If NULL, then default config will be used.
- @param handler Completion callback that returns error code.
- 
- @return Error code
+ @param completion Completion callback that returns error code.
 */
-- (NSError *)createWalletWithPoolName:(NSString *)poolName
-                                 name:(NSString *)name
-                                xType:(NSString *)type
-                               config:(NSString *)config
-                          credentials:(NSString *)credentials
-                           completion:(void (^)(NSError *error)) handler;
+- (void)createWalletWithName:(NSString *)name
+                    poolName:(NSString *)poolName
+                        type:(NSString *)type
+                      config:(NSString *)config
+                 credentials:(NSString *)credentials
+                  completion:(void (^)(NSError *error)) completion;
 
 /**
  Opens the wallet with specific name.
  
- Wallet with corresponded name must be previously created with IndyWallet::createWalletWithPoolName method.
+ Wallet with corresponded name must be previously created with IndyWallet::createWalletWithName method.
  
  @warning It is impossible to open wallet with the same name more than once.
  
@@ -84,25 +78,21 @@
  @param credentials Wallet credentials json. List of supported keys are defined by wallet type.
  If NULL, then default config will be used.
  
- @param handler Completion callback that returns error code and created handle to opened wallet to use in methods that require wallet access.
-
- @return Error code
- 
+ @param completion Completion callback that returns error code and created handle to opened wallet to use in methods that require wallet access.
  */
-- (NSError *)openWalletWithName:(NSString *)name
-                  runtimeConfig:(NSString *)config
-                    credentials:(NSString *)credentials
-                     completion:(void (^)(NSError *error, IndyHandle walletHandle )) handler;
+- (void)openWalletWithName:(NSString *)name
+             runtimeConfig:(NSString *)config
+               credentials:(NSString *)credentials
+                completion:(void (^)(NSError *error, IndyHandle walletHandle )) completion;
 
 /**
  Closes opened wallet and frees allocated resources.
  
  @param walletHandle  wallet handle returned by IndyWallet::openWalletWithName.
- 
- @return Error code
+ @param completion Completion callback that returns error code.
  */
-- (NSError *)closeWalletWithHandle:(IndyHandle)walletHandle
-                        completion:(void (^)(NSError *error ))handler;
+- (void)closeWalletWithHandle:(IndyHandle)walletHandle
+                   completion:(void (^)(NSError *error ))completion;
 
 /**
  Deletes created wallet.
@@ -111,16 +101,16 @@
  
  @param credentials Wallet credentials json. List of supported keys are defined by wallet type.
                     If NULL, then default credentials will be used.
+ @param completion Completion callback that returns error code.
  */
-- (NSError *)deleteWalletWithName:(NSString *)walletName
-                      credentials:(NSString *)credentials
-                       completion:(void (^)(NSError *error ))handler;
+- (void)deleteWalletWithName:(NSString *)walletName
+                 credentials:(NSString *)credentials
+                  completion:(void (^)(NSError *error ))completion;
 
 /**
  Delete all keychain wallets from Keychain.
  */
 - (void)cleanupIndyKeychainWallet;
-
 
 @end
 

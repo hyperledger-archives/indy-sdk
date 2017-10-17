@@ -296,7 +296,7 @@ extern "C" {
     
     extern indy_error_t indy_build_claim_def_txn(indy_handle_t command_handle,
                                                  const char *  submitter_did,
-                                                 const char *  xref,
+                                                 indy_i32_t  xref,
                                                  const char *  signature_type,
                                                  const char *  data,
 
@@ -323,7 +323,7 @@ extern "C" {
 
      extern indy_error_t indy_build_get_claim_def_txn(indy_handle_t command_handle,
                                                       const char *  submitter_did,
-                                                      const char *  xref,
+                                                      indy_i32_t  xref,
                                                       const char *  signature_type,
                                                       const char *  origin,
                                                       void           (*cb)(indy_handle_t xcommand_handle,

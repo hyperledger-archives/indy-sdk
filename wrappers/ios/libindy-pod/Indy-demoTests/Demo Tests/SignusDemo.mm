@@ -74,54 +74,31 @@
     // 5. Create My DID
     
     NSString *myDidJson = @"{}";
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    __block NSString *myDid = nil;
-    __block NSString *myVerkey = nil;
-    __block NSString *myPk = nil;
-    ret = [IndySignus createAndStoreMyDid: myDidJson
-                             walletHandle: myWalletHandle
-                               completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
-    {
-        XCTAssertEqual(error.code, Success, "createAndStoreMyDid() got error in completion");
-        NSLog(@"myDid:");
-        NSLog(@"did = %@", did);
-        NSLog(@"verkey = %@", verkey);
-        NSLog(@"pk = %@", pk);
-        myDid = did;
-        myVerkey = verkey;
-        myPk = pk;
-        [completionExpectation fulfill];
-    }];
+    NSString *myDid = nil;
+    NSString *myVerkey = nil;
+    NSString *myPk = nil;
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:myWalletHandle
+                                                          myDidJson:myDidJson
+                                                           outMyDid:&myDid
+                                                        outMyVerkey:&myVerkey
+                                                            outMyPk:&myPk];
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 6. Create Their DID
 
     NSString *theirDidJson = @"{}";
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    __block NSString *theirDid = nil;
-    __block NSString *theirVerkey = nil;
-    __block NSString *theirPk = nil;
-    
-    ret = [IndySignus createAndStoreMyDid: theirDidJson
-                             walletHandle: theirWalletHandle
-                               completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
-    {
-        XCTAssertEqual(error.code, Success, "createAndStoreMyDid() got error in completion");
-        NSLog(@"theirDid:");
-        NSLog(@"did = %@", did);
-        NSLog(@"verkey = %@", verkey);
-        NSLog(@"pk = %@", pk);
-        theirDid = [NSString stringWithString: did];
-        theirVerkey = [NSString stringWithString: verkey];
-        theirPk = [NSString stringWithString: pk];
-        [completionExpectation fulfill];
-    }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    NSString *theirDid = nil;
+    NSString *theirVerkey = nil;
+    NSString *theirPk = nil;
+
+    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:theirWalletHandle
+                                                          myDidJson:theirDidJson
+                                                           outMyDid:&theirDid
+                                                        outMyVerkey:&theirVerkey
+                                                            outMyPk:&theirPk];
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
 
     // 7. Store Their DID
@@ -131,17 +108,9 @@
                                                                  \"verkey\":\"%@\"\
                                                                 }", theirDid, theirPk, theirVerkey];
 
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    ret = [IndySignus storeTheirDid: theirIdentityJson
-                       walletHandle: myWalletHandle
-                         completion:^(NSError *error)
-    {
-        XCTAssertEqual(error.code, Success, "storeTheirDid() got error in completion");
-        [completionExpectation fulfill];
-    }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:myWalletHandle
+                                                         identityJson:theirIdentityJson];
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 8. Their Sign message
@@ -155,22 +124,9 @@
                          "}";
     NSData *message = [messageJson dataUsingEncoding:NSUTF8StringEncoding];
     
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    __block NSData *signature = nil;
+    NSData *signature = nil;
     
-    ret = [IndySignus signMessage:message
-                              did:theirDid
-                     walletHandle:theirWalletHandle
-                       completion:^(NSError *error, NSData *blockSignature)
-           {
-               XCTAssertEqual(error.code, Success, "sign() got error in completion");
-               NSLog(@"signature: %@", signature);
-               signature = blockSignature;
-               [completionExpectation fulfill];
-           }];
-
-
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    ret = [[SignusUtils sharedInstance] signWithWalletHandle:theirWalletHandle theirDid:theirDid message:message outSignature:&signature];
     XCTAssertEqual(ret.code, Success, @"sign() failed!");
     
     // 9. I Verify message
@@ -178,21 +134,15 @@
     
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
-    ret = [IndySignus verifySignature:signature
-                           forMessage:message
-                                  did:theirDid
-                         walletHandle:myWalletHandle
-                           poolHandle:poolHandle
-                           completion:^(NSError *error, BOOL valid)
-           {
-               XCTAssertEqual(error.code, Success, "verifySignature() got error in completion");
-               XCTAssertEqual(YES, valid, "verifySignature() signature is not valid");
-               [completionExpectation fulfill];
-           }];
-
-    // TODO: There is some error inside closure at rust level
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    BOOL verified = false;
+    ret = [[SignusUtils sharedInstance] verifyWithWalletHandle:myWalletHandle
+                                                    poolHandle:poolHandle
+                                                           did:theirDid
+                                                       message:message
+                                                     signature:signature
+                                                   outVerified:&verified];
     XCTAssertEqual(ret.code, Success, @"verifySignature() failed!");
+    XCTAssertEqual(YES, verified, "verifySignature() signature is not valid");
     
     [TestUtils cleanupStorage];
 }
@@ -208,7 +158,6 @@
     NSString *theirWalletName = @"their_wallet6";
     NSString *xtype = @"keychain";
     NSError *ret = nil;
-    XCTestExpectation* completionExpectation = nil;
     
     IndyHandle myWalletHandle = 0;
     IndyHandle theirWalletHandle = 0;
@@ -249,55 +198,28 @@
     
     // 5. Create My DID
     
-    NSString *myDidJson = @"{}";
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    NSString *myDid = nil;
+    NSString *myVerkey = nil;
+    NSString *myPk = nil;
     
-    __block NSString *myDid = nil;
-    __block NSString *myVerkey = nil;
-    __block NSString *myPk = nil;
-    ret = [IndySignus createAndStoreMyDid: myDidJson
-                             walletHandle: myWalletHandle
-                               completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
-           {
-               XCTAssertEqual(error.code, Success, "createAndStoreMyDid() got error in completion");
-               NSLog(@"myDid:");
-               NSLog(@"did = %@", did);
-               NSLog(@"verkey = %@", verkey);
-               NSLog(@"pk = %@", pk);
-               myDid = did;
-               myVerkey = verkey;
-               myPk = pk;
-               [completionExpectation fulfill];
-           }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:myWalletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:&myVerkey
+                                                                    outMyPk:&myPk];
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 6. Create Their DID
     
-    NSString *theirDidJson = @"{}";
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    NSString *theirDid = nil;
+    NSString *theirVerkey = nil;
+    NSString *theirPk = nil;
     
-    __block NSString *theirDid = nil;
-    __block NSString *theirVerkey = nil;
-    __block NSString *theirPk = nil;
-    
-    ret = [IndySignus createAndStoreMyDid: theirDidJson
-                             walletHandle: theirWalletHandle
-                               completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
-           {
-               XCTAssertEqual(error.code, Success, "createAndStoreMyDid() got error in completion");
-               NSLog(@"theirDid:");
-               NSLog(@"did = %@", did);
-               NSLog(@"verkey = %@", verkey);
-               NSLog(@"pk = %@", pk);
-               theirDid = [NSString stringWithString: did];
-               theirVerkey = [NSString stringWithString: verkey];
-               theirPk = [NSString stringWithString: pk];
-               [completionExpectation fulfill];
-           }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:theirWalletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&theirDid
+                                                                outMyVerkey:&theirVerkey
+                                                                    outMyPk:&theirPk];
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 7. Store Their DID
@@ -307,16 +229,8 @@
                                    \"verkey\":\"%@\"\
                                    }", theirDid, theirPk, theirVerkey];
     
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    ret = [IndySignus storeTheirDid:theirIdentityJson
-                       walletHandle:myWalletHandle
-                         completion:^(NSError *error){
-                             XCTAssertEqual(error.code, Success, "storeTheirDid() got error in completion");
-                             [completionExpectation fulfill];
-                         }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:myWalletHandle
+                                                         identityJson:theirIdentityJson];
     XCTAssertEqual(ret.code, Success, @"IndySignus::storeTheirDid() failed!");
     
     // 8. Their Sign message
@@ -330,42 +244,21 @@
     "}";
     NSData *message = [messageJson dataUsingEncoding:NSUTF8StringEncoding];
     
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    __block NSData *signature = nil;
-    
-    ret = [IndySignus signMessage:message
-                              did:theirDid
-                     walletHandle:theirWalletHandle
-                       completion:^(NSError *error, NSData *blockSignature)
-           {
-               XCTAssertEqual(error.code, Success, "sign() got error in completion");
-               NSLog(@"signature: %@", signature);
-               signature = blockSignature;
-               [completionExpectation fulfill];
-           }];
-  
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    NSData *signature = nil;
+    ret = [[SignusUtils sharedInstance] signWithWalletHandle:theirWalletHandle
+                                                    theirDid:theirDid
+                                                     message:message
+                                                outSignature:&signature];
     XCTAssertEqual(ret.code, Success, @"sign() failed!");
     
     // 9. I Verify message
     IndyHandle poolHandle = 1;
     
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    ret = [IndySignus verifySignature:signature
-                           forMessage:message
-                                  did:theirDid
-                         walletHandle:myWalletHandle
-                           poolHandle:poolHandle
-                           completion:^(NSError *error, BOOL valid)
-           {
-               XCTAssertEqual(error.code, Success, "verifySignature() got error in completion");
-               XCTAssertEqual(YES, valid, "verifySignature() signature is not valid");
-               [completionExpectation fulfill];
-           }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    BOOL verified = false;
+    ret = [[SignusUtils sharedInstance] verifyWithWalletHandle:myWalletHandle
+                                                    poolHandle:poolHandle did:theirDid message:message signature:signature outVerified:&verified];
     XCTAssertEqual(ret.code, Success, @"verifySignature() failed!");
+    XCTAssertEqual(YES, verified, "verifySignature() signature is not valid");
     
     [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [TestUtils cleanupStorage];
