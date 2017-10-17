@@ -88,7 +88,6 @@
                                                             walletHandle:walletHandle];
     
     XCTAssertEqual(ret.code, Success, @"proverCreateMasterSecret() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 6. Prover create Claim Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];

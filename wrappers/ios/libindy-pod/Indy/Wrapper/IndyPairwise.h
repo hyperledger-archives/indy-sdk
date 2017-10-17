@@ -24,16 +24,16 @@
  Will map theirDid to myDid and store in wallet.
  
  @param theirDid Their DID
- @param myDid Pairwise did.
+ @param myDid Pairwise did. Create it by IndySignus:createAndStoreMyDid.
  @param metadata Additional information about theirDid.
  @param walletHandle Handle of wallet, where pairwise will be stored.
  @param completion Completion block, returns error.
  */
 + (void)createPairwiseForTheirDid:(NSString *)theirDid
-                                 myDid:(NSString *)myDid
-                              metadata:(NSString *)metadata
-                          walletHandle:(IndyHandle)walletHandle
-                            completion:(void (^)(NSError *error))completion;
+                            myDid:(NSString *)myDid
+                         metadata:(NSString *)metadata
+                     walletHandle:(IndyHandle)walletHandle
+                       completion:(void (^)(NSError *error))completion;
 
 /**
  Gets list of pairwise pairs stored in wallet with provided handle.
