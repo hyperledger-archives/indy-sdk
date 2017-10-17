@@ -36,7 +36,7 @@ describe('Using the cxs ffi directly ', function() {
     })
 
     it('a to cxs_connection_connect without the ability to connect should return 1', function () {
-        assert.equal(run.ffi.cxs_connection_connect(2), 1003)
+        assert.equal(run.ffi.cxs_connection_connect(2, "SMS"), 1003)
     })
 
     it('a call to cxs_connection_get_data should return 0', function () {

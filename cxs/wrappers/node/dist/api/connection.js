@@ -10,13 +10,15 @@ class Connection {
     }
     create(recipientInfo) {
         const connectionHandlePtr = ref.alloc(ref.types.uint32);
-        const result = this.RUST_API.cxs_connection_create(recipientInfo, connectionHandlePtr);
+        const info = (recipientInfo == null) ? null : JSON.stringify(recipientInfo);
+        const result = this.RUST_API.cxs_connection_create(info, connectionHandlePtr);
         this.connectionHandle = ref.deref(connectionHandlePtr, ref.types.uint32);
         this.clearOnExit();
         return result;
     }
-    connect() {
-        return this.RUST_API.cxs_connection_connect(this.connectionHandle);
+    connect(options) {
+        const connectionType = options.sms ? 'SMS' : 'QR';
+        return this.RUST_API.cxs_connection_connect(this.connectionHandle, connectionType);
     }
     getData() {
         return this.RUST_API.cxs_connection_get_data(this.connectionHandle);

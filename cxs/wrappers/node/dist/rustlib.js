@@ -16,6 +16,7 @@ exports.FFI_UNSIGNED_INT_PTR = ref.refType('uint32');
 exports.FFI_STRING = 'string';
 exports.FFI_CONFIG_PATH = exports.FFI_STRING;
 exports.FFI_STRING_DATA = 'string';
+exports.FFI_CONNECTION_TYPE = 'string';
 exports.FFI_CONNECTION_HANDLE_PTR = ref.refType(exports.FFI_CONNECTION_HANDLE);
 class CXSRuntimeConfig {
     constructor(_basepath) {
@@ -25,11 +26,11 @@ class CXSRuntimeConfig {
 exports.CXSRuntimeConfig = CXSRuntimeConfig;
 exports.FFIConfiguration = {
     // connection.rs
-    cxs_connection_connect: [exports.FFI_ERROR_CODE, [exports.FFI_CONNECTION_HANDLE]],
+    cxs_connection_connect: [exports.FFI_ERROR_CODE, [exports.FFI_CONNECTION_HANDLE, exports.FFI_CONNECTION_TYPE]],
     cxs_connection_create: [exports.FFI_ERROR_CODE, [exports.FFI_STRING_DATA, exports.FFI_CONNECTION_HANDLE_PTR]],
     cxs_connection_get_data: [exports.FFI_STRING_DATA, [exports.FFI_CONNECTION_HANDLE]],
     cxs_connection_get_state: [exports.FFI_ERROR_CODE, [exports.FFI_CONNECTION_HANDLE, exports.FFI_UNSIGNED_INT_PTR]],
     cxs_connection_release: [exports.FFI_ERROR_CODE, [exports.FFI_CONNECTION_HANDLE]],
-    cxs_init: ['int', ['string']]
+    cxs_init: [exports.FFI_ERROR_CODE, [exports.FFI_CONFIG_PATH]]
 };
 //# sourceMappingURL=rustlib.js.map

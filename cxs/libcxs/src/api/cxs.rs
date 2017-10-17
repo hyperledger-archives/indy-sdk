@@ -167,7 +167,7 @@ pub extern fn cxs_connection_create(recipient_info: *const c_char, connection_ha
 }
 
 #[no_mangle]
-pub extern fn cxs_connection_connect(connection_handle: u32) -> u32 {
+pub extern fn cxs_connection_connect(connection_handle: u32, connection_type: *const c_char) -> u32 {
     connect(connection_handle)
 }
 

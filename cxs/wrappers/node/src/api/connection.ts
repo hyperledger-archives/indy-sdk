@@ -6,6 +6,8 @@ import { CXSRuntimeConfig } from '../rustlib'
 
 import {
     IConnections,
+    IConnectOptions,
+    IRecipientInfo,
     StateType
 } from './api'
 
@@ -18,17 +20,19 @@ export class Connection implements IConnections {
     this.initRustApi(path)
   }
 
-  create ( recipientInfo: string ): number {
+  create ( recipientInfo: IRecipientInfo ): number {
     const connectionHandlePtr = ref.alloc(ref.types.uint32)
-    const result = this.RUST_API.cxs_connection_create(recipientInfo, connectionHandlePtr)
+    const info = (recipientInfo == null) ? null : JSON.stringify(recipientInfo)
+    const result = this.RUST_API.cxs_connection_create(info, connectionHandlePtr)
     this.connectionHandle = ref.deref(connectionHandlePtr, ref.types.uint32)
     this.clearOnExit()
 
     return result
   }
 
-  connect (): number {
-    return this.RUST_API.cxs_connection_connect(this.connectionHandle)
+  connect ( options: IConnectOptions ): number {
+    const connectionType: string = options.sms ? 'SMS' : 'QR'
+    return this.RUST_API.cxs_connection_connect(this.connectionHandle, connectionType)
   }
 
   getData (): string {
