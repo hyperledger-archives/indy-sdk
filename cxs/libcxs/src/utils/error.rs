@@ -9,6 +9,8 @@ use std::fmt;
 
 pub static UNKNOWN_ERROR: Error = Error{code_num:1001, message:"Unknown Error"};
 pub static CONNECTION_ERROR: Error = Error{code_num:1002, message:"Error with Connection"};
+pub static INVALID_CONNECTION_HANDLE: Error = Error{code_num:1003, message:"Invalid Connection Handle"};
+pub static INVALID_CONFIGURATION: Error = Error{code_num:1004, message:"Invalid Configuration"};
 pub static SUCCESS: Error = Error{code_num:0, message:"Success"};
 lazy_static! {
     static ref ERROR_MESSAGES: HashMap<u32, &'static str> = {
@@ -16,6 +18,8 @@ lazy_static! {
         insert_message(&mut m, &SUCCESS);
         insert_message(&mut m, &UNKNOWN_ERROR);
         insert_message(&mut m, &CONNECTION_ERROR);
+        insert_message(&mut m, &INVALID_CONNECTION_HANDLE);
+        insert_message(&mut m, &INVALID_CONFIGURATION);
         m
     };
 

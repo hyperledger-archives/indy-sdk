@@ -89,7 +89,7 @@ pub fn connect(handle: u32) -> u32 {
 
     let rc = match result {
        Some(t) => t.connect(),
-       None => error::UNKNOWN_ERROR.code_num,
+       None => error::INVALID_CONNECTION_HANDLE.code_num,
     };
 
     rc
@@ -114,7 +114,7 @@ pub fn release(handle:u32) -> u32 {
 
     let rc = match result {
         Some(t) => error::SUCCESS.code_num,
-        None => error::UNKNOWN_ERROR.code_num,
+        None => error::INVALID_CONNECTION_HANDLE.code_num,
     };
 
     rc
@@ -127,43 +127,43 @@ mod tests {
 
     #[test]
     fn test_create_connection() {
-        let handle = build_connection("Whatever".to_owned());
-
+        let handle = build_connection("test_create_connection".to_owned());
         assert!(handle > 0);
-
         release(handle);
     }
 
     #[test]
     fn test_create_idempotency() {
-        let handle = build_connection("Whatever".to_owned());
-        let handle2 = build_connection("Whatever".to_owned());
+        let handle = build_connection("test_create_idempotency".to_owned());
+        let handle2 = build_connection("test_create_idempotency".to_owned());
         assert_eq!(handle,handle2);
+        release(handle);
+        release(handle2);
     }
 
     #[test]
     fn test_connection_release() {
-        let handle = build_connection("Whatever".to_owned());
-
+        let handle = build_connection("test_cxn_release".to_owned());
         assert!(handle > 0);
-
         let rc = release(handle);
-
         assert_eq!(rc, error::SUCCESS.code_num);
     }
 
     #[test]
-    fn test_connect() {
-        let handle = build_connection("Whatever".to_owned());
-
-        assert!(handle > 0);
-
-        let rc = connect(handle);
-
-        assert_eq!(rc, error::SUCCESS.code_num);
-
+    fn test_state_not_connected() {
+        let handle = build_connection("test_state_not_connected".to_owned());
         let state = get_state(handle);
+        assert_eq!(state, CxsStateType::CxsStateInitialized as u32);
+        release(handle);
+    }
 
+    #[test]
+    fn test_connect() {
+        let handle = build_connection("test_connect".to_owned());
+        assert!(handle > 0);
+        let rc = connect(handle);
+        assert_eq!(rc, error::SUCCESS.code_num);
+        let state = get_state(handle);
         assert_eq!(state, CxsStateType::CxsStateOfferSent as u32);
         release(handle);
     }
@@ -177,16 +177,13 @@ mod tests {
     #[test]
     fn test_connection_release_fails() {
         let rc = release(1);
-        
-        assert_eq!(rc, error::UNKNOWN_ERROR.code_num);
+        assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
     }
 
     #[test]
     fn test_get_state() {
-        let handle = build_connection("Whatever".to_owned());
-
+        let handle = build_connection("test_state".to_owned());
         let state = get_state(handle);
-
         assert_eq!(state, CxsStateType::CxsStateInitialized as u32);
         release(handle);
     }
@@ -194,23 +191,19 @@ mod tests {
     #[test]
     fn test_get_state_fails() {
         let state = get_state(1);
-
         assert_eq!(state, CxsStateType::CxsStateNone as u32);
     }
 
     #[test]
     fn test_get_string_fails() {
         let string = to_string(1);
-
         assert_eq!(string.len(), 0);
     }
 
     #[test]
     fn test_get_string() {
         let handle = build_connection("".to_owned());
-
         let string = to_string(handle);
-
         println!("string: {}", string);
         assert!(string.len() > 10);
         release(handle);

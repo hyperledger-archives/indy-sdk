@@ -1,29 +1,38 @@
+extern crate libc;
 
-use indy::api::wallet::indy_create_wallet;
-
+use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use std::ptr::null;
 use utils::generate_command_handle;
 use utils::init::indy_error_to_cxs_error_code;
-use indy::api::ErrorCode;
+
+extern {
+    fn indy_create_wallet(command_handle: i32,
+                                 pool_name: *const c_char,
+                                 name: *const c_char,
+                                 xtype: *const c_char,
+                                 config: *const c_char,
+                                 credentials: *const c_char,
+                                 cb: Option<extern fn(xcommand_handle: i32, err: i32)>) -> i32;
+}
 
 
 pub fn create_wallet<'a>(pool_name:&str, wallet_name:&str, wallet_type:&str) -> u32 {
     let handle = generate_command_handle();
 
     // currently we have no call backs
-    extern "C" fn dummy_callback(_handle: i32, _err: ErrorCode) { }
+    extern "C" fn dummy_callback(_handle: i32, _err: i32) { }
 
-    let indy_err = indy_create_wallet(handle,
-                                      CStringUtils::string_to_cstring(pool_name.to_string()).as_ptr(),
-                                      CStringUtils::string_to_cstring(wallet_name.to_string()).as_ptr(),
-                                      CStringUtils::string_to_cstring(wallet_type.to_string()).as_ptr(),
-                                      null(),
-                                      null(),
-                                      Some(dummy_callback));
-
-    indy_error_to_cxs_error_code(indy_err)
-
+    unsafe {
+        let indy_err = indy_create_wallet(handle,
+                                          CStringUtils::string_to_cstring(pool_name.to_string()).as_ptr(),
+                                          CStringUtils::string_to_cstring(wallet_name.to_string()).as_ptr(),
+                                          CStringUtils::string_to_cstring(wallet_type.to_string()).as_ptr(),
+                                          null(),
+                                          null(),
+                                          Some(dummy_callback));
+        indy_error_to_cxs_error_code(indy_err)
+    }
 }
 
 

@@ -6,7 +6,12 @@
   "description": "Node wrapper for cxs",
   "main": "dist/index.js",
   "scripts": {
+<<<<<<< HEAD
     "test": "mocha -gc --expose-gc test/**/*.js"
+=======
+    "test": "mocha -gc --expose-gc test/**/*.js",
+    "doc-gen": "./node_modules/.bin/jsdoc -d doc src/*"
+>>>>>>> master
   },
   "repository": {
     "type": "git",
@@ -23,7 +28,12 @@
     "mocha": "^3.5.0",
     "path": "^0.12.7",
     "tslint": "^5.7.0",
+<<<<<<< HEAD
     "weak": "^1.0.1"
+=======
+    "weak": "^1.0.1",
+    "typescript": "^2.5.3"
+>>>>>>> master
   },
   "directories": {
     "test": "test",
@@ -31,7 +41,9 @@
     "build": "dist"
   },
   "devDependencies": {
+    "@types/node": "^8.0.34",
     "tslint-config-standard": "^6.0.1",
+    "jsdoc": "^3.5.5",
     "typescript": "^2.5.3"
   }
 }

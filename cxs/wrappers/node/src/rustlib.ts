@@ -16,9 +16,9 @@ export const FFI_CONNECTION_HANDLE = 'uint32'
 export const FFI_UNSIGNED_INT = 'uint32'
 export const FFI_UNSIGNED_INT_PTR = ref.refType('uint32')
 export const FFI_STRING = 'string'
+export const FFI_CONFIG_PATH = FFI_STRING
 export const FFI_STRING_DATA = 'string'
 export const FFI_CONNECTION_HANDLE_PTR = ref.refType(FFI_CONNECTION_HANDLE)
-export const FFI_CXS_STATUS_PTR = ref.refType(CxsStatus)
 
 // Rust Lib Native Types
 export type rust_did = string
@@ -48,9 +48,12 @@ export const FFIConfiguration = {
   cxs_connection_create: [FFI_ERROR_CODE, [FFI_STRING_DATA, FFI_CONNECTION_HANDLE_PTR]],
   cxs_connection_get_data: [FFI_STRING_DATA, [FFI_CONNECTION_HANDLE]],
   cxs_connection_get_state: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE, FFI_UNSIGNED_INT_PTR]],
-  cxs_connection_list_state: [FFI_ERROR_CODE, [FFI_CXS_STATUS_PTR]],
   cxs_connection_release: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE]],
 
+<<<<<<< HEAD
   cxs_init: ['int', ['string']]
 
+=======
+  cxs_init: [FFI_ERROR_CODE, [FFI_CONFIG_PATH]]
+>>>>>>> master
 }
