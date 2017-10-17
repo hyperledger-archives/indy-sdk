@@ -1,0 +1,23 @@
+{
+    "name": "libindy-objc",
+    "version": "0.2.0",
+    "summary": "Summary TODO.",
+    "homepage": "TODO",
+    "license": {
+        "type": "Apache License 2.0",
+        "file": "LICENSE"
+    },
+    "authors": {
+        "Daniel Hardman": "daniel.hardman@evernym.com"
+    },
+    "source": {
+        "http": "https://repo.evernym.com/libindy/ios/stable/indy-objc/0.2.0/libindy-objc.zip"
+    },
+    "platforms": {
+        "ios": "10.0"
+    },
+    "ios": {
+        "vendored_frameworks": "libindy-objc/Indy.framework"
+    },
+    "module_name": "Indy"
+}
