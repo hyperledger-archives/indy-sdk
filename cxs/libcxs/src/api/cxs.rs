@@ -325,13 +325,13 @@ mod tests {
         assert_eq!(rc, error::SUCCESS.code_num);
         assert!(handle > 0);
 
-        let rc = cxs_connection_connect(handle);
+        let rc = cxs_connection_connect(handle, CString::new("QR").unwrap().into_raw());
         assert_eq!(rc, error::SUCCESS.code_num);
     }
 
     #[test]
     fn test_cxs_connection_connect_fails() {
-        let rc = cxs_connection_connect(0);
+        let rc = cxs_connection_connect(0, CString::new("QR").unwrap().into_raw());
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
     }
 
@@ -397,7 +397,7 @@ mod tests {
 
         let rc = cxs_connection_release(handle);
         assert_eq!(rc, error::SUCCESS.code_num);
-        let rc = cxs_connection_connect(handle);
+        let rc = cxs_connection_connect(handle, CString::new("QR").unwrap().into_raw());
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
     }
 }

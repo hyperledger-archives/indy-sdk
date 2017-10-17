@@ -96,7 +96,7 @@ cxs_error_t cxs_claimdef_get(cxs_claimdef_handle_t claimdef_handle, char *data);
 cxs_error_t cxs_connection_create(const char *recipient_info, cxs_connection_handle_t *connection_handle);
 
 /** Asynchronously request a connection be made. */
-cxs_error_t cxs_connection_connect(cxs_connection_handle_t connection_handle);
+cxs_error_t cxs_connection_connect(cxs_connection_handle_t connection_handle, const char *connection_type);
 
 /** Returns the contents of the connection handle or null if the connection does not exist. */
 char *cxs_connection_get_data(cxs_connection_handle_t connection_handle);
