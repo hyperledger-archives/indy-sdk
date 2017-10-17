@@ -78,7 +78,9 @@
     // 6. Open Their Wallet. Gets Their wallet handle
     __block IndyHandle theirWalletHandle = 0;
     
-    ret = [[WalletUtils sharedInstance] openWalletWithName:theirWalletName config:nil outHandle:&theirWalletHandle];
+    ret = [[WalletUtils sharedInstance] openWalletWithName:theirWalletName
+                                                    config:nil
+                                                 outHandle:&theirWalletHandle];
     XCTAssertEqual(ret.code, Success, @"openWalletWithName() failed!");
     
     // 7. Create my did
@@ -125,19 +127,29 @@
                                "\"operation\":{"
                                     "\"dest\":\"%@\","
                                     "\"type\":\"1\"},"
+                               "\"protocolVersion\": 1,"
                                "\"reqId\":%d"
                                "}", theirDid, myDid, [nymReqId intValue]];
 
     // 11. Send NYM request with signing
     NSString *nymTxnResponse;
+    
+//    ret = [[LedgerUtils sharedInstance] submitRequest:nymTxnRequest
+//                                       withPoolHandle:poolHandle
+//                                           resultJson:&nymTxnResponse];
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
-                                                              walletHandle:myWalletHandle submitterDid:theirDid requestJson:nymTxnRequest outResponseJson:&nymTxnResponse];
+                                                              walletHandle:myWalletHandle
+                                                              submitterDid:theirDid
+                                                               requestJson:nymTxnRequest
+                                                           outResponseJson:&nymTxnResponse];
     XCTAssertEqual(ret.code, Success, @"signAndSubmitRequestWithWalletHandle() failed!");
+    XCTAssertTrue(nymTxnResponse);
     
     // 12. Prepare and send GET_NYM request
     NSNumber *getNymRequestId = [[PoolUtils sharedInstance] getRequestId];
     NSString *getNymTxnRequest = [NSString stringWithFormat:@"{"
                                   "\"reqId\":%d,"
+                                  "\"signature\": null,"
                                   "\"identifier\":\"%@\","
                                   "\"operation\":{"
                                         "\"type\":\"105\","

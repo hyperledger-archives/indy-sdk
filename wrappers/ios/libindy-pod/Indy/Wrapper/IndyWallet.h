@@ -50,17 +50,17 @@
                     If NULL, then default config will be used.
  @param completion Completion callback that returns error code.
 */
-- (void)createWalletWithPoolName:(NSString *)poolName
-                            name:(NSString *)name
-                           xType:(NSString *)type
-                          config:(NSString *)config
-                     credentials:(NSString *)credentials
-                      completion:(void (^)(NSError *error)) completion;
+- (void)createWalletWithName:(NSString *)name
+                    poolName:(NSString *)poolName
+                        type:(NSString *)type
+                      config:(NSString *)config
+                 credentials:(NSString *)credentials
+                  completion:(void (^)(NSError *error)) completion;
 
 /**
  Opens the wallet with specific name.
  
- Wallet with corresponded name must be previously created with IndyWallet::createWalletWithPoolName method.
+ Wallet with corresponded name must be previously created with IndyWallet::createWalletWithName method.
  
  @warning It is impossible to open wallet with the same name more than once.
  

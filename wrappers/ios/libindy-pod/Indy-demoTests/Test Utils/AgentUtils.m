@@ -117,8 +117,7 @@
                  listenerHandler:onListenerCallback
                connectionHandler:onConnectCallback
                   messageHandler:onMessageCallback];
-    
-    // wait for listenerCallback
+
     [self waitForExpectations: @[listenerCompletionExpectation] timeout:[TestUtils defaultTimeout]];
     
     if (listenerHandle) { *listenerHandle = tempListenerHandle;};
@@ -231,8 +230,9 @@
                                     receiverDid:(NSString *)receiverDid
                                       isTimeout:(BOOL *)isTimeout
 {
+   dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    
     // connection callback. waiting for completion
-    XCTestExpectation* connectCompletionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"listener completion finished"];
     __block NSError *connectionErr;
     __block IndyHandle tempConnectionHandle;
     
@@ -240,22 +240,21 @@
         NSLog(@"AgentUtils::connectWithPoolHandle::OnConnectCallback triggered with code: %ld", (long)error.code);
         tempConnectionHandle = connectionHandle;
         connectionErr = error;
-        [connectCompletionExpectation fulfill];
+        dispatch_semaphore_signal(semaphore);
     };
     
-   // __weak typeof(self)weakSelf = self;
     void (^messageHandler)(IndyHandle, NSError*, NSString*) = ^(IndyHandle xConnectionHandle, NSError *error, NSString *message) {
         NSLog(@"AgentUtils::connectWithPoolHandle::OnMessageCallback triggered invoced with error code: %ld", (long)error.code);
     };
     
-    [IndyAgent connectSenderDid:senderDid
-                withReceiverDid:receiverDid
-                     poolHandle:poolHandle
-                   walletHandle:walletHandle
-              connectionHandler:onConnectCallback
-                 messageHandler:messageHandler];
-
-    [self waitForExpectations: @[connectCompletionExpectation] timeout:[TestUtils shortTimeout]];
+        [IndyAgent connectSenderDid:senderDid
+                    withReceiverDid:receiverDid
+                         poolHandle:poolHandle
+                       walletHandle:walletHandle
+                  connectionHandler:onConnectCallback
+                     messageHandler:messageHandler];
+   
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (5.0 * NSEC_PER_SEC)));
     
     if (connectionErr == nil)
     {

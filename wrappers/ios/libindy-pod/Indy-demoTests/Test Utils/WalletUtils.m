@@ -63,12 +63,12 @@
     NSString *walletName = [NSString stringWithFormat:@"default-wallet-name-%lu", (unsigned long)[[SequenceUtils sharedInstance] getNextId]];
     NSString *xTypeStr = (xtype) ? xtype : @"default";
     
-    [[IndyWallet sharedInstance] createWalletWithPoolName:  poolName
-                                                     name:  walletName
-                                                    xType:  xTypeStr
-                                                   config:  nil
-                                              credentials:  nil
-                                               completion: ^(NSError* error)
+    [[IndyWallet sharedInstance] createWalletWithName:  walletName
+                                             poolName:  poolName
+                                                 type:  xTypeStr
+                                               config:  nil
+                                          credentials:  nil
+                                           completion: ^(NSError* error)
            {
                err = error;
                [completionExpectation fulfill];
@@ -110,12 +110,12 @@
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    [[IndyWallet sharedInstance] createWalletWithPoolName:  poolName
-                                                     name:  walletName
-                                                    xType:  xtype
-                                                   config:  config
-                                              credentials:  nil
-                                               completion: ^(NSError *error)
+    [[IndyWallet sharedInstance] createWalletWithName:  walletName
+                                             poolName:  poolName
+                                                 type:  xtype
+                                               config:  config
+                                          credentials:  nil
+                                           completion: ^(NSError *error)
            {
                err = error;
                [completionExpectation fulfill];
