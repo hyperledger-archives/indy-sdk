@@ -29,10 +29,9 @@ namespace Hyperledger.Indy
         /// <returns>An IndyException or subclass instance.</returns>
         internal static IndyException FromSdkError(int sdkErrorCode)
         {
-            if (!Enum.IsDefined(typeof(ErrorCode), sdkErrorCode))
-                return MakeExceptionForUnknownError(sdkErrorCode);
-
-            switch ((ErrorCode)sdkErrorCode)
+            var errorCode = (ErrorCode)sdkErrorCode;
+            
+            switch (errorCode)
             {
                 case ErrorCode.CommonInvalidParam1:
                 case ErrorCode.CommonInvalidParam2:
@@ -98,14 +97,9 @@ namespace Hyperledger.Indy
                 case ErrorCode.SignusUnknownCryptoError:
                     return new UnknownCryptoException();
                 default:
-                    return MakeExceptionForUnknownError(sdkErrorCode);
+                    var message = string.Format("An unmapped error with the code '{0}' was returned by the SDK.", sdkErrorCode);
+                    return new IndyException(message, sdkErrorCode);
             }      
-        }
-
-        private static IndyException MakeExceptionForUnknownError(int sdkErrorCode)
-        {
-            var message = string.Format("An unmapped error with the code '{0}' was returned by the SDK.", sdkErrorCode);
-            return new IndyException(message, sdkErrorCode);
         }
 
         /// <summary>
