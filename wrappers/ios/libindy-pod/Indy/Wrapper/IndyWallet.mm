@@ -100,12 +100,12 @@
     }
 }
 
-- (void)createWalletWithPoolName:(NSString *)poolName
-                            name:(NSString *)name
-                           xType:(NSString *)type
-                          config:(NSString *)config
-                     credentials:(NSString *)credentials
-                      completion:(void (^)(NSError *error)) completion
+- (void)createWalletWithName:(NSString *)name
+                    poolName:(NSString *)poolName
+                        type:(NSString *)type
+                      config:(NSString *)config
+                 credentials:(NSString *)credentials
+                  completion:(void (^)(NSError *error)) completion
 {
     indy_error_t ret;
     
