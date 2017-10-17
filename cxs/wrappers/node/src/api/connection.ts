@@ -1,9 +1,5 @@
 import * as ffi from 'ffi'
 import * as ref from 'ref'
-<<<<<<< HEAD
-import * as Struct from 'ref-struct'
-=======
->>>>>>> master
 import * as weak from 'weak'
 import { CXSRuntime } from '../index'
 import { CXSRuntimeConfig } from '../rustlib'
@@ -15,12 +11,7 @@ import {
 
 export class Connection implements IConnections {
   public connectionHandle: ref.types.uint32
-<<<<<<< HEAD
-  public state: ref.types.uint32
-  public statusList: any
-=======
   public state: StateType
->>>>>>> master
   private RUST_API: ffi
 
   constructor ( path?: string ) {
@@ -44,11 +35,7 @@ export class Connection implements IConnections {
     return this.RUST_API.cxs_connection_get_data(this.connectionHandle)
   }
 
-<<<<<<< HEAD
-  getState (): number {
-=======
   getState (): StateType {
->>>>>>> master
     const statusPtr = ref.alloc(ref.types.uint32)
     const result = this.RUST_API.cxs_connection_get_state(this.connectionHandle, statusPtr)
     this.state = ref.deref(statusPtr, ref.types.uint32)
