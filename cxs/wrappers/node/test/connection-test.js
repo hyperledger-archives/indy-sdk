@@ -24,8 +24,8 @@ describe('A Connection object with ', function () {
             DIDremote: "0"}), 0)
     })
 
-    it('null param in create should return unknown error', function () {
-        assert.equal(connection.create(null), 1001)
+    it('null param in create should return success', function () {
+        assert.equal(connection.create(null), 0)
     })
 
 

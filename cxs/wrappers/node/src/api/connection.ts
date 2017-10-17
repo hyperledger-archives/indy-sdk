@@ -22,8 +22,7 @@ export class Connection implements IConnections {
 
   create ( recipientInfo: IRecipientInfo ): number {
     const connectionHandlePtr = ref.alloc(ref.types.uint32)
-    const info = (recipientInfo == null) ? null : JSON.stringify(recipientInfo)
-    const result = this.RUST_API.cxs_connection_create(info, connectionHandlePtr)
+    const result = this.RUST_API.cxs_connection_create(JSON.stringify(recipientInfo), connectionHandlePtr)
     this.connectionHandle = ref.deref(connectionHandlePtr, ref.types.uint32)
     this.clearOnExit()
 
