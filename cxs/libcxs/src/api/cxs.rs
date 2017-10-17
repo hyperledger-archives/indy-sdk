@@ -167,7 +167,7 @@ pub extern fn cxs_connection_create(recipient_info: *const c_char, connection_ha
 }
 
 #[no_mangle]
-pub extern fn cxs_connection_connect(connection_handle: u32) -> u32 {
+pub extern fn cxs_connection_connect(connection_handle: u32, connection_type: *const c_char) -> u32 {
     connect(connection_handle)
 }
 
@@ -325,13 +325,13 @@ mod tests {
         assert_eq!(rc, error::SUCCESS.code_num);
         assert!(handle > 0);
 
-        let rc = cxs_connection_connect(handle);
+        let rc = cxs_connection_connect(handle, CString::new("QR").unwrap().into_raw());
         assert_eq!(rc, error::SUCCESS.code_num);
     }
 
     #[test]
     fn test_cxs_connection_connect_fails() {
-        let rc = cxs_connection_connect(0);
+        let rc = cxs_connection_connect(0, CString::new("QR").unwrap().into_raw());
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
     }
 
@@ -397,7 +397,7 @@ mod tests {
 
         let rc = cxs_connection_release(handle);
         assert_eq!(rc, error::SUCCESS.code_num);
-        let rc = cxs_connection_connect(handle);
+        let rc = cxs_connection_connect(handle, CString::new("QR").unwrap().into_raw());
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
     }
 }

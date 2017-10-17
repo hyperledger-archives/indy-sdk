@@ -3,13 +3,12 @@ var parentDir = require('path');
 var currentDir = parentDir.dirname(module.filename);
 var Connection = require(parentDir.dirname(currentDir) + '/dist/api/connection').Connection
 var StateType = require(parentDir.dirname(currentDir) + '/dist/api/api').StateType
+var IRecipientInfo = require(parentDir.dirname(currentDir) + '/dist/api/api').IRecipientInfo
 var path = parentDir.dirname(currentDir) + "/lib/libcxs.so";
 var expect = chai.expect;
 var assert = chai.assert;
 
 // console.log(release(handle)) // tslint:disable-line
-
-
 describe('A Connection object with ', function () {
     let connection;
     beforeEach(function() {
@@ -19,15 +18,14 @@ describe('A Connection object with ', function () {
     //connection_create tests
 
     it('valid parameters in create should return success', function () {
-        assert.equal(connection.create("dog, cat, man"), 0)
+        assert.equal(connection.create({
+            id: "234",
+            DIDself: "456",
+            DIDremote: "0"}), 0)
     })
 
-    it('null param in create should return unknown error', function () {
-        assert.equal(connection.create(null), 1001)
-    })
-
-    it('invalid type as param to create throws TypeError', function () {
-        expect(function (){connection.create(3)}).to.throw(TypeError)
+    it('null param in create should return success', function () {
+        assert.equal(connection.create(null), 0)
     })
 
 
@@ -35,11 +33,11 @@ describe('A Connection object with ', function () {
 
     it(' a call to connect with connection already created should return success', function () {
         connection.create("info")
-        assert.equal(connection.connect(), 0)
+        assert.equal(connection.connect({sms: false}), 0)
     })
 
     it(' a call to create with no connection created should return unknown error', function () {
-        assert.equal(connection.connect(), 1003)
+        assert.equal(connection.connect({sms: true}), 1003)
     })
 
 
@@ -59,7 +57,7 @@ describe('A Connection object with ', function () {
 
     it('a call to get_data where connection was released should return a null value', function () {
         connection.create("info")
-        assert.equal(connection.connect(), 0)
+        assert.equal(connection.connect({sms: true}), 0)
         var data = connection.getData()
         assert.notEqual(data, null)
         assert.equal(connection.release(), 0)
@@ -71,7 +69,7 @@ describe('A Connection object with ', function () {
 
     it('call to getState where connection exists should return success', function () {
         connection.create("info")
-        connection.connect()
+        connection.connect({sms: false})
         assert.equal(connection.getState(), 0)
         assert.equal(connection.state, StateType.OfferSent)
     })
@@ -95,9 +93,9 @@ describe('A Connection object with ', function () {
 
     it('call to connection_release where connection exists should return success', function () {
         connection.create("info")
-        assert.equal(connection.connect(), 0)
+        assert.equal(connection.connect({sms: true}), 0)
         assert.equal(connection.release(), 0)
-        assert.equal(connection.connect(), 1003)
+        assert.equal(connection.connect({sms: true}), 1003)
         assert.equal(connection.getData(), null)
     })
 
@@ -118,7 +116,7 @@ describe('A Connection object with ', function () {
     it('connection and GC deletes object should return null whet get_data is called ', function () {
         const connection = new Connection(path)
         connection.create("msg")
-        connection.connect()
+        connection.connect({sms: true})
         const getData = connection.RUST_API.cxs_connection_get_data
         const handle = connection.connectionHandle
         assert.notEqual(connection.getData(handle), null)
