@@ -42,7 +42,7 @@ export class Connection implements IConnections {
     const statusPtr = ref.alloc(ref.types.uint32)
     const result = this.RUST_API.cxs_connection_get_state(this.connectionHandle, statusPtr)
     this.state = ref.deref(statusPtr, ref.types.uint32)
-    return result
+    return this.state
   }
 
   release (): number {

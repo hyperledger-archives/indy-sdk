@@ -34,11 +34,16 @@ describe('A Connection object with ', function () {
 
 // connection_connect tests
 
-    it(' a call to connect with connection already created should return success', function () {
+    it.only(' a call to connect with connection already created should return success', function () {
         connection.create("connection_connect tests")
-        mysleep.msleep(1500)
-        assert.equal(connection.connect({sms: true}), 0)
+        connection.getState()
+        mysleep.msleep(1000)
+        while (connection.state != 1) {
+            mysleep.msleep(50)
+            connection.getState()
+        }
 
+        assert.equal(connection.connect({sms: true}), 0)
     })
 
     it(' a call to create with no connection created should return unknown error', function () {
