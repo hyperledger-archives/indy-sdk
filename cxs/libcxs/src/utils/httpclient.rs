@@ -1,30 +1,33 @@
 extern crate mockito;
 
+use settings;
 use std::io::Read;
 use reqwest;
 
 pub fn post(body_content: &str, url: &str) -> Result<String,String> {
     let client = reqwest::Client::new();
     info!("Posting \"{}\" to: \"{}\"", body_content, url);
+    if settings::test_mode_enabled() {return Ok("test_mode_response".to_owned());}
     let mut response = match  client.post(url).body(body_content.to_owned()).send() {
         Ok(result) => result,
         Err(err) => return Err("could not connect".to_string()),
     };
 
     info!("Response: {:?}", response);
-    if !response.status().is_success() {return Result::Err("POST failed".to_string());}
+    if !response.status().is_success() {return Err("POST failed".to_string());}
 
     let mut content = String::new();
     match response.read_to_string(&mut content) {
-        Ok(_) => return Ok(content.to_owned()),
-        Err(_) => return Err("could not read response".to_string()),
-    };
+        Ok(_) => Ok(content.to_owned()),
+        Err(_) => Err("could not read response".to_string()),
+    }
 }
 
 
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use mockito;
     use utils::httpclient;
 
@@ -90,5 +93,19 @@ mod tests {
             Err(x) => assert_eq!(x,"POST failed"),
             Ok(x) => assert_eq!(x,"world"), //should fail if we get here
         };
+    }
+
+    #[test]
+    fn test_httpclient_in_test_mode() {
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+
+        let mut my_url = String::from(URL);
+        my_url.push_str("/agent/core");
+
+        match httpclient::post("anything", &my_url) {
+            Err(x) => assert_eq!(1,0), //should fail if we get here
+            Ok(x) => assert_eq!(x,"test_mode_response"),
+        };
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
     }
 }

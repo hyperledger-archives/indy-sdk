@@ -28,6 +28,7 @@ use connection::{build_connection, connect, to_string, get_state, release};
 #[no_mangle]
 pub extern fn cxs_init (config_path:*const c_char) -> u32 {
 
+    //TODO: ensure routine is NOT idempotent, return error if already initialized
     ::utils::logger::LoggerUtils::init();
 
     settings::set_defaults();
@@ -35,13 +36,17 @@ pub extern fn cxs_init (config_path:*const c_char) -> u32 {
     if !config_path.is_null() {
         check_useful_c_str!(config_path,error::UNKNOWN_ERROR.code_num);
 
-        match settings::process_config_file(&config_path) {
-            Err(_) => {
-                error!("Invalid configuration specified");
-                return error::INVALID_CONFIGURATION.code_num;
-            },
-            Ok(_) => info!("Successfully parsed config: {}",config_path),
-        };
+        if config_path == "ENABLE_TEST_MODE" {
+            settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        } else {
+            match settings::process_config_file(&config_path) {
+                Err(_) => {
+                    error!("Invalid configuration specified");
+                    return error::INVALID_CONFIGURATION.code_num;
+                },
+                Ok(_) => info!("Successfully parsed config: {}", config_path),
+            };
+        }
     }
 
     let config_name = match settings::get_config_value(settings::CONFIG_POOL_CONFIG_NAME) {
@@ -69,7 +74,7 @@ pub extern fn cxs_init (config_path:*const c_char) -> u32 {
         x => return x,
     };
 
-    match wallet::create_wallet(&pool_name, &wallet_name, &wallet_type) {
+    match wallet::init_wallet(&pool_name, &wallet_name, &wallet_type) {
         0 => 0,
         x => return x,
     };
@@ -260,6 +265,11 @@ mod tests {
     use std::ffi::CString;
     use std::error::Error;
     use std::io::prelude::*;
+    use utils::wallet;
+    use utils::pool;
+    use std::thread;
+    use std::time::Duration;
+    use mockito;
     use std::fs;
 
     #[test]
@@ -285,6 +295,8 @@ mod tests {
         assert_eq!(result,0);
         // Leave file around or other concurrent tests will fail
 //        fs::remove_file(config_path).unwrap();
+        wallet::tests::delete_wallet("my_wallet");
+        pool::delete_pool_config("my_config");
     }
 
 
@@ -298,6 +310,8 @@ mod tests {
     fn test_init_no_config_path() {
         let result = cxs_init(ptr::null());
         assert_eq!(result,0);
+        wallet::tests::delete_wallet("wallet1");
+        pool::delete_pool_config("config1");
     }
 
 
@@ -320,13 +334,25 @@ mod tests {
 
     #[test]
     fn test_cxs_connection_connect() {
+        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT,mockito::SERVER_URL);
+        let _m = mockito::mock("POST", "/agency/route")
+            .with_status(202)
+            .with_header("content-type", "text/plain")
+            .with_body("nice!")
+            .expect(3)
+            .create();
+
+        wallet::tests::make_wallet("test_cxs_connection_connect");
         let mut handle: u32 = 0;
-        let rc = cxs_connection_create(CString::new("test_connect").unwrap().into_raw(), &mut handle);
+        let rc = cxs_connection_create(CString::new("test_cxs_connection_connect").unwrap().into_raw(), &mut handle);
         assert_eq!(rc, error::SUCCESS.code_num);
+        thread::sleep(Duration::from_secs(2));
         assert!(handle > 0);
 
         let rc = cxs_connection_connect(handle, CString::new("QR").unwrap().into_raw());
         assert_eq!(rc, error::SUCCESS.code_num);
+        wallet::tests::delete_wallet("test_cxs_connection_connect");
+        _m.assert();
     }
 
     #[test]
@@ -345,7 +371,7 @@ mod tests {
         let mut state: u32 = 0;
         let rc = cxs_connection_get_state(handle, &mut state);
         assert_eq!(rc, error::SUCCESS.code_num);
-        assert_eq!(state,CxsStateType::CxsStateInitialized as u32);
+        assert_eq!(state,CxsStateType::CxsStateNone as u32);
     }
 
     #[test]

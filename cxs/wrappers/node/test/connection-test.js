@@ -1,3 +1,4 @@
+var mysleep = require('sleep');
 var chai = require('chai');
 var parentDir = require('path');
 var currentDir = parentDir.dirname(module.filename);
@@ -5,6 +6,7 @@ var Connection = require(parentDir.dirname(currentDir) + '/dist/api/connection')
 var StateType = require(parentDir.dirname(currentDir) + '/dist/api/api').StateType
 var IRecipientInfo = require(parentDir.dirname(currentDir) + '/dist/api/api').IRecipientInfo
 var path = parentDir.dirname(currentDir) + "/lib/libcxs.so";
+var cxs = require('../dist/index.js')
 var expect = chai.expect;
 var assert = chai.assert;
 
@@ -12,6 +14,7 @@ var assert = chai.assert;
 describe('A Connection object with ', function () {
     let connection;
     beforeEach(function() {
+        const result = cxs.init_cxs('ENABLE_TEST_MODE')
         connection = new Connection(path)
     });
 
@@ -32,8 +35,10 @@ describe('A Connection object with ', function () {
 // connection_connect tests
 
     it(' a call to connect with connection already created should return success', function () {
-        connection.create("info")
-        assert.equal(connection.connect({sms: false}), 0)
+        connection.create("connection_connect tests")
+        mysleep.msleep(1000)
+        assert.equal(connection.connect({sms: true}), 0)
+
     })
 
     it(' a call to create with no connection created should return unknown error', function () {
@@ -56,7 +61,8 @@ describe('A Connection object with ', function () {
     })
 
     it('a call to get_data where connection was released should return a null value', function () {
-        connection.create("info")
+        connection.create("connection_get_data tests")
+        mysleep.msleep(1000)
         assert.equal(connection.connect({sms: true}), 0)
         var data = connection.getData()
         assert.notEqual(data, null)
@@ -68,8 +74,9 @@ describe('A Connection object with ', function () {
 // connection_getState tests
 
     it('call to getState where connection exists should return success', function () {
-        connection.create("info")
-        connection.connect({sms: false})
+        connection.create("connection_getState tests")
+        mysleep.msleep(1000)
+        connection.connect({sms: true})
         assert.equal(connection.getState(), 0)
         assert.equal(connection.state, StateType.OfferSent)
     })
@@ -85,14 +92,15 @@ describe('A Connection object with ', function () {
 
         connection.create("info2")
         assert.equal(connection.getState(), 0)
-        assert.equal(connection.state, StateType.Initialized)
+        assert.equal(connection.state, StateType.None)
     })
 
 
 // connection_release tests
 
     it('call to connection_release where connection exists should return success', function () {
-        connection.create("info")
+        connection.create("connection_release tests")
+        mysleep.msleep(1000)
         assert.equal(connection.connect({sms: true}), 0)
         assert.equal(connection.release(), 0)
         assert.equal(connection.connect({sms: true}), 1003)

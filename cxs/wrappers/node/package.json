@@ -23,9 +23,10 @@
     "fs-extra": "^4.0.2",
     "mocha": "^3.5.0",
     "path": "^0.12.7",
+    "sleep": "^5.1.1",
     "tslint": "^5.7.0",
-    "weak": "^1.0.1",
-    "typescript": "^2.5.3"
+    "typescript": "^2.5.3",
+    "weak": "^1.0.1"
   },
   "directories": {
     "test": "test",
@@ -33,9 +34,8 @@
     "build": "dist"
   },
   "devDependencies": {
-    "@types/node": "^8.0.34",
-    "tslint-config-standard": "^6.0.1",
+    "@types/node": "^8.0.44",
     "jsdoc": "^3.5.5",
-    "typescript": "^2.5.3"
+    "tslint-config-standard": "^6.0.1"
   }
 }

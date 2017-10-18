@@ -6,7 +6,7 @@ use config::Config;
 use std::sync::RwLock;
 use utils::error;
 use std::path::Path;
-use url::{Url, ParseError};
+use url::Url;
 
 
 pub static CONFIG_POOL_NAME: &'static str = "pool_name";
@@ -22,6 +22,7 @@ pub static CONFIG_ENTERPRISE_DID_AGENCY: &'static str = "enterprise_did_agency";
 pub static CONFIG_ENTERPRISE_DID_AGENT: &'static str = "enterprise_did_agent";
 pub static CONFIG_ENTERPRISE_NAME: &'static str = "enterprise_name";
 pub static CONFIG_LOGO_URL: &'static str = "logo_url";
+pub static CONFIG_ENABLE_TEST_MODE: &'static str = "enable_test_mode";
 
 lazy_static! {
     static ref SETTINGS: RwLock<Config> = RwLock::new(Config::default());
@@ -44,7 +45,7 @@ pub fn set_defaults() -> u32 {
     settings.set_default(CONFIG_ENTERPRISE_DID_AGENT,"default");
     settings.set_default(CONFIG_ENTERPRISE_NAME,"default");
     settings.set_default(CONFIG_LOGO_URL,"http://www.evernym.com");
-
+    settings.set_default(CONFIG_ENABLE_TEST_MODE,"false");
 
     error::SUCCESS.code_num
 }
@@ -114,6 +115,15 @@ fn validate_config() -> Result<u32, String> {
     }
 }
 
+pub fn test_mode_enabled() -> bool {
+    let config = SETTINGS.read().unwrap();
+
+    match config.get_str(CONFIG_ENABLE_TEST_MODE) {
+        Err(_) => false,
+        Ok(value) => if value == "true" { true } else { false },
+    }
+}
+
 pub fn process_config_file(path: &str) -> Result<u32, String> {
 
     if !Path::new(path).is_file() {
@@ -137,6 +147,12 @@ pub fn get_config_value(key: &str) -> Result<String, u32> {
         Err(_) => Err(error::INVALID_CONFIGURATION.code_num),
         Ok(value) => Ok(value),
     }
+}
+
+pub fn set_config_value(key: &str, value: &str) {
+    let mut settings = SETTINGS.write().unwrap();
+
+    settings.set(key, value).unwrap();
 }
 
 
