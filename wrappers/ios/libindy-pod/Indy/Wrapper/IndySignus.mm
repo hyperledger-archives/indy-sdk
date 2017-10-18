@@ -10,8 +10,8 @@
 
 @implementation IndySignus
 
-+ (NSError *)createAndStoreMyDidWithWalletHandle:(IndyHandle)walletHandle
-                                         didJSON:(NSString *)didJson
++ (NSError *)createAndStoreMyDid:(NSString *)didJson
+                    walletHandle:(IndyHandle)walletHandle
                                       completion:(void (^)(NSError *error, NSString *did, NSString *verkey, NSString *pk)) handler
 {
     indy_error_t ret;
@@ -28,24 +28,25 @@
     }
     
     return [NSError errorFromIndyError: ret];
-    
 }
 
-+ (NSError *)replaceKeysWithWalletHandle:(IndyHandle)walletHandle
-                                     did:(NSString *)did
-                            identityJSON:(NSString *)identityJSON
-                              completion:(void (^)(NSError *error, NSString *verkey, NSString *pk)) handler
++ (NSError *)replaceKeysStartForDid:(NSString *)did
+                       identityJson:(NSString *)identityJson
+                       walletHandle:(IndyHandle)walletHandle
+                         completion:(void (^)(NSError *error,
+                                              NSString *verkey,
+                                              NSString *pk)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
-    ret = indy_replace_keys( handle,
-                            walletHandle,
-                            [did UTF8String],
-                            [identityJSON UTF8String],
-                            IndyWrapperCommon4PCallback
-                            );
+    ret = indy_replace_keys_start(handle,
+                                  walletHandle,
+                                  [did UTF8String],
+                                  [identityJson UTF8String],
+                                  IndyWrapperCommon4PCallback);
+    
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
@@ -54,9 +55,30 @@
     return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)storeTheirDidWithWalletHandle:(IndyHandle)walletHandle
-                              identityJSON:(NSString *)identityJSON
-                                completion:(void (^)(NSError *error)) handler
++ (NSError *)replaceKeysApplyForDid:(NSString *)did
+                       walletHandle:(IndyHandle)walletHandle
+                         completion:(void (^)(NSError *error)) completion
+{
+    indy_error_t ret;
+    
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+    
+    ret = indy_replace_keys_apply(handle,
+                                  walletHandle,
+                                  [did UTF8String],
+                                  IndyWrapperCommon2PCallback);
+    
+    if( ret != Success )
+    {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+    }
+    
+    return [NSError errorFromIndyError: ret];
+}
+
++ (NSError *)storeTheirDid:(NSString *)identityJSON
+              walletHandle:(IndyHandle)walletHandle
+                completion:(void (^)(NSError *error)) handler
 {
     indy_error_t ret;
     
@@ -75,11 +97,11 @@
     return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)signWithWalletHandle:(IndyHandle)walletHandle
-                              did:(NSString *)did
-                          message:(NSData*)message
-                       completion:(void (^)(NSError *error,
-                                            NSData *signature)) handler
++ (NSError *)signMessage:(NSData*)message
+                     did:(NSString *)did
+            walletHandle:(IndyHandle)walletHandle
+              completion:(void (^)(NSError *error,
+                                   NSData *signature)) handler
 {
     indy_error_t ret;
     
@@ -102,12 +124,13 @@
     return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)verifySignatureWithWalletHandle:(IndyHandle)walletHandle
-                                  poolHandle:(IndyHandle)poolHandle
-                                         did:(NSString *)did
-                                     message:(NSData *)message
-                                   signature:(NSData *)signature
-                                  completion:(void (^)(NSError *error, BOOL valid)) handler
++ (NSError *)verifySignature:(NSData *)signature
+                  forMessage:(NSData *)message
+                         did:(NSString *)did
+                walletHandle:(IndyHandle)walletHandle
+                  poolHandle:(IndyHandle)poolHandle
+                  completion:(void (^)(NSError *error,
+                                       BOOL valid)) handler
 {
     indy_error_t ret;
     
@@ -135,12 +158,14 @@
     return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)encryptWithWalletHandle:(IndyHandle)walletHandle
-                                pool:(IndyHandle)poolHandle
-                               myDid:(NSString *)myDid
-                                 did:(NSString *)did
-                             message:(NSData *)message
-                          completion:(void (^)(NSError *error, NSData *encryptedMsg, NSData *nonce)) handler
++ (NSError *)encryptMessage:(NSData *)message
+                      myDid:(NSString *)myDid
+                        did:(NSString *)did
+               walletHandle:(IndyHandle)walletHandle
+                       pool:(IndyHandle)poolHandle
+                 completion:(void (^)(NSError *error,
+                                      NSData *encryptedMsg,
+                                      NSData *nonce)) handler
 {
     indy_error_t ret;
     
@@ -166,12 +191,13 @@
     return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)decryptWithWalletHandle:(IndyHandle)walletHandle
-                               myDid:(NSString *)myDid
-                                 did:(NSString *)did
-                    encryptedMessage:(NSData *)encryptedMessage
-                               nonce:(NSData *)nonce
-                          completion:(void (^)(NSError *error, NSData *decryptedMessage)) handler
++ (NSError *)decryptMessage:(NSData *)encryptedMessage
+                      myDid:(NSString *)myDid
+                        did:(NSString *)did
+                      nonce:(NSData *)nonce
+               walletHandle:(IndyHandle)walletHandle
+                 completion:(void (^)(NSError *error,
+                                      NSData *decryptedMessage)) handler
 {
     indy_error_t ret;
     

@@ -5,6 +5,7 @@ import java.util.concurrent.CompletableFuture;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
+import org.hyperledger.indy.sdk.ParamGuard;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateClaimResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
@@ -259,6 +260,10 @@ public class Anoncreds extends IndyJava.API {
 			String schemaJson, 
 			String signatureType, 
 			boolean createNonRevoc) throws IndyException {
+		
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(issuerDid, "issuerDid");		
+		ParamGuard.notNullOrWhiteSpace(schemaJson, "schemaJson");		
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -295,6 +300,9 @@ public class Anoncreds extends IndyJava.API {
 			int schemaSeqNo, 
 			int maxClaimNum) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(issuerDid, "issuerDid");		
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -329,6 +337,10 @@ public class Anoncreds extends IndyJava.API {
 			String claimJson,
 			int userRevocIndex) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(claimReqJson, "claimReqJson");		
+		ParamGuard.notNullOrWhiteSpace(claimJson, "claimJson");			
+		
 		CompletableFuture<IssuerCreateClaimResult> future = new CompletableFuture<IssuerCreateClaimResult>();
 		int commandHandle = addFuture(future);
 
@@ -363,6 +375,9 @@ public class Anoncreds extends IndyJava.API {
 			int schemaSeqNo,
 			int userRevocIndex) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(issuerDid, "issuerDid");		
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -393,6 +408,9 @@ public class Anoncreds extends IndyJava.API {
 			Wallet wallet,
 			String claimOfferJson) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(claimOfferJson, "claimOfferJson");		
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -421,6 +439,9 @@ public class Anoncreds extends IndyJava.API {
 			Wallet wallet,
 			String filterJson) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(filterJson, "filterJson");		
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -449,6 +470,9 @@ public class Anoncreds extends IndyJava.API {
 			Wallet wallet,
 			String masterSecretName) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(masterSecretName, "masterSecretName");		
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -483,6 +507,12 @@ public class Anoncreds extends IndyJava.API {
 			String claimDefJson,
 			String masterSecretName) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(proverDid, "proverDid");		
+		ParamGuard.notNullOrWhiteSpace(claimOfferJson, "claimOfferJson");		
+		ParamGuard.notNullOrWhiteSpace(claimDefJson, "claimDefJson");		
+		ParamGuard.notNullOrWhiteSpace(masterSecretName, "masterSecretName");		
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -514,6 +544,9 @@ public class Anoncreds extends IndyJava.API {
 			Wallet wallet,
 			String claim) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(claim, "claim");		
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -542,6 +575,9 @@ public class Anoncreds extends IndyJava.API {
 			Wallet wallet,
 			String filter) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(filter, "filter");		
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -570,6 +606,9 @@ public class Anoncreds extends IndyJava.API {
 			Wallet wallet,
 			String proofRequest) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(proofRequest, "proofRequest");		
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -608,6 +647,14 @@ public class Anoncreds extends IndyJava.API {
 			String claimDefs,
 			String revocRegs) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(proofRequest, "proofRequest");
+		ParamGuard.notNullOrWhiteSpace(requestedClaims, "requestedClaims");		
+		ParamGuard.notNullOrWhiteSpace(schemas, "schemas");		
+		ParamGuard.notNullOrWhiteSpace(masterSecret, "masterSecret");		
+		ParamGuard.notNullOrWhiteSpace(claimDefs, "claimDefs");		
+		ParamGuard.notNullOrWhiteSpace(revocRegs, "revocRegs");		
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -647,6 +694,12 @@ public class Anoncreds extends IndyJava.API {
 			String claimDefs,
 			String revocRegs) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(proofRequest, "proofRequest");
+		ParamGuard.notNullOrWhiteSpace(proof, "proof");		
+		ParamGuard.notNullOrWhiteSpace(schemas, "schemas");		
+		ParamGuard.notNullOrWhiteSpace(claimDefs, "claimDefs");			
+		ParamGuard.notNullOrWhiteSpace(revocRegs, "revocRegs");		
+		
 		CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
 		int commandHandle = addFuture(future);
 

@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
+import org.hyperledger.indy.sdk.ParamGuard;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
@@ -289,6 +290,12 @@ public class Agent extends IndyJava.API {
 			String senderDid,
 			String receiverDid,
 			AgentObservers.MessageObserver messageObserver) throws IndyException {
+		
+		ParamGuard.notNull(pool, "pool");
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(receiverDid, "senderDid");
+		ParamGuard.notNullOrWhiteSpace(receiverDid, "senderDid");
+		ParamGuard.notNull(messageObserver, "messageObserver");
 
 		CompletableFuture<Connection> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
@@ -323,6 +330,9 @@ public class Agent extends IndyJava.API {
 			String endpoint,
 			AgentObservers.ConnectionObserver connectionObserver) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(endpoint, "endpoint");
+		ParamGuard.notNull(connectionObserver, "connectionObserver");
+		
 		CompletableFuture<Listener> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 		addConnectionObserver(commandHandle, connectionObserver);
@@ -354,6 +364,11 @@ public class Agent extends IndyJava.API {
 			Pool pool,
 			Wallet wallet,
 			String did) throws IndyException {
+		
+		ParamGuard.notNull(listener, "listener");
+		ParamGuard.notNull(pool, "pool");
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(did, "did");		
 
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
@@ -389,6 +404,10 @@ public class Agent extends IndyJava.API {
 			Wallet wallet,
 			String did) throws IndyException {
 
+		ParamGuard.notNull(listener, "listener");
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(did, "did");		
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -418,6 +437,9 @@ public class Agent extends IndyJava.API {
 	public static CompletableFuture<Void> agentSend(
 			Agent.Connection connection,
 			String message) throws IndyException {
+		
+		ParamGuard.notNull(connection, "connection");
+		ParamGuard.notNull(message, "message");		
 
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
@@ -445,6 +467,8 @@ public class Agent extends IndyJava.API {
 	public static CompletableFuture<Void> agentCloseConnection(
 			Agent.Connection connection) throws IndyException {
 
+		ParamGuard.notNull(connection, "connection");
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -472,6 +496,8 @@ public class Agent extends IndyJava.API {
 	public static CompletableFuture<Void> agentCloseListener(
 			Agent.Listener listener) throws IndyException {
 
+		ParamGuard.notNull(listener, "listener");
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 

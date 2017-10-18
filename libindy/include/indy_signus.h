@@ -202,7 +202,8 @@ extern "C" {
                                                                    indy_bool_t   valid )
                                              );
 
-    /// Encrypts a message by a public key associated with a DID.
+    /// Encrypts a message by public-key (associated with their did) authenticated-encryption scheme
+    /// using nonce.
     /// If a secure wallet doesn't contain a public key associated with the given DID,
     /// then the public key is read from the Ledger.
     /// Otherwise either an existing public key from wallet is used (see wallet_store_their_identity),
@@ -212,8 +213,9 @@ extern "C" {
     /// #Params
     /// wallet_handle: wallet handler (created by open_wallet).
     /// command_handle: command handle to map callback to user context.
-    /// my_did: encrypting DID
-    /// did: encrypting DID
+    /// pool_handle: pool handle.
+    /// my_did: encrypted DID
+    /// their_did: encrypted DID
     /// message_raw: a pointer to first byte of message that to be encrypted
     /// message_len: a message length
     /// cb: Callback that takes command result as parameter.
@@ -241,17 +243,17 @@ extern "C" {
                                                           indy_u32_t        encrypted_msg_len,
                                                           const indy_u8_t*  nonce_raw,
                                                           indy_u32_t        nonce_len)
-                                   );
+                                     );
 
-    /// Decrypts a message encrypted by a public key associated with my DID.
+    /// Decrypts a message by public-key authenticated-encryption scheme using nonce.
     /// The DID with a secret key must be already created and
     /// stored in a secured wallet (see wallet_create_and_store_my_identity)
     ///
     /// #Params
     /// wallet_handle: wallet handler (created by open_wallet).
     /// command_handle: command handle to map callback to user context.
-    /// my_did: DID
-    /// did: DID that signed the message
+    /// my_did: encrypted DID
+    /// their_did: encrypted DID that signed the message
     /// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
     /// encrypted_msg_len: a message length
     /// nonce_raw: a pointer to first byte of nonce that encrypted message
@@ -259,7 +261,7 @@ extern "C" {
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// a decrypted message
+    /// decrypted message
     ///
     /// #Errors
     /// Common*
@@ -280,6 +282,76 @@ extern "C" {
                                                           const indy_u8_t*  decrypted_msg_raw,
                                                           indy_u32_t        decrypted_msg_len)
                                     );
+
+
+    /// Encrypts a message by public-key (associated with did) anonymous-encryption scheme.
+    /// If a secure wallet doesn't contain a public key associated with the given DID,
+    /// then the public key is read from the Ledger.
+    /// Otherwise either an existing public key from wallet is used (see wallet_store_their_identity),
+    /// or it checks the Ledger (according to freshness settings set during initialization)
+    /// whether public key is still the same and updates public key for the DID if needed.
+    ///
+    /// #Params
+    /// wallet_handle: wallet handler (created by open_wallet).
+    /// pool_handle: pool handle.
+    /// command_handle: command handle to map callback to user context.
+    /// did: encrypted DID
+    /// message_raw: a pointer to first byte of message that to be encrypted
+    /// message_len: a message length
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// an encrypted message
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Ledger*
+    /// Crypto*
+
+    extern indy_error_t indy_encrypt_sealed(indy_handle_t      command_handle,
+                                            indy_handle_t      wallet_handle,
+                                            const char *       did,
+                                            const indy_u8_t *  message_raw,
+                                            indy_u32_t         message_len,
+
+                                            void           (*cb)(indy_handle_t     xcommand_handle,
+                                                                 indy_error_t      err,
+                                                                 const indy_u8_t*  encrypted_msg_raw,
+                                                                 indy_u32_t        encrypted_msg_len)
+                                           );
+
+    /// Decrypts a message by public-key anonymous-encryption scheme.
+    /// The DID with a secret key must be already created and
+    /// stored in a secured wallet (see wallet_create_and_store_my_identity)
+    ///
+    /// #Params
+    /// wallet_handle: wallet handler (created by open_wallet).
+    /// command_handle: command handle to map callback to user context.
+    /// did: DID that signed the message
+    /// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
+    /// encrypted_msg_len: a message length
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// decrypted message
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
+
+    extern indy_error_t indy_decrypt_sealed(indy_handle_t      command_handle,
+                                            indy_handle_t      wallet_handle,
+                                            const char *       did,
+                                            const indy_u8_t*   encrypted_msg_raw,
+                                            indy_u32_t         encrypted_msg_len,
+
+                                            void           (*cb)(indy_handle_t     xcommand_handle,
+                                                                 indy_error_t      err,
+                                                                 const indy_u8_t*  decrypted_msg_raw,
+                                                                 indy_u32_t        decrypted_msg_len)
+                                           );
 
 #ifdef __cplusplus
 }

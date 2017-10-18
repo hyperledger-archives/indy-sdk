@@ -57,11 +57,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
         {
             var msg = "{\"reqId\":1496822211362017764}";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
                 Ledger.SignRequestAsync(_wallet, "8wZcEriaNLNKtteJvx7f8i", msg)
             );
-
-            Assert.AreEqual(ErrorCode.WalletNotFoundError, ex.ErrorCode);
 
         }
 
@@ -70,11 +68,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
         {
             var msg = "\"reqId\":1496822211362017764";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                Ledger.SignRequestAsync(_wallet, _did, msg)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
     }
 }

@@ -214,11 +214,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "              \"requested_predicates\":{}\n" +
                 "             }";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -233,11 +231,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "              \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"LE\",\"value\":18}}\n" +
                 "             }";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 AnonCreds.ProverGetClaimsForProofReqAsync(_commonWallet, proofRequest)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
     }

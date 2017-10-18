@@ -5,6 +5,8 @@ import java.util.concurrent.CompletableFuture;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
+import org.hyperledger.indy.sdk.ParamGuard;
+import org.hyperledger.indy.sdk.StringUtils;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
@@ -271,6 +273,11 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String requestJson) throws IndyException {
 
+		ParamGuard.notNull(pool, "pool");
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(requestJson, "requestJson");
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -302,6 +309,9 @@ public class Ledger extends IndyJava.API {
 			Pool pool,
 			String requestJson) throws IndyException {
 
+		ParamGuard.notNull(pool, "pool");
+		ParamGuard.notNullOrWhiteSpace(requestJson, "requestJson");
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -332,6 +342,10 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String requestJson) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(requestJson, "requestJson");
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -361,6 +375,9 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String targetDid) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -393,6 +410,9 @@ public class Ledger extends IndyJava.API {
 			String alias,
 			String role) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -427,6 +447,14 @@ public class Ledger extends IndyJava.API {
 			String hash,
 			String raw,
 			String enc) throws IndyException {
+		
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
+		
+		if(StringUtils.isNullOrWhiteSpace(hash) && 
+				StringUtils.isNullOrWhiteSpace(raw) &&
+				StringUtils.isNullOrWhiteSpace(enc))
+			throw new IllegalArgumentException("At least one of the 'hash', 'raw' or 'enc' parameters must be provided with a non-empty string.");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -459,6 +487,10 @@ public class Ledger extends IndyJava.API {
 			String targetDid,
 			String data) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
+		ParamGuard.notNullOrWhiteSpace(data, "data");
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -486,6 +518,9 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String targetDid) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -512,6 +547,9 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			String data) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(data, "data");
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -540,6 +578,10 @@ public class Ledger extends IndyJava.API {
 			String dest,
 			String data) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(dest, "dest");
+		ParamGuard.notNullOrWhiteSpace(data, "data");
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -571,6 +613,10 @@ public class Ledger extends IndyJava.API {
 			String signatureType,
 			String data) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(signatureType, "signatureType");
+		ParamGuard.notNullOrWhiteSpace(data, "data");
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -603,6 +649,10 @@ public class Ledger extends IndyJava.API {
 			String signatureType,
 			String origin) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(signatureType, "signatureType");
+		ParamGuard.notNullOrWhiteSpace(origin, "origin");
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -633,6 +683,10 @@ public class Ledger extends IndyJava.API {
 			String targetDid,
 			String data) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
+		ParamGuard.notNullOrWhiteSpace(data, "data");
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -660,6 +714,8 @@ public class Ledger extends IndyJava.API {
 			String submitterDid,
 			int data) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 

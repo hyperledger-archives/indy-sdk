@@ -38,11 +38,9 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestCreateMyDidWorksForInvalidIdentityJson()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 Signus.StoreTheirDidAsync(_wallet, "{\"field\":\"value\"}")
-            );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
+            );            
         }
 
         [TestMethod]
@@ -56,11 +54,9 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestStoreTheirDidWorksWithoutDid()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 Signus.StoreTheirDidAsync(_wallet, string.Format("{{\"verkey\":\"{0}\"}}", _verkey))
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -80,11 +76,9 @@ namespace Hyperledger.Indy.Test.SignusTests
                 "\"verkey\":\"{1}\", " +
                 "\"crypto_type\": \"some_type\"}}", _did, _verkey);
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<UnknownCryptoException>(() =>
                 Signus.StoreTheirDidAsync(_wallet, json)
             );
-
-            Assert.AreEqual(ErrorCode.SignusUnknownCryptoError, ex.ErrorCode);
         }
 
 

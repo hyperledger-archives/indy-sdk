@@ -47,11 +47,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                     "        \"period\":[\"8\",\"8\"]\n" +
                     "       }";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -67,12 +65,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                     "        \"age\":\"28\"" +
                     "       }";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 AnonCreds.IssuerCreateClaimAsync(_commonWallet, claimRequest, claim, -1)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
-
     }
 }
