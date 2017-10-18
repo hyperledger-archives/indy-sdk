@@ -36,7 +36,7 @@ describe('A Connection object with ', function () {
 
     it(' a call to connect with connection already created should return success', function () {
         connection.create("connection_connect tests")
-        mysleep.msleep(1000)
+        mysleep.msleep(1500)
         assert.equal(connection.connect({sms: true}), 0)
 
     })
