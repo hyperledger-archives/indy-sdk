@@ -23,7 +23,7 @@ us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to
 * [iOS](wrappers/ios/ios-build.md)
 
 ## Binaries
-Builded binaries can be downloaded from https://repo.evernym.com/libindy:
+Pre-Built binaries can be downloaded from https://repo.evernym.com/libindy:
 * ubuntu/{master,stable,rc} - Ubuntu deb packages
 * windows/{master,stable,rc} - Windows zip-archive with all required DLLs (include libindy itself) and headers
 * windows/deps/ - Windows zip archive with dependencies (DLLs and headers) to build libindy from sources
