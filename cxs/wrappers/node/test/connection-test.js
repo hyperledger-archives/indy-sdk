@@ -23,6 +23,7 @@ const waitFor = async (predicate) => {
 
 // console.log(release(handle)) // tslint:disable-line
 describe('A Connection object with ', function () {
+    this.timeout = 10000
   
     let connection;
     beforeEach(function() {
@@ -80,7 +81,7 @@ describe('A Connection object with ', function () {
 
         
         await waitFor(() => connection.connect({sms: true}) === 0)
-
+        
         assert.equal(connection.getState(),StateType.OfferSent)
    
         var data = connection.getData()
