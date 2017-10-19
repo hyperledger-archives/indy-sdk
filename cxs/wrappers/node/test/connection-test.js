@@ -87,9 +87,9 @@ describe('A Connection object with ', function () {
         assert.equal(connection.getData(), null)
     })
 
-    it.only('a call to get_data where connection was released should return a null value', function () {
-        assert.equal(connection.create("connection11_get_data tests"), 0)
-        mysleep.msleep(1000)
+    it('a call to get_data where connection was released should return a null value', function () {
+        assert.equal(connection.create("connection_get_data tests"), 0)
+        
         assert.equal(connection.connect({sms: true}), 0)
         assert.equal(connection.getState(),StateType.OfferSent)
    
@@ -102,10 +102,78 @@ describe('A Connection object with ', function () {
         assert.equal(data, null)
      
     })
+    it.only('a call to get_data where connection was released should return a null value', function () {
+        /*
+        var createConnection = function(){
+            return new Promise((resolve,reject) =>{
+                    resolve(connection.create("promise release"))
+            });
+        }
+
+        var waitThreeSeconds= function(){
+            return new Promise((resolve,reject) =>{
+                mysleep.usleep(3000)
+                resolve()
+            });
+        }
+
+        var connectConnection = function() {
+            return new Promise((resolve,reject) => {
+                assert.equal(connection.connect({sms: true}),0)
+                resolve()
+            });
+        }
+
+        var connectGetState = function() {
+            return new Promise((ressolve, reject) => {
+                
+                connection.getState()
+                resolve()
+            })
+        }
+        */
+        // createConnection().then().then(connectConnection)
+        const releaseTest = async () => {
+            connection.create("promise release")
+            console.log("###############################")
+            // await sleep(4000)
+            for (i = 1; i< 100000000; i++){
+                
+            }
+            assert.equal(connection.connect({sms: true}),0)
+            assert.equal(connection.getState(),StateType.OfferSent)
+            
+            var data = connection.getData()
+            assert.notEqual(data, null)
+            assert.equal(connection.release(), 0)
+                 
+           
+            data = connection.getData()
+            assert.equal(data, null)
+        }
+
+        releaseTest()
+
+        /*
+        assert.equal(connection.create("promise release"), 0)
+        
+        assert.equal(connection.connect({sms: true}), 0)
+        assert.equal(connection.getState(),StateType.OfferSent)
+   
+        var data = connection.getData()
+        assert.notEqual(data, null)
+        assert.equal(connection.release(), 0)
+        
+  
+        data = connection.getData()
+        assert.equal(data, null)
+        */
+     
+    })
 
 // connection_getState tests
 
-    it.only('call to getState where connection exists should return success', function () {
+    it('call to getState where connection exists should return success', function () {
         connection.create("connection_getState tests")
         mysleep.msleep(1000)
         connection.connect({sms: true})
