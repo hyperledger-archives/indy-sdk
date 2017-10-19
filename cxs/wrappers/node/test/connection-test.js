@@ -88,62 +88,16 @@ describe('A Connection object with ', function () {
     })
 
     it.only('a call to get_data where connection was released should return a null value', function () {
-        // var createConnection = new Promise(function(resolve, reject){
-        //     var result = connection.create("connection_get_data tests")
-        //     sleep(1000)
-        //     if (result == 0){
-        //         resolve()
-        //     } else {
-        //         reject()
-        //     }
-        // })
-
-        // var connectToConnection = new Promise(function(resolve, reject){
-        //     var result = connection.connect({sms: true})
-        //     sleep(1000)
-        //     var state = connection.getState()
-
-        //     if (state == 1) {
-        //         resolve()
-        //     } else {
-        //         reject()
-        //     }
-        // })
-
-        // createConnection.then(
-        //     function(result){
-        //         console.log("it worked")
-        //         connectToConnection.then(function(result){
-        //             console.log("connect did connect")
-        //         },
-        //         function(err){
-                    
-        //             console.log("connect did not get to ready")
-        //             assert.notEqual(1,1)
-        //         })
-
-        //     },
-        //     function(err) {
-        //         console.log("creating connection didnt work")
-                
-        //     }
-        // )
-     
-        assert.equal(connection.create("connection_get_data tests"), 0)
-        console.log("##### " + connection.getState())
-        console.log("##### " + connection.getState())
-        console.log("##### " + connection.getState())
-        while (connection.getState() == 0 ){
-            connection.getState()
-        }
-        
-        
+        assert.equal(connection.create("connection11_get_data tests"), 0)
+        mysleep.msleep(1000)
         assert.equal(connection.connect({sms: true}), 0)
-        sleep(500)
+        assert.equal(connection.getState(),StateType.OfferSent)
+   
         var data = connection.getData()
         assert.notEqual(data, null)
         assert.equal(connection.release(), 0)
-        sleep(500)
+        
+  
         data = connection.getData()
         assert.equal(data, null)
      
@@ -151,7 +105,7 @@ describe('A Connection object with ', function () {
 
 // connection_getState tests
 
-    it('call to getState where connection exists should return success', function () {
+    it.only('call to getState where connection exists should return success', function () {
         connection.create("connection_getState tests")
         mysleep.msleep(1000)
         connection.connect({sms: true})

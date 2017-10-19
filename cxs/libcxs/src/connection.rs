@@ -280,18 +280,12 @@ pub fn update_state(handle: u32) {
 
 
 pub fn get_state(handle: u32) -> u32 {
-    let mut current_state:u32 = 0;
-    {
-        let mut connection_table = CONNECTION_MAP.lock().unwrap();
-        if let Some(cxn) = connection_table.get_mut(&handle) {
-            current_state = cxn.get_state()
-        }
-    }
 
-    if current_state != CxsStateType::CxsStateNone as u32 {
-        // Try to update state from agent first
-        update_state(handle);
-    }
+
+    // Try to update state from agent first
+    info!("about to update state");
+    update_state(handle);
+    info!("returned from updating state");
     let m = CONNECTION_MAP.lock().unwrap();
     let result = m.get(&handle);
 
