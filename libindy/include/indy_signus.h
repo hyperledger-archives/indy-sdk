@@ -129,6 +129,63 @@ extern "C" {
                                                                   indy_error_t  err)
                                             );
 
+    extern indy_error_t indy_create_key(indy_handle_t     command_handle,
+                                        const char *const seed,
+
+                                        void              (*cb)(indy_handle_t     command_handle,
+                                                                indy_error_t      err
+                                                                const char *const vk)
+                                       );
+
+    extern indy_error_t indy_store_key_meta(indy_handle_t     command_handle
+                                            const char *const vk,
+                                            const char *const meta,
+
+                                            void              (*cb)(indy_handle_t     command_handle,
+                                                                    indy_error_t      err)
+                                           );
+
+    extern indy_error_t indy_get_key_meta(indy_handle_t     command_handle
+                                          const char *const vk,
+
+                                          void              (*cb)(indy_handle_t     command_handle,
+                                                                  indy_error_t      err,
+                                                                  const char *const meta)
+                                         );
+
+    extern indy_error_t indy_key_for_did(indy_handle_t     command_handle
+                                         const char *const did,
+
+                                         void              (*cb)(indy_handle_t     command_handle,
+                                                                 indy_error_t      err,
+                                                                 const char *const key)
+                                        );
+
+    extern indy_error_t indy_endpoint_for_did(indy_handle_t     command_handle
+                                              const char *const did,
+
+                                              void              (*cb)(indy_handle_t     command_handle,
+                                                                      indy_error_t      err,
+                                                                      const char *const endpoint,
+                                                                      const char *const transport_vk)
+                                             );
+
+    extern indy_error_t indy_store_did_meta(indy_handle_t     command_handle
+                                            const char *const did,
+                                            const char *const meta,
+
+                                            void              (*cb)(indy_handle_t     command_handle,
+                                                                    indy_error_t      err)
+                                           );
+
+    extern indy_error_t indy_get_did_meta(indy_handle_t     command_handle
+                                          const char *const did,
+
+                                          void              (*cb)(indy_handle_t     command_handle,
+                                                                  indy_error_t      err,
+                                                                  const char *const meta)
+                                         );
+
     /// Signs a message by a signing key associated with my DID. The DID with a signing key
     /// must be already created and stored in a secured wallet (see create_and_store_my_identity)
     ///
@@ -352,6 +409,15 @@ extern "C" {
                                                                  const indy_u8_t*  decrypted_msg_raw,
                                                                  indy_u32_t        decrypted_msg_len)
                                            );
+
+/* TODO implement for key-based approach:
+ indy_sign(signer_vk, msg) -> signature
+ indy_verify(signer_vk, msg, signature) -> bool
+ indy_encrypt(sender_vk, recepient_vk, msg) -> (nonce, encrypted_msg)
+ indy_decrypt(sender_vk, recepient_vk, encrypted_msg, nonce) -> msg
+ indy_encrypt_anonymous(recepient_vk, msg) -> encrypted_msg
+ indy_decrypt_anonymous(recepient_vk, encrypted_msg) -> msg
+*/
 
 #ifdef __cplusplus
 }
