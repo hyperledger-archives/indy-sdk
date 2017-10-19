@@ -61,7 +61,6 @@ export class Connection implements IConnections {
     const release = this.RUST_API.cxs_connection_release
     const handle = this.connectionHandle
     weak.addCallback(weakRef, () => {
-      console.log('_clearOnExit')
       release(handle)
     })
   }

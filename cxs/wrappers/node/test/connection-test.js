@@ -23,6 +23,8 @@ const waitFor = async (predicate) => {
 
 // console.log(release(handle)) // tslint:disable-line
 describe('A Connection object with ', function () {
+    this.timeout(10000)
+
     before(function() {
         cxs.init_cxs('ENABLE_TEST_MODE')
     });
