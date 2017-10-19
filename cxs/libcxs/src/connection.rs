@@ -43,7 +43,9 @@ struct Connection {
 
 impl Connection {
     fn connect(&mut self) -> u32 {
+        info!("inside private connect");
         if self.state != CxsStateType::CxsStateInitialized {return error::NOT_READY.code_num;}
+        info!("inside private connect, we are initialized");
 
         let url = format!("{}/agency/route",settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
@@ -301,11 +303,14 @@ pub fn connect(handle: u32) -> u32 {
     let mut m = CONNECTION_MAP.lock().unwrap();
     let result = m.get_mut(&handle);
 
+    info!("matching result with handle {}",&handle);
     let rc = match result {
-       Some(t) => t.connect(),
+       Some(t) =>{ info!("connecting with handle {}",&handle);
+                    t.connect()},
        None => error::INVALID_CONNECTION_HANDLE.code_num,
     };
 
+    info!("returning from connect with value {}.",rc);
     rc
 }
 
