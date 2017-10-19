@@ -36,10 +36,7 @@ describe('A Connection object with ', function () {
 
     it.only(' a call to connect with connection already created should return success', function () {
         connection.create("connection_connect tests")
-        while (connection.getState() != StateType.Initialized) {
-            mysleep.msleep(1000)
-        }
-
+        mysleep.msleep(1000)
         assert.equal(connection.connect({sms: true}), 0)
     })
 
