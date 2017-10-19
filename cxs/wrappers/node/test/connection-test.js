@@ -45,19 +45,6 @@ describe('A Connection object with ', function () {
     })
 
 
-// connection_connect tests
-
-    it(' a call to create with no connection created should return unknown error', function () {
-        const connection = new Connection(path)
-        assert.equal(connection._connect({sms: true}), 1003)
-    })
-
-    it(' a call to connect with connection already created should return success', function () { 
-        const connection = new Connection(path)       
-        connection.create("connection_connect tests")
-        return connection.connect({sms: true})
-    })
-
 // connection_get_data tests
 
     it('a call to get_data where connection exists should return back the connections data', function () {
@@ -80,14 +67,23 @@ describe('A Connection object with ', function () {
 
         await connection.connect({sms: true})
         
-        assert.equal(connection.getState(),StateType.OfferSent)
-   
-        const data = connection.getData()
-        assert.notEqual(data, null)
+        assert.equal(connection.getState(), StateType.OfferSent)
+        assert.notEqual(connection.getData(), null)
         assert.equal(connection.release(), 0)
-        
-        data = connection.getData()
-        assert.equal(data, null)
+        assert.equal(connection.getData(), null)
+    })
+
+// connection_connect tests
+
+    it(' a call to connect with connection already created should return success', function () { 
+        const connection = new Connection(path)       
+        connection.create("connection_connect tests")
+        return connection.connect({sms: true})
+    })
+
+    it(' a call to create with no connection created should return unknown error', function () {
+        const connection = new Connection(path)
+        assert.equal(connection._connect({sms: true}), 1003)
     })
 
     // connection_getState tests
