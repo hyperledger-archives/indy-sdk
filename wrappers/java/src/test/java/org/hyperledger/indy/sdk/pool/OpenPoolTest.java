@@ -33,7 +33,7 @@ public class OpenPoolTest extends IndyIntegrationTest {
 
 	@Test
 	public void testOpenPoolWorksForTwice() throws Exception {
-		thrown.expectCause(isA(PoolClosedException.class));
+		thrown.expectCause(isA(InvalidPoolException.class));
 
 		String poolName = PoolUtils.createPoolLedgerConfig();
 

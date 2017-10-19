@@ -10,7 +10,7 @@ import org.hyperledger.indy.sdk.anoncreds.RevocationRegistryFullException;
 import org.hyperledger.indy.sdk.ledger.ConsensusException;
 import org.hyperledger.indy.sdk.ledger.InvalidLedgerTransactionException;
 import org.hyperledger.indy.sdk.ledger.LedgerSecurityException;
-import org.hyperledger.indy.sdk.pool.PoolClosedException;
+import org.hyperledger.indy.sdk.pool.InvalidPoolException;
 import org.hyperledger.indy.sdk.pool.PoolConfigNotCreatedException;
 import org.hyperledger.indy.sdk.pool.PoolLedgerConfigExistsException;
 import org.hyperledger.indy.sdk.pool.PoolLedgerTerminatedException;
@@ -18,7 +18,7 @@ import org.hyperledger.indy.sdk.signus.UnknownCryptoException;
 import org.hyperledger.indy.sdk.wallet.DuplicateWalletTypeException;
 import org.hyperledger.indy.sdk.wallet.UnknownWalletTypeException;
 import org.hyperledger.indy.sdk.wallet.WalletAlreadyOpenedException;
-import org.hyperledger.indy.sdk.wallet.WalletClosedException;
+import org.hyperledger.indy.sdk.wallet.InvalidWalletException;
 import org.hyperledger.indy.sdk.wallet.WalletExistsException;
 import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
 import org.hyperledger.indy.sdk.wallet.WrongWalletForPoolException;
@@ -80,7 +80,7 @@ public class IndyException extends Exception {
 			case CommonIOError:
 				return new IOException();
 			case WalletInvalidHandle:
-				return new WalletClosedException();
+				return new InvalidWalletException();
 			case WalletUnknownTypeError:
 				return new UnknownWalletTypeException();
 			case WalletTypeAlreadyRegisteredError:
@@ -96,7 +96,7 @@ public class IndyException extends Exception {
 			case PoolLedgerNotCreatedError:
 				return new PoolConfigNotCreatedException();
 			case PoolLedgerInvalidPoolHandle:
-				return new PoolClosedException();
+				return new InvalidPoolException();
 			case PoolLedgerTerminated:
 				return new PoolLedgerTerminatedException();
 			case LedgerNoConsensusError:
