@@ -1,14 +1,14 @@
-var mysleep = require('sleep');
-var chai = require('chai');
-var parentDir = require('path');
-var currentDir = parentDir.dirname(module.filename);
-var Connection = require(parentDir.dirname(currentDir) + '/dist/api/connection').Connection
-var StateType = require(parentDir.dirname(currentDir) + '/dist/api/api').StateType
-var IRecipientInfo = require(parentDir.dirname(currentDir) + '/dist/api/api').IRecipientInfo
-var path = parentDir.dirname(currentDir) + "/lib/libcxs.so";
-var cxs = require('../dist/index.js')
-var expect = chai.expect;
-var assert = chai.assert;
+const mysleep = require('sleep');
+const chai = require('chai');
+const parentDir = require('path');
+const currentDir = parentDir.dirname(module.filename);
+const Connection = require(parentDir.dirname(currentDir) + '/dist/api/connection').Connection
+const StateType = require(parentDir.dirname(currentDir) + '/dist/api/api').StateType
+const IRecipientInfo = require(parentDir.dirname(currentDir) + '/dist/api/api').IRecipientInfo
+const path = parentDir.dirname(currentDir) + "/lib/libcxs.so";
+const cxs = require('../dist/index.js')
+const expect = chai.expect;
+const assert = chai.assert;
 
 const sleep = (time) => new Promise((res) => setTimeout(res, time))
 
@@ -47,25 +47,24 @@ describe('A Connection object with ', function () {
 
 // connection_connect tests
 
-    it(' a call to connect with connection already created should return success', async function () { 
-        const connection = new Connection(path)       
-        await connection.create("connection_connect tests")
-        return connection.connect({sms: true})
-    })
-
     it(' a call to create with no connection created should return unknown error', function () {
         const connection = new Connection(path)
         assert.equal(connection._connect({sms: true}), 1003)
     })
 
+    it(' a call to connect with connection already created should return success', function () { 
+        const connection = new Connection(path)       
+        connection.create("connection_connect tests")
+        return connection.connect({sms: true})
+    })
 
 // connection_get_data tests
 
     it('a call to get_data where connection exists should return back the connections data', function () {
         const connection = new Connection(path)
         connection.create("dog, cat, man")
-        var data = connection.getData()
-        var jsonData = JSON.parse(data)
+        const data = connection.getData()
+        const jsonData = JSON.parse(data)
         assert.notEqual(data, null)
         assert.equal(jsonData.handle, connection.connectionHandle)
     })
@@ -83,7 +82,7 @@ describe('A Connection object with ', function () {
         
         assert.equal(connection.getState(),StateType.OfferSent)
    
-        var data = connection.getData()
+        const data = connection.getData()
         assert.notEqual(data, null)
         assert.equal(connection.release(), 0)
         
