@@ -74,7 +74,7 @@ describe('A Connection object with ', function () {
         assert.equal(connection.getData(), null)
     })
 
-    it('a call to get_data where connection was released should return a null value', async function () {
+    it.only('a call to get_data where connection was released should return a null value', async function () {
         const connection = new Connection(path)
         assert.equal(connection.create("connection_get_data tests"), 0)
 
