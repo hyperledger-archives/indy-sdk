@@ -1,11 +1,12 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
+import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.isA;
 
 import java.util.concurrent.ExecutionException;
 
@@ -38,7 +39,7 @@ public class ProverStoreClaimOfferTest extends AnoncredsIntegrationTest {
 	public void testProverStoreClaimOfferWorksForInvalidJson() throws Exception {
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String claimOffer = "{\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\"}";
 
@@ -49,7 +50,7 @@ public class ProverStoreClaimOfferTest extends AnoncredsIntegrationTest {
 	public void testProverStoreClaimOfferWorksForInvalidIssuerDid() throws Exception {
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String claimOffer = "{\"issuer_did\":\"invalid_base58_string\",\"schema_seq_no\":1}";
 

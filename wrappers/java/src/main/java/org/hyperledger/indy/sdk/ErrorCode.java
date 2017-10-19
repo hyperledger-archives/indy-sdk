@@ -193,6 +193,11 @@ public enum ErrorCode {
 	 * ???
 	 */
 	AnoncredsProofRejected(405),
+	
+	/**
+	 * Attempt to use a revoked claim.
+	 */
+	AnoncredsClaimRevoked(406),
 
 	// Signus errors
 	

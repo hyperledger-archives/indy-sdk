@@ -1,11 +1,11 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.isA;
 
 import java.util.concurrent.ExecutionException;
 
@@ -36,7 +36,7 @@ public class ProverCreateMasterSecretTest extends AnoncredsIntegrationTest {
 	public void testProverCreateMasterSecretWorksForDuplicate() throws Exception {
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.AnoncredsMasterSecretDuplicateNameError));
+		thrown.expectCause(isA(DuplicateMasterSecretNameException.class));
 
 		String masterSecretName = "master_secret_name_duplicate";
 		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();

@@ -1,9 +1,9 @@
 package org.hyperledger.indy.sdk.wallet;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
+import org.hyperledger.indy.sdk.IOException;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 
 import org.junit.Ignore;
@@ -39,7 +39,7 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 	@Ignore//TODO THERE IS BUG IN INDY
 	public void testDeleteWalletWorksForOpened() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonIOError));
+		thrown.expectCause(isA(IOException.class));
 
 		String walletName = "deleteWalletWorksForOpened";
 
@@ -51,7 +51,7 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testDeleteWalletWorksForTwice() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonIOError));
+		thrown.expectCause(isA(IOException.class));
 
 		Wallet.createWallet(POOL, WALLET, null, null, null).get();
 
@@ -73,7 +73,7 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testDeleteWalletWorksForNotCreated() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonIOError));
+		thrown.expectCause(isA(IOException.class));
 
 		Wallet.deleteWallet(WALLET, null).get();
 	}

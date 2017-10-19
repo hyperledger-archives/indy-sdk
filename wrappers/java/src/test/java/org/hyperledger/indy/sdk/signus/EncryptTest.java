@@ -1,15 +1,16 @@
 package org.hyperledger.indy.sdk.signus;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
+import org.hyperledger.indy.sdk.InvalidStateException;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
+import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 
 public class EncryptTest extends IndyIntegrationTestWithPoolAndSingleWallet {
@@ -60,7 +61,7 @@ public class EncryptTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 	@Test
 	public void testEncryptWorksForUnknownMyDid() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletNotFoundError));
+		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
 		String identityJson = String.format(IDENTITY_JSON_TEMPLATE, trusteeDid, trusteeVerkey);
 		Signus.storeTheirDid(wallet, identityJson).get();
@@ -71,7 +72,7 @@ public class EncryptTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 	@Test
 	public void testEncryptWorksForNotFoundNym() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidState));
+		thrown.expectCause(isA(InvalidStateException.class));
 
 		Signus.encrypt(wallet, pool, trusteeDid, DID1, MESSAGE).get();
 	}
