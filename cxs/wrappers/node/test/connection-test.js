@@ -34,13 +34,13 @@ describe('A Connection object with ', function () {
 
 // connection_connect tests
 
-    it.only(' a call to connect with connection already created should return success', function () {
+    it(' a call to connect with connection already created should return success', function () {
         connection.create("connection_connect tests")
         connection.getState()
         mysleep.msleep(1000)
-        while (connection.state != 1) {
-            mysleep.msleep(50)
+        while (connection.state  != 1) {
             connection.getState()
+            mysleep.msleep(50)
         }
 
         assert.equal(connection.connect({sms: true}), 0)
