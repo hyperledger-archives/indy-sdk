@@ -23,7 +23,7 @@ const waitFor = async (predicate) => {
 
 // console.log(release(handle)) // tslint:disable-line
 describe('A Connection object with ', function () {
-    this.timeout = 10000
+    this.timeout(10000)
   
     let connection;
     beforeEach(function() {
