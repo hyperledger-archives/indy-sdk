@@ -46,23 +46,14 @@ describe('A Connection object with ', function () {
 
 // connection_connect tests
 
-    it(' a call to connect with connection already created should return success', function () {
-        const waitForConnect = async (predicate) => {
-            if (!predicate()) {
-                await sleep(1000)
-                return waitForConnect(predicate)
-            }
-            return predicate()
-        }
-        
+    it(' a call to connect with connection already created should return success', function () {        
         connection.create("connection_connect tests")
 
         var f = function(){
             var state = connection.getState()
             return connection.connect({sms: true}) === 0
         }
-        assert(waitForConnect(f))
-
+        return waitFor(f)
     })
 
     it(' a call to create with no connection created should return unknown error', function () {
@@ -84,13 +75,12 @@ describe('A Connection object with ', function () {
         assert.equal(connection.getData(), null)
     })
 
-    it('a call to get_data where connection was released should return a null value', function () {
+    it('a call to get_data where connection was released should return a null value', async function () {
         assert.equal(connection.create("connection_get_data tests"), 0)
-        for (i = 1; i< 100000000; i++){
-            // we need to wait
-        }
 
-        assert.equal(connection.connect({sms: true}), 0)
+        
+        await waitFor(() => connection.connect({sms: true}) === 0)
+
         assert.equal(connection.getState(),StateType.OfferSent)
    
         var data = connection.getData()
@@ -100,7 +90,6 @@ describe('A Connection object with ', function () {
   
         data = connection.getData()
         assert.equal(data, null)
-     
     })
 
     // connection_getState tests
