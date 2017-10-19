@@ -426,4 +426,5 @@ mod tests {
         let rc = cxs_connection_connect(handle, CString::new("QR").unwrap().into_raw());
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
     }
+
 }

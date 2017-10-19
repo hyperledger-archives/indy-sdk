@@ -278,10 +278,20 @@ pub fn update_state(handle: u32) {
     }
 }
 
-pub fn get_state(handle: u32) -> u32 {
-    // Try to update state from agent first
-    update_state(handle);
 
+pub fn get_state(handle: u32) -> u32 {
+    let mut current_state:u32 = 0;
+    {
+        let mut connection_table = CONNECTION_MAP.lock().unwrap();
+        if let Some(cxn) = connection_table.get_mut(&handle) {
+            current_state = cxn.get_state()
+        }
+    }
+
+    if current_state != CxsStateType::CxsStateNone as u32 {
+        // Try to update state from agent first
+        update_state(handle);
+    }
     let m = CONNECTION_MAP.lock().unwrap();
     let result = m.get(&handle);
 
@@ -561,5 +571,7 @@ mod tests {
         wallet::tests::delete_wallet(wallet_name);
         release(handle);
     }
+
+
 
 }
