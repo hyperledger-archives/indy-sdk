@@ -10,8 +10,13 @@ var cxs = require('../dist/index.js')
 var expect = chai.expect;
 var assert = chai.assert;
 
+const sleep = (time) => new Promise((res) => setTimeout(res, time))
+
+
+
 // console.log(release(handle)) // tslint:disable-line
 describe('A Connection object with ', function () {
+  
     let connection;
     beforeEach(function() {
         const result = cxs.init_cxs('ENABLE_TEST_MODE')
@@ -34,11 +39,26 @@ describe('A Connection object with ', function () {
 
 // connection_connect tests
 
-    it.only(' a call to connect with connection already created should return success', function () {
+    it(' a call to connect with connection already created should return success', function () {
+        const waitForConnect = async (predicate) => {
+            if (!predicate()) {
+                await sleep(1000)
+                return waitForConnect(predicate)
+            }
+            return predicate()
+        }
+        
         connection.create("connection_connect tests")
-        mysleep.msleep(1000)
-        connection.getState()
-        assert.equal(connection.connect({sms: true}), 0)
+
+        var f = function(){
+            console.log("****** inside waitforConnect ******")
+            var state = connection.getState()
+            console.log("****** state: " + state + " ******")
+            return connection.connect({sms: true}) === 0
+        }
+        assert(waitForConnect(f))
+        
+        //assert.equal(connection.connect({sms: true}), 0)
     })
 
     it(' a call to create with no connection created should return unknown error', function () {
@@ -110,8 +130,6 @@ describe('A Connection object with ', function () {
     it('call to connection_release with no connection should return unknown error', function () {
         assert.equal(connection.release(), 1003)
     })
-
-    const sleep = (time) => new Promise((res) => setTimeout(res, time))
 
     const waitFor = async (predicate) => {
         if (!predicate()) {
