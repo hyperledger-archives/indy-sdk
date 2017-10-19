@@ -21,7 +21,7 @@ public class ClosePoolTest extends IndyIntegrationTest {
 
 	@Test
 	public void testClosePoolWorksForTwice() throws Exception {
-		thrown.expectCause(isA(PoolClosedException.class));
+		thrown.expectCause(isA(InvalidPoolException.class));
 
 		Pool pool = PoolUtils.createAndOpenPoolLedger();
 		assertNotNull(pool);
