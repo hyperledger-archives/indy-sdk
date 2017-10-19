@@ -253,6 +253,7 @@ pub fn build_connection (info_string: String) -> u32 {
     info!("creating new connection and did (wallet: {}, handle {}", wallet_handle, new_handle);
     unsafe {
         let indy_err = indy_create_and_store_my_did(new_handle as i32, wallet_handle, CString::new(did_json).unwrap().as_ptr(), Some(store_new_did_info_cb));
+        info!("INDY ERRO from indy_create_and_store_my_did: {}", indy_err);
     }
     new_handle
 }
