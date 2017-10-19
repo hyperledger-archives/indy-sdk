@@ -220,6 +220,8 @@ extern "C" fn store_new_did_info_cb (handle: i32,
 }
 
 pub fn build_connection (info_string: String) -> u32 {
+    // creating wallet
+
     info!("building connection with {}", info_string);
     // Check to make sure info_string is unique
     let new_handle = find_connection(&info_string);

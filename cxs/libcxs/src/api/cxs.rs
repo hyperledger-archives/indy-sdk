@@ -74,6 +74,7 @@ pub extern fn cxs_init (config_path:*const c_char) -> u32 {
         x => return x,
     };
 
+    info!("Initializing wallet with name: {} and pool: {}", &wallet_name, &pool_name);
     match wallet::init_wallet(&pool_name, &wallet_name, &wallet_type) {
         0 => 0,
         x => return x,
@@ -161,7 +162,6 @@ pub extern fn cxs_claimdef_get(claimdef_handle: u32, data: *mut c_char) -> u32 {
 #[no_mangle]
 pub extern fn cxs_connection_create(recipient_info: *const c_char, connection_handle: *mut u32) -> u32 {
     check_useful_c_str!(recipient_info, error::UNKNOWN_ERROR.code_num);
-
     if connection_handle.is_null() {return error::UNKNOWN_ERROR.code_num}
 
     let handle = build_connection(recipient_info.to_owned());

@@ -25,8 +25,9 @@ const waitFor = async (predicate) => {
 describe('A Connection object with ', function () {
     this.timeout(10000)
 
-    before(function() {
+    before(async function() {
         cxs.init_cxs('ENABLE_TEST_MODE')
+        await sleep(3000)
     });
 
     //connection_create tests
