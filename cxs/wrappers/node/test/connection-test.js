@@ -23,17 +23,14 @@ const waitFor = async (predicate) => {
 
 // console.log(release(handle)) // tslint:disable-line
 describe('A Connection object with ', function () {
-    this.timeout(10000)
-  
-    let connection;
-    beforeEach(function() {
-        const result = cxs.init_cxs('ENABLE_TEST_MODE')
-        connection = new Connection(path)
+    before(function() {
+        cxs.init_cxs('ENABLE_TEST_MODE')
     });
 
     //connection_create tests
 
     it('valid parameters in create should return success', function () {
+        const connection = new Connection(path)
         assert.equal(connection.create({
             id: "234",
             DIDself: "456",
@@ -41,30 +38,29 @@ describe('A Connection object with ', function () {
     })
 
     it('null param in create should return success', function () {
+        const connection = new Connection(path)
         assert.equal(connection.create(null), 0)
     })
 
 
 // connection_connect tests
 
-    it(' a call to connect with connection already created should return success', function () {        
+    it(' a call to connect with connection already created should return success', function () { 
+        const connection = new Connection(path)       
         connection.create("connection_connect tests")
-
-        var f = function(){
-            var state = connection.getState()
-            return connection.connect({sms: true}) === 0
-        }
-        return waitFor(f)
+        return connection.connect({sms: true})
     })
 
     it(' a call to create with no connection created should return unknown error', function () {
-        assert.equal(connection.connect({sms: true}), 1003)
+        const connection = new Connection(path)
+        assert.equal(connection._connect({sms: true}), 1003)
     })
 
 
 // connection_get_data tests
 
     it('a call to get_data where connection exists should return back the connections data', function () {
+        const connection = new Connection(path)
         connection.create("dog, cat, man")
         var data = connection.getData()
         var jsonData = JSON.parse(data)
@@ -73,14 +69,16 @@ describe('A Connection object with ', function () {
     })
 
     it('a call to get_data where connection doesnt exist should return a null value', function () {
+        const connection = new Connection(path)
         assert.equal(connection.getData(), null)
     })
 
     it('a call to get_data where connection was released should return a null value', async function () {
+        const connection = new Connection(path)
         assert.equal(connection.create("connection_get_data tests"), 0)
 
         
-        await waitFor(() => connection.connect({sms: true}) === 0)
+        await connection.connect({sms: true})
         
         assert.equal(connection.getState(),StateType.OfferSent)
    
@@ -95,55 +93,52 @@ describe('A Connection object with ', function () {
 
     // connection_getState tests
 
-    it('call to getState where connection exists should return success', function () {
+    it('call to getState where connection exists should return success', async function () {
+        const connection = new Connection(path)
         connection.create("connection_getState tests")
-        mysleep.msleep(1000)
-        connection.connect({sms: true})
+        await connection.connect({sms: true})
         assert.equal(connection.getState(),StateType.OfferSent)
         
     })
 
     it('call to getState where no connection exists should have a state value of 0', function () {
+        const connection = new Connection(path)
         assert.equal(connection.getState(),StateType.None)
-        
     })
 
 
     it('call to get_state where connection exists but not connected should have a state value of 1', function () {
-        var connection = new Connection(path)
-
+        const connection = new Connection(path)
         connection.create("info2")
-        mysleep.msleep(1000)
-        assert.equal(connection.getState(), StateType.Initialized)
+        return waitFor(() => connection.getState() === StateType.Initialized)
     })
 
 
 // connection_release tests
 
-    it('call to connection_release where connection exists should return success', function () {
+    it('call to connection_release where connection exists should return success', async function () {
+        const connection = new Connection(path)
         connection.create("connection_release tests")
-        mysleep.msleep(1000)
-        assert.equal(connection.connect({sms: true}), 0)
+        await connection.connect({sms: true})
         assert.equal(connection.release(), 0)
-        assert.equal(connection.connect({sms: true}), 1003)
+        assert.equal(connection._connect({sms: true}), 1003)
         assert.equal(connection.getData(), null)
     })
 
     it('call to connection_release with no connection should return unknown error', function () {
+        const connection = new Connection(path)
         assert.equal(connection.release(), 1003)
     })
 
-
-
     it('connection and GC deletes object should return null whet get_data is called ', function () {
+        this.timeout(30000)
         const connection = new Connection(path)
         connection.create("msg")
-        connection.connect({sms: true})
+        connection._connect({sms: true})
         const getData = connection.RUST_API.cxs_connection_get_data
         const handle = connection.connectionHandle
         assert.notEqual(connection.getData(handle), null)
 
-        this.timeout(30000)
         delete connection
         global.gc()
 
