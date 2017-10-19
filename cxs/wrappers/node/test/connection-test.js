@@ -34,13 +34,10 @@ describe('A Connection object with ', function () {
 
 // connection_connect tests
 
-    it(' a call to connect with connection already created should return success', function () {
+    it.only(' a call to connect with connection already created should return success', function () {
         connection.create("connection_connect tests")
-        connection.getState()
-        mysleep.msleep(1000)
-        while (connection.state  != 1) {
-            connection.getState()
-            mysleep.msleep(50)
+        while (connection.getState() != StateType.Initialized) {
+            mysleep.msleep(1000)
         }
 
         assert.equal(connection.connect({sms: true}), 0)
@@ -82,13 +79,13 @@ describe('A Connection object with ', function () {
         connection.create("connection_getState tests")
         mysleep.msleep(1000)
         connection.connect({sms: true})
-        assert.equal(connection.getState(), 0)
-        assert.equal(connection.state, StateType.OfferSent)
+        assert.equal(connection.getState(),StateType.OfferSent)
+        
     })
 
     it('call to getState where no connection exists should have a state value of 0', function () {
-        assert.equal(connection.getState(), 0)
-        assert.equal(connection.state, StateType.None)
+        assert.equal(connection.getState(),StateType.None)
+        
     })
 
 
@@ -96,8 +93,8 @@ describe('A Connection object with ', function () {
         var connection = new Connection(path)
 
         connection.create("info2")
-        assert.equal(connection.getState(), 0)
-        assert.equal(connection.state, StateType.None)
+        mysleep.msleep(1000)
+        assert.equal(connection.getState(), StateType.Initialized)
     })
 
 
