@@ -1,10 +1,10 @@
 package org.hyperledger.indy.sdk.signus;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
+import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -31,7 +31,7 @@ public class SignTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testSignWorksForUnknowDid() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletNotFoundError));
+		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
 		Signus.sign(this.wallet, DID1, MESSAGE).get();
 	}

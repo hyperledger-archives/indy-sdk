@@ -1,8 +1,7 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
+import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.json.JSONObject;
@@ -12,6 +11,7 @@ import org.junit.rules.Timeout;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertTrue;
 
 public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
@@ -80,7 +80,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 	@Test
 	public void testBuildClaimDefRequestWorksForInvalidJson() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String data = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"}}}";
 
@@ -126,7 +126,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 	@Test
 	public void testClaimDefRequestWorksWithoutSignature() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
+		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
 
 		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();

@@ -17,7 +17,7 @@ use errors::signus::SignusError;
 use std::collections::HashMap;
 use std::str;
 
-const DEFAULT_CRYPTO_TYPE: &'static str = "ed25519";
+pub const DEFAULT_CRYPTO_TYPE: &'static str = "ed25519";
 
 trait CryptoType {
     fn encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError>;
@@ -143,22 +143,25 @@ impl SignusService {
     }
 
     pub fn encrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), SignusError> {
-        if !self.crypto_types.contains_key(&my_did.crypto_type.as_str()) {
-            return Err(SignusError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", my_did.crypto_type)));
-        }
-
-        let signus = self.crypto_types.get(&my_did.crypto_type.as_str()).unwrap();
-
-        if their_did.pk.is_none() {
+        let their_pk = &their_did.pk;
+        let my_sk = &my_did.sk;
+        if their_pk.is_none() {
             return Err(SignusError::CommonError(CommonError::InvalidStructure(format!("TheirDid doesn't contain pk: {}", their_did.did))));
         }
+        let their_pk = their_pk.as_ref().unwrap();
+        self.encrypt_by_keys(&my_sk, their_pk, &my_did.crypto_type, doc)
+    }
 
-        let public_key = their_did.pk.clone().unwrap();
+    pub fn encrypt_by_keys(&self, my_sk: &str, their_pk: &str, crypto_type: &str, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), SignusError> {
+        if !self.crypto_types.contains_key(&crypto_type) {
+            return Err(SignusError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", crypto_type)));
+        }
+        let signus = self.crypto_types.get(&crypto_type).unwrap();
 
         let nonce = signus.gen_nonce();
 
-        let secret_key = Base58::decode(&my_did.sk)?;
-        let public_key = Base58::decode(&public_key)?;
+        let secret_key = Base58::decode(&my_sk)?;
+        let public_key = Base58::decode(&their_pk)?;
 
         let encrypted_doc = signus.encrypt(&secret_key, &public_key, doc, &nonce)?;
         Ok((encrypted_doc, nonce))
@@ -187,17 +190,18 @@ impl SignusService {
     }
 
     pub fn encrypt_sealed(&self, their_did: &TheirDid, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
-        if !self.crypto_types.contains_key(&their_did.crypto_type.as_str()) {
-            return Err(SignusError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", their_did.crypto_type)));
-        }
-
-        let signus = self.crypto_types.get(&their_did.crypto_type.as_str()).unwrap();
-
         if their_did.pk.is_none() {
             return Err(SignusError::CommonError(CommonError::InvalidStructure(format!("TheirDid doesn't contain pk: {}", their_did.did))));
         }
+        self.encrypt_sealed_by_keys(their_did.pk.as_ref().unwrap(), &their_did.crypto_type, doc)
+    }
 
-        let public_key = their_did.pk.clone().unwrap();
+    pub fn encrypt_sealed_by_keys(&self, public_key: &str, crypto_type: &str, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
+        if !self.crypto_types.contains_key(&crypto_type) {
+            return Err(SignusError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", crypto_type)));
+        }
+        let signus = self.crypto_types.get(&crypto_type).unwrap();
+
         let public_key = Base58::decode(&public_key)?;
 
         let encrypted_doc = signus.encrypt_sealed(&public_key, doc)?;

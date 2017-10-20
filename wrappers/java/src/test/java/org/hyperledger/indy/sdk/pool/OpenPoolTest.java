@@ -1,12 +1,11 @@
 package org.hyperledger.indy.sdk.pool;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters.OpenPoolLedgerJSONParameter;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 
 public class OpenPoolTest extends IndyIntegrationTest {
@@ -34,7 +33,7 @@ public class OpenPoolTest extends IndyIntegrationTest {
 
 	@Test
 	public void testOpenPoolWorksForTwice() throws Exception {
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.PoolLedgerInvalidPoolHandle));
+		thrown.expectCause(isA(InvalidPoolException.class));
 
 		String poolName = PoolUtils.createPoolLedgerConfig();
 

@@ -2,9 +2,7 @@ package org.hyperledger.indy.sdk.wallet;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.hyperledger.indy.sdk.IndyException;

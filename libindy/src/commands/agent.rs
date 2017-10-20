@@ -1,5 +1,6 @@
 #![warn(unused_variables)]
 
+extern crate base64;
 extern crate rust_base58;
 extern crate serde_json;
 extern crate zmq_pw as zmq;
@@ -16,10 +17,12 @@ use commands::ledger::LedgerCommand;
 use commands::utils::check_wallet_and_pool_handles_consistency;
 use errors::indy::IndyError;
 use errors::common::CommonError;
+use errors::wallet::WalletError;
 use services::agent::AgentService;
 use services::ledger::LedgerService;
 use services::ledger::types::{Reply, GetNymResultData, GetNymReplyResult};
 use services::pool::PoolService;
+use services::signus::{SignusService, DEFAULT_CRYPTO_TYPE};
 use services::signus::types::{MyDid, TheirDid};
 use services::wallet::WalletService;
 use utils::crypto::box_::CryptoBox;
@@ -138,6 +141,7 @@ pub struct AgentCommandExecutor {
     agent_service: Rc<AgentService>,
     ledger_service: Rc<LedgerService>,
     pool_service: Rc<PoolService>,
+    signus_service: Rc<SignusService>,
     wallet_service: Rc<WalletService>,
 
     out_connections: RefCell<HashMap<i32, AgentMessageCB>>,
@@ -160,12 +164,13 @@ struct Listener {
 }
 
 impl AgentCommandExecutor {
-    pub fn new(agent_service: Rc<AgentService>, ledger_service: Rc<LedgerService>, pool_service: Rc<PoolService>, wallet_service: Rc<WalletService>) -> AgentCommandExecutor {
+    pub fn new(agent_service: Rc<AgentService>, ledger_service: Rc<LedgerService>, pool_service: Rc<PoolService>, signus_service: Rc<SignusService>, wallet_service: Rc<WalletService>) -> AgentCommandExecutor {
         AgentCommandExecutor {
-            agent_service: agent_service,
-            ledger_service: ledger_service,
-            pool_service: pool_service,
-            wallet_service: wallet_service,
+            agent_service,
+            ledger_service,
+            pool_service,
+            signus_service,
+            wallet_service,
             out_connections: RefCell::new(HashMap::new()),
             listeners: RefCell::new(HashMap::new()),
             listen_callbacks: RefCell::new(HashMap::new()),
@@ -263,7 +268,32 @@ impl AgentCommandExecutor {
 
     fn prep_msg(&self, wallet_handle: i32, sender_vk: String, recipient_vk: String, msg: Vec<u8>,
                 cb: AgentPrepMsgCB) {
-        unimplemented!();
+        //FIXME work with keys, not my_did
+        let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", sender_vk));
+        if my_did_json.is_err() {
+            return cb(Err(IndyError::WalletError(WalletError::NotFound(format!("My Did not found")))));
+        }
+        let my_did_json = my_did_json.unwrap();
+
+        let my_did = MyDid::from_json(&my_did_json);
+        if my_did.is_err() {
+            return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid my did json")))));
+        }
+        let my_did: MyDid = my_did.unwrap();
+        //FIXME ^^^
+
+        cb(self.signus_service.encrypt_by_keys(&my_did.sk, &recipient_vk, &my_did.crypto_type, msg.as_slice())
+            .and_then(|(msg, nonce)| {
+                let msg: serde_json::Value = json!({
+                    "auth": true,
+                    "nonce": base64::encode(nonce.as_slice()),
+                    "msg": base64::encode(msg.as_slice()),
+                    "sender": sender_vk,
+                });
+                let msg = serde_json::to_string(&msg).unwrap();
+                self.signus_service.encrypt_sealed_by_keys(&recipient_vk, DEFAULT_CRYPTO_TYPE, msg.as_bytes())
+            })
+            .map_err(|err| IndyError::SignusError(err)))
     }
 
     fn connect(&self, pool_handle: i32, wallet_handle: i32,

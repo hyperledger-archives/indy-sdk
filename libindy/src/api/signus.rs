@@ -192,48 +192,112 @@ pub  extern fn indy_store_their_did(command_handle: i32,
     result_to_err_code!(result)
 }
 
+/// Creates keys pair and stores in the wallet.
+///
+/// #Params
+/// command_handle: Command handle to map callback to caller context.
+/// wallet_handle: Wallet handle (created by open_wallet).
+/// key_json: Key information as json. Example:
+/// {
+///     "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+///     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
+/// }
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - xcommand_handle: command handle to map callback to caller context.
+/// - err: Error code.
+/// - verkey: Ver key of generated key pair, also used as key identifier
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Crypto*
 #[no_mangle]
-pub extern fn indy_create_key(command_handle: i32,
-                              wallet_handle: i32,
-                              seed: *const c_char,
-                              cb: Option<extern fn(command_handle_: i32,
-                                                   err: ErrorCode,
-                                                   vk: *const c_char)>) -> ErrorCode {
-    unimplemented!();
+#[allow(unused_variables)]
+pub  extern fn indy_create_key(command_handle: i32,
+                               wallet_handle: i32,
+                               key_json: *const c_char,
+                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                    verkey: *const c_char)>) -> ErrorCode {
+    unimplemented!()
+}
+
+/// Saves/replaces the meta information for the giving key in the wallet.
+///
+/// #Params
+/// command_handle: Command handle to map callback to caller context.
+/// wallet_handle: Wallet handle (created by open_wallet).
+/// verkey - the key (verkey, key id) to store metadata.
+/// metadata - the meta information that will be store with the key.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - xcommand_handle: command handle to map callback to caller context.
+/// - err: Error code.
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Crypto*
+#[no_mangle]
+#[allow(unused_variables)]
+pub  extern fn indy_set_key_metadata(command_handle: i32,
+                                     wallet_handle: i32,
+                                     verkey: *const c_char,
+                                     metadata: *const c_char,
+                                     cb: Option<extern fn(xcommand_handle: i32,
+                                                          err: ErrorCode)>) -> ErrorCode {
+}
+
+/// Retrieves the meta information for the giving key in the wallet.
+///
+/// #Params
+/// command_handle: Command handle to map callback to caller context.
+/// wallet_handle: Wallet handle (created by open_wallet).
+/// verkey - The key (verkey, key id) to retrieve metadata.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - xcommand_handle: Command handle to map callback to caller context.
+/// - err: Error code.
+/// - metadata - The meta information stored with the key; Can be null if no metadata was saved for this key.
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Crypto*
+#[no_mangle]
+#[allow(unused_variables)]
+pub  extern fn indy_get_key_metadata(command_handle: i32,
+                                     wallet_handle: i32,
+                                     verkey: *const c_char,
+                                     cb: Option<extern fn(xcommand_handle: i32,
+                                                          err: ErrorCode,
+                                                          metadata: *const c_char)>) -> ErrorCode {
+    unimplemented!()
 }
 
 #[no_mangle]
-pub extern fn indy_store_key_metadata(command_handle: i32,
-                                      wallet_handle: i32,
-                                      vk: *const c_char,
-                                      metadata: *const c_char,
-                                      cb: Option<extern fn(command_handle_: i32,
-                                                           err: ErrorCode)>) -> ErrorCode {
-    unimplemented!();
-}
-
-#[no_mangle]
-pub extern fn indy_get_key_metadata(command_handle: i32,
-                                    wallet_handle: i32,
-                                    vk: *const c_char,
-                                    cb: Option<extern fn(command_handle_: i32,
-                                                         err: ErrorCode,
-                                                         metadata: *const c_char)>) -> ErrorCode {
-    unimplemented!();
-}
-
-#[no_mangle]
+#[allow(unused_variables)]
 pub extern fn indy_key_for_did(command_handle: i32,
                                pool_handle: i32,
                                wallet_handle: i32,
                                did: *const c_char,
-                               cb: Option<extern fn(command_handle_: i32,
+                               cb: Option<extern fn(xcommand_handle: i32,
                                                     err: ErrorCode,
                                                     key: *const c_char)>) -> ErrorCode {
     unimplemented!();
 }
 
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern fn indy_endpoint_for_did(command_handle: i32,
                                     wallet_handle: i32,
                                     did: *const c_char,
@@ -244,17 +308,57 @@ pub extern fn indy_endpoint_for_did(command_handle: i32,
     unimplemented!();
 }
 
+/// Saves/replaces the meta information for the giving DID in the wallet.
+///
+/// #Params
+/// command_handle: Command handle to map callback to caller context.
+/// wallet_handle: Wallet handle (created by open_wallet).
+/// did - the DID to store metadata.
+/// metadata - the meta information that will be store with the DID.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - xcommand_handle: command handle to map callback to caller context.
+/// - err: Error code.
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Crypto*
 #[no_mangle]
-pub extern fn indy_store_did_metadata(command_handle: i32,
-                                      wallet_handle: i32,
-                                      did: *const c_char,
-                                      metadata: *const c_char,
-                                      cb: Option<extern fn(command_handle_: i32,
-                                                           err: ErrorCode)>) -> ErrorCode {
+#[allow(unused_variables)]
+pub extern fn indy_set_did_metadata(command_handle: i32,
+                                    wallet_handle: i32,
+                                    did: *const c_char,
+                                    metadata: *const c_char,
+                                    cb: Option<extern fn(command_handle_: i32,
+                                                         err: ErrorCode)>) -> ErrorCode {
     unimplemented!();
 }
 
+/// Retrieves the meta information for the giving DID in the wallet.
+///
+/// #Params
+/// command_handle: Command handle to map callback to caller context.
+/// wallet_handle: Wallet handle (created by open_wallet).
+/// did - The DID to retrieve metadata.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - xcommand_handle: Command handle to map callback to caller context.
+/// - err: Error code.
+/// - metadata - The meta information stored with the DID; Can be null if no metadata was saved for this DID.
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Crypto*
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern fn indy_get_did_metadata(command_handle: i32,
                                     wallet_handle: i32,
                                     did: *const c_char,
