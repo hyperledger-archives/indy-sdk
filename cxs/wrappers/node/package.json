@@ -6,7 +6,7 @@
   "description": "Node wrapper for cxs",
   "main": "dist/index.js",
   "scripts": {
-    "compile": "./node_modules/typescript/bin/tsc -p ./tsconfig.json",
+    "compile": "./node_modules/.bin/tsc -p ./tsconfig.json",
     "test": "mocha -gc --expose-gc test/**/*.js",
     "doc-gen": "./node_modules/.bin/jsdoc -d doc src/*"
   },
