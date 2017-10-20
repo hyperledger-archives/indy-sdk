@@ -527,9 +527,9 @@ mod high_cases {
             let decrypted_msg: serde_json::Value = serde_json::from_str(decrypted_msg_json).unwrap();
 
             assert_eq!(true, decrypted_msg["auth"].as_bool().unwrap());
-            assert_eq!(sender_vk, decrypted_msg["from"].as_str().unwrap());
-            decrypted_msg["nonce"].as_array().unwrap();
-            decrypted_msg["msg"].as_array().unwrap();
+            assert_eq!(sender_vk, decrypted_msg["sender"].as_str().unwrap());
+            decrypted_msg["nonce"].as_str().unwrap();
+            decrypted_msg["msg"].as_str().unwrap();
         }
 
         #[test]
@@ -555,7 +555,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let (_, sender_vk, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (_, sender_vk, _) = SignusUtils::create_my_did(wallet_handle, &format!(r#"{{"seed":"{}", "cid":true}}"#, MY1_SEED)).unwrap();
             let (recipient_did, recipient_vk, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY2_SEED)).unwrap();
 
             let encrypted_msg = AgentUtils::prep_msg(wallet_handle, &sender_vk, &recipient_vk, MESSAGE.as_bytes()).unwrap();
@@ -627,9 +627,7 @@ mod high_cases {
             let decrypted_msg: serde_json::Value = serde_json::from_str(decrypted_msg_json).unwrap();
 
             assert_eq!(false, decrypted_msg["auth"].as_bool().unwrap());
-            let msg = decrypted_msg["msg"].as_array().unwrap().to_vec();
-            let msg: Vec<u8> = msg.into_iter().map(|value| serde_json::from_value(value).unwrap()).collect();
-            assert_eq!(MESSAGE.as_bytes().to_vec(), msg);
+            assert_eq!(MESSAGE, decrypted_msg["msg"].as_str().unwrap());
         }
 
         #[test]
