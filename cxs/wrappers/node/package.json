@@ -5,6 +5,7 @@
   "license": "ISC",
   "description": "Node wrapper for cxs",
   "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
   "scripts": {
     "compile": "./node_modules/.bin/tsc -p ./tsconfig.json",
     "test": "mocha -gc --expose-gc test/**/*.js",
