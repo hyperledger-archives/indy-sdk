@@ -43,9 +43,7 @@ struct Connection {
 
 impl Connection {
     fn connect(&mut self) -> u32 {
-        info!("inside private connect");
         if self.state != CxsStateType::CxsStateInitialized {return error::NOT_READY.code_num;}
-        info!("inside private connect, we are initialized");
 
         let url = format!("{}/agency/route",settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
