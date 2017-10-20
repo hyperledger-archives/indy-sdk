@@ -1,45 +1,49 @@
-extern crate futures;
-extern crate hyper;
-extern crate tokio_core;
-extern crate nom;
+extern crate reqwest;
 
 mod mock;
 
-use std::thread;
-use std::time::Duration;
-
-use std::str::from_utf8;
-use futures::{Future, Stream};
-use hyper::{Client,Uri};
-use tokio_core::reactor::Core;
-use nom::AsBytes;
-
-fn get(uri: Uri) -> Result<hyper::Response, hyper::Error>{
-    let mut core = Core::new().unwrap();
-    let client = Client::new(&core.handle());
-
-    let work = client.get(uri);
-
-    core.run(work)
-}
-
-// Not sure how to do this right
-//fn body_string(body: Body) -> &'static str{
-//    let body_val = body.concat2().wait().unwrap();
-//    let body_bytes = body_val.as_bytes();
-//    let str = from_utf8(body_bytes).unwrap();
-//    str.clone()
-//}
+use std::io::Read;
 
 
 #[test]
 fn mock_agent_srv() {
     let server = mock::agent_srv::MockAgentSrv::new(Some(3000), None);
     server.start().unwrap();
-    thread::sleep(Duration::from_millis(100));
-    let resp = get("http://127.0.0.1:3000".parse().unwrap()).unwrap();
-    let body_val = resp.body().concat2().wait().unwrap();
-    let body_bytes = body_val.as_bytes();
-    assert_eq!(from_utf8(body_bytes).unwrap(), "OK");
+
+    let client = reqwest::Client::new();
+    let mut resp = client.get("http://127.0.0.1:3000")
+        .send()
+        .unwrap();
+
+    let mut content = String::new();
+    resp.read_to_string(&mut content).unwrap();
+
+    assert_eq!(content, "OK");
     server.stop().unwrap();
+}
+
+#[test]
+fn mock_create_key() {
+    let server = mock::agent_srv::MockAgentSrv::new(None, None);
+    server.start().unwrap();
+
+    let body = r#"{
+      "to": "JmvnKLYj7b7e5ywLxkRMjM",
+      "agentPayload": "{\"type\":\"CREATE_KEY\",\"forDID\":\"29gMVowi6hkzWsHSy8hcch\",\
+      \"forDIDVerKey\":\"dLqfZF8FL5LmyRADdcKUcVvNfsdt6UA6RKbzNkZnrSX\",\"nonce\":\"sdf\"}"
+    }"#;
+
+    let url =  format!("http://127.0.0.1:{}", server.port);
+    let client = reqwest::Client::new();
+
+    let mut response = client.post(&url)
+        .body(body)
+        .send()
+        .unwrap();
+
+    server.stop().unwrap();
+
+    let mut content = String::new();
+    response.read_to_string(&mut content).unwrap();
+    assert_eq!(content, "OK");
 }
