@@ -29,6 +29,14 @@ extern {
 }
 
 #[derive(Serialize, Deserialize)]
+struct ConnectionOptions {
+    #[serde(default)]
+    connection_type: String,
+    #[serde(default)]
+    phone: String,
+}
+
+#[derive(Serialize, Deserialize)]
 struct Connection {
     info: String,
     handle: u32,
@@ -42,12 +50,17 @@ struct Connection {
 }
 
 impl Connection {
-    fn connect(&mut self) -> u32 {
+    fn connect(&mut self, options:String) -> u32 {
         if self.state != CxsStateType::CxsStateInitialized {return error::NOT_READY.code_num;}
+
+        let options_obj: ConnectionOptions = match serde_json::from_str(options.trim()) {
+            Ok(val) => val,
+            Err(_) => return error::INVALID_OPTION.code_num
+        };
 
         let url = format!("{}/agency/route",settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
-        let json_msg = format!("{{\"to\":\"{}\",\"agentPayload\":\"{{\\\"type\\\":\\\"SEND_INVITE\\\",\\\"keyDlgProof\\\":\\\"nothing\\\",\\\"phoneNumber\\\":\\\"{}\\\"}}\"}}", self.pw_did, self.info);
+        let json_msg = format!("{{\"to\":\"{}\",\"agentPayload\":\"{{\\\"type\\\":\\\"SEND_INVITE\\\",\\\"keyDlgProof\\\":\\\"nothing\\\",\\\"phoneNumber\\\":\\\"{}\\\"}}\"}}", self.pw_did, options_obj.phone);
 
         match httpclient::post(&json_msg,&url) {
             Err(_) => return error::UNKNOWN_ERROR.code_num,
@@ -298,12 +311,12 @@ pub fn get_state(handle: u32) -> u32 {
     rc
 }
 
-pub fn connect(handle: u32) -> u32 {
+pub fn connect(handle: u32, options:String) -> u32 {
     let mut m = CONNECTION_MAP.lock().unwrap();
     let result = m.get_mut(&handle);
 
     let rc = match result {
-       Some(t) => t.connect(),
+       Some(t) => t.connect(options),
        None => error::INVALID_CONNECTION_HANDLE.code_num,
     };
 
@@ -361,7 +374,7 @@ mod tests {
         assert!(!get_pw_did(handle).unwrap().is_empty());
         assert!(!get_pw_verkey(handle).unwrap().is_empty());
         assert_eq!(get_state(handle),CxsStateType::CxsStateInitialized as u32);
-        connect(handle);
+        connect(handle, "{}".to_string());
         _m.assert();
 
         let _m = mockito::mock("POST", "/agency/route")
@@ -447,11 +460,11 @@ mod tests {
         let handle4 = build_connection("handle4".to_owned());
         let handle5 = build_connection("handle5".to_owned());
 
-        connect(handle1);
-        connect(handle2);
-        connect(handle3);
-        connect(handle4);
-        connect(handle5);
+        connect(handle1, "{}".to_string());
+        connect(handle2, "{}".to_string());
+        connect(handle3, "{}".to_string());
+        connect(handle4, "{}".to_string());
+        connect(handle5, "{}".to_string());
 
         let data1 = to_string(handle1);
         let data2 = to_string(handle2);

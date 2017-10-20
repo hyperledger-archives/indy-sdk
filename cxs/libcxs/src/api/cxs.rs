@@ -172,8 +172,16 @@ pub extern fn cxs_connection_create(recipient_info: *const c_char, connection_ha
 }
 
 #[no_mangle]
-pub extern fn cxs_connection_connect(connection_handle: u32, connection_type: *const c_char) -> u32 {
-    connect(connection_handle)
+pub extern fn cxs_connection_connect(connection_handle: u32, connection_options: *const c_char) -> u32 {
+    let options = if !connection_options.is_null() {
+        check_useful_c_str!(connection_options, error::UNKNOWN_ERROR.code_num);
+        connection_options.to_owned()
+    }
+    else {
+        "".to_string()
+    };
+
+    connect(connection_handle, options)
 }
 
 #[no_mangle]
@@ -349,7 +357,7 @@ mod tests {
         thread::sleep(Duration::from_secs(2));
         assert!(handle > 0);
 
-        let rc = cxs_connection_connect(handle, CString::new("QR").unwrap().into_raw());
+        let rc = cxs_connection_connect(handle, CString::new("{}").unwrap().into_raw());
         assert_eq!(rc, error::SUCCESS.code_num);
         wallet::tests::delete_wallet("test_cxs_connection_connect");
         _m.assert();
@@ -357,7 +365,7 @@ mod tests {
 
     #[test]
     fn test_cxs_connection_connect_fails() {
-        let rc = cxs_connection_connect(0, CString::new("QR").unwrap().into_raw());
+        let rc = cxs_connection_connect(0, CString::new("{}").unwrap().into_raw());
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
     }
 
@@ -423,7 +431,7 @@ mod tests {
 
         let rc = cxs_connection_release(handle);
         assert_eq!(rc, error::SUCCESS.code_num);
-        let rc = cxs_connection_connect(handle, CString::new("QR").unwrap().into_raw());
+        let rc = cxs_connection_connect(handle, CString::new("{}").unwrap().into_raw());
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
     }
 
