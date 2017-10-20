@@ -20,6 +20,10 @@
   },
   "homepage": "https://github.com/evernym/cxs#readme",
   "dependencies": {
+    "@types/ffi": "0.0.19",
+    "@types/node": "^8.0.44",
+    "@types/ref": "0.0.28",
+    "@types/ref-struct": "0.0.28",
     "chai": "^4.1.1",
     "ffi": "^2.2.0",
     "fs-extra": "^4.0.2",
@@ -37,9 +41,6 @@
     "build": "dist"
   },
   "devDependencies": {
-    "@types/ffi": "0.0.19",
-    "@types/node": "^8.0.44",
-    "@types/ref": "0.0.28",
     "jsdoc": "^3.5.5",
     "tslint-config-standard": "^6.0.1"
   }
