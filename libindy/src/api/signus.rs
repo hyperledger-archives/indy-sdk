@@ -284,6 +284,28 @@ pub  extern fn indy_get_key_metadata(command_handle: i32,
     unimplemented!()
 }
 
+/// Returns ver key (key id) for the given DID.
+/// Note that indy_create_and_store_my_did makes similar wallet record as indy_create_key.
+/// As result we can use returned ver key in all generic crypto and messaging functions.
+/// Note that this function looks to wallet and if no wallet record can lookup ledger.
+///
+/// #Params
+/// command_handle: Command handle to map callback to caller context.
+/// wallet_handle: Wallet handle (created by open_wallet).
+/// did - The DID to resolve key.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - xcommand_handle: Command handle to map callback to caller context.
+/// - err: Error code.
+/// - key - The DIDs ver key (key id).
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Crypto*
 #[no_mangle]
 #[allow(unused_variables)]
 pub extern fn indy_key_for_did(command_handle: i32,
@@ -295,6 +317,26 @@ pub extern fn indy_key_for_did(command_handle: i32,
     unimplemented!();
 }
 
+/// Returns endpoint information for the given DID.
+///
+/// #Params
+/// command_handle: Command handle to map callback to caller context.
+/// wallet_handle: Wallet handle (created by open_wallet).
+/// did - The DID to resolve endpoint.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - xcommand_handle: Command handle to map callback to caller context.
+/// - err: Error code.
+/// - endpoint - The DIDs endpoint.
+/// - transport_vk - The DIDs transport key (ver key, key id).
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Crypto*
 #[no_mangle]
 #[allow(unused_variables)]
 pub extern fn indy_endpoint_for_did(command_handle: i32,
