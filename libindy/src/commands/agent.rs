@@ -29,8 +29,16 @@ use utils::crypto::verkey_builder::build_full_verkey;
 
 pub type AgentConnectCB = Box<Fn(Result<i32, IndyError>) + Send>;
 pub type AgentMessageCB = Box<Fn(Result<(i32, String), IndyError>) + Send>;
+pub type AgentPrepMsgCB = Box<Fn(Result<Vec<u8>, IndyError>) + Send>;
 
 pub enum AgentCommand {
+    PrepMsg(
+        i32, // wallet handle
+        String, // sender_vk
+        String, // recipient_vk
+        Vec<u8>, // msg
+        AgentPrepMsgCB, // cb
+    ),
     Connect(
         i32, // pool handle
         i32, // wallet handle
@@ -170,6 +178,10 @@ impl AgentCommandExecutor {
 
     pub fn execute(&self, agent_cmd: AgentCommand) {
         match agent_cmd {
+            AgentCommand::PrepMsg(wallet_handle, sender_vk, recipient_vk, msg, cb) => {
+                info!(target: "agent_command_executor", "PrepMsg command received");
+                self.prep_msg(wallet_handle, sender_vk, recipient_vk, msg, cb);
+            }
             AgentCommand::Connect(pool_handle, wallet_handle, sender_did, receiver_did, connect_cb, message_cb) => {
                 info!(target: "agent_command_executor", "Connect command received");
                 self.connect(pool_handle, wallet_handle, sender_did, receiver_did, connect_cb, message_cb)
@@ -247,6 +259,11 @@ impl AgentCommandExecutor {
                 self.on_close_listener_ack(cmd_id, res);
             }
         }
+    }
+
+    fn prep_msg(&self, wallet_handle: i32, sender_vk: String, recipient_vk: String, msg: Vec<u8>,
+                cb: AgentPrepMsgCB) {
+        unimplemented!();
     }
 
     fn connect(&self, pool_handle: i32, wallet_handle: i32,
@@ -601,14 +618,14 @@ impl AgentCommandExecutor {
         }
     }
 
-    fn on_close_connection_ack(&self, cmd_id: i32, res: Result<(), CommonError>, ) {
+    fn on_close_connection_ack(&self, cmd_id: i32, res: Result<(), CommonError>) {
         match self.close_callbacks.borrow_mut().remove(&cmd_id) {
             Some(cb) => cb(res.map_err(From::from)),
             None => error!("Can't handle CloseConnectionAck cmd - not found callback for {}", cmd_id)
         };
     }
 
-    fn on_close_listener_ack(&self, cmd_id: i32, res: Result<(), CommonError>, ) {
+    fn on_close_listener_ack(&self, cmd_id: i32, res: Result<(), CommonError>) {
         match self.close_callbacks.borrow_mut().remove(&cmd_id) {
             Some(cb) => cb(res.map_err(From::from)),
             None => error!("Can't handle CloseListenerAck cmd - not found callback for {}", cmd_id)

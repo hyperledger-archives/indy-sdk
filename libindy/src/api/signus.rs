@@ -6,7 +6,6 @@ use commands::{Command, CommandExecutor};
 use commands::signus::SignusCommand;
 use utils::cstring::CStringUtils;
 use utils::byte_array::vec_to_pointer;
-use std::slice;
 
 use self::libc::c_char;
 
