@@ -59,7 +59,7 @@ def testNodeWrapper(envn) {
                 sh 'npm -v'
                 sh 'npm install'
                 sh 'npm rebuild'
-                sh 'node_modules/.bin/tsc -p tsconfig.json'
+                sh 'npm run compile'
                 sh 'npm test'
             }
         }
