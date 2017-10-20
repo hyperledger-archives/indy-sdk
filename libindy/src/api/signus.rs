@@ -252,7 +252,7 @@ pub  extern fn indy_set_key_metadata(command_handle: i32,
                                      metadata: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: i32,
                                                           err: ErrorCode)>) -> ErrorCode {
-    unimplemented!()
+    unimplemented!();
 }
 
 /// Retrieves the meta information for the giving key in the wallet.
