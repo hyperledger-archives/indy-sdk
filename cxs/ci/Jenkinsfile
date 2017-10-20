@@ -34,7 +34,6 @@ node('ubuntu') {
                 sh "ls cxs/wrappers/node/lib"
             }
         }
-
         stage ('Testing'){
             sh "echo Testing"
             app.inside {
@@ -59,6 +58,7 @@ def testNodeWrapper(envn) {
             envn.inside {
                 sh 'npm -v'
                 sh 'npm install'
+                sh 'npm rebuild'
                 sh 'node_modules/.bin/tsc -p tsconfig.json'
                 sh 'npm test'
             }
