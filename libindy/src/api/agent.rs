@@ -55,6 +55,7 @@ pub extern fn indy_prep_anonymous_msg(command_handle: i32,
 
 #[no_mangle]
 pub extern fn indy_parse_msg(command_handle: i32,
+                             wallet_handle: i32,
                              recipient_vk: *const c_char,
                              encrypted_msg: *const u8,
                              encrypted_len: u32,

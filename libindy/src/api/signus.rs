@@ -193,7 +193,9 @@ pub  extern fn indy_store_their_did(command_handle: i32,
 }
 
 #[no_mangle]
-pub extern fn indy_create_key(command_handle: i32, seed: *const c_char,
+pub extern fn indy_create_key(command_handle: i32,
+                              wallet_handle: i32,
+                              seed: *const c_char,
                               cb: Option<extern fn(command_handle_: i32,
                                                    err: ErrorCode,
                                                    vk: *const c_char)>) -> ErrorCode {
@@ -202,6 +204,7 @@ pub extern fn indy_create_key(command_handle: i32, seed: *const c_char,
 
 #[no_mangle]
 pub extern fn indy_store_key_metadata(command_handle: i32,
+                                      wallet_handle: i32,
                                       vk: *const c_char,
                                       metadata: *const c_char,
                                       cb: Option<extern fn(command_handle_: i32,
@@ -211,6 +214,7 @@ pub extern fn indy_store_key_metadata(command_handle: i32,
 
 #[no_mangle]
 pub extern fn indy_get_key_metadata(command_handle: i32,
+                                    wallet_handle: i32,
                                     vk: *const c_char,
                                     cb: Option<extern fn(command_handle_: i32,
                                                          err: ErrorCode,
@@ -220,6 +224,8 @@ pub extern fn indy_get_key_metadata(command_handle: i32,
 
 #[no_mangle]
 pub extern fn indy_key_for_did(command_handle: i32,
+                               pool_handle: i32,
+                               wallet_handle: i32,
                                did: *const c_char,
                                cb: Option<extern fn(command_handle_: i32,
                                                     err: ErrorCode,
@@ -229,6 +235,7 @@ pub extern fn indy_key_for_did(command_handle: i32,
 
 #[no_mangle]
 pub extern fn indy_endpoint_for_did(command_handle: i32,
+                                    wallet_handle: i32,
                                     did: *const c_char,
                                     cb: Option<extern fn(command_handle_: i32,
                                                          err: ErrorCode,
@@ -239,6 +246,7 @@ pub extern fn indy_endpoint_for_did(command_handle: i32,
 
 #[no_mangle]
 pub extern fn indy_store_did_metadata(command_handle: i32,
+                                      wallet_handle: i32,
                                       did: *const c_char,
                                       metadata: *const c_char,
                                       cb: Option<extern fn(command_handle_: i32,
@@ -248,6 +256,7 @@ pub extern fn indy_store_did_metadata(command_handle: i32,
 
 #[no_mangle]
 pub extern fn indy_get_did_metadata(command_handle: i32,
+                                    wallet_handle: i32,
                                     did: *const c_char,
                                     cb: Option<extern fn(command_handle_: i32,
                                                          err: ErrorCode,
