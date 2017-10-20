@@ -67,7 +67,8 @@ export class Connection implements IConnections {
   private _connect = (options: IConnectOptions): number => {
     const phone = options.phone
     const connectionType: string = phone ? 'SMS' : 'QR'
-    return this.RUST_API.cxs_connection_connect(this.connectionHandle, JSON.stringify({ connectionType, phone }))
+    return this.RUST_API.cxs_connection_connect(this.connectionHandle,
+      JSON.stringify({ connection_type: connectionType, phone }))
   }
 
   private _sleep = (sleepTime: number): Promise<void> => new Promise((res) => setTimeout(res, sleepTime))
