@@ -193,6 +193,69 @@ pub  extern fn indy_store_their_did(command_handle: i32,
     result_to_err_code!(result)
 }
 
+#[no_mangle]
+pub extern fn indy_create_key(command_handle: i32, seed: *const c_char,
+                              cb: Option<extern fn(command_handle_: i32,
+                                                   err: ErrorCode,
+                                                   vk: *const c_char)>) -> ErrorCode {
+    unimplemented!();
+}
+
+#[no_mangle]
+pub extern fn indy_store_key_metadata(command_handle: i32,
+                                      vk: *const c_char,
+                                      metadata: *const c_char,
+                                      cb: Option<extern fn(command_handle_: i32,
+                                                           err: ErrorCode)>) -> ErrorCode {
+    unimplemented!();
+}
+
+#[no_mangle]
+pub extern fn indy_get_key_metadata(command_handle: i32,
+                                    vk: *const c_char,
+                                    cb: Option<extern fn(command_handle_: i32,
+                                                         err: ErrorCode,
+                                                         metadata: *const c_char)>) -> ErrorCode {
+    unimplemented!();
+}
+
+#[no_mangle]
+pub extern fn indy_key_for_did(command_handle: i32,
+                               did: *const c_char,
+                               cb: Option<extern fn(command_handle_: i32,
+                                                    err: ErrorCode,
+                                                    key: *const c_char)>) -> ErrorCode {
+    unimplemented!();
+}
+
+#[no_mangle]
+pub extern fn indy_endpoint_for_did(command_handle: i32,
+                                    did: *const c_char,
+                                    cb: Option<extern fn(command_handle_: i32,
+                                                         err: ErrorCode,
+                                                         endpoint: *const c_char,
+                                                         transport_vk: *const c_char)>) -> ErrorCode {
+    unimplemented!();
+}
+
+#[no_mangle]
+pub extern fn indy_store_did_metadata(command_handle: i32,
+                                      did: *const c_char,
+                                      metadata: *const c_char,
+                                      cb: Option<extern fn(command_handle_: i32,
+                                                           err: ErrorCode)>) -> ErrorCode {
+    unimplemented!();
+}
+
+#[no_mangle]
+pub extern fn indy_get_did_metadata(command_handle: i32,
+                                    did: *const c_char,
+                                    cb: Option<extern fn(command_handle_: i32,
+                                                         err: ErrorCode,
+                                                         metadata: *const c_char)>) -> ErrorCode {
+    unimplemented!();
+}
+
 /// Signs a message by a signing key associated with my DID. The DID with a signing key
 /// must be already created and stored in a secured wallet (see create_and_store_my_identity)
 ///
