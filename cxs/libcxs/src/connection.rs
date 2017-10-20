@@ -286,9 +286,7 @@ pub fn get_state(handle: u32) -> u32 {
 
 
     // Try to update state from agent first
-    info!("about to update state");
     update_state(handle);
-    info!("returned from updating state");
     let m = CONNECTION_MAP.lock().unwrap();
     let result = m.get(&handle);
 
@@ -304,14 +302,11 @@ pub fn connect(handle: u32) -> u32 {
     let mut m = CONNECTION_MAP.lock().unwrap();
     let result = m.get_mut(&handle);
 
-    info!("matching result with handle {}",&handle);
     let rc = match result {
-       Some(t) =>{ info!("connecting with handle {}",&handle);
-                    t.connect()},
+       Some(t) => t.connect(),
        None => error::INVALID_CONNECTION_HANDLE.code_num,
     };
 
-    info!("returning from connect with value {}.",rc);
     rc
 }
 
