@@ -42,7 +42,6 @@ pub extern fn indy_prep_msg(command_handle: i32,
 }
 
 #[no_mangle]
-#[allow(unused_variables)]
 pub extern fn indy_prep_anonymous_msg(command_handle: i32,
                                       recipient_vk: *const c_char,
                                       msg_data: *const u8,
@@ -51,7 +50,22 @@ pub extern fn indy_prep_anonymous_msg(command_handle: i32,
                                                            err: ErrorCode,
                                                            encrypted_msg: *const u8,
                                                            encrypted_len: u32)>) -> ErrorCode {
-    unimplemented!();
+    check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam2);
+    check_useful_c_byte_array!(msg_data, msg_len, ErrorCode::CommonInvalidParam3, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Agent(AgentCommand::PrepAnonymousMsg(
+            recipient_vk,
+            msg_data,
+            Box::new(move |result| {
+                let (err, encrypted_msg) = result_to_err_code_1!(result, Vec::new());
+                let (encrypted_msg_raw, encrypted_msg_len) = vec_to_pointer(&encrypted_msg);
+                cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 #[no_mangle]

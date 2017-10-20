@@ -42,6 +42,11 @@ pub enum AgentCommand {
         Vec<u8>, // msg
         AgentPrepMsgCB, // cb
     ),
+    PrepAnonymousMsg(
+        String, // recipient_vk
+        Vec<u8>, // msg
+        AgentPrepMsgCB, // cb
+    ),
     Connect(
         i32, // pool handle
         i32, // wallet handle
@@ -187,6 +192,10 @@ impl AgentCommandExecutor {
                 info!(target: "agent_command_executor", "PrepMsg command received");
                 self.prep_msg(wallet_handle, sender_vk, recipient_vk, msg, cb);
             }
+            AgentCommand::PrepAnonymousMsg(recipient_vk, msg, cb) => {
+                info!(target: "agent_command_executor", "PrepAnonymousMsg command received");
+                self.prep_anonymous_msg(recipient_vk, msg, cb);
+            }
             AgentCommand::Connect(pool_handle, wallet_handle, sender_did, receiver_did, connect_cb, message_cb) => {
                 info!(target: "agent_command_executor", "Connect command received");
                 self.connect(pool_handle, wallet_handle, sender_did, receiver_did, connect_cb, message_cb)
@@ -293,7 +302,19 @@ impl AgentCommandExecutor {
                 let msg = serde_json::to_string(&msg).unwrap();
                 self.signus_service.encrypt_sealed_by_keys(&recipient_vk, DEFAULT_CRYPTO_TYPE, msg.as_bytes())
             })
-            .map_err(|err| IndyError::SignusError(err)))
+            .map_err(IndyError::SignusError))
+    }
+
+    fn prep_anonymous_msg(&self, recipient_vk: String, msg: Vec<u8>,
+                          cb: AgentPrepMsgCB) {
+        let msg: serde_json::Value = json!({
+            "auth": false,
+            "msg": base64::encode(msg.as_slice()),
+        });
+        let msg = serde_json::to_string(&msg).unwrap();
+        cb(self.signus_service
+            .encrypt_sealed_by_keys(&recipient_vk, DEFAULT_CRYPTO_TYPE, msg.as_bytes())
+            .map_err(IndyError::SignusError))
     }
 
     fn connect(&self, pool_handle: i32, wallet_handle: i32,
