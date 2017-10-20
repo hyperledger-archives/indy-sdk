@@ -8,6 +8,41 @@ use utils::cstring::CStringUtils;
 
 use self::libc::c_char;
 
+#[no_mangle]
+pub extern fn indy_prep_msg(command_handle: i32,
+                            sender_vk: *const c_char,
+                            recipient_vk: *const c_char,
+                            msg_data: *const u8,
+                            msg_len: u32,
+                            cb: Option<extern fn(command_handle_: i32,
+                                                 encrypted_msg: *const c_char,
+                                                 encrypted_len: u32)>) -> ErrorCode {
+    unimplemented!();
+}
+
+#[no_mangle]
+pub extern fn indy_prep_anonymous_msg(command_handle: i32,
+                                      recipient_vk: *const c_char,
+                                      msg_data: *const u8,
+                                      msg_len: u32,
+                                      cb: Option<extern fn(command_handle_: i32,
+                                                           encrypted_msg: *const c_char,
+                                                           encrypted_len: u32)>) -> ErrorCode {
+    unimplemented!();
+}
+
+#[no_mangle]
+pub extern fn indy_parse_msg(command_handle: i32,
+                             recipient_vk: *const c_char,
+                             encrypted_msg: *const u8,
+                             encrypted_len: u32,
+                             cb: Option<extern fn(command_handle_: i32,
+                                                  sender_vk: *const c_char,
+                                                  msg_data: *const u8,
+                                                  msg_len: u32)>) -> ErrorCode {
+    unimplemented!();
+}
+
 /// Establishes agent to agent connection.
 ///
 /// Information about sender Identity must be saved in the wallet with indy_create_and_store_my_did

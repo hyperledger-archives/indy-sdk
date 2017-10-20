@@ -137,21 +137,21 @@ extern "C" {
                                                                 const char *const vk)
                                        );
 
-    extern indy_error_t indy_store_key_meta(indy_handle_t     command_handle
-                                            const char *const vk,
-                                            const char *const meta,
+    extern indy_error_t indy_store_key_metadata(indy_handle_t     command_handle
+                                                const char *const vk,
+                                                const char *const metadata,
 
-                                            void              (*cb)(indy_handle_t     command_handle,
-                                                                    indy_error_t      err)
-                                           );
+                                                void              (*cb)(indy_handle_t     command_handle,
+                                                                        indy_error_t      err)
+                                               );
 
-    extern indy_error_t indy_get_key_meta(indy_handle_t     command_handle
-                                          const char *const vk,
+    extern indy_error_t indy_get_key_metadata(indy_handle_t     command_handle
+                                              const char *const vk,
 
-                                          void              (*cb)(indy_handle_t     command_handle,
-                                                                  indy_error_t      err,
-                                                                  const char *const meta)
-                                         );
+                                              void              (*cb)(indy_handle_t     command_handle,
+                                                                      indy_error_t      err,
+                                                                      const char *const metadata)
+                                             );
 
     extern indy_error_t indy_key_for_did(indy_handle_t     command_handle
                                          const char *const did,
@@ -170,21 +170,21 @@ extern "C" {
                                                                       const char *const transport_vk)
                                              );
 
-    extern indy_error_t indy_store_did_meta(indy_handle_t     command_handle
-                                            const char *const did,
-                                            const char *const meta,
+    extern indy_error_t indy_store_did_metadata(indy_handle_t     command_handle
+                                                const char *const did,
+                                                const char *const metadata,
 
-                                            void              (*cb)(indy_handle_t     command_handle,
-                                                                    indy_error_t      err)
-                                           );
+                                                void              (*cb)(indy_handle_t     command_handle,
+                                                                        indy_error_t      err)
+                                               );
 
-    extern indy_error_t indy_get_did_meta(indy_handle_t     command_handle
-                                          const char *const did,
+    extern indy_error_t indy_get_did_metadata(indy_handle_t     command_handle
+                                              const char *const did,
 
-                                          void              (*cb)(indy_handle_t     command_handle,
-                                                                  indy_error_t      err,
-                                                                  const char *const meta)
-                                         );
+                                              void              (*cb)(indy_handle_t     command_handle,
+                                                                      indy_error_t      err,
+                                                                      const char *const metadata)
+                                             );
 
     /// Signs a message by a signing key associated with my DID. The DID with a signing key
     /// must be already created and stored in a secured wallet (see create_and_store_my_identity)

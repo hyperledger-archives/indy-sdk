@@ -11,7 +11,8 @@ extern indy_error_t indy_prep_msg(indy_handle_t          command_handle,
                                   const indy_u8_t *const msg_data,
                                   indy_u32_t             msg_len,
 
-                                  void                   (cb*)(const indy_u8_t *const encrypted_msg
+                                  void                   (cb*)(indy_handle_t          command_handle,
+                                                               const indy_u8_t *const encrypted_msg
                                                                indy_u32_t             encrypted_len)
                                  );
 
@@ -20,7 +21,8 @@ extern indy_error_t indy_prep_anonymous_msg(indy_handle_t          command_handl
                                             const indy_u8_t *const msg_data,
                                             indy_u32_t             msg_len,
 
-                                            void                   (cb*)(const indy_u8_t *const encrypted_msg
+                                            void                   (cb*)(indy_handle_t          command_handle,
+                                                                         const indy_u8_t *const encrypted_msg
                                                                          indy_u32_t             encrypted_len)
                                  );
 
@@ -29,7 +31,8 @@ extern indy_error_t indy_parse_msg(indy_handle_t          command_handle,
                                    const indy_u8_t *const encrypted_msg,
                                    indy_u32_t             encrypted_len,
 
-                                   void                   (cb*)(const char *const      sender_vk,
+                                   void                   (cb*)(indy_handle_t          command_handle,
+                                                                const char *const      sender_vk,
                                                                 const indy_u8_t *const msg_data,
                                                                 indy_u32_t             msg_len)
                                   );
