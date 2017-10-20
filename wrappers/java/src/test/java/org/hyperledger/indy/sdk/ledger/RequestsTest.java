@@ -1,17 +1,17 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.hyperledger.indy.sdk.wallet.Wallet;
+import org.hyperledger.indy.sdk.wallet.WrongWalletForPoolException;
 import org.json.JSONObject;
 import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 
 public class RequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
@@ -54,7 +54,7 @@ public class RequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 	@Test
 	public void testSignAndSubmitRequestWorksForNotFoundSigner() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
+		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
 
 		SignusJSONParameters.CreateAndStoreMyDidJSONParameter signerDidJson =
 				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "00000000000000000000UnknowSigner", null, null);
@@ -69,7 +69,7 @@ public class RequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 	@Test
 	public void testSignAndSubmitRequestWorksForIncompatibleWalletAndPool() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletIncompatiblePoolError));
+		thrown.expectCause(isA(WrongWalletForPoolException.class));
 
 		String walletName = "incompatibleWallet";
 

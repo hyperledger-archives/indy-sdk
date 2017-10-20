@@ -1,8 +1,9 @@
 package org.hyperledger.indy.sdk.pairwise;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
+import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.isA;
 
 import java.util.concurrent.ExecutionException;
 
@@ -21,7 +22,7 @@ public class CreatePairwiseTest extends PairwiseIntegrationTest {
 	@Test
 	public void testCreatePairwiseWorksForNotFoundMyDid() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletNotFoundError));
+		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
 		Pairwise.createPairwise(wallet, theirDid, DID1, null).get();
 	}
@@ -29,7 +30,7 @@ public class CreatePairwiseTest extends PairwiseIntegrationTest {
 	@Test
 	public void testCreatePairwiseWorksForNotFoundTheirDid() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletNotFoundError));
+		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
 		Pairwise.createPairwise(wallet, DID1, myDid, null).get();
 	}
