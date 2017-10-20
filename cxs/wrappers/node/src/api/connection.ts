@@ -30,7 +30,7 @@ export class Connection implements IConnections {
     return result
   }
 
-  async connect ( options: IConnectOptions ): Promise<void> {
+  async connect ( options: IConnectOptions = {} ): Promise<void> {
     const timeout = options.timeout || 10000
     await this._waitFor(() => this._connect(options) === 0, timeout)
   }
