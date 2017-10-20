@@ -1,11 +1,10 @@
 package org.hyperledger.indy.sdk.pool;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 
 public class ClosePoolTest extends IndyIntegrationTest {
@@ -22,7 +21,7 @@ public class ClosePoolTest extends IndyIntegrationTest {
 
 	@Test
 	public void testClosePoolWorksForTwice() throws Exception {
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.PoolLedgerInvalidPoolHandle));
+		thrown.expectCause(isA(InvalidPoolException.class));
 
 		Pool pool = PoolUtils.createAndOpenPoolLedger();
 		assertNotNull(pool);
