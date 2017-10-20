@@ -42,6 +42,7 @@ pub extern fn indy_prep_msg(command_handle: i32,
 }
 
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern fn indy_prep_anonymous_msg(command_handle: i32,
                                       recipient_vk: *const c_char,
                                       msg_data: *const u8,
@@ -54,6 +55,7 @@ pub extern fn indy_prep_anonymous_msg(command_handle: i32,
 }
 
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern fn indy_parse_msg(command_handle: i32,
                              recipient_vk: *const c_char,
                              encrypted_msg: *const u8,
