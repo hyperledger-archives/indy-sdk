@@ -37,8 +37,9 @@ export interface IFFIInterfaceConfig {
 
 export class CXSRuntimeConfig {
   basepath?: string
-  constructor (_basepath?: string) {
-    this.basepath = _basepath
+
+  constructor (basepath?: string) {
+    this.basepath = basepath
   }
 }
 

@@ -24,6 +24,6 @@ export interface IRecipientInfo {
 }
 
 export interface IConnectOptions {
-  sms?: boolean,
+  phone?: string,
   timeout?: number
 }
