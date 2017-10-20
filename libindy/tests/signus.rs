@@ -143,7 +143,7 @@ mod high_cases {
 
             let invalid_wallet_handle = wallet_handle + 1;
             let res = SignusUtils::store_key_metadata(invalid_wallet_handle, VERKEY, METADATA);
-            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap());
+            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -221,8 +221,8 @@ mod high_cases {
 
             SignusUtils::store_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
 
-            let invalid_invalid_handle = invalid_handle + 1;
-            let res = SignusUtils::get_key_metadata(invalid_invalid_handle, VERKEY).unwrap();
+            let invalid_invalid_handle = wallet_handle + 1;
+            let res = SignusUtils::get_key_metadata(invalid_invalid_handle, VERKEY);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -260,7 +260,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, DID, VERKEY);
-            SignusUtils::store_their_did(wallet_handle, identity_json).unwrap();
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let received_verkey = SignusUtils::key_for_did(pool_handle, wallet_handle, DID).unwrap();
             assert_eq!(VERKEY, received_verkey);
@@ -481,11 +481,11 @@ mod high_cases {
 
             SignusUtils::store_did_metadata(wallet_handle, DID, METADATA).unwrap();
             let metadata = SignusUtils::get_did_metadata(wallet_handle, DID).unwrap();
-            assert_eq!(METADATA.to_string(), metadata.unwrap());
+            assert_eq!(METADATA.to_string(), metadata);
 
             SignusUtils::store_did_metadata(wallet_handle, DID, "updated metadata").unwrap();
             let updated_metadata = SignusUtils::get_did_metadata(wallet_handle, DID).unwrap();
-            assert_ne!(METADATA.to_string(), updated_metadata.unwrap());
+            assert_ne!(METADATA.to_string(), updated_metadata);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -499,10 +499,10 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = SignusUtils::store_did_metadata(wallet_handle, "invalid_base58string", METADATA);
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap());
+            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
             let res = SignusUtils::store_did_metadata(wallet_handle, "invalidDidLength", METADATA);
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap());
+            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -517,7 +517,7 @@ mod high_cases {
 
             let invalid_wallet_handle = wallet_handle + 1;
             let res = SignusUtils::store_did_metadata(invalid_wallet_handle, DID, METADATA);
-            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap());
+            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -595,8 +595,8 @@ mod high_cases {
 
             SignusUtils::store_did_metadata(wallet_handle, DID, METADATA).unwrap();
 
-            let invalid_invalid_handle = invalid_handle + 1;
-            let res = SignusUtils::get_did_metadata(invalid_invalid_handle, DID).unwrap();
+            let invalid_invalid_handle = wallet_handle + 1;
+            let res = SignusUtils::get_did_metadata(invalid_invalid_handle, DID);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();

@@ -10,8 +10,6 @@ use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
 use utils::ledger::LedgerUtils;
 
-use std::ptr::null;
-
 pub struct SignusUtils {}
 
 impl SignusUtils {
@@ -416,11 +414,12 @@ impl SignusUtils {
         });
         let (command_handle, callback) = CallbackUtils::closure_to_create_key_cb(cb);
 
-        let seed_str = seed.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let key_json = seed.map_or("{}".to_string(), |seed| format!(r#"{{"seed":"{}"}}"#, seed));
+        let key_json = CString::new(key_json).unwrap();
 
         let err = indy_create_key(command_handle,
                                   wallet_handle,
-                                  if seed.is_some() { seed_str.as_ptr() } else { null() },
+                                  key_json.as_ptr(),
                                   callback);
 
         if err != ErrorCode::Success {
@@ -443,11 +442,11 @@ impl SignusUtils {
         let verkey = CString::new(verkey).unwrap();
         let metadata = CString::new(metadata).unwrap();
 
-        let err = indy_store_key_metadata(command_handle,
-                                          wallet_handle,
-                                          verkey.as_ptr(),
-                                          metadata.as_ptr(),
-                                          callback);
+        let err = indy_set_key_metadata(command_handle,
+                                        wallet_handle,
+                                        verkey.as_ptr(),
+                                        metadata.as_ptr(),
+                                        callback);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -642,11 +641,11 @@ impl SignusUtils {
         let did = CString::new(did).unwrap();
         let metadata = CString::new(metadata).unwrap();
 
-        let err = indy_store_key_metadata(command_handle,
-                                          wallet_handle,
-                                          did.as_ptr(),
-                                          metadata.as_ptr(),
-                                          callback);
+        let err = indy_set_did_metadata(command_handle,
+                                        wallet_handle,
+                                        did.as_ptr(),
+                                        metadata.as_ptr(),
+                                        callback);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -667,7 +666,7 @@ impl SignusUtils {
 
         let did = CString::new(did).unwrap();
 
-        let err = indy_get_key_metadata(command_handle,
+        let err = indy_get_did_metadata(command_handle,
                                         wallet_handle,
                                         did.as_ptr(),
                                         callback);
