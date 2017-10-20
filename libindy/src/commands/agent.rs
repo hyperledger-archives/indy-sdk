@@ -1,6 +1,5 @@
 #![warn(unused_variables)]
 
-extern crate base64;
 extern crate rust_base58;
 extern crate serde_json;
 extern crate zmq_pw as zmq;
@@ -12,6 +11,7 @@ use std::rc::Rc;
 
 use self::rust_base58::{FromBase58, ToBase58};
 
+use base64;
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use commands::utils::check_wallet_and_pool_handles_consistency;
