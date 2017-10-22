@@ -53,7 +53,7 @@ namespace Hyperledger.Indy
                 case ErrorCode.CommonIOError:
                     return new IOException();
                 case ErrorCode.WalletInvalidHandle:
-                    return new WalletClosedException(); 
+                    return new InvalidWalletException(); 
                 case ErrorCode.WalletUnknownTypeError:
                     return new UnknownWalletTypeException(); 
                 case ErrorCode.WalletTypeAlreadyRegisteredError:
@@ -69,7 +69,7 @@ namespace Hyperledger.Indy
                 case ErrorCode.PoolLedgerNotCreatedError:
                     return new PoolConfigNotCreatedException();
                 case ErrorCode.PoolLedgerInvalidPoolHandle:
-                    return new PoolClosedException();
+                    return new InvalidPoolException();
                 case ErrorCode.PoolLedgerTerminated:
                     return new PoolLedgerTerminatedException();
                 case ErrorCode.LedgerNoConsensusError:
