@@ -1,5 +1,3 @@
-#![warn(unused_variables)] /* FIXME move up */
-
 #[macro_use]
 mod utils;
 

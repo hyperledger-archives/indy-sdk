@@ -1,5 +1,3 @@
-#![warn(unused_variables)] /* FIXME move up */
-
 extern crate libc;
 
 pub mod agent;

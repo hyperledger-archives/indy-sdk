@@ -1,7 +1,3 @@
-// TODO: FIXME: It must be removed after code layout stabilization!
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 extern crate base64;
 
 #[macro_use]
@@ -16,12 +12,18 @@ extern crate serde_json;
 extern crate lazy_static;
 
 // Note that to use macroses from util inside of other modules it must me loaded first!
+#[allow(dead_code)] /* FIXME */
 #[macro_use]
 mod utils;
 
 pub mod api;
+#[allow(dead_code)] /* FIXME */
 mod commands;
+#[allow(dead_code)] /* FIXME */
+#[allow(unused_variables)] /* FIXME */
 mod errors;
+#[allow(dead_code)] /* FIXME */
+#[allow(unused_variables)] /* FIXME */
 mod services;
 
 #[cfg(test)]
