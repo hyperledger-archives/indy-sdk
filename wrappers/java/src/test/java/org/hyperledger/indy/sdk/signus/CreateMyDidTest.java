@@ -1,10 +1,10 @@
 package org.hyperledger.indy.sdk.signus;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
+import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 
 import org.bitcoinj.core.Base58;
@@ -67,7 +67,7 @@ public class CreateMyDidTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testCreateMyDidWorksForInvalidSeed() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String didJson = new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "aaaaaaaaaaa", null, null).toJson();
 
@@ -77,7 +77,7 @@ public class CreateMyDidTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testCreateMyDidWorksForInvalidCryptoType() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.SignusUnknownCryptoError));
+		thrown.expectCause(isA(UnknownCryptoException.class));
 
 		String didJson = new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, "crypto_type", null).toJson();
 

@@ -1,8 +1,7 @@
 package org.hyperledger.indy.sdk.demo;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
+import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.anoncreds.Anoncreds;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults;
 import org.hyperledger.indy.sdk.pool.Pool;
@@ -20,6 +19,7 @@ import org.junit.rules.Timeout;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
@@ -478,7 +478,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 	public void testVerifyProofWorksForProofDoesNotCorrespondToProofRequest() throws Exception {
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		//1. Issuer create ClaimDef
 		String schemaJson = "{\n" +

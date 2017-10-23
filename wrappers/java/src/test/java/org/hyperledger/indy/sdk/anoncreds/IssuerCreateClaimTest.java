@@ -1,12 +1,12 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
+import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.json.JSONObject;
 import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -45,7 +45,7 @@ public class IssuerCreateClaimTest extends AnoncredsIntegrationTest {
 		initCommonWallet();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String claimRequest = String.format(claimRequestTemplate, issuerDid, 1);
 
@@ -62,7 +62,7 @@ public class IssuerCreateClaimTest extends AnoncredsIntegrationTest {
 		initCommonWallet();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String claimRequest = String.format(claimRequestTemplate, issuerDid, 1);
 
