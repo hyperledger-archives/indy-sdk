@@ -7,7 +7,6 @@ use errors::pool::PoolError;
 use errors::signus::SignusError;
 use errors::indy::IndyError;
 
-use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::signus::SignusService;
 use services::signus::types::MyDid;
@@ -107,7 +106,6 @@ pub enum LedgerCommand {
 }
 
 pub struct LedgerCommandExecutor {
-    anoncreds_service: Rc<AnoncredsService>,
     pool_service: Rc<PoolService>,
     signus_service: Rc<SignusService>,
     wallet_service: Rc<WalletService>,
@@ -117,13 +115,11 @@ pub struct LedgerCommandExecutor {
 }
 
 impl LedgerCommandExecutor {
-    pub fn new(anoncreds_service: Rc<AnoncredsService>,
-               pool_service: Rc<PoolService>,
+    pub fn new(pool_service: Rc<PoolService>,
                signus_service: Rc<SignusService>,
                wallet_service: Rc<WalletService>,
                ledger_service: Rc<LedgerService>) -> LedgerCommandExecutor {
         LedgerCommandExecutor {
-            anoncreds_service: anoncreds_service,
             pool_service: pool_service,
             signus_service: signus_service,
             wallet_service: wallet_service,

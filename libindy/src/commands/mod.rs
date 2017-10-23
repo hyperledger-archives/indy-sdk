@@ -77,9 +77,9 @@ impl CommandExecutor {
 
                 let agent_command_executor = AgentCommandExecutor::new(agent_service.clone(), ledger_service.clone(), pool_service.clone(), signus_service.clone(), wallet_service.clone());
                 let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone());
-                let ledger_command_executor = LedgerCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), signus_service.clone(), wallet_service.clone(), ledger_service.clone());
+                let ledger_command_executor = LedgerCommandExecutor::new(pool_service.clone(), signus_service.clone(), wallet_service.clone(), ledger_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
-                let signus_command_executor = SignusCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone(), signus_service.clone(), ledger_service.clone());
+                let signus_command_executor = SignusCommandExecutor::new(pool_service.clone(), wallet_service.clone(), signus_service.clone(), ledger_service.clone());
                 let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
                 let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
 

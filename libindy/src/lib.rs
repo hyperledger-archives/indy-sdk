@@ -17,7 +17,6 @@ extern crate lazy_static;
 mod utils;
 
 pub mod api;
-#[allow(dead_code)] /* FIXME */
 mod commands;
 #[allow(dead_code)] /* FIXME */
 #[allow(unused_variables)] /* FIXME */
@@ -32,6 +31,6 @@ mod tests {
 
     #[test]
     fn dummy() {
-        assert! (true, "Dummy check!");
+        assert!(true, "Dummy check!");
     }
 }

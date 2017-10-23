@@ -5,7 +5,6 @@ use errors::wallet::WalletError;
 use errors::indy::IndyError;
 use services::signus::types::{MyDidInfo, MyKyesInfo, MyDid, TheirDidInfo, TheirDid};
 use services::ledger::types::{Reply, GetNymResultData, GetNymReplyResult};
-use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::signus::SignusService;
@@ -101,7 +100,6 @@ pub enum SignusCommand {
 }
 
 pub struct SignusCommandExecutor {
-    anoncreds_service: Rc<AnoncredsService>,
     pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
     signus_service: Rc<SignusService>,
@@ -113,17 +111,15 @@ pub struct SignusCommandExecutor {
 }
 
 impl SignusCommandExecutor {
-    pub fn new(anoncreds_service: Rc<AnoncredsService>,
-               pool_service: Rc<PoolService>,
+    pub fn new(pool_service: Rc<PoolService>,
                wallet_service: Rc<WalletService>,
                signus_service: Rc<SignusService>,
                ledger_service: Rc<LedgerService>) -> SignusCommandExecutor {
         SignusCommandExecutor {
-            anoncreds_service: anoncreds_service,
-            pool_service: pool_service,
-            wallet_service: wallet_service,
-            signus_service: signus_service,
-            ledger_service: ledger_service,
+            pool_service,
+            wallet_service,
+            signus_service,
+            ledger_service,
             verify_callbacks: RefCell::new(HashMap::new()),
             encrypt_callbacks: RefCell::new(HashMap::new()),
             encrypt_sealed_callbacks: RefCell::new(HashMap::new()),
