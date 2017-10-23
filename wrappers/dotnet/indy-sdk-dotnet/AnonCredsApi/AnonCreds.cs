@@ -150,7 +150,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// </summary>
         /// <remarks>
         /// <para>This method creates both primary and revocation keys for the given
-        /// signature type and schema and stores them in the provided <see cref="Wallet"/>.
+        /// signature type and schema and stores them in the provided <paramref name="wallet"/>.
         /// The generated claim definition is returned as a JSON string containing information about the 
         /// signature type, schema, the issuer's public key and the unique identifier of the public key 
         /// in the wallet.
@@ -193,7 +193,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// Creates a new revocation registry for the provided claim definition.
         /// </summary>
         /// <remarks>
-        /// The revocation registry is stored in the provided <see cref="Wallet"/> and is identified by
+        /// The revocation registry is stored in the provided <paramref name="wallet"/> and is identified by
         /// a unique key which is returned in the revocation registry JSON string returned by the method.
         /// </remarks>
         /// <param name="wallet">The wallet to store the revocation registry in.</param>
@@ -378,9 +378,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <remarks>
         /// <para>
         /// Claim offers stored with the <see cref="ProverStoreClaimOfferAsync(Wallet, string)"/> can be
-        /// retrieved by searching on the DID of the issuer and/or the schema sequence number.  To filter
-        /// the claim offers a <paramref name="filterJson"/> parameter must be provided with a JSON
-        /// string which can include the following members:
+        /// retrieved from the <paramref name="wallet"/> by searching on the DID of the issuer and/or the schema 
+        /// sequence number.  To filter the claim offers a <paramref name="filterJson"/> parameter must be provided with 
+        /// a JSON string which can include the following members:
         /// <code>
         /// {
         ///     "issuer_did": string,
