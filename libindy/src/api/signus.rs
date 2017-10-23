@@ -302,7 +302,8 @@ pub extern fn indy_key_for_did(command_handle: i32,
 pub extern fn indy_set_endpoint_for_did(command_handle: i32,
                                         wallet_handle: i32,
                                         did: *const c_char,
-                                        endpoint: *const c_char,
+                                        address: *const c_char,
+                                        transport_key: *const c_char,
                                         cb: Option<extern fn(command_handle_: i32,
                                                              err: ErrorCode)>) -> ErrorCode {
     unimplemented!();
