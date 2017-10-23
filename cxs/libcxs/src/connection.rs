@@ -276,18 +276,21 @@ pub fn build_connection (source_id: Option<String>,
         info!("creating new connection and did (wallet: {}, handle {}", wallet_handle, new_handle);
         unsafe {
             let indy_err = indy_create_and_store_my_did(new_handle as i32, wallet_handle, CString::new(did_json).unwrap().as_ptr(), Some(store_new_did_info_cb));
-            info!("INDY ERRO from indy_create_and_store_my_did: {}", indy_err);
         }
     }
     else {
         //TODO need to get VERKEY ?MAYBE?
+        use serde_json;
         let wallet_handle = wallet::get_wallet_handle();
-        let did_json = "{}";
+        let did_clone = did.clone().unwrap();
+
+        let did_json =format!("{{\"did\":\"{}\"}}", did_clone);
+
+        info!("creating new connection with a specific did");
         unsafe {
             let indy_err = indy_create_and_store_my_did(new_handle as i32, wallet_handle, CString::new(did_json).unwrap().as_ptr(), Some(store_new_did_info_cb));
-            info!("INDY ERRO from indy_create_and_store_my_did: {}", indy_err);
         }
-        set_pw_did(new_handle, &did.unwrap_or_default());
+        set_pw_did(new_handle, &did.unwrap());
     }
     new_handle
 }
