@@ -1242,7 +1242,8 @@
     NSString *getSchemaRequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildGetSchemaRequestWithSubmitterDid:identifier
                                                                                   dest:identifier
-                                                                                  data:data resultJson:&getSchemaRequestJson];
+                                                                                  data:data
+                                                                            resultJson:&getSchemaRequestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetSchemaRequestWithSubmitterDid() failed");
     NSDictionary *request = [NSDictionary fromString:getSchemaRequestJson];
     XCTAssertTrue([request contains:expectedResult], @"request doesn't contain expectedResult");
@@ -1654,7 +1655,7 @@
     [TestUtils cleanupStorage];
     NSString *identifier = @"identifier";
     NSString *signatureType = @"CL";
-    NSString *schemaSeqNo = @"1";
+    NSNumber *schemaSeqNo = @(1);
     NSString *data = @"{"\
     "\"primary\":{"\
     "\"n\":\"1\","\
@@ -1705,7 +1706,7 @@
 {
     [TestUtils cleanupStorage];
     NSString *identifier = @"identifier";
-    NSString *xref = @"1";
+    NSNumber *xref = @(1);
     NSString *signatureType = @"signature_type";
     NSString *origin = @"origin";
     
@@ -1864,7 +1865,7 @@
     // 12. Build claim def request
     NSString *claimDefRequestJson;
     ret = [[LedgerUtils sharedInstance] buildClaimDefTxnWithSubmitterDid:myDid
-                                                                    xref:[seqNo stringValue]
+                                                                    xref:seqNo
                                                            signatureType:claimDef[@"signature_type"]
                                                                     data:claimDefDataJson
                                                               resultJson:&claimDefRequestJson];
@@ -2016,7 +2017,7 @@
     // 12. Build claim def request
     NSString *claimDefRequestJson;
     ret = [[LedgerUtils sharedInstance] buildClaimDefTxnWithSubmitterDid:myDid
-                                                                    xref:[seqNo stringValue]
+                                                                    xref:seqNo
                                                            signatureType:claimDef[@"signature_type"]
                                                                     data:claimDefDataJson
                                                               resultJson:&claimDefRequestJson];
@@ -2117,7 +2118,7 @@
     NSMutableDictionary *schemaData = [NSMutableDictionary new];
     schemaData[@"name"] = @"gvt3";
     schemaData[@"version"] = @"3.0";
-    schemaData[@"keys"] = keys;
+    schemaData[@"attr_names"] = keys;
     
     NSString *schemaDataJson = [NSDictionary toString:schemaData];
     

@@ -33,7 +33,6 @@
     NSString *theirWalletName = @"their_wallet3";
     NSString *walletType = @"default";
     NSString *poolName = @"ledger_demo_works";
-    XCTestExpectation *completionExpectation;
     NSError *ret;
     
     // 1. Create ledger config from genesis txn file
@@ -48,126 +47,65 @@
     
     // 2. Open pool ledger
     __block IndyHandle poolHandle = 0;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [IndyPool openPoolLedgerWithName:poolName
-                                poolConfig:nil
-                                completion:^(NSError *error, IndyHandle h)
-            {
-                XCTAssertEqual(error.code, Success, "openPoolLedgerWithName got error in completion");
-                poolHandle = h;
-                [completionExpectation fulfill];
-            }];
+    
+    ret = [[PoolUtils sharedInstance] openPoolLedger:poolName config:nil poolHandler:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"openPoolLedgerWithName() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 3. Create my wallet
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [[IndyWallet sharedInstance] createWalletWithPoolName:poolName
-                                                           name:myWalletName
-                                                          xType:walletType
-                                                         config:nil
-                                                    credentials:nil
-                                                     completion:^(NSError *error)
-           {
-              // XCTAssertEqual(error.code, Success, "createWalletWithPoolName got error in completion");
-               [completionExpectation fulfill];
-           }];
+    
+    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
+                                                      walletName:myWalletName
+                                                           xtype:walletType
+                                                          config:nil];
     XCTAssertEqual(ret.code, Success, @"createWalletWithPoolName() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 4. Open My Wallet. Gets My wallet handle
     __block IndyHandle myWalletHandle = 0;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [[IndyWallet sharedInstance] openWalletWithName:myWalletName
-                                            runtimeConfig:nil
-                                              credentials:nil
-                                               completion:^(NSError *error, IndyHandle h)
-            {
-                XCTAssertEqual(error.code, Success, "openPoolLedgerWithName got error in completion");
-                myWalletHandle = h;
-                [completionExpectation fulfill];
-            }];
+    
+    ret = [[WalletUtils sharedInstance] openWalletWithName:myWalletName
+                                                    config:nil
+                                                 outHandle:&myWalletHandle];
     XCTAssertEqual(ret.code, Success, @"openWalletWithName() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 5. Create their wallet
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [[IndyWallet sharedInstance] createWalletWithPoolName:poolName
-                                                           name:theirWalletName
-                                                          xType:walletType
-                                                         config:nil
-                                                    credentials:nil
-                                                     completion:^(NSError *error)
-           {
-               XCTAssertEqual(error.code, Success, "createWalletWithPoolName got error in completion");
-               [completionExpectation fulfill];
-           }];
+    
+    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
+                                                      walletName:theirWalletName
+                                                           xtype:walletType
+                                                          config:nil];
     XCTAssertEqual(ret.code, Success, @"createWalletWithPoolName() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 6. Open Their Wallet. Gets Their wallet handle
     __block IndyHandle theirWalletHandle = 0;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [[IndyWallet sharedInstance] openWalletWithName:theirWalletName
-                                            runtimeConfig:nil
-                                              credentials:nil
-                                               completion:^(NSError *error, IndyHandle h)
-           {
-               XCTAssertEqual(error.code, Success, "openPoolLedgerWithName got error in completion");
-               theirWalletHandle = h;
-               [completionExpectation fulfill];
-           }];
+    
+    ret = [[WalletUtils sharedInstance] openWalletWithName:theirWalletName
+                                                    config:nil
+                                                 outHandle:&theirWalletHandle];
     XCTAssertEqual(ret.code, Success, @"openWalletWithName() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 7. Create my did
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    __block NSString *myDid = nil;
-    __block NSString *myVerkey = nil;
-    __block NSString *myPk = nil;
-    ret = [IndySignus createAndStoreMyDid:@"{}"
-                             walletHandle:myWalletHandle
-                               completion:^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
-           {
-               XCTAssertEqual(error.code, Success, "createAndStoreMyDid() got error in completion");
-               NSLog(@"myDid:");
-               NSLog(@"did = %@", did);
-               NSLog(@"verkey = %@", verkey);
-               NSLog(@"pk = %@", pk);
-               myDid = did;
-               myVerkey = verkey;
-               myPk = pk;
-               [completionExpectation fulfill];
-           }];
+    NSString *myDid = nil;
+    NSString *myVerkey = nil;
+    NSString *myPk = nil;
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:myWalletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:&myVerkey
+                                                                    outMyPk:&myPk];
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 8. Create Their DID from Trustee1 seed
-    NSString *theirDidJson = @"{\"seed\":\"000000000000000000000000Trustee1\"}";
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    NSString *theirDid = nil;
+    NSString *theirVerkey = nil;
+    NSString *theirPk = nil;
     
-    __block NSString *theirDid = nil;
-    __block NSString *theirVerkey = nil;
-    __block NSString *theirPk = nil;
-    
-    ret = [IndySignus createAndStoreMyDid:theirDidJson
-                             walletHandle:theirWalletHandle
-                               completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
-           {
-               XCTAssertEqual(error.code, Success, "createAndStoreMyDid() got error in completion");
-               NSLog(@"theirDid:");
-               NSLog(@"did = %@", did);
-               NSLog(@"verkey = %@", verkey);
-               NSLog(@"pk = %@", pk);
-               theirDid = [NSString stringWithString: did];
-               theirVerkey = [NSString stringWithString: verkey];
-               theirPk = [NSString stringWithString: pk];
-               [completionExpectation fulfill];
-           }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:theirWalletHandle
+                                                                       seed:@"000000000000000000000000Trustee1"
+                                                                   outMyDid:&theirDid
+                                                                outMyVerkey:&theirVerkey
+                                                                    outMyPk:&theirPk];
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 9. Store Their DID
@@ -177,17 +115,9 @@
                                                                 \"verkey\":\"%@\"\
                                    }", theirDid, theirPk, theirVerkey];
     
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [IndySignus storeTheirDid:theirIdentityJson
-                       walletHandle:myWalletHandle
-                         completion:^(NSError *error)
-           {
-               XCTAssertEqual(error.code, Success, "storeTheirDid() got error in completion");
-               [completionExpectation fulfill];
-           }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
+    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:myWalletHandle
+                                                         identityJson:theirIdentityJson];
+    XCTAssertEqual(ret.code, Success, @"IndySignus::storeTheirDid() failed!");
     
     // 10. Prepare NYM transaction
     // removing signature field does not help
@@ -197,29 +127,29 @@
                                "\"operation\":{"
                                     "\"dest\":\"%@\","
                                     "\"type\":\"1\"},"
+                               "\"protocolVersion\": 1,"
                                "\"reqId\":%d"
                                "}", theirDid, myDid, [nymReqId intValue]];
 
     // 11. Send NYM request with signing
-    __block NSString *nymTxnResponse;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [IndyLedger signAndSubmitRequestWithWalletHandle:theirWalletHandle
-                                                poolHandle:poolHandle
-                                              submitterDID:theirDid
-                                               requestJSON:nymTxnRequest
-                                                completion:^(NSError *error, NSString *requestResult)
-            {
-                XCTAssertEqual(error.code, Success, "signAndSubmitRequestWithWalletHandle() got error in completion");
-                nymTxnResponse = requestResult;
-                [completionExpectation fulfill];
-            }];
-  //  XCTAssertEqual(ret.code, Success, @"signAndSubmitRequestWithWalletHandle() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    NSString *nymTxnResponse;
+    
+//    ret = [[LedgerUtils sharedInstance] submitRequest:nymTxnRequest
+//                                       withPoolHandle:poolHandle
+//                                           resultJson:&nymTxnResponse];
+    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
+                                                              walletHandle:myWalletHandle
+                                                              submitterDid:theirDid
+                                                               requestJson:nymTxnRequest
+                                                           outResponseJson:&nymTxnResponse];
+    XCTAssertEqual(ret.code, Success, @"signAndSubmitRequestWithWalletHandle() failed!");
+    XCTAssertTrue(nymTxnResponse);
     
     // 12. Prepare and send GET_NYM request
     NSNumber *getNymRequestId = [[PoolUtils sharedInstance] getRequestId];
     NSString *getNymTxnRequest = [NSString stringWithFormat:@"{"
                                   "\"reqId\":%d,"
+                                  "\"signature\": null,"
                                   "\"identifier\":\"%@\","
                                   "\"operation\":{"
                                         "\"type\":\"105\","
@@ -227,16 +157,10 @@
                                   "}", [getNymRequestId intValue] , myVerkey, myDid];
     
     __block NSString *getNymTxnResponseJson;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [IndyLedger submitRequestWithPoolHandle:poolHandle
-                                        requestJSON:getNymTxnRequest
-                                         completion:^(NSError *error, NSString *requestResult)
-           {
-               XCTAssertEqual(error.code, Success, "submitRequestWithPoolHandle() got error in completion");
-               getNymTxnResponseJson = requestResult;
-               [completionExpectation fulfill];
-           }];
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+   
+    ret = [[LedgerUtils sharedInstance] submitRequest:getNymTxnRequest
+                                       withPoolHandle:poolHandle
+                                           resultJson:&getNymTxnResponseJson];
     XCTAssertEqual(ret.code, Success, @"submitRequestWithPoolHandle() failed!");
     
     NSDictionary *getNymTxnResponse = [NSDictionary fromString:getNymTxnResponseJson];
@@ -277,126 +201,61 @@
     
     // 2. Open pool ledger
     __block IndyHandle poolHandle = 0;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [IndyPool openPoolLedgerWithName:poolName
-                                poolConfig:nil
-                                completion:^(NSError *error, IndyHandle h)
-           {
-               XCTAssertEqual(error.code, Success, "openPoolLedgerWithName got error in completion");
-               poolHandle = h;
-               [completionExpectation fulfill];
-           }];
+    
+    ret = [[PoolUtils sharedInstance] openPoolLedger:poolName config:nil poolHandler:&poolHandle];
     XCTAssertEqual(ret.code, Success, @"openPoolLedgerWithName() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 3. Create my wallet
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [[IndyWallet sharedInstance] createWalletWithPoolName:poolName
-                                                           name:myWalletName
-                                                          xType:walletType
-                                                         config:nil
-                                                    credentials:nil
-                                                     completion:^(NSError *error)
-           {
-               XCTAssertEqual(error.code, Success, "createWalletWithPoolName got error in completion");
-               [completionExpectation fulfill];
-           }];
+    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
+                                                      walletName:myWalletName
+                                                           xtype:walletType
+                                                          config:nil];
     XCTAssertEqual(ret.code, Success, @"createWalletWithPoolName() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 4. Open My Wallet. Gets My wallet handle
     __block IndyHandle myWalletHandle = 0;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [[IndyWallet sharedInstance] openWalletWithName:myWalletName
-                                            runtimeConfig:nil
-                                              credentials:nil
-                                               completion:^(NSError *error, IndyHandle h)
-           {
-               XCTAssertEqual(error.code, Success, "openPoolLedgerWithName got error in completion");
-               myWalletHandle = h;
-               [completionExpectation fulfill];
-           }];
+    
+    ret = [[WalletUtils sharedInstance] openWalletWithName:myWalletName config:nil outHandle:&myWalletHandle];
     XCTAssertEqual(ret.code, Success, @"openWalletWithName() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 5. Create their wallet
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [[IndyWallet sharedInstance] createWalletWithPoolName:poolName
-                                                           name:theirWalletName
-                                                          xType:walletType
-                                                         config:nil
-                                                    credentials:nil
-                                                     completion:^(NSError *error)
-           {
-               XCTAssertEqual(error.code, Success, "createWalletWithPoolName got error in completion");
-               [completionExpectation fulfill];
-           }];
-    XCTAssertEqual(ret.code, Success, @"createWalletWithPoolName() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
+    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:poolName
+                                                      walletName:theirWalletName
+                                                           xtype:walletType
+                                                          config:nil];
     
     // 6. Open Their Wallet. Gets Their wallet handle
     __block IndyHandle theirWalletHandle = 0;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [[IndyWallet sharedInstance] openWalletWithName:theirWalletName
-                                            runtimeConfig:nil
-                                              credentials:nil
-                                               completion:^(NSError *error, IndyHandle h)
-           {
-               XCTAssertEqual(error.code, Success, "openPoolLedgerWithName got error in completion");
-               theirWalletHandle = h;
-               [completionExpectation fulfill];
-           }];
+    
+    ret = [[WalletUtils sharedInstance] openWalletWithName:theirWalletName config:nil outHandle:&theirWalletHandle];
     XCTAssertEqual(ret.code, Success, @"openWalletWithName() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 7. Create my did
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    __block NSString *myDid = nil;
-    __block NSString *myVerkey = nil;
-    __block NSString *myPk = nil;
-    ret = [IndySignus createAndStoreMyDid:@"{}"
-                             walletHandle:myWalletHandle
-                               completion:^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
-           {
-               XCTAssertEqual(error.code, Success, "createAndStoreMyDid() got error in completion");
-               NSLog(@"myDid:");
-               NSLog(@"did = %@", did);
-               NSLog(@"verkey = %@", verkey);
-               NSLog(@"pk = %@", pk);
-               myDid = did;
-               myVerkey = verkey;
-               myPk = pk;
-               [completionExpectation fulfill];
-           }];
+    NSString *myDid = nil;
+    NSString *myVerkey = nil;
+    NSString *myPk = nil;
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:myWalletHandle
+                                                                       seed:nil
+                                                                   outMyDid:&myDid
+                                                                outMyVerkey:&myVerkey
+                                                                    outMyPk:&myPk];
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 8. Create Their DID from Trustee1 seed
-    NSString *theirDidJson = @"{\"seed\":\"000000000000000000000000Trustee1\"}";
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    __block NSString *theirDid = nil;
-    __block NSString *theirVerkey = nil;
-    __block NSString *theirPk = nil;
+    NSString *theirDid = nil;
+    NSString *theirVerkey = nil;
+    NSString *theirPk = nil;
     
-    ret = [IndySignus createAndStoreMyDid:theirDidJson
-                             walletHandle:theirWalletHandle
-                               completion: ^(NSError *error, NSString *did, NSString *verkey, NSString *pk)
-           {
-               XCTAssertEqual(error.code, Success, "createAndStoreMyDid() got error in completion");
-               NSLog(@"theirDid:");
-               NSLog(@"did = %@", did);
-               NSLog(@"verkey = %@", verkey);
-               NSLog(@"pk = %@", pk);
-               theirDid = [NSString stringWithString: did];
-               theirVerkey = [NSString stringWithString: verkey];
-               theirPk = [NSString stringWithString: pk];
-               [completionExpectation fulfill];
-           }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:theirWalletHandle
+                                                                       seed:@"000000000000000000000000Trustee1"
+                                                                   outMyDid:&theirDid
+                                                                outMyVerkey:&theirVerkey
+                                                                    outMyPk:&theirPk];
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 9. Store Their DID
@@ -406,17 +265,10 @@
                                    \"verkey\":\"%@\"\
                                    }", theirDid, theirPk, theirVerkey];
     
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [IndySignus storeTheirDid:theirIdentityJson
-                       walletHandle:myWalletHandle
-                         completion:^(NSError *error)
-           {
-               XCTAssertEqual(error.code, Success, "storeTheirDid() got error in completion");
-               [completionExpectation fulfill];
-           }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
+   
+    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:myWalletHandle
+                                                         identityJson:theirIdentityJson];
+    XCTAssertEqual(ret.code, Success, @"storeTheirDidWithWalletHandle() failed!");
     
     // 10. Prepare NYM transaction
     // removing signature field does not help
@@ -430,20 +282,13 @@
                                "}", theirDid, myDid, [nymReqId intValue]];
     
     // 11. Send NYM request with signing
-    __block NSString *nymTxnResponse;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [IndyLedger signAndSubmitRequestWithWalletHandle:theirWalletHandle
-                                                poolHandle:poolHandle
-                                              submitterDID:theirDid
-                                               requestJSON:nymTxnRequest
-                                                completion:^(NSError *error, NSString *requestResult)
-           {
-               XCTAssertEqual(error.code, Success, "signAndSubmitRequestWithWalletHandle() got error in completion");
-               nymTxnResponse = requestResult;
-               [completionExpectation fulfill];
-           }];
-    //  XCTAssertEqual(ret.code, Success, @"signAndSubmitRequestWithWalletHandle() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    NSString *nymTxnResponse;
+    ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
+                                                              walletHandle:theirWalletHandle
+                                                              submitterDid:theirDid
+                                                               requestJson:nymTxnRequest
+                                                           outResponseJson:&nymTxnResponse];
+    XCTAssertEqual(ret.code, Success, @"signAndSubmitRequestWithWalletHandle() failed!");
     
     // 12. Prepare and send GET_NYM request
     NSNumber *getNymRequestId = [[PoolUtils sharedInstance] getRequestId];
@@ -455,17 +300,11 @@
                                   "\"dest\":\"%@\"}"\
                                   "}", [getNymRequestId intValue] , myVerkey, myDid];
     
-    __block NSString *getNymTxnResponseJson;
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    ret = [IndyLedger submitRequestWithPoolHandle:poolHandle
-                                      requestJSON:getNymTxnRequest
-                                       completion:^(NSError *error, NSString *requestResult)
-           {
-               XCTAssertEqual(error.code, Success, "submitRequestWithPoolHandle() got error in completion");
-               getNymTxnResponseJson = requestResult;
-               [completionExpectation fulfill];
-           }];
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    NSString *getNymTxnResponseJson;
+    
+    ret = [[LedgerUtils sharedInstance] submitRequest:getNymTxnRequest
+                                       withPoolHandle:poolHandle
+                                           resultJson:&getNymTxnResponseJson];
     XCTAssertEqual(ret.code, Success, @"submitRequestWithPoolHandle() failed!");
     
     NSDictionary *getNymTxnResponse = [NSDictionary fromString:getNymTxnResponseJson];
