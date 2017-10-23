@@ -38,7 +38,7 @@ struct ConnectionOptions {
 
 #[derive(Serialize, Deserialize)]
 struct Connection {
-    info: String,
+    source_id: String,
     handle: u32,
     pw_did: String,
     pw_verkey: String,
@@ -85,11 +85,11 @@ impl Connection {
     fn set_endpoint(&mut self, endpoint: &str) {self.endpoint = endpoint.to_string();}
 }
 
-fn find_connection(info_string: &str) -> u32 {
+fn find_connection(did: &str) -> u32 {
     let connection_table = CONNECTION_MAP.lock().unwrap();
 
-    for (handle, connection) in connection_table.iter() {
-        if connection.info == info_string {
+    for (handle, connection) in connection_table.iter() { //TODO this could be very slow with lots of objects
+        if connection.pw_did == did {
             return *handle;
         }
     };
@@ -230,21 +230,28 @@ extern "C" fn store_new_did_info_cb (handle: i32,
     set_state(handle as u32,CxsStateType::CxsStateInitialized);
 }
 
-pub fn build_connection (info_string: String) -> u32 {
+//TODO may want to split between the code path where did is pass and is not passed
+pub fn build_connection (source_id: Option<String>,
+                         did: Option<String>,
+                         their_did: Option<String>) -> u32 {
     // creating wallet
 
-    info!("building connection with {}", info_string);
+    let source_id_unwrap = source_id.unwrap_or("".to_string());
+
+    info!("building connection with {}", source_id_unwrap);
     // Check to make sure info_string is unique
-    let new_handle = find_connection(&info_string);
+    if did.is_some() {
+        let new_handle = find_connection(&did.clone().unwrap_or_default());
+        if new_handle > 0 {return new_handle}
+    }
 
-    if new_handle > 0 {return new_handle}
-
+    let new_handle = rand::thread_rng().gen::<u32>();
     info!("creating connection with handle {}", new_handle);
     // This is a new connection
-    let new_handle = rand::thread_rng().gen::<u32>();
+
 
     let c = Box::new(Connection {
-            info: info_string,
+            source_id: source_id_unwrap,
             handle: new_handle,
             pw_did: String::new(),
             pw_verkey:String::new(),
@@ -255,16 +262,24 @@ pub fn build_connection (info_string: String) -> u32 {
             endpoint: String::new(),
         });
 
-    let mut m = CONNECTION_MAP.lock().unwrap();
-    m.insert(new_handle, c);
+    {
+        let mut m = CONNECTION_MAP.lock().unwrap();
+        m.insert(new_handle, c);
+    }
 
-    let wallet_handle = wallet::get_wallet_handle();
-    let did_json = "{}";
+    if did.is_none() { //TODO need better input validation
+        let wallet_handle = wallet::get_wallet_handle();
+        let did_json = "{}";
 
-    info!("creating new connection and did (wallet: {}, handle {}", wallet_handle, new_handle);
-    unsafe {
-        let indy_err = indy_create_and_store_my_did(new_handle as i32, wallet_handle, CString::new(did_json).unwrap().as_ptr(), Some(store_new_did_info_cb));
-        info!("INDY ERRO from indy_create_and_store_my_did: {}", indy_err);
+        info!("creating new connection and did (wallet: {}, handle {}", wallet_handle, new_handle);
+        unsafe {
+            let indy_err = indy_create_and_store_my_did(new_handle as i32, wallet_handle, CString::new(did_json).unwrap().as_ptr(), Some(store_new_did_info_cb));
+            info!("INDY ERRO from indy_create_and_store_my_did: {}", indy_err);
+        }
+    }
+    else {
+        //TODO need to get VERKEY ?MAYBE?
+        set_pw_did(new_handle, &did.unwrap_or_default());
     }
     new_handle
 }
@@ -368,7 +383,9 @@ mod tests {
 
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT,mockito::SERVER_URL);
         wallet::tests::make_wallet("test_create_connection");
-        let handle = build_connection("test_create_connection".to_owned());
+        let handle = build_connection(Some("test_create_connection".to_owned()),
+                                      None,
+                                      None);
         assert!(handle > 0);
         thread::sleep(Duration::from_secs(2));
         assert!(!get_pw_did(handle).unwrap().is_empty());
@@ -392,16 +409,38 @@ mod tests {
 
     #[test]
     fn test_create_idempotency() {
-        let handle = build_connection("test_create_idempotency".to_owned());
-        let handle2 = build_connection("test_create_idempotency".to_owned());
+        let handle = build_connection(Some("test_create_idempotency".to_owned()),
+                                      Some("PLgUY9J3a9aRhvpFWMKMyb".to_string()),
+                                      None);
+        let handle2 = build_connection(Some("test_create_idempotency".to_owned()),
+                                       Some("PLgUY9J3a9aRhvpFWMKMyb".to_string()),
+                                       None);
         assert_eq!(handle,handle2);
         release(handle);
         release(handle2);
     }
 
     #[test]
+    fn test_create_drop_create() {
+        let handle = build_connection(Some("test_create_idempotency".to_owned()),
+                                      Some("PLgUY9J3a9aRhvpFWMKMyb".to_string()),
+                                      None);
+        let did1 = get_pw_did(handle).unwrap();
+        release(handle);
+        let handle2 = build_connection(Some("test_create_idempotency".to_owned()),
+                                       Some("PLgUY9J3a9aRhvpFWMKMyb".to_string()),
+                                       None);
+        assert_ne!(handle,handle2);
+        let did2 = get_pw_did(handle2).unwrap();
+        assert_eq!(did1, did2);
+        release(handle2);
+    }
+
+    #[test]
     fn test_connection_release() {
-        let handle = build_connection("test_cxn_release".to_owned());
+        let handle = build_connection(Some("test_cxn_release".to_owned()),
+                                      None,
+                                      None);
         assert!(handle > 0);
         let rc = release(handle);
         assert_eq!(rc, error::SUCCESS.code_num);
@@ -410,7 +449,9 @@ mod tests {
     #[test]
     fn test_state_not_connected() {
         wallet::tests::make_wallet("test_state_not_connected");
-        let handle = build_connection("test_state_not_connected".to_owned());
+        let handle = build_connection(Some("test_state_not_connected".to_owned()),
+                                      None,
+                                      None);
         thread::sleep(Duration::from_secs(1));
         let state = get_state(handle);
         assert_eq!(state, CxsStateType::CxsStateInitialized as u32);
@@ -444,7 +485,7 @@ mod tests {
 
     #[test]
     fn test_get_string() {
-        let handle = build_connection("".to_owned());
+        let handle = build_connection(Some("".to_owned()), None, None);
         let string = to_string(handle);
         println!("string: {}", string);
         assert!(string.len() > 10);
@@ -454,11 +495,11 @@ mod tests {
     #[test]
     fn test_many_handles() {
 
-        let handle1 = build_connection("handle1".to_owned());
-        let handle2 = build_connection("handle2".to_owned());
-        let handle3 = build_connection("handle3".to_owned());
-        let handle4 = build_connection("handle4".to_owned());
-        let handle5 = build_connection("handle5".to_owned());
+        let handle1 = build_connection(Some("handle1".to_owned()), None, None);
+        let handle2 = build_connection(Some("handle2".to_owned()), None, None);
+        let handle3 = build_connection(Some("handle3".to_owned()), None, None);
+        let handle4 = build_connection(Some("handle4".to_owned()), None, None);
+        let handle5 = build_connection(Some("handle5".to_owned()), None, None);
 
         connect(handle1, "{}".to_string());
         connect(handle2, "{}".to_string());
@@ -492,7 +533,9 @@ mod tests {
     #[test]
     fn test_set_get_pw_verkey() {
         wallet::tests::make_wallet("test_set_get_pw_verkey");
-        let handle = build_connection("test_set_get_pw_verkey".to_owned());
+        let handle = build_connection(Some("test_set_get_pw_verkey".to_owned()),
+                                      None,
+                                      None);
         thread::sleep(Duration::from_secs(1));
         assert!(!get_pw_did(handle).unwrap().is_empty());
         assert!(!get_pw_verkey(handle).unwrap().is_empty());
@@ -505,7 +548,9 @@ mod tests {
     #[test]
     fn test_cb_adds_verkey() {
         wallet::tests::make_wallet("test_cb_adds_verkey");
-        let handle = build_connection("test_cb_adds_verkey".to_owned());
+        let handle = build_connection(Some("test_cb_adds_verkey".to_owned()),
+                                      None,
+                                      None);
         let err = 0;
 
         let did = CString::new("DUMMYDIDHERE").unwrap().as_ptr();
@@ -532,7 +577,9 @@ mod tests {
 
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT,mockito::SERVER_URL);
         wallet::tests::make_wallet("test_create_agent_pairwise");
-        let handle = build_connection("test_create_agent_pairwise".to_owned());
+        let handle = build_connection(Some("test_create_agent_pairwise".to_owned()),
+                                      None,
+                                      None);
 
         match create_agent_pairwise(handle) {
             Ok(x) => assert_eq!(x,error::SUCCESS.code_num),
@@ -552,7 +599,9 @@ mod tests {
 
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT,mockito::SERVER_URL);
         wallet::tests::make_wallet("test_create_agent_profile");
-        let handle = build_connection("test_create_agent_profile".to_owned());
+        let handle = build_connection(Some("test_create_agent_profile".to_owned()),
+                                      None,
+                                      None);
 
         match update_agent_profile(handle) {
             Ok(x) => assert_eq!(x,error::SUCCESS.code_num),
@@ -570,7 +619,7 @@ mod tests {
         let test_name = "test_get_set_uuid_and_endpoint";
         let wallet_name = test_name;
         wallet::tests::make_wallet(wallet_name);
-        let handle = build_connection(test_name.to_owned());
+        let handle = build_connection(Some(test_name.to_owned()), None, None);
         assert_eq!(get_endpoint(handle).unwrap(), "");
         set_uuid(handle, uuid);
         set_endpoint(handle,endpoint);

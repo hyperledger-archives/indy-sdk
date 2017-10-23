@@ -47,9 +47,14 @@ describe('A Connection object with ', function () {
 
 // connection_connect tests
 
-    it.only(' a call to connect with connection already created should return success', function () { 
+    it(' a call to connect with connection already created should return success', function () {
         const connection = new Connection(path)       
-        connection.create("connection_connect tests")
+        connection.create({
+                              id: "234",
+                              DIDself: "548NLfYrPxtB299RVafcjR",
+//                              DIDremote: "0"
+                          })
+        console.log("SDFSDFSDFSDF")
         return connection.connect({sms: true})
     })
 
@@ -63,7 +68,7 @@ describe('A Connection object with ', function () {
 
     it('a call to get_data where connection exists should return back the connections data', function () {
         const connection = new Connection(path)
-        connection.create("dog, cat, man")
+                connection.create({ id: "234" })
         const data = connection.getData()
         const jsonData = JSON.parse(data)
         assert.notEqual(data, null)
@@ -75,9 +80,9 @@ describe('A Connection object with ', function () {
         assert.equal(connection.getData(), null)
     })
 
-    it.only('a call to get_data where connection was released should return a null value', async function () {
+    it('a call to get_data where connection was released should return a null value', async function () {
         const connection = new Connection(path)
-        assert.equal(connection.create("connection_get_data tests"), 0)
+        assert.equal(connection.create({id: "234"}), 0)
 
         await connection.connect({sms: true})
         
@@ -91,7 +96,7 @@ describe('A Connection object with ', function () {
 
     it('call to getState where connection exists should return success', async function () {
         const connection = new Connection(path)
-        connection.create("connection_getState tests")
+        connection.create({id: "234"})
         await connection.connect({sms: true})
         assert.equal(connection.getState(),StateType.OfferSent)
     })
@@ -104,7 +109,7 @@ describe('A Connection object with ', function () {
 
     it('call to get_state where connection exists but not connected should have a state value of 1', function () {
         const connection = new Connection(path)
-        connection.create("info2")
+        connection.create({id: "234"})
         return waitFor(() => connection.getState() === StateType.Initialized)
     })
 
@@ -113,7 +118,7 @@ describe('A Connection object with ', function () {
 
     it('call to connection_release where connection exists should return success', async function () {
         const connection = new Connection(path)
-        connection.create("connection_release tests")
+        connection.create({id: "234"})
         await connection.connect({sms: true})
         assert.equal(connection.release(), 0)
         assert.equal(connection._connect({sms: true}), 1003)
@@ -128,7 +133,7 @@ describe('A Connection object with ', function () {
     it('connection and GC deletes object should return null whet get_data is called ', function () {
         this.timeout(30000)
         const connection = new Connection(path)
-        connection.create("msg")
+        connection.create({id: "234"})
         connection._connect({sms: true})
         const getData = connection.RUST_API.cxs_connection_get_data
         const handle = connection.connectionHandle

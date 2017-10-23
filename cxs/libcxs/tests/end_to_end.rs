@@ -39,7 +39,7 @@ fn connection_ete() {
     let mut handle: u32 = 0;
     let id = CString::new("{\"id\":\"ckmMPiEDcH4R5URY\"}").unwrap();
     let options = CString::new("{\"phone\":\"8017170266\"}").unwrap();
-    r = api::cxs::cxs_connection_create(id.as_ptr(), &mut handle);
+    r = api::cxs::cxs_connection_create(id.as_ptr(), std::ptr::null(), std::ptr::null(), &mut handle);
     assert!(r == 0);
     thread::sleep(Duration::from_secs(1));
     r = api::cxs::cxs_connection_connect(handle, options.as_ptr());

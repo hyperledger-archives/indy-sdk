@@ -32,7 +32,7 @@ describe('Using the cxs ffi directly ', function() {
 
     it('a call to cxs_connection_create should return 0', function () {
         var intPtr = ref.alloc('int')
-        assert.equal(run.ffi.cxs_connection_create("dog, cat, man", intPtr), 0)
+        assert.equal(run.ffi.cxs_connection_create("dog, cat, man", "", "", intPtr), 0)
     })
 
     it('a to cxs_connection_connect without the ability to connect should return 1', function () {
