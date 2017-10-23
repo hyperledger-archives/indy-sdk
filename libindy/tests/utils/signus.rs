@@ -607,7 +607,33 @@ impl SignusUtils {
         Ok(verkey)
     }
 
-    pub fn endpoint_for_did(wallet_handle: i32, did: &str) -> Result<(Option<String>, Option<String>), ErrorCode> {
+    pub fn set_endpoint_for_did(wallet_handle: i32, did: &str, endpoint: &str) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err| {
+            sender.send((err)).unwrap();
+        });
+        let (command_handle, callback) = CallbackUtils::closure_to_set_endpoint_for_did_cb(cb);
+
+        let did = CString::new(did).unwrap();
+        let endpoint = CString::new(endpoint).unwrap();
+
+        let err = indy_set_endpoint_for_did(command_handle,
+                                            wallet_handle,
+                                            did.as_ptr(),
+                                            metadata.as_ptr(),
+                                            callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let err = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok(())
+    }
+
+    pub fn endpoint_for_did(wallet_handle: i32, did: &str) -> Result<(String, Option<String>), ErrorCode> {
         let (sender, receiver) = channel();
         let cb = Box::new(move |err, endpoint, transport_vk| {
             sender.send((err, endpoint, transport_vk)).unwrap();
@@ -631,7 +657,7 @@ impl SignusUtils {
         Ok((endpoint, transport_vk))
     }
 
-    pub fn store_did_metadata(wallet_handle: i32, did: &str, metadata: &str) -> Result<(), ErrorCode> {
+    pub fn set_did_metadata(wallet_handle: i32, did: &str, metadata: &str) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
         let cb = Box::new(move |err| {
             sender.send((err)).unwrap();

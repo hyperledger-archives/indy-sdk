@@ -1263,22 +1263,39 @@ impl CallbackUtils {
         (command_handle, Some(key_for_did_callback))
     }
 
-    pub fn closure_to_endpoint_for_did_cb(closure: Box<FnMut(ErrorCode, Option<String>, Option<String>) + Send>) -> (i32,
-                                                                                                     Option<extern fn(command_handle: i32,
-                                                                                                                      err: ErrorCode,
-                                                                                                                      endpoint: *const c_char,
-                                                                                                                      transport_vk: *const c_char)>) {
+    pub fn closure_to_set_endpoint_for_did_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                         Option<extern fn(command_handle: i32,
+                                                                                                          err: ErrorCode)>) {
         lazy_static! {
-            static ref ENDPOINT_FOR_DID_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Option<String>, Option<String>) + Send > >> = Default::default();
+            static ref SET_ENDPOINT_FOR_DID_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn set_endpoint_for_did_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = SET_ENDPOINT_FOR_DID_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = SET_ENDPOINT_FOR_DID_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(set_endpoint_for_did_callback))
+    }
+
+    pub fn closure_to_endpoint_for_did_cb(closure: Box<FnMut(ErrorCode, String, Option<String>) + Send>) -> (i32,
+                                                                                                             Option<extern fn(command_handle: i32,
+                                                                                                                              err: ErrorCode,
+                                                                                                                              endpoint: *const c_char,
+                                                                                                                              transport_vk: *const c_char)>) {
+        lazy_static! {
+            static ref ENDPOINT_FOR_DID_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, Option<String>) + Send > >> = Default::default();
         }
 
         extern "C" fn endpoint_for_did_callback(command_handle: i32, err: ErrorCode, endpoint: *const c_char, transport_vk: *const c_char) {
             let mut callbacks = ENDPOINT_FOR_DID_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
-            let endpoint =
-                if endpoint.is_null() { None } else {
-                    unsafe { Some(CStr::from_ptr(endpoint).to_str().unwrap().to_string()) }
-                };
+            let endpoint = unsafe { CStr::from_ptr(endpoint).to_str().unwrap().to_string() };
             let transport_vk =
                 if transport_vk.is_null() { None } else {
                     unsafe { Some(CStr::from_ptr(transport_vk).to_str().unwrap().to_string()) }

@@ -555,6 +555,23 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
+            let (_, sender_vk, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (recipient_did, recipient_vk, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY2_SEED)).unwrap();
+
+            let encrypted_msg = AgentUtils::prep_msg(wallet_handle, &sender_vk, &recipient_vk, MESSAGE.as_bytes()).unwrap();
+            check_message(wallet_handle, &recipient_did, &sender_vk, &encrypted_msg);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_prep_msg_works_for_created_did_as_cid() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
             let (_, sender_vk, _) = SignusUtils::create_my_did(wallet_handle, &format!(r#"{{"seed":"{}", "cid":true}}"#, MY1_SEED)).unwrap();
             let (recipient_did, recipient_vk, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY2_SEED)).unwrap();
 
@@ -645,7 +662,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_prep_anonymous_msg_works_for_invalid_verkey() {
+        fn indy_prep_anonymous_msg_works_for_invalid_recipient_vk() {
             TestUtils::cleanup_storage();
 
             let res = AgentUtils::prep_anonymous_msg(INVALID_VERKEY_LENGTH, &MESSAGE.as_bytes());
