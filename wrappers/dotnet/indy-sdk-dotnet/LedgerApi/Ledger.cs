@@ -118,8 +118,8 @@ namespace Hyperledger.Indy.LedgerApi
         /// <remarks>
         /// This method adds information associated with the submitter specified by the
         /// <paramref name="submitterDid"/> to the JSON provided in the <paramref name="requestJson"/> parameter
-        /// then signs it with the submitter's signing key from the provided wallet and sends the signed 
-        /// request message the to validator <see cref="Pool"/>.
+        /// then signs it with the submitter's signing key from the provided <paramref name="wallet"/> and sends the signed 
+        /// request message to the specified validator <paramref name="pool"/>.   
         /// </remarks>
         /// <param name="pool">The validator pool to submit the request to.</param>
         /// <param name="wallet">The wallet containing the submitter keys to sign the request with.</param>
@@ -155,8 +155,8 @@ namespace Hyperledger.Indy.LedgerApi
         /// Submits a request to the ledger.
         /// </summary>
         /// <remarks>
-        /// This method publishes a message to the validator pool as-is and assumes that the message was
-        /// previously prepared for submission.  Requests can be signed prior to using this method with a
+        /// This method publishes a message to the validator pool specified in the <paramref name="pool"/> parameter as-is 
+        /// and assumes that the message was previously prepared for submission.  Requests can be signed prior to using this 
         /// call to the <see cref="SignRequestAsync(Wallet, string, string)"/> method, or messages can be 
         /// both signed and submitted using the <see cref="SignAndSubmitRequestAsync(Pool, Wallet, string, string)"/>
         /// method.

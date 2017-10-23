@@ -53,7 +53,7 @@ namespace Hyperledger.Indy.Test.PoolTests
             var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
             pool.Dispose();
 
-            var ex = await Assert.ThrowsExceptionAsync<PoolClosedException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidPoolException>(() =>
                 pool.CloseAsync()
             );
         }      

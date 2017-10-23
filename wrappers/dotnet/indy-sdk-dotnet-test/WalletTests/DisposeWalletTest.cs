@@ -53,7 +53,7 @@ namespace Hyperledger.Indy.Test.WalletTests
             var wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
             wallet.Dispose();
 
-            var ex = await Assert.ThrowsExceptionAsync<WalletClosedException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidWalletException>(() =>
                 wallet.CloseAsync()
             );
         }      
