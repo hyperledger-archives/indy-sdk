@@ -66,7 +66,7 @@ namespace Hyperledger.Indy.AgentApi
         /// Creates a new AgentListener that listens for incoming connections on the specified endpoint.
         /// </summary>
         /// <remarks>
-        /// The endpoint specified must be in the format <c>address:port</c> where <c>address</c> is
+        /// The <paramref name="endpoint"/> specified must be in the format <c>address:port</c> where <c>address</c> is
         /// an IP address or host address and <c>port</c> is a numeric port number.
         /// </remarks>
         /// <param name="endpoint">The endpoint on which the incoming connections will listened for.</param>
@@ -193,7 +193,7 @@ namespace Hyperledger.Indy.AgentApi
         /// automatically rejected.  This method adds an identity to the listener that will be authorized 
         /// to accept connections.
         /// </para>
-        /// <para>This method will perform a <see cref="Wallet"/> lookup to find the identity information 
+        /// <para>This method will perform a lookup against the <paramref name="wallet"/> to find the identity information 
         /// for the DID to add and consequently the DID must have already been saved in the wallet using 
         /// the <see cref="Hyperledger.Indy.SignusApi.CreateAndStoreMyDidResult"/> method prior to attempting to
         /// add it to the listener.
@@ -235,7 +235,7 @@ namespace Hyperledger.Indy.AgentApi
         /// </summary>
         /// <remarks>
         /// <para>Once an identity has been added to an AgentListner using the <see cref="AddIdentityAsync(Pool, Wallet, string)"/>
-        /// it can be removed using this method. A <see cref="Wallet"/> lookup will be performed to find 
+        /// it can be removed using this method. A lookup will be performed against the <paramref name="wallet"/> to find 
         /// the identity information for the DID so the wallet containing the DID must be provided.
         /// </para>
         /// </remarks>
