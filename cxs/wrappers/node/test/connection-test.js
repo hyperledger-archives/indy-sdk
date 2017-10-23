@@ -47,7 +47,7 @@ describe('A Connection object with ', function () {
 
 // connection_connect tests
 
-    it.only(' a call to connect with connection already created should return success', function () { 
+    it(' a call to connect with connection already created should return success', function () { 
         const connection = new Connection(path)       
         connection.create("connection_connect tests")
         return connection.connect({sms: true})
@@ -75,7 +75,7 @@ describe('A Connection object with ', function () {
         assert.equal(connection.getData(), null)
     })
 
-    it.only('a call to get_data where connection was released should return a null value', async function () {
+    it('a call to get_data where connection was released should return a null value', async function () {
         const connection = new Connection(path)
         assert.equal(connection.create("connection_get_data tests"), 0)
 
