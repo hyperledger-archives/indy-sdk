@@ -143,7 +143,7 @@ impl SignusService {
     }
 
     pub fn encrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), SignusError> {
-        let their_pk = &their_did.pk;
+        let their_pk = &their_did.verkey;
         let my_sk = &my_did.sk;
         if their_pk.is_none() {
             return Err(SignusError::CommonError(CommonError::InvalidStructure(format!("TheirDid doesn't contain pk: {}", their_did.did))));
@@ -162,6 +162,7 @@ impl SignusService {
 
         let secret_key = Base58::decode(&my_sk)?;
         let public_key = Base58::decode(&their_pk)?;
+        let public_key = signus.verkey_to_public_key(&public_key)?;
 
         let encrypted_doc = signus.encrypt(&secret_key, &public_key, doc, &nonce)?;
         Ok((encrypted_doc, nonce))
@@ -190,10 +191,10 @@ impl SignusService {
     }
 
     pub fn encrypt_sealed(&self, their_did: &TheirDid, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
-        if their_did.pk.is_none() {
+        if their_did.verkey.is_none() {
             return Err(SignusError::CommonError(CommonError::InvalidStructure(format!("TheirDid doesn't contain pk: {}", their_did.did))));
         }
-        self.encrypt_sealed_by_keys(their_did.pk.as_ref().unwrap(), &their_did.crypto_type, doc)
+        self.encrypt_sealed_by_keys(their_did.verkey.as_ref().unwrap(), &their_did.crypto_type, doc)
     }
 
     pub fn encrypt_sealed_by_keys(&self, public_key: &str, crypto_type: &str, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
@@ -203,6 +204,7 @@ impl SignusService {
         let signus = self.crypto_types.get(&crypto_type).unwrap();
 
         let public_key = Base58::decode(&public_key)?;
+        let public_key = signus.verkey_to_public_key(&public_key)?;
 
         let encrypted_doc = signus.encrypt_sealed(&public_key, doc)?;
         Ok(encrypted_doc)

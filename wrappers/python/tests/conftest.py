@@ -65,6 +65,28 @@ def seed_my2():
 
 
 @pytest.fixture
+def verkey_my1():
+    logger = logging.getLogger(__name__)
+    logger.debug("verkey1: >>>")
+
+    res = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
+
+    logger.debug("seed_trustee1: <<< res: %r", res)
+    return res
+
+
+@pytest.fixture
+def verkey_my2():
+    logger = logging.getLogger(__name__)
+    logger.debug("verkey1: >>>")
+
+    res = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
+
+    logger.debug("seed_trustee1: <<< res: %r", res)
+    return res
+
+
+@pytest.fixture
 def endpoint():
     return "127.0.0.1:9700"
 

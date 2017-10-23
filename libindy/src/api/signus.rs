@@ -288,6 +288,7 @@ pub  extern fn indy_get_key_metadata(command_handle: i32,
 #[no_mangle]
 #[allow(unused_variables)]
 pub extern fn indy_key_for_did(command_handle: i32,
+                               pool_handle: i32,
                                wallet_handle: i32,
                                did: *const c_char,
                                cb: Option<extern fn(xcommand_handle: i32,
@@ -298,13 +299,25 @@ pub extern fn indy_key_for_did(command_handle: i32,
 
 #[no_mangle]
 #[allow(unused_variables)]
-pub extern fn indy_endpoint_for_did(command_handle: i32,
-                                    wallet_handle: i32,
-                                    did: *const c_char,
-                                    cb: Option<extern fn(command_handle_: i32,
-                                                         err: ErrorCode,
-                                                         endpoint: *const c_char,
-                                                         transport_vk: *const c_char)>) -> ErrorCode {
+pub extern fn indy_set_endpoint_for_did(command_handle: i32,
+                                        wallet_handle: i32,
+                                        did: *const c_char,
+                                        address: *const c_char,
+                                        transport_key: *const c_char,
+                                        cb: Option<extern fn(command_handle_: i32,
+                                                             err: ErrorCode)>) -> ErrorCode {
+    unimplemented!();
+}
+
+#[no_mangle]
+#[allow(unused_variables)]
+pub extern fn indy_get_endpoint_for_did(command_handle: i32,
+                                        wallet_handle: i32,
+                                        did: *const c_char,
+                                        cb: Option<extern fn(command_handle_: i32,
+                                                             err: ErrorCode,
+                                                             endpoint: *const c_char,
+                                                             transport_vk: *const c_char)>) -> ErrorCode {
     unimplemented!();
 }
 

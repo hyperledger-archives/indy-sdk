@@ -4,12 +4,14 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.sun.jna.Pointer;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.ParamGuard;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.wallet.Wallet;
+import org.hyperledger.indy.sdk.agent.AgentResults.ParseMsgResult;
 
 import com.sun.jna.Callback;
 
@@ -38,54 +40,54 @@ public class Agent extends IndyJava.API {
 
 	/**
 	 * Adds a message observer to track against the specified command handle.
-	 * 
-	 * @param commandHandle The command handle to track against.
-	 * @param messageObserver	The message observer to track.
+	 *
+	 * @param commandHandle   The command handle to track against.
+	 * @param messageObserver The message observer to track.
 	 */
 	private static void addMessageObserver(int commandHandle, AgentObservers.MessageObserver messageObserver) {
 
-		assert(! Agent.messageObserver.containsKey(commandHandle));
+		assert (! Agent.messageObserver.containsKey(commandHandle));
 		Agent.messageObserver.put(commandHandle, messageObserver);
 
 	}
 
 	/**
 	 * Removes a message observer from tracking.
-	 * 
+	 *
 	 * @param xcommand_handle The command handle the message observer is tracked against.
 	 * @return The message observer.
 	 */
 	private static AgentObservers.MessageObserver removeMessageObserver(int xcommand_handle) {
 
 		AgentObservers.MessageObserver future = messageObserver.remove(xcommand_handle);
-		assert(future != null);
+		assert (future != null);
 
 		return future;
 	}
 
 	/**
 	 * Adds a connection observer to track against the specified command handle.
-	 * 
-	 * @param commandHandle The command handle to track against.
+	 *
+	 * @param commandHandle      The command handle to track against.
 	 * @param connectionObserver The connection observer to track.
 	 */
 	private static void addConnectionObserver(int commandHandle, AgentObservers.ConnectionObserver connectionObserver) {
 
-		assert(! connectionObservers.containsKey(commandHandle));
+		assert (! connectionObservers.containsKey(commandHandle));
 		connectionObservers.put(commandHandle, connectionObserver);
 
 	}
 
 	/**
 	 * Removes a connection observer from tracking.
-	 * 
+	 *
 	 * @param xcommand_handle The command handle the connection observer is tracked against.
 	 * @return The connection observer.
 	 */
 	private static AgentObservers.ConnectionObserver removeConnectionObserver(int xcommand_handle) {
 
 		AgentObservers.ConnectionObserver future = connectionObservers.remove(xcommand_handle);
-		assert(future != null);
+		assert (future != null);
 
 		return future;
 	}
@@ -99,13 +101,13 @@ public class Agent extends IndyJava.API {
 	 */
 	private static Callback agentConnectConnectionCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, int connection_handle) throws IndyException {
 
 			CompletableFuture<Connection> future = (CompletableFuture<Connection>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			assert(! connections.containsKey(connection_handle));
+			assert (! connections.containsKey(connection_handle));
 			Agent.Connection connection = new Agent.Connection(connection_handle);
 			connections.put(connection_handle, connection);
 
@@ -138,13 +140,13 @@ public class Agent extends IndyJava.API {
 	 */
 	private static Callback agentListenListenerCb = new Callback() {
 
-		@SuppressWarnings({ "unused", "unchecked" })
+		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, int listener_handle) throws IndyException {
 
 			CompletableFuture<Listener> future = (CompletableFuture<Listener>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			assert(! listeners.containsKey(listener_handle));
+			assert (! listeners.containsKey(listener_handle));
 			Agent.Listener listener = new Agent.Listener(listener_handle);
 			listeners.put(listener_handle, listener);
 
@@ -167,7 +169,7 @@ public class Agent extends IndyJava.API {
 			Agent.Listener listener = listeners.get(xlistener_handle);
 			if (listener == null) return;
 
-			assert(! connections.containsKey(connection_handle));
+			assert (! connections.containsKey(connection_handle));
 			Agent.Connection connection = new Agent.Connection(connection_handle);
 			connections.put(connection_handle, connection);
 
@@ -269,17 +271,72 @@ public class Agent extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when prepMsg completes.
+	 */
+	private static Callback prepMsgCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, Pointer encrypted_msg, int encrypted_len) {
+
+			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			byte[] result = new byte[encrypted_len];
+			encrypted_msg.read(0, result, 0, encrypted_len);
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Callback used when prepAnonymousMsg completes.
+	 */
+	private static Callback prepAnonymousMsgCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, Pointer encrypted_msg, int encrypted_len) {
+
+			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			byte[] result = new byte[encrypted_len];
+			encrypted_msg.read(0, result, 0, encrypted_len);
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Callback used when parseMsg completes.
+	 */
+	private static Callback parseMsgCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String senderKey, Pointer msg_data, int msg_len) {
+
+			byte[] msg = new byte[msg_len];
+			msg_data.read(0, msg, 0, msg_len);
+
+			CompletableFuture<ParseMsgResult> future = (CompletableFuture<ParseMsgResult>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			ParseMsgResult result = new ParseMsgResult(senderKey, msg);
+			future.complete(result);
+
+
+		}
+	};
+
 	/*
 	 * STATIC METHODS
 	 */
 
 	/**
 	 * Establishes an outgoing connection.
-	 * 
-	 * @param pool The pool.
-	 * @param wallet The wallet.
-	 * @param senderDid The sender DID.
-	 * @param receiverDid The receiver DID.
+	 *
+	 * @param pool            The pool.
+	 * @param wallet          The wallet.
+	 * @param senderDid       The sender DID.
+	 * @param receiverDid     The receiver DID.
 	 * @param messageObserver The message observer that will be notified when a message is received on the connection.
 	 * @return A future that resolves to a Connection.
 	 * @throws IndyException Thrown if a failure occurs when calling the SDK.
@@ -290,7 +347,7 @@ public class Agent extends IndyJava.API {
 			String senderDid,
 			String receiverDid,
 			AgentObservers.MessageObserver messageObserver) throws IndyException {
-		
+
 		ParamGuard.notNull(pool, "pool");
 		ParamGuard.notNull(wallet, "wallet");
 		ParamGuard.notNullOrWhiteSpace(receiverDid, "senderDid");
@@ -320,8 +377,8 @@ public class Agent extends IndyJava.API {
 
 	/**
 	 * Starts a listener that listens for incoming connections.
-	 * 
-	 * @param endpoint The endpoint on which the listener should listen for connections.
+	 *
+	 * @param endpoint           The endpoint on which the listener should listen for connections.
 	 * @param connectionObserver An observer that will be notified when new incoming connections are established.
 	 * @return A future that resolves to a listener.
 	 * @throws IndyException Thrown if an error occurs when calling the SDK.
@@ -332,7 +389,7 @@ public class Agent extends IndyJava.API {
 
 		ParamGuard.notNullOrWhiteSpace(endpoint, "endpoint");
 		ParamGuard.notNull(connectionObserver, "connectionObserver");
-		
+
 		CompletableFuture<Listener> future = new CompletableFuture<>();
 		int commandHandle = addFuture(future);
 		addConnectionObserver(commandHandle, connectionObserver);
@@ -351,24 +408,24 @@ public class Agent extends IndyJava.API {
 
 	/**
 	 * Adds an identity to the specified listener.
-	 * 
+	 *
 	 * @param listener The listener to add the identity to.
-	 * @param pool The pool.
-	 * @param wallet The wallet.
-	 * @param did The DID of the identity to add.
+	 * @param pool     The pool.
+	 * @param wallet   The wallet.
+	 * @param did      The DID of the identity to add.
 	 * @return A future that does not resolve a value.
-	 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+	 * @throws IndyException Thrown if an error occurs when calling the SDK.
 	 */
 	public static CompletableFuture<Void> agentAddIdentity(
 			Agent.Listener listener,
 			Pool pool,
 			Wallet wallet,
 			String did) throws IndyException {
-		
+
 		ParamGuard.notNull(listener, "listener");
 		ParamGuard.notNull(pool, "pool");
 		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNullOrWhiteSpace(did, "did");		
+		ParamGuard.notNullOrWhiteSpace(did, "did");
 
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
@@ -392,12 +449,12 @@ public class Agent extends IndyJava.API {
 
 	/**
 	 * Removes an identity from the specified listener.
-	 * 
+	 *
 	 * @param listener The listener to remove the identity from.
-	 * @param wallet The wallet.
-	 * @param did The DID of the identity to remove.
+	 * @param wallet   The wallet.
+	 * @param did      The DID of the identity to remove.
 	 * @return A future that does not resolve a value.
-	 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+	 * @throws IndyException Thrown if an error occurs when calling the SDK.
 	 */
 	public static CompletableFuture<Void> agentRemoveIdentity(
 			Agent.Listener listener,
@@ -406,8 +463,8 @@ public class Agent extends IndyJava.API {
 
 		ParamGuard.notNull(listener, "listener");
 		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNullOrWhiteSpace(did, "did");		
-		
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -428,18 +485,18 @@ public class Agent extends IndyJava.API {
 
 	/**
 	 * Sends a message to the specified connection.
-	 * 
+	 *
 	 * @param connection The connection to send the message to.
-	 * @param message The message to send.
+	 * @param message    The message to send.
 	 * @return A future that does not resolve a value.
-	 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+	 * @throws IndyException Thrown if an error occurs when calling the SDK.
 	 */
 	public static CompletableFuture<Void> agentSend(
 			Agent.Connection connection,
 			String message) throws IndyException {
-		
+
 		ParamGuard.notNull(connection, "connection");
-		ParamGuard.notNull(message, "message");		
+		ParamGuard.notNull(message, "message");
 
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
@@ -459,16 +516,16 @@ public class Agent extends IndyJava.API {
 
 	/**
 	 * Closes the provided connection.
-	 * 
-	 * @param connection The connection to close. 
+	 *
+	 * @param connection The connection to close.
 	 * @return A future that does not resolve a value.
-	 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+	 * @throws IndyException Thrown if an error occurs when calling the SDK.
 	 */
 	public static CompletableFuture<Void> agentCloseConnection(
 			Agent.Connection connection) throws IndyException {
 
 		ParamGuard.notNull(connection, "connection");
-		
+
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -488,16 +545,16 @@ public class Agent extends IndyJava.API {
 
 	/**
 	 * Closes the specified listener.
-	 * 
+	 *
 	 * @param listener The listener to close.
 	 * @return A future that does not resolve a value.
-	 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+	 * @throws IndyException Thrown if an error occurs when calling the SDK.
 	 */
 	public static CompletableFuture<Void> agentCloseListener(
 			Agent.Listener listener) throws IndyException {
 
 		ParamGuard.notNull(listener, "listener");
-		
+
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -509,6 +566,106 @@ public class Agent extends IndyJava.API {
 				commandHandle,
 				listenerHandle,
 				agentCloseListenerCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * @param wallet       The wallet.
+	 * @param senderKey
+	 * @param recipientKey
+	 * @param message      a message to be encrypted
+	 * @return A future that resolves to an encrypted message.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<byte[]> prepMsg(
+			Wallet wallet,
+			String senderKey,
+			String recipientKey,
+			byte[] message) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(senderKey, "senderKey");
+		ParamGuard.notNullOrWhiteSpace(recipientKey, "recipientKey");
+		ParamGuard.notNull(message, "message");
+
+		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_prep_msg(
+				commandHandle,
+				walletHandle,
+				senderKey,
+				recipientKey,
+				message,
+				message.length,
+				prepMsgCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * @param recipientKey
+	 * @param message      a message to be encrypted
+	 * @return A future that resolves to an encrypted message.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<byte[]> prepAnonymousMsg(
+			String recipientKey,
+			byte[] message) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(recipientKey, "recipientKey");
+		ParamGuard.notNull(message, "message");
+
+		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_prep_anonymous_msg(
+				commandHandle,
+				recipientKey,
+				message,
+				message.length,
+				prepMsgCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * @param wallet       The wallet.
+	 * @param recipientKey
+	 * @param encryptedMsg encrypted message
+	 * @return A future that resolves to senderKey and message.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<ParseMsgResult> parseMsg(
+			Wallet wallet,
+			String recipientKey,
+			byte[] encryptedMsg) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(recipientKey, "recipientKey");
+		ParamGuard.notNull(encryptedMsg, "encryptedMsg");
+
+		CompletableFuture<ParseMsgResult> future = new CompletableFuture<ParseMsgResult>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_parse_msg(
+				commandHandle,
+				walletHandle,
+				recipientKey,
+				encryptedMsg,
+				encryptedMsg.length,
+				parseMsgCb);
 
 		checkResult(result);
 
@@ -534,7 +691,7 @@ public class Agent extends IndyJava.API {
 
 		/**
 		 * Gets the handle of the listener.
-		 * 
+		 *
 		 * @return The handle of the listener.
 		 */
 		public int getListenerHandle() {
@@ -544,12 +701,12 @@ public class Agent extends IndyJava.API {
 
 		/**
 		 * Adds an identity to the listener.
-		 * 
-		 * @param pool The pool.
+		 *
+		 * @param pool   The pool.
 		 * @param wallet The wallet.
-		 * @param did The DID of the identity to add.
+		 * @param did    The DID of the identity to add.
 		 * @return A future that does not resolve a value.
-		 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+		 * @throws IndyException Thrown if an error occurs when calling the SDK.
 		 */
 		public CompletableFuture<Void> agentAddIdentity(Pool pool, Wallet wallet, String did) throws IndyException {
 
@@ -558,11 +715,11 @@ public class Agent extends IndyJava.API {
 
 		/**
 		 * Removes an identity from the listener.
-		 * 
+		 *
 		 * @param wallet The wallet.
-		 * @param did The DID of the identity to remove.
+		 * @param did    The DID of the identity to remove.
 		 * @return A future that does not resolve a value.
-		 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+		 * @throws IndyException Thrown if an error occurs when calling the SDK.
 		 */
 		public CompletableFuture<Void> agentRemoveIdentity(Wallet wallet, String did) throws IndyException {
 
@@ -571,9 +728,9 @@ public class Agent extends IndyJava.API {
 
 		/**
 		 * Closes the listener.
-		 * 
+		 *
 		 * @return A future that does not resolve a value.
-		 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+		 * @throws IndyException Thrown if an error occurs when calling the SDK.
 		 */
 		public CompletableFuture<Void> agentCloseListener() throws IndyException {
 
@@ -596,7 +753,7 @@ public class Agent extends IndyJava.API {
 
 		/**
 		 * Gets the handle of the connection.
-		 * 
+		 *
 		 * @return The handle of the connection.
 		 */
 		public int getConnectionHandle() {
@@ -606,10 +763,10 @@ public class Agent extends IndyJava.API {
 
 		/**
 		 * Sends a message on the connection.
-		 * 
+		 *
 		 * @param message The message to send.
 		 * @return A future that does not resolve a value.
-		 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+		 * @throws IndyException Thrown if an error occurs when calling the SDK.
 		 */
 		public CompletableFuture<Void> agentSend(String message) throws IndyException {
 
@@ -618,9 +775,9 @@ public class Agent extends IndyJava.API {
 
 		/**
 		 * Closes the connection.
-		 * 
+		 *
 		 * @return A future that does not resolve a value.
-		 * @throws IndyException Thrown if an error occurs when calling the SDK. 
+		 * @throws IndyException Thrown if an error occurs when calling the SDK.
 		 */
 		public CompletableFuture<Void> agentCloseConnection() throws IndyException {
 
