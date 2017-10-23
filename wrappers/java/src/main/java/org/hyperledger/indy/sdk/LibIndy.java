@@ -65,6 +65,14 @@ public abstract class LibIndy {
 		public int indy_decrypt(int command_handle, int wallet_handle, String myDid, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, Callback cb);
 		public int indy_encrypt_sealed(int command_handle, int wallet_handle, int pool_handle, String did, byte[] message_raw, int message_len, Callback cb);
 		public int indy_decrypt_sealed(int command_handle, int wallet_handle, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
+		public int indy_create_key(int command_handle, int wallet_handle, String key_json, Callback cb);
+		public int indy_set_key_metadata(int command_handle, int wallet_handle, String verkey, String metadata, Callback cb);
+		public int indy_get_key_metadata(int command_handle, int wallet_handle, String verkey, Callback cb);
+		public int indy_key_for_did(int command_handle, int pool_handle, int wallet_handle, String did, Callback cb);
+		public int indy_set_endpoint_for_did(int command_handle, int wallet_handle, String did, String endpoint, Callback cb);
+		public int indy_get_endpoint_for_did(int command_handle, int wallet_handle, String did, Callback cb);
+		public int indy_set_did_metadata(int command_handle, int wallet_handle, String did, String metadata, Callback cb);
+		public int indy_get_did_metadata(int command_handle, int wallet_handle, String did, Callback cb);
 
 		// anoncreds.rs
 
@@ -91,6 +99,9 @@ public abstract class LibIndy {
 		public int indy_agent_send(int command_handle, int connection_handle, String message, Callback cb);
 		public int indy_agent_close_connection(int command_handle, int connection_handle, Callback cb);
 		public int indy_agent_close_listener(int command_handle, int listener_handle, Callback cb);
+		public int indy_prep_msg(int command_handle, int wallet_handle, String sender_vk, String recipient_vk, byte[] msg_data, int msg_len, Callback cb);
+		public int indy_prep_anonymous_msg(int command_handle, String recipient_vk, byte[] msg_data, int msg_len, Callback cb);
+		public int indy_parse_msg(int command_handle, int wallet_handle, String recipient_vk, byte[] encrypted_msg, int encrypted_len, Callback cb);
 
 		// pairwise.rs
 
@@ -122,7 +133,7 @@ public abstract class LibIndy {
 
 	/**
 	 * Initializes the API with the path to the C-Callable library.
-	 * 
+	 *
 	 * @param searchPath The path to the directory containing the C-Callable library file.
 	 */
 	public static void init(String searchPath) {
@@ -152,7 +163,7 @@ public abstract class LibIndy {
 
 	/**
 	 * Indicates whether or not the API has been initialized.
-	 * 
+	 *
 	 * @return true if the API is initialize, otherwise false.
 	 */
 	public static boolean isInitialized() {

@@ -1283,7 +1283,7 @@ impl CallbackUtils {
         (command_handle, Some(set_endpoint_for_did_callback))
     }
 
-    pub fn closure_to_endpoint_for_did_cb(closure: Box<FnMut(ErrorCode, String, Option<String>) + Send>) -> (i32,
+    pub fn closure_to_get_endpoint_for_did_cb(closure: Box<FnMut(ErrorCode, String, Option<String>) + Send>) -> (i32,
                                                                                                              Option<extern fn(command_handle: i32,
                                                                                                                               err: ErrorCode,
                                                                                                                               endpoint: *const c_char,

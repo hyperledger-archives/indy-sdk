@@ -89,4 +89,27 @@ public final class SignusResults {
 		 */
 		public byte[] getNonce() { return this.nonce; }
 	}
+
+	/**
+	 * Result from calling endpointForDid.
+	 */
+	public static class EndpointForDidResult extends IndyJava.Result {
+
+		private String endpoint, transportKey;
+		EndpointForDidResult(String endpoint, String transportKey) { this.endpoint = endpoint; this.transportKey = transportKey;}
+
+		/**
+		 * Gets the Endpoint.
+		 *
+		 * @return The Endpoint.
+		 */
+		public String getEndpoint() { return this.endpoint; }
+
+		/**
+		 * Gets the transport key.
+		 *
+		 * @return The transport key.
+		 */
+		public String getTransportKey() { return this.transportKey; }
+	}
 }

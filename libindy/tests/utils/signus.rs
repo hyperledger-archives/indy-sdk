@@ -620,7 +620,7 @@ impl SignusUtils {
         let err = indy_set_endpoint_for_did(command_handle,
                                             wallet_handle,
                                             did.as_ptr(),
-                                            metadata.as_ptr(),
+                                            endpoint.as_ptr(),
                                             callback);
 
         if err != ErrorCode::Success {
@@ -633,19 +633,19 @@ impl SignusUtils {
         Ok(())
     }
 
-    pub fn endpoint_for_did(wallet_handle: i32, did: &str) -> Result<(String, Option<String>), ErrorCode> {
+    pub fn get_endpoint_for_did(wallet_handle: i32, did: &str) -> Result<(String, Option<String>), ErrorCode> {
         let (sender, receiver) = channel();
         let cb = Box::new(move |err, endpoint, transport_vk| {
             sender.send((err, endpoint, transport_vk)).unwrap();
         });
-        let (command_handle, callback) = CallbackUtils::closure_to_endpoint_for_did_cb(cb);
+        let (command_handle, callback) = CallbackUtils::closure_to_get_endpoint_for_did_cb(cb);
 
         let did = CString::new(did).unwrap();
 
-        let err = indy_endpoint_for_did(command_handle,
-                                        wallet_handle,
-                                        did.as_ptr(),
-                                        callback);
+        let err = indy_get_endpoint_for_did(command_handle,
+                                            wallet_handle,
+                                            did.as_ptr(),
+                                            callback);
 
         if err != ErrorCode::Success {
             return Err(err);

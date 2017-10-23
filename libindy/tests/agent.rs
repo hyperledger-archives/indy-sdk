@@ -1,4 +1,5 @@
 extern crate indy;
+extern crate base64;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
 use indy::api as api;
@@ -637,6 +638,7 @@ mod high_cases {
 
     mod prep_anonymous_msg {
         use super::*;
+        use base64;
 
         fn check_message(wallet_handle: i32, recipient_did: &str, encrypted_msg: &Vec<u8>) {
             let decrypted_message = SignusUtils::decrypt_sealed(wallet_handle, recipient_did, encrypted_msg).unwrap();
@@ -644,7 +646,7 @@ mod high_cases {
             let decrypted_msg: serde_json::Value = serde_json::from_str(decrypted_msg_json).unwrap();
 
             assert_eq!(false, decrypted_msg["auth"].as_bool().unwrap());
-            assert_eq!(MESSAGE, decrypted_msg["msg"].as_str().unwrap());
+            assert_eq!(MESSAGE.as_bytes().to_vec(), base64::decode(decrypted_msg["msg"].as_str().unwrap()).unwrap());
         }
 
         #[test]
