@@ -637,7 +637,7 @@ mod tests {
             .create();
 
         assert_eq!(get_state(handle),CxsStateType::CxsStateAccepted as u32);
-        wallet::tests::delete_wallet("test_create_connection");
+        wallet::tests::delete_wallet(test_name);
         _m.assert();
         release(handle);
     }

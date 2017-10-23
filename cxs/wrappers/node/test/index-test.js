@@ -15,11 +15,11 @@ describe('call to cxs_init with provided path', function() {
     path += "/lib/libcxs.so";
     var run = new CXSRuntime(new CXSRuntimeConfig(path));
     it('should return 0', function () {
-        assert.equal(run.ffi.cxs_init(null), 0);
+        assert.equal(run._ffi.cxs_init(null), 0);
     })
 
     it('should return 1004', function() {
-            assert.equal(run.ffi.cxs_init('garbage'), 1004);
+            assert.equal(run._ffi.cxs_init('garbage'), 1004);
     })
 });
 
@@ -32,24 +32,24 @@ describe('Using the cxs ffi directly ', function() {
 
     it('a call to cxs_connection_create should return 0', function () {
         var intPtr = ref.alloc('int')
-        assert.equal(run.ffi.cxs_connection_create("dog, cat, man", intPtr), 0)
+        assert.equal(run._ffi.cxs_connection_create("dog, cat, man", intPtr), 0)
     })
 
     it('a to cxs_connection_connect without the ability to connect should return 1', function () {
-        assert.equal(run.ffi.cxs_connection_connect(2, "SMS"), 1003)
+        assert.equal(run._ffi.cxs_connection_connect(2, "SMS"), 1003)
     })
 
     it('a call to cxs_connection_get_data should return 0', function () {
-        assert.equal(run.ffi.cxs_connection_get_data(2), null)
+        assert.equal(run._ffi.cxs_connection_get_data(2), null)
     })
 
     it('a call to cxs_connection_get_state should return 0', function () {
         var intPtr = ref.alloc('int')
-        assert.equal(run.ffi.cxs_connection_get_state(2, intPtr), 0)
+        assert.equal(run._ffi.cxs_connection_get_state(2, intPtr), 0)
     })
 
     it('a call to cxs_connection_release without ability to release should return 1', function() {
-        assert.equal(run.ffi.cxs_connection_release(2), 1003)
+        assert.equal(run._ffi.cxs_connection_release(2), 1003)
     })
 
 });
