@@ -4,14 +4,13 @@ import static org.junit.Assert.*;
 
 import java.util.concurrent.ExecutionException;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateClaimResult;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.*;
+import static org.hamcrest.CoreMatchers.isA;
 
 public class IssuerRevokeClaimTest extends AnoncredsIntegrationTest
 {
@@ -88,7 +87,7 @@ public class IssuerRevokeClaimTest extends AnoncredsIntegrationTest
     @Test
     public void testAnoncredsWorksForClaimRevokedBeforeProofCreated() throws Exception {
     	thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.AnoncredsClaimRevoked));
+		thrown.expectCause(isA(ClaimRevokedException.class));
 		
         //9. Issuer revoke claim
         String revocRegUpdateJson =  Anoncreds.issuerRevokeClaim(
