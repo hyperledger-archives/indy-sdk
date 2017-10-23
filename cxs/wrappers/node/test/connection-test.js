@@ -40,21 +40,22 @@ describe('A Connection object with ', function () {
             DIDremote: "0"}), 0)
     })
 
-    it('null param in create should return success', function () {
+    it('object with id as param in create should return success', function () {
         const connection = new Connection(path)
-        assert.equal(connection.create(null), 0)
+        assert.equal(connection.create({id: "999"}), 0)
     })
 
 // connection_connect tests
 
-    it(' a call to connect with connection already created should return success', function () {
+    it(' a call to connect with connection already created should return success', async function () {
         const connection = new Connection(path)       
         connection.create({
                               id: "234",
                               DIDself: "548NLfYrPxtB299RVafcjR",
-//                              DIDremote: "0"
+                             DIDremote: "0"
                           })
-        console.log("SDFSDFSDFSDF")
+
+
         return connection.connect({sms: true})
     })
 

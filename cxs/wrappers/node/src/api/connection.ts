@@ -21,8 +21,8 @@ export class Connection implements IConnections {
   }
 
   create ( recipientInfo: IRecipientInfo ): number {
-    const myDid = recipientInfo.DIDself != undefined ? recipientInfo.DIDself : null
-    const theirDid = recipientInfo.DIDremote != undefined ? recipientInfo.DIDremote : null
+    const myDid = recipientInfo.DIDself !== undefined ? recipientInfo.DIDself : null
+    const theirDid = recipientInfo.DIDremote !== undefined ? recipientInfo.DIDremote : null
     const id = recipientInfo.id // TODO verifiy that id is a string
     const connectionHandlePtr = alloc(refTypes.uint32)
     const result = this.RUST_API.cxs_connection_create(id, myDid, theirDid, connectionHandlePtr)
