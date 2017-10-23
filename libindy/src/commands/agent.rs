@@ -1,5 +1,3 @@
-#![warn(unused_variables)]
-
 extern crate rust_base58;
 extern crate serde_json;
 extern crate zmq_pw as zmq;
@@ -33,6 +31,7 @@ use utils::crypto::verkey_builder::build_full_verkey;
 pub type AgentConnectCB = Box<Fn(Result<i32, IndyError>) + Send>;
 pub type AgentMessageCB = Box<Fn(Result<(i32, String), IndyError>) + Send>;
 pub type AgentPrepMsgCB = Box<Fn(Result<Vec<u8>, IndyError>) + Send>;
+pub type AgentParseMsgCB = Box<Fn(Result<(Option<String>, Vec<u8>), IndyError>) + Send>;
 
 pub enum AgentCommand {
     PrepMsg(
@@ -46,6 +45,12 @@ pub enum AgentCommand {
         String, // recipient_vk
         Vec<u8>, // msg
         AgentPrepMsgCB, // cb
+    ),
+    ParseMsg(
+        i32, // wallet handle
+        String, // recipient_vk
+        Vec<u8>, // msg
+        AgentParseMsgCB, // cb
     ),
     Connect(
         i32, // pool handle
@@ -196,6 +201,10 @@ impl AgentCommandExecutor {
                 info!(target: "agent_command_executor", "PrepAnonymousMsg command received");
                 self.prep_anonymous_msg(recipient_vk, msg, cb);
             }
+            AgentCommand::ParseMsg(wallet_handle, recipient_vk, msg, cb) => {
+                info!(target: "agent_command_executor", "ParseMsg command received");
+                self.parse_msg(wallet_handle, recipient_vk, msg, cb);
+            }
             AgentCommand::Connect(pool_handle, wallet_handle, sender_did, receiver_did, connect_cb, message_cb) => {
                 info!(target: "agent_command_executor", "Connect command received");
                 self.connect(pool_handle, wallet_handle, sender_did, receiver_did, connect_cb, message_cb)
@@ -317,6 +326,48 @@ impl AgentCommandExecutor {
             .map_err(IndyError::SignusError))
     }
 
+    fn parse_msg(&self, wallet_handle: i32, recipient_vk: String, msg: Vec<u8>,
+                 cb: AgentParseMsgCB) {
+        //FIXME work with keys, not my_did
+        let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", recipient_vk));
+        if my_did_json.is_err() {
+            return cb(Err(IndyError::WalletError(WalletError::NotFound(format!("My Did not found")))));
+        }
+        let my_did_json = my_did_json.unwrap();
+
+        let my_did = MyDid::from_json(&my_did_json);
+        if my_did.is_err() {
+            return cb(Err(IndyError::CommonError(CommonError::InvalidState(format!("Invalid my did json")))));
+        }
+        let my_did: MyDid = my_did.unwrap();
+        //FIXME ^^^
+
+        let result = self.signus_service.decrypt_sealed(my_did, msg.as_slice());
+        struct DecryptedMsg {
+            msg: String,
+            authorized: bool,
+            sender: Option<String>,
+            nonce: Option<String>,
+        }
+
+        let decrypted_msg: DecryptedMsg = serde_json::from_slice(result.unwrap()).unwrap();
+
+        let result = if decrypted_msg.authorized {
+            assert!(decrypted_msg.sender.is_some());
+            assert!(decrypted_msg.nonce.is_some());
+            (decrypted_msg.sender.clone().unwrap(),
+             self.signus_service.decrypt(my_did, decrypted_msg.sender,
+                                         decrypted_msg.msg.as_ref().unwrap().from_base64(),
+                                         decrypted_msg.nonce.as_ref().unwrap().from_base64()).unwrap())
+        } else {
+            assert!(decrypted_msg.sender.is_none());
+            assert!(decrypted_msg.nonce.is_none());
+            (None, decrypted_msg.msg.from_base64())
+        };
+
+
+        cb(Ok(result))
+    }
     fn connect(&self, pool_handle: i32, wallet_handle: i32,
                sender_did: String, receiver_did: String,
                connect_cb: AgentConnectCB, message_cb: AgentMessageCB) {

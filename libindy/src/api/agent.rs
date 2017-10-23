@@ -69,7 +69,6 @@ pub extern fn indy_prep_anonymous_msg(command_handle: i32,
 }
 
 #[no_mangle]
-#[allow(unused_variables)]
 pub extern fn indy_parse_msg(command_handle: i32,
                              wallet_handle: i32,
                              recipient_vk: *const c_char,
@@ -80,7 +79,24 @@ pub extern fn indy_parse_msg(command_handle: i32,
                                                   sender_vk: *const c_char,
                                                   msg_data: *const u8,
                                                   msg_len: u32)>) -> ErrorCode {
-    unimplemented!();
+    check_useful_c_str!(recipient_vk, ErrorCode::CommonInvalidParam3);
+    check_useful_c_byte_array!(encrypted_msg, encrypted_len, ErrorCode::CommonInvalidParam4, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Agent(AgentCommand::ParseMsg(
+            wallet_handle,
+            recipient_vk,
+            encrypted_msg,
+            Box::new(move |result| {
+                let (err, sender_vk, msg) = result_to_err_code_2!(result, String::new(), Vec::new());
+                let (msg_data, msg_len) = vec_to_pointer(&msg);
+                let sender_vk = CStringUtils::string_to_cstring(sender_vk);
+                cb(command_handle, err, sender_vk.as_ptr(), msg_data, msg_len)
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Establishes agent to agent connection.
