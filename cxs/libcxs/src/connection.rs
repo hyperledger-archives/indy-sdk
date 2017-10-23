@@ -47,6 +47,7 @@ struct Connection {
     state: CxsStateType,
     uuid: String,
     endpoint: String, // For QR code invitation
+    invite_detail: String,
 }
 
 impl Connection {
@@ -64,8 +65,9 @@ impl Connection {
 
         match httpclient::post(&json_msg,&url) {
             Err(_) => return error::UNKNOWN_ERROR.code_num,
-            Ok(_) => {
+            Ok(response) => {
                 self.state = CxsStateType::CxsStateOfferSent;
+                self.invite_detail = response;
                 return error::SUCCESS.code_num
             },
         }
@@ -253,6 +255,7 @@ pub fn build_connection (info_string: String) -> u32 {
             state: CxsStateType::CxsStateNone,
             uuid: String::new(),
             endpoint: String::new(),
+            invite_detail: String::new(),
         });
 
     let mut m = CONNECTION_MAP.lock().unwrap();
@@ -264,7 +267,6 @@ pub fn build_connection (info_string: String) -> u32 {
     info!("creating new connection and did (wallet: {}, handle {}", wallet_handle, new_handle);
     unsafe {
         let indy_err = indy_create_and_store_my_did(new_handle as i32, wallet_handle, CString::new(did_json).unwrap().as_ptr(), Some(store_new_did_info_cb));
-        info!("INDY ERRO from indy_create_and_store_my_did: {}", indy_err);
     }
     new_handle
 }
@@ -577,6 +579,66 @@ mod tests {
         assert_eq!(get_uuid(handle).unwrap(), uuid);
         assert_eq!(get_endpoint(handle).unwrap(), endpoint);
         wallet::tests::delete_wallet(wallet_name);
+        release(handle);
+    }
+
+    #[test]
+    fn test_get_qr_code_data(){
+        ::utils::logger::LoggerUtils::init();
+        let test_name = "test_get_qr_code_data";
+        let _m = mockito::mock("POST", "/agency/route")
+            .with_status(202)
+            .with_header("content-type", "text/plain")
+            .with_body("nice!")
+            .expect(3)
+            .create();
+
+        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT,mockito::SERVER_URL);
+        wallet::tests::make_wallet(test_name);
+        let handle = build_connection(test_name.to_owned());
+        assert!(handle > 0);
+        thread::sleep(Duration::from_secs(2));
+        assert!(!get_pw_did(handle).unwrap().is_empty());
+        assert!(!get_pw_verkey(handle).unwrap().is_empty());
+        assert_eq!(get_state(handle),CxsStateType::CxsStateInitialized as u32);
+        _m.assert();
+
+        let response = "{ \"inviteDetail\": {
+                \"senderEndpoint\": \"34.210.228.152:80\",
+                \"connReqId\": \"CXqcDCE\",
+                \"senderAgentKeyDlgProof\": \"sdfsdf\",
+                \"senderName\": \"Evernym\",
+                \"senderDID\": \"JiLBHundRhwYaMbPWno8Vg\",
+                \"senderLogoUrl\": \"https://postimg.org/image/do2r09ain/\",
+                \"senderDIDVerKey\": \"AevwvcQBLv5CERRJShzUncV7ubapSgbDZxus42zS8fk1\",
+                \"targetName\": \"there\"
+            }}";
+
+        let _m = mockito::mock("POST", "/agency/route")
+            .with_status(202)
+            .with_header("content-type", "text/plain")
+            .with_body(response)
+            .expect(1)
+            .create();
+
+
+        connect(handle, "{}".to_string());
+        let data = to_string(handle);
+        info!("Data from to_string(i.e. 'get_data()'{}",data);
+        assert!(data.contains("there"));
+
+        _m.assert();
+
+        let _m = mockito::mock("POST", "/agency/route")
+            .with_status(202)
+            .with_header("content-type", "text/plain")
+            .with_body("message accepted")
+            .expect(1)
+            .create();
+
+        assert_eq!(get_state(handle),CxsStateType::CxsStateAccepted as u32);
+        wallet::tests::delete_wallet("test_create_connection");
+        _m.assert();
         release(handle);
     }
 
