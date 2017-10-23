@@ -65,11 +65,11 @@ def testNodeWrapper(envn) {
         }
         stage ('Build Node Package'){
             envn.inside {
-                //if (env.BRANCH_NAME == "master") {
+                if (env.BRANCH_NAME == "master") {
                     sh 'npm pack'
                     sh 'test -f cxs-1.0.0.tgz'
                     archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.tgz'
-                //}
+                }
             }
         }
     }
