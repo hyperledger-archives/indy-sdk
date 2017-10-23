@@ -180,7 +180,6 @@ pub extern fn cxs_connection_create(source_id: *const c_char,
 
 
     let handle = build_connection(source_id_opt, did_opt, None);
-
     unsafe { *connection_handle = handle }
 
     error::SUCCESS.code_num
@@ -473,5 +472,57 @@ mod tests {
         let rc = cxs_connection_connect(handle, CString::new("{}").unwrap().into_raw());
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
     }
+
+    #[test]
+    fn test_init_create_and_connect(){
+        let _m = mockito::mock("POST", "/agency/route")
+            .with_status(202)
+            .with_header("content-type", "text/plain")
+            .with_body("nice!")
+            .expect(4)
+            .create();
+        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT,mockito::SERVER_URL);
+
+        let result = cxs_init(ptr::null());
+        thread::sleep(Duration::from_secs(3));
+
+        let mut handle: u32 = 0;
+        let rc = cxs_connection_create(CString::new("5").unwrap().into_raw(),
+//                                       CString::new("548NLfYrPxtB299RVafcjR").unwrap().into_raw(),
+//                                       CString::new("338NLfYrPxtB299RVafcjR").unwrap().into_raw(),
+                                       ptr::null_mut(),
+                                       ptr::null(),
+                                       &mut handle);
+        thread::sleep(Duration::from_secs(1));
+
+        let rc = cxs_connection_connect(handle, CString::new("{}").unwrap().into_raw());
+        assert_eq!(rc, 0);
+
+    }
+
+    #[test]
+    fn test_init_create_and_connect_with_did() {
+        let _m = mockito::mock("POST", "/agency/route")
+            .with_status(202)
+            .with_header("content-type", "text/plain")
+            .with_body("nice!")
+            .expect(4)
+            .create();
+        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
+
+        let result = cxs_init(ptr::null());
+        thread::sleep(Duration::from_secs(3));
+
+        let mut handle: u32 = 0;
+        let rc = cxs_connection_create(CString::new("5").unwrap().into_raw(),
+                                       CString::new("548NLfYrPxtB299RVafcjR").unwrap().into_raw(),
+                                       CString::new("338NLfYrPxtB299RVafcjR").unwrap().into_raw(),
+                                       &mut handle);
+        thread::sleep(Duration::from_secs(1));
+
+        let rc = cxs_connection_connect(handle, CString::new("{}").unwrap().into_raw());
+        assert_eq!(rc, 0);
+    }
+
 
 }

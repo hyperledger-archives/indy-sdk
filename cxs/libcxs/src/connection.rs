@@ -63,7 +63,10 @@ impl Connection {
         let json_msg = format!("{{\"to\":\"{}\",\"agentPayload\":\"{{\\\"type\\\":\\\"SEND_INVITE\\\",\\\"keyDlgProof\\\":\\\"nothing\\\",\\\"phoneNumber\\\":\\\"{}\\\"}}\"}}", self.pw_did, options_obj.phone);
 
         match httpclient::post(&json_msg,&url) {
-            Err(_) => return error::UNKNOWN_ERROR.code_num,
+            Err(_) => {
+                println!("better message");
+                return error::UNKNOWN_ERROR.code_num
+            },
             Ok(_) => {
                 self.state = CxsStateType::CxsStateOfferSent;
                 return error::SUCCESS.code_num
@@ -241,14 +244,13 @@ pub fn build_connection (source_id: Option<String>,
     info!("building connection with {}", source_id_unwrap);
     // Check to make sure info_string is unique
     if did.is_some() {
+
         let new_handle = find_connection(&did.clone().unwrap_or_default());
         if new_handle > 0 {return new_handle}
     }
-
     let new_handle = rand::thread_rng().gen::<u32>();
     info!("creating connection with handle {}", new_handle);
     // This is a new connection
-
 
     let c = Box::new(Connection {
             source_id: source_id_unwrap,
@@ -279,6 +281,12 @@ pub fn build_connection (source_id: Option<String>,
     }
     else {
         //TODO need to get VERKEY ?MAYBE?
+        let wallet_handle = wallet::get_wallet_handle();
+        let did_json = "{}";
+        unsafe {
+            let indy_err = indy_create_and_store_my_did(new_handle as i32, wallet_handle, CString::new(did_json).unwrap().as_ptr(), Some(store_new_did_info_cb));
+            info!("INDY ERRO from indy_create_and_store_my_did: {}", indy_err);
+        }
         set_pw_did(new_handle, &did.unwrap_or_default());
     }
     new_handle
