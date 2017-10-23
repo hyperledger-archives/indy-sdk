@@ -83,17 +83,11 @@
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     NSString *masterSecretName = @"master_secret";
-    ret = [IndyAnoncreds proverCreateMasterSecretWithWalletHandle:walletHandle
-                                                   masterSecretName:masterSecretName
-                                                         completion:^(NSError *error)
-           {
-               XCTAssertEqual(error.code, Success, "proverCreateMasterSecret got error in completion");
-               [completionExpectation fulfill];
-               
-           }];
+    
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:masterSecretName
+                                                            walletHandle:walletHandle];
     
     XCTAssertEqual(ret.code, Success, @"proverCreateMasterSecret() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 6. Prover create Claim Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -104,21 +98,13 @@
                                  "\"schema_seq_no\": %@}", schemaSeqNo ];
     __block NSString *claimReqJSON = nil;
     
-    ret = [IndyAnoncreds proverCreateAndStoreClaimReqWithWalletHandle:walletHandle
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:[NSDictionary toString:claimDef]
                                                               proverDid:proverDiD
-                                                         claimOfferJSON:claimOfferJSON
-                                                           claimDefJSON:[NSDictionary toString:claimDef]
+                                                         claimOfferJson:claimOfferJSON
                                                        masterSecretName:masterSecretName
-                                                             completion:^(NSError *error, NSString *claimReqJSON1)
-           {
-               XCTAssertEqual(error.code, Success, "proverCreateAndStoreClaimReq got error in completion");
-               claimReqJSON = [ NSString stringWithString: claimReqJSON1 ];
-               [completionExpectation fulfill];
-               
-           }];
-    
+                                                           walletHandle:walletHandle
+                                                        outClaimReqJson:&claimReqJSON];
     XCTAssertEqual(ret.code, Success, @"proverCreateAndStoreClaimReq() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 7. Issuer create Claim for Claim Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -132,33 +118,18 @@
     __block NSString *xClaimJSON = nil;
     
     
-    ret = [IndyAnoncreds issuerCreateClaimWithWalletHandle:walletHandle
-                                              claimReqJSON:claimReqJSON
-                                                 claimJSON:testClaimJson
-                                            userRevocIndex:nil
-                                                completion:^(NSError* error, NSString* revocRegUpdateJSON, NSString* claimJSON1)
-           {
-               XCTAssertEqual(error.code, Success, "issuerCreateClaim() got error in completion");
-               xClaimJSON = [ NSString stringWithString: claimJSON1];
-               [completionExpectation fulfill];
-           }];
-    
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:walletHandle
+                                                                claimReqJson:claimReqJSON
+                                                                   claimJson:testClaimJson
+                                                              userRevocIndex:nil
+                                                                outClaimJson:&xClaimJSON
+                                                       outRevocRegUpdateJSON:nil];
     XCTAssertEqual( ret.code, Success, @"issuerCreateClaim() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 8. Prover process and store Claim
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    ret = [IndyAnoncreds proverStoreClaimWithWalletHandle:walletHandle
-                                                 claimsJSON:xClaimJSON
-                                                 completion:^(NSError *error)
-           {
-               XCTAssertEqual(error.code, Success, "proverStoreClaim() got error in completion");
-               [completionExpectation fulfill];
-           }];
-    
+    ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
+                                                                 claimsJson:xClaimJSON];
     XCTAssertEqual( ret.code, Success, @"proverStoreClaim() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 9. Prover gets Claims for Proof Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -185,18 +156,10 @@
     
     __block NSString *claimsJson = nil;
     
-    ret = [IndyAnoncreds proverGetClaimsForProofReqWithWalletHandle:walletHandle
-                                                         proofReqJSON:proofReqJSON
-                                                           completion:^(NSError* error, NSString* claimsJSON1)
-           {
-               claimsJson = claimsJSON1;
-               XCTAssertEqual(error.code, Success, "proverGetClaimsForProofReq() got error in completion");
-               [completionExpectation fulfill];
-               
-           }];
-    
+    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
+                                                                     proofRequestJson:proofReqJSON
+                                                                        outClaimsJson:&claimsJson];
     XCTAssertEqual( ret.code, Success, @"proverGetClaimsForProofReq() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     NSDictionary *claims = [ NSDictionary fromString: claimsJson];
     XCTAssertTrue(claims, @"serialization failed");
@@ -220,56 +183,34 @@
     
     NSString *revocRegsJsons = @"{}";
     
-    __block NSString *proofJSON = nil;
+    NSString *proofJSON = nil;
     
-    ret =  [IndyAnoncreds proverCreateProofWithWalletHandle:walletHandle
-                                                 proofReqJSON:proofReqJSON
-                                          requestedClaimsJSON:requestedClaimsJSON
-                                                  schemasJSON:schemas_json
-                                             masterSecretName:masterSecretName
-                                                claimDefsJSON:claimDefsJSON
-                                                revocRegsJSON:revocRegsJsons
-                                                   completion:^(NSError* error, NSString* proofJSON1)
-            {
-                XCTAssertEqual(error.code, Success, "proverCreateProof() got error in completion");
-                proofJSON = [ NSString stringWithString: proofJSON1];
-                [completionExpectation fulfill];
-            }];
-    
+    ret = [[AnoncredsUtils sharedInstance] proverCreateProofWithWalletHandle:walletHandle
+                                                                proofReqJson:proofReqJSON
+                                                         requestedClaimsJson:requestedClaimsJSON
+                                                                 schemasJson:schemas_json
+                                                            masterSecretName:masterSecretName
+                                                               claimDefsJson:claimDefsJSON
+                                                               revocRegsJson:revocRegsJsons
+                                                                outProofJson:&proofJSON];
     XCTAssertEqual( ret.code, Success, @"proverCreateProof() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 11. Verifier verify proof
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [IndyAnoncreds verifierVerifyProofWithWalletHandle:  proofReqJSON
-                                                     proofJSON:  proofJSON
-                                                   schemasJSON:  schemas_json
-                                                 claimDefsJSON:  claimDefsJSON
-                                                 revocRegsJSON:  revocRegsJsons
-                                                    completion: ^(NSError *error, BOOL valid)
-           {
-               XCTAssertEqual(error.code, Success, "verifierVerifyProof() got error in completion");
-               XCTAssertEqual(valid, true, "verifierVerifyProof() got error in completion");
-               [completionExpectation fulfill];
-               
-           }];
+    BOOL valid = false;
     
+    ret = [[AnoncredsUtils sharedInstance] verifierVerifyProof:proofReqJSON
+                                                     proofJson:proofJSON
+                                                   schemasJson:schemas_json
+                                                 claimDefsJson:claimDefsJSON
+                                                 revocRegsJson:revocRegsJsons
+                                                      outValid:&valid];
     XCTAssertEqual(ret.code, Success, @"verifierVerifyProof() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 12. close wallet
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    ret = [[IndyWallet sharedInstance] closeWalletWithHandle: walletHandle
-                                                    completion: ^ (NSError *error)
-           {
-               XCTAssertEqual(error.code, Success, "closeWallet got error in completion");
-               [completionExpectation fulfill];
-           }];
-    
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
     XCTAssertEqual(ret.code, Success, @"closeWallet() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    
     [TestUtils cleanupStorage];
 }
 
@@ -329,20 +270,13 @@
     claimDef[@"seqNo"] = claimDefSeqNo;
     
     // 5. Prover create Master Secret
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     NSString *masterSecretName = @"master_secret";
-    ret = [IndyAnoncreds proverCreateMasterSecretWithWalletHandle:walletHandle
-                                                 masterSecretName:masterSecretName
-                                                       completion:^(NSError *error)
-           {
-               XCTAssertEqual(error.code, Success, "proverCreateMasterSecret got error in completion");
-               [completionExpectation fulfill];
-               
-           }];
+    
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:masterSecretName
+                                                            walletHandle:walletHandle];
     
     XCTAssertEqual(ret.code, Success, @"proverCreateMasterSecret() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 6. Prover create Claim Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -353,24 +287,15 @@
                                  "\"schema_seq_no\": %@}", schemaSeqNo ];
     __block NSString *claimReqJSON = nil;
     
-    ret = [IndyAnoncreds proverCreateAndStoreClaimReqWithWalletHandle:walletHandle
-                                                            proverDid:proverDiD
-                                                       claimOfferJSON:claimOfferJSON
-                                                         claimDefJSON:[NSDictionary toString:claimDef]
-                                                     masterSecretName:masterSecretName
-                                                           completion:^(NSError *error, NSString *claimReqJSON1)
-           {
-               XCTAssertEqual(error.code, Success, "proverCreateAndStoreClaimReq got error in completion");
-               claimReqJSON = [ NSString stringWithString: claimReqJSON1 ];
-               [completionExpectation fulfill];
-               
-           }];
-    
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:[NSDictionary toString:claimDef]
+                                                              proverDid:proverDiD
+                                                         claimOfferJson:claimOfferJSON
+                                                       masterSecretName:masterSecretName
+                                                           walletHandle:walletHandle
+                                                        outClaimReqJson:&claimReqJSON];
     XCTAssertEqual(ret.code, Success, @"proverCreateAndStoreClaimReq() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 7. Issuer create Claim for Claim Request
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     NSString*  testClaimJson = @"{\
     \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\
@@ -380,34 +305,18 @@
     }";
     __block NSString *xClaimJSON = nil;
     
-    
-    ret = [IndyAnoncreds issuerCreateClaimWithWalletHandle:walletHandle
-                                              claimReqJSON:claimReqJSON
-                                                 claimJSON:testClaimJson
-                                            userRevocIndex:nil
-                                                completion:^(NSError* error, NSString* revocRegUpdateJSON, NSString* claimJSON1)
-           {
-               XCTAssertEqual(error.code, Success, "issuerCreateClaim() got error in completion");
-               xClaimJSON = [ NSString stringWithString: claimJSON1];
-               [completionExpectation fulfill];
-           }];
-    
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:walletHandle
+                                                                claimReqJson:claimReqJSON
+                                                                   claimJson:testClaimJson
+                                                              userRevocIndex:nil
+                                                                outClaimJson:&xClaimJSON
+                                                       outRevocRegUpdateJSON:nil];
     XCTAssertEqual( ret.code, Success, @"issuerCreateClaim() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 8. Prover process and store Claim
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    
-    ret = [IndyAnoncreds proverStoreClaimWithWalletHandle:walletHandle
-                                               claimsJSON:xClaimJSON
-                                               completion:^(NSError *error)
-           {
-               XCTAssertEqual(error.code, Success, "proverStoreClaim() got error in completion");
-               [completionExpectation fulfill];
-           }];
-    
+    ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
+                                                                 claimsJson:xClaimJSON];
     XCTAssertEqual( ret.code, Success, @"proverStoreClaim() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 9. Prover gets Claims for Proof Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
@@ -434,18 +343,10 @@
     
     __block NSString *claimsJson = nil;
     
-    ret = [IndyAnoncreds proverGetClaimsForProofReqWithWalletHandle:walletHandle
-                                                       proofReqJSON:proofReqJSON
-                                                         completion:^(NSError* error, NSString* claimsJSON1)
-           {
-               claimsJson = claimsJSON1;
-               XCTAssertEqual(error.code, Success, "proverGetClaimsForProofReq() got error in completion");
-               [completionExpectation fulfill];
-               
-           }];
-    
+    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
+                                                                     proofRequestJson:proofReqJSON
+                                                                        outClaimsJson:&claimsJson];
     XCTAssertEqual( ret.code, Success, @"proverGetClaimsForProofReq() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     NSDictionary *claims = [ NSDictionary fromString: claimsJson];
     XCTAssertTrue(claims, @"serialization failed");
@@ -455,7 +356,6 @@
     NSString *claimUUID = [claims_for_attr_1 objectForKey:@"claim_uuid"];
     
     // 10. Prover create Proof for Proof Request
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     NSString* requestedClaimsJSON = [ NSString stringWithFormat: @"{\
                                      \"self_attested_attributes\":{},\
@@ -471,54 +371,32 @@
     
     __block NSString *proofJSON = nil;
     
-    ret =  [IndyAnoncreds proverCreateProofWithWalletHandle:walletHandle
-                                               proofReqJSON:proofReqJSON
-                                        requestedClaimsJSON:requestedClaimsJSON
-                                                schemasJSON:schemas_json
-                                           masterSecretName:masterSecretName
-                                              claimDefsJSON:claimDefsJSON
-                                              revocRegsJSON:revocRegsJsons
-                                                 completion:^(NSError* error, NSString* proofJSON1)
-            {
-                XCTAssertEqual(error.code, Success, "proverCreateProof() got error in completion");
-                proofJSON = [ NSString stringWithString: proofJSON1];
-                [completionExpectation fulfill];
-            }];
-    
+    ret = [[AnoncredsUtils sharedInstance] proverCreateProofWithWalletHandle:walletHandle
+                                                                proofReqJson:proofReqJSON
+                                                         requestedClaimsJson:requestedClaimsJSON
+                                                                 schemasJson:schemas_json
+                                                            masterSecretName:masterSecretName
+                                                               claimDefsJson:claimDefsJSON
+                                                               revocRegsJson:revocRegsJsons
+                                                                outProofJson:&proofJSON];
     XCTAssertEqual( ret.code, Success, @"proverCreateProof() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     // 11. Verifier verify proof
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+
+    BOOL valid = false;
+    ret = [[AnoncredsUtils sharedInstance] verifierVerifyProof:proofReqJSON
+                                                     proofJson:proofJSON
+                                                   schemasJson:schemas_json
+                                                 claimDefsJson:claimDefsJSON
+                                                 revocRegsJson:revocRegsJsons
+                                                      outValid:&valid];
     
-    ret = [IndyAnoncreds verifierVerifyProofWithWalletHandle:  proofReqJSON
-                                                   proofJSON:  proofJSON
-                                                 schemasJSON:  schemas_json
-                                               claimDefsJSON:  claimDefsJSON
-                                               revocRegsJSON:  revocRegsJsons
-                                                  completion: ^(NSError *error, BOOL valid)
-           {
-               XCTAssertEqual(error.code, Success, "verifierVerifyProof() got error in completion");
-               XCTAssertEqual(valid, true, "verifierVerifyProof() got error in completion");
-               [completionExpectation fulfill];
-               
-           }];
-    
-    XCTAssertEqual(ret.code, Success, @"verifierVerifyProof() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    XCTAssertEqual(valid, true, "verifierVerifyProof() got error in completion");
     
     // 12. close wallet
-    completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [[IndyWallet sharedInstance] closeWalletWithHandle: walletHandle
-                                                  completion: ^ (NSError *error)
-           {
-               XCTAssertEqual(error.code, Success, "closeWallet got error in completion");
-               [completionExpectation fulfill];
-           }];
-    
+    ret = [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
     XCTAssertEqual(ret.code, Success, @"closeWallet() failed!");
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
     [TestUtils cleanupStorage];

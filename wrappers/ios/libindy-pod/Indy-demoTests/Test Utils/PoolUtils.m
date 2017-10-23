@@ -302,24 +302,18 @@
                                      poolConfig:(NSString *)config
 
 {
-    NSError *ret = nil;
     NSString *configStr = (config) ? config : @"";
 
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
 
-    ret = [IndyPool createPoolLedgerConfigWithPoolName:poolName
-                                            poolConfig:configStr
-                                            completion:^ (NSError *error)
-           {
-               err = error;
-               [completionExpectation fulfill];
-           }];
-    
-    if (ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyPool createPoolLedgerConfigWithPoolName:poolName
+                                      poolConfig:configStr
+                                      completion:^ (NSError *error)
+     {
+         err = error;
+         [completionExpectation fulfill];
+     }];
 
     [self waitForExpectations:@[ completionExpectation ] timeout:[TestUtils shortTimeout]];
 
@@ -332,26 +326,20 @@
                      config:(NSString*)config
                 poolHandler:(IndyHandle*)handle
 {
-    NSError *ret = nil;
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block IndyHandle poolHandle = 0;
     
     NSString *configStr = (config) ? config : @"";
     
-    ret = [IndyPool openPoolLedgerWithName:poolName
-                                poolConfig:configStr
-                                completion:^(NSError *error, IndyHandle blockHandle)
-           {
-               err = error;
-               poolHandle = blockHandle;
-               [completionExpectation fulfill];
-           }];
-    
-    if( ret.code != Success )
-    {
-        return ret;
-    }
+    [IndyPool openPoolLedgerWithName:poolName
+                          poolConfig:configStr
+                          completion:^(NSError *error, IndyHandle blockHandle)
+     {
+         err = error;
+         poolHandle = blockHandle;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
@@ -387,18 +375,12 @@
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     
-    
-    NSError * ret = [IndyPool refreshPoolLedgerWithHandle:poolHandle
-                                               completion:^(NSError* error)
-                     {
-                         err = error;
-                         [completionExpectation fulfill];
-                     }];
-    
-    if( ret.code != Success )
-    {
-        return ret;
-    }
+    [IndyPool refreshPoolLedgerWithHandle:poolHandle
+                               completion:^(NSError* error)
+     {
+         err = error;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils shortTimeout]];
     
@@ -410,19 +392,13 @@
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     
-    
-    NSError * ret = [IndyPool closePoolLedgerWithHandle:poolHandle
-                                             completion:^(NSError* error)
-                     {
-                         err = error;
-                         [completionExpectation fulfill];
-                     }];
-    
-    if( ret.code != Success )
-    {
-        return ret;
-    }
-    
+    [IndyPool closePoolLedgerWithHandle:poolHandle
+                             completion:^(NSError* error)
+     {
+         err = error;
+         [completionExpectation fulfill];
+     }];
+
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     return err;
@@ -434,17 +410,12 @@
     __block NSError *err = nil;
     
     
-    NSError * ret = [IndyPool deletePoolLedgerConfigWithName:poolName
-                                                  completion:^(NSError* error)
-                     {
-                         err = error;
-                         [completionExpectation fulfill];
-                     }];
-    
-    if( ret.code != Success )
-    {
-        return ret;
-    }
+    [IndyPool deletePoolLedgerConfigWithName:poolName
+                                  completion:^(NSError* error)
+     {
+         err = error;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
@@ -456,27 +427,18 @@
                                request:(NSString *)request
                               response:(NSString **)response
 {
-    
-    NSError *ret = nil;
-    
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString* outResponse = nil;
     
-    
-    ret = [IndyLedger submitRequestWithPoolHandle:poolHandle
-                                        requestJSON:request
-                                         completion:^(NSError* error, NSString* result)
-    {
-        err = error;
-        outResponse = result;
-        [completionExpectation fulfill];
-    }];
-    
-    if( ret.code != Success )
-    {
-        return ret;
-    }
+    [IndyLedger submitRequest:request
+                   poolHandle:poolHandle
+                   completion:^(NSError* error, NSString* result)
+     {
+         err = error;
+         outResponse = result;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     

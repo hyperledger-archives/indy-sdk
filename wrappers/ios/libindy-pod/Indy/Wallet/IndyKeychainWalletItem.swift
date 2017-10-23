@@ -238,7 +238,7 @@ extension IndyKeychainWalletItem
 
 extension IndyKeychainWalletItem
 {
-    @objc class WalletValue: NSObject, NSCoding
+    @objc(IndyKeychainWalletItem) class WalletValue: NSObject, NSCoding
     {
         var value: String
         var timeCreated: String

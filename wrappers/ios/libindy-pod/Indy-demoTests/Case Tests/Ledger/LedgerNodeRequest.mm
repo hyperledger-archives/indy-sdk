@@ -200,7 +200,7 @@
     [TestUtils cleanupStorage];
     NSString *identifier = @"some_identifier";
     NSString *signature_type = @"CL";
-    NSString *schemaSeqNo = @"1";
+    NSNumber *schemaSeqNo = @(1);
     NSString *data = @"{"\
                         "\"primary\":{"\
                             "\"n\":\"1\","\
@@ -211,10 +211,10 @@
     
     NSString *claimDefTxn;
     NSError *ret = [[LedgerUtils sharedInstance] buildClaimDefTxnWithSubmitterDid:identifier
-                                                                    xref:schemaSeqNo
-                                                           signatureType:signature_type
-                                                                    data:data
-                                                              resultJson:&claimDefTxn];
+                                                                             xref:schemaSeqNo
+                                                                    signatureType:signature_type
+                                                                             data:data
+                                                                       resultJson:&claimDefTxn];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"LedgerUtils::buildClaimDefTxnWithSubmitterDid() failed");
     
     [TestUtils cleanupStorage];
