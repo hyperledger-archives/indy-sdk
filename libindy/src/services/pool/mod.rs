@@ -13,7 +13,7 @@ use self::serde_json::Value;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::{fmt, fs, io, thread};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::io::{BufRead, Write};
 use std::error::Error;
 
@@ -258,11 +258,19 @@ impl PoolWorker {
         let ctx: zmq::Context = zmq::Context::new();
         let key_pair = zmq::CurveKeyPair::new()?;
         for gen_txn in &merkle_tree {
-            let gen_txn: GenTransaction = rmp_serde::decode::from_slice(gen_txn.as_slice())
-                .map_err(|e|
-                    CommonError::InvalidState(format!("MerkleTree contains invalid data {}", e)))?;
+            let gen_txn_num = rmp_serde::decode::from_slice::<GenTransaction<u32>>(gen_txn.as_slice());
+            let gen_txn_str = rmp_serde::decode::from_slice::<GenTransaction<String>>(gen_txn.as_slice());
 
-            let mut rn: RemoteNode = RemoteNode::new(&gen_txn)?;
+            let rn = if let Ok(gen_txn) = gen_txn_num {
+                RemoteNode::new(&gen_txn)
+            } else if let Ok(gen_txn) = gen_txn_str {
+                RemoteNode::new(&gen_txn)
+            } else {
+                warn!("MerkleTree contains invalid data:\n{:?}\n{:?}",
+                            gen_txn_str.unwrap_err(), gen_txn_num.unwrap_err());
+                continue;
+            };
+            let mut rn = rn.map_err(map_err_trace!())?;
             rn.connect(&ctx, &key_pair)?;
             rn.send_str("pi")?;
             self.handler.nodes_mut().push(rn);
@@ -511,7 +519,7 @@ impl Debug for RemoteNode {
 }
 
 impl RemoteNode {
-    fn new(txn: &GenTransaction) -> Result<RemoteNode, PoolError> {
+    fn new<T>(txn: &GenTransaction<T>) -> Result<RemoteNode, PoolError> where T: Display {
         let node_verkey = txn.dest.as_str().from_base58()
             .map_err(|e| { CommonError::InvalidStructure("Invalid field dest in genesis transaction".to_string()) })?;
         Ok(RemoteNode {
@@ -1087,13 +1095,13 @@ mod tests {
 
         pub static POLL_TIMEOUT: i64 = 1000; /* in ms */
 
-        pub fn start() -> (GenTransaction, thread::JoinHandle<Vec<String>>) {
+        pub fn start() -> (GenTransaction<u32>, thread::JoinHandle<Vec<String>>) {
             let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
             let pkc = ED25519::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
             let skc = ED25519::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
             let ctx = zmq::Context::new();
             let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
-            let gt = GenTransaction {
+            let gt = GenTransaction::<u32> {
                 identifier: "".to_string(),
                 data: NodeData {
                     alias: "n1".to_string(),
