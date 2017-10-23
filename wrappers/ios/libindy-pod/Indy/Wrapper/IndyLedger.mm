@@ -12,15 +12,15 @@
 @implementation IndyLedger
 
 
-+ (NSError *)signAndSubmitRequestWithWalletHandle:(IndyHandle)walletHandle
-                                       poolHandle:(IndyHandle)poolHandle
-                                     submitterDID:(NSString *)submitterDid
-                                      requestJSON:(NSString *)requestJSON
-                                       completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler
++ (void)signAndSubmitRequest:(NSString *)requestJSON
+                submitterDID:(NSString *)submitterDid
+                  poolHandle:(IndyHandle)poolHandle
+                walletHandle:(IndyHandle)walletHandle
+                  completion:(void (^)(NSError *error, NSString *requestResultJSON)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_sign_and_submit_request(handle,
                                        poolHandle,
@@ -32,19 +32,21 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)signRequestWithWalletHandle:(IndyHandle)walletHandle
-                            submitterDid:(NSString *)submitterDid
-                             requestJson:(NSString *)requestJson
-                              completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler
++ (void)signRequest:(NSString *)requestJson
+       submitterDid:(NSString *)submitterDid
+       walletHandle:(IndyHandle)walletHandle
+         completion:(void (^)(NSError *error, NSString *requestResultJSON)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_sign_request(handle,
                             walletHandle,
@@ -55,18 +57,20 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)submitRequestWithPoolHandle:(IndyHandle)poolHandle
-                             requestJSON:(NSString *)requestJSON
-                              completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler
++ (void)submitRequest:(NSString *)requestJSON
+           poolHandle:(IndyHandle)poolHandle
+           completion:(void (^)(NSError *error, NSString *requestResultJSON)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
     ret = indy_submit_request(handle,
                               poolHandle,
@@ -76,23 +80,25 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
 // MARK: - Nym request
 
-+ (NSError *)buildNymRequestWithSubmitterDid:(NSString *)submitterDid
-                                   targetDID:(NSString *)targetDid
-                                      verkey:(NSString *)verkey
-                                       alias:(NSString *)alias
-                                        role:(NSString *)role
-                                  completion:(void (^)(NSError *error, NSString *requestJSON)) handler
++ (void)buildNymRequestWithSubmitterDid:(NSString *)submitterDid
+                              targetDID:(NSString *)targetDid
+                                 verkey:(NSString *)verkey
+                                  alias:(NSString *)alias
+                                   role:(NSString *)role
+                             completion:(void (^)(NSError *error, NSString *requestJSON)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     
     ret = indy_build_nym_request(handle,
@@ -105,18 +111,20 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
-                                      targetDID:(NSString *)targetDid
-                                     completion:(void (^)(NSError *error, NSString *requestJSON)) handler
++ (void)buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
+                                 targetDID:(NSString *)targetDid
+                                completion:(void (^)(NSError *error, NSString *requestJSON)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_build_get_nym_request(handle,
                                      [submitterDid UTF8String],
@@ -126,23 +134,25 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
 // MARK: - Attribute request
 
-+ (NSError *)buildAttribRequestWithSubmitterDid:(NSString *)submitterDid
-                                      targetDID:(NSString *)targetDid
-                                           hash:(NSString *)hash
-                                            raw:(NSString *)raw
-                                            enc:(NSString *)enc
-                                     completion:(void (^)(NSError *error, NSString *requestJSON)) handler
++ (void)buildAttribRequestWithSubmitterDid:(NSString *)submitterDid
+                                 targetDID:(NSString *)targetDid
+                                      hash:(NSString *)hash
+                                       raw:(NSString *)raw
+                                       enc:(NSString *)enc
+                                completion:(void (^)(NSError *error, NSString *requestJSON)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_build_attrib_request( handle,
                                     [submitterDid UTF8String],
@@ -155,19 +165,21 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)buildGetAttribRequestWithSubmitterDid:(NSString *)submitterDid
-                                         targetDID:(NSString *)targetDid
-                                              data:(NSString *)data
-                                        completion:(void (^)(NSError *error, NSString *requestJSON)) handler
++ (void)buildGetAttribRequestWithSubmitterDid:(NSString *)submitterDid
+                                    targetDID:(NSString *)targetDid
+                                         data:(NSString *)data
+                                   completion:(void (^)(NSError *error, NSString *requestJSON)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_build_get_attrib_request(handle,
                                         [submitterDid UTF8String],
@@ -177,20 +189,22 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
 // MARK: - Schema request
 
-+ (NSError *)buildSchemaRequestWithSubmitterDid:(NSString *)submitterDid
-                                           data:(NSString *)data
-                                     completion:(void (^)(NSError *error, NSString *requestJSON)) handler
++ (void)buildSchemaRequestWithSubmitterDid:(NSString *)submitterDid
+                                      data:(NSString *)data
+                                completion:(void (^)(NSError *error, NSString *requestJSON)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_build_schema_request( handle,
                                     [submitterDid UTF8String],
@@ -199,19 +213,21 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)buildGetSchemaRequestWithSubmitterDid:(NSString *)submitterDid
-                                              dest:(NSString *)dest
-                                              data:(NSString *)data
-                                        completion:(void (^)(NSError *error, NSString *requestJSON)) handler
++ (void)buildGetSchemaRequestWithSubmitterDid:(NSString *)submitterDid
+                                         dest:(NSString *)dest
+                                         data:(NSString *)data
+                                   completion:(void (^)(NSError *error, NSString *requestJSON)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
  
     ret = indy_build_get_schema_request( handle,
@@ -222,81 +238,77 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
 // MARK: - ClaimDefTxn request
 
-+ (NSError *)buildClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                         xref:(NSString *)xref
-                                signatureType:(NSString *)signatureType
-                                         data:(NSString *)data
-                                   completion:(void (^)(NSError *error, NSString *requestJSON)) handler
++ (void)buildClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
+                                    xref:(NSNumber *)xref
+                           signatureType:(NSString *)signatureType
+                                    data:(NSString *)data
+                              completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_build_claim_def_txn( handle,
                                    [submitterDid UTF8String],
-                                   [xref UTF8String],
+                                   [xref intValue],
                                    [signatureType UTF8String],
                                    [data UTF8String],
                                    IndyWrapperCommon3PSCallback );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
 
-+ (NSError *)buildGetClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
-                                            xref:(NSString *)xref
-                                   signatureType:(NSString *)signatureType
-                                          origin:(NSString *)origin
-                                      completion:(void (^)(NSError *error, NSString *requestJSON)) handler
++ (void)buildGetClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
+                                       xref:(NSNumber *)xref
+                              signatureType:(NSString *)signatureType
+                                     origin:(NSString *)origin
+                                 completion:(void (^)(NSError *error, NSString *requestJSON)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
-    
-    NSString *xrefStr;
-    if ([xref isKindOfClass:[NSNumber class]])
-    {
-        xrefStr = [(NSNumber *)xref stringValue];
-    }
-    else
-    {
-        xrefStr = xref;
-    }
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_build_get_claim_def_txn(handle,
                                        [submitterDid UTF8String],
-                                       [xrefStr UTF8String],
+                                       [xref intValue],
                                        [signatureType UTF8String],
                                        [origin UTF8String],
                                        IndyWrapperCommon3PSCallback);
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
 // MARK: - Ddo request
 
-+ (NSError *)buildGetDdoRequestWithSubmitterDid:(NSString *)submitterDid
-                                      targetDID:(NSString *)targetDid
-                                     completion:(void (^)(NSError *error, NSString *requestResultJSON)) handler
++ (void)buildGetDdoRequestWithSubmitterDid:(NSString *)submitterDid
+                                 targetDID:(NSString *)targetDid
+                                completion:(void (^)(NSError *error, NSString *requestResultJSON)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_build_get_ddo_request( handle,
                                      [submitterDid UTF8String],
@@ -306,21 +318,23 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
 // MARK: - Node request
 
-+ (NSError *)buildNodeRequestWithSubmitterDid:(NSString *)submitterDid
-                                    targetDid:(NSString *)targetDid
-                                         data:(NSString *)data
-                                   completion:(void (^)(NSError *error, NSString *requestJSON)) handler
++ (void)buildNodeRequestWithSubmitterDid:(NSString *)submitterDid
+                               targetDid:(NSString *)targetDid
+                                    data:(NSString *)data
+                              completion:(void (^)(NSError *error, NSString *requestJSON)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_build_node_request( handle,
                                   [submitterDid UTF8String],
@@ -330,20 +344,22 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
 // MARK: - Txn request
 
-+ (NSError *)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
-                                           data:(NSNumber *)data
-                                     completion:(void (^)(NSError *error, NSString *requestJSON)) handler
++ (void)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
+                                      data:(NSNumber *)data
+                                completion:(void (^)(NSError *error, NSString *requestJSON)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_build_get_txn_request(handle,
                                      [submitterDid UTF8String],
@@ -352,9 +368,11 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
 @end

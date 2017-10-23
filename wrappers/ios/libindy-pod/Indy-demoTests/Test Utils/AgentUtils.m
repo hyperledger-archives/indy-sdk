@@ -65,20 +65,15 @@
         if (messageCallback != nil) { messageCallback(xConnectionHandle, message);}
     };
     
-    NSError *ret = [IndyAgent connectWithPoolHandle:poolHandle
-                                         walletHandle:walletHandle
-                                            senderDId:senderDid
-                                          receiverDId:receiverDid
-                                    connectionHandler:onConnectCallback
-                                     messageHandler:^(IndyHandle xConnectionHandle, NSError *error, NSString *message) {
-                                         NSLog(@"AgentUtils::connectWithPoolHandle::OnMessageCallback triggered invoced with error code: %ld", (long)error.code);
-                                         if (messageCallback != nil) { messageCallback(xConnectionHandle, message);}
-                                     }];
-
-    if (ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyAgent connectSenderDid:senderDid
+                withReceiverDid:receiverDid
+                     poolHandle:poolHandle
+                   walletHandle:walletHandle
+              connectionHandler:onConnectCallback
+                 messageHandler:^(IndyHandle xConnectionHandle, NSError *error, NSString *message) {
+                     NSLog(@"AgentUtils::connectWithPoolHandle::OnMessageCallback triggered invoced with error code: %ld", (long)error.code);
+                     if (messageCallback != nil) { messageCallback(xConnectionHandle, message);}
+                 }];
     
     // wait for connection callback
     [self waitForExpectations: @[connectCompletionExpectation] timeout:[TestUtils defaultTimeout]];
@@ -88,9 +83,6 @@
     return connectionErr;
 }
 
-//__strong void (^onListenerCallback)(NSError*, IndyHandle) = nil;
-//__strong void (^onMessageCallback)(IndyHandle, NSError*, NSString*) = nil;
-//__strong void (^onConnectCallback)(IndyHandle, NSError*, IndyHandle, NSString*, NSString* ) = nil;
 
 - (NSError *)listenForEndpoint:(NSString *)endpoint
              connectionCallback:( void (^)(IndyHandle listenerHandle, IndyHandle connectionHandle))connectionCallback
@@ -121,17 +113,11 @@
     };
 
     // listen
-    NSError *ret = [IndyAgent listenForEndpoint:endpoint
-                                  listenerHandler:onListenerCallback
-                                connectionHandler:onConnectCallback
-                                   messageHandler:onMessageCallback];
-    if (ret.code != Success)
-    {
-        NSLog(@"IndyAgent::listenWithWalletHandle failed with code: %ld", ret.code);
-        return ret;
-    }
-    
-    // wait for listenerCallback
+    [IndyAgent listenForEndpoint:endpoint
+                 listenerHandler:onListenerCallback
+               connectionHandler:onConnectCallback
+                  messageHandler:onMessageCallback];
+
     [self waitForExpectations: @[listenerCompletionExpectation] timeout:[TestUtils defaultTimeout]];
     
     if (listenerHandle) { *listenerHandle = tempListenerHandle;};
@@ -147,18 +133,13 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err;
     
-    NSError *ret = [IndyAgent sendWithConnectionHandle:connectionHandle
-                                                messsage:message
-                                              completion:^(NSError *error)
-    {
-        err = error;
-        [completionExpectation fulfill];
-    }];
-    
-    if (ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyAgent sendMessage:message
+          connectionHandle:connectionHandle
+                completion:^(NSError *error)
+     {
+         err = error;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
@@ -170,17 +151,12 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err;
     
-    NSError *ret = [IndyAgent closeConnection:connectionHandle
-                                     completion:^(NSError *error)
-                    {
-                        err = error;
-                        [completionExpectation fulfill];
-                    }];
-    
-    if (ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyAgent closeConnection:connectionHandle
+                    completion:^(NSError *error)
+     {
+         err = error;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
@@ -192,17 +168,12 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err;
     
-    NSError *ret = [IndyAgent closeListener:listenerHandle
-                                   completion:^(NSError *error)
-                    {
-                        err = error;
-                        [completionExpectation fulfill];
-                    }];
-    
-    if (ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyAgent closeListener:listenerHandle
+                  completion:^(NSError *error)
+     {
+         err = error;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
@@ -217,20 +188,15 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err;
     
-    NSError *ret = [IndyAgent addIdentity:did
-                          forListenerHandle:listenerHandle
-                                 poolHandle:poolHandle
-                               walletHandle:walletHandle
-                                 completion:^(NSError *error)
-                    {
-                        err = error;
-                        [completionExpectation fulfill];
-                    }];
-    
-    if (ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyAgent addIdentity:did
+         forListenerHandle:listenerHandle
+                poolHandle:poolHandle
+              walletHandle:walletHandle
+                completion:^(NSError *error)
+     {
+         err = error;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
@@ -244,19 +210,14 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err;
     
-    NSError *ret = [IndyAgent removeIdentity:did
-                             forListenerHandle:listenerHandle
-                                  walletHandle:walletHandle
-                                    completion:^(NSError *error)
-                    {
-                        err = error;
-                        [completionExpectation fulfill];
-                    }];
-    
-    if (ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyAgent removeIdentity:did
+            forListenerHandle:listenerHandle
+                 walletHandle:walletHandle
+                   completion:^(NSError *error)
+     {
+         err = error;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
@@ -269,8 +230,9 @@
                                     receiverDid:(NSString *)receiverDid
                                       isTimeout:(BOOL *)isTimeout
 {
+   dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+    
     // connection callback. waiting for completion
-    XCTestExpectation* connectCompletionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"listener completion finished"];
     __block NSError *connectionErr;
     __block IndyHandle tempConnectionHandle;
     
@@ -278,36 +240,32 @@
         NSLog(@"AgentUtils::connectWithPoolHandle::OnConnectCallback triggered with code: %ld", (long)error.code);
         tempConnectionHandle = connectionHandle;
         connectionErr = error;
-        [connectCompletionExpectation fulfill];
+        dispatch_semaphore_signal(semaphore);
     };
     
-   // __weak typeof(self)weakSelf = self;
     void (^messageHandler)(IndyHandle, NSError*, NSString*) = ^(IndyHandle xConnectionHandle, NSError *error, NSString *message) {
         NSLog(@"AgentUtils::connectWithPoolHandle::OnMessageCallback triggered invoced with error code: %ld", (long)error.code);
     };
     
-    NSError *ret = [IndyAgent connectWithPoolHandle:poolHandle
-                                       walletHandle:walletHandle
-                                          senderDId:senderDid
-                                        receiverDId:receiverDid
-                                  connectionHandler:onConnectCallback
-                                     messageHandler:messageHandler];
+        [IndyAgent connectSenderDid:senderDid
+                    withReceiverDid:receiverDid
+                         poolHandle:poolHandle
+                       walletHandle:walletHandle
+                  connectionHandler:onConnectCallback
+                     messageHandler:messageHandler];
+   
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (5.0 * NSEC_PER_SEC)));
     
-    if (ret.code != Success)
+    if (connectionErr == nil)
     {
-        return ret;
+        if (isTimeout) { *isTimeout = true; }
     }
-    
-    // wait for connection callback
-    [self waitForExpectations: @[connectCompletionExpectation] timeout:[TestUtils shortTimeout]];
-    
-    if (connectionErr)
+    else
     {
-        return connectionErr;
-    } else {
-        if (isTimeout) { *isTimeout = YES; }
-        return ret;
+        if (isTimeout) { *isTimeout = false; }
     }
+
+    return connectionErr;
 }
 
 @end
