@@ -225,15 +225,15 @@ impl SignusUtils {
         Ok(())
     }
 
-    pub fn replace_keys(pool_handle: i32, wallet_handle: i32, did: &str) -> Result<(String, String), ErrorCode> {
-        let (verkey, pk) = SignusUtils::replace_keys_start(wallet_handle, did, "{}").unwrap();
+    pub fn replace_keys(pool_handle: i32, wallet_handle: i32, did: &str) -> Result<String, ErrorCode> {
+        let verkey = SignusUtils::replace_keys_start(wallet_handle, did, "{}").unwrap();
 
         let nym_request = LedgerUtils::build_nym_request(did, did, Some(&verkey), None, None).unwrap();
         LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, did, &nym_request).unwrap();
 
         SignusUtils::replace_keys_apply(wallet_handle, did).unwrap();
 
-        Ok((verkey, pk))
+        Ok(verkey)
     }
 
     pub fn verify(wallet_handle: i32, pool_handle: i32, did: &str, msg: &[u8], signature: &[u8]) -> Result<bool, ErrorCode> {

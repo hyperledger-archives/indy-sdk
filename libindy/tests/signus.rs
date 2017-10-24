@@ -766,7 +766,7 @@ mod high_cases {
 
             let (my_did, my_verkey) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-            let (new_verkey, _) = SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
+            let new_verkey = SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
 
             assert!(new_verkey != my_verkey);
 
@@ -800,7 +800,7 @@ mod high_cases {
 
             let (my_did, my_verkey) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-            let (new_verkey, _) = SignusUtils::replace_keys_start(wallet_handle, &my_did, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}"#).unwrap();
+            let new_verkey = SignusUtils::replace_keys_start(wallet_handle, &my_did, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}"#).unwrap();
             assert_eq!(new_verkey, VERKEY);
             assert_ne!(my_verkey, new_verkey);
 
@@ -821,7 +821,7 @@ mod high_cases {
 
             let (my_did, my_verkey) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-            let (new_verkey, _) = SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
+            let new_verkey = SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
 
             assert!(new_verkey != my_verkey);
 
@@ -1727,7 +1727,7 @@ mod medium_cases {
 
             let (my_did, my_verkey) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-            let (new_verkey, _) = SignusUtils::replace_keys_start(wallet_handle, &my_did, r#"{"crypto_type":"ed25519"}"#).unwrap();
+            let new_verkey = SignusUtils::replace_keys_start(wallet_handle, &my_did, r#"{"crypto_type":"ed25519"}"#).unwrap();
             assert!(my_verkey != new_verkey);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -2143,7 +2143,7 @@ mod medium_cases {
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             // 6. Start replacing of keys
-            let (new_verkey, _) = SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
+            let new_verkey = SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
 
             // 7. Send Nym request to Ledger with new verkey
             let nym_request = LedgerUtils::build_nym_request(&my_did, &my_did, Some(&new_verkey), None, None).unwrap();

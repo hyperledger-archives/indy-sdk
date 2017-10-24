@@ -14,27 +14,17 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate zmq_pw as zmq;
 
-use std::sync::mpsc::channel;
-use std::thread;
-
 use indy::api::ErrorCode;
 
 #[macro_use]
 mod utils;
 
 use utils::agent::AgentUtils;
-use utils::ledger::LedgerUtils;
 use utils::pool::PoolUtils;
 use utils::signus::SignusUtils;
 use utils::test::TestUtils;
-use utils::timeout::TimeoutUtils;
 use utils::wallet::WalletUtils;
 use utils::constants::*;
-
-use std::sync::mpsc::RecvTimeoutError;
-
-static CLIENT_MESSAGE: &'static str = "msg_from_client";
-static SERVER_MESSAGE: &'static str = "msg_from_server";
 
 
 mod high_cases {

@@ -6,7 +6,6 @@ use indy::api::ErrorCode;
 
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
-use std::sync::mpsc::RecvTimeoutError;
 
 pub struct AgentUtils {}
 
