@@ -62,8 +62,8 @@
     
     //3. Prover create Master Secret
     NSString *masterSecretName = @"prover_master_secret";
-    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:walletHandle
-                                                   masterSecretName:masterSecretName];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:masterSecretName
+                                                            walletHandle:walletHandle];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret failed");
     
     //4. Prover create Claim Request
@@ -71,11 +71,12 @@
     NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[TestUtils issuerDid]
                                                                       schemaSeqNo:schemaSeqNo];
     NSString *claimRequest;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
+    
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOfferJson
-                                                           claimDefJson:claimDefJson
                                                        masterSecretName:masterSecretName
+                                                           walletHandle:walletHandle
                                                         outClaimReqJson:&claimRequest];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed");
     XCTAssertTrue([claimRequest isValid], @"invalid claimRequest");
@@ -209,8 +210,8 @@
     
     NSString *masterSecretName = @"prover_master_secret";
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:proverWalletHandle
-                                                   masterSecretName:masterSecretName];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:masterSecretName
+                                                            walletHandle:proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed");
     
     //5. Prover store Claim Offer received from Issuer
@@ -245,12 +246,12 @@
     NSString* proverDid = @"BzfFCYk";
     NSString* claimReq = nil;
     
-    ret = [[ AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq: proverWalletHandle
-                                                               proverDid: proverDid
-                                                          claimOfferJson: claimOfferJson
-                                                            claimDefJson: claimDefJSON
-                                                        masterSecretName: masterSecretName
-                                                         outClaimReqJson:&claimReq ];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJSON
+                                                              proverDid:proverDid
+                                                         claimOfferJson:claimOfferJson
+                                                       masterSecretName:masterSecretName
+                                                           walletHandle:proverWalletHandle
+                                                        outClaimReqJson:&claimReq];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq() failed");
     XCTAssertTrue([claimReq isValid], @"invalid claimRequest: %@", claimReq);
     NSLog(@"claimReqJson: %@", claimReq);
@@ -426,15 +427,15 @@
     //6. Prover create Master Secret for Issuer1
     
     NSString* masterSecretName1 = @"prover_master_secret_issuer_1";
-    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:proverWalletHandle
-                                                   masterSecretName:masterSecretName1];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:masterSecretName1
+                                                            walletHandle:proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed for issuer 1");
     
     //7. Prover create Master Secret for Issuer2
     NSString* masterSecretName2 = @"prover_master_secret_issuer_2";
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:proverWalletHandle
-                                                   masterSecretName:masterSecretName2];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:masterSecretName2
+                                                            walletHandle:proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed for issuer 2");
     
     //8. Prover store Claim Offer received from Issuer1
@@ -491,11 +492,12 @@
     //11. Prover create Claim Request for gvt claim offer
     
     NSString* gvtClaimReq;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:proverWalletHandle
+    
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:gvtClaimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
-                                                           claimDefJson:gvtClaimDefJson
                                                        masterSecretName:masterSecretName1
+                                                           walletHandle:proverWalletHandle
                                                         outClaimReqJson:&gvtClaimReq];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq() failed");
     
@@ -521,11 +523,11 @@
     
     claimOffer = [claimOffer2_issuerDid isEqual: issuer2Did] ? claimOffer2Json : claimOffer1Json;
     NSString* xyzClaimReq;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq: proverWalletHandle
-                                                              proverDid: proverDid
-                                                         claimOfferJson: claimOffer
-                                                           claimDefJson: xyzClaimDefJson
-                                                       masterSecretName: masterSecretName1
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:xyzClaimDefJson
+                                                              proverDid:proverDid
+                                                         claimOfferJson:claimOffer
+                                                       masterSecretName:masterSecretName1
+                                                           walletHandle:proverWalletHandle
                                                         outClaimReqJson:&xyzClaimReq];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq() failed");
     
@@ -771,8 +773,8 @@
     //5. Prover create Master Secret for Issuer
     
     NSString* masterSecretName = @"prover_master_secret_issuer";
-    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:proverWalletHandle
-                                                   masterSecretName:masterSecretName];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:masterSecretName
+                                                            walletHandle:proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed");
     
     //6. Prover store GVT Claim Offer received from Issuer
@@ -831,11 +833,11 @@
     
     NSString* gvtClaimReq = nil;
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:proverWalletHandle
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:gvtClaimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
-                                                           claimDefJson:gvtClaimDefJson
                                                        masterSecretName:masterSecretName
+                                                           walletHandle:proverWalletHandle
                                                         outClaimReqJson:&gvtClaimReq];
     
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq() failed");
@@ -864,12 +866,12 @@
     claimOffer = [claimOffer2_schemaSeqNo isEqual: xyzSchemaSeqNo] ? claimOffer2Json : claimOffer1Json;
     NSString* xyzClaimReq = nil;
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq: proverWalletHandle
-                                                              proverDid: proverDid
-                                                         claimOfferJson: claimOffer
-                                                           claimDefJson: xyzClaimDefJson
-                                                       masterSecretName: masterSecretName
-                                                        outClaimReqJson: &xyzClaimReq];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:xyzClaimDefJson
+                                                              proverDid:proverDid
+                                                         claimOfferJson:claimOffer
+                                                       masterSecretName:masterSecretName
+                                                           walletHandle:proverWalletHandle
+                                                        outClaimReqJson:&xyzClaimReq];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq() failed");
     
     //13. Issuer create XYZ Claim

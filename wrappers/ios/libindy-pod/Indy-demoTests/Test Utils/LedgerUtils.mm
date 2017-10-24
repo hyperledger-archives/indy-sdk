@@ -35,23 +35,17 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *outJson = nil;
-    NSError *ret;
-
-    ret = [IndyLedger signAndSubmitRequestWithWalletHandle:walletHandle
-                                                  poolHandle:poolHandle
-                                                submitterDID:submitterDid
-                                                 requestJSON:requestJson
-                                                  completion:^(NSError* error, NSString *resultJson)
-    {
-        err = error;
-        outJson = resultJson;
-        [completionExpectation fulfill];
-    }];
     
-    if( ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyLedger signAndSubmitRequest:requestJson
+                        submitterDID:submitterDid
+                          poolHandle:poolHandle
+                        walletHandle:walletHandle
+                          completion:^(NSError* error, NSString *resultJson)
+     {
+         err = error;
+         outJson = resultJson;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
@@ -67,21 +61,13 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *outJson = nil;
-    NSError *ret;
     
-    ret = [IndyLedger submitRequestWithPoolHandle:poolHandle
-                                      requestJSON:request
-                                       completion:^(NSError* error, NSString *resultJson)
-           {
-               err = error;
-               outJson = resultJson;
-               [completionExpectation fulfill];
-           }];
-  
-    if( ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyLedger submitRequest:request poolHandle:poolHandle completion:^(NSError* error, NSString *resultJson)
+     {
+         err = error;
+         outJson = resultJson;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
@@ -102,26 +88,20 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *outJson = nil;
-    NSError *ret;
     
-    ret = [IndyLedger buildNymRequestWithSubmitterDid:submitterDid
-                                            targetDID:targetDid
-                                               verkey:verkey
-                                                alias:alias
-                                                 role:role
-                                           completion:^(NSError *error, NSString *json)
-           {
-               err = error;
-               outJson = json;
-               [completionExpectation fulfill];
-           }];
+    [IndyLedger buildNymRequestWithSubmitterDid:submitterDid
+                                      targetDID:targetDid
+                                         verkey:verkey
+                                          alias:alias
+                                           role:role
+                                     completion:^(NSError *error, NSString *json)
+     {
+         err = error;
+         outJson = json;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
-    
-    if( ret.code != Success)
-    {
-        return ret;
-    }
     
     if (resultJson){ *resultJson = outJson; }
     
@@ -136,21 +116,15 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *outJson = nil;
-    NSError *ret;
     
-    ret = [IndyLedger buildGetNymRequestWithSubmitterDid:submitterDid
-                                               targetDID:targetDid
-                                              completion:^(NSError *error, NSString *json)
-    {
-        err = error;
-        outJson = json;
-        [completionExpectation fulfill];
-    }];
-    
-    if( ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyLedger buildGetNymRequestWithSubmitterDid:submitterDid
+                                         targetDID:targetDid
+                                        completion:^(NSError *error, NSString *json)
+     {
+         err = error;
+         outJson = json;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
@@ -171,24 +145,18 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *outJson = nil;
-    NSError *ret;
     
-    ret = [IndyLedger buildAttribRequestWithSubmitterDid:submitterDid
-                                               targetDID:targetDid
-                                                    hash:hash
-                                                     raw:raw
-                                                     enc:enc
-                                              completion:^(NSError* error, NSString* requestJson)
-           {
-               err = error;
-               outJson = requestJson;
-               [completionExpectation fulfill];
-           }];
-    
-    if( ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyLedger buildAttribRequestWithSubmitterDid:submitterDid
+                                         targetDID:targetDid
+                                              hash:hash
+                                               raw:raw
+                                               enc:enc
+                                        completion:^(NSError* error, NSString* requestJson)
+     {
+         err = error;
+         outJson = requestJson;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
@@ -205,22 +173,16 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *outRequest = nil;
-    NSError *ret;
     
-    ret = [IndyLedger buildGetAttribRequestWithSubmitterDid:submitterDid
-                                                  targetDID:targetDid
-                                                       data:data
-                                                 completion:^(NSError *error, NSString *request)
-    {
-        err = error;
-        outRequest = request;
-        [completionExpectation fulfill];
-    }];
-    
-    if( ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyLedger buildGetAttribRequestWithSubmitterDid:submitterDid
+                                            targetDID:targetDid
+                                                 data:data
+                                           completion:^(NSError *error, NSString *request)
+     {
+         err = error;
+         outRequest = request;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
@@ -236,21 +198,15 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
-    NSError *ret;
     
-    ret = [IndyLedger buildSchemaRequestWithSubmitterDid:submitterDid
-                                                    data:data
-                                              completion:^(NSError *error, NSString *request)
-           {
-               err = error;
-               result = request;
-               [completionExpectation fulfill];
-           }];
-    
-    if( ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyLedger buildSchemaRequestWithSubmitterDid:submitterDid
+                                              data:data
+                                        completion:^(NSError *error, NSString *request)
+     {
+         err = error;
+         result = request;
+         [completionExpectation fulfill];
+     }];
 
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
@@ -266,23 +222,16 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
-    NSError *ret;
     
-    
-    ret = [IndyLedger buildGetSchemaRequestWithSubmitterDid:submitterDid
-                                                         dest:dest
-                                                         data:data
-                                                   completion:^(NSError *error, NSString *request)
-           {
-               err = error;
-               result = request;
-               [completionExpectation fulfill];
-           }];
-    
-    if( ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyLedger buildGetSchemaRequestWithSubmitterDid:submitterDid
+                                                 dest:dest
+                                                 data:data
+                                           completion:^(NSError *error, NSString *request)
+     {
+         err = error;
+         result = request;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
@@ -300,22 +249,16 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
-    NSError *ret;
     
-    ret = [IndyLedger buildNodeRequestWithSubmitterDid:submitterDid
-                                               targetDid:targetDid
-                                                    data:data
-                                              completion:^(NSError *error, NSString *request)
-           {
-               err = error;
-               result = request;
-               [completionExpectation fulfill];
-           }];
-    
-    if( ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyLedger buildNodeRequestWithSubmitterDid:submitterDid
+                                       targetDid:targetDid
+                                            data:data
+                                      completion:^(NSError *error, NSString *request)
+     {
+         err = error;
+         result = request;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
@@ -326,7 +269,7 @@
 // MARK: Build claim definition txn
 
 - (NSError *)buildClaimDefTxnWithSubmitterDid:(NSString *) submitterDid
-                                         xref:(NSString *) xref
+                                         xref:(NSNumber *) xref
                                 signatureType:(NSString *) signatureType
                                          data:(NSString *) data
                                    resultJson:(NSString**) resultJson
@@ -334,23 +277,17 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
-    NSError *ret;
     
-    ret = [IndyLedger buildClaimDefTxnWithSubmitterDid:submitterDid
-                                                    xref:xref
-                                           signatureType:signatureType
-                                                    data:data
-                                              completion:^(NSError* error, NSString* request)
-           {
-               err = error;
-               result = request;
-               [completionExpectation fulfill];
-           }];
-    
-    if( ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyLedger buildClaimDefTxnWithSubmitterDid:submitterDid
+                                            xref:xref
+                                   signatureType:signatureType
+                                            data:data
+                                      completion:^(NSError* error, NSString* request)
+     {
+         err = error;
+         result = request;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
@@ -359,7 +296,7 @@
 }
 
 - (NSError *)buildGetClaimDefTxnWithSubmitterDid:(NSString *) submitterDid
-                                            xref:(NSString *) xref
+                                            xref:(NSNumber *) xref
                                    signatureType:(NSString *) signatureType
                                           origin:(NSString *) origin
                                       resultJson:(NSString**) resultJson
@@ -367,23 +304,17 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
-    NSError *ret;
     
-    ret = [IndyLedger buildGetClaimDefTxnWithSubmitterDid:submitterDid
-                                                       xref:xref
-                                              signatureType:signatureType
-                                                     origin:origin
-                                                 completion:^(NSError* error, NSString* request)
-           {
-               err = error;
-               result = request;
-               [completionExpectation fulfill];
-           }];
-    
-    if( ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyLedger buildGetClaimDefTxnWithSubmitterDid:submitterDid
+                                               xref:xref
+                                      signatureType:signatureType
+                                             origin:origin
+                                         completion:^(NSError* error, NSString* request)
+     {
+         err = error;
+         result = request;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
@@ -398,21 +329,15 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
-    NSError *ret;
     
-    ret = [IndyLedger buildGetTxnRequestWithSubmitterDid:submitterDid
-                                                      data:data
-                                                completion:^(NSError* error, NSString* request)
-           {
-               err = error;
-               result = request;
-               [completionExpectation fulfill];
-           }];
-    
-    if( ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyLedger buildGetTxnRequestWithSubmitterDid:submitterDid
+                                              data:data
+                                        completion:^(NSError* error, NSString* request)
+     {
+         err = error;
+         result = request;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
@@ -430,23 +355,14 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     __block NSString *result = nil;
-    NSError *ret;
     
-    ret = [IndyLedger signRequestWithWalletHandle:walletHandle
-                                     submitterDid:submitterDid
-                                      requestJson:requestJson
-                                       completion:^(NSError* error, NSString* signResult)
-           {
-               err = error;
-               result = signResult;
-               [completionExpectation fulfill];
-           }];
-    
-    if( ret.code != Success)
-    {
-        return ret;
-    }
-    
+    [IndyLedger signRequest:requestJson submitterDid:submitterDid walletHandle:walletHandle completion:^(NSError* error, NSString* signResult)
+     {
+         err = error;
+         result = signResult;
+         [completionExpectation fulfill];
+     }];
+      
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     
     if (resultJson) { *resultJson = result;}

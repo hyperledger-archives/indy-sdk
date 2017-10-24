@@ -1,8 +1,7 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
+import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults;
@@ -10,6 +9,7 @@ import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertTrue;
 
 public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
@@ -43,7 +43,7 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 	@Test
 	public void testSendNodeRequestWorksWithoutSignature() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
+		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
 
 		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, stewardDidJson.toJson()).get();
 		String did = didResult.getDid();
@@ -55,7 +55,7 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 	@Test
 	public void testBuildNodeRequestWorksForWrongServiceType() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String data = "{\"node_ip\":\"10.0.0.100\"," +
 				"\"node_port\":910," +
@@ -71,7 +71,7 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 	@Test
 	public void testBuildNodeRequestWorksForMissedField() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String data = "{\"node_ip\":\"10.0.0.100\"," +
 				"\"node_port\":910," +
@@ -85,7 +85,7 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 	@Test
 	public void testSendNodeRequestWorksForWrongRole() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
+		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
 
 		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();

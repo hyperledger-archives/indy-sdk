@@ -1,8 +1,7 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
+import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.json.JSONObject;
@@ -10,7 +9,7 @@ import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
 
-import static junit.framework.TestCase.assertNull;
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -51,7 +50,7 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 	@Test
 	public void testSchemaRequestWorksWithoutSignature() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
+		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
 
 		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();
@@ -100,7 +99,7 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 	@Test
 	public void testBuildSchemaRequestWorksForMissedFields() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String data = "{\"name\":\"name\",\"version\":\"1.0\"}";
 

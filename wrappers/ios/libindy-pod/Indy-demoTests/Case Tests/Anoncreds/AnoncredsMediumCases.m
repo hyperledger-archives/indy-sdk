@@ -226,12 +226,12 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. create master secret
-    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:walletHandle
-                                                   masterSecretName:@"master_secret_name_duplicate"];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:@"master_secret_name_duplicate"
+                                                            walletHandle:walletHandle];
      XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret first failed");
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecret:walletHandle
-                                                   masterSecretName:@"master_secret_name_duplicate"];
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:@"master_secret_name_duplicate"
+                                                            walletHandle:walletHandle];
      XCTAssertEqual(ret.code, AnoncredsMasterSecretDuplicateNameError, @"AnoncredsUtils::proverCreateMasterSecret second returned wrong code");
 }
 
@@ -250,11 +250,12 @@
     
     // 2. create and store claim request
     NSString *claimOfferJson = @"{\"schema_seq_no\":1}";
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
+    
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                                          claimOfferJson:claimOfferJson
-                                                           claimDefJson:claimDefJson
                                                        masterSecretName:[TestUtils commonMasterSecretName]
+                                                           walletHandle:walletHandle
                                                         outClaimReqJson:nil];
 
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed with wrong code");
@@ -281,11 +282,11 @@
                 "\"s\":\"432192\","\
             "}}";
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                                          claimOfferJson:claimOfferJson
-                                                           claimDefJson:claimDefJson
                                                        masterSecretName:[TestUtils commonMasterSecretName]
+                                                           walletHandle:walletHandle
                                                         outClaimReqJson:nil];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverCreateAndStoreClaimReq returned wrong code");
 }
@@ -305,11 +306,11 @@
     NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[TestUtils issuerDid]
                                                                       schemaSeqNo:@(1)];
     
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                                          claimOfferJson:claimOfferJson
-                                                           claimDefJson:claimDefJson
                                                        masterSecretName:@"invalid_master_secret_name"
+                                                           walletHandle:walletHandle
                                                         outClaimReqJson:nil];
     
     XCTAssertEqual(ret.code, WalletNotFoundError, @"AnoncredsUtils::proverCreateAndStoreClaimReq returned wrong error");
@@ -429,11 +430,12 @@
     // 2. create and store claim request
     NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[TestUtils issuerDid]
                                                                       schemaSeqNo:@(1)];
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReq:walletHandle
+    
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                                          claimOfferJson:claimOfferJson
-                                                           claimDefJson:claimDefJson
                                                        masterSecretName:@"common_master_secter_name"
+                                                           walletHandle:walletHandle
                                                         outClaimReqJson:nil];
     //TODO: - Returns 204 error. Is it right? no check in rust
     //XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed");
