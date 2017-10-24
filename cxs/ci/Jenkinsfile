@@ -1,6 +1,5 @@
 #!groovy
 
-def app
 def pathToCi = 'cxs/ci'
 def dockerfile= 'dockerfile'
 
@@ -34,7 +33,7 @@ node('ubuntu') {
 }
 
 def buildDocker(){
-    var app
+    def app
     stage ('Build docker environment'){
         sh "pwd"
         sh "ls ${pathToCi}"
