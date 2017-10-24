@@ -852,11 +852,13 @@ public class Signus extends IndyJava.API {
 	public static CompletableFuture<Void> setEndpointForDid(
 			Wallet wallet,
 			String did,
-			String endpoint) throws IndyException {
+			String address,
+			String transportKey) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
 		ParamGuard.notNullOrWhiteSpace(did, "did");
-		ParamGuard.notNull(endpoint, "endpoint");
+		ParamGuard.notNull(address, "address");
+		ParamGuard.notNullOrWhiteSpace(transportKey, "transportKey");
 
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
@@ -867,7 +869,8 @@ public class Signus extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				did,
-				endpoint,
+				address,
+				transportKey,
 				setEndpointForDidCb);
 
 		checkResult(result);
@@ -881,7 +884,7 @@ public class Signus extends IndyJava.API {
 	 * @return A future resolving to a verkey
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<EndpointForDidResult> endpointForDid(
+	public static CompletableFuture<EndpointForDidResult> getEndpointForDid(
 			Wallet wallet,
 			String did) throws IndyException {
 

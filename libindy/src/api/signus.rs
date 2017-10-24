@@ -316,7 +316,7 @@ pub extern fn indy_get_endpoint_for_did(command_handle: i32,
                                         did: *const c_char,
                                         cb: Option<extern fn(command_handle_: i32,
                                                              err: ErrorCode,
-                                                             endpoint: *const c_char,
+                                                             address: *const c_char,
                                                              transport_vk: *const c_char)>) -> ErrorCode {
     unimplemented!();
 }

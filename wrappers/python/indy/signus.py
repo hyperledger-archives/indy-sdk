@@ -609,21 +609,24 @@ async def key_for_did(pool_handle: int,
 
 async def set_endpoint_for_did(wallet_handle: int,
                                did: str,
-                               endpoint: str) -> None:
+                               address: str,
+                               transport_key: str) -> None:
     """
     Creates keys pair and stores in the wallet.
 
     :param wallet_handle: Wallet handle (created by open_wallet).
     :param did: encrypted DID.
-    :param endpoint:
+    :param address:
+    :param transport_key:
     :return: Error code
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("set_endpoint_for_did: >>> wallet_handle: %r, did: %r, endpoint: %r",
+    logger.debug("set_endpoint_for_did: >>> wallet_handle: %r, did: %r, address: %r, transport_key: %r",
                  wallet_handle,
                  did,
-                 endpoint)
+                 address,
+                 transport_key)
 
     if not hasattr(set_endpoint_for_did, "cb"):
         logger.debug("set_endpoint_for_did: Creating callback")
@@ -631,12 +634,14 @@ async def set_endpoint_for_did(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_did = c_char_p(did.encode('utf-8'))
-    c_endpoint = c_char_p(endpoint.encode('utf-8'))
+    c_address = c_char_p(address.encode('utf-8'))
+    c_transport_key = c_char_p(transport_key.encode('utf-8'))
 
     await do_call('indy_set_endpoint_for_did',
                   c_wallet_handle,
                   c_did,
-                  c_endpoint,
+                  c_address,
+                  c_transport_key,
                   set_endpoint_for_did.cb)
 
     logger.debug("set_endpoint_for_did: <<<")

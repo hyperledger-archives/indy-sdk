@@ -7,11 +7,6 @@ from indy.error import ErrorCode
 import base58
 import pytest
 
-seed = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-expected_verkey = 'CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW'
-crypto_type = 'ed25519'
-expected_did = 'NcYxiDXkpYi6ov5FcYDi1e'
-
 
 @pytest.mark.asyncio
 async def test_create_my_did_works_with_empty_json(wallet_handle):
@@ -21,31 +16,31 @@ async def test_create_my_did_works_with_empty_json(wallet_handle):
 
 
 @pytest.mark.asyncio
-async def test_create_my_did_works_for_seed(wallet_handle):
-    (did, ver_key, _) = await signus.create_and_store_my_did(wallet_handle, json.dumps({'seed': seed}))
-    assert expected_did == did
-    assert expected_verkey == ver_key
+async def test_create_my_did_works_for_seed(wallet_handle, seed_my1, did_my1, verkey_my1):
+    (did, ver_key, _) = await signus.create_and_store_my_did(wallet_handle, json.dumps({'seed': seed_my1}))
+    assert did_my1 == did
+    assert verkey_my1 == ver_key
 
 
 @pytest.mark.asyncio
-async def test_create_my_did_works_as_cid(wallet_handle):
-    (did, ver_key, _) = await signus.create_and_store_my_did(wallet_handle, json.dumps({'seed': seed, 'cid': True}))
-    assert expected_verkey == did
-    assert expected_verkey == ver_key
+async def test_create_my_did_works_as_cid(wallet_handle, seed_my1, verkey_my1):
+    (did, ver_key, _) = await signus.create_and_store_my_did(wallet_handle, json.dumps({'seed': seed_my1, 'cid': True}))
+    assert verkey_my1 == did
+    assert verkey_my1 == ver_key
 
 
 @pytest.mark.asyncio
-async def test_create_my_did_works_for_passed_did(wallet_handle):
-    (did, _, _) = await signus.create_and_store_my_did(wallet_handle, json.dumps({'did': expected_did}))
-    assert expected_did == did
+async def test_create_my_did_works_for_passed_did(wallet_handle, did_my1):
+    (did, _, _) = await signus.create_and_store_my_did(wallet_handle, json.dumps({'did': did_my1}))
+    assert did_my1 == did
 
 
 @pytest.mark.asyncio
-async def test_create_my_did_works_for_correct_type(wallet_handle):
+async def test_create_my_did_works_for_correct_type(wallet_handle, seed_my1, did_my1, verkey_my1, crypto_type):
     (did, ver_key, _) = \
-        await signus.create_and_store_my_did(wallet_handle, json.dumps({'seed': seed, 'crypto_type': crypto_type}))
-    assert expected_did == did
-    assert expected_verkey == ver_key
+        await signus.create_and_store_my_did(wallet_handle, json.dumps({'seed': seed_my1, 'crypto_type': crypto_type}))
+    assert did_my1 == did
+    assert verkey_my1 == ver_key
 
 
 @pytest.mark.asyncio

@@ -5,7 +5,6 @@ import pytest
 from indy import IndyError, signus
 from indy.error import ErrorCode
 
-message = '{"reqId":1496822211362017764}'.encode('utf-8')
 encrypted_message = bytes(
     [16, 85, 246, 243, 120, 246, 219, 123, 127, 175, 76, 243, 223, 143, 20, 163, 77, 88, 56, 211, 173, 108, 252, 30,
      210, 202, 183, 215, 102, 93, 101, 185, 51, 114, 89, 24, 207, 123, 156, 228, 6, 39, 55, 250, 172])
@@ -14,7 +13,7 @@ nonce = bytes(
 
 
 @pytest.mark.asyncio
-async def test_decrypt_works(wallet_handle, identity_my2, identity_trustee1):
+async def test_decrypt_works(wallet_handle, identity_my2, identity_trustee1, message):
     (trustee_did, _) = identity_trustee1
     (my_did, _) = identity_my2
 
@@ -23,7 +22,7 @@ async def test_decrypt_works(wallet_handle, identity_my2, identity_trustee1):
 
 
 @pytest.mark.asyncio
-async def test_decrypt_works_for_other_coder(pool_handle, wallet_handle, identity_my1, identity_trustee1):
+async def test_decrypt_works_for_other_coder(pool_handle, wallet_handle, identity_my1, identity_trustee1, message):
     (trustee_did, trustee_verkey) = identity_trustee1
     (my_did, my_verkey) = identity_my1
 

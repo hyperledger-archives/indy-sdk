@@ -432,7 +432,7 @@ impl SignusUtils {
         Ok(verkey)
     }
 
-    pub fn store_key_metadata(wallet_handle: i32, verkey: &str, metadata: &str) -> Result<(), ErrorCode> {
+    pub fn set_key_metadata(wallet_handle: i32, verkey: &str, metadata: &str) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
         let cb = Box::new(move |err| {
             sender.send((err)).unwrap();

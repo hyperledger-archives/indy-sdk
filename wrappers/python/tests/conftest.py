@@ -22,73 +22,57 @@ def event_loop():
 
 @pytest.fixture
 def seed_trustee1():
-    logger = logging.getLogger(__name__)
-    logger.debug("seed_trustee1: >>>")
-
-    res = "000000000000000000000000Trustee1"
-
-    logger.debug("seed_trustee1: <<< res: %r", res)
-    return res
+    return "000000000000000000000000Trustee1"
 
 
 @pytest.fixture
 def seed_steward1():
-    logger = logging.getLogger(__name__)
-    logger.debug("seed_trustee1: >>>")
-
-    res = "000000000000000000000000Steward1"
-
-    logger.debug("seed_trustee1: <<< res: %r", res)
-    return res
+    return "000000000000000000000000Steward1"
 
 
 @pytest.fixture
 def seed_my1():
-    logger = logging.getLogger(__name__)
-    logger.debug("seed_my1: >>>")
-
-    res = "00000000000000000000000000000My1"
-
-    logger.debug("seed_my1: <<< res: %r", res)
-    return res
+    return "00000000000000000000000000000My1"
 
 
 @pytest.fixture
 def seed_my2():
-    logger = logging.getLogger(__name__)
-    logger.debug("seed_my2: >>>")
+    return "00000000000000000000000000000My2"
 
-    res = "00000000000000000000000000000My2"
 
-    logger.debug("seed_my2: <<< res: %r", res)
-    return res
+@pytest.fixture
+def did_my1():
+    return "VsKV7grR1BUE29mG2Fm2kX"
 
 
 @pytest.fixture
 def verkey_my1():
-    logger = logging.getLogger(__name__)
-    logger.debug("verkey1: >>>")
-
-    res = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
-
-    logger.debug("seed_trustee1: <<< res: %r", res)
-    return res
+    return "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
 
 
 @pytest.fixture
 def verkey_my2():
-    logger = logging.getLogger(__name__)
-    logger.debug("verkey1: >>>")
+    return "kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn"
 
-    res = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
 
-    logger.debug("seed_trustee1: <<< res: %r", res)
-    return res
+@pytest.fixture
+def message():
+    return '{"reqId":1496822211362017764}'.encode('utf-8')
 
 
 @pytest.fixture
 def endpoint():
     return "127.0.0.1:9700"
+
+
+@pytest.fixture
+def crypto_type():
+    return "ed25519"
+
+
+@pytest.fixture
+def metadata():
+    return "ed25519"
 
 
 @pytest.fixture
@@ -444,3 +428,5 @@ async def identity_my2(wallet_handle, identity_trustee1, seed_my2, ):
 
     await signus.store_their_did(wallet_handle, json.dumps({'did': trustee_did, 'verkey': trustee_verkey}))
     return (my_did, my_verkey)
+
+

@@ -7,11 +7,10 @@ import pytest
 from indy import IndyError, signus
 from indy.error import ErrorCode
 
-message = '{"reqId":1496822211362017764}'.encode('utf-8')
-
 
 @pytest.mark.asyncio
-async def test_encrypt_works_for_pk_cached_in_wallet(pool_handle, wallet_handle, identity_trustee1, identity_my2):
+async def test_encrypt_works_for_pk_cached_in_wallet(pool_handle, wallet_handle, identity_trustee1,
+                                                     identity_my2, message):
     (trustee_did, _) = identity_trustee1
     (my_did, _) = identity_my2
 
@@ -19,7 +18,8 @@ async def test_encrypt_works_for_pk_cached_in_wallet(pool_handle, wallet_handle,
 
 
 @pytest.mark.asyncio
-async def test_encrypt_works_for_get_pk_from_ledger(pool_handle, wallet_handle, identity_my1, identity_trustee1):
+async def test_encrypt_works_for_get_pk_from_ledger(pool_handle, wallet_handle, identity_my1,
+                                                    identity_trustee1, message):
     (trustee_did, _) = identity_trustee1
     (my_did, _) = identity_my1
 
@@ -28,7 +28,8 @@ async def test_encrypt_works_for_get_pk_from_ledger(pool_handle, wallet_handle, 
 
 
 @pytest.mark.asyncio
-async def test_encrypt_works_for_get_nym_from_ledger(pool_handle, wallet_handle, identity_my1, identity_trustee1):
+async def test_encrypt_works_for_get_nym_from_ledger(pool_handle, wallet_handle, identity_my1,
+                                                     identity_trustee1, message):
     (trustee_did, _) = identity_trustee1
     (my_did, _) = identity_my1
 
@@ -39,7 +40,7 @@ async def test_encrypt_works_for_get_nym_from_ledger(pool_handle, wallet_handle,
 @pytest.mark.asyncio
 @pytest.mark.parametrize("wallet_runtime_config", ['{"freshness_time":1}'])
 async def test_encrypt_works_for_expired_nym(wallet_handle, pool_handle, identity_trustee1, identity_my1,
-                                             wallet_runtime_config):
+                                             wallet_runtime_config, message):
     (trustee_did, _) = identity_trustee1
     (my_did, my_verkey) = identity_my1
 
@@ -51,7 +52,8 @@ async def test_encrypt_works_for_expired_nym(wallet_handle, pool_handle, identit
 
 
 @pytest.mark.asyncio
-async def test_encrypt_works_for_invalid_wallet_handle(wallet_handle, pool_handle, identity_my2, identity_trustee1):
+async def test_encrypt_works_for_invalid_wallet_handle(wallet_handle, pool_handle, identity_my2,
+                                                       identity_trustee1, message):
     (trustee_did, _) = identity_trustee1
     (my_did, _) = identity_my2
 
@@ -61,7 +63,8 @@ async def test_encrypt_works_for_invalid_wallet_handle(wallet_handle, pool_handl
 
 
 @pytest.mark.asyncio
-async def test_encrypt_works_for_invalid_pool_handle(wallet_handle, pool_handle, identity_my2, identity_trustee1):
+async def test_encrypt_works_for_invalid_pool_handle(wallet_handle, pool_handle, identity_my2,
+                                                     identity_trustee1, message):
     (trustee_did, _) = identity_trustee1
     (my_did, _) = identity_my2
 
