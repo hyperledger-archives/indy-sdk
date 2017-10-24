@@ -1,6 +1,5 @@
 #!groovy
 
-def pathToCi = 'cxs/ci'
 def dockerfile= 'dockerfile'
 
 def getUserUid() {
@@ -34,6 +33,7 @@ node('ubuntu') {
 
 def buildDocker(){
     def app
+    def pathToCi = 'cxs/ci'
     stage ('Build docker environment'){
         sh "pwd"
         sh "ls ${pathToCi}"
