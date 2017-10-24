@@ -169,21 +169,23 @@ impl SignusService {
     }
 
     pub fn decrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, SignusError> {
-        if !self.crypto_types.contains_key(&my_did.crypto_type.as_str()) {
-            return Err(SignusError::UnknownCryptoError(format!("MyDid crypto is unknown: {}, {}", my_did.did, my_did.crypto_type)));
-        }
-
-        let signus = self.crypto_types.get(&my_did.crypto_type.as_str()).unwrap();
-
-        if their_did.pk.is_none() {
+        if their_did.verkey.is_none() {
             return Err(SignusError::CommonError(
-                CommonError::InvalidStructure(format!("No pk in TheirDid: {}", their_did.did))));
+                CommonError::InvalidStructure(format!("No verkey in TheirDid: {}", their_did.did))));
+        }
+        self.decrypt_by_keys(&my_did.sk, their_did.verkey.as_ref().unwrap(), &my_did.crypto_type, doc, nonce)
+    }
+
+    pub fn decrypt_by_keys(&self, my_sk: &str, their_pk: &str, crypto_type: &str, doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, SignusError> {
+        if !self.crypto_types.contains_key(crypto_type) {
+            return Err(SignusError::UnknownCryptoError(format!("crypto is unknown: {}", crypto_type)));
         }
 
-        let public_key = their_did.pk.clone().unwrap();
+        let signus = self.crypto_types.get(crypto_type).unwrap();
 
-        let secret_key = Base58::decode(&my_did.sk)?;
-        let public_key = Base58::decode(&public_key)?;
+        let secret_key = Base58::decode(&my_sk)?;
+        let public_key = Base58::decode(&their_pk)?;
+        let public_key = signus.verkey_to_public_key(&public_key)?;
 
         let decrypted_doc = signus.decrypt(&secret_key, &public_key, &doc, &nonce)?;
 

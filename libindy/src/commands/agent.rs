@@ -341,33 +341,47 @@ impl AgentCommandExecutor {
         }
         let my_did: MyDid = my_did.unwrap();
         //FIXME ^^^
+        cb(self._parse_msg(&my_did, msg.as_slice()))
+    }
 
-        let result = self.signus_service.decrypt_sealed(my_did, msg.as_slice());
+    fn _parse_msg(&self, my_did: &MyDid, msg: &[u8]) -> Result<(Option<String>, Vec<u8>), IndyError> {
+        let decrypted_msg = self.signus_service
+            .decrypt_sealed(my_did, msg)
+            .map_err(map_err_trace!())?;
+
+        #[derive(Deserialize)]
         struct DecryptedMsg {
             msg: String,
             authorized: bool,
             sender: Option<String>,
             nonce: Option<String>,
         }
+        let parsed_msg: DecryptedMsg = serde_json::from_slice(decrypted_msg.as_slice())
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't determine internal msg format: {:?}", err)))
+            .map_err(map_err_trace!())?;
 
-        let decrypted_msg: DecryptedMsg = serde_json::from_slice(result.unwrap()).unwrap();
+        let internal_msg: Vec<u8> = base64::decode(&parsed_msg.msg)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't decode internal msg filed from base64 {}", err)))
+            .map_err(map_err_trace!())?;
 
-        let result = if decrypted_msg.authorized {
-            assert!(decrypted_msg.sender.is_some());
-            assert!(decrypted_msg.nonce.is_some());
-            (decrypted_msg.sender.clone().unwrap(),
-             self.signus_service.decrypt(my_did, decrypted_msg.sender,
-                                         decrypted_msg.msg.as_ref().unwrap().from_base64(),
-                                         decrypted_msg.nonce.as_ref().unwrap().from_base64()).unwrap())
+        if !parsed_msg.authorized && parsed_msg.sender.is_none() && parsed_msg.nonce.is_none() {
+            Ok((None, internal_msg))
+        } else if let (&Some(ref sender), &Some(ref nonce)) = (&parsed_msg.sender, &parsed_msg.nonce) {
+            let nonce: Vec<u8> = base64::decode(nonce)
+                .map_err(|err| CommonError::InvalidStructure(format!("Can't decode nonce from base64 {}", err)))
+                .map_err(map_err_trace!())?;
+            let decrypted_intenal_msg = self.signus_service
+                .decrypt_by_keys(&my_did.sk, &sender, DEFAULT_CRYPTO_TYPE,
+                                 internal_msg.as_slice(), nonce.as_slice())
+                .map_err(map_err_trace!())?;
+            Ok((parsed_msg.sender.clone(), decrypted_intenal_msg))
         } else {
-            assert!(decrypted_msg.sender.is_none());
-            assert!(decrypted_msg.nonce.is_none());
-            (None, decrypted_msg.msg.from_base64())
-        };
-
-
-        cb(Ok(result))
+            Err(IndyError::CommonError(CommonError::InvalidStructure(
+                format!("Invalid internal msg format: authorized {}, sender is some {}, nonce is some {}",
+                        parsed_msg.authorized, parsed_msg.sender.is_some(), parsed_msg.nonce.is_some()))))
+        }
     }
+
     fn connect(&self, pool_handle: i32, wallet_handle: i32,
                sender_did: String, receiver_did: String,
                connect_cb: AgentConnectCB, message_cb: AgentMessageCB) {

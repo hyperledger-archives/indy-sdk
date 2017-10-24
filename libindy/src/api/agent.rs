@@ -8,6 +8,7 @@ use utils::byte_array::vec_to_pointer;
 use utils::cstring::CStringUtils;
 
 use self::libc::c_char;
+use std::ptr;
 
 #[no_mangle]
 pub extern fn indy_prep_msg(command_handle: i32,
@@ -89,10 +90,12 @@ pub extern fn indy_parse_msg(command_handle: i32,
             recipient_vk,
             encrypted_msg,
             Box::new(move |result| {
-                let (err, sender_vk, msg) = result_to_err_code_2!(result, String::new(), Vec::new());
+                let (err, sender_vk, msg) = result_to_err_code_2!(result, None, Vec::new());
                 let (msg_data, msg_len) = vec_to_pointer(&msg);
-                let sender_vk = CStringUtils::string_to_cstring(sender_vk);
-                cb(command_handle, err, sender_vk.as_ptr(), msg_data, msg_len)
+                let sender_vk = sender_vk.map(CStringUtils::string_to_cstring);
+                cb(command_handle, err,
+                   sender_vk.map(|vk| vk.as_ptr()).unwrap_or(ptr::null()),
+                   msg_data, msg_len)
             })
         )));
 

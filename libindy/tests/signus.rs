@@ -397,7 +397,7 @@ mod high_cases {
             assert_eq!(VERKEY, key);
 
             let new_endpoint = "10.10.10.1:9710";
-            SignusUtils::set_endpoint_for_did(wallet_handle, DID, updated_endpoint, VERKEY_FOR_MY2_SEED).unwrap();
+            SignusUtils::set_endpoint_for_did(wallet_handle, DID, new_endpoint, VERKEY_FOR_MY2_SEED).unwrap();
             let (updated_endpoint, updated_key) = SignusUtils::get_endpoint_for_did(wallet_handle, DID).unwrap();
             assert_eq!(new_endpoint, updated_endpoint);
             assert_eq!(VERKEY_FOR_MY2_SEED, updated_key);
