@@ -67,10 +67,10 @@ def testRust(envn) {
 
 
 def createZip(envn) {
-    dir ('cxs/libcxs'){
+    dir ('cxs/libcxs/target/debug'){
         stage ('Create Zip File') {
             envn.inside {
-                sh 'tar -cf libcxs.tar target/debug/libcxs.so'
+                sh 'tar -cf libcxs.tar libcxs.so'
                 archiveArtifacts allowEmptyArchive: true, artifacts: 'libcxs.tar'
             }
         }
