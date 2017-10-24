@@ -46,7 +46,7 @@ mod high_cases {
         fn check_message(sender_vk: &str, encrypted_msg: &Vec<u8>) {
             let recipient_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let (recipient_did, _, _) = SignusUtils::create_and_store_my_did(recipient_wallet_handle, Some(MY2_SEED)).unwrap();
+            let (recipient_did, _) = SignusUtils::create_and_store_my_did(recipient_wallet_handle, Some(MY2_SEED)).unwrap();
 
             let decrypted_message = SignusUtils::decrypt_sealed(recipient_wallet_handle, &recipient_did, encrypted_msg).unwrap();
             let decrypted_msg_json = std::str::from_utf8(&decrypted_message).unwrap();
@@ -82,7 +82,7 @@ mod high_cases {
 
             let sender_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let (_, sender_vk, _) = SignusUtils::create_and_store_my_did(sender_wallet_handle, Some(MY1_SEED)).unwrap();
+            let (_, sender_vk) = SignusUtils::create_and_store_my_did(sender_wallet_handle, Some(MY1_SEED)).unwrap();
 
             let encrypted_msg = AgentUtils::prep_msg(sender_wallet_handle, &sender_vk, VERKEY_FOR_MY2_SEED, MESSAGE.as_bytes()).unwrap();
             check_message(&sender_vk, &encrypted_msg);
@@ -98,7 +98,7 @@ mod high_cases {
 
             let sender_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let (_, sender_vk, _) = SignusUtils::create_my_did(sender_wallet_handle, &format!(r#"{{"seed":"{}", "cid":true}}"#, MY1_SEED)).unwrap();
+            let (_, sender_vk) = SignusUtils::create_my_did(sender_wallet_handle, &format!(r#"{{"seed":"{}", "cid":true}}"#, MY1_SEED)).unwrap();
 
             let encrypted_msg = AgentUtils::prep_msg(sender_wallet_handle, &sender_vk, VERKEY_FOR_MY2_SEED, MESSAGE.as_bytes()).unwrap();
             check_message(&sender_vk, &encrypted_msg);
@@ -166,7 +166,7 @@ mod high_cases {
         fn check_message(encrypted_msg: &Vec<u8>) {
             let recipient_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let (recipient_did, _, _) = SignusUtils::create_and_store_my_did(recipient_wallet_handle, Some(MY2_SEED)).unwrap();
+            let (recipient_did, _) = SignusUtils::create_and_store_my_did(recipient_wallet_handle, Some(MY2_SEED)).unwrap();
 
             let decrypted_message = SignusUtils::decrypt_sealed(recipient_wallet_handle, &recipient_did, encrypted_msg).unwrap();
             let decrypted_msg_json = std::str::from_utf8(&decrypted_message).unwrap();
@@ -255,7 +255,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let (recipient_did, recipient_vk, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY2_SEED)).unwrap();
+            let (recipient_did, recipient_vk) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY2_SEED)).unwrap();
 
             let msg = format!(r#"{{"auth":true,"nonce":{:?},"sender":"{:?}","msg":"unencrypted message"}}"#, NONCE, VERKEY);
             let encrypted_msg = SignusUtils::encrypt_sealed(wallet_handle, pool_handle, &recipient_did, msg.as_bytes()).unwrap();
