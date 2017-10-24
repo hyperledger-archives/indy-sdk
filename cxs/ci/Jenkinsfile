@@ -1,7 +1,5 @@
 #!groovy
 
-def app
-def pathToCi = 'cxs/ci'
 def dockerfile= 'dockerfile'
 
 def getUserUid() {
@@ -17,31 +15,11 @@ node('ubuntu') {
         stage ('Checkout'){
             checkout scm
         }
-        stage ('Build docker environment'){
-            sh "pwd"
-            sh "ls ${pathToCi}"
-            sh "echo building"
-            app = build('cxs')
-        
-        }
-        stage ('Building'){
-            app.inside {
-                sh "rustc --version"
-                sh "gcc --version"
-                sh "mkdir -p cxs/wrappers/node/lib"
-                sh "cd cxs/libcxs; cargo build"
-                sh "cp cxs/libcxs/target/debug/libcxs.so cxs/wrappers/node/lib"
-                sh "ls cxs/wrappers/node/lib"
-            }
-        }
-        stage ('Testing'){
-            sh "echo Testing"
-            app.inside {
-                sh "cd cxs/libcxs; cargo test -- --test-threads=1"
-            }
-        }
-        
+        app = buildDocker()
+        buildRust(app)
+        testRust(app) 
         testNodeWrapper(app)
+        createZip(app)
     } catch (Exception ex) {
         currentBuild.result = "FAILED"
         echo "$ex error"
@@ -49,6 +27,52 @@ node('ubuntu') {
        
         step([$class: 'WsCleanup'])
         
+    }
+}
+
+def buildDocker(){
+    def app
+    def pathToCi = 'cxs/ci'
+    stage ('Build docker environment'){
+        sh "pwd"
+        sh "ls ${pathToCi}"
+        sh "echo building"
+        app = build('cxs')
+    }
+    return app
+}
+
+def buildRust(envn){
+    stage ('Building Rust Library'){
+        envn.inside {
+            sh "rustc --version"
+            sh "gcc --version"
+            sh "mkdir -p cxs/wrappers/node/lib"
+            sh "cd cxs/libcxs; cargo build"
+            sh "cp cxs/libcxs/target/debug/libcxs.so cxs/wrappers/node/lib"
+            sh "ls cxs/wrappers/node/lib"
+        }
+    }
+}
+
+def testRust(envn) {
+    stage ('Testing Rust'){
+        sh "echo Testing"
+        envn.inside {
+            sh "cd cxs/libcxs; cargo test -- --test-threads=1"
+        }
+    }
+}
+
+
+def createZip(envn) {
+    dir ('cxs/libcxs/target/debug'){
+        stage ('Create Zip File') {
+            envn.inside {
+                sh 'tar -cf libcxs.tar libcxs.so'
+                archiveArtifacts allowEmptyArchive: true, artifacts: 'libcxs.tar'
+            }
+        }
     }
 }
 
@@ -63,7 +87,7 @@ def testNodeWrapper(envn) {
                 sh 'npm test'
             }
         }
-        stage ('Build Node Package'){
+        stage ('Build Node Artifact'){
             envn.inside {
                 if (env.BRANCH_NAME == "master") {
                     sh 'npm pack'
