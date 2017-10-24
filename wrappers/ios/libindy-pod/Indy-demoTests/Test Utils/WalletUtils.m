@@ -29,8 +29,6 @@
 
 - (NSError *)registerWalletType: (NSString *)xtype
 {
-    NSError *ret;
-    
     if ([self.registeredWalletTypes containsObject:xtype])
     {
         return [NSError errorWithDomain:@"IndyErrorDomain" code: WalletTypeAlreadyRegisteredError userInfo:nil];;
@@ -40,17 +38,12 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     
-    ret = [[IndyWallet sharedInstance] registerIndyKeychainWalletType:xtype
-                                                           completion:^(NSError* error)
+    [[IndyWallet sharedInstance] registerIndyKeychainWalletType:xtype
+                                                     completion:^(NSError* error)
            {
                err = error;
                [completionExpectation fulfill];
            }];
-    
-    if( ret.code != Success )
-    {
-        return ret;
-    }
     
     [self.registeredWalletTypes addObject:xtype];
     
@@ -64,28 +57,22 @@
                                      handle:(IndyHandle *) handle
 {
     __block NSError *err = nil;
-    NSError *ret = nil;
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     NSString *walletName = [NSString stringWithFormat:@"default-wallet-name-%lu", (unsigned long)[[SequenceUtils sharedInstance] getNextId]];
     NSString *xTypeStr = (xtype) ? xtype : @"default";
     
-    ret = [[IndyWallet sharedInstance] createWalletWithPoolName:  poolName
-                                                           name:  walletName
-                                                          xType:  xTypeStr
-                                                         config:  nil
-                                                    credentials:  nil
-                                                     completion: ^(NSError* error)
+    [[IndyWallet sharedInstance] createWalletWithName:  walletName
+                                             poolName:  poolName
+                                                 type:  xTypeStr
+                                               config:  nil
+                                          credentials:  nil
+                                           completion: ^(NSError* error)
            {
                err = error;
                [completionExpectation fulfill];
            }];
-    
-    if( ret.code != Success )
-    {
-        return ret;
-    }
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
@@ -97,20 +84,15 @@
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block IndyHandle walletHandle = 0;
     
-    ret = [[IndyWallet sharedInstance] openWalletWithName:walletName
-                                              runtimeConfig:nil
-                                                credentials:nil
-                                                 completion:^(NSError *error, IndyHandle h)
+    [[IndyWallet sharedInstance] openWalletWithName:walletName
+                                      runtimeConfig:nil
+                                        credentials:nil
+                                         completion:^(NSError *error, IndyHandle h)
            {
                err = error;
                walletHandle = h;
                [completionExpectation fulfill];
            }];
-    
-    if( ret.code != Success )
-    {
-        return ret;
-    }
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
@@ -125,25 +107,19 @@
                                config:(NSString *)config
 {
     __block NSError *err = nil;
-    NSError *ret = nil;
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [[IndyWallet sharedInstance] createWalletWithPoolName:  poolName
-                                                             name:  walletName
-                                                            xType:  xtype
-                                                           config:  config
-                                                      credentials:  nil
-                                                       completion: ^(NSError *error)
+    [[IndyWallet sharedInstance] createWalletWithName:  walletName
+                                             poolName:  poolName
+                                                 type:  xtype
+                                               config:  config
+                                          credentials:  nil
+                                           completion: ^(NSError *error)
            {
                err = error;
                [completionExpectation fulfill];
            }];
-    
-    if( ret.code != Success )
-    {
-        return ret;
-    }
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     return err;
@@ -152,22 +128,16 @@
 - (NSError *)deleteWalletWithName:(NSString *)walletName
 {
     __block NSError *err;
-    NSError *ret = nil;
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [[IndyWallet sharedInstance] deleteWalletWithName:walletName
-                                                credentials:nil
-                                                 completion:^(NSError *error)
+    [[IndyWallet sharedInstance] deleteWalletWithName:walletName
+                                          credentials:nil
+                                           completion:^(NSError *error)
            {
                err = error;
                [completionExpectation fulfill];
            }];
-    
-    if( ret.code != Success )
-    {
-        return ret;
-    }
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
@@ -180,24 +150,18 @@
 {
     __block NSError *err;
     __block IndyHandle outHandle = 0;
-    NSError *ret = nil;
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [[IndyWallet sharedInstance] openWalletWithName:walletName
-                                              runtimeConfig:config
-                                                credentials:nil
-                                                 completion:^(NSError *error, IndyHandle h)
+    [[IndyWallet sharedInstance] openWalletWithName:walletName
+                                      runtimeConfig:config
+                                        credentials:nil
+                                         completion:^(NSError *error, IndyHandle h)
            {
                err = error;
                outHandle = h;
                [completionExpectation fulfill];
            }];
-    
-    if( ret.code != Success )
-    {
-        return ret;
-    }
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
@@ -208,21 +172,15 @@
 - (NSError *)closeWalletWithHandle:(IndyHandle)walletHandle
 {
     __block NSError *err;
-    NSError *ret = nil;
     
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
-    ret = [[IndyWallet sharedInstance] closeWalletWithHandle:walletHandle
-                                                    completion:^(NSError *error)
-           {
-               err = error;
-               [completionExpectation fulfill];
-           }];
-    
-    if( ret.code != Success )
-    {
-        return ret;
-    }
+    [[IndyWallet sharedInstance] closeWalletWithHandle:walletHandle
+                                            completion:^(NSError *error)
+     {
+         err = error;
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils shortTimeout]];
     

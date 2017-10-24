@@ -24,22 +24,20 @@
  
  Note that messages encryption/decryption will be performed automatically.
  
- @param poolHandle Pool handle (created by IndyPool::openPoolLedgerWithName)
- @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName)
  @param senderDid Id of sender Identity stored in secured Wallet.
  @param receiverDid Id of receiver Identity.
+ @param poolHandle Pool handle (created by IndyPool::openPoolLedgerWithName)
+ @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName)
  @param connectionHandler Callback that will be called after establishing of connection or on error. Will be called exactly once with result of connect operation.
  @param messageHandler Callback that will be called on receiving of an incoming message.
  Can be called multiply times: once for each incoming message.
-
- @return Error code
  */
-+ (NSError *)connectWithPoolHandle:(IndyHandle)poolHandle
-                      walletHandle:(IndyHandle)walletHandle
-                         senderDId:(NSString *)senderDid
-                       receiverDId:(NSString *)receiverDid
-                 connectionHandler:(void (^)(NSError *error, IndyHandle connectionHandle)) connectionHandler
-                    messageHandler:(void (^)(IndyHandle connectionHandle, NSError *error, NSString *message))messageHandler;
++ (void)connectSenderDid:(NSString *)senderDid
+         withReceiverDid:(NSString *)receiverDid
+              poolHandle:(IndyHandle)poolHandle
+            walletHandle:(IndyHandle)walletHandle
+       connectionHandler:(void (^)(NSError *error, IndyHandle connectionHandle)) connectionHandler
+          messageHandler:(void (^)(IndyHandle connectionHandle, NSError *error, NSString *message))messageHandler;
 
 
 /**
@@ -62,21 +60,18 @@
         Can be called multiply times: once for each incoming connection.
  @param messageCompletion Callback that will be called on receiving of an incoming message.
         Can be called multiply times: once for each incoming message.
- 
- @return Error code
  */
-+ (NSError *)listenForEndpoint:(NSString *)endpoint
-               listenerHandler:(void (^)(NSError *error,
-                                         IndyHandle listenerHandle))listenerCompletion
-             connectionHandler:(void (^)(IndyHandle xlistenerHandle,
-                                         NSError *error,
-                                         IndyHandle connectionHandle,
-                                         NSString *senderDid,
-                                         NSString *receiverDid))connectionCompletion
-                messageHandler:(void (^)(IndyHandle xconnectionHandle,
-                                         NSError *error,
-                                         NSString *message))messageCompletion;
-
++ (void)listenForEndpoint:(NSString *)endpoint
+          listenerHandler:(void (^)(NSError *error,
+                                    IndyHandle listenerHandle))listenerCompletion
+        connectionHandler:(void (^)(IndyHandle xlistenerHandle,
+                                    NSError *error,
+                                    IndyHandle connectionHandle,
+                                    NSString *senderDid,
+                                    NSString *receiverDid))connectionCompletion
+           messageHandler:(void (^)(IndyHandle xconnectionHandle,
+                                    NSError *error,
+                                    NSString *message))messageCompletion;
 
 /**
  Sends message to connected agent.
@@ -84,16 +79,13 @@
  Note that this call works for both incoming and outgoing connections.
  Note that messages encryption/decryption will be performed automatically.
  
-
- @param connectionHandle Connection handle returned by IndyAgent::connectWithPoolHandle or IndyAgent::listenForEndpoint calls.
  @param message Message to send.
- @param handler Callback that will be called after message sent or on error. Will be called exactly once.
- 
- @return Error code
+ @param connectionHandle Connection handle returned by IndyAgent::connectWithPoolHandle or IndyAgent::listenForEndpoint calls.
+ @param completion Callback that will be called after message sent or on error. Will be called exactly once.
  */
-+ (NSError *)sendWithConnectionHandle:(IndyHandle)connectionHandle
-                             messsage:(NSString *)message
-                           completion:(void (^)(NSError *error)) handler;
++ (void)sendMessage:(NSString *)message
+   connectionHandle:(IndyHandle)connectionHandle
+         completion:(void (^)(NSError *error)) completion;
 
 /**
  Add identity to listener.
@@ -109,16 +101,14 @@
  @param walletHandle Wallet handle (created by open_wallet).
  @param did DID of identity.
  
- @param handler Callback that will be called after identity added or on error.
+ @param completion Callback that will be called after identity added or on error.
          Will be called exactly once with result of start listen operation.
- 
- @return Error code
  */
-+ (NSError *)addIdentity:(NSString *)did
-       forListenerHandle:(IndyHandle)listenerHandle
-              poolHandle:(IndyHandle)poolHandle
-            walletHandle:(IndyHandle)walletHandle
-              completion:(void (^)(NSError *error)) handler;
++ (void)addIdentity:(NSString *)did
+  forListenerHandle:(IndyHandle)listenerHandle
+         poolHandle:(IndyHandle)poolHandle
+       walletHandle:(IndyHandle)walletHandle
+         completion:(void (^)(NSError *error)) completion;
 
 /**
  Remove identity from listener.
@@ -132,15 +122,13 @@
  @param listenerHandle Listener handle (created by indy_agent_listen).
  @param walletHandle Wallet handle (created by open_wallet).
  @param did DID of identity.
- @param handler Callback that will be called after identity removed or on error.
+ @param completion Callback that will be called after identity removed or on error.
          Will be called exactly once with result of start listen operation.
- 
- @return Error code
  */
-+ (NSError *)removeIdentity:(NSString *)did
-          forListenerHandle:(IndyHandle)listenerHandle
-               walletHandle:(IndyHandle)walletHandle
-                 completion:(void (^)(NSError *error)) handler;
++ (void)removeIdentity:(NSString *)did
+     forListenerHandle:(IndyHandle)listenerHandle
+          walletHandle:(IndyHandle)walletHandle
+            completion:(void (^)(NSError *error)) completion;
 
 /**
  Closes agent connection.
@@ -148,12 +136,10 @@
  Note that this call works for both incoming and outgoing connections.
  
  @param connectionHandle Connection handle returned by indy_agent_connect or indy_agent_listen calls.
- @param handler Callback that will be called after connection closed or on error. Will be called exactly once.
- 
- @return Error code
+ @param completion Callback that will be called after connection closed or on error. Will be called exactly once.
  */
-+ (NSError *)closeConnection:(IndyHandle)connectionHandle
-                  completion:(void (^)(NSError *error)) handler;
++ (void)closeConnection:(IndyHandle)connectionHandle
+             completion:(void (^)(NSError *error)) completion;
 
 /**
  Closes listener and stops listening for agent connections.
@@ -161,10 +147,8 @@
  Note that all opened incomming connections will be closed automatically.
  
  @param listenerHandle Listener handle returned by indy_agent_listen call.
- @param handler Callback that will be called after listener closed or on error. Will be called exactly once.
- 
- @return Error code
+ @param completion Callback that will be called after listener closed or on error. Will be called exactly once.
  */
-+ (NSError *)closeListener:(IndyHandle)listenerHandle
-                completion:(void (^)(NSError *error)) handler;
++ (void)closeListener:(IndyHandle)listenerHandle
+           completion:(void (^)(NSError *error)) completion;
 @end

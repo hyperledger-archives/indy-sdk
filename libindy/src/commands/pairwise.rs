@@ -211,15 +211,6 @@ pub struct PairwiseInfo {
     pub metadata: Option<String>,
 }
 
-impl PairwiseInfo {
-    pub fn new(my_did: String, metadata: Option<String>) -> PairwiseInfo {
-        PairwiseInfo {
-            my_did: my_did,
-            metadata: metadata
-        }
-    }
-}
-
 impl JsonEncodable for PairwiseInfo {}
 
 impl<'a> JsonDecodable<'a> for PairwiseInfo {}

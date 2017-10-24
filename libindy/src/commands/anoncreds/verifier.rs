@@ -4,8 +4,6 @@ use errors::common::CommonError;
 use errors::indy::IndyError;
 
 use services::anoncreds::AnoncredsService;
-use services::pool::PoolService;
-use services::wallet::WalletService;
 use services::anoncreds::types::{
     ClaimDefinition,
     Schema,
@@ -29,18 +27,12 @@ pub enum VerifierCommand {
 
 pub struct VerifierCommandExecutor {
     anoncreds_service: Rc<AnoncredsService>,
-    pool_service: Rc<PoolService>,
-    wallet_service: Rc<WalletService>
 }
 
 impl VerifierCommandExecutor {
-    pub fn new(anoncreds_service: Rc<AnoncredsService>,
-               pool_service: Rc<PoolService>,
-               wallet_service: Rc<WalletService>) -> VerifierCommandExecutor {
+    pub fn new(anoncreds_service: Rc<AnoncredsService>) -> VerifierCommandExecutor {
         VerifierCommandExecutor {
-            anoncreds_service: anoncreds_service,
-            pool_service: pool_service,
-            wallet_service: wallet_service,
+            anoncreds_service,
         }
     }
 

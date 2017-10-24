@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Indy.PairwiseApi;
+using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;

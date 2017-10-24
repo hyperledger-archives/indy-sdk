@@ -1,13 +1,15 @@
 mod ed25519;
 pub mod types;
 
-use self::ed25519::ED25519Signus;
+use self::ed25519::ED25519CryptoType;
 use self::types::{
+    KeyInfo,
     MyDidInfo,
-    MyDid,
     TheirDidInfo,
-    TheirDid
+    Key,
+    Did
 };
+
 use utils::crypto::base58::Base58;
 use utils::crypto::verkey_builder::build_full_verkey;
 
@@ -23,13 +25,11 @@ trait CryptoType {
     fn encrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError>;
     fn decrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError>;
     fn gen_nonce(&self) -> Vec<u8>;
-    fn create_key_pair_for_signature(&self, seed: Option<&[u8]>) -> Result<(Vec<u8>, Vec<u8>), CommonError>;
-    fn sign(&self, private_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
-    fn verify(&self, public_key: &[u8], doc: &[u8], signature: &[u8]) -> Result<bool, CommonError>;
-    fn verkey_to_public_key(&self, vk: &[u8]) -> Result<Vec<u8>, CommonError>;
-    fn signkey_to_private_key(&self, sk: &[u8]) -> Result<Vec<u8>, CommonError>;
-    fn encrypt_sealed(&self, public_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
-    fn decrypt_sealed(&self, public_key: &[u8], private_key: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
+    fn create_key(&self, seed: Option<&[u8]>) -> Result<(Vec<u8>, Vec<u8>), CommonError>;
+    fn sign(&self, sk: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
+    fn verify(&self, vk: &[u8], doc: &[u8], signature: &[u8]) -> Result<bool, CommonError>;
+    fn encrypt_sealed(&self, vk: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
+    fn decrypt_sealed(&self, vk: &[u8], sk: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
 }
 
 pub struct SignusService {
@@ -39,188 +39,243 @@ pub struct SignusService {
 impl SignusService {
     pub fn new() -> SignusService {
         let mut crypto_types: HashMap<&str, Box<CryptoType>> = HashMap::new();
-        crypto_types.insert(DEFAULT_CRYPTO_TYPE, Box::new(ED25519Signus::new()));
+        crypto_types.insert(DEFAULT_CRYPTO_TYPE, Box::new(ED25519CryptoType::new()));
 
         SignusService {
             crypto_types: crypto_types
         }
     }
 
-    pub fn create_my_did(&self, my_did_info: &MyDidInfo) -> Result<MyDid, SignusError> {
-        let xtype = my_did_info.crypto_type.clone().unwrap_or(DEFAULT_CRYPTO_TYPE.to_string());
+    pub fn create_key(&self, key_info: &KeyInfo) -> Result<Key, SignusError> {
+        let crypto_type_name = key_info.crypto_type
+            .as_ref()
+            .map(String::as_str)
+            .unwrap_or(DEFAULT_CRYPTO_TYPE);
 
-        if !self.crypto_types.contains_key(&xtype.as_str()) {
+        if !self.crypto_types.contains_key(crypto_type_name) {
             return Err(
                 SignusError::UnknownCryptoError(
-                    format!("MyDidInfo info contains unknown crypto: {}", xtype)));
+                    format!("KeyInfo contains unknown crypto: {}", crypto_type_name)));
         }
 
-        let signus = self.crypto_types.get(&xtype.as_str()).unwrap();
+        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
+
+        let seed = key_info.seed.as_ref().map(String::as_bytes);
+        let (vk, sk) = crypto_type.create_key(seed)?;
+        let vk = Base58::encode(&vk);
+        let sk = Base58::encode(&sk);
+
+        if !crypto_type_name.eq(DEFAULT_CRYPTO_TYPE) {
+            // Use suffix with crypto type name to store crypto type inside of vk
+            let vk = format!("{}:{}", vk, crypto_type_name);
+        }
+
+        Ok(Key::new(vk, sk))
+    }
+
+    pub fn create_my_did(&self, my_did_info: &MyDidInfo) -> Result<(Did, Key), SignusError> {
+        let crypto_type_name = my_did_info.crypto_type
+            .as_ref()
+            .map(String::as_str)
+            .unwrap_or(DEFAULT_CRYPTO_TYPE);
+
+        if !self.crypto_types.contains_key(crypto_type_name) {
+            return Err(
+                SignusError::UnknownCryptoError(
+                    format!("MyDidInfo info contains unknown crypto: {}", crypto_type_name)));
+        }
+
+        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
         let seed = my_did_info.seed.as_ref().map(String::as_bytes);
-        let (ver_key, sign_key) = signus.create_key_pair_for_signature(seed)?;
-
-        let public_key = signus.verkey_to_public_key(&ver_key)?;
-        let secret_key = signus.signkey_to_private_key(&sign_key)?;
+        let (vk, sk) = crypto_type.create_key(seed)?;
 
         let did = match my_did_info.did {
             Some(ref did) => Base58::decode(did)?,
-            _ if my_did_info.cid == Some(true) => ver_key.clone(),
-            _ => ver_key[0..16].to_vec()
+            _ if my_did_info.cid == Some(true) => vk.clone(),
+            _ => vk[0..16].to_vec()
         };
 
-        let my_did = MyDid::new(Base58::encode(&did),
-                                xtype.clone(),
-                                Base58::encode(&public_key),
-                                Base58::encode(&secret_key),
-                                Base58::encode(&ver_key),
-                                Base58::encode(&sign_key));
+        let did = Base58::encode(&did);
+        let vk = Base58::encode(&vk);
+        let sk = Base58::encode(&sk);
 
-        Ok(my_did)
-    }
-
-    pub fn create_their_did(&self, their_did_info: &TheirDidInfo) -> Result<TheirDid, SignusError> {
-        let xtype = their_did_info.crypto_type.clone().unwrap_or(DEFAULT_CRYPTO_TYPE.to_string());
-
-        if !self.crypto_types.contains_key(&xtype.as_str()) {
-            return Err(
-                SignusError::UnknownCryptoError(
-                    format!("TheirDidInfo info contains unknown crypto: {}", xtype)));
+        if !crypto_type_name.eq(DEFAULT_CRYPTO_TYPE) {
+            // Use suffix with crypto type name to store crypto type inside of vk
+            let vk = format!("{}:{}", vk, crypto_type_name);
         }
 
-        let signus = self.crypto_types.get(&xtype.as_str()).unwrap();
+        Ok((Did::new(did, vk.clone()), Key::new(vk, sk)))
+    }
 
+    pub fn create_their_did(&self, their_did_info: &TheirDidInfo) -> Result<Did, SignusError> {
         // Check did is correct Base58
         Base58::decode(&their_did_info.did)?;
 
-        let (verkey, pk) = match their_did_info.verkey {
-            Some(ref verkey) => {
-                let full_verkey = build_full_verkey(&their_did_info.did, &Some(verkey.clone()))
-                    .map_err(|err| CommonError::InvalidState(format!("Invalid verkey {:?}", err)))?;
-                (Some(Base58::encode(&full_verkey)),
-                 Some(Base58::encode(&signus.verkey_to_public_key(&full_verkey)?)))
-            }
-            None => (None, None)
-        };
+        let verkey = build_full_verkey(their_did_info.did.as_str(),
+                                       their_did_info.verkey.as_ref().map(String::as_str))?;
 
-        let their_did = TheirDid::new(their_did_info.did.clone(),
-                                      xtype.clone(),
-                                      verkey,
-                                      pk,
-                                      their_did_info.endpoint.as_ref().cloned());
-        Ok(their_did)
+        let did = Did::new(their_did_info.did.clone(),
+                           verkey);
+        Ok(did)
     }
 
-    pub fn sign(&self, my_did: &MyDid, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
-        if !self.crypto_types.contains_key(&my_did.crypto_type.as_str()) {
+    pub fn sign(&self, my_key: &Key, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
+        let crypto_type_name = if my_key.verkey.contains(":") {
+            let splits: Vec<&str> = my_key.verkey.split(":").collect();
+            splits[1]
+        } else {
+            DEFAULT_CRYPTO_TYPE
+        };
+
+        if !self.crypto_types.contains_key(crypto_type_name) {
             return Err(
                 SignusError::UnknownCryptoError(
-                    format!("Trying to sign message with unknown crypto: {}", my_did.crypto_type)));
+                    format!("Trying to sign message with unknown crypto: {}", crypto_type_name)));
         }
 
-        let signus = self.crypto_types.get(&my_did.crypto_type.as_str()).unwrap();
+        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let sign_key = Base58::decode(&my_did.signkey)?;
-
-        let signature = signus.sign(&sign_key, doc)?;
+        let my_sk = Base58::decode(my_key.signkey.as_str())?;
+        let signature = crypto_type.sign(&my_sk, doc)?;
 
         Ok(signature)
     }
 
-    pub fn verify(&self, their_did: &TheirDid, msg: &[u8], signature: &[u8]) -> Result<bool, SignusError> {
-        if !self.crypto_types.contains_key(their_did.crypto_type.as_str()) {
-            return Err(SignusError::UnknownCryptoError(format!("Trying to verify message with unknown crypto: {}", their_did.crypto_type)));
-        }
-
-        let signus = self.crypto_types.get(their_did.crypto_type.as_str()).unwrap();
-
-        let verkey = match their_did.verkey {
-            Some(ref verkey) => Base58::decode(&verkey)?,
-            None => return Err(SignusError::CommonError(CommonError::InvalidStructure(format!("TheirDid doesn't contain verkey: {}", their_did.did))))
+    pub fn verify(&self, their_vk: &str, msg: &[u8], signature: &[u8]) -> Result<bool, SignusError> {
+        let (their_vk, crypto_type_name) = if their_vk.contains(":") {
+            let splits: Vec<&str> = their_vk.split(":").collect();
+            (splits[0], splits[1])
+        } else {
+            (DEFAULT_CRYPTO_TYPE, their_vk)
         };
 
-        Ok(signus.verify(&verkey, msg, signature)?)
+        if !self.crypto_types.contains_key(crypto_type_name) {
+            return Err(SignusError::UnknownCryptoError(
+                format!("Trying to verify message with unknown crypto: {}", crypto_type_name)));
+        }
+
+        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
+
+        let their_vk = Base58::decode(&their_vk)?;
+
+        Ok(crypto_type.verify(&their_vk, msg, signature)?)
     }
 
-    pub fn encrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), SignusError> {
-        let their_pk = &their_did.verkey;
-        let my_sk = &my_did.sk;
-        if their_pk.is_none() {
-            return Err(SignusError::CommonError(CommonError::InvalidStructure(format!("TheirDid doesn't contain pk: {}", their_did.did))));
+    pub fn encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), SignusError> {
+        let (crypto_type_name, my_vk) = if my_key.verkey.contains(":") {
+            let splits: Vec<&str> = my_key.verkey.split(":").collect();
+            (splits[0], splits[1])
+        } else {
+            (DEFAULT_CRYPTO_TYPE, my_key.verkey.as_str())
+        };
+
+        let (their_crypto_type_name, their_vk) = if their_vk.contains(":") {
+            let splits: Vec<&str> = their_vk.split(":").collect();
+            (splits[0], splits[1])
+        } else {
+            (DEFAULT_CRYPTO_TYPE, their_vk)
+        };
+
+        if !self.crypto_types.contains_key(&crypto_type_name) {
+            return Err(SignusError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", crypto_type_name)));
         }
-        let their_pk = their_pk.as_ref().unwrap();
-        self.encrypt_by_keys(&my_sk, their_pk, &my_did.crypto_type, doc)
-    }
 
-    pub fn encrypt_by_keys(&self, my_sk: &str, their_pk: &str, crypto_type: &str, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), SignusError> {
-        if !self.crypto_types.contains_key(&crypto_type) {
-            return Err(SignusError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", crypto_type)));
+        if !crypto_type_name.eq(their_crypto_type_name) {
+            // TODO: FIXME: Use dedicated error code
+            return Err(SignusError::UnknownCryptoError(
+                format!("My key crypto type is incompatible with their key crypto type: {} {}",
+                        crypto_type_name,
+                        their_crypto_type_name)));
         }
-        let signus = self.crypto_types.get(&crypto_type).unwrap();
 
-        let nonce = signus.gen_nonce();
+        let crypto_type = self.crypto_types.get(&crypto_type_name).unwrap();
 
-        let secret_key = Base58::decode(&my_sk)?;
-        let public_key = Base58::decode(&their_pk)?;
-        let public_key = signus.verkey_to_public_key(&public_key)?;
+        let my_sk = Base58::decode(my_key.signkey.as_str())?;
+        let their_vk = Base58::decode(their_vk)?;
+        let nonce = crypto_type.gen_nonce();
 
-        let encrypted_doc = signus.encrypt(&secret_key, &public_key, doc, &nonce)?;
+        let encrypted_doc = crypto_type.encrypt(&my_sk, &their_vk, doc, &nonce)?;
         Ok((encrypted_doc, nonce))
     }
 
-    pub fn decrypt(&self, my_did: &MyDid, their_did: &TheirDid, doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, SignusError> {
-        if !self.crypto_types.contains_key(&my_did.crypto_type.as_str()) {
-            return Err(SignusError::UnknownCryptoError(format!("MyDid crypto is unknown: {}, {}", my_did.did, my_did.crypto_type)));
+    pub fn decrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, SignusError> {
+        let (crypto_type_name, my_vk) = if my_key.verkey.contains(":") {
+            let splits: Vec<&str> = my_key.verkey.split(":").collect();
+            (splits[0], splits[1])
+        } else {
+            (DEFAULT_CRYPTO_TYPE, my_key.verkey.as_str())
+        };
+
+        let (their_crypto_type_name, their_vk) = if their_vk.contains(":") {
+            let splits: Vec<&str> = their_vk.split(":").collect();
+            (splits[0], splits[1])
+        } else {
+            (DEFAULT_CRYPTO_TYPE, their_vk)
+        };
+
+        if !self.crypto_types.contains_key(&crypto_type_name) {
+            return Err(SignusError::UnknownCryptoError(
+                format!("Trying to decrypt message with unknown crypto: {}", crypto_type_name)));
         }
 
-        let signus = self.crypto_types.get(&my_did.crypto_type.as_str()).unwrap();
-
-        if their_did.pk.is_none() {
-            return Err(SignusError::CommonError(
-                CommonError::InvalidStructure(format!("No pk in TheirDid: {}", their_did.did))));
+        if !crypto_type_name.eq(their_crypto_type_name) {
+            // TODO: FIXME: Use dedicated error code
+            return Err(SignusError::UnknownCryptoError(
+                format!("My key crypto type is incompatible with their key crypto type: {} {}",
+                        crypto_type_name,
+                        their_crypto_type_name)));
         }
 
-        let public_key = their_did.pk.clone().unwrap();
+        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let secret_key = Base58::decode(&my_did.sk)?;
-        let public_key = Base58::decode(&public_key)?;
+        let my_sk = Base58::decode(&my_key.signkey)?;
+        let their_vk = Base58::decode(their_vk)?;
 
-        let decrypted_doc = signus.decrypt(&secret_key, &public_key, &doc, &nonce)?;
+        let decrypted_doc = crypto_type.decrypt(&my_sk, &their_vk, &doc, &nonce)?;
 
         Ok(decrypted_doc)
     }
 
-    pub fn encrypt_sealed(&self, their_did: &TheirDid, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
-        if their_did.verkey.is_none() {
-            return Err(SignusError::CommonError(CommonError::InvalidStructure(format!("TheirDid doesn't contain pk: {}", their_did.did))));
+    pub fn encrypt_sealed(&self, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
+        let (crypto_type_name, their_vk) = if their_vk.contains(":") {
+            let splits: Vec<&str> = their_vk.split(":").collect();
+            (splits[0], splits[1])
+        } else {
+            (DEFAULT_CRYPTO_TYPE, their_vk)
+        };
+
+        if !self.crypto_types.contains_key(&crypto_type_name) {
+            return Err(SignusError::UnknownCryptoError(format!("Trying to encrypt sealed message with unknown crypto: {}", crypto_type_name)));
         }
-        self.encrypt_sealed_by_keys(their_did.verkey.as_ref().unwrap(), &their_did.crypto_type, doc)
-    }
 
-    pub fn encrypt_sealed_by_keys(&self, public_key: &str, crypto_type: &str, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
-        if !self.crypto_types.contains_key(&crypto_type) {
-            return Err(SignusError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", crypto_type)));
-        }
-        let signus = self.crypto_types.get(&crypto_type).unwrap();
+        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let public_key = Base58::decode(&public_key)?;
-        let public_key = signus.verkey_to_public_key(&public_key)?;
+        let their_vk = Base58::decode(their_vk)?;
 
-        let encrypted_doc = signus.encrypt_sealed(&public_key, doc)?;
+        let encrypted_doc = crypto_type.encrypt_sealed(&their_vk, doc)?;
         Ok(encrypted_doc)
     }
 
-    pub fn decrypt_sealed(&self, my_did: &MyDid, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
-        if !self.crypto_types.contains_key(&my_did.crypto_type.as_str()) {
-            return Err(SignusError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", my_did.crypto_type)));
+    pub fn decrypt_sealed(&self, my_key: &Key, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
+        let (crypto_type_name, my_vk) = if my_key.verkey.contains(":") {
+            let splits: Vec<&str> = my_key.verkey.split(":").collect();
+            (splits[0], splits[1])
+        } else {
+            (DEFAULT_CRYPTO_TYPE, my_key.verkey.as_str())
+        };
+
+        if !self.crypto_types.contains_key(&crypto_type_name) {
+            return Err(SignusError::UnknownCryptoError(
+                format!("Trying to decrypt sealed message with unknown crypto: {}", crypto_type_name)));
         }
 
-        let signus = self.crypto_types.get(&my_did.crypto_type.as_str()).unwrap();
+        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let public_key = Base58::decode(&my_did.pk)?;
-        let private_key = Base58::decode(&my_did.sk)?;
+        let my_vk = Base58::decode(my_vk)?;
+        let my_sk = Base58::decode(my_key.signkey.as_str())?;
 
-        let decrypted_doc = signus.decrypt_sealed(&public_key, &private_key, doc)?;
+        let decrypted_doc = crypto_type.decrypt_sealed(&my_vk, &my_sk, doc)?;
         Ok(decrypted_doc)
     }
 }

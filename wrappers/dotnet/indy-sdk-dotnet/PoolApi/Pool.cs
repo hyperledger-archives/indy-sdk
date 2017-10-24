@@ -25,7 +25,8 @@ namespace Hyperledger.Indy.PoolApi
         };
 
         /// <summary>
-        /// Creates a new local pool configuration that can be used later to open a connection to pool nodes.
+        /// Creates a new local pool configuration with the specified name that can be used later to open a connection to 
+        /// pool nodes.
         /// </summary>
         /// <remarks>
         /// <para>
