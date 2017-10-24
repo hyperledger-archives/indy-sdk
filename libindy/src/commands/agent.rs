@@ -2,29 +2,17 @@ extern crate rust_base58;
 extern crate serde_json;
 extern crate zmq_pw as zmq;
 
-use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use base64;
-use commands::ledger::LedgerCommand;
-use commands::utils::check_wallet_and_pool_handles_consistency;
 use errors::indy::IndyError;
 use errors::common::CommonError;
 use errors::wallet::WalletError;
-use services::ledger::LedgerService;
-use services::ledger::types::{Reply, GetNymResultData, GetNymReplyResult};
-use services::pool::PoolService;
-use services::signus::{SignusService, DEFAULT_CRYPTO_TYPE};
-use services::signus::types::{Did, Key, Endpoint as SEndpoint};
+use services::signus::SignusService;
+use services::signus::types::Key;
 use services::wallet::WalletService;
-use utils::crypto::box_::CryptoBox;
 use utils::json::JsonDecodable;
-use utils::sequence::SequenceUtils;
-use utils::crypto::verkey_builder::build_full_verkey;
 
-pub type AgentConnectCB = Box<Fn(Result<i32, IndyError>) + Send>;
-pub type AgentMessageCB = Box<Fn(Result<(i32, String), IndyError>) + Send>;
 pub type AgentPrepMsgCB = Box<Fn(Result<Vec<u8>, IndyError>) + Send>;
 pub type AgentParseMsgCB = Box<Fn(Result<(Option<String>, Vec<u8>), IndyError>) + Send>;
 
@@ -50,44 +38,18 @@ pub enum AgentCommand {
 }
 
 pub struct AgentCommandExecutor {
-    ledger_service: Rc<LedgerService>,
-    pool_service: Rc<PoolService>,
     signus_service: Rc<SignusService>,
     wallet_service: Rc<WalletService>,
 
-    out_connections: RefCell<HashMap<i32, AgentMessageCB>>,
-    listeners: RefCell<HashMap<i32, Listener>>,
 
-    listen_callbacks: RefCell<HashMap<i32, (
-        Box<Fn(Result<i32, IndyError>) + Send>, // listen cb
-        Listener
-    )>>,
-    add_rm_identity_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), IndyError>)>>>,
-    connect_callbacks: RefCell<HashMap<i32, (AgentConnectCB, AgentMessageCB)>>,
-    send_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), IndyError>)>>>,
-    close_callbacks: RefCell<HashMap<i32, Box<Fn(Result<(), IndyError>)>>>,
 }
 
-struct Listener {
-    on_connect: Box<Fn(Result<(i32, i32, String, String), IndyError>) + Send>,
-    on_msg: AgentMessageCB,
-    conn_handles: HashSet<i32>,
-}
 
 impl AgentCommandExecutor {
-    pub fn new(ledger_service: Rc<LedgerService>, pool_service: Rc<PoolService>, signus_service: Rc<SignusService>, wallet_service: Rc<WalletService>) -> AgentCommandExecutor {
+    pub fn new(signus_service: Rc<SignusService>, wallet_service: Rc<WalletService>) -> AgentCommandExecutor {
         AgentCommandExecutor {
-            ledger_service,
-            pool_service,
             signus_service,
             wallet_service,
-            out_connections: RefCell::new(HashMap::new()),
-            listeners: RefCell::new(HashMap::new()),
-            listen_callbacks: RefCell::new(HashMap::new()),
-            add_rm_identity_callbacks: RefCell::new(HashMap::new()),
-            connect_callbacks: RefCell::new(HashMap::new()),
-            send_callbacks: RefCell::new(HashMap::new()),
-            close_callbacks: RefCell::new(HashMap::new()),
         }
     }
 
