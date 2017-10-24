@@ -17,30 +17,10 @@ node('ubuntu') {
         stage ('Checkout'){
             checkout scm
         }
-        stage ('Build docker environment'){
-            sh "pwd"
-            sh "ls ${pathToCi}"
-            sh "echo building"
-            app = build('cxs')
-        
-        }
-        stage ('Building'){
-            app.inside {
-                sh "rustc --version"
-                sh "gcc --version"
-                sh "mkdir -p cxs/wrappers/node/lib"
-                sh "cd cxs/libcxs; cargo build"
-                sh "cp cxs/libcxs/target/debug/libcxs.so cxs/wrappers/node/lib"
-                sh "ls cxs/wrappers/node/lib"
-            }
-        }
-        stage ('Testing'){
-            sh "echo Testing"
-            app.inside {
-                sh "cd cxs/libcxs; cargo test -- --test-threads=1"
-            }
-        }
-        
+        app = buildDocker()
+        buildRust(app)
+        createZip(app)
+        testRust(app) 
         testNodeWrapper(app)
         createZip(app)
     } catch (Exception ex) {
@@ -53,12 +33,46 @@ node('ubuntu') {
     }
 }
 
+def buildDocker(){
+    var app
+    stage ('Build docker environment'){
+        sh "pwd"
+        sh "ls ${pathToCi}"
+        sh "echo building"
+        app = build('cxs')
+    }
+    return app
+}
+
+def buildRust(envn){
+    stage ('Building'){
+        envn.inside {
+            sh "rustc --version"
+            sh "gcc --version"
+            sh "mkdir -p cxs/wrappers/node/lib"
+            sh "cd cxs/libcxs; cargo build"
+            sh "cp cxs/libcxs/target/debug/libcxs.so cxs/wrappers/node/lib"
+            sh "ls cxs/wrappers/node/lib"
+        }
+    }
+}
+
+def testRust(envn) {
+    stage ('Testing Rust'){
+        sh "echo Testing"
+        envn.inside {
+            sh "cd cxs/libcxs; cargo test -- --test-threads=1"
+        }
+    }
+}
+
+
 def createZip(envn) {
     dir ('cxs/libcxs'){
         stage ('Create Zip File') {
             envn.inside {
                 sh 'tar -cf libcxs.tar target/debug/libcxs.so'
-                archiveArtifacts allowEmptyArchive: true, artifacts: libcxs.tar
+                archiveArtifacts allowEmptyArchive: true, artifacts: 'libcxs.tar'
             }
         }
     }
