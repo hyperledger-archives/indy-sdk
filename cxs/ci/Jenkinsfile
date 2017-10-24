@@ -17,7 +17,6 @@ node('ubuntu') {
         }
         app = buildDocker()
         buildRust(app)
-        createZip(app)
         testRust(app) 
         testNodeWrapper(app)
         createZip(app)
@@ -44,7 +43,7 @@ def buildDocker(){
 }
 
 def buildRust(envn){
-    stage ('Building'){
+    stage ('Building Rust Library'){
         envn.inside {
             sh "rustc --version"
             sh "gcc --version"
@@ -88,7 +87,7 @@ def testNodeWrapper(envn) {
                 sh 'npm test'
             }
         }
-        stage ('Build Node Package'){
+        stage ('Build Node Artifact'){
             envn.inside {
                 if (env.BRANCH_NAME == "master") {
                     sh 'npm pack'
