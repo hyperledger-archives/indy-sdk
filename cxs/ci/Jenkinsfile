@@ -42,6 +42,7 @@ node('ubuntu') {
         }
         
         testNodeWrapper(app)
+        createZip(app)
     } catch (Exception ex) {
         currentBuild.result = "FAILED"
         echo "$ex error"
@@ -49,6 +50,17 @@ node('ubuntu') {
        
         step([$class: 'WsCleanup'])
         
+    }
+}
+
+def createZip(envn) {
+    dir ('cxs/libcxs'){
+        stage ('Create Zip File') {
+            envn.inside {
+                sh 'tar -cf libcxs.tar target/debug/libcxs.so'
+                archiveArtifacts allowEmptyArchive: true, artifacts: libcxs.tar
+            }
+        }
     }
 }
 
