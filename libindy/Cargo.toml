@@ -44,7 +44,7 @@ log = "0.3.7"
 openssl = { version = "0.9.11", optional = true }
 rand = "0.3"
 rlp = "0.2.0"
-rusqlite = { git = "https://github.com/mikelodder7/rusqlcipher" }
+rusqlite = { git = "https://github.com/mikelodder7/rusqlcipher", features=["bundled"] }
 rust-base58 = {version = "0.0.4", optional = true}
 base64 = "0.6.0"
 serde = "1.0"
