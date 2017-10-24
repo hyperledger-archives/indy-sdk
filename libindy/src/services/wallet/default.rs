@@ -30,9 +30,17 @@ impl Default for DefaultWalletRuntimeConfig {
 }
 
 #[derive(Deserialize)]
-struct DefaultWalletCredentials {}
+struct DefaultWalletCredentials {
+    key: String
+}
 
 impl<'a> JsonDecodable<'a> for DefaultWalletCredentials {}
+
+impl Default for DefaultWalletCredentials {
+    fn default() -> Self {
+        DefaultWalletCredentials { key: String::new() }
+    }
+}
 
 struct DefaultWalletRecord {
     key: String,
@@ -43,7 +51,8 @@ struct DefaultWalletRecord {
 struct DefaultWallet {
     name: String,
     pool_name: String,
-    config: DefaultWalletRuntimeConfig
+    config: DefaultWalletRuntimeConfig,
+    credentials: DefaultWalletCredentials
 }
 
 impl DefaultWallet {
@@ -54,14 +63,15 @@ impl DefaultWallet {
         DefaultWallet {
             name: name.to_string(),
             pool_name: pool_name.to_string(),
-            config: config
+            config: config,
+            credentials: credentials
         }
     }
 }
 
 impl Wallet for DefaultWallet {
     fn set(&self, key: &str, value: &str) -> Result<(), WalletError> {
-        _open_connection(self.name.as_str())?
+        _open_connection(self.name.as_str(), self.credentials.key.as_str())?
             .execute(
                 "INSERT OR REPLACE INTO wallet (key, value, time_created) VALUES (?1, ?2, ?3)",
                 &[&key.to_string(), &value.to_string(), &time::get_time()])?;
@@ -69,7 +79,7 @@ impl Wallet for DefaultWallet {
     }
 
     fn get(&self, key: &str) -> Result<String, WalletError> {
-        let record = _open_connection(self.name.as_str())?
+        let record = _open_connection(self.name.as_str(), self.credentials.key.as_str())?
             .query_row(
                 "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
                 &[&key.to_string()], |row| {
@@ -83,7 +93,7 @@ impl Wallet for DefaultWallet {
     }
 
     fn list(&self, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError> {
-        let connection = _open_connection(self.name.as_str())?;
+        let connection = _open_connection(self.name.as_str(), self.credentials.key.as_str())?;
         let mut stmt = connection.prepare("SELECT key, value, time_created FROM wallet WHERE key like ?1 order by key")?;
         let records = stmt.query_map(&[&format!("{}%", key_prefix)], |row| {
             DefaultWalletRecord {
@@ -104,7 +114,7 @@ impl Wallet for DefaultWallet {
     }
 
     fn get_not_expired(&self, key: &str) -> Result<String, WalletError> {
-        let record = _open_connection(self.name.as_str())?
+        let record = _open_connection(self.name.as_str(), self.credentials.key.as_str())?
             .query_row(
                 "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
                 &[&key.to_string()], |row| {
@@ -151,7 +161,12 @@ impl WalletType for DefaultWalletType {
             return Err(WalletError::AlreadyExists(name.to_string()))
         }
 
-        _open_connection(name).map_err(map_err_trace!())?
+        let runtime_auth = match credentials {
+            Some(auth) => DefaultWalletCredentials::from_json(auth)?,
+            None => DefaultWalletCredentials::default()
+        };
+
+        _open_connection(name, runtime_auth.key.as_str()).map_err(map_err_trace!())?
             .execute("CREATE TABLE wallet (key TEXT CONSTRAINT constraint_name PRIMARY KEY, value TEXT NOT NULL, time_created TEXT NOT_NULL)", &[])
             .map_err(map_err_trace!())?;
         trace!("DefaultWalletType.create <<");
@@ -170,13 +185,17 @@ impl WalletType for DefaultWalletType {
             None => DefaultWalletRuntimeConfig::default()
         };
 
-        // FIXME: parse and implement credentials!!!
+        let runtime_auth = match credentials {
+            Some(auth) => DefaultWalletCredentials::from_json(auth)?,
+            None => DefaultWalletCredentials::default()
+        };
+
         Ok(Box::new(
             DefaultWallet::new(
                 name,
                 pool_name,
                 runtime_config,
-                DefaultWalletCredentials {})))
+                runtime_auth)))
     }
 }
 
@@ -186,7 +205,7 @@ fn _db_path(name: &str) -> PathBuf {
     path
 }
 
-fn _open_connection(name: &str) -> Result<Connection, WalletError> {
+fn _open_connection(name: &str, credentials: &str) -> Result<Connection, WalletError> {
     let path = _db_path(name);
     if !path.parent().unwrap().exists() {
         fs::DirBuilder::new()
@@ -194,7 +213,15 @@ fn _open_connection(name: &str) -> Result<Connection, WalletError> {
             .create(path.parent().unwrap())?;
     }
 
-    Ok(Connection::open(path)?)
+    let conn = Connection::open(path);
+    if let Ok(c) = conn {
+        let sql = format!("PRAGMA key='{}'", credentials);
+        c.execute(&sql, &[])?;
+        Ok(c)
+    }
+    else {
+        Ok(conn?)
+    }
 }
 
 impl From<rusqlite::Error> for WalletError {
@@ -400,6 +427,32 @@ mod tests {
         let wallet = default_wallet_type.open("wallet1", "pool1", None, None, None).unwrap();
 
         assert_eq!(wallet.get_name(), "wallet1");
+
+        TestUtils::cleanup_indy_home();
+    }
+
+    #[test]
+    fn default_wallet_create_encrypted() {
+        TestUtils::cleanup_indy_home();
+
+        let default_wallet_type = DefaultWalletType::new();
+        default_wallet_type.create("encrypted_wallet", None, Some("{\"key\":\"test\"}")).unwrap();
+        let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some("{\"key\":\"test\"}")).unwrap();
+
+        wallet.set("key1::subkey1", "value1").unwrap();
+        wallet.set("key1::subkey2", "value2").unwrap();
+
+        let mut key_values = wallet.list("key1::").unwrap();
+        key_values.sort();
+        assert_eq!(2, key_values.len());
+
+        let (key, value) = key_values.pop().unwrap();
+        assert_eq!("key1::subkey2", key);
+        assert_eq!("value2", value);
+
+        let (key, value) = key_values.pop().unwrap();
+        assert_eq!("key1::subkey1", key);
+        assert_eq!("value1", value);
 
         TestUtils::cleanup_indy_home();
     }
