@@ -45,8 +45,7 @@ pub  extern fn indy_create_and_store_my_did(command_handle: i32,
                                             did_json: *const c_char,
                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                  did: *const c_char,
-                                                                 verkey: *const c_char,
-                                                                 pk: *const c_char)>) -> ErrorCode {
+                                                                 verkey: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(did_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -55,11 +54,10 @@ pub  extern fn indy_create_and_store_my_did(command_handle: i32,
             wallet_handle,
             did_json,
             Box::new(move |result| {
-                let (err, did, verkey, pk) = result_to_err_code_3!(result, String::new(), String::new(), String::new());
+                let (err, did, verkey) = result_to_err_code_2!(result, String::new(), String::new());
                 let did = CStringUtils::string_to_cstring(did);
                 let verkey = CStringUtils::string_to_cstring(verkey);
-                let pk = CStringUtils::string_to_cstring(pk);
-                cb(command_handle, err, did.as_ptr(), verkey.as_ptr(), pk.as_ptr())
+                cb(command_handle, err, did.as_ptr(), verkey.as_ptr())
             })
         )));
 
@@ -93,8 +91,7 @@ pub  extern fn indy_replace_keys_start(command_handle: i32,
                                        did: *const c_char,
                                        identity_json: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                            verkey: *const c_char,
-                                                            pk: *const c_char)>) -> ErrorCode {
+                                                            verkey: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(identity_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
@@ -105,10 +102,9 @@ pub  extern fn indy_replace_keys_start(command_handle: i32,
             identity_json,
             did,
             Box::new(move |result| {
-                let (err, verkey, pk) = result_to_err_code_2!(result, String::new(), String::new());
+                let (err, verkey) = result_to_err_code_1!(result, String::new());
                 let verkey = CStringUtils::string_to_cstring(verkey);
-                let pk = CStringUtils::string_to_cstring(pk);
-                cb(command_handle, err, verkey.as_ptr(), pk.as_ptr())
+                cb(command_handle, err, verkey.as_ptr())
             })
         )));
 
@@ -222,7 +218,21 @@ pub  extern fn indy_create_key(command_handle: i32,
                                key_json: *const c_char,
                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                     verkey: *const c_char)>) -> ErrorCode {
-    unimplemented!()
+    check_useful_c_str!(key_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::CreateKey(
+            wallet_handle,
+            key_json,
+            Box::new(move |result| {
+                let (err, verkey) = result_to_err_code_1!(result, String::new());
+                let verkey = CStringUtils::string_to_cstring(verkey);
+                cb(command_handle, err, verkey.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Saves/replaces the meta information for the giving key in the wallet.
@@ -252,6 +262,7 @@ pub  extern fn indy_set_key_metadata(command_handle: i32,
                                      metadata: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: i32,
                                                           err: ErrorCode)>) -> ErrorCode {
+    unimplemented!()
 }
 
 /// Retrieves the meta information for the giving key in the wallet.
@@ -314,7 +325,21 @@ pub extern fn indy_key_for_did(command_handle: i32,
                                cb: Option<extern fn(xcommand_handle: i32,
                                                     err: ErrorCode,
                                                     key: *const c_char)>) -> ErrorCode {
-    unimplemented!();
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::KeyForDid(
+            wallet_handle,
+            did,
+            Box::new(move |result| {
+                let (err, verkey) = result_to_err_code_1!(result, String::new());
+                let key = CStringUtils::string_to_cstring(verkey);
+                cb(command_handle, err, key.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Returns endpoint information for the given DID.
