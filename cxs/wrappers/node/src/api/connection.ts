@@ -10,7 +10,7 @@ import {
     IRecipientInfo,
     StateType
 } from './api'
-import { ConnectionTimeoutError } from './errors'
+import { ConnectionTimeoutError, CXSInternalError } from './errors'
 
 export class Connection implements IConnections {
   public connectionHandle: Type
@@ -40,26 +40,16 @@ export class Connection implements IConnections {
 
   getData (): IConnectionData {
     const dataToRelease = this.RUST_API.cxs_connection_get_data(this.connectionHandle)
-    /* tslint:disable */
     // this.RUST_API.free(dataToRelease)
     return JSON.parse(dataToRelease)
-  }
-
-  myDid (): string {
-    return this.getData().pw_did
-  }
-
-  didEndpoint (): string {
-    return this.getData().did_endpoint
-  }
-
-  myId (): string {
-    return this.getData().source_id
   }
 
   getState (): StateType {
     const statusPtr = alloc(refTypes.uint32)
     const result = this.RUST_API.cxs_connection_get_state(this.connectionHandle, statusPtr)
+    if (result) {
+      throw new CXSInternalError(`cxs_connection_get_state -> ${result}`)
+    }
     this.state = deref(statusPtr)
     return this.state
   }

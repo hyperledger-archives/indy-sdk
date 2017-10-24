@@ -83,6 +83,7 @@ def testNodeWrapper(envn) {
                 sh 'npm -v'
                 sh 'npm install'
                 sh 'npm rebuild'
+                sh 'npm run lint'
                 sh 'npm run compile'
                 sh 'npm test'
             }
