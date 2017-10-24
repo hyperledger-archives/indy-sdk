@@ -4,10 +4,11 @@ import * as weak from 'weak'
 import { CXSRuntime } from '../index'
 import { CXSRuntimeConfig } from '../rustlib'
 import {
-  IConnections,
-  IConnectOptions,
-  IRecipientInfo,
-  StateType
+    IConnectionData,
+    IConnections,
+    IConnectOptions,
+    IRecipientInfo,
+    StateType
 } from './api'
 import { ConnectionTimeoutError } from './errors'
 
@@ -37,8 +38,23 @@ export class Connection implements IConnections {
     await this._waitFor(() => this._connect(options) === 0, timeout)
   }
 
-  getData (): string {
-    return this.RUST_API.cxs_connection_get_data(this.connectionHandle)
+  getData (): IConnectionData {
+    const dataToRelease = this.RUST_API.cxs_connection_get_data(this.connectionHandle)
+    /* tslint:disable */
+    // this.RUST_API.free(dataToRelease)
+    return JSON.parse(dataToRelease)
+  }
+
+  myDid (): string {
+    return this.getData().pw_did
+  }
+
+  didEndpoint (): string {
+    return this.getData().did_endpoint
+  }
+
+  myId (): string {
+    return this.getData().source_id
   }
 
   getState (): StateType {

@@ -42,6 +42,7 @@
   },
   "devDependencies": {
     "jsdoc": "^3.5.5",
-    "tslint-config-standard": "^6.0.1"
+    "tslint-config-standard": "^6.0.1",
+    "typescript": "^2.5.3"
   }
 }

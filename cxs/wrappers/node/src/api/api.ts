@@ -1,7 +1,7 @@
 export interface IConnections {
   create ( IRecipientInfo ): number
+  getData (): IConnectionData
   connect ( IConnectOptions ): Promise<void>
-  getData (): string
   getState (): number
   release (): number
 }
@@ -26,4 +26,17 @@ export interface IRecipientInfo {
 export interface IConnectOptions {
   phone?: string,
   timeout?: number
+}
+
+export interface IConnectionData {
+  source_id: string
+  invite_detail: string,
+  handle: number,
+  pw_did: string,
+  pw_verkey: string,
+  did_endpoint: string,
+  endpoint: string,
+  uuid: string,
+  wallet: string,
+  state: string
 }
