@@ -9,10 +9,8 @@ import org.hyperledger.indy.sdk.ParamGuard;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.signus.SignusResults.EncryptResult;
-import org.hyperledger.indy.sdk.signus.SignusResults.ReplaceKeysStartResult;
 import org.hyperledger.indy.sdk.signus.SignusResults.EndpointForDidResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
-import org.hyperledger.indy.sdk.pool.Pool;
 
 import com.sun.jna.Callback;
 import com.sun.jna.Pointer;
@@ -40,12 +38,12 @@ public class Signus extends IndyJava.API {
 	private static Callback createAndStoreMyDidCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String did, String verkey, String pk) {
+		public void callback(int xcommand_handle, int err, String did, String verkey) {
 
 			CompletableFuture<CreateAndStoreMyDidResult> future = (CompletableFuture<CreateAndStoreMyDidResult>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			CreateAndStoreMyDidResult result = new CreateAndStoreMyDidResult(did, verkey, pk);
+			CreateAndStoreMyDidResult result = new CreateAndStoreMyDidResult(did, verkey);
 			future.complete(result);
 		}
 	};
@@ -56,12 +54,12 @@ public class Signus extends IndyJava.API {
 	private static Callback replaceKeysStartCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String verkey, String pk) {
+		public void callback(int xcommand_handle, int err, String verkey) {
 
-			CompletableFuture<ReplaceKeysStartResult> future = (CompletableFuture<ReplaceKeysStartResult>) removeFuture(xcommand_handle);
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			ReplaceKeysStartResult result = new ReplaceKeysStartResult(verkey, pk);
+			String result = verkey;
 			future.complete(result);
 		}
 	};
@@ -377,7 +375,7 @@ public class Signus extends IndyJava.API {
 	 * @return A future that resolves to a ReplaceKeysStartResult instance.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<ReplaceKeysStartResult> replaceKeysStart(
+	public static CompletableFuture<String> replaceKeysStart(
 			Wallet wallet,
 			String did,
 			String identityJson) throws IndyException {
@@ -386,7 +384,7 @@ public class Signus extends IndyJava.API {
 		ParamGuard.notNullOrWhiteSpace(did, "did");
 		ParamGuard.notNullOrWhiteSpace(identityJson, "identityJson");
 
-		CompletableFuture<ReplaceKeysStartResult> future = new CompletableFuture<ReplaceKeysStartResult>();
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -596,6 +594,7 @@ public class Signus extends IndyJava.API {
 	 * Decrypts a message by public-key authenticated-encryption scheme using nonce.
 	 *
 	 * @param wallet       The wallet.
+	 * @param pool       The pool.
 	 * @param myDid        DID
 	 * @param did          DID that signed the message
 	 * @param encryptedMsg encrypted message
@@ -605,6 +604,7 @@ public class Signus extends IndyJava.API {
 	 */
 	public static CompletableFuture<byte[]> decrypt(
 			Wallet wallet,
+			Pool pool,
 			String myDid,
 			String did,
 			byte[] encryptedMsg,
@@ -620,10 +620,12 @@ public class Signus extends IndyJava.API {
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
+		int poolHandle = pool.getPoolHandle();
 
 		int result = LibIndy.api.indy_decrypt(
 				commandHandle,
 				walletHandle,
+				poolHandle,
 				myDid,
 				did,
 				encryptedMsg,
@@ -843,9 +845,10 @@ public class Signus extends IndyJava.API {
 	}
 
 	/**
-	 * @param wallet   The wallet.
-	 * @param did      The encrypted Did.
-	 * @param endpoint The endpoint that will be store with the key.
+	 * @param wallet       The wallet.
+	 * @param did          The encrypted Did.
+	 * @param address      .
+	 * @param transportKey .
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -881,7 +884,7 @@ public class Signus extends IndyJava.API {
 	/**
 	 * @param wallet The wallet.
 	 * @param did
-	 * @return A future resolving to a verkey
+	 * @return A future resolving to a endpoint object
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<EndpointForDidResult> getEndpointForDid(

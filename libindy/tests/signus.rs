@@ -82,20 +82,6 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
-
-        #[test]
-        fn indy_create_key_works_for_invalid_seed() {
-            TestUtils::cleanup_storage();
-
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let res = SignusUtils::create_key(wallet_handle, Some("invalidSeedLength"));
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
     }
 
     mod set_key_metadata {
