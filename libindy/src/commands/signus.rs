@@ -25,38 +25,38 @@ use super::utils::check_wallet_and_pool_handles_consistency;
 pub enum SignusCommand {
     CreateAndStoreMyDid(
         i32, // wallet handle
-        String, // my did info_json
+        String, // my did info json
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     ReplaceKeysStart(
         i32, // wallet handle
-        String, // identity json
+        String, // key info json
         String, // did
         Box<Fn(Result<String, IndyError>) + Send>),
     ReplaceKeysApply(
         i32, // wallet handle
-        String, // did
+        String, // my did
         Box<Fn(Result<(), IndyError>) + Send>),
     StoreTheirDid(
         i32, // wallet handle
-        String, // identity json
+        String, // their did info json
         Box<Fn(Result<(), IndyError>) + Send>),
     Sign(
         i32, // wallet handle
-        String, // did
+        String, // my did
         Vec<u8>, // msg
         Box<Fn(Result<Vec<u8>, IndyError>) + Send>),
     VerifySignature(
         i32, // wallet handle
-        i32, // pool_handle,
-        String, // their_did
+        i32, // pool handle,
+        String, // their did
         Vec<u8>, // msg
         Vec<u8>, // signature
         Box<Fn(Result<bool, IndyError>) + Send>),
     Encrypt(
         i32, // wallet handle
         i32, // pool handle
-        String, // my_did
-        String, // their_did
+        String, // my did
+        String, // their did
         Vec<u8>, // msg
         Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>) + Send>),
     Decrypt(
@@ -70,22 +70,23 @@ pub enum SignusCommand {
     EncryptSealed(
         i32, // wallet handle
         i32, // pool handle
-        String, // did
+        String, // their did
         Vec<u8>, // msg
         Box<Fn(Result<Vec<u8>, IndyError>) + Send>),
     DecryptSealed(
         i32, // wallet handle
-        String, // did
+        String, // my did
         Vec<u8>, // msg
         Box<Fn(Result<Vec<u8>, IndyError>) + Send>),
     CreateKey(
         i32, // wallet handle
-        String, // key json
+        String, // key info json
         Box<Fn(Result<String/*verkey*/, IndyError>) + Send>),
     KeyForDid(
         i32, // wallet handle
-        String, // did
+        String, // did (my or their)
         Box<Fn(Result<String/*key*/, IndyError>) + Send>),
+    // Internal commands
     GetNymAck(
         i32, // wallet_handle
         Result<String, IndyError>, // GetNym Result

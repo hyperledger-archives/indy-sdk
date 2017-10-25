@@ -154,9 +154,7 @@ pub  extern fn indy_replace_keys_apply(command_handle: i32,
 /// identity_json: Identity information as json. Example:
 ///     {
 ///        "did": string, (required)
-///        "verkey": string (optional, if only pk is provided),
-///        "crypto_type": string, (optional; if not set then ed25519 curve is used;
-///               currently only 'ed25519' value is supported for this field)
+///        "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
