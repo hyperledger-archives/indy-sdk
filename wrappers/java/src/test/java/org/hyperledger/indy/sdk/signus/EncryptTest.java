@@ -44,15 +44,6 @@ public class EncryptTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 	}
 
 	@Test
-	public void testEncryptWorksForGetPkFromLedger() throws Exception {
-		String identityJson = String.format("{\"did\":\"%s\"}", did);
-		Signus.storeTheirDid(wallet, identityJson).get();
-
-		SignusResults.EncryptResult encryptResult = Signus.encrypt(wallet, pool, trusteeDid, did, MESSAGE).get();
-		assertNotNull(encryptResult);
-	}
-
-	@Test
 	public void testEncryptWorksForGetNymFromLedger() throws Exception {
 		SignusResults.EncryptResult encryptResult = Signus.encrypt(wallet, pool, trusteeDid, did, MESSAGE).get();
 		assertNotNull(encryptResult);

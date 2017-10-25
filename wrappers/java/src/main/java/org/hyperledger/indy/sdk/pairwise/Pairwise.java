@@ -254,8 +254,7 @@ public class Pairwise extends IndyJava.API {
 
 		ParamGuard.notNull(wallet, "wallet");
 		ParamGuard.notNullOrWhiteSpace(theirDid, "theirDid");
-		ParamGuard.notNullOrWhiteSpace(metadata, "metadata");		
-		
+
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 

@@ -14,8 +14,6 @@ import java.util.concurrent.ExecutionException;
 
 public class CreateMyDidTest extends IndyIntegrationTestWithSingleWallet {
 
-	private String existsCryptoType = "ed25519";
-
 	@Test
 	public void testCreateMyDidWorksForEmptyJson() throws Exception {
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(wallet, "{}").get();
@@ -54,7 +52,7 @@ public class CreateMyDidTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testCreateMyDidWorksForCorrectCryptoType() throws Exception {
-		String didJson = new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, existsCryptoType, null).toJson();
+		String didJson = new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, CRYPTO_TYPE, null).toJson();
 
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson).get();
 
@@ -84,7 +82,7 @@ public class CreateMyDidTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testCreateMyDidWorksForAllParams() throws Exception {
-		String didJson = new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(DID1, MY1_SEED, existsCryptoType, true).toJson();
+		String didJson = new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(DID1, MY1_SEED, CRYPTO_TYPE, true).toJson();
 
 		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson).get();
 
