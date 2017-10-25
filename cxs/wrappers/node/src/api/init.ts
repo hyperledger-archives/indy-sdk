@@ -1,4 +1,3 @@
-import * as posix from 'path'
 import { CXSRuntime } from '../index'
 import { CXSRuntimeConfig } from '../rustlib'
 
