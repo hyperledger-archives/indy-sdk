@@ -116,6 +116,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
             }
         }
 
+        /* FIXME: restore ASAP
         sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
         dir('wrappers/java') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
@@ -136,6 +137,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
                 '''
             }
         }
+        */
     }
     finally {
         closePool(env_name, network_name, poolInst)
