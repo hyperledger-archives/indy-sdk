@@ -154,9 +154,7 @@ pub  extern fn indy_replace_keys_apply(command_handle: i32,
 /// identity_json: Identity information as json. Example:
 ///     {
 ///        "did": string, (required)
-///        "verkey": string (optional, if only pk is provided),
-///        "crypto_type": string, (optional; if not set then ed25519 curve is used;
-///               currently only 'ed25519' value is supported for this field)
+///        "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -212,7 +210,6 @@ pub  extern fn indy_store_their_did(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-#[allow(unused_variables)]
 pub  extern fn indy_create_key(command_handle: i32,
                                wallet_handle: i32,
                                key_json: *const c_char,
@@ -255,7 +252,6 @@ pub  extern fn indy_create_key(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-#[allow(unused_variables)]
 pub  extern fn indy_set_key_metadata(command_handle: i32,
                                      wallet_handle: i32,
                                      verkey: *const c_char,
@@ -300,7 +296,6 @@ pub  extern fn indy_set_key_metadata(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-#[allow(unused_variables)]
 pub  extern fn indy_get_key_metadata(command_handle: i32,
                                      wallet_handle: i32,
                                      verkey: *const c_char,
@@ -347,7 +342,6 @@ pub  extern fn indy_get_key_metadata(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-#[allow(unused_variables)]
 pub extern fn indy_key_for_did(command_handle: i32,
                                pool_handle: i32,
                                wallet_handle: i32,
@@ -394,7 +388,6 @@ pub extern fn indy_key_for_did(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-#[allow(unused_variables)]
 pub extern fn indy_set_endpoint_for_did(command_handle: i32,
                                         wallet_handle: i32,
                                         did: *const c_char,
@@ -423,7 +416,6 @@ pub extern fn indy_set_endpoint_for_did(command_handle: i32,
 }
 
 #[no_mangle]
-#[allow(unused_variables)]
 pub extern fn indy_get_endpoint_for_did(command_handle: i32,
                                         wallet_handle: i32,
                                         did: *const c_char,
@@ -469,7 +461,6 @@ pub extern fn indy_get_endpoint_for_did(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-#[allow(unused_variables)]
 pub extern fn indy_set_did_metadata(command_handle: i32,
                                     wallet_handle: i32,
                                     did: *const c_char,
@@ -514,7 +505,6 @@ pub extern fn indy_set_did_metadata(command_handle: i32,
 /// Wallet*
 /// Crypto*
 #[no_mangle]
-#[allow(unused_variables)]
 pub extern fn indy_get_did_metadata(command_handle: i32,
                                     wallet_handle: i32,
                                     did: *const c_char,
@@ -706,8 +696,9 @@ pub  extern fn indy_encrypt(command_handle: i32,
 /// stored in a secured wallet (see wallet_create_and_store_my_identity)
 ///
 /// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// pool_handle: pool handle.
 /// my_did: encrypted DID
 /// their_did: encrypted DID that signed the message
 /// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
@@ -726,6 +717,7 @@ pub  extern fn indy_encrypt(command_handle: i32,
 #[no_mangle]
 pub  extern fn indy_decrypt(command_handle: i32,
                             wallet_handle: i32,
+                            pool_handle: i32,
                             my_did: *const c_char,
                             their_did: *const c_char,
                             encrypted_msg_raw: *const u8,
@@ -743,6 +735,7 @@ pub  extern fn indy_decrypt(command_handle: i32,
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::Decrypt(
             wallet_handle,
+            pool_handle,
             my_did,
             their_did,
             encrypted_msg_raw,

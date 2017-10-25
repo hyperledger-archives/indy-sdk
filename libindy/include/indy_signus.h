@@ -106,10 +106,7 @@ extern "C" {
     /// identity_json: Identity information as json. Example:
     ///     {
     ///        "did": string, (required)
-    ///        "verkey": string (optional, if only pk is provided),
-    ///        "pk": string (optional, if only verification key is provided),
-    ///        "crypto_type": string, (optional; if not set then ed25519 curve is used;
-    ///               currently only 'ed25519' value is supported for this field)
+    ///        "verkey": string (optional, can be avoided if did is cryptonym: did == verkey)
     ///     }
     /// cb: Callback that takes command result as parameter.
     ///
@@ -385,8 +382,8 @@ extern "C" {
     /// whether public key is still the same and updates public key for the DID if needed.
     ///
     /// #Params
-    /// wallet_handle: wallet handler (created by open_wallet).
     /// command_handle: command handle to map callback to user context.
+    /// wallet_handle: wallet handler (created by open_wallet).
     /// pool_handle: pool handle.
     /// my_did: encrypted DID
     /// their_did: encrypted DID
@@ -407,7 +404,7 @@ extern "C" {
                                      indy_handle_t      wallet_handle,
                                      indy_handle_t      pool_handle,
                                      const char *       my_did,
-                                     const char *       did,
+                                     const char *       their_did,
                                      const indy_u8_t *  message_raw,
                                      indy_u32_t         message_len,
 
@@ -424,8 +421,9 @@ extern "C" {
     /// stored in a secured wallet (see wallet_create_and_store_my_identity)
     ///
     /// #Params
-    /// wallet_handle: wallet handler (created by open_wallet).
     /// command_handle: command handle to map callback to user context.
+    /// wallet_handle: wallet handler (created by open_wallet).
+    /// pool_handle: pool handle.
     /// my_did: encrypted DID
     /// their_did: encrypted DID that signed the message
     /// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
@@ -444,8 +442,9 @@ extern "C" {
     
     extern indy_error_t indy_decrypt(indy_handle_t      command_handle,
                                      indy_handle_t      wallet_handle,
+                                     indy_handle_t      pool_handle,
                                      const char *       my_did,
-                                     const char *       did,
+                                     const char *       their_did,
                                      const indy_u8_t*   encrypted_msg_raw,
                                      indy_u32_t         encrypted_msg_len,
                                      const indy_u8_t*   nonce_raw,
