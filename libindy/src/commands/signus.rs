@@ -257,7 +257,7 @@ impl SignusCommandExecutor {
                     format!("Can't serialize Key: {}", err.description())))?;
 
         self.wallet_service.set(wallet_handle, &format!("my_did::{}", my_did.did), &my_did_json)?;
-        self.wallet_service.set(wallet_handle, &format!("my_key::{}", my_key.verkey), &my_key_json)?;
+        self.wallet_service.set(wallet_handle, &format!("key::{}", my_key.verkey), &my_key_json)?;
         Ok((my_did.did, my_did.verkey))
     }
 
@@ -296,7 +296,7 @@ impl SignusCommandExecutor {
                     format!("Can't serialize Key: {}", err.description())))?;
 
         self.wallet_service.set(wallet_handle, &format!("my_did_temporary::{}", my_did.did), &did_json)?;
-        self.wallet_service.set(wallet_handle, &format!("my_key::{}", my_key.verkey), &key_json)?;
+        self.wallet_service.set(wallet_handle, &format!("key::{}", my_key.verkey), &key_json)?;
 
         Ok(my_did.verkey)
     }
