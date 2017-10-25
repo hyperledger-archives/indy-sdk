@@ -19,7 +19,9 @@ node('ubuntu') {
         buildRust(app)
         testRust(app) 
         testNodeWrapper(app)
-        createZip(app)
+        if (env.BRANCH_NAME == "master") {
+            createZip(app)
+        }
     } catch (Exception ex) {
         currentBuild.result = "FAILED"
         if (env.BRANCH_NAME == "master") {
