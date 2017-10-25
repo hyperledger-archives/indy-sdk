@@ -19,14 +19,17 @@ node('ubuntu') {
         buildRust(app)
         testRust(app) 
         testNodeWrapper(app)
-        createZip(app)
+        if (env.BRANCH_NAME == "master") {
+            createZip(app)
+        }
     } catch (Exception ex) {
         currentBuild.result = "FAILED"
+        if (env.BRANCH_NAME == "master") {
+            fail()
+        }
         echo "$ex error"
     } finally {
-       
         step([$class: 'WsCleanup'])
-        
     }
 }
 
@@ -100,4 +103,13 @@ def testNodeWrapper(envn) {
     }
 }
 
+def fail() {
+
+    def message = [
+        message: "$JOB_NAME - Build # $BUILD_NUMBER - fail: Check console output at $BUILD_URL to view the results."
+    ]
+
+    slackSend message
+
+}
 
