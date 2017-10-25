@@ -615,8 +615,9 @@ pub  extern fn indy_encrypt(command_handle: i32,
 /// stored in a secured wallet (see wallet_create_and_store_my_identity)
 ///
 /// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// pool_handle: pool handle.
 /// my_did: encrypted DID
 /// their_did: encrypted DID that signed the message
 /// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
@@ -635,6 +636,7 @@ pub  extern fn indy_encrypt(command_handle: i32,
 #[no_mangle]
 pub  extern fn indy_decrypt(command_handle: i32,
                             wallet_handle: i32,
+                            pool_handle: i32,
                             my_did: *const c_char,
                             their_did: *const c_char,
                             encrypted_msg_raw: *const u8,
@@ -652,6 +654,7 @@ pub  extern fn indy_decrypt(command_handle: i32,
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::Decrypt(
             wallet_handle,
+            pool_handle,
             my_did,
             their_did,
             encrypted_msg_raw,
