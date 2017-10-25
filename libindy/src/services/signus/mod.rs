@@ -143,7 +143,7 @@ impl SignusService {
     }
 
     pub fn verify(&self, their_vk: &str, msg: &[u8], signature: &[u8]) -> Result<bool, SignusError> {
-        let (their_vk, crypto_type_name) = if their_vk.contains(":") {
+        let (crypto_type_name, their_vk) = if their_vk.contains(":") {
             let splits: Vec<&str> = their_vk.split(":").collect();
             (splits[0], splits[1])
         } else {
