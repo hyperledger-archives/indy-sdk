@@ -24,7 +24,6 @@ use super::utils::check_wallet_and_pool_handles_consistency;
 
 use utils::crypto::base58::Base58;
 
-#[derive()]
 pub enum SignusCommand {
     CreateAndStoreMyDid(
         i32, // wallet handle
@@ -667,7 +666,7 @@ impl SignusCommandExecutor {
         cb(self._key_for_did(pool_handle, wallet_handle, did));
     }
 
-    fn _key_for_did(&self, pool_handle: i32, wallet_handle: i32, did: &str) -> Result<String, IndyError> {
+    fn _key_for_did(&self, /*FIXME pool_handle*/_: i32, wallet_handle: i32, did: &str) -> Result<String, IndyError> {
         // TODO: FIXME: It works only for my did now!!!
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", did))?;
         let my_did = Did::from_json(&my_did_json)

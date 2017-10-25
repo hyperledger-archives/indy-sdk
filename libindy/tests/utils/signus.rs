@@ -306,7 +306,7 @@ impl SignusUtils {
         Ok((encrypted_msg, nonce))
     }
 
-    pub fn decrypt(wallet_handle: i32, my_did: &str, did: &str, encrypted_msg: &[u8], nonce: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+    pub fn decrypt(wallet_handle: i32, pool_handle: i32, my_did: &str, did: &str, encrypted_msg: &[u8], nonce: &[u8]) -> Result<Vec<u8>, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, decrypted_msg| {
@@ -321,6 +321,7 @@ impl SignusUtils {
         let err =
             indy_decrypt(command_handle,
                          wallet_handle,
+                         pool_handle,
                          my_did.as_ptr(),
                          did.as_ptr(),
                          encrypted_msg.as_ptr() as *const u8,
