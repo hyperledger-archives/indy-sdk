@@ -2011,7 +2011,7 @@ mod medium_cases {
             let (their_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
             let res = SignusUtils::decrypt(wallet_handle, -1, &my_did, &their_did, ENCRYPTED_MESSAGE, NONCE);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle); /* TODO FIXME review test */
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 

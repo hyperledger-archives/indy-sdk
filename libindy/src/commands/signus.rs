@@ -378,9 +378,6 @@ impl SignusCommandExecutor {
                         msg: Vec<u8>,
                         signature: Vec<u8>,
                         cb: Box<Fn(Result<bool, IndyError>) + Send>) {
-        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                   wallet_handle, pool_handle, cb);
-
         let their_did = match self.wallet_service.get_not_expired(wallet_handle, &format!("their_did::{}", their_did)) {
             Ok(their_did_json) => {
                 if let Ok(their_did) = Did::from_json(&their_did_json) {
@@ -392,6 +389,8 @@ impl SignusCommandExecutor {
             }
             Err(WalletError::NotFound(_)) => {
                 // No their their_did present in the wallet. Deffer this command until it is fetched from ledger.
+                check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                   wallet_handle, pool_handle, cb);
                 let deferred_cmd_id = self._defer_command(
                     SignusCommand::VerifySignature(
                         wallet_handle,
@@ -444,7 +443,8 @@ impl SignusCommandExecutor {
             }
             Err(WalletError::NotFound(_)) => {
                 return cb(Err(IndyError::SignusError(
-                    SignusError::CommonError(CommonError::InvalidState(format!("No Key for my DID"))))));
+                    SignusError::CommonError(CommonError::InvalidState(
+                        format!("No Key for my DID {}, verkey {}", my_did.did, my_did.verkey))))));
             }
             Err(err) => return cb(Err(IndyError::WalletError(err)))
         };
@@ -487,9 +487,6 @@ impl SignusCommandExecutor {
                encrypted_msg: Vec<u8>,
                nonce: Vec<u8>,
                cb: Box<Fn(Result<Vec<u8>, IndyError>) + Send>) {
-        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                   wallet_handle, pool_handle, cb);
-
         let my_did = match self.wallet_service.get(wallet_handle, &format!("my_did::{}", my_did)) {
             Ok(my_did_json) => {
                 if let Ok(my_did) = Did::from_json(&my_did_json) {
@@ -513,7 +510,8 @@ impl SignusCommandExecutor {
             }
             Err(WalletError::NotFound(_)) => {
                 return cb(Err(IndyError::SignusError(
-                    SignusError::CommonError(CommonError::InvalidState(format!("No Key for my DID"))))));
+                    SignusError::CommonError(CommonError::InvalidState(
+                        format!("No Key for my DID {}, verkey {}", my_did.did, my_did.verkey))))));
             }
             Err(err) => return cb(Err(IndyError::WalletError(err)))
         };
@@ -529,6 +527,8 @@ impl SignusCommandExecutor {
             }
             Err(WalletError::NotFound(_)) => {
                 // No their their_did present in the wallet. Deffer this command until it is fetched from ledger.
+                check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                   wallet_handle, pool_handle, cb);
                 let deferred_cmd_id = self._defer_command(
                     SignusCommand::Decrypt(
                         wallet_handle,
@@ -555,6 +555,8 @@ impl SignusCommandExecutor {
                       their_did: String,
                       msg: Vec<u8>,
                       cb: Box<Fn(Result<Vec<u8>, IndyError>) + Send>) {
+        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                   wallet_handle, pool_handle, cb); /* TODO FIXME move down and re-view tests */
         let their_did = match self.wallet_service.get_not_expired(wallet_handle, &format!("their_did::{}", their_did)) {
             Ok(their_did_json) => {
                 if let Ok(their_did) = Did::from_json(&their_did_json) {
