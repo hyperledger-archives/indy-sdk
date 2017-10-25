@@ -28,6 +28,13 @@ async def test_set_key_metadata_works_for_empty_string(wallet_handle, verkey_my1
 
 
 @pytest.mark.asyncio
+async def test_set_key_metadata_works_for_invalid_did(wallet_handle, metadata):
+    with pytest.raises(IndyError) as e:
+        await signus.set_key_metadata(wallet_handle, 'invalid_base58string', metadata)
+    assert ErrorCode.CommonInvalidStructure == e.value.error_code
+
+
+@pytest.mark.asyncio
 async def test_set_key_metadata_works_for_invalid_handle(wallet_handle, verkey_my1, metadata):
     with pytest.raises(IndyError) as e:
         invalid_wallet_handle = wallet_handle + 1

@@ -18,16 +18,6 @@ async def test_encrypt_works_for_pk_cached_in_wallet(pool_handle, wallet_handle,
 
 
 @pytest.mark.asyncio
-async def test_encrypt_works_for_get_pk_from_ledger(pool_handle, wallet_handle, identity_my1,
-                                                    identity_trustee1, message):
-    (trustee_did, _) = identity_trustee1
-    (my_did, _) = identity_my1
-
-    await signus.store_their_did(wallet_handle, json.dumps({"did": my_did}))
-    await signus.encrypt(wallet_handle, pool_handle, trustee_did, my_did, message)
-
-
-@pytest.mark.asyncio
 async def test_encrypt_works_for_get_nym_from_ledger(pool_handle, wallet_handle, identity_my1,
                                                      identity_trustee1, message):
     (trustee_did, _) = identity_trustee1

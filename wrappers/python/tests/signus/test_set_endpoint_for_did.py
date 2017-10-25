@@ -33,20 +33,12 @@ async def test_set_endpoint_for_did_works_for_invalid_did(wallet_handle, verkey_
         await signus.set_endpoint_for_did(wallet_handle, 'invalid_base58string', endpoint, verkey_my1)
     assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
-    with pytest.raises(IndyError) as e:
-        await signus.set_endpoint_for_did(wallet_handle, 'invalidDidLength', endpoint, verkey_my1)
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
-
 
 @pytest.mark.asyncio
 async def test_set_endpoint_for_did_works_for_invalid_transport_key(wallet_handle, identity_trustee1, endpoint):
     (did, _) = identity_trustee1
     with pytest.raises(IndyError) as e:
         await signus.set_endpoint_for_did(wallet_handle, did, endpoint, 'CnEDk___MnmiHXEV1WFgbV___eYnPqs___TdcZaNhFVW')
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
-
-    with pytest.raises(IndyError) as e:
-        await signus.set_endpoint_for_did(wallet_handle, did, endpoint, 'invalidVerkeyLength')
     assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 

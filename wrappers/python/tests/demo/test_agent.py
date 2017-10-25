@@ -24,11 +24,11 @@ async def test_agent_demo_works(pool_name, pool_genesis_txn_path, seed_trustee1,
     sender_wallet_handle = await wallet.open_wallet('sender_wallet', None, None)
 
     # 5. Create Listener DID
-    (listener_did, listener_verkey, listener_pk) = await signus.create_and_store_my_did(listener_wallet_handle, "{}")
+    (listener_did, listener_verkey) = await signus.create_and_store_my_did(listener_wallet_handle, "{}")
 
     # 6. Create Sender DID from Trustee1 seed
-    (sender_did, sender_verkey, sender_pk) = \
-        await signus.create_and_store_my_did(sender_wallet_handle, json.dumps({"seed": seed_trustee1}))
+    (sender_did, sender_verkey) = await signus.create_and_store_my_did(sender_wallet_handle,
+                                                                       json.dumps({"seed": seed_trustee1}))
 
     # 7. Prepare and send NYM transaction
     nym_txn_req = await ledger.build_nym_request(sender_did, listener_did, listener_verkey, None, None)
@@ -38,7 +38,7 @@ async def test_agent_demo_works(pool_name, pool_genesis_txn_path, seed_trustee1,
     raw = json.dumps({
         "endpoint": {
             "ha": endpoint,
-            "verkey": listener_pk
+            "verkey": listener_verkey
         }
     })
 
