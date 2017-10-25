@@ -403,23 +403,21 @@ impl CallbackUtils {
         (command_handle, Some(verifier_verify_proof_callback))
     }
 
-    pub fn closure_to_create_and_store_my_did_cb(closure: Box<FnMut(ErrorCode, String, String, String) + Send>) -> (i32,
+    pub fn closure_to_create_and_store_my_did_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
                                                                                                                     Option<extern fn(command_handle: i32,
                                                                                                                                      err: ErrorCode,
                                                                                                                                      did: *const c_char,
-                                                                                                                                     verkey: *const c_char,
-                                                                                                                                     pk: *const c_char)>) {
+                                                                                                                                     verkey: *const c_char)>) {
         lazy_static! {
-            static ref CREATE_AND_STORE_MY_DID_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String, String) + Send > >> = Default::default();
+            static ref CREATE_AND_STORE_MY_DID_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
         }
 
-        extern "C" fn create_and_store_my_did_callback(command_handle: i32, err: ErrorCode, did: *const c_char, verkey: *const c_char, pk: *const c_char) {
+        extern "C" fn create_and_store_my_did_callback(command_handle: i32, err: ErrorCode, did: *const c_char, verkey: *const c_char) {
             let mut callbacks = CREATE_AND_STORE_MY_DID_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let did = unsafe { CStr::from_ptr(did).to_str().unwrap().to_string() };
             let verkey = unsafe { CStr::from_ptr(verkey).to_str().unwrap().to_string() };
-            let pk = unsafe { CStr::from_ptr(pk).to_str().unwrap().to_string() };
-            cb(err, did, verkey, pk)
+            cb(err, did, verkey)
         }
 
         let mut callbacks = CREATE_AND_STORE_MY_DID_CALLBACKS.lock().unwrap();
@@ -798,21 +796,19 @@ impl CallbackUtils {
         (command_handle, Some(delete_wallet_callback))
     }
 
-    pub fn closure_to_replace_keys_start_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
+    pub fn closure_to_replace_keys_start_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
                                                                                                        Option<extern fn(command_handle: i32,
                                                                                                                         err: ErrorCode,
-                                                                                                                        verkey: *const c_char,
-                                                                                                                        pk: *const c_char)>) {
+                                                                                                                        verkey: *const c_char)>) {
         lazy_static! {
-            static ref REPLACE_KEYS_START_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
+            static ref REPLACE_KEYS_START_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
         }
 
-        extern "C" fn replace_keys_start_callback(command_handle: i32, err: ErrorCode, verkey: *const c_char, pk: *const c_char) {
+        extern "C" fn replace_keys_start_callback(command_handle: i32, err: ErrorCode, verkey: *const c_char) {
             let mut callbacks = REPLACE_KEYS_START_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let verkey = unsafe { CStr::from_ptr(verkey).to_str().unwrap().to_string() };
-            let pk = unsafe { CStr::from_ptr(pk).to_str().unwrap().to_string() };
-            cb(err, verkey, pk)
+            cb(err, verkey)
         }
 
         let mut callbacks = REPLACE_KEYS_START_CALLBACKS.lock().unwrap();

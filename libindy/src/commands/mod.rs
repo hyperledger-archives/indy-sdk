@@ -20,7 +20,6 @@ use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 
 use errors::common::CommonError;
 
-//use services::agent::AgentService;
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
@@ -74,7 +73,7 @@ impl CommandExecutor {
                 let signus_service = Rc::new(SignusService::new());
                 let ledger_service = Rc::new(LedgerService::new());
 
-                let agent_command_executor = AgentCommandExecutor::new(ledger_service.clone(), pool_service.clone(), signus_service.clone(), wallet_service.clone());
+                let agent_command_executor = AgentCommandExecutor::new(signus_service.clone(), wallet_service.clone());
                 let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone());
                 let ledger_command_executor = LedgerCommandExecutor::new(pool_service.clone(), signus_service.clone(), wallet_service.clone(), ledger_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
