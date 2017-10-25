@@ -129,7 +129,7 @@ impl PairwiseUtils {
         Ok(pairwise_info_json)
     }
 
-    pub fn set_pairwise_metadata(wallet_handle: i32, their_did: &str, metadata: &str) -> Result<(), ErrorCode> {
+    pub fn set_pairwise_metadata(wallet_handle: i32, their_did: &str, metadata: Option<&str>) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err| {
@@ -139,13 +139,13 @@ impl PairwiseUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_set_pairwise_metadata_cb(cb);
 
         let their_did = CString::new(their_did).unwrap();
-        let metadata = CString::new(metadata).unwrap();
+        let metadata_str = metadata.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err =
             indy_set_pairwise_metadata(command_handle,
                                        wallet_handle,
                                        their_did.as_ptr(),
-                                       metadata.as_ptr(),
+                                       if metadata.is_some() { metadata_str.as_ptr() } else { null() },
                                        cb);
 
         if err != ErrorCode::Success {

@@ -8,7 +8,7 @@ import logging
 
 
 async def create_and_store_my_did(wallet_handle: int,
-                                  did_json: str) -> (str, str, str):
+                                  did_json: str) -> (str, str):
     """
     Creates keys (signing and encryption keys) for a new
     DID (owned by the caller of the library).
@@ -38,17 +38,17 @@ async def create_and_store_my_did(wallet_handle: int,
 
     if not hasattr(create_and_store_my_did, "cb"):
         logger.debug("create_wallet: Creating callback")
-        create_and_store_my_did.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p, c_char_p))
+        create_and_store_my_did.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
     c_did_json = c_char_p(did_json.encode('utf-8'))
 
-    did, verkey, pk = await do_call('indy_create_and_store_my_did',
-                                    c_wallet_handle,
-                                    c_did_json,
-                                    create_and_store_my_did.cb)
+    did, verkey = await do_call('indy_create_and_store_my_did',
+                                c_wallet_handle,
+                                c_did_json,
+                                create_and_store_my_did.cb)
 
-    res = (did.decode(), verkey.decode(), pk.decode())
+    res = (did.decode(), verkey.decode())
 
     logger.debug("create_and_store_my_did: <<< res: %r", res)
     return res
@@ -56,7 +56,7 @@ async def create_and_store_my_did(wallet_handle: int,
 
 async def replace_keys_start(wallet_handle: int,
                              did: str,
-                             identity_json: str) -> (str, str):
+                             identity_json: str) -> str:
     """
     Generated new keys (signing and encryption keys) for an existing
     DID (owned by the caller of the library).
@@ -80,26 +80,26 @@ async def replace_keys_start(wallet_handle: int,
 
     if not hasattr(replace_keys_start, "cb"):
         logger.debug("replace_keys_start: Creating callback")
-        replace_keys_start.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+        replace_keys_start.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
     c_did = c_char_p(did.encode('utf-8'))
     c_identity_json = c_char_p(identity_json.encode('utf-8'))
 
-    verkey, pk = await do_call('indy_replace_keys_start',
-                               c_wallet_handle,
-                               c_did,
-                               c_identity_json,
-                               replace_keys_start.cb)
+    verkey = await do_call('indy_replace_keys_start',
+                           c_wallet_handle,
+                           c_did,
+                           c_identity_json,
+                           replace_keys_start.cb)
 
-    res = (verkey.decode(), pk.decode())
+    res = verkey.decode()
 
     logger.debug("replace_keys_start: <<< res: %r", res)
     return res
 
 
 async def replace_keys_apply(wallet_handle: int,
-                             did: str) -> (str, str):
+                             did: str) -> None:
     """
     Apply temporary keys as main for an existing DID (owned by the caller of the library).
 
@@ -490,7 +490,7 @@ async def create_key(wallet_handle: int,
     c_wallet_handle = c_int32(wallet_handle)
     c_key_json = c_char_p(key_json.encode('utf-8'))
 
-    verkey = await do_call('indy_key_json',
+    verkey = await do_call('indy_create_key',
                            c_wallet_handle,
                            c_key_json,
                            create_key.cb)
@@ -609,21 +609,24 @@ async def key_for_did(pool_handle: int,
 
 async def set_endpoint_for_did(wallet_handle: int,
                                did: str,
-                               endpoint: str) -> None:
+                               address: str,
+                               transport_key: str) -> None:
     """
     Creates keys pair and stores in the wallet.
 
     :param wallet_handle: Wallet handle (created by open_wallet).
     :param did: encrypted DID.
-    :param endpoint:
+    :param address:
+    :param transport_key:
     :return: Error code
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("set_endpoint_for_did: >>> wallet_handle: %r, did: %r, endpoint: %r",
+    logger.debug("set_endpoint_for_did: >>> wallet_handle: %r, did: %r, address: %r, transport_key: %r",
                  wallet_handle,
                  did,
-                 endpoint)
+                 address,
+                 transport_key)
 
     if not hasattr(set_endpoint_for_did, "cb"):
         logger.debug("set_endpoint_for_did: Creating callback")
@@ -631,12 +634,14 @@ async def set_endpoint_for_did(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_did = c_char_p(did.encode('utf-8'))
-    c_endpoint = c_char_p(endpoint.encode('utf-8'))
+    c_address = c_char_p(address.encode('utf-8'))
+    c_transport_key = c_char_p(transport_key.encode('utf-8'))
 
     await do_call('indy_set_endpoint_for_did',
                   c_wallet_handle,
                   c_did,
-                  c_endpoint,
+                  c_address,
+                  c_transport_key,
                   set_endpoint_for_did.cb)
 
     logger.debug("set_endpoint_for_did: <<<")
@@ -668,10 +673,7 @@ async def get_endpoint_for_did(wallet_handle: int,
                                            c_did,
                                            get_endpoint_for_did.cb)
 
-    if transport_vk:
-        transport_vk = transport_vk.decode()
-
-    res = (endpoint, transport_vk)
+    res = (endpoint.decode(), transport_vk.decode())
 
     logger.debug("get_endpoint_for_did: <<< res: %r", res)
     return res
@@ -734,12 +736,12 @@ async def get_did_metadata(wallet_handle: int,
     c_wallet_handle = c_int32(wallet_handle)
     c_did = c_char_p(did.encode('utf-8'))
 
-    key = await do_call('indy_get_did_metadata',
-                        c_wallet_handle,
-                        c_did,
-                        get_did_metadata.cb)
+    metadata = await do_call('indy_get_did_metadata',
+                             c_wallet_handle,
+                             c_did,
+                             get_did_metadata.cb)
 
-    res = key.decode()
+    res = metadata.decode()
 
     logger.debug("get_did_metadata: <<< res: %r", res)
     return res

@@ -11,7 +11,6 @@ public class PairwiseIntegrationTest extends IndyIntegrationTestWithSingleWallet
 	protected String myDid;
 	String theirDid;
 	static final String metadata = "some metadata";
-	static final String PAIRWISE_TEMPLATE = "{\"my_did\":\"%s\",\"metadata\":\"%s\"}";
 	static final String PAIR_TEMPLATE = "{\"my_did\":\"%s\",\"their_did\":\"%s\"}";
 
 

@@ -113,7 +113,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_prep_msg_works_for_invalid_handle() {
+        fn indy_prep_msg_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
@@ -247,7 +247,7 @@ mod high_cases {
 
             let (recipient_did, recipient_vk) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY2_SEED)).unwrap();
 
-            let msg = format!(r#"{{"auth":true,"nonce":{:?},"sender":"{:?}","msg":"unencrypted message"}}"#, NONCE, VERKEY);
+            let msg = format!(r#"{{"auth":true,"nonce":"Th7MpTaRZVRYnPiabds81Y12","sender":"{:?}","msg":"unencrypted message"}}"#, VERKEY);
             let encrypted_msg = SignusUtils::encrypt_sealed(wallet_handle, pool_handle, &recipient_did, msg.as_bytes()).unwrap();
 
             let res = AgentUtils::parse_msg(wallet_handle, &recipient_vk, &encrypted_msg);
@@ -276,7 +276,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_parse_msg_msg_works_for_unknown_recipient_vk() {
+        fn indy_parse_msg_works_for_unknown_recipient_vk() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();

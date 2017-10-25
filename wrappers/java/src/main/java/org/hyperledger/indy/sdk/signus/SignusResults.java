@@ -95,15 +95,15 @@ public final class SignusResults {
 	 */
 	public static class EndpointForDidResult extends IndyJava.Result {
 
-		private String endpoint, transportKey;
-		EndpointForDidResult(String endpoint, String transportKey) { this.endpoint = endpoint; this.transportKey = transportKey;}
+		private String address, transportKey;
+		EndpointForDidResult(String address, String transportKey) { this.address = address; this.transportKey = transportKey;}
 
 		/**
 		 * Gets the Endpoint.
 		 *
 		 * @return The Endpoint.
 		 */
-		public String getEndpoint() { return this.endpoint; }
+		public String getAddress() { return this.address; }
 
 		/**
 		 * Gets the transport key.

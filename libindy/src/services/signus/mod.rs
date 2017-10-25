@@ -296,23 +296,21 @@ mod tests {
     fn create_my_did_works_for_passed_did() {
         let service = SignusService::new();
 
-        let did = Some("Dbf2fjCbsiq2kfns".to_string());
-        let did_info = MyDidInfo::new(did.clone(), None, None, None);
+        let did = "NcYxiDXkpYi6ov5FcYDi1e";
+        let did_info = MyDidInfo::new(Some(did.clone().to_string()), None, None, None);
 
-        let my_did = service.create_my_did(&did_info).unwrap();
-
-        assert_eq!(did.unwrap(), my_did.did);
+        let (my_did, _) = service.create_my_did(&did_info).unwrap();
+        assert_eq!(did, my_did.did);
     }
 
     #[test]
     fn create_my_did_not_works_for_invalid_crypto_type() {
         let service = SignusService::new();
 
-        let did = Some("Dbf2fjCbsiq2kfns".to_string());
+        let did = Some("NcYxiDXkpYi6ov5FcYDi1e".to_string());
         let crypto_type = Some("type".to_string());
 
         let did_info = MyDidInfo::new(did.clone(), None, crypto_type, None);
-
         assert!(service.create_my_did(&did_info).is_err());
     }
 
@@ -320,27 +318,28 @@ mod tests {
     fn create_my_did_works_for_seed() {
         let service = SignusService::new();
 
-        let did = Some("Dbf2fjCbsiq2kfns".to_string());
-        let seed = Some("DJASbewkdUY3265HJFDSbds278sdDSnA".to_string());
+        let did = Some("NcYxiDXkpYi6ov5FcYDi1e".to_string());
+        let seed = Some("00000000000000000000000000000My1".to_string());
 
         let did_info_with_seed = MyDidInfo::new(did.clone(), seed, None, None);
         let did_info_without_seed = MyDidInfo::new(did.clone(), None, None, None);
 
-        let res_with_seed = service.create_my_did(&did_info_with_seed).unwrap();
-        let res_without_seed = service.create_my_did(&did_info_without_seed).unwrap();
+        let (did_with_seed, _) = service.create_my_did(&did_info_with_seed).unwrap();
+        let (did_without_seed, _) = service.create_my_did(&did_info_without_seed).unwrap();
 
-        assert_ne!(res_with_seed.verkey, res_without_seed.verkey)
+        assert_ne!(did_with_seed.verkey, did_without_seed.verkey)
     }
 
     #[test]
     fn create_their_did_works_without_verkey() {
         let service = SignusService::new();
-        let did = "8wZcEriaNLNKtteJvx7f8i";
-        let their_did_info = TheirDidInfo::new(did.to_string(), None, None, None);
-        let their_did: TheirDid = service.create_their_did(&their_did_info).unwrap();
+        let did = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
+
+        let their_did_info = TheirDidInfo::new(did.to_string(), None);
+        let their_did = service.create_their_did(&their_did_info).unwrap();
 
         assert_eq!(did.to_string(), their_did.did);
-        assert_eq!(None, their_did.verkey);
+        assert_eq!(did.to_string(), their_did.verkey);
     }
 
     #[test]
@@ -348,150 +347,98 @@ mod tests {
         let service = SignusService::new();
         let did = "8wZcEriaNLNKtteJvx7f8i";
         let verkey = "5L2HBnzbu6Auh2pkDRbFt5f4prvgE2LzknkuYLsKkacp";
-        let their_did_info = TheirDidInfo::new(did.to_string(), None, Some(verkey.to_string()), None);
-        let their_did: TheirDid = service.create_their_did(&their_did_info).unwrap();
+
+        let their_did_info = TheirDidInfo::new(did.to_string(), Some(verkey.to_string()));
+        let their_did = service.create_their_did(&their_did_info).unwrap();
 
         assert_eq!(did.to_string(), their_did.did);
-        assert_eq!(verkey, their_did.verkey.unwrap());
+        assert_eq!(verkey, their_did.verkey);
     }
 
     #[test]
     fn create_their_did_works_for_abbreviated_verkey() {
         let service = SignusService::new();
         let did = "8wZcEriaNLNKtteJvx7f8i";
-        let their_did_info = TheirDidInfo::new(did.to_string(), None, Some("~NcYxiDXkpYi6ov5FcYDi1e".to_string()), None);
-        let their_did: TheirDid = service.create_their_did(&their_did_info).unwrap();
+        let their_did_info = TheirDidInfo::new(did.to_string(), Some("~NcYxiDXkpYi6ov5FcYDi1e".to_string()));
+        let their_did = service.create_their_did(&their_did_info).unwrap();
 
         assert_eq!(did.to_string(), their_did.did);
-        assert_eq!("5L2HBnzbu6Auh2pkDRbFt5f4prvgE2LzknkuYLsKkacp", their_did.verkey.unwrap());
+        assert_eq!("5L2HBnzbu6Auh2pkDRbFt5f4prvgE2LzknkuYLsKkacp", their_did.verkey);
     }
 
     #[test]
     fn sign_works() {
         let service = SignusService::new();
-
         let did_info = MyDidInfo::new(None, None, None, None);
-
-        let message = r#"{
-            "reqId":1495034346617224651,
-            "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
-            "operation":{
-                "type":"1",
-                "dest":"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB"
-            }
-        }"#;
-
-        let my_did = service.create_my_did(&did_info).unwrap();
-
-        service.sign(&my_did, message.as_bytes()).unwrap();
+        let message = r#"message"#;
+        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
+        service.sign(&my_key, message.as_bytes()).unwrap();
     }
 
     #[test]
     fn sign_works_for_invalid_signkey() {
         let service = SignusService::new();
-
-        let message = r#"{
-            "reqId":1495034346617224651,
-            "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
-            "operation":{
-                "type":"1",
-                "dest":"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB"
-            }
-        }"#;
-
-        let my_did = MyDid::new("NcYxiDXkpYi6ov5FcYDi1e".to_string(),
-                                DEFAULT_CRYPTO_TYPE.to_string(),
-                                "pk".to_string(),
-                                "sk".to_string(),
-                                "verkey".to_string(),
-                                "signkey".to_string());
-
-        assert!(service.sign(&my_did, message.as_bytes()).is_err());
+        let message = r#"message"#;
+        let my_key = Key::new("8wZcEriaNLNKtteJvx7f8i".to_string(), "5L2HBnzbu6Auh2pkDRbFt5f4prvgE2LzknkuYLsKkacp".to_string());
+        assert!(service.sign(&my_key, message.as_bytes()).is_err());
     }
 
     #[test]
     fn sign_verify_works() {
         let service = SignusService::new();
-
         let did_info = MyDidInfo::new(None, None, None, None);
-
-        let message = r#"{
-            "reqId":1495034346617224651,
-            "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
-            "operation":{
-                "type":"1",
-                "dest":"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB"
-            }
-        }"#;
-
-        let my_did = service.create_my_did(&did_info).unwrap();
-
-        let signature = service.sign(&my_did, message.as_bytes()).unwrap();
-
-        let their_did = TheirDid {
-            did: "sw2SA2jCbsiq2kfns".to_string(),
-            crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
-            pk: None,
-            endpoint: None,
-            verkey: Some(my_did.verkey)
-        };
-
-        let valid = service.verify(&their_did, message.as_bytes(), &signature).unwrap();
+        let message = r#"message"#;
+        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
+        let signature = service.sign(&my_key, message.as_bytes()).unwrap();
+        let valid = service.verify(&my_did.verkey, message.as_bytes(), &signature).unwrap();
         assert!(valid);
+    }
+
+    #[test]
+    fn sign_verify_works_for_verkey_contained_crypto_type() {
+        let service = SignusService::new();
+        let did_info = MyDidInfo::new(None, None, None, None);
+        let message = r#"message"#;
+        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
+        let signature = service.sign(&my_key, message.as_bytes()).unwrap();
+        let verkey = format!("ed25519:{}", my_did.verkey);
+        let valid = service.verify(&verkey, message.as_bytes(), &signature).unwrap();
+        assert!(valid);
+    }
+
+
+    #[test]
+    fn sign_verify_works_for_verkey_contained_invalid_crypto_type() {
+        let service = SignusService::new();
+        let did_info = MyDidInfo::new(None, None, None, None);
+        let message = r#"message"#;
+        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
+        let signature = service.sign(&my_key, message.as_bytes()).unwrap();
+        let verkey = format!("crypto_type:{}", my_did.verkey);
+        assert!(service.verify(&verkey, message.as_bytes(), &signature).is_err());
     }
 
     #[test]
     fn verify_not_works_for_invalid_verkey() {
         let service = SignusService::new();
-
         let did_info = MyDidInfo::new(None, None, None, None);
-
-        let message = r#"{
-            "reqId":1495034346617224651,
-            "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
-            "operation":{
-                "type":"1",
-                "dest":"4efZu2SXufS556yss7W5k6Po37jt4371RM4whbPKBKdB"
-            }
-        }"#;
-
-        let my_did = service.create_my_did(&did_info).unwrap();
-
-        let signature = service.sign(&my_did, message.as_bytes()).unwrap();
-
-        let their_did = TheirDid {
-            did: "sw2SA2jCbsiq2kfns".to_string(),
-            crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
-            pk: None,
-            endpoint: None,
-            verkey: Some("AnnxV4t3LUHKZaxVQDWoVaG44NrGmeDYMA4Gz6C2tCZd".to_string())
-        };
-
-        let valid = service.verify(&their_did, message.as_bytes(), &signature).unwrap();
+        let message = r#"message"#;
+        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
+        let signature = service.sign(&my_key, message.as_bytes()).unwrap();
+        let verkey = "AnnxV4t3LUHKZaxVQDWoVaG44NrGmeDYMA4Gz6C2tCZd";
+        let valid = service.verify(verkey, message.as_bytes(), &signature).unwrap();
         assert_eq!(false, valid);
     }
 
     #[test]
     fn encrypt_works() {
         let service = SignusService::new();
-
         let msg = "some message";
-
         let did_info = MyDidInfo::new(None, None, None, None);
-
-        let my_did = service.create_my_did(&did_info).unwrap();
-
-        let their_did = service.create_my_did(&did_info.clone()).unwrap();
-
-        let their_did = TheirDid {
-            did: their_did.did,
-            crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
-            pk: Some(their_did.pk),
-            endpoint: None,
-            verkey: Some(their_did.verkey)
-        };
-
-        service.encrypt(&my_did, &their_did, msg.as_bytes()).unwrap();
+        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
+        let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
+        let their_did = Did::new(their_did.did, their_did.verkey);
+        service.encrypt(&my_key, &their_did.verkey, msg.as_bytes()).unwrap();
     }
 
     #[test]
@@ -502,33 +449,53 @@ mod tests {
 
         let did_info = MyDidInfo::new(None, None, None, None);
 
-        let my_did = service.create_my_did(&did_info).unwrap();
+        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
 
         let my_did_for_encrypt = my_did.clone();
+        let my_key_for_encrypt = my_key.clone();
 
-        let their_did_for_decrypt = TheirDid {
-            did: my_did.did,
-            crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
-            pk: Some(my_did.pk),
-            endpoint: None,
-            verkey: Some(my_did.verkey)
-        };
+        let their_did_for_decrypt = Did::new(my_did.did, my_did.verkey);
 
-        let their_did = service.create_my_did(&did_info.clone()).unwrap();
-
+        let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
         let my_did_for_decrypt = their_did.clone();
+        let my_key_for_decrypt = their_key.clone();
 
-        let their_did_for_encrypt = TheirDid {
-            did: their_did.did,
-            crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
-            pk: Some(their_did.pk),
-            endpoint: None,
-            verkey: Some(their_did.verkey)
-        };
+        let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
 
-        let (encrypted_message, noce) = service.encrypt(&my_did_for_encrypt, &their_did_for_encrypt, msg.as_bytes()).unwrap();
+        let (encrypted_message, noce) = service.encrypt(&my_key_for_encrypt, &their_did_for_encrypt.verkey, msg.as_bytes()).unwrap();
 
-        let decrypted_message = service.decrypt(&my_did_for_decrypt, &their_did_for_decrypt, &encrypted_message, &noce).unwrap();
+        let decrypted_message = service.decrypt(&my_key_for_decrypt, &their_did_for_decrypt.verkey, &encrypted_message, &noce).unwrap();
+
+        assert_eq!(msg.as_bytes().to_vec(), decrypted_message);
+    }
+
+
+    #[test]
+    fn encrypt_decrypt_works_for_verkey_contained_crypto_type() {
+        let service = SignusService::new();
+
+        let msg = "some message";
+
+        let did_info = MyDidInfo::new(None, None, None, None);
+
+        let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
+
+        let my_did_for_encrypt = my_did.clone();
+        let my_key_for_encrypt = my_key.clone();
+
+        let their_did_for_decrypt = Did::new(my_did.did, my_did.verkey);
+
+        let (their_did, their_key) = service.create_my_did(&did_info.clone()).unwrap();
+        let my_did_for_decrypt = their_did.clone();
+        let my_key_for_decrypt = their_key.clone();
+
+        let their_did_for_encrypt = Did::new(their_did.did, their_did.verkey);
+
+        let (encrypted_message, noce) = service.encrypt(&my_key_for_encrypt, &their_did_for_encrypt.verkey, msg.as_bytes()).unwrap();
+
+        let verkey = format!("ed25519:{}", their_did_for_decrypt.verkey);
+
+        let decrypted_message = service.decrypt(&my_key_for_decrypt, &verkey, &encrypted_message, &noce).unwrap();
 
         assert_eq!(msg.as_bytes().to_vec(), decrypted_message);
     }
@@ -536,44 +503,22 @@ mod tests {
     #[test]
     fn encrypt_sealed_works() {
         let service = SignusService::new();
-
         let msg = "some message";
-
         let did_info = MyDidInfo::new(None, None, None, None);
-
-        let did = service.create_my_did(&did_info.clone()).unwrap();
-
-        let did = TheirDid {
-            did: did.did,
-            crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
-            pk: Some(did.pk),
-            endpoint: None,
-            verkey: Some(did.verkey)
-        };
-
-        service.encrypt_sealed(&did, msg.as_bytes()).unwrap();
+        let (did, key) = service.create_my_did(&did_info.clone()).unwrap();
+        let did = Did::new(did.did, did.verkey);
+        service.encrypt_sealed(&did.verkey, msg.as_bytes()).unwrap();
     }
 
     #[test]
     fn encrypt_decrypt_sealed_works() {
         let service = SignusService::new();
-
         let msg = "some message".as_bytes();
-
         let did_info = MyDidInfo::new(None, None, None, None);
-
-        let did = service.create_my_did(&did_info.clone()).unwrap();
-
-        let encrypt_did = TheirDid {
-            did: did.did.clone(),
-            crypto_type: DEFAULT_CRYPTO_TYPE.to_string(),
-            pk: Some(did.pk.clone()),
-            endpoint: None,
-            verkey: Some(did.verkey.clone())
-        };
-
-        let encrypted_message = service.encrypt_sealed(&encrypt_did, msg).unwrap();
-        let decrypted_message = service.decrypt_sealed(&did, &encrypted_message).unwrap();
+        let (did, key) = service.create_my_did(&did_info.clone()).unwrap();
+        let encrypt_did = Did::new(did.did.clone(), did.verkey.clone());
+        let encrypted_message = service.encrypt_sealed(&encrypt_did.verkey, msg).unwrap();
+        let decrypted_message = service.decrypt_sealed(&key, &encrypted_message).unwrap();
         assert_eq!(msg, decrypted_message.as_slice());
     }
 }

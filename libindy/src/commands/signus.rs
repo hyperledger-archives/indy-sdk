@@ -3,7 +3,7 @@ use errors::signus::SignusError;
 use errors::common::CommonError;
 use errors::wallet::WalletError;
 use errors::indy::IndyError;
-use services::signus::types::{KeyInfo, MyDidInfo, TheirDidInfo, Did, Key};
+use services::signus::types::{KeyInfo, MyDidInfo, TheirDidInfo, Did, Key, Endpoint};
 use services::ledger::types::{Reply, GetNymResultData, GetNymReplyResult};
 use services::pool::PoolService;
 use services::wallet::WalletService;
@@ -22,6 +22,9 @@ use utils::sequence::SequenceUtils;
 
 use super::utils::check_wallet_and_pool_handles_consistency;
 
+use utils::crypto::base58::Base58;
+
+#[derive()]
 pub enum SignusCommand {
     CreateAndStoreMyDid(
         i32, // wallet handle
@@ -101,10 +104,39 @@ pub enum SignusCommand {
         i32, // wallet handle
         String, // key json
         Box<Fn(Result<String/*verkey*/, IndyError>) + Send>),
+    SetKeyMetadata(
+        i32, // wallet handle
+        String, // verkey
+        String, // metadata
+        Box<Fn(Result<(), IndyError>) + Send>),
+    GetKeyMetadata(
+        i32, // wallet handle
+        String, // verkey
+        Box<Fn(Result<String, IndyError>) + Send>),
     KeyForDid(
+        i32, // pool handle
         i32, // wallet handle
         String, // did
         Box<Fn(Result<String/*key*/, IndyError>) + Send>),
+    SetEndpointForDid(
+        i32, // wallet handle
+        String, // did
+        String, // address
+        String, // transport_key
+        Box<Fn(Result<(), IndyError>) + Send>),
+    GetEndpointForDid(
+        i32, // wallet handle
+        String, // did
+        Box<Fn(Result<(String, String), IndyError>) + Send>),
+    SetDidMetadata(
+        i32, // wallet handle
+        String, // did
+        String, // metadata
+        Box<Fn(Result<(), IndyError>) + Send>),
+    GetDidMetadata(
+        i32, // wallet handle
+        String, // did
+        Box<Fn(Result<String, IndyError>) + Send>)
 }
 
 pub struct SignusCommandExecutor {
@@ -191,9 +223,33 @@ impl SignusCommandExecutor {
                 info!(target: "signus_command_executor", "CreateKey command received");
                 self.create_key(wallet_handle, &key_info_json, cb);
             }
-            SignusCommand::KeyForDid(wallet_handle, did, cb) => {
+            SignusCommand::SetKeyMetadata(wallet_handle, verkey, metadata, cb) => {
+                info!(target: "signus_command_executor", "SetKeyMetadata command received");
+                self.set_key_metadata(wallet_handle, &verkey, &metadata, cb);
+            }
+            SignusCommand::GetKeyMetadata(wallet_handle, verkey, cb) => {
+                info!(target: "signus_command_executor", "GetKeyMetadata command received");
+                self.get_key_metadata(wallet_handle, &verkey, cb);
+            }
+            SignusCommand::KeyForDid(pool_handle, wallet_handle, did, cb) => {
                 info!(target: "signus_command_executor", "KeyForDid command received");
-                self.key_for_did(wallet_handle, &did, cb);
+                self.key_for_did(pool_handle, wallet_handle, &did, cb);
+            }
+            SignusCommand::SetEndpointForDid(wallet_handle, did, address, transport_key, cb) => {
+                info!(target: "signus_command_executor", "SetEndpointForDid command received");
+                self.set_endpoint_for_did(wallet_handle, &did, &address, &transport_key, cb);
+            }
+            SignusCommand::GetEndpointForDid(wallet_handle, did, cb) => {
+                info!(target: "signus_command_executor", "GetEndpointForDid command received");
+                self.get_endpoint_for_did(wallet_handle, &did, cb);
+            }
+            SignusCommand::SetDidMetadata(wallet_handle, did, metadata, cb) => {
+                info!(target: "signus_command_executor", "SetDidMetadata command received");
+                self.set_did_metadata(wallet_handle, &did, &metadata, cb);
+            }
+            SignusCommand::GetDidMetadata(wallet_handle, did, cb) => {
+                info!(target: "signus_command_executor", "GetDidMetadata command received");
+                self.get_did_metadata(wallet_handle, &did, cb);
             }
         };
     }
@@ -813,7 +869,30 @@ impl SignusCommandExecutor {
         Ok(key.verkey)
     }
 
+    fn set_key_metadata(&self,
+                        wallet_handle: i32,
+                        verkey: &str,
+                        metadata: &str,
+                        cb: Box<Fn(Result<(), IndyError>) + Send>) {
+        cb(self._set_key_metadata(wallet_handle, verkey, metadata));
+    }
+
+    fn _set_key_metadata(&self, wallet_handle: i32, verkey: &str, metadata: &str) -> Result<(), IndyError> {
+        Base58::decode(verkey)?;
+        self.wallet_service.set(wallet_handle, &format!("key::{}::metadata", verkey), metadata)?;
+        Ok(())
+    }
+
+    fn get_key_metadata(&self,
+                        wallet_handle: i32,
+                        verkey: &str,
+                        cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        cb(self.wallet_service.get(wallet_handle, &format!("key::{}::metadata", verkey))
+            .map_err(|err| IndyError::WalletError(err)));
+    }
+
     fn key_for_did(&self,
+                   pool_handle: i32,
                    wallet_handle: i32,
                    did: &str,
                    cb: Box<Fn(Result<String, IndyError>) + Send>) {
@@ -821,7 +900,6 @@ impl SignusCommandExecutor {
     }
 
     fn _key_for_did(&self, wallet_handle: i32, did: &str) -> Result<String, IndyError> {
-
         // TODO: FIXME: It works only for my did now!!!
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", did))?;
         let my_did = Did::from_json(&my_did_json)
@@ -829,5 +907,68 @@ impl SignusCommandExecutor {
             .map_err(|err| CommonError::InvalidState(err.to_string()))?;
 
         Ok(my_did.verkey)
+    }
+
+    fn set_endpoint_for_did(&self,
+                            wallet_handle: i32,
+                            did: &str,
+                            address: &str,
+                            transport_key: &str,
+                            cb: Box<Fn(Result<(), IndyError>) + Send>) {
+        cb(self._set_endpoint_for_did(wallet_handle, did, address, transport_key));
+    }
+
+    fn _set_endpoint_for_did(&self, wallet_handle: i32, did: &str, address: &str, transport_key: &str) -> Result<(), IndyError> {
+        Base58::decode(did)?;
+        Base58::decode(transport_key)?;
+
+        let endpoint = Endpoint::new(address.to_string(), transport_key.to_string());
+        let endpoint_json = endpoint.to_json()
+            .map_err(map_err_trace!())
+            .map_err(|err|
+                CommonError::InvalidState(format!("Can't serialize Endpoint: {}", err.description())))?;
+
+        self.wallet_service.set(wallet_handle, &format!("did::{}::endpoint", did), &endpoint_json)?;
+        Ok(())
+    }
+
+    fn get_endpoint_for_did(&self,
+                            wallet_handle: i32,
+                            did: &str,
+                            cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        cb(self._get_endpoint_for_did(wallet_handle, did));
+    }
+
+    fn _get_endpoint_for_did(&self, wallet_handle: i32, did: &str) -> Result<(String, String), IndyError> {
+        let endpoint_json = self.wallet_service.get(wallet_handle, &format!("did::{}::endpoint", did))?;
+        let endpoint: Endpoint = Endpoint::from_json(&endpoint_json)
+            .map_err(map_err_trace!())
+            .map_err(|err|
+                CommonError::InvalidState(format!("Can't deserialize Endpoint: {}", err.description())))?;
+
+        Ok((endpoint.ha, endpoint.verkey))
+    }
+
+    fn set_did_metadata(&self,
+                        wallet_handle: i32,
+                        did: &str,
+                        metadata: &str,
+                        cb: Box<Fn(Result<(), IndyError>) + Send>) {
+        cb(self._set_did_metadata(wallet_handle, did, metadata));
+    }
+
+    fn _set_did_metadata(&self, wallet_handle: i32, did: &str, metadata: &str) -> Result<(), IndyError> {
+        Base58::decode(did)?;
+
+        self.wallet_service.set(wallet_handle, &format!("did::{}::metadata", did), metadata)?;
+        Ok(())
+    }
+
+    fn get_did_metadata(&self,
+                        wallet_handle: i32,
+                        did: &str,
+                        cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        cb(self.wallet_service.get(wallet_handle, &format!("did::{}::metadata", did))
+            .map_err(|err| IndyError::WalletError(err)));
     }
 }

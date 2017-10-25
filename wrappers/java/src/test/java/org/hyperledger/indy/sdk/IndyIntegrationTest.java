@@ -21,6 +21,7 @@ public class IndyIntegrationTest {
 
 	protected static final String TRUSTEE_SEED = "000000000000000000000000Trustee1";
 	protected static final String MY1_SEED = "00000000000000000000000000000My1";
+	protected static final String MY2_SEED = "00000000000000000000000000000My2";
 	protected static final String DID1 = "8wZcEriaNLNKtteJvx7f8i";
 	protected static final String IDENTITY_JSON_TEMPLATE = "{\"did\":\"%s\",\"verkey\":\"%s\"}";
 	protected static final byte[] MESSAGE = "{\"reqId\":1496822211362017764}".getBytes();
@@ -30,6 +31,15 @@ public class IndyIntegrationTest {
 	protected static final String TYPE = "default";
 	protected static final String TRUSTEE_IDENTITY_JSON =
 			new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null).toJson();
+	protected static final String VERKEY = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
+	protected static final String VERKEY_FOR_MY1_SEED = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
+	protected static final String VERKEY_FOR_MY2_SEED = "kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn";
+	protected static final String DID_FOR_MY1_SEED = "VsKV7grR1BUE29mG2Fm2kX";
+	protected static final String DID_FOR_MY2_SEED = "2PRyVHmkXQnQzJQKxHxnXC";
+	protected static final String METADATA = "some metadata";
+	protected static final String ENDPOINT = "127.0.0.1:9700";
+	protected static final String INVALID_VERKEY = "CnEDk___MnmiHXEV1WFgbV___eYnPqs___TdcZaNhFVW";
+
 
 	protected static final String MY1_IDENTITY_JSON =
 			new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, null, null).toJson();
