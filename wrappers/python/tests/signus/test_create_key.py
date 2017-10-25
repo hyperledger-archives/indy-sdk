@@ -26,9 +26,6 @@ async def test_create_my_did_works_for_invalid_seed(wallet_handle):
         await signus.create_key(wallet_handle, json.dumps({'seed': 'invalidSeedLength'}))
     assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
-    with pytest.raises(IndyError) as e:
-        await signus.create_key(wallet_handle, json.dumps({'seed': 'invalid_base58_string11111111111'}))
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio

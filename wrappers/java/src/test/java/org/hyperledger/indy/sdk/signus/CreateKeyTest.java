@@ -28,7 +28,7 @@ public class CreateKeyTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testCreateKeyWorksForInvalidSeed() throws Exception {
-		String paramJson = new SignusJSONParameters.CreateKeyJSONParameter("invalid_base58_string11111111111", null).toJson();
+		String paramJson = new SignusJSONParameters.CreateKeyJSONParameter("invalidSeedLength", null).toJson();
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
