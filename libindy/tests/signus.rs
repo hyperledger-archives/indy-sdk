@@ -92,25 +92,22 @@ mod high_cases {
             let res = SignusUtils::create_key(wallet_handle, Some("invalidSeedLength"));
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
-            let res = SignusUtils::create_key(wallet_handle, Some("invalid_base58_string11111111111"));
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
-
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
     }
 
-    mod store_key_metadata {
+    mod set_key_metadata {
         use super::*;
 
         #[test]
-        fn indy_store_key_metadata_works() {
+        fn indy_set_key_metadata_works() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            SignusUtils::store_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
+            SignusUtils::set_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -118,17 +115,17 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_store_key_metadata_works_for_replace() {
+        fn indy_set_key_metadata_works_for_replace() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            SignusUtils::store_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
+            SignusUtils::set_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
             let metadata = SignusUtils::get_key_metadata(wallet_handle, VERKEY).unwrap();
             assert_eq!(METADATA.to_string(), metadata);
 
             let new_metadata = "updated metadata";
-            SignusUtils::store_key_metadata(wallet_handle, VERKEY, new_metadata).unwrap();
+            SignusUtils::set_key_metadata(wallet_handle, VERKEY, new_metadata).unwrap();
             let updated_metadata = SignusUtils::get_key_metadata(wallet_handle, VERKEY).unwrap();
             assert_eq!(new_metadata, updated_metadata);
 
@@ -138,13 +135,13 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_store_key_metadata_works_for_invalid_handle() {
+        fn indy_set_key_metadata_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 1;
-            let res = SignusUtils::store_key_metadata(invalid_wallet_handle, VERKEY, METADATA);
+            let res = SignusUtils::set_key_metadata(invalid_wallet_handle, VERKEY, METADATA);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -153,12 +150,27 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_store_key_metadata_works_for_empty_string() {
+        fn indy_set_key_metadata_works_for_empty_string() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            SignusUtils::store_key_metadata(wallet_handle, VERKEY, "").unwrap();
+            SignusUtils::set_key_metadata(wallet_handle, VERKEY, "").unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+
+        #[test]
+        fn indy_set_key_metadata_works_for_invalid_key() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let res = SignusUtils::set_key_metadata(wallet_handle, INVALID_BASE58_VERKEY, METADATA);
+            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -175,7 +187,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            SignusUtils::store_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
+            SignusUtils::set_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
 
             let metadata = SignusUtils::get_key_metadata(wallet_handle, VERKEY).unwrap();
             assert_eq!(METADATA.to_string(), metadata);
@@ -191,7 +203,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            SignusUtils::store_key_metadata(wallet_handle, VERKEY, "").unwrap();
+            SignusUtils::set_key_metadata(wallet_handle, VERKEY, "").unwrap();
 
             let metadata = SignusUtils::get_key_metadata(wallet_handle, VERKEY).unwrap();
             assert_eq!("", metadata);
@@ -221,7 +233,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            SignusUtils::store_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
+            SignusUtils::set_key_metadata(wallet_handle, VERKEY, METADATA).unwrap();
 
             let invalid_invalid_handle = wallet_handle + 1;
             let res = SignusUtils::get_key_metadata(invalid_invalid_handle, VERKEY);
@@ -416,9 +428,6 @@ mod high_cases {
             let res = SignusUtils::set_endpoint_for_did(wallet_handle, INVALID_BASE58_DID, ENDPOINT, VERKEY);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
-            let res = SignusUtils::set_endpoint_for_did(wallet_handle, INVALID_DID_LENGTH, ENDPOINT, VERKEY);
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
-
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
@@ -501,7 +510,7 @@ mod high_cases {
 
             let invalid_wallet_handle = wallet_handle + 1;
             let res = SignusUtils::get_endpoint_for_did(invalid_wallet_handle, DID);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -535,9 +544,23 @@ mod high_cases {
             let metadata = SignusUtils::get_did_metadata(wallet_handle, DID).unwrap();
             assert_eq!(METADATA.to_string(), metadata);
 
-            SignusUtils::set_did_metadata(wallet_handle, DID, "updated metadata").unwrap();
+            let new_metadata = "updated metadata";
+            SignusUtils::set_did_metadata(wallet_handle, DID, new_metadata).unwrap();
             let updated_metadata = SignusUtils::get_did_metadata(wallet_handle, DID).unwrap();
-            assert_ne!(METADATA.to_string(), updated_metadata);
+            assert_eq!(new_metadata, updated_metadata);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_set_did_metadata_works_for_empty_string() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            SignusUtils::set_did_metadata(wallet_handle, DID, "").unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -551,9 +574,6 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = SignusUtils::set_did_metadata(wallet_handle, INVALID_BASE58_DID, METADATA);
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
-
-            let res = SignusUtils::set_did_metadata(wallet_handle, INVALID_DID_LENGTH, METADATA);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -570,19 +590,6 @@ mod high_cases {
             let invalid_wallet_handle = wallet_handle + 1;
             let res = SignusUtils::set_did_metadata(invalid_wallet_handle, DID, METADATA);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        fn indy_set_did_metadata_works_for_empty_string() {
-            TestUtils::cleanup_storage();
-
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            SignusUtils::set_did_metadata(wallet_handle, DID, "").unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -656,7 +663,6 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
-
 
     mod create_my_did {
         use super::*;

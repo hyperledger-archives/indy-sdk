@@ -126,24 +126,88 @@ extern "C" {
                                                                   indy_error_t  err)
                                             );
 
+    /// Creates keys pair and stores in the wallet.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// key_json: Key information as json. Example:
+    /// {
+    ///     "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+    ///     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
+    /// }
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: command handle to map callback to caller context.
+    /// - err: Error code.
+    /// - verkey: Ver key of generated key pair, also used as key identifier
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
     extern indy_error_t indy_create_key(indy_handle_t     command_handle,
-                                        const char *const seed,
+                                        indy_handle_t     wallet_handle,
+                                        const char *const key_json,
 
                                         void              (*cb)(indy_handle_t     command_handle,
                                                                 indy_error_t      err
                                                                 const char *const vk)
                                        );
 
-    extern indy_error_t indy_store_key_metadata(indy_handle_t     command_handle
-                                                const char *const vk,
-                                                const char *const metadata,
+    /// Saves/replaces the meta information for the giving key in the wallet.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// verkey - the key (verkey, key id) to store metadata.
+    /// metadata - the meta information that will be store with the key.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: command handle to map callback to caller context.
+    /// - err: Error code.
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
+    extern indy_error_t indy_set_key_metadata(indy_handle_t     command_handle
+                                              indy_handle_t     wallet_handle,
+                                              const char *const verkey,
+                                              const char *const metadata,
 
-                                                void              (*cb)(indy_handle_t     command_handle,
-                                                                        indy_error_t      err)
-                                               );
+                                              void              (*cb)(indy_handle_t     command_handle,
+                                                                      indy_error_t      err)
+                                              );
 
+    /// Retrieves the meta information for the giving key in the wallet.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// verkey - The key (verkey, key id) to retrieve metadata.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - err: Error code.
+    /// - metadata - The meta information stored with the key; Can be null if no metadata was saved for this key.
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
     extern indy_error_t indy_get_key_metadata(indy_handle_t     command_handle
-                                              const char *const vk,
+                                              indy_handle_t     wallet_handle,
+                                              const char *const verkey,
 
                                               void              (*cb)(indy_handle_t     command_handle,
                                                                       indy_error_t      err,
@@ -151,6 +215,8 @@ extern "C" {
                                              );
 
     extern indy_error_t indy_key_for_did(indy_handle_t     command_handle
+                                         indy_handle_t     pool_handle,
+                                         indy_handle_t     wallet_handle,
                                          const char *const did,
 
                                          void              (*cb)(indy_handle_t     command_handle,
@@ -158,24 +224,75 @@ extern "C" {
                                                                  const char *const key)
                                         );
 
-    extern indy_error_t indy_endpoint_for_did(indy_handle_t     command_handle
+    extern indy_error_t indy_set_endpoint_for_did(indy_handle_t     command_handle
+                                                  indy_handle_t     wallet_handle,
+                                                  const char *const did,
+                                                  const char *const address,
+                                                  const char *const transport_key,
+
+                                                  void              (*cb)(indy_handle_t     command_handle,
+                                                                          indy_error_t      err)
+                                                 );
+
+    extern indy_error_t indy_get_endpoint_for_did(indy_handle_t     command_handle
+                                                  indy_handle_t     wallet_handle,
+                                                  const char *const did,
+
+                                                  void              (*cb)(indy_handle_t     command_handle,
+                                                                          indy_error_t      err,
+                                                                          const char *const address,
+                                                                          const char *const transport_vk)
+                                                 );
+
+    /// Saves/replaces the meta information for the giving DID in the wallet.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// did - the DID to store metadata.
+    /// metadata - the meta information that will be store with the DID.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: command handle to map callback to caller context.
+    /// - err: Error code.
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
+    extern indy_error_t indy_set_did_metadata(indy_handle_t     command_handle
+                                              indy_handle_t     wallet_handle,
                                               const char *const did,
+                                              const char *const metadata,
 
                                               void              (*cb)(indy_handle_t     command_handle,
-                                                                      indy_error_t      err,
-                                                                      const char *const endpoint,
-                                                                      const char *const transport_vk)
+                                                                      indy_error_t      err)
                                              );
 
-    extern indy_error_t indy_store_did_metadata(indy_handle_t     command_handle
-                                                const char *const did,
-                                                const char *const metadata,
-
-                                                void              (*cb)(indy_handle_t     command_handle,
-                                                                        indy_error_t      err)
-                                               );
-
+    /// Retrieves the meta information for the giving DID in the wallet.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// did - The DID to retrieve metadata.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - err: Error code.
+    /// - metadata - The meta information stored with the DID; Can be null if no metadata was saved for this DID.
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
     extern indy_error_t indy_get_did_metadata(indy_handle_t     command_handle
+                                              indy_handle_t     wallet_handle,
                                               const char *const did,
 
                                               void              (*cb)(indy_handle_t     command_handle,

@@ -1,5 +1,4 @@
 from indy import IndyError
-from indy import signus
 from indy import pairwise
 
 import pytest

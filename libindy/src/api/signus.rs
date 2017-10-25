@@ -260,7 +260,22 @@ pub  extern fn indy_set_key_metadata(command_handle: i32,
                                      metadata: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: i32,
                                                           err: ErrorCode)>) -> ErrorCode {
-    unimplemented!();
+    check_useful_c_str!(verkey, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str_empty_accepted!(metadata, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::SetKeyMetadata(
+            wallet_handle,
+            verkey,
+            metadata,
+            Box::new(move |result| {
+                let err = result_to_err_code!(result);
+                cb(command_handle, err)
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Retrieves the meta information for the giving key in the wallet.
@@ -290,7 +305,21 @@ pub  extern fn indy_get_key_metadata(command_handle: i32,
                                      cb: Option<extern fn(xcommand_handle: i32,
                                                           err: ErrorCode,
                                                           metadata: *const c_char)>) -> ErrorCode {
-    unimplemented!()
+    check_useful_c_str!(verkey, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::GetKeyMetadata(
+            wallet_handle,
+            verkey,
+            Box::new(move |result| {
+                let (err, metadata) = result_to_err_code_1!(result, String::new());
+                let metadata = CStringUtils::string_to_cstring(metadata);
+                cb(command_handle, err, metadata.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Returns ver key (key id) for the given DID.
@@ -324,16 +353,17 @@ pub extern fn indy_key_for_did(command_handle: i32,
                                cb: Option<extern fn(xcommand_handle: i32,
                                                     err: ErrorCode,
                                                     key: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::KeyForDid(
+            pool_handle,
             wallet_handle,
             did,
             Box::new(move |result| {
-                let (err, verkey) = result_to_err_code_1!(result, String::new());
-                let key = CStringUtils::string_to_cstring(verkey);
+                let (err, key) = result_to_err_code_1!(result, String::new());
+                let key = CStringUtils::string_to_cstring(key);
                 cb(command_handle, err, key.as_ptr())
             })
         )));
@@ -370,7 +400,24 @@ pub extern fn indy_set_endpoint_for_did(command_handle: i32,
                                         transport_key: *const c_char,
                                         cb: Option<extern fn(command_handle_: i32,
                                                              err: ErrorCode)>) -> ErrorCode {
-    unimplemented!();
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(address, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(transport_key, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::SetEndpointForDid(
+            wallet_handle,
+            did,
+            address,
+            transport_key,
+            Box::new(move |result| {
+                let err = result_to_err_code!(result);
+                cb(command_handle, err)
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 #[no_mangle]
@@ -380,9 +427,24 @@ pub extern fn indy_get_endpoint_for_did(command_handle: i32,
                                         did: *const c_char,
                                         cb: Option<extern fn(command_handle_: i32,
                                                              err: ErrorCode,
-                                                             endpoint: *const c_char,
+                                                             address: *const c_char,
                                                              transport_vk: *const c_char)>) -> ErrorCode {
-    unimplemented!();
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::GetEndpointForDid(
+            wallet_handle,
+            did,
+            Box::new(move |result| {
+                let (err, address, transport_vk) = result_to_err_code_2!(result, String::new(), String::new());
+                let address = CStringUtils::string_to_cstring(address);
+                let transport_vk = CStringUtils::string_to_cstring(transport_vk);
+                cb(command_handle, err, address.as_ptr(), transport_vk.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Saves/replaces the meta information for the giving DID in the wallet.
@@ -412,7 +474,22 @@ pub extern fn indy_set_did_metadata(command_handle: i32,
                                     metadata: *const c_char,
                                     cb: Option<extern fn(command_handle_: i32,
                                                          err: ErrorCode)>) -> ErrorCode {
-    unimplemented!();
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str_empty_accepted!(metadata, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::SetDidMetadata(
+            wallet_handle,
+            did,
+            metadata,
+            Box::new(move |result| {
+                let err = result_to_err_code!(result);
+                cb(command_handle, err)
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Retrieves the meta information for the giving DID in the wallet.
@@ -442,7 +519,21 @@ pub extern fn indy_get_did_metadata(command_handle: i32,
                                     cb: Option<extern fn(command_handle_: i32,
                                                          err: ErrorCode,
                                                          metadata: *const c_char)>) -> ErrorCode {
-    unimplemented!();
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::GetDidMetadata(
+            wallet_handle,
+            did,
+            Box::new(move |result| {
+                let (err, metadata) = result_to_err_code_1!(result, String::new());
+                let metadata = CStringUtils::string_to_cstring(metadata);
+                cb(command_handle, err, metadata.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
 }
 
 /// Signs a message by a signing key associated with my DID. The DID with a signing key

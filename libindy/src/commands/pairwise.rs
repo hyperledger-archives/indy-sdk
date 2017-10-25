@@ -31,7 +31,7 @@ pub enum PairwiseCommand {
     SetPairwiseMetadata(
         i32, // wallet handle
         String, // their_did
-        String, // metadata
+        Option<String>, // metadata
         Box<Fn(Result<(), IndyError>) + Send>)
 }
 
@@ -66,7 +66,7 @@ impl PairwiseCommandExecutor {
             }
             PairwiseCommand::SetPairwiseMetadata(wallet_handle, their_did, metadata, cb) => {
                 info!(target: "pairwise_command_executor", "SetPairwiseMetadata command received");
-                self.set_pairwise_metadata(wallet_handle, &their_did, &metadata, cb);
+                self.set_pairwise_metadata(wallet_handle, &their_did, metadata.as_ref().map(String::as_str), cb);
             }
         };
     }
@@ -156,7 +156,7 @@ impl PairwiseCommandExecutor {
     fn set_pairwise_metadata(&self,
                              wallet_handle: i32,
                              their_did: &str,
-                             metadata: &str,
+                             metadata: Option<&str>,
                              cb: Box<Fn(Result<(), IndyError>) + Send>) {
         cb(self._set_pairwise_metadata(wallet_handle, their_did, metadata))
     }
@@ -164,14 +164,14 @@ impl PairwiseCommandExecutor {
     fn _set_pairwise_metadata(&self,
                               wallet_handle: i32,
                               their_did: &str,
-                              metadata: &str) -> Result<(), IndyError> {
+                              metadata: Option<&str>) -> Result<(), IndyError> {
         let pairwise_json = self.wallet_service.get(wallet_handle, &format!("pairwise::{}", their_did))?;
 
         let mut pairwise: Pairwise = Pairwise::from_json(&pairwise_json)
             .map_err(|err|
                 CommonError::InvalidState(format!("Can't deserialize Pairwise: {:?}", err)))?;
 
-        pairwise.metadata = Some(metadata.to_string());
+        pairwise.metadata = metadata.as_ref().map(|s| s.to_string());
 
         let pairwise_json = pairwise.to_json()
             .map_err(|err|

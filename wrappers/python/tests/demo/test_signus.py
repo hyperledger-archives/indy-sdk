@@ -19,17 +19,11 @@ async def test_signus_demo_works(pool_name, seed_trustee1, path_home):
     await signus.create_and_store_my_did(my_wallet_handle, "{}")
 
     # 4. Create Their DID from Trustee1 seed
-    (their_did, their_verkey, their_pk) = \
-        await signus.create_and_store_my_did(their_wallet_handle, json.dumps({"seed": seed_trustee1}))
+    (their_did, their_verkey) = await signus.create_and_store_my_did(their_wallet_handle,
+                                                                     json.dumps({"seed": seed_trustee1}))
 
     # 5. Store Their DID
-    their_identity_json = json.dumps({
-        'did': their_did,
-        'pk': their_pk,
-        'verkey': their_verkey
-    })
-
-    await signus.store_their_did(my_wallet_handle, their_identity_json)
+    await signus.store_their_did(my_wallet_handle, json.dumps({'did': their_did, 'verkey': their_verkey}))
 
     # 6. Their sign message
     message = json.dumps({
