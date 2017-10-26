@@ -87,3 +87,6 @@ async def test_verify_works_for_get_nym_from_ledger_with_incompatible_wallet(poo
     with pytest.raises(IndyError) as e:
         await signus.verify_signature(wallet_handle, pool_handle, did_my1, message, signature)
     assert ErrorCode.WalletIncompatiblePoolError == e.value.error_code
+
+    await wallet.close_wallet(wallet_handle)
+    await wallet.delete_wallet(wallet_name, None)

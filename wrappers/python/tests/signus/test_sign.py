@@ -20,9 +20,9 @@ async def test_sign_works(wallet_handle, seed_my1, message):
 
 
 @pytest.mark.asyncio
-async def test_sign_works_for_unknown_did(wallet_handle, message):
+async def test_sign_works_for_unknown_did(wallet_handle, message, did_my1):
     with pytest.raises(IndyError) as e:
-        await signus.sign(wallet_handle, 'unknownDid', message)
+        await signus.sign(wallet_handle, did_my1, message)
     assert ErrorCode.WalletNotFoundError == e.value.error_code
 
 

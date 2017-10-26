@@ -69,6 +69,6 @@ public class DecryptTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Signus.decrypt(wallet, pool, "unknowDid", trusteeDid, encryptedMessage, nonce).get();
+		Signus.decrypt(wallet, pool, DID1, trusteeDid, encryptedMessage, nonce).get();
 	}
 }
