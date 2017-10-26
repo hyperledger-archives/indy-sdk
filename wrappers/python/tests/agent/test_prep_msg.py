@@ -47,11 +47,8 @@ async def test_prep_msg_works_for_invalid_handle(wallet_handle, verkey_my1, verk
 
 
 @pytest.mark.asyncio
-async def test_prep_msg_works_for_invalid_recipient_vk(wallet_handle, verkey_my1, message):
+async def test_prep_msg_works_for_invalid_recipient_vk(wallet_handle, identity_trustee1, message):
+    (_, key) = identity_trustee1
     with pytest.raises(IndyError) as e:
-        await agent.prep_msg(wallet_handle, verkey_my1, 'invalidVerkeyLength', message)
-    assert ErrorCode.CommonInvalidStructure == e.value.error_code
-
-    with pytest.raises(IndyError) as e:
-        await agent.prep_msg(wallet_handle, verkey_my1, 'CnEDk___MnmiHXEV1WFgbV___eYnPqs___TdcZaNhFVW', message)
+        await agent.prep_msg(wallet_handle, key, 'CnEDk___MnmiHXEV1WFgbV___eYnPqs___TdcZaNhFVW', message)
     assert ErrorCode.CommonInvalidStructure == e.value.error_code

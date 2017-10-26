@@ -13,11 +13,11 @@ nonce = bytes(
 
 
 @pytest.mark.asyncio
-async def test_decrypt_works(wallet_handle, identity_my2, identity_trustee1, message):
+async def test_decrypt_works(pool_handle, wallet_handle, identity_my2, identity_trustee1, message):
     (trustee_did, _) = identity_trustee1
     (my_did, _) = identity_my2
 
-    decrypted_message = await signus.decrypt(wallet_handle, my_did, trustee_did, encrypted_message, nonce)
+    decrypted_message = await signus.decrypt(wallet_handle, pool_handle, my_did, trustee_did, encrypted_message, nonce)
     assert message == decrypted_message
 
 
@@ -32,12 +32,13 @@ async def test_decrypt_works_for_other_coder(pool_handle, wallet_handle, identit
     (encrypted_msg, local_nonce) = await signus.encrypt(wallet_handle, pool_handle, my_did, my_did, message)
 
     with pytest.raises(IndyError) as e:
-        await signus.decrypt(wallet_handle, my_did, trustee_did, encrypted_msg, local_nonce)
+        await signus.decrypt(wallet_handle, pool_handle, my_did, trustee_did, encrypted_msg, local_nonce)
     assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
-async def test_decrypt_works_for_nonce_not_correspond_message(wallet_handle, identity_my2, identity_trustee1):
+async def test_decrypt_works_for_nonce_not_correspond_message(wallet_handle, pool_handle, identity_my2,
+                                                              identity_trustee1):
     (trustee_did, _) = identity_trustee1
     (my_did, _) = identity_my2
 
@@ -45,15 +46,15 @@ async def test_decrypt_works_for_nonce_not_correspond_message(wallet_handle, ide
         [1, 2, 3, 4, 5, 6, 7, 65, 212, 14, 109, 131, 200, 169, 94, 110, 51, 47, 101, 89, 0, 171, 105, 183])
 
     with pytest.raises(IndyError) as e:
-        await signus.decrypt(wallet_handle, my_did, trustee_did, encrypted_message, local_nonce)
+        await signus.decrypt(wallet_handle, pool_handle, my_did, trustee_did, encrypted_message, local_nonce)
     assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
-async def test_decrypt_works_for_invalid_wallet_handle(wallet_handle, identity_my2, identity_trustee1):
+async def test_decrypt_works_for_invalid_wallet_handle(wallet_handle, pool_handle, identity_my2, identity_trustee1):
     (trustee_did, _) = identity_trustee1
     (my_did, _) = identity_my2
 
     with pytest.raises(IndyError) as e:
-        await signus.decrypt(wallet_handle + 1, my_did, trustee_did, encrypted_message, nonce)
+        await signus.decrypt(wallet_handle + 1, pool_handle, my_did, trustee_did, encrypted_message, nonce)
     assert ErrorCode.WalletInvalidHandle == e.value.error_code

@@ -235,7 +235,6 @@ mod high_cases {
         use super::*;
 
         #[test]
-        #[ignore] /* TODO FIXME */
         fn indy_key_for_did_works_for_my_did() {
             TestUtils::cleanup_storage();
 
@@ -298,7 +297,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] /* TODO FIXME */
         fn indy_key_for_did_works_for_unknown_did() {
             TestUtils::cleanup_storage();
 
@@ -354,7 +352,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] /* TODO FIXME */
         fn indy_key_for_did_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
 

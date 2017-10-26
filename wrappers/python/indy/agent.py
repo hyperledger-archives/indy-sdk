@@ -63,7 +63,7 @@ async def prep_anonymous_msg(recipient_vk: str,
     def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
         return bytes(arr_ptr[:arr_len]),
 
-    if not hasattr(prep_msg, "cb"):
+    if not hasattr(prep_anonymous_msg, "cb"):
         logger.debug("prep_anonymous_msg: Creating callback")
         prep_anonymous_msg.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
 
@@ -76,7 +76,7 @@ async def prep_anonymous_msg(recipient_vk: str,
                                   c_msg_len,
                                   prep_anonymous_msg.cb)
 
-    logger.debug("prep_anonymous_msg: <<< res: %r", prep_anonymous_msg)
+    logger.debug("prep_anonymous_msg: <<< res: %r", encrypted_msg)
     return encrypted_msg
 
 
@@ -99,7 +99,7 @@ async def parse_msg(wallet_handle: int,
     def transform_cb(key: c_char_p, arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
         return (key, bytes(arr_ptr[:arr_len])),
 
-    if not hasattr(prep_msg, "cb"):
+    if not hasattr(parse_msg, "cb"):
         logger.debug("parse_msg: Creating callback")
         parse_msg.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, POINTER(c_uint8), c_uint32), transform_cb)
 
@@ -107,10 +107,10 @@ async def parse_msg(wallet_handle: int,
     c_recipient_vk = c_char_p(recipient_vk.encode('utf-8'))
     c_encrypted_msg_len = c_uint32(len(encrypted_msg))
 
-    (sender_vk, msg) = await do_call('indy_prep_anonymous_msg',
+    (sender_vk, msg) = await do_call('indy_parse_msg',
                                      c_wallet_handle,
                                      c_recipient_vk,
-                                     encrypted_msg,
+                                     bytes(encrypted_msg),
                                      c_encrypted_msg_len,
                                      parse_msg.cb)
 

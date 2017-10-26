@@ -47,6 +47,9 @@ public class AgentParseMsgTest extends IndyIntegrationTestWithPoolAndSingleWalle
 		String recipientDid = result.getDid();
 		String recipientVk = result.getVerkey();
 
+		String identityJson = String.format(IDENTITY_JSON_TEMPLATE, recipientDid, recipientVk);
+		Signus.storeTheirDid(wallet, identityJson).get();
+
 		String msg = String.format("{\"auth\":true,\"nonсe\":\"Th7MpTaRZVRYnPiabds81Y12\",\"sender\":\"%s\",\"msg\":\"unencrypted message\"}", VERKEY);
 		byte[] encryptedMsg = Signus.encryptSealed(wallet, pool, recipientDid, msg.getBytes()).get();
 

@@ -92,9 +92,9 @@ pub extern fn indy_parse_msg(command_handle: i32,
             Box::new(move |result| {
                 let (err, sender_vk, msg) = result_to_err_code_2!(result, None, Vec::new());
                 let (msg_data, msg_len) = vec_to_pointer(&msg);
-                let sender_vk = sender_vk.map(CStringUtils::string_to_cstring);
+                let c_sender_vk = sender_vk.clone().map(CStringUtils::string_to_cstring).unwrap_or(CStringUtils::string_to_cstring(String::new()));
                 cb(command_handle, err,
-                   sender_vk.map(|vk| vk.as_ptr()).unwrap_or(ptr::null()),
+                   if sender_vk.is_some() { c_sender_vk.as_ptr() } else { ptr::null() },
                    msg_data, msg_len)
             })
         )));
