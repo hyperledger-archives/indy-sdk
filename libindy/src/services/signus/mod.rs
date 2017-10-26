@@ -116,6 +116,8 @@ impl SignusService {
         let verkey = build_full_verkey(their_did_info.did.as_str(),
                                        their_did_info.verkey.as_ref().map(String::as_str))?;
 
+        self.validate_key(&verkey)?;
+
         let did = Did::new(their_did_info.did.clone(),
                            verkey);
         Ok(did)
@@ -303,7 +305,7 @@ impl SignusService {
     pub fn validate_did(&self, did: &str) -> Result<(), SignusError> {
         let did = Base58::decode(did)?;
 
-        if did.len() != 16 || did.len() != 32 {
+        if did.len() != 16 && did.len() != 32 {
             return Err(SignusError::CommonError(
                 CommonError::InvalidStructure(
                     format!("Trying to use did with unexpected len: {}", did.len()))));

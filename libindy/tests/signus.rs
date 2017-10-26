@@ -33,6 +33,10 @@ pub const METADATA: &'static str = "some_metadata";
 pub const INVALID_BASE58_DID: &'static str = "invalid_base58string";
 pub const INVALID_DID_LENGTH: &'static str = "invalidDidLength";
 
+#[test]
+fn indy_set_did_metadata_works() {
+}
+
 mod high_cases {
     use super::*;
 
@@ -253,7 +257,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] /* TODO FIXME */
         fn indy_key_for_did_works_for_their_did() {
             TestUtils::cleanup_storage();
 
@@ -273,7 +276,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] /* TODO FIXME */
         fn indy_key_for_did_works_for_get_key_from_ledger() {
             TestUtils::cleanup_storage();
 
@@ -304,7 +306,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = SignusUtils::key_for_did(pool_handle, wallet_handle, DID);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::CommonInvalidState, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
             PoolUtils::close(pool_handle).unwrap();
@@ -313,7 +315,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] /* TODO FIXME */
         fn indy_key_for_did_works_for_incompatible_wallet_and_pool() {
             TestUtils::cleanup_storage();
 
@@ -332,7 +333,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] /* TODO FIXME */
         fn indy_key_for_did_works_for_invalid_pool_handle() {
             TestUtils::cleanup_storage();
 
@@ -764,7 +764,7 @@ mod high_cases {
 
             let new_verkey = SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
 
-            assert!(new_verkey != my_verkey);
+            assert_ne!(new_verkey, my_verkey);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -1278,6 +1278,7 @@ mod high_cases {
         fn indy_decrypt_works() {
             TestUtils::cleanup_storage();
 
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
@@ -1286,11 +1287,12 @@ mod high_cases {
             let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, their_did, their_verkey);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
-            let decrypted_message = SignusUtils::decrypt(wallet_handle, -1, &my_did, &their_did, ENCRYPTED_MESSAGE, NONCE).unwrap();
+            let decrypted_message = SignusUtils::decrypt(wallet_handle, pool_handle, &my_did, &their_did, ENCRYPTED_MESSAGE, NONCE).unwrap();
 
             assert_eq!(MESSAGE.as_bytes().to_vec(), decrypted_message);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -1300,7 +1302,6 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (my_did, my_verkey) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
@@ -1314,7 +1315,7 @@ mod high_cases {
 
             let (encrypted_message, nonce) = SignusUtils::encrypt(wallet_handle, pool_handle, &my_did, &my_did, MESSAGE.as_bytes()).unwrap();
 
-            let res = SignusUtils::decrypt(wallet_handle, -1, &my_did, &their_did, &encrypted_message, &nonce);
+            let res = SignusUtils::decrypt(wallet_handle, pool_handle, &my_did, &their_did, &encrypted_message, &nonce);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1327,6 +1328,7 @@ mod high_cases {
         fn indy_decrypt_works_for_nonce_not_correspond_message() {
             TestUtils::cleanup_storage();
 
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
@@ -1336,10 +1338,11 @@ mod high_cases {
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let nonce = "acS2SQgDdfE3Goxa1AhcWCa4kEMqSelv7";
-            let res = SignusUtils::decrypt(wallet_handle, -1, &my_did, &their_did, ENCRYPTED_MESSAGE, nonce.as_bytes());
+            let res = SignusUtils::decrypt(wallet_handle, pool_handle, &my_did, &their_did, ENCRYPTED_MESSAGE, nonce.as_bytes());
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -1348,6 +1351,7 @@ mod high_cases {
         fn indy_decrypt_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
 
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
@@ -1357,10 +1361,11 @@ mod high_cases {
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 1;
-            let res = SignusUtils::decrypt(invalid_wallet_handle, -1, &my_did, &their_did, ENCRYPTED_MESSAGE, NONCE);
+            let res = SignusUtils::decrypt(invalid_wallet_handle, pool_handle, &my_did, &their_did, ENCRYPTED_MESSAGE, NONCE);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -1693,13 +1698,12 @@ mod medium_cases {
         }
 
         #[test]
-        #[ignore] /* TODO FIXME */
         fn indy_store_their_did_works_for_invalid_verkey() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let identity_json = r#"{"did":"did", "verkey":"verkey"}"#;
+            let identity_json = r#"{"did":"did", "verkey":"invalid_base58string"}"#;
 
             let res = SignusUtils::store_their_did(wallet_handle, identity_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1868,6 +1872,7 @@ mod medium_cases {
         fn indy_decrypt_works_for_unknown_my_did() {
             TestUtils::cleanup_storage();
 
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (their_did, their_verkey) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
@@ -1875,10 +1880,11 @@ mod medium_cases {
             let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, their_did, their_verkey);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
-            let res = SignusUtils::decrypt(wallet_handle, -1, DID, &their_did, ENCRYPTED_MESSAGE, NONCE);
+            let res = SignusUtils::decrypt(wallet_handle, pool_handle, DID, &their_did, ENCRYPTED_MESSAGE, NONCE);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -1887,15 +1893,17 @@ mod medium_cases {
         fn indy_decrypt_works_for_unknown_coder_did() {
             TestUtils::cleanup_storage();
 
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
-            let (their_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (their_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY2_SEED)).unwrap();
 
-            let res = SignusUtils::decrypt(wallet_handle, -1, &my_did, &their_did, ENCRYPTED_MESSAGE, NONCE);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle); /* TODO FIXME review test */
+            let res = SignusUtils::decrypt(wallet_handle, pool_handle, &my_did, &their_did, ENCRYPTED_MESSAGE, NONCE);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -1904,6 +1912,7 @@ mod medium_cases {
         fn indy_decrypt_works_for_saved_coder_nym_without_pk() {
             TestUtils::cleanup_storage();
 
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
@@ -1912,10 +1921,11 @@ mod medium_cases {
             let identity_json = format!(r#"{{"did":"{}"}}"#, their_did);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
-            let res = SignusUtils::decrypt(wallet_handle, -1, &my_did, &their_did, ENCRYPTED_MESSAGE, NONCE);
+            let res = SignusUtils::decrypt(wallet_handle, pool_handle, &my_did, &their_did, ENCRYPTED_MESSAGE, NONCE);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -1924,6 +1934,7 @@ mod medium_cases {
         fn indy_decrypt_works_for_invalid_nonce_len() {
             TestUtils::cleanup_storage();
 
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
@@ -1934,10 +1945,11 @@ mod medium_cases {
 
             let nonce = vec![24, 99, 107, 70, 58, 6, 252, 149, 225];
 
-            let res = SignusUtils::decrypt(wallet_handle, -1, &my_did, &their_did, ENCRYPTED_MESSAGE, &nonce);
+            let res = SignusUtils::decrypt(wallet_handle, pool_handle, &my_did, &their_did, ENCRYPTED_MESSAGE, &nonce);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -1994,7 +2006,7 @@ mod medium_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let res = SignusUtils::decrypt_sealed(wallet_handle, &"unknowndid", ENCRYPTED_MESSAGE);
+            let res = SignusUtils::decrypt_sealed(wallet_handle, DID, ENCRYPTED_MESSAGE);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();

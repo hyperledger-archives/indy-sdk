@@ -271,7 +271,7 @@ impl SignusCommandExecutor {
         self._wallet_set_key(wallet_handle, &temporary_key)?;
         self._wallet_set_my_temporary_did(wallet_handle, &my_temporary_did)?;
 
-        let res = my_did.verkey;
+        let res = my_temporary_did.verkey;
         Ok(res)
     }
 
@@ -420,6 +420,9 @@ impl SignusCommandExecutor {
                       cb: Box<Fn(Result<Vec<u8>, IndyError>) + Send>) {
         try_cb!(self.signus_service.validate_did(&their_did), cb);
 
+        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                   wallet_handle, pool_handle, cb);
+
         let their_did = ensure_their_did!(self,
                                           wallet_handle,
                                           pool_handle,
@@ -484,6 +487,10 @@ impl SignusCommandExecutor {
                    cb: Box<Fn(Result<String, IndyError>) + Send>) {
         try_cb!(self.signus_service.validate_did(&did), cb);
 
+
+        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                   wallet_handle, pool_handle, cb);
+
         // Look to my did
         match self._wallet_get_my_did(wallet_handle, &did) {
             Ok(my_did) => return cb(Ok(my_did.verkey)),
@@ -497,8 +504,8 @@ impl SignusCommandExecutor {
                                           pool_handle,
                                           did,
                                           SignusCommand::KeyForDid(
-                                              wallet_handle,
                                               pool_handle,
+                                              wallet_handle,
                                               did.clone(),
                                               cb),
                                            cb);
