@@ -27,3 +27,6 @@ pub mod sequence;
 pub mod test;
 
 pub mod timeout;
+
+#[macro_use]
+pub mod try;
