@@ -62,7 +62,7 @@ public abstract class LibIndy {
 		public int indy_sign(int command_handle, int wallet_handle, String did, byte[] message_raw, int message_len, Callback cb);
 		public int indy_verify_signature(int command_handle, int wallet_handle, int pool_handle, String did, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
 		public int indy_encrypt(int command_handle, int wallet_handle, int pool_handle, String my_did, String did, byte[] message_raw, int message_len, Callback cb);
-		public int indy_decrypt(int command_handle, int wallet_handle, String myDid, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, Callback cb);
+		public int indy_decrypt(int command_handle, int wallet_handle, int pool_handle, String myDid, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, Callback cb);
 		public int indy_encrypt_sealed(int command_handle, int wallet_handle, int pool_handle, String did, byte[] message_raw, int message_len, Callback cb);
 		public int indy_decrypt_sealed(int command_handle, int wallet_handle, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
 		public int indy_create_key(int command_handle, int wallet_handle, String key_json, Callback cb);
@@ -91,14 +91,6 @@ public abstract class LibIndy {
 		public int indy_verifier_verify_proof(int command_handle, String proof_request_json, String proof_json, String schemas_json, String claim_defs_jsons, String revoc_regs_json, Callback cb);
 
 		// agent.rs
-
-		public int indy_agent_connect(int command_handle, int pool_handle, int wallet_handle, String sender_did, String receiver_did, Callback connection_cb, Callback message_cb);
-		public int indy_agent_listen(int command_handle, String endpoint, Callback listener_cb, Callback connection_cb, Callback message_cb);
-		public int indy_agent_add_identity(int command_handle, int listener_handle, int pool_handle, int wallet_handle, String did, Callback add_identity_cb);
-		public int indy_agent_remove_identity(int command_handle, int listener_handle, int wallet_handle, String did, Callback rm_identity_cb);
-		public int indy_agent_send(int command_handle, int connection_handle, String message, Callback cb);
-		public int indy_agent_close_connection(int command_handle, int connection_handle, Callback cb);
-		public int indy_agent_close_listener(int command_handle, int listener_handle, Callback cb);
 		public int indy_prep_msg(int command_handle, int wallet_handle, String sender_vk, String recipient_vk, byte[] msg_data, int msg_len, Callback cb);
 		public int indy_prep_anonymous_msg(int command_handle, String recipient_vk, byte[] msg_data, int msg_len, Callback cb);
 		public int indy_parse_msg(int command_handle, int wallet_handle, String recipient_vk, byte[] encrypted_msg, int encrypted_len, Callback cb);

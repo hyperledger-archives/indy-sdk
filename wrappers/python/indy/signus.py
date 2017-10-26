@@ -319,6 +319,7 @@ async def encrypt(wallet_handle: int,
 
 
 async def decrypt(wallet_handle: int,
+                  pool_handle: int,
                   my_did: str,
                   did: str,
                   encrypted_msg: bytes,
@@ -329,6 +330,7 @@ async def decrypt(wallet_handle: int,
     stored in a secured wallet (see wallet_create_and_store_my_identity)
 
     :param wallet_handle: wallet handler (created by open_wallet).
+    :param pool_handle: pool handler (created by open_pool).
     :param my_did: DID
     :param did: DID that signed the message
     :param encrypted_msg: encrypted message
@@ -353,6 +355,7 @@ async def decrypt(wallet_handle: int,
                                transform_cb)
 
     c_wallet_handle = c_int32(wallet_handle)
+    c_pool_handle = c_int32(pool_handle)
     c_my_did = c_char_p(my_did.encode('utf-8'))
     c_did = c_char_p(did.encode('utf-8'))
     c_encrypted_msg_len = c_uint32(len(encrypted_msg))
@@ -360,6 +363,7 @@ async def decrypt(wallet_handle: int,
 
     decrypted_message = await do_call('indy_decrypt',
                                       c_wallet_handle,
+                                      c_pool_handle,
                                       c_my_did,
                                       c_did,
                                       bytes(encrypted_msg),
@@ -595,7 +599,7 @@ async def key_for_did(pool_handle: int,
     c_wallet_handle = c_int32(wallet_handle)
     c_did = c_char_p(did.encode('utf-8'))
 
-    key = await do_call('indy_get_key_metadata',
+    key = await do_call('indy_key_for_did',
                         c_pool_handle,
                         c_wallet_handle,
                         c_did,

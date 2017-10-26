@@ -40,11 +40,6 @@ async def test_store_their_did_works_without_did(wallet_handle, verkey_my1):
 
 
 @pytest.mark.asyncio
-async def test_store_their_did_works_for_correct_crypto_type(wallet_handle, did_my1, crypto_type):
-    await signus.store_their_did(wallet_handle, json.dumps({"did": did_my1, "crypto_type": crypto_type}))
-
-
-@pytest.mark.asyncio
 async def test_store_their_did_works_for_invalid_did(wallet_handle):
     with pytest.raises(IndyError) as e:
         await signus.store_their_did(wallet_handle, '{"did": "invalid_base58_string"}')

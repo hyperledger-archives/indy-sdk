@@ -113,7 +113,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] /* TODO FIXME */
         fn indy_prep_msg_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
 
@@ -137,9 +136,6 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let sender_vk = SignusUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
-
-            let res = AgentUtils::prep_msg(wallet_handle, &sender_vk, INVALID_VERKEY_LENGTH, MESSAGE.as_bytes());
-            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
             let res = AgentUtils::prep_msg(wallet_handle, &sender_vk, INVALID_BASE58_VERKEY, MESSAGE.as_bytes());
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
@@ -197,7 +193,6 @@ mod high_cases {
         use super::*;
 
         #[test]
-        #[ignore] /* TODO FIXME */
         fn indy_parse_msg_works_for_authenticated_message() {
             TestUtils::cleanup_storage();
 
@@ -220,7 +215,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] /* TODO FIXME */
         fn indy_parse_msg_works_for_anonymous_message() {
             TestUtils::cleanup_storage();
 
@@ -242,22 +236,26 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] /* TODO FIXME */
         fn indy_parse_msg_works_for_invalid_authenticated_msg() {
             TestUtils::cleanup_storage();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let recipient_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let (recipient_did, recipient_vk) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY2_SEED)).unwrap();
+            let (recipient_did, recipient_vk) = SignusUtils::create_and_store_my_did(recipient_wallet_handle, Some(MY2_SEED)).unwrap();
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, recipient_did, recipient_vk);
+            SignusUtils::store_their_did(sender_wallet_handle, &identity_json).unwrap();
 
             let msg = format!(r#"{{"auth":true,"nonce":"Th7MpTaRZVRYnPiabds81Y12","sender":"{:?}","msg":"unencrypted message"}}"#, VERKEY);
-            let encrypted_msg = SignusUtils::encrypt_sealed(wallet_handle, pool_handle, &recipient_did, msg.as_bytes()).unwrap();
+            let encrypted_msg = SignusUtils::encrypt_sealed(sender_wallet_handle, pool_handle, &recipient_did, msg.as_bytes()).unwrap();
 
-            let res = AgentUtils::parse_msg(wallet_handle, &recipient_vk, &encrypted_msg);
+            let res = AgentUtils::parse_msg(recipient_wallet_handle, &recipient_vk, &encrypted_msg);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
+            WalletUtils::close_wallet(sender_wallet_handle).unwrap();
+            WalletUtils::close_wallet(recipient_wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -296,7 +294,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] /* TODO FIXME */
         fn indy_parse_msg_msg_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
 

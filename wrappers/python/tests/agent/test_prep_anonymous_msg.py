@@ -10,7 +10,7 @@ from tests.agent.conftest import check_message
 @pytest.mark.asyncio
 async def test_prep_msg_works_for_created_key(verkey_my2, message):
     encrypted_msg = await agent.prep_anonymous_msg(verkey_my2, message)
-    check_message(encrypted_msg, message)
+    await check_message(encrypted_msg, message)
 
 
 @pytest.mark.asyncio

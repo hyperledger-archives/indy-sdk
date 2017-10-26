@@ -42,14 +42,6 @@ public class VerifyTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 	}
 
 	@Test
-	public void testVerifyWorksForGetVerkeyFromLedger() throws Exception {
-		Signus.storeTheirDid(wallet, String.format("{\"did\":\"%s\"}", myDid)).get();
-
-		Boolean valid = Signus.verifySignature(wallet, pool, myDid, MESSAGE, signature).get();
-		assertTrue(valid);
-	}
-
-	@Test
 	public void testVerifyWorksForGetNymFromLedger() throws Exception {
 		Boolean valid = Signus.verifySignature(wallet, pool, myDid, MESSAGE, signature).get();
 		assertTrue(valid);
