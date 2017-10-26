@@ -17,7 +17,7 @@ dependencies = [
  "rand 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "rlp 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rmp-serde 0.13.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "rusqlite 0.12.0 (git+https://github.com/mikelodder7/rusqlcipher)",
+ "rusqlcipher 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust-base58 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -252,9 +252,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "libsqlite3-sys"
+name = "libsqlcipher-sys"
 version = "0.8.1"
-source = "git+https://github.com/mikelodder7/rusqlcipher#1b3d04ce1c4580e3c68546b39c796a82e8efcc89"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "gcc 0.3.54 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkg-config 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -472,12 +472,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "rusqlite"
-version = "0.12.0"
-source = "git+https://github.com/mikelodder7/rusqlcipher#1b3d04ce1c4580e3c68546b39c796a82e8efcc89"
+name = "rusqlcipher"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bitflags 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "libsqlite3-sys 0.8.1 (git+https://github.com/mikelodder7/rusqlcipher)",
+ "libsqlcipher-sys 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.38 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -741,7 +741,7 @@ dependencies = [
 "checksum lazy_static 0.2.9 (registry+https://github.com/rust-lang/crates.io-index)" = "c9e5e58fa1a4c3b915a561a78a22ee0cac6ab97dca2504428bc1cb074375f8d5"
 "checksum libc 0.2.32 (registry+https://github.com/rust-lang/crates.io-index)" = "56cce3130fd040c28df6f495c8492e5ec5808fb4c9093c310df02b0c8f030148"
 "checksum libsodium-sys 0.0.14 (registry+https://github.com/rust-lang/crates.io-index)" = "cbbc6e46017815abf8698de0ed4847fad45fd8cad2909ac38ac6de79673c1ad1"
-"checksum libsqlite3-sys 0.8.1 (git+https://github.com/mikelodder7/rusqlcipher)" = "<none>"
+"checksum libsqlcipher-sys 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "ddeadc1487dba20cfc863dd62498ccc4a7188ab9b0481e45bda8fcdc1facb8ef"
 "checksum linked-hash-map 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7860ec297f7008ff7a1e3382d7f7e1dcd69efc94751a2284bafc3d013c2aa939"
 "checksum log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)" = "880f77541efa6e5cc74e76910c9884d9859683118839d6a1dc3b11e63512565b"
 "checksum lru-cache 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4d06ff7ff06f729ce5f4e227876cb88d10bc59cd4ae1e09fbb2bde15c850dc21"
@@ -767,7 +767,7 @@ dependencies = [
 "checksum rlp 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0805e6847d59744fe31f61f5f38c7e63ee5b42de25dcb8033e33447023d477d9"
 "checksum rmp 0.8.7 (registry+https://github.com/rust-lang/crates.io-index)" = "a3d45d7afc9b132b34a2479648863aa95c5c88e98b32285326a6ebadc80ec5c9"
 "checksum rmp-serde 0.13.7 (registry+https://github.com/rust-lang/crates.io-index)" = "011e1d58446e9fa3af7cdc1fb91295b10621d3ac4cb3a85cc86385ee9ca50cd3"
-"checksum rusqlite 0.12.0 (git+https://github.com/mikelodder7/rusqlcipher)" = "<none>"
+"checksum rusqlcipher 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)" = "21f4a70315dc70332abcc40fbc062a306a21fcda6b7a6dd896f93163f79bc987"
 "checksum rust-base58 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "b313b91fcdc6719ad41fa2dad2b7e810b03833fae4bf911950e15529a5f04439"
 "checksum rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)" = "dcf128d1287d2ea9d80910b5f1120d0b8eede3fbf1abe91c40d39ea7d51e6fda"
 "checksum rustc_version 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b9743a7670d88d5d52950408ecdb7c71d8986251ab604d4689dd2ca25c9bca69"

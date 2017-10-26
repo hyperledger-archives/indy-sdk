@@ -1,4 +1,4 @@
-extern crate rusqlite;
+extern crate rusqlcipher;
 extern crate time;
 
 use super::{Wallet, WalletType};
@@ -8,7 +8,7 @@ use errors::wallet::WalletError;
 use utils::environment::EnvironmentUtils;
 use utils::json::JsonDecodable;
 
-use self::rusqlite::Connection;
+use self::rusqlcipher::Connection;
 use self::time::Timespec;
 
 use std::error::Error;
@@ -224,10 +224,10 @@ fn _open_connection(name: &str, credentials: &str) -> Result<Connection, WalletE
     }
 }
 
-impl From<rusqlite::Error> for WalletError {
-    fn from(err: rusqlite::Error) -> WalletError {
+impl From<rusqlcipher::Error> for WalletError {
+    fn from(err: rusqlcipher::Error) -> WalletError {
         match err {
-            rusqlite::Error::QueryReturnedNoRows => WalletError::NotFound(format!("Wallet record is not found: {}", err.description())),
+            rusqlcipher::Error::QueryReturnedNoRows => WalletError::NotFound(format!("Wallet record is not found: {}", err.description())),
             _ => WalletError::CommonError(CommonError::InvalidState(format!("Unexpected SQLite error: {}", err.description())))
         }
     }
