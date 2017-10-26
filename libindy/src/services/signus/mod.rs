@@ -114,7 +114,6 @@ impl SignusService {
 
         let verkey = build_full_verkey(their_did_info.did.as_str(),
                                        their_did_info.verkey.as_ref().map(String::as_str))?;
-
         let did = Did::new(their_did_info.did.clone(),
                            verkey);
         Ok(did)
@@ -143,11 +142,11 @@ impl SignusService {
     }
 
     pub fn verify(&self, their_vk: &str, msg: &[u8], signature: &[u8]) -> Result<bool, SignusError> {
-        let (crypto_type_name, their_vk) = if their_vk.contains(":") {
+        let (their_vk, crypto_type_name) = if their_vk.contains(":") {
             let splits: Vec<&str> = their_vk.split(":").collect();
             (splits[0], splits[1])
         } else {
-            (DEFAULT_CRYPTO_TYPE, their_vk)
+            (their_vk, DEFAULT_CRYPTO_TYPE)
         };
 
         if !self.crypto_types.contains_key(crypto_type_name) {
@@ -163,18 +162,18 @@ impl SignusService {
     }
 
     pub fn encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), SignusError> {
-        let (crypto_type_name, my_vk) = if my_key.verkey.contains(":") {
+        let (my_vk, crypto_type_name) = if my_key.verkey.contains(":") {
             let splits: Vec<&str> = my_key.verkey.split(":").collect();
             (splits[0], splits[1])
         } else {
-            (DEFAULT_CRYPTO_TYPE, my_key.verkey.as_str())
+            (my_key.verkey.as_str(), DEFAULT_CRYPTO_TYPE)
         };
 
-        let (their_crypto_type_name, their_vk) = if their_vk.contains(":") {
+        let (their_vk, their_crypto_type_name) = if their_vk.contains(":") {
             let splits: Vec<&str> = their_vk.split(":").collect();
             (splits[0], splits[1])
         } else {
-            (DEFAULT_CRYPTO_TYPE, their_vk)
+            (their_vk, DEFAULT_CRYPTO_TYPE)
         };
 
         if !self.crypto_types.contains_key(&crypto_type_name) {
@@ -200,18 +199,18 @@ impl SignusService {
     }
 
     pub fn decrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, SignusError> {
-        let (crypto_type_name, my_vk) = if my_key.verkey.contains(":") {
+        let (my_vk, crypto_type_name) = if my_key.verkey.contains(":") {
             let splits: Vec<&str> = my_key.verkey.split(":").collect();
             (splits[0], splits[1])
         } else {
-            (DEFAULT_CRYPTO_TYPE, my_key.verkey.as_str())
+            (my_key.verkey.as_str(), DEFAULT_CRYPTO_TYPE)
         };
 
-        let (their_crypto_type_name, their_vk) = if their_vk.contains(":") {
+        let (their_vk, their_crypto_type_name) = if their_vk.contains(":") {
             let splits: Vec<&str> = their_vk.split(":").collect();
             (splits[0], splits[1])
         } else {
-            (DEFAULT_CRYPTO_TYPE, their_vk)
+            (their_vk, DEFAULT_CRYPTO_TYPE)
         };
 
         if !self.crypto_types.contains_key(&crypto_type_name) {
@@ -238,11 +237,11 @@ impl SignusService {
     }
 
     pub fn encrypt_sealed(&self, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
-        let (crypto_type_name, their_vk) = if their_vk.contains(":") {
+        let (their_vk, crypto_type_name) = if their_vk.contains(":") {
             let splits: Vec<&str> = their_vk.split(":").collect();
             (splits[0], splits[1])
         } else {
-            (DEFAULT_CRYPTO_TYPE, their_vk)
+            (their_vk, DEFAULT_CRYPTO_TYPE)
         };
 
         if !self.crypto_types.contains_key(&crypto_type_name) {
@@ -258,11 +257,11 @@ impl SignusService {
     }
 
     pub fn decrypt_sealed(&self, my_key: &Key, doc: &[u8]) -> Result<Vec<u8>, SignusError> {
-        let (crypto_type_name, my_vk) = if my_key.verkey.contains(":") {
+        let (my_vk, crypto_type_name) = if my_key.verkey.contains(":") {
             let splits: Vec<&str> = my_key.verkey.split(":").collect();
             (splits[0], splits[1])
         } else {
-            (DEFAULT_CRYPTO_TYPE, my_key.verkey.as_str())
+            (my_key.verkey.as_str(), DEFAULT_CRYPTO_TYPE)
         };
 
         if !self.crypto_types.contains_key(&crypto_type_name) {
@@ -401,7 +400,7 @@ mod tests {
         let message = r#"message"#;
         let (my_did, my_key) = service.create_my_did(&did_info).unwrap();
         let signature = service.sign(&my_key, message.as_bytes()).unwrap();
-        let verkey = format!("ed25519:{}", my_did.verkey);
+        let verkey = my_did.verkey + ":ed25519";
         let valid = service.verify(&verkey, message.as_bytes(), &signature).unwrap();
         assert!(valid);
     }
@@ -493,7 +492,7 @@ mod tests {
 
         let (encrypted_message, noce) = service.encrypt(&my_key_for_encrypt, &their_did_for_encrypt.verkey, msg.as_bytes()).unwrap();
 
-        let verkey = format!("ed25519:{}", their_did_for_decrypt.verkey);
+        let verkey = their_did_for_decrypt.verkey + ":ed25519";
 
         let decrypted_message = service.decrypt(&my_key_for_decrypt, &verkey, &encrypted_message, &noce).unwrap();
 
