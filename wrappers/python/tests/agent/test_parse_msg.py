@@ -32,7 +32,7 @@ async def test_parse_msg_works_for_invalid_authenticated_msg(pool_handle, wallet
                                                              identity_trustee1):
     (_, sender_verkey) = identity_steward1
     (recipient_did, recipient_verkey) = identity_trustee1
-    signus.store_their_did(wallet_handle, json.dumps({'did': recipient_did, 'verkey': 'recipient_verkey'}))
+    await signus.store_their_did(wallet_handle, json.dumps({'did': recipient_did, 'verkey': recipient_verkey}))
 
     msg = json.dumps({
         'auth': True,
