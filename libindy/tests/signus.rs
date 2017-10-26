@@ -28,10 +28,7 @@ use std::{thread, time};
 
 pub const ENCRYPTED_MESSAGE: &'static [u8; 45] = &[187, 227, 10, 29, 46, 178, 12, 179, 197, 69, 171, 70, 228, 204, 52, 22, 199, 54, 62, 13, 115, 5, 216, 66, 20, 131, 121, 29, 251, 224, 253, 201, 75, 73, 225, 237, 219, 133, 35, 217, 131, 135, 232, 129, 32];
 pub const SIGNATURE: &'static [u8; 64] = &[169, 215, 8, 225, 7, 107, 110, 9, 193, 162, 202, 214, 162, 66, 238, 211, 63, 209, 12, 196, 8, 211, 55, 27, 120, 94, 204, 147, 53, 104, 103, 61, 60, 249, 237, 127, 103, 46, 220, 223, 10, 95, 75, 53, 245, 210, 241, 151, 191, 41, 48, 30, 9, 16, 78, 252, 157, 206, 210, 145, 125, 133, 109, 11];
-pub const DID: &'static str = "NcYxiDXkpYi6ov5FcYDi1e";
-pub const METADATA: &'static str = "some_metadata";
 pub const INVALID_BASE58_DID: &'static str = "invalid_base58string";
-pub const INVALID_DID_LENGTH: &'static str = "invalidDidLength";
 
 #[test]
 fn indy_set_did_metadata_works() {
@@ -680,10 +677,10 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let (my_did, my_verkey) = SignusUtils::create_my_did(wallet_handle, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}"#).unwrap();
+            let (my_did, my_verkey) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
 
-            assert_eq!(my_did, DID);
-            assert_eq!(my_verkey, VERKEY);
+            assert_eq!(my_did, DID_MY1);
+            assert_eq!(my_verkey, VERKEY_MY1);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -883,12 +880,41 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn indy_store_their_did_works() {
+        fn indy_store_their_did_works_for_did_only() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let identity_json = format!(r#"{{"did":"{}"}}"#, DID);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_store_their_did_works_for_verkey() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, DID, VERKEY);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_store_their_did_works_for_verkey_with_crypto_type() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let verkey = VERKEY.to_owned() + ":ed25519";
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, DID, verkey);
             SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -928,20 +954,6 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_store_their_did_works_with_verkey() {
-            TestUtils::cleanup_storage();
-
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, DID, VERKEY);
-            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
         fn indy_store_their_did_works_for_abbreviated_verkey() {
             TestUtils::cleanup_storage();
 
@@ -964,20 +976,6 @@ mod high_cases {
             let identity_json = format!(r#"{{"verkey":"{}"}}"#, VERKEY);
             let res = SignusUtils::store_their_did(wallet_handle, &identity_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-
-            TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        fn indy_store_their_did_works_for_correct_crypto_type() {
-            TestUtils::cleanup_storage();
-
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}", "crypto_type": "ed25519"}}"#, DID, VERKEY);
-            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -1053,6 +1051,50 @@ mod high_cases {
 
             let valid = SignusUtils::verify(wallet_handle, pool_handle, &did, MESSAGE.as_bytes(), SIGNATURE).unwrap();
             assert!(valid);
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_verify_works_for_verkey_with_correct_crypto_type() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (did, verkey) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let verkey = verkey + ":ed25519";
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, did, verkey);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let valid = SignusUtils::verify(wallet_handle, pool_handle, &did, MESSAGE.as_bytes(), SIGNATURE).unwrap();
+            assert!(valid);
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_verify_works_for_verkey_with_invalid_crypto_type() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (did, verkey) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let verkey = verkey + ":crypto_type";
+            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, did, verkey);
+            SignusUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            let res = SignusUtils::verify(wallet_handle, pool_handle, &did, MESSAGE.as_bytes(), SIGNATURE);
+            assert_eq!(ErrorCode::SignusUnknownCryptoError, res.unwrap_err());
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
