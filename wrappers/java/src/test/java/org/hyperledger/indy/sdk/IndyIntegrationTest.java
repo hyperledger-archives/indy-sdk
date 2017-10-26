@@ -39,6 +39,7 @@ public class IndyIntegrationTest {
 	protected static final String METADATA = "some metadata";
 	protected static final String ENDPOINT = "127.0.0.1:9700";
 	protected static final String INVALID_VERKEY = "CnEDk___MnmiHXEV1WFgbV___eYnPqs___TdcZaNhFVW";
+	protected static final String CRYPTO_TYPE = "ed25519";
 
 
 	protected static final String MY1_IDENTITY_JSON =

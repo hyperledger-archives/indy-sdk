@@ -31,7 +31,8 @@ async def test_parse_msg_works_for_anonymous_message(wallet_handle, identity_tru
 async def test_parse_msg_works_for_invalid_authenticated_msg(pool_handle, wallet_handle, identity_steward1,
                                                              identity_trustee1):
     (_, sender_verkey) = identity_steward1
-    (_, recipient_verkey) = identity_trustee1
+    (recipient_did, recipient_verkey) = identity_trustee1
+    await signus.store_their_did(wallet_handle, json.dumps({'did': recipient_did, 'verkey': recipient_verkey}))
 
     msg = json.dumps({
         'auth': True,
@@ -39,7 +40,7 @@ async def test_parse_msg_works_for_invalid_authenticated_msg(pool_handle, wallet
         'sender': sender_verkey,
         'msg': 'unencrypted message'
     })
-    encrypted_msg = await signus.encrypt_sealed(wallet_handle, pool_handle, recipient_verkey, msg.encode('utf-8'))
+    encrypted_msg = await signus.encrypt_sealed(wallet_handle, pool_handle, recipient_did, msg.encode('utf-8'))
     with pytest.raises(IndyError) as e:
         await agent.parse_msg(wallet_handle, recipient_verkey, encrypted_msg)
     assert ErrorCode.CommonInvalidStructure == e.value.error_code
