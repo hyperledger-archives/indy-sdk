@@ -23,8 +23,6 @@ use utils::constants::*;
 
 use indy::api::ErrorCode;
 
-pub const METADATA: &'static str = "some metadata";
-
 
 mod high_cases {
     use super::*;
