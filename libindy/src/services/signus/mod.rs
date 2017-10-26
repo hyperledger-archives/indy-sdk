@@ -283,11 +283,11 @@ impl SignusService {
     }
 
     pub fn validate_key(&self, vk: &str) -> Result<(), SignusError> {
-        let (crypto_type_name, vk) = if vk.contains(":") {
+        let (vk, crypto_type_name) = if vk.contains(":") {
             let splits: Vec<&str> = vk.split(":").collect();
             (splits[0], splits[1])
         } else {
-            (DEFAULT_CRYPTO_TYPE, vk)
+            (vk, DEFAULT_CRYPTO_TYPE)
         };
 
         if !self.crypto_types.contains_key(&crypto_type_name) {
