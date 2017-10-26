@@ -1,3 +1,5 @@
+#[macro_use]
+pub mod cstring;
 pub mod pool;
 pub mod wallet;
 pub mod init;
@@ -12,8 +14,6 @@ pub fn generate_command_handle() -> i32 {
     let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
     command_handle
 }
-#[macro_use]
-pub mod cstring;
 
 #[macro_use]
 pub mod logger;

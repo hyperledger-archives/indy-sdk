@@ -18,7 +18,7 @@ pub fn post(body_content: &str, url: &str) -> Result<String,String> {
 
     let mut content = String::new();
     match response.read_to_string(&mut content) {
-        Ok(_) => Ok(content.to_owned()),
+        Ok(_) => {info!("Response: {}", content); Ok(content.to_owned())},
         Err(_) => Err("could not read response".to_string()),
     }
 }
@@ -35,6 +35,7 @@ mod tests {
 
     #[test]
     fn test_httpclient_fails_with_no_response() {
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         let mut my_url = String::from("http://127.0.0.1:3333");
         my_url.push_str("/nothing");
 
@@ -46,6 +47,7 @@ mod tests {
 
     #[test]
     fn test_httpclient_success() {
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         let _m = mockito::mock("POST", "/agent/core")
             .with_status(202)
             .with_header("content-type", "text/plain")
@@ -63,6 +65,7 @@ mod tests {
 
     #[test]
     fn test_httpclient_fails_with_bad_url() {
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         let _m = mockito::mock("POST", "/agent/core")
             .with_status(202)
             .with_header("content-type", "text/plain")
@@ -80,7 +83,8 @@ mod tests {
 
     #[test]
     fn test_httpclient_fails_with_404() {
-         let _m = mockito::mock("POST", "/agent/core")
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        let _m = mockito::mock("POST", "/agent/core")
             .with_status(404)
             .with_header("content-type", "text/plain")
             .with_body("world")

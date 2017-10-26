@@ -2,8 +2,6 @@ extern crate rand;
 extern crate serde_json;
 extern crate libc;
 
-use self::libc::c_char;
-use utils::cstring::CStringUtils;
 use utils::wallet;
 use utils::error;
 use utils::httpclient;
@@ -11,21 +9,10 @@ use api::CxsStateType;
 use rand::Rng;
 use std::sync::Mutex;
 use std::collections::HashMap;
-use std::ffi::CString;
 use settings;
 
 lazy_static! {
     static ref CONNECTION_MAP: Mutex<HashMap<u32, Box<Connection>>> = Default::default();
-}
-
-extern {
-    fn indy_create_and_store_my_did(command_handle: i32,
-                                    wallet_handle: i32,
-                                    did_json: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: i32, err: i32,
-                                                         did: *const c_char,
-                                                         verkey: *const c_char,
-                                                         pk: *const c_char)>) -> i32;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -53,7 +40,10 @@ struct Connection {
 
 impl Connection {
     fn connect(&mut self, options: String) -> u32 {
-        if self.state != CxsStateType::CxsStateInitialized { return error::NOT_READY.code_num; }
+        if self.state != CxsStateType::CxsStateInitialized {
+            info!("connection {} in state {} not ready to connect",self.handle,self.state as u32);
+            return error::NOT_READY.code_num;
+        }
 
         let options_obj: ConnectionOptions = match serde_json::from_str(options.trim()) {
             Ok(val) => val,
@@ -182,9 +172,11 @@ pub fn get_pw_verkey(handle: u32) -> Result<String, u32> {
 }
 
 pub fn create_agent_pairwise(handle: u32) -> Result<u32, u32> {
-    settings::set_defaults();
     let enterprise_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT).unwrap();
-    let pw_did = get_pw_did(handle).unwrap();
+    let pw_did = match get_pw_did(handle) {
+        Ok(x) => x,
+        Err(x) => return Err(error::UNKNOWN_ERROR.code_num),
+    };
     let pw_verkey = get_pw_verkey(handle).unwrap();
     let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
@@ -197,9 +189,11 @@ pub fn create_agent_pairwise(handle: u32) -> Result<u32, u32> {
 }
 
 pub fn update_agent_profile(handle: u32) -> Result<u32, u32> {
-    settings::set_defaults();
     let enterprise_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT).unwrap();
-    let pw_did = get_pw_did(handle).unwrap();
+    let pw_did = match get_pw_did(handle) {
+        Ok(x) => x,
+        Err(_) => return Err(error::UNKNOWN_ERROR.code_num),
+    };
     let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
     let json_msg = format!("{{\"to\":\"{}\",\"agentPayload\":\"{{\\\"type\\\":\\\"UPDATE_PROFILE_DATA\\\",\\\"name\\\":\\\"{}\\\",\\\"logoUrl\\\":\\\"{}\\\",\\\"nonce\\\":\\\"anything\\\"}}\"}}",
@@ -211,31 +205,6 @@ pub fn update_agent_profile(handle: u32) -> Result<u32, u32> {
         Ok(_) => return Ok(error::SUCCESS.code_num),
         Err(_) => return Err(error::UNKNOWN_ERROR.code_num),
     }
-}
-
-extern "C" fn store_new_did_info_cb(handle: i32,
-                                    err: i32,
-                                    did: *const c_char,
-                                    verkey: *const c_char,
-                                    pk: *const c_char) {
-    check_useful_c_str!(did, ());
-    check_useful_c_str!(verkey, ());
-    check_useful_c_str!(pk, ());
-    info!("handle: {} err: {} did: {} verkey: {} pk: {}", handle as u32, err, did, verkey, pk);
-    set_pw_did(handle as u32, &did);
-    set_pw_verkey(handle as u32, &verkey);
-
-    match create_agent_pairwise(handle as u32) {
-        Err(_) => error!("could not create pairwise key on agent"),
-        Ok(_) => info!("created pairwise key on agent"),
-    };
-
-    match update_agent_profile(handle as u32) {
-        Err(_) => error!("could not update profile on agent"),
-        Ok(_) => info!("updated profile on agent"),
-    };
-
-    set_state(handle as u32, CxsStateType::CxsStateInitialized);
 }
 
 //TODO may want to split between the code path where did is pass and is not passed
@@ -271,38 +240,36 @@ pub fn build_connection (source_id: Option<String>,
 
     {
         let mut m = CONNECTION_MAP.lock().unwrap();
+        info!("inserting handle {} into connection table", new_handle);
         m.insert(new_handle, c);
     }
 
     if did.is_none() { //TODO need better input validation
-        let wallet_handle = wallet::get_wallet_handle();
         let did_json = "{}";
 
-        info!("creating new connection and did (wallet: {}, handle {}", wallet_handle, new_handle);
-        unsafe {
-            let indy_err = indy_create_and_store_my_did(new_handle as i32, wallet_handle, CString::new(did_json).unwrap().as_ptr(), Some(store_new_did_info_cb));
-        }
+        info!("creating new connection from empty data");
+        match wallet::create_and_store_my_did(new_handle, did_json) {
+            Ok(_) => info!("successfully created new did"),
+            Err(x) => error!("could not create DID: {}", x),
+        };
     }
     else {
         //TODO need to get VERKEY ?MAYBE?
-        let wallet_handle = wallet::get_wallet_handle();
         let did_clone = did.clone().unwrap();
 
         let did_json =format!("{{\"did\":\"{}\"}}", did_clone);
 
-        info!("creating new connection with a specific did");
-        unsafe {
-            let indy_err = indy_create_and_store_my_did(new_handle as i32, wallet_handle, CString::new(did_json).unwrap().as_ptr(), Some(store_new_did_info_cb));
-        }
+        info!("creating new connection from data: {}", did_json);
+        match wallet::create_and_store_my_did(new_handle, &did_json) {
+            Ok(_) => info!("successfully created did"),
+            Err(x) => error!("could not create DID: {}", x),
+        };
+
         set_pw_did(new_handle, &did.unwrap());
     }
     new_handle
 }
 
-
-impl Drop for Connection {
-    fn drop(&mut self) {}
-}
 
 pub fn update_state(handle: u32) {
     let pw_did = match get_pw_did(handle) {
@@ -361,7 +328,6 @@ pub fn to_string(handle: u32) -> String {
     connection_json.to_owned()
 }
 
-#[allow(unused_variables)]
 pub fn release(handle: u32) -> u32 {
     let mut m = CONNECTION_MAP.lock().unwrap();
     let result = m.remove(&handle);
@@ -397,11 +363,14 @@ mod tests {
 
     #[test]
     fn test_create_connection() {
+        ::utils::logger::LoggerUtils::init();
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         let _m = mockito::mock("POST", "/agency/route")
             .with_status(202)
             .with_header("content-type", "text/plain")
             .with_body("nice!")
-            .expect(4)
+            .expect(6)
             .create();
 
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
@@ -410,7 +379,7 @@ mod tests {
                                       None,
                                       None);
         assert!(handle > 0);
-        thread::sleep(Duration::from_secs(2));
+        thread::sleep(Duration::from_secs(1));
         assert!(!get_pw_did(handle).unwrap().is_empty());
         assert!(!get_pw_verkey(handle).unwrap().is_empty());
         assert_eq!(get_state(handle), CxsStateType::CxsStateInitialized as u32);
@@ -432,6 +401,9 @@ mod tests {
 
     #[test]
     fn test_create_idempotency() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle = build_connection(Some("test_create_idempotency".to_owned()),
                                       Some("PLgUY9J3a9aRhvpFWMKMyb".to_string()),
                                       None);
@@ -445,12 +417,14 @@ mod tests {
 
     #[test]
     fn test_create_drop_create() {
-        let handle = build_connection(Some("test_create_idempotency".to_owned()),
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let handle = build_connection(Some("test_create_drop_create".to_owned()),
                                       Some("PLgUY9J3a9aRhvpFWMKMyb".to_string()),
                                       None);
         let did1 = get_pw_did(handle).unwrap();
         release(handle);
-        let handle2 = build_connection(Some("test_create_idempotency".to_owned()),
+        let handle2 = build_connection(Some("test_create_drop_create".to_owned()),
                                        Some("PLgUY9J3a9aRhvpFWMKMyb".to_string()),
                                        None);
         assert_ne!(handle,handle2);
@@ -461,6 +435,8 @@ mod tests {
 
     #[test]
     fn test_connection_release() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle = build_connection(Some("test_cxn_release".to_owned()),
                                       None,
                                       None);
@@ -471,14 +447,14 @@ mod tests {
 
     #[test]
     fn test_state_not_connected() {
-        wallet::tests::make_wallet("test_state_not_connected");
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle = build_connection(Some("test_state_not_connected".to_owned()),
                                       None,
                                       None);
         thread::sleep(Duration::from_secs(1));
         let state = get_state(handle);
         assert_eq!(state, CxsStateType::CxsStateInitialized as u32);
-        wallet::tests::delete_wallet("test_state_not_connected");
         release(handle);
     }
 
@@ -508,6 +484,8 @@ mod tests {
 
     #[test]
     fn test_get_string() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle = build_connection(Some("".to_owned()), None, None);
         let string = to_string(handle);
         println!("string: {}", string);
@@ -517,7 +495,8 @@ mod tests {
 
     #[test]
     fn test_many_handles() {
-
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle1 = build_connection(Some("handle1".to_owned()), None, None);
         let handle2 = build_connection(Some("handle2".to_owned()), None, None);
         let handle3 = build_connection(Some("handle3".to_owned()), None, None);
@@ -555,7 +534,8 @@ mod tests {
 
     #[test]
     fn test_set_get_pw_verkey() {
-        wallet::tests::make_wallet("test_set_get_pw_verkey");
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle = build_connection(Some("test_set_get_pw_verkey".to_owned()),
                                       None,
                                       None);
@@ -565,33 +545,13 @@ mod tests {
         set_pw_verkey(handle, &"HELLODOLLY");
         assert!(!get_pw_did(handle).unwrap().is_empty());
         release(handle);
-        wallet::tests::delete_wallet("test_set_get_pw_verkey");
     }
 
-    #[test]
-    fn test_cb_adds_verkey() {
-        wallet::tests::make_wallet("test_cb_adds_verkey");
-        let handle = build_connection(Some("test_cb_adds_verkey".to_owned()),
-                                      None,
-                                      None);
-        let err = 0;
-
-        let did = CString::new("DUMMYDIDHERE").unwrap().as_ptr();
-        let verkey = CString::new("DUMMYVERKEY").unwrap().as_ptr();
-        let pk = CString::new("DUMMYPK").unwrap().as_ptr();
-        store_new_did_info_cb(handle as i32,
-                              err,
-                              did,
-                              verkey,
-                              pk);
-        thread::sleep(Duration::from_secs(1));
-        assert!(!get_pw_verkey(handle).unwrap().is_empty());
-        wallet::tests::delete_wallet("test_cb_adds_verkey");
-    }
 
     #[test]
     fn test_create_agent_pairwise() {
-        ::utils::logger::LoggerUtils::init();
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let _m = mockito::mock("POST", "/agency/route")
             .with_status(202)
             .with_header("content-type", "text/plain")
@@ -599,7 +559,6 @@ mod tests {
             .create();
 
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
-        wallet::tests::make_wallet("test_create_agent_pairwise");
         let handle = build_connection(Some("test_create_agent_pairwise".to_owned()),
                                       None,
                                       None);
@@ -608,12 +567,12 @@ mod tests {
             Ok(x) => assert_eq!(x, error::SUCCESS.code_num),
             Err(x) => assert_eq!(x, error::SUCCESS.code_num), //fail if we get here
         };
-        wallet::tests::delete_wallet("test_create_agent_pairwise");
     }
 
     #[test]
     fn test_create_agent_profile() {
-        ::utils::logger::LoggerUtils::init();
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let _m = mockito::mock("POST", "/agency/route")
             .with_status(202)
             .with_header("content-type", "text/plain")
@@ -621,7 +580,6 @@ mod tests {
             .create();
 
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
-        wallet::tests::make_wallet("test_create_agent_profile");
         let handle = build_connection(Some("test_create_agent_profile".to_owned()),
                                       None,
                                       None);
@@ -630,31 +588,30 @@ mod tests {
             Ok(x) => assert_eq!(x, error::SUCCESS.code_num),
             Err(x) => assert_eq!(x, error::SUCCESS.code_num), //fail if we get here
         };
-        wallet::tests::delete_wallet("test_create_agent_profile");
         release(handle);
     }
 
     #[test]
     fn test_get_set_uuid_and_endpoint() {
-        ::utils::logger::LoggerUtils::init();
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let uuid = "THISISA!UUID";
         let endpoint = "hello";
         let test_name = "test_get_set_uuid_and_endpoint";
         let wallet_name = test_name;
-        wallet::tests::make_wallet(wallet_name);
         let handle = build_connection(Some(test_name.to_owned()), None, None);
         assert_eq!(get_endpoint(handle).unwrap(), "");
         set_uuid(handle, uuid);
         set_endpoint(handle, endpoint);
         assert_eq!(get_uuid(handle).unwrap(), uuid);
         assert_eq!(get_endpoint(handle).unwrap(), endpoint);
-        wallet::tests::delete_wallet(wallet_name);
         release(handle);
     }
 
     #[test]
     fn test_get_qr_code_data() {
-        ::utils::logger::LoggerUtils::init();
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         let test_name = "test_get_qr_code_data";
         let _m = mockito::mock("POST", "/agency/route")
             .with_status(202)
@@ -667,7 +624,7 @@ mod tests {
         wallet::tests::make_wallet(test_name);
         let handle = build_connection(Some(test_name.to_owned()), None, None);
         assert!(handle > 0);
-        thread::sleep(Duration::from_secs(2));
+        thread::sleep(Duration::from_secs(1));
         assert!(!get_pw_did(handle).unwrap().is_empty());
         assert!(!get_pw_verkey(handle).unwrap().is_empty());
         assert_eq!(get_state(handle), CxsStateType::CxsStateInitialized as u32);
@@ -714,7 +671,6 @@ mod tests {
 
     #[test]
     fn test_jsonfying_invite_details() {
-        ::utils::logger::LoggerUtils::init();
         let response = "{ \"inviteDetail\": {
                 \"senderEndpoint\": \"34.210.228.152:80\",
                 \"connReqId\": \"CXqcDCE\",

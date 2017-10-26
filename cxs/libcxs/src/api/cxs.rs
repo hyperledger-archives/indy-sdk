@@ -296,6 +296,8 @@ mod tests {
 
     #[test]
     fn test_init_with_file() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let config_path = "/tmp/test_init.json";
         let path = Path::new(config_path);
 
@@ -317,7 +319,6 @@ mod tests {
         assert_eq!(result,0);
         // Leave file around or other concurrent tests will fail
 //        fs::remove_file(config_path).unwrap();
-        wallet::tests::delete_wallet("my_wallet");
         pool::delete_pool_config("my_config");
     }
 
@@ -330,15 +331,18 @@ mod tests {
 
     #[test]
     fn test_init_no_config_path() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let result = cxs_init(ptr::null());
         assert_eq!(result,0);
-        wallet::tests::delete_wallet("wallet1");
         pool::delete_pool_config("config1");
     }
 
 
     #[test]
     fn test_cxs_connection_create() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let mut handle: u32 = 0;
         let rc = cxs_connection_create(CString::new("test_create").unwrap().into_raw(),
                                        ptr::null_mut(),
@@ -350,6 +354,8 @@ mod tests {
 
     #[test]
     fn test_cxs_connection_create_fails() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let rc = cxs_connection_create(CString::new("test_create_fails").unwrap().into_raw(),
                                        ptr::null_mut(),
                                        ptr::null(),
@@ -365,6 +371,8 @@ mod tests {
 
     #[test]
     fn test_cxs_connection_connect() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT,mockito::SERVER_URL);
         let _m = mockito::mock("POST", "/agency/route")
             .with_status(202)
@@ -380,7 +388,7 @@ mod tests {
                                        ptr::null(),
                                        &mut handle);
         assert_eq!(rc, error::SUCCESS.code_num);
-        thread::sleep(Duration::from_secs(2));
+        thread::sleep(Duration::from_secs(1));
         assert!(handle > 0);
 
         let rc = cxs_connection_connect(handle, CString::new("{}").unwrap().into_raw());
@@ -397,6 +405,8 @@ mod tests {
 
     #[test]
     fn test_cxs_connection_get_state() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let mut handle: u32 = 0;
         let rc = cxs_connection_create(CString::new("test_get_state").unwrap().into_raw(),
                                        ptr::null_mut(),
@@ -413,6 +423,8 @@ mod tests {
 
     #[test]
     fn test_cxs_connection_get_state_fails() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let mut handle: u32 = 0;
         let rc = cxs_connection_create(CString::new("test_get_state_fails").unwrap().into_raw(),
                                        ptr::null_mut(),
@@ -431,6 +443,8 @@ mod tests {
     #[test]
     #[allow(unused_assignments)]
     fn test_cxs_connection_get_data() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let mut handle: u32 = 0;
         let rc = cxs_connection_create(CString::new("test_get_data").unwrap().into_raw(),
                                        ptr::null_mut(),
@@ -459,6 +473,8 @@ mod tests {
 
     #[test]
     fn test_cxs_connection_release() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let mut handle: u32 = 0;
         let rc = cxs_connection_create(CString::new("test_release").unwrap().into_raw(),
                                        ptr::null_mut(),
@@ -475,25 +491,18 @@ mod tests {
 
     #[test]
     fn test_init_create_and_connect(){
-        let _m = mockito::mock("POST", "/agency/route")
-            .with_status(202)
-            .with_header("content-type", "text/plain")
-            .with_body("nice!")
-            .expect(4)
-            .create();
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT,mockito::SERVER_URL);
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
 
         let result = cxs_init(ptr::null());
-        thread::sleep(Duration::from_secs(3));
-
         let mut handle: u32 = 0;
-        let rc = cxs_connection_create(CString::new("5").unwrap().into_raw(),
-//                                       CString::new("548NLfYrPxtB299RVafcjR").unwrap().into_raw(),
-//                                       CString::new("338NLfYrPxtB299RVafcjR").unwrap().into_raw(),
+        thread::sleep(Duration::from_millis(1500));
+        let rc = cxs_connection_create(CString::new("test_init_create_and_connect").unwrap().into_raw(),
                                        ptr::null_mut(),
                                        ptr::null(),
                                        &mut handle);
-        thread::sleep(Duration::from_secs(1));
+        assert_eq!(rc, 0);
+        thread::sleep(Duration::from_millis(1500));
 
         let rc = cxs_connection_connect(handle, CString::new("{}").unwrap().into_raw());
         assert_eq!(rc, 0);
@@ -502,19 +511,15 @@ mod tests {
 
     #[test]
     fn test_init_create_and_connect_with_did() {
-        let _m = mockito::mock("POST", "/agency/route")
-            .with_status(202)
-            .with_header("content-type", "text/plain")
-            .with_body("nice!")
-            .expect(4)
-            .create();
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
 
         let result = cxs_init(ptr::null());
-        thread::sleep(Duration::from_secs(3));
+        thread::sleep(Duration::from_secs(1));
 
         let mut handle: u32 = 0;
-        let rc = cxs_connection_create(CString::new("5").unwrap().into_raw(),
+        let rc = cxs_connection_create(CString::new("test_init_create_and_connect_with_did").unwrap().into_raw(),
                                        CString::new("548NLfYrPxtB299RVafcjR").unwrap().into_raw(),
                                        CString::new("338NLfYrPxtB299RVafcjR").unwrap().into_raw(),
                                        &mut handle);
