@@ -26,6 +26,7 @@ trait CryptoType {
     fn decrypt(&self, private_key: &[u8], public_key: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError>;
     fn gen_nonce(&self) -> Vec<u8>;
     fn create_key(&self, seed: Option<&[u8]>) -> Result<(Vec<u8>, Vec<u8>), CommonError>;
+    fn validate_key(&self, vk: &[u8]) -> Result<(), CommonError>;
     fn sign(&self, sk: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
     fn verify(&self, vk: &[u8], doc: &[u8], signature: &[u8]) -> Result<bool, CommonError>;
     fn encrypt_sealed(&self, vk: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError>;
@@ -114,6 +115,9 @@ impl SignusService {
 
         let verkey = build_full_verkey(their_did_info.did.as_str(),
                                        their_did_info.verkey.as_ref().map(String::as_str))?;
+
+        //TODO FIXME self.validate_key(&verkey)?;
+
         let did = Did::new(their_did_info.did.clone(),
                            verkey);
         Ok(did)
@@ -276,6 +280,38 @@ impl SignusService {
 
         let decrypted_doc = crypto_type.decrypt_sealed(&my_vk, &my_sk, doc)?;
         Ok(decrypted_doc)
+    }
+
+    pub fn validate_key(&self, vk: &str) -> Result<(), SignusError> {
+        let (vk, crypto_type_name) = if vk.contains(":") {
+            let splits: Vec<&str> = vk.split(":").collect();
+            (splits[0], splits[1])
+        } else {
+            (vk, DEFAULT_CRYPTO_TYPE)
+        };
+
+        if !self.crypto_types.contains_key(&crypto_type_name) {
+            return Err(SignusError::UnknownCryptoError(format!("Trying to use key with unknown crypto: {}", crypto_type_name)));
+        }
+
+        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
+
+        let vk = Base58::decode(vk)?;
+
+        crypto_type.validate_key(&vk)?;
+        Ok(())
+    }
+
+    pub fn validate_did(&self, did: &str) -> Result<(), SignusError> {
+        let did = Base58::decode(did)?;
+
+        if did.len() != 16 && did.len() != 32 {
+            return Err(SignusError::CommonError(
+                CommonError::InvalidStructure(
+                    format!("Trying to use did with unexpected len: {}", did.len()))));
+        }
+
+        Ok(())
     }
 }
 

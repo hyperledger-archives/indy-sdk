@@ -47,4 +47,8 @@ impl CryptoType for ED25519CryptoType {
         Sealbox::decrypt(CryptoBox::vk_to_curve25519(vk)?.as_ref(),
                          CryptoBox::sk_to_curve25519(sk)?.as_ref(), doc)
     }
+    fn validate_key(&self, vk: &[u8]) -> Result<(), CommonError> {
+        // TODO: FIXME: Validate key
+        Ok(())
+    }
 }
