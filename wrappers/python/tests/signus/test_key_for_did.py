@@ -23,9 +23,9 @@ async def test_key_for_did_works_for_their_did(pool_handle, wallet_handle, did_m
 
 
 @pytest.mark.asyncio
-async def test_key_for_did_works_for_unknown_did(pool_handle, wallet_handle, did_my1):
+async def test_key_for_did_works_for_unknown_did(pool_handle, wallet_handle, did_my2):
     with pytest.raises(IndyError) as e:
-        await signus.key_for_did(pool_handle, wallet_handle, did_my1)
+        await signus.key_for_did(pool_handle, wallet_handle, did_my2)
     assert ErrorCode.CommonInvalidState == e.value.error_code
 
 
