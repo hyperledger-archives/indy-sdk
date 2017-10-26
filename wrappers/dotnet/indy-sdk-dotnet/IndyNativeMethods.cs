@@ -883,6 +883,35 @@ namespace Hyperledger.Indy
         // agent.rs
 
         /// <summary>
+        /// Delegate for agent functions that prepare messages.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that will be passed to the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="encrypted_data">The encrypted data message.</param>
+        /// <param name="encrypted_len">The encrypted data length.</param>
+        internal delegate void AgentMessagePreparedDelegate(int xcommand_handle, int err, IntPtr encrypted_data, int encrypted_len);
+
+
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_prep_msg(int command_handle,IntPtr wallet_handle, string sender_pk, string recipient_vk, byte[] msg_data, int msg_len, AgentMessagePreparedDelegate cb);
+
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_prep_anonymous_msg(int command_handle, string recipient_vk, byte[] msg_data, int msg_len, AgentMessagePreparedDelegate cb);
+
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_parse_msg(int command_handle, IntPtr wallet_handle, string recipient_vk, byte[] encrypted_data, int encrypted_len, AgentMessageParsedDelegate cb);
+
+        /// <summary>
+        /// Delegate for agent callbacks that parse messages.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that will be passed to the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="sender_key">The key of the sender.</param>
+        /// <param name="msg_data">The message data.</param>
+        /// <param name="msg_len">The message data length</param>
+        internal delegate void AgentMessageParsedDelegate(int xcommand_handle, int err, string sender_key, IntPtr msg_data, int msg_len);
+
+        /// <summary>
         /// Delegate for the agent functions that receive messages.
         /// </summary>
         /// <param name="xconnection_handle">The handle for the connection the message was recevied on.</param>
