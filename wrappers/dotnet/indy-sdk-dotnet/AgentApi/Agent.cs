@@ -83,6 +83,7 @@ namespace Hyperledger.Indy.AgentApi
         /// <param name="recipientKey">The verification key of the intended recipient of the message.</param>
         /// <param name="message">The message content to prepare.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to an array of bytes containing the prepared message.</returns>
+        /// <exception cref="InvalidStructureException">Thrown if the value passed to the <paramref name="recipientKey"/> is malformed or the content of the <paramref name="message"/> parameter is invalid.</exception>
         public static Task<byte[]> PrepAnonymousMsgAsync(string recipientKey, byte[] message)
         {
             ParamGuard.NotNullOrWhiteSpace(recipientKey, "recipientKey");
