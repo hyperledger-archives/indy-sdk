@@ -21,6 +21,7 @@ namespace Hyperledger.Indy.Test
         protected readonly static string TRUSTEE_IDENTITY_JSON = string.Format("{{\"seed\":\"{0}\"}}", TRUSTEE_SEED);
         protected const string VERKEY = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
         protected const string VERKEY_FOR_MY1_SEED = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
+        protected const string VERKEY_FOR_MY2_SEED = "kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn";
 
         protected const string INVALID_VERKEY = "CnEDk___MnmiHXEV1WFgbV___eYnPqs___TdcZaNhFVW";
 

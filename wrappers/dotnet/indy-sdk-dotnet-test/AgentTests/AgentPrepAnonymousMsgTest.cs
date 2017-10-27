@@ -14,8 +14,6 @@ namespace Hyperledger.Indy.Test.AgentTests
     [TestClass]
     public class AgentPrepAnonymousMsgTest : IndyIntegrationTestWithSingleWallet
     {
-
-
         private async Task CheckMessage(byte[] encryptedMsg)
         {
             await Wallet.CreateWalletAsync(POOL, "walletForCheck", TYPE, null, null);
@@ -25,8 +23,8 @@ namespace Hyperledger.Indy.Test.AgentTests
             var result = await Signus.CreateAndStoreMyDidAsync(localWallet, didJson);
             var recipientDid = result.Did;
 
-            var decryptedMessage = await Signus.DecryptSealedAsync(localWallet, recipientDid, encryptedMsg);
-            var decryptedMessageJson = Encoding.UTF8.GetString(decryptedMessage);
+            var decryptedMessageBytes = await Signus.DecryptSealedAsync(localWallet, recipientDid, encryptedMsg);
+            var decryptedMessageJson = Encoding.UTF8.GetString(decryptedMessageBytes);
             var decryptedMsg = JObject.Parse(decryptedMessageJson);
 
 
