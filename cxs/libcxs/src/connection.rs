@@ -10,6 +10,8 @@ use rand::Rng;
 use std::sync::Mutex;
 use std::collections::HashMap;
 use settings;
+use ::utils::messages::GeneralMessage;
+use ::utils::messages;
 
 lazy_static! {
     static ref CONNECTION_MAP: Mutex<HashMap<u32, Box<Connection>>> = Default::default();
@@ -52,12 +54,19 @@ impl Connection {
 
         let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
-        let json_msg = format!("{{\"to\":\"{}\",\"agentPayload\":\"{{\\\"type\\\":\\\"SEND_INVITE\\\",\\\"keyDlgProof\\\":\\\"nothing\\\",\\\"phoneNumber\\\":\\\"{}\\\"}}\"}}", self.pw_did, options_obj.phone);
+        let json_msg = match messages::send_invite()
+            .to(&self.pw_did)
+            .key_delegate("key")
+            .phone_number(&options_obj.phone)
+            .serialize_message(){
+            Ok(x) => x,
+            Err(x) => return x
+        };
 
         match httpclient::post(&json_msg,&url) {
             Err(_) => {
                 println!("better message");
-                return error::UNKNOWN_ERROR.code_num
+                return error::POST_MSG_FAILURE.code_num
             },
             Ok(response) => {
                 self.state = CxsStateType::CxsStateOfferSent;
@@ -172,7 +181,7 @@ pub fn get_pw_verkey(handle: u32) -> Result<String, u32> {
 }
 
 pub fn create_agent_pairwise(handle: u32) -> Result<u32, u32> {
-    let enterprise_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT).unwrap();
+    let enterprise_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENCY).unwrap();
     let pw_did = match get_pw_did(handle) {
         Ok(x) => x,
         Err(x) => return Err(error::UNKNOWN_ERROR.code_num),
@@ -180,11 +189,19 @@ pub fn create_agent_pairwise(handle: u32) -> Result<u32, u32> {
     let pw_verkey = get_pw_verkey(handle).unwrap();
     let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
-    let json_msg = format!("{{\"to\":\"{}\",\"agentPayload\":\"{{\\\"type\\\":\\\"CREATE_KEY\\\",\\\"forDID\\\":\\\"{}\\\",\\\"forDIDVerKey\\\":\\\"{}\\\",\\\"nonce\\\":\\\"anything\\\"}}\"}}", enterprise_did, pw_did, pw_verkey);
+    let json_msg = match messages::create_keys()
+        .to(&pw_did)
+        .for_did(&enterprise_did)
+        .for_verkey(&pw_verkey)
+        .nonce("anything")
+        .serialize_message(){
+        Ok(x) => x,
+        Err(x) => return Err(x),
+    };
 
     match httpclient::post(&json_msg, &url) {
         Ok(_) => return Ok(error::SUCCESS.code_num),
-        Err(_) => return Err(error::UNKNOWN_ERROR.code_num),
+        Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
     }
 }
 
@@ -196,14 +213,18 @@ pub fn update_agent_profile(handle: u32) -> Result<u32, u32> {
     };
     let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
-    let json_msg = format!("{{\"to\":\"{}\",\"agentPayload\":\"{{\\\"type\\\":\\\"UPDATE_PROFILE_DATA\\\",\\\"name\\\":\\\"{}\\\",\\\"logoUrl\\\":\\\"{}\\\",\\\"nonce\\\":\\\"anything\\\"}}\"}}",
-                           pw_did,
-                           settings::get_config_value(settings::CONFIG_ENTERPRISE_NAME).unwrap(),
-                           settings::get_config_value(settings::CONFIG_LOGO_URL).unwrap());
+    let json_msg = match messages::update_data()
+        .to(&pw_did)
+        .name(&settings::get_config_value(settings::CONFIG_ENTERPRISE_NAME).unwrap())
+        .logo_url(&settings::get_config_value(settings::CONFIG_LOGO_URL).unwrap())
+        .serialize_message(){
+        Ok(x) => x,
+        Err(x) => return Err(x)
+    };
 
     match httpclient::post(&json_msg, &url) {
         Ok(_) => return Ok(error::SUCCESS.code_num),
-        Err(_) => return Err(error::UNKNOWN_ERROR.code_num),
+        Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
     }
 }
 
@@ -244,6 +265,7 @@ pub fn build_connection (source_id: Option<String>,
         m.insert(new_handle, c);
     }
 
+
     if did.is_none() { //TODO need better input validation
         let did_json = "{}";
 
@@ -271,19 +293,33 @@ pub fn build_connection (source_id: Option<String>,
 }
 
 
-pub fn update_state(handle: u32) {
+pub fn update_state(handle: u32) -> u32{
     let pw_did = match get_pw_did(handle) {
         Ok(did) => did,
-        Err(_) => return,
+        Err(x) => return x,
     };
 
     let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
-    let json_msg = format!("{{\"to\":\"{}\",\"agentPayload\":\"{{\\\"type\\\":\\\"getMsgs\\\"}}\"}}", pw_did);
 
+    let uid = "123";
+    let msg_type = "Any type";
+    let status_code = "1";
+    let payload = "payload";
+    let json_msg = match messages::get_messages()
+        .to(&pw_did)
+        .uid(&uid)
+        .msg_type(&msg_type)
+        .status_code(&status_code)
+        .include_edge_payload(&payload)
+        .serialize_message(){
+        Ok(x) => x,
+        Err(x) => return x,
+    };
     match httpclient::post(&json_msg, &url) {
-        Err(_) => {}
+        Err(_) => {error::POST_MSG_FAILURE.code_num}
         Ok(response) => {
             if response.contains("message accepted") { set_state(handle, CxsStateType::CxsStateAccepted); }
+            error::SUCCESS.code_num
             //TODO: add expiration handling
         }
     }
@@ -370,7 +406,7 @@ mod tests {
             .with_status(202)
             .with_header("content-type", "text/plain")
             .with_body("nice!")
-            .expect(6)
+            .expect(4)
             .create();
 
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
@@ -552,16 +588,26 @@ mod tests {
     fn test_create_agent_pairwise() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let _m = mockito::mock("POST", "/agency/route")
-            .with_status(202)
-            .with_header("content-type", "text/plain")
-            .with_body("nice!")
-            .create();
 
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
-        let handle = build_connection(Some("test_create_agent_pairwise".to_owned()),
-                                      None,
-                                      None);
+        let handle = rand::thread_rng().gen::<u32>();
+
+        let c = Box::new(Connection {
+            source_id: "1".to_string(),
+            handle: handle,
+            pw_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
+            pw_verkey: "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string(),
+            did_endpoint: String::new(),
+            wallet: String::new(),
+            state: CxsStateType::CxsStateNone,
+            uuid: String::new(),
+            endpoint: String::new(),
+            invite_detail: String::new(),
+        });
+
+        {
+            let mut m = CONNECTION_MAP.lock().unwrap();
+            m.insert(handle, c);
+        }
 
         match create_agent_pairwise(handle) {
             Ok(x) => assert_eq!(x, error::SUCCESS.code_num),
@@ -573,16 +619,25 @@ mod tests {
     fn test_create_agent_profile() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let _m = mockito::mock("POST", "/agency/route")
-            .with_status(202)
-            .with_header("content-type", "text/plain")
-            .with_body("nice!")
-            .create();
+        let handle = rand::thread_rng().gen::<u32>();
 
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
-        let handle = build_connection(Some("test_create_agent_profile".to_owned()),
-                                      None,
-                                      None);
+        let c = Box::new(Connection {
+            source_id: "1".to_string(),
+            handle: handle,
+            pw_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
+            pw_verkey: "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string(),
+            did_endpoint: String::new(),
+            wallet: String::new(),
+            state: CxsStateType::CxsStateNone,
+            uuid: String::new(),
+            endpoint: String::new(),
+            invite_detail: String::new(),
+        });
+
+        {
+            let mut m = CONNECTION_MAP.lock().unwrap();
+            m.insert(handle, c);
+        }
 
         match update_agent_profile(handle) {
             Ok(x) => assert_eq!(x, error::SUCCESS.code_num),

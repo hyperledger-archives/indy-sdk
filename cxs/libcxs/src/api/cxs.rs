@@ -115,11 +115,11 @@ pub extern fn cxs_init (config_path:*const c_char) -> u32 {
         Err(x) => return x,
         Ok(v) => v,
     };
-    //
-//        let logo_url = match settings::get_config_value(settings::CONFIG_LOGO_URL) {
-//            Err(x) => return x,
-//            Ok(v) => v,
-//        };
+
+    let logo_url = match settings::get_config_value(settings::CONFIG_LOGO_URL) {
+        Err(x) => return x,
+        Ok(v) => v,
+    };
 
     return error::SUCCESS.code_num
 }

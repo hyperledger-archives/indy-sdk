@@ -115,8 +115,8 @@ pub fn create_and_store_my_did(handle: u32, did_json: &str) -> Result<u32, Strin
         warn!("using test mode create_and_store_my_did with handle {}",my_handle);
         thread::spawn(move|| {
             thread::sleep(Duration::from_millis(200));
-            let did: String = thread_rng().gen_ascii_chars().take(32).collect();
-            let verkey: String = thread_rng().gen_ascii_chars().take(32).collect();
+            let did: String = "8XFh8yBzrpJQmNyZzgoTqB".to_string();
+            let verkey: String = "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string();
             let pk: String = thread_rng().gen_ascii_chars().take(32).collect();
             store_new_did_info_cb(my_handle as i32, 0, CString::new(did).unwrap().as_ptr(), CString::new(verkey).unwrap().as_ptr(), CString::new(pk).unwrap().as_ptr());
         });

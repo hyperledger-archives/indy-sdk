@@ -1,7 +1,6 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 extern crate serde;
-extern crate serde_json;
 extern crate rand;
 extern crate reqwest;
 extern crate mockito;
@@ -13,6 +12,9 @@ extern crate log;
 
 #[macro_use]
 extern crate serde_derive;
+
+#[macro_use]
+extern crate serde_json;
 
 #[macro_use]
 extern crate lazy_static;
