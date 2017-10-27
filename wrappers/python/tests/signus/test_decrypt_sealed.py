@@ -5,11 +5,9 @@ import pytest
 from indy import IndyError, signus
 from indy.error import ErrorCode
 
-message = '{"reqId":1496822211362017764}'.encode('utf-8')
-
 
 @pytest.mark.asyncio
-async def test_decrypt_sealed_works(pool_handle, wallet_handle, identity_trustee1):
+async def test_decrypt_sealed_works(pool_handle, wallet_handle, identity_trustee1, message):
     (did, verkey) = identity_trustee1
     await signus.store_their_did(wallet_handle, json.dumps({"did": did, "verkey": verkey}))
 
@@ -19,7 +17,8 @@ async def test_decrypt_sealed_works(pool_handle, wallet_handle, identity_trustee
 
 
 @pytest.mark.asyncio
-async def test_decrypt_sealed_works_for_other_coder(pool_handle, wallet_handle, identity_steward1, identity_trustee1):
+async def test_decrypt_sealed_works_for_other_coder(pool_handle, wallet_handle, identity_steward1,
+                                                    identity_trustee1, message):
     (trustee_did, trustee_verkey) = identity_trustee1
     (steward_did, steward_verkey) = identity_steward1
 

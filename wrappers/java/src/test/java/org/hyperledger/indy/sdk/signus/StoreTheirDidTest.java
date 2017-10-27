@@ -37,17 +37,4 @@ public class StoreTheirDidTest extends IndyIntegrationTestWithSingleWallet {
 
 		Signus.storeTheirDid(this.wallet, String.format("{\"verkey\":\"%s\"}", verkey)).get();
 	}
-
-	@Test
-	public void testStoreTheirDidWorksForCorrectCryptoType() throws Exception {
-		Signus.storeTheirDid(this.wallet, String.format("{\"did\":\"%s\", \"verkey\":\"%s\", \"crypto_type\": \"ed25519\"}", DID1, verkey)).get();
-	}
-
-	@Test
-	public void testStoreTheirDidWorksForInvalidCryptoType() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(UnknownCryptoException.class));
-
-		Signus.storeTheirDid(this.wallet, String.format("{\"did\":\"%s\", \"verkey\":\"%s\", \"crypto_type\": \"some_type\"}", DID1, verkey)).get();
-	}
 }
