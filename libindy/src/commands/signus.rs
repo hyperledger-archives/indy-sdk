@@ -77,19 +77,6 @@ pub enum SignusCommand {
         String, // my did
         Vec<u8>, // msg
         Box<Fn(Result<Vec<u8>, IndyError>) + Send>),
-    CreateKey(
-        i32, // wallet handle
-        String, // key info json
-        Box<Fn(Result<String/*verkey*/, IndyError>) + Send>),
-    SetKeyMetadata(
-        i32, // wallet handle
-        String, // verkey
-        String, // metadata
-        Box<Fn(Result<(), IndyError>) + Send>),
-    GetKeyMetadata(
-        i32, // wallet handle
-        String, // verkey
-        Box<Fn(Result<String, IndyError>) + Send>),
     KeyForDid(
         i32, // pool handle
         i32, // wallet handle
@@ -196,18 +183,6 @@ impl SignusCommandExecutor {
             SignusCommand::DecryptSealed(wallet_handle, my_did, encrypted_msg, cb) => {
                 info!("DecryptSealed command received");
                 cb(self.decrypt_sealed(wallet_handle, my_did, encrypted_msg));
-            }
-            SignusCommand::CreateKey(wallet_handle, key_info_json, cb) => {
-                info!("CreateKey command received");
-                cb(self.create_key(wallet_handle, key_info_json));
-            }
-            SignusCommand::SetKeyMetadata(wallet_handle, verkey, metadata, cb) => {
-                info!("SetKeyMetadata command received");
-                cb(self.set_key_metadata(wallet_handle, verkey, metadata));
-            }
-            SignusCommand::GetKeyMetadata(wallet_handle, verkey, cb) => {
-                info!("GetKeyMetadata command received");
-                cb(self.get_key_metadata(wallet_handle, verkey));
             }
             SignusCommand::KeyForDid(pool_handle, wallet_handle, did, cb) => {
                 info!("KeyForDid command received");
@@ -374,7 +349,7 @@ impl SignusCommandExecutor {
                                            cb);
 
         let res = try_cb!(self.signus_service.encrypt(&my_key, &their_did.verkey, &msg), cb);
-        cb(Ok(res));
+        cb(Ok(res))
     }
 
     fn decrypt(&self,
@@ -409,7 +384,7 @@ impl SignusCommandExecutor {
                                            cb);
 
         let res = try_cb!(self.signus_service.decrypt(&my_key, &their_did.verkey, &encrypted_msg, &nonce), cb);
-        cb(Ok(res));
+        cb(Ok(res))
     }
 
     fn encrypt_sealed(&self,
@@ -436,7 +411,7 @@ impl SignusCommandExecutor {
                                            cb);
 
         let res = try_cb!(self.signus_service.encrypt_sealed(&their_did.verkey, &msg), cb);
-        cb(Ok(res));
+        cb(Ok(res))
     }
 
     fn decrypt_sealed(&self,
@@ -449,34 +424,6 @@ impl SignusCommandExecutor {
         let key = self._wallet_get_key(wallet_handle, &my_did.verkey)?;
 
         let res = self.signus_service.decrypt_sealed(&key, &encrypted_msg)?;
-        Ok(res)
-    }
-
-    fn create_key(&self, wallet_handle: i32, key_info_json: String) -> Result<String, IndyError> {
-        let key_info = KeyInfo::from_json(&key_info_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidStructure(
-                    format!("Invalid KeyInfo json: {}", err.description())))?;
-
-        let key = self.signus_service.create_key(&key_info)?;
-        self._wallet_set_key(wallet_handle, &key)?;
-
-        let res = key.verkey;
-        Ok(res)
-    }
-
-    fn set_key_metadata(&self, wallet_handle: i32, verkey: String, metadata: String) -> Result<(), IndyError> {
-        self.signus_service.validate_key(&verkey)?;
-        self._wallet_set_key_metadata(wallet_handle, &verkey, &metadata)?;
-        Ok(())
-    }
-
-    fn get_key_metadata(&self,
-                        wallet_handle: i32,
-                        verkey: String) -> Result<String, IndyError> {
-        self.signus_service.validate_key(&verkey)?;
-        let res = self._wallet_get_key_metadata(wallet_handle, &verkey)?;
         Ok(res)
     }
 
@@ -637,9 +584,6 @@ impl SignusCommandExecutor {
             SignusCommand::DecryptSealed(_, _, _, cb) => {
                 return cb(Err(err));
             }
-            SignusCommand::CreateKey(_, _, cb) => {
-                return cb(Err(err));
-            }
             SignusCommand::KeyForDid(_, _, _, cb) => {
                 return cb(Err(err));
             }
@@ -761,16 +705,6 @@ impl SignusCommandExecutor {
             .map_err(|err|
                 CommonError::InvalidState(
                     format!("Can't deserialize Key: {}", err.description())))?;
-        Ok(res)
-    }
-
-    fn _wallet_set_key_metadata(&self, wallet_handle: i32, verkey: &str, metadata: &str) -> Result<(), IndyError> {
-        self.wallet_service.set(wallet_handle, &format!("key::{}::metadata", verkey), metadata)?;
-        Ok(())
-    }
-
-    fn _wallet_get_key_metadata(&self, wallet_handle: i32, verkey: &str) -> Result<String, IndyError> {
-        let res = self.wallet_service.get(wallet_handle, &format!("key::{}::metadata", verkey))?;
         Ok(res)
     }
 
