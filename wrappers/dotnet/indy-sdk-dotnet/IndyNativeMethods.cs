@@ -451,8 +451,7 @@ namespace Hyperledger.Indy
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="did">The created DID.</param>
         /// <param name="verkey">The verification key for the signature.</param>
-        /// <param name="pk">The public key for decryption.</param>
-        internal delegate void CreateAndStoreMyDidResultDelegate(int xcommand_handle, int err, string did, string verkey, string pk);
+        internal delegate void CreateAndStoreMyDidResultDelegate(int xcommand_handle, int err, string did, string verkey);
 
         /// <summary>
         /// Generates new keys (signing and encryption keys) for an existing
@@ -473,8 +472,7 @@ namespace Hyperledger.Indy
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="verkey">The key for verification of signature.</param>
-        /// <param name="pk">The public key for decryption.</param>
-        internal delegate void ReplaceKeysStartResultDelegate(int xcommand_handle, int err, string verkey, string pk);
+        internal delegate void ReplaceKeysStartResultDelegate(int xcommand_handle, int err, string verkey);
 
         /// <summary>
         /// Apply temporary keys as main for an existing DID (owned by the caller of the library).

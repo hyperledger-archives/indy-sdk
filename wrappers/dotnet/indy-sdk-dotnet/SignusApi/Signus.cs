@@ -15,14 +15,14 @@ namespace Hyperledger.Indy.SignusApi
         /// <summary>
         /// Gets the callback to use when the command for CreateAndStoreMyDidResultAsync has completed.
         /// </summary>
-        private static CreateAndStoreMyDidResultDelegate _createAndStoreMyDidCallback = (xcommand_handle, err, did, verkey, pk) =>
+        private static CreateAndStoreMyDidResultDelegate _createAndStoreMyDidCallback = (xcommand_handle, err, did, verkey) =>
         {
             var taskCompletionSource = PendingCommands.Remove<CreateAndStoreMyDidResult>(xcommand_handle);
 
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            var callbackResult = new CreateAndStoreMyDidResult(did, verkey, pk);
+            var callbackResult = new CreateAndStoreMyDidResult(did, verkey);
 
             taskCompletionSource.SetResult(callbackResult);
         };
@@ -30,16 +30,14 @@ namespace Hyperledger.Indy.SignusApi
         /// <summary>
         /// Gets the callback to use when the command for ReplaceKeysAsync has completed.
         /// </summary>
-        private static ReplaceKeysStartResultDelegate _replaceKeysCallback = (xcommand_handle, err, verkey, pk) =>
+        private static ReplaceKeysStartResultDelegate _replaceKeysCallback = (xcommand_handle, err, verkey) =>
         {
-            var taskCompletionSource = PendingCommands.Remove<ReplaceKeysStartResult>(xcommand_handle);
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            var callbackResult = new ReplaceKeysStartResult(verkey, pk);
-
-            taskCompletionSource.SetResult(callbackResult);
+            taskCompletionSource.SetResult(verkey);
         };
 
         /// <summary>
@@ -284,10 +282,10 @@ namespace Hyperledger.Indy.SignusApi
         /// <param name="wallet">The wallet the DID is stored in.</param>
         /// <param name="did">The did to replace the keys for.</param>
         /// <param name="identityJson">The identity information as JSON.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="ReplaceKeysStartResult"/> when the operation completes.</returns>
-        public static Task<ReplaceKeysStartResult> ReplaceKeysStartAsync(Wallet wallet, string did, string identityJson)
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the new verification key when the operation completes.</returns>
+        public static Task<string> ReplaceKeysStartAsync(Wallet wallet, string did, string identityJson)
         {
-            var taskCompletionSource = new TaskCompletionSource<ReplaceKeysStartResult>();
+            var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
             var commandResult = IndyNativeMethods.indy_replace_keys_start(
