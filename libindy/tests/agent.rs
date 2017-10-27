@@ -21,6 +21,7 @@ mod utils;
 
 use utils::agent::AgentUtils;
 use utils::pool::PoolUtils;
+use utils::crypto::CryptoUtils;
 use utils::signus::SignusUtils;
 use utils::test::TestUtils;
 use utils::wallet::WalletUtils;
@@ -56,7 +57,7 @@ mod high_cases {
 
             let sender_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let sender_vk = SignusUtils::create_key(sender_wallet_handle, Some(MY1_SEED)).unwrap();
+            let sender_vk = CryptoUtils::create_key(sender_wallet_handle, Some(MY1_SEED)).unwrap();
 
             let encrypted_msg = AgentUtils::prep_msg(sender_wallet_handle, &sender_vk, VERKEY_FOR_MY2_SEED, MESSAGE.as_bytes()).unwrap();
             check_message(&sender_vk, &encrypted_msg);
@@ -118,7 +119,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let sender_vk = SignusUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+            let sender_vk = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 1;
             let res = AgentUtils::prep_msg(invalid_wallet_handle, &sender_vk, VERKEY, MESSAGE.as_bytes());
@@ -135,7 +136,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let sender_vk = SignusUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+            let sender_vk = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
 
             let res = AgentUtils::prep_msg(wallet_handle, &sender_vk, INVALID_BASE58_VERKEY, MESSAGE.as_bytes());
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
@@ -199,8 +200,8 @@ mod high_cases {
             let sender_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let recipient_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let sender_vk = SignusUtils::create_key(sender_wallet_handle, Some(MY1_SEED)).unwrap();
-            let recipient_vk = SignusUtils::create_key(recipient_wallet_handle, Some(MY2_SEED)).unwrap();
+            let sender_vk = CryptoUtils::create_key(sender_wallet_handle, Some(MY1_SEED)).unwrap();
+            let recipient_vk = CryptoUtils::create_key(recipient_wallet_handle, Some(MY2_SEED)).unwrap();
 
             let encrypted_msg = AgentUtils::prep_msg(sender_wallet_handle, &sender_vk, &recipient_vk, MESSAGE.as_bytes()).unwrap();
 
@@ -221,7 +222,7 @@ mod high_cases {
             let sender_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let recipient_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let recipient_vk = SignusUtils::create_key(recipient_wallet_handle, Some(MY2_SEED)).unwrap();
+            let recipient_vk = CryptoUtils::create_key(recipient_wallet_handle, Some(MY2_SEED)).unwrap();
 
             let encrypted_msg = AgentUtils::prep_anonymous_msg(&recipient_vk, MESSAGE.as_bytes()).unwrap();
 
@@ -266,7 +267,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let recipient_vk = SignusUtils::create_key(wallet_handle, Some(MY2_SEED)).unwrap();
+            let recipient_vk = CryptoUtils::create_key(wallet_handle, Some(MY2_SEED)).unwrap();
 
             let encrypted_msg = "unencrypted message";
             let res = AgentUtils::parse_msg(wallet_handle, &recipient_vk, &encrypted_msg.as_bytes());
@@ -299,7 +300,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let recipient_vk = SignusUtils::create_key(wallet_handle, Some(MY2_SEED)).unwrap();
+            let recipient_vk = CryptoUtils::create_key(wallet_handle, Some(MY2_SEED)).unwrap();
 
             let encrypted_msg = AgentUtils::prep_anonymous_msg(&recipient_vk, &MESSAGE.as_bytes()).unwrap();
 
