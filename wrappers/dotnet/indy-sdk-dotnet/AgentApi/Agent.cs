@@ -53,6 +53,8 @@ namespace Hyperledger.Indy.AgentApi
         /// <param name="recipientKey">The verification key of the intended recipient of the message.</param>
         /// <param name="message">The message content to prepare.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to an array of bytes containing the prepared message.</returns>
+        /// <exception cref="WalletValueNotFoundException">Thrown if the sender key does not exist in the <paramref name="wallet"/>.</exception>
+        /// <exception cref="InvalidStructureException">Thrown if the <paramref name="recipientKey"/> is invalid.</exception>
         public static Task<byte[]> PrepMsgAsync(Wallet wallet, string senderKey, string recipientKey, byte[] message)
         {
             ParamGuard.NotNull(wallet, "wallet");

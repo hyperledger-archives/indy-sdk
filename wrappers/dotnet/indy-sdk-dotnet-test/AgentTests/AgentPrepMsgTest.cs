@@ -72,12 +72,23 @@ namespace Hyperledger.Indy.Test.AgentTests
             await CheckMessage(senderVk, encryptedMsg);
         }
 
-        //[TestMethod]
-        //public async Task TestPrepAnonymousMsgWorksForInvalidRecipientVk()
-        //{
-        //    var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-        //        Agent.PrepAnonymousMsgAsync(INVALID_VERKEY, MESSAGE)
-        //    );
-        //}
+        [TestMethod]
+        public async Task TestPrepMsgWorksForUnknownSenderVerkey()
+        {
+            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
+                Agent.PrepMsgAsync(wallet, VERKEY, VERKEY_FOR_MY2_SEED, MESSAGE)
+            );
+        }
+
+        [TestMethod]
+        public async Task TestPrepMsgWorksForInvalidRecipientVk()
+        {
+            var paramJson = string.Format("{{\"seed\":\"{0}\"}}", MY1_SEED);
+            var senderVk = await Signus.CreateKeyAsync(wallet, paramJson);
+
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
+                Agent.PrepMsgAsync(wallet, senderVk, INVALID_VERKEY, MESSAGE)
+            );
+        }
     }
 }
