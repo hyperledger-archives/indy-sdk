@@ -53,7 +53,7 @@ namespace Hyperledger.Indy.AgentApi
         /// <param name="recipientKey">The verification key of the intended recipient of the message.</param>
         /// <param name="message">The message content to prepare.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to an array of bytes containing the prepared message.</returns>
-        public static Task<byte[]> PrepMessageAsync(Wallet wallet, string senderKey, string recipientKey, byte[] message)
+        public static Task<byte[]> PrepMsgAsync(Wallet wallet, string senderKey, string recipientKey, byte[] message)
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(senderKey, "senderKey");
@@ -83,7 +83,7 @@ namespace Hyperledger.Indy.AgentApi
         /// <param name="recipientKey">The verification key of the intended recipient of the message.</param>
         /// <param name="message">The message content to prepare.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to an array of bytes containing the prepared message.</returns>
-        public static Task<byte[]> PrepAnonymousMessageAsync(string recipientKey, byte[] message)
+        public static Task<byte[]> PrepAnonymousMsgAsync(string recipientKey, byte[] message)
         {
             ParamGuard.NotNullOrWhiteSpace(recipientKey, "recipientKey");
             ParamGuard.NotNull(message, "message");
@@ -111,6 +111,8 @@ namespace Hyperledger.Indy.AgentApi
         /// <param name="encryptedMsg">The encrypted message to parse.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="ParseMsgResult"/> containing the sender key and the parsed message 
         /// content.</returns>
+        /// <exception cref="InvalidStructureException">Thrown if the value passed to the <paramref name="recipientKey"/> parameter is malformed or the <paramref name="encryptedMsg"/> is invalid.</exception>
+        /// <exception cref="WalletValueNotFoundException">Thrown if the <paramref name="recipientKey"/> does not exist in the <paramref name="wallet"/>.</exception>
         public static Task<ParseMsgResult> ParseMsgAsync(Wallet wallet, string recipientKey, byte[] encryptedMsg)
         {
             ParamGuard.NotNull(wallet, "wallet");

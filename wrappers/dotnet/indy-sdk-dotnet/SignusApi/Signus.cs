@@ -650,6 +650,7 @@ namespace Hyperledger.Indy.SignusApi
         /// <param name="wallet">The wallet to create the key in.</param>
         /// <param name="keyJson">The JSON string describing the key.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the verification key of the generated key-pair.</returns>
+        /// <exception cref="InvalidStructureException">Thrown if the value passed to the <paramref name="keyJson"/> parameter is malformed.</exception>
         public static Task<string> CreateKeyAsync(Wallet wallet, string keyJson)
         {
             ParamGuard.NotNull(wallet, "wallet");
