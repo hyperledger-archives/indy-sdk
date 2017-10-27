@@ -97,7 +97,7 @@
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
     // 4. Build schema request
@@ -107,7 +107,8 @@
                             "\"client_ip\":\"10.0.0.100\"," \
                             "\"client_port\":9709," \
                             "\"alias\":\"Node5\"," \
-                            "\"services\":[\"VALIDATOR\"]" \
+                            "\"services\":[\"VALIDATOR\"]," \
+                            "\"blskey\": \"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\""
                             "}"];
     NSString *nodeRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildNodeRequestWithSubmitterDid:myDid
@@ -116,7 +117,7 @@
                                                               resultJson:&nodeRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildNodeRequestWithSubmitterDid() failed");
     XCTAssertNotNil(nodeRequest, @"nodeRequest is nil!");
-    // TODO: 110 Error
+ 
     // 5. Sign and submit request
     NSString *nodeResponse = nil;
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
@@ -159,7 +160,7 @@
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil
                                                                     outMyPk:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
     // 4. Build schema request
@@ -169,7 +170,8 @@
                           "\"client_ip\":\"10.0.0.100\"," \
                           "\"client_port\":9709," \
                           "\"alias\":\"Node5\"," \
-                          "\"services\":[\"VALIDATOR\"]" \
+                          "\"services\":[\"VALIDATOR\"],"
+                          "\"blskey\": \"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\""
                           "}"];
     NSString *nodeRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildNodeRequestWithSubmitterDid:myDid
@@ -198,7 +200,7 @@
     [TestUtils cleanupStorage];
     NSString *identifier = @"some_identifier";
     NSString *signature_type = @"CL";
-    NSString *schemaSeqNo = @"1";
+    NSNumber *schemaSeqNo = @(1);
     NSString *data = @"{"\
                         "\"primary\":{"\
                             "\"n\":\"1\","\
@@ -209,10 +211,10 @@
     
     NSString *claimDefTxn;
     NSError *ret = [[LedgerUtils sharedInstance] buildClaimDefTxnWithSubmitterDid:identifier
-                                                                    xref:schemaSeqNo
-                                                           signatureType:signature_type
-                                                                    data:data
-                                                              resultJson:&claimDefTxn];
+                                                                             xref:schemaSeqNo
+                                                                    signatureType:signature_type
+                                                                             data:data
+                                                                       resultJson:&claimDefTxn];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"LedgerUtils::buildClaimDefTxnWithSubmitterDid() failed");
     
     [TestUtils cleanupStorage];

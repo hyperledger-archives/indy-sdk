@@ -1,4 +1,6 @@
-﻿namespace Hyperledger.Indy.AgentApi
+﻿using System;
+
+namespace Hyperledger.Indy.AgentApi
 {
     /// <summary>
     /// Event raised when a connection is established on an <see cref="AgentListener"/>.
@@ -7,7 +9,7 @@
     /// The AgentConnectionEvent is raised asynchronously when an agent establishes a connection on 
     /// an <see cref="AgentListener"/> that is listening for incoming connections.  These
     /// events are queued and events for a specific listener can be obtained by calling the listener's 
-    /// <see cref="AgentListener.WaitForConnection"/> method.   
+    /// <see cref="AgentListener.WaitForConnectionAsync"/> method.   
     /// </remarks>
     public sealed class AgentConnectionEvent : AgentEvent
     {
@@ -22,10 +24,10 @@
         internal AgentConnectionEvent(AgentListener listener, ErrorCode result, AgentConnection connection, string senderDid, string receiverDid) :
             base(listener.Handle, result)
         {
-            Connection = connection;
+            Listener = listener ?? throw new ArgumentNullException("listener");
+            Connection = connection ?? throw new ArgumentNullException("connection"); ;
             SenderDid = senderDid;
             ReceiverDid = receiverDid;
-            Listener = listener;
         }
 
         /// <summary>

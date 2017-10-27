@@ -23,9 +23,8 @@ async def test_build_nym_request_works_for_only_required_fields():
     expected_response = {
         "identifier": identifier,
         "operation": {
-            "type": "1",
             "dest": destination,
-            "role": None
+            "type": "1",
         }
     }
 
@@ -44,11 +43,11 @@ async def test_build_nym_request_works_with_option_fields():
     expected_response = {
         "identifier": identifier,
         "operation": {
-            "type": "1",
-            "dest": destination,
-            "verkey": ver_key,
             "alias": alias,
-            "role": "2"
+            "dest": destination,
+            "role": "2",
+            "type": "1",
+            "verkey": ver_key,
         }
     }
 
@@ -66,7 +65,7 @@ async def test_nym_request_works_for_different_roles(wallet_handle, pool_handle,
 
 
 async def check_for_role(pool_handle, wallet_handle, trustee_did, role, expected_role_value):
-    (my_did, my_verkey, _) = await signus.create_and_store_my_did(wallet_handle, "{}")
+    (my_did, my_verkey) = await signus.create_and_store_my_did(wallet_handle, "{}")
 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, role)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)

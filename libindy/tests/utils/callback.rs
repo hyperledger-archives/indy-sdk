@@ -403,23 +403,21 @@ impl CallbackUtils {
         (command_handle, Some(verifier_verify_proof_callback))
     }
 
-    pub fn closure_to_create_and_store_my_did_cb(closure: Box<FnMut(ErrorCode, String, String, String) + Send>) -> (i32,
+    pub fn closure_to_create_and_store_my_did_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
                                                                                                                     Option<extern fn(command_handle: i32,
                                                                                                                                      err: ErrorCode,
                                                                                                                                      did: *const c_char,
-                                                                                                                                     verkey: *const c_char,
-                                                                                                                                     pk: *const c_char)>) {
+                                                                                                                                     verkey: *const c_char)>) {
         lazy_static! {
-            static ref CREATE_AND_STORE_MY_DID_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String, String) + Send > >> = Default::default();
+            static ref CREATE_AND_STORE_MY_DID_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
         }
 
-        extern "C" fn create_and_store_my_did_callback(command_handle: i32, err: ErrorCode, did: *const c_char, verkey: *const c_char, pk: *const c_char) {
+        extern "C" fn create_and_store_my_did_callback(command_handle: i32, err: ErrorCode, did: *const c_char, verkey: *const c_char) {
             let mut callbacks = CREATE_AND_STORE_MY_DID_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let did = unsafe { CStr::from_ptr(did).to_str().unwrap().to_string() };
             let verkey = unsafe { CStr::from_ptr(verkey).to_str().unwrap().to_string() };
-            let pk = unsafe { CStr::from_ptr(pk).to_str().unwrap().to_string() };
-            cb(err, did, verkey, pk)
+            cb(err, did, verkey)
         }
 
         let mut callbacks = CREATE_AND_STORE_MY_DID_CALLBACKS.lock().unwrap();
@@ -798,28 +796,46 @@ impl CallbackUtils {
         (command_handle, Some(delete_wallet_callback))
     }
 
-    pub fn closure_to_replace_keys_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
-                                                                                                 Option<extern fn(command_handle: i32,
-                                                                                                                  err: ErrorCode,
-                                                                                                                  verkey: *const c_char,
-                                                                                                                  pk: *const c_char)>) {
+    pub fn closure_to_replace_keys_start_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                                       Option<extern fn(command_handle: i32,
+                                                                                                                        err: ErrorCode,
+                                                                                                                        verkey: *const c_char)>) {
         lazy_static! {
-            static ref REPLACE_KEYS_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
+            static ref REPLACE_KEYS_START_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
         }
 
-        extern "C" fn replace_keys_callback(command_handle: i32, err: ErrorCode, verkey: *const c_char, pk: *const c_char) {
-            let mut callbacks = REPLACE_KEYS_CALLBACKS.lock().unwrap();
+        extern "C" fn replace_keys_start_callback(command_handle: i32, err: ErrorCode, verkey: *const c_char) {
+            let mut callbacks = REPLACE_KEYS_START_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let verkey = unsafe { CStr::from_ptr(verkey).to_str().unwrap().to_string() };
-            let pk = unsafe { CStr::from_ptr(pk).to_str().unwrap().to_string() };
-            cb(err, verkey, pk)
+            cb(err, verkey)
         }
 
-        let mut callbacks = REPLACE_KEYS_CALLBACKS.lock().unwrap();
+        let mut callbacks = REPLACE_KEYS_START_CALLBACKS.lock().unwrap();
         let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
         callbacks.insert(command_handle, closure);
 
-        (command_handle, Some(replace_keys_callback))
+        (command_handle, Some(replace_keys_start_callback))
+    }
+
+    pub fn closure_to_replace_keys_apply_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                       Option<extern fn(command_handle: i32,
+                                                                                                        err: ErrorCode)>) {
+        lazy_static! {
+            static ref REPLACE_KEYS_APPLY_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn replace_keys_apply_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = REPLACE_KEYS_APPLY_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = REPLACE_KEYS_APPLY_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(replace_keys_apply_callback))
     }
 
     pub fn closure_to_encrypt_cb(closure: Box<FnMut(ErrorCode, Vec<u8>, Vec<u8>) + Send>) -> (i32,
@@ -854,7 +870,7 @@ impl CallbackUtils {
             static ref DECRYPT_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
         }
 
-        extern "C" fn closure_to_decrypt_callback(command_handle: i32, err: ErrorCode, decrypted_msg_raw: *const u8, decrypted_msg_len: u32) {
+        extern "C" fn decrypt_callback(command_handle: i32, err: ErrorCode, decrypted_msg_raw: *const u8, decrypted_msg_len: u32) {
             let mut callbacks = DECRYPT_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let decrypted_msg = unsafe { slice::from_raw_parts(decrypted_msg_raw, decrypted_msg_len as usize) };
@@ -865,7 +881,7 @@ impl CallbackUtils {
         let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
         callbacks.insert(command_handle, closure);
 
-        (command_handle, Some(closure_to_decrypt_callback))
+        (command_handle, Some(decrypt_callback))
     }
 
     pub fn closure_to_sign_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
@@ -876,7 +892,7 @@ impl CallbackUtils {
             static ref SIGN_REQUEST_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
         }
 
-        extern "C" fn closure_to_sign_request_callback(command_handle: i32, err: ErrorCode, signed_request_json: *const c_char) {
+        extern "C" fn sign_request_callback(command_handle: i32, err: ErrorCode, signed_request_json: *const c_char) {
             let mut callbacks = SIGN_REQUEST_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let signed_request_json = unsafe { CStr::from_ptr(signed_request_json).to_str().unwrap().to_string() };
@@ -887,7 +903,7 @@ impl CallbackUtils {
         let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
         callbacks.insert(command_handle, closure);
 
-        (command_handle, Some(closure_to_sign_request_callback))
+        (command_handle, Some(sign_request_callback))
     }
 
 
@@ -933,5 +949,399 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(issuer_create_and_store_revoc_reg_callback))
+    }
+
+    pub fn closure_to_encrypt_sealed_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (i32,
+                                                                                            Option<extern fn(command_handle: i32,
+                                                                                                             err: ErrorCode,
+                                                                                                             encrypted_msg_raw: *const u8, encrypted_msg_len: u32)>) {
+        lazy_static! {
+            static ref ENCRYPT_SEALED_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
+        }
+
+        extern "C" fn encrypt_sealed_callback(command_handle: i32, err: ErrorCode, encrypted_msg_raw: *const u8, encrypted_msg_len: u32) {
+            let mut callbacks = ENCRYPT_SEALED_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let encrypted_msg = unsafe { slice::from_raw_parts(encrypted_msg_raw, encrypted_msg_len as usize) };
+            cb(err, encrypted_msg.to_vec())
+        }
+
+        let mut callbacks = ENCRYPT_SEALED_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(encrypt_sealed_callback))
+    }
+
+    pub fn closure_to_decrypt_sealed_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (i32,
+                                                                                            Option<extern fn(command_handle: i32,
+                                                                                                             err: ErrorCode,
+                                                                                                             decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) {
+        lazy_static! {
+            static ref DECRYPT_SEALED_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
+        }
+
+        extern "C" fn encrypt_sealed_callback(command_handle: i32, err: ErrorCode, decrypted_msg_raw: *const u8, decrypted_msg_len: u32) {
+            let mut callbacks = DECRYPT_SEALED_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let decrypted_msg = unsafe { slice::from_raw_parts(decrypted_msg_raw, decrypted_msg_len as usize) };
+            cb(err, decrypted_msg.to_vec())
+        }
+
+        let mut callbacks = DECRYPT_SEALED_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(encrypt_sealed_callback))
+    }
+
+    pub fn closure_to_pairwise_exists_cb(closure: Box<FnMut(ErrorCode, bool) + Send>) -> (i32,
+                                                                                          Option<extern fn(command_handle: i32,
+                                                                                                           err: ErrorCode,
+                                                                                                           valid: bool)>) {
+        lazy_static! {
+            static ref PAIRWISE_EXISTS_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, bool) + Send > >> = Default::default();
+        }
+
+        extern "C" fn pairwise_exists_callback(command_handle: i32, err: ErrorCode, exists: bool) {
+            let mut callbacks = PAIRWISE_EXISTS_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err, exists)
+        }
+
+        let mut callbacks = PAIRWISE_EXISTS_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(pairwise_exists_callback))
+    }
+
+    pub fn closure_to_pairwise_create_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                    Option<extern fn(command_handle: i32,
+                                                                                                     err: ErrorCode)>) {
+        lazy_static! {
+            static ref PAIRWISE_CREATE_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn pairwise_create_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = PAIRWISE_CREATE_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = PAIRWISE_CREATE_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(pairwise_create_callback))
+    }
+
+    pub fn closure_to_pairwise_list_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                          Option<extern fn(command_handle: i32,
+                                                                                                           err: ErrorCode,
+                                                                                                           pairwise_list: *const c_char)>) {
+        lazy_static! {
+            static ref PAIRWISE_LIST_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn pairwise_list_callback(command_handle: i32, err: ErrorCode, pairwise_list: *const c_char) {
+            let mut callbacks = PAIRWISE_LIST_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let pairwise_list = unsafe { CStr::from_ptr(pairwise_list).to_str().unwrap().to_string() };
+            cb(err, pairwise_list)
+        }
+
+        let mut callbacks = PAIRWISE_LIST_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(pairwise_list_callback))
+    }
+
+    pub fn closure_to_get_pairwise_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                         Option<extern fn(command_handle: i32,
+                                                                                                          err: ErrorCode,
+                                                                                                          pairwise_info_json: *const c_char)>) {
+        lazy_static! {
+            static ref GET_PAIRWISE_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn get_pairwise_callback(command_handle: i32, err: ErrorCode, pairwise_info_json: *const c_char) {
+            let mut callbacks = GET_PAIRWISE_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let pairwise_info_json = unsafe { CStr::from_ptr(pairwise_info_json).to_str().unwrap().to_string() };
+            cb(err, pairwise_info_json)
+        }
+
+        let mut callbacks = GET_PAIRWISE_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(get_pairwise_callback))
+    }
+
+    pub fn closure_to_set_pairwise_metadata_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                          Option<extern fn(command_handle: i32,
+                                                                                                           err: ErrorCode)>) {
+        lazy_static! {
+            static ref SET_PAIRWISE_METADATA_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn set_pairwise_metadata_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = SET_PAIRWISE_METADATA_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = SET_PAIRWISE_METADATA_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(set_pairwise_metadata_callback))
+    }
+
+    pub fn closure_to_create_key_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                       Option<extern fn(command_handle: i32,
+                                                                                                        err: ErrorCode,
+                                                                                                        verkey: *const c_char)>) {
+        lazy_static! {
+            static ref CREATE_KEY_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn create_key_callback(command_handle: i32, err: ErrorCode, verkey: *const c_char) {
+            let mut callbacks = CREATE_KEY_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let verkey = unsafe { CStr::from_ptr(verkey).to_str().unwrap().to_string() };
+            cb(err, verkey)
+        }
+
+        let mut callbacks = CREATE_KEY_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(create_key_callback))
+    }
+
+    pub fn closure_to_store_key_metadata_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                       Option<extern fn(command_handle: i32,
+                                                                                                        err: ErrorCode)>) {
+        lazy_static! {
+            static ref STORE_KEY_METADATA_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn store_key_metadata_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = STORE_KEY_METADATA_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = STORE_KEY_METADATA_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(store_key_metadata_callback))
+    }
+
+    pub fn closure_to_get_key_metadata_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                             Option<extern fn(command_handle: i32,
+                                                                                                              err: ErrorCode,
+                                                                                                              metadata: *const c_char)>) {
+        lazy_static! {
+            static ref GET_KEY_META_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn get_key_metadata_callback(command_handle: i32, err: ErrorCode, metadata: *const c_char) {
+            let mut callbacks = GET_KEY_META_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let metadata = unsafe { CStr::from_ptr(metadata).to_str().unwrap().to_string() };
+            cb(err, metadata)
+        }
+
+        let mut callbacks = GET_KEY_META_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(get_key_metadata_callback))
+    }
+
+    pub fn closure_to_prep_msg_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (i32,
+                                                                                      Option<extern fn(command_handle: i32,
+                                                                                                       err: ErrorCode,
+                                                                                                       encrypted_msg_raw: *const u8, encrypted_msg_len: u32)>) {
+        lazy_static! {
+            static ref PREP_MSG_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
+        }
+
+        extern "C" fn prep_msg_callback(command_handle: i32, err: ErrorCode, encrypted_msg_raw: *const u8, encrypted_msg_len: u32) {
+            let mut callbacks = PREP_MSG_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let encrypted_msg = unsafe { slice::from_raw_parts(encrypted_msg_raw, encrypted_msg_len as usize) };
+            cb(err, encrypted_msg.to_vec())
+        }
+
+        let mut callbacks = PREP_MSG_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(prep_msg_callback))
+    }
+
+    pub fn closure_to_prep_anonymous_msg_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (i32,
+                                                                                                Option<extern fn(command_handle: i32,
+                                                                                                                 err: ErrorCode,
+                                                                                                                 encrypted_msg_raw: *const u8, encrypted_msg_len: u32)>) {
+        lazy_static! {
+            static ref PREP_ANONYMOUS_MSG_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
+        }
+
+        extern "C" fn prep_anonymous_msg_callback(command_handle: i32, err: ErrorCode, encrypted_msg_raw: *const u8, encrypted_msg_len: u32) {
+            let mut callbacks = PREP_ANONYMOUS_MSG_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let encrypted_msg = unsafe { slice::from_raw_parts(encrypted_msg_raw, encrypted_msg_len as usize) };
+            cb(err, encrypted_msg.to_vec())
+        }
+
+        let mut callbacks = PREP_ANONYMOUS_MSG_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(prep_anonymous_msg_callback))
+    }
+
+    pub fn closure_to_parse_msg_cb(closure: Box<FnMut(ErrorCode, Option<String>, Vec<u8>) + Send>) -> (i32,
+                                                                                                       Option<extern fn(command_handle: i32,
+                                                                                                                        err: ErrorCode,
+                                                                                                                        verkey: *const c_char,
+                                                                                                                        msg_raw: *const u8, msg_len: u32)>) {
+        lazy_static! {
+            static ref PARSE_MSG_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Option<String>, Vec<u8>) + Send > >> = Default::default();
+        }
+
+        extern "C" fn parse_msg_callback(command_handle: i32, err: ErrorCode, verkey: *const c_char, msg_raw: *const u8, msg_len: u32) {
+            let mut callbacks = PARSE_MSG_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let msg = unsafe { slice::from_raw_parts(msg_raw, msg_len as usize) };
+
+            let verkey =
+                if verkey.is_null() { None } else {
+                    unsafe { Some(CStr::from_ptr(verkey).to_str().unwrap().to_string()) }
+                };
+
+            cb(err, verkey, msg.to_vec())
+        }
+
+        let mut callbacks = PARSE_MSG_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(parse_msg_callback))
+    }
+
+    pub fn closure_to_key_for_did_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                        Option<extern fn(command_handle: i32,
+                                                                                                         err: ErrorCode,
+                                                                                                         verkey: *const c_char)>) {
+        lazy_static! {
+            static ref KEY_FOR_DID_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn key_for_did_callback(command_handle: i32, err: ErrorCode, verkey: *const c_char) {
+            let mut callbacks = KEY_FOR_DID_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let verkey = unsafe { CStr::from_ptr(verkey).to_str().unwrap().to_string() };
+            cb(err, verkey)
+        }
+
+        let mut callbacks = KEY_FOR_DID_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(key_for_did_callback))
+    }
+
+    pub fn closure_to_set_endpoint_for_did_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                         Option<extern fn(command_handle: i32,
+                                                                                                          err: ErrorCode)>) {
+        lazy_static! {
+            static ref SET_ENDPOINT_FOR_DID_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn set_endpoint_for_did_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = SET_ENDPOINT_FOR_DID_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = SET_ENDPOINT_FOR_DID_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(set_endpoint_for_did_callback))
+    }
+
+    pub fn closure_to_get_endpoint_for_did_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
+                                                                                                             Option<extern fn(command_handle: i32,
+                                                                                                                              err: ErrorCode,
+                                                                                                                              endpoint: *const c_char,
+                                                                                                                              transport_vk: *const c_char)>) {
+        lazy_static! {
+            static ref ENDPOINT_FOR_DID_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn endpoint_for_did_callback(command_handle: i32, err: ErrorCode, endpoint: *const c_char, transport_vk: *const c_char) {
+            let mut callbacks = ENDPOINT_FOR_DID_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let endpoint = unsafe { CStr::from_ptr(endpoint).to_str().unwrap().to_string() };
+            let transport_vk = unsafe { CStr::from_ptr(transport_vk).to_str().unwrap().to_string() };
+            cb(err, endpoint, transport_vk)
+        }
+
+        let mut callbacks = ENDPOINT_FOR_DID_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(endpoint_for_did_callback))
+    }
+
+    pub fn closure_to_store_did_metadata_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                       Option<extern fn(command_handle: i32,
+                                                                                                        err: ErrorCode)>) {
+        lazy_static! {
+            static ref STORE_KEY_METADATA_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
+        }
+
+        extern "C" fn store_key_metadata_callback(command_handle: i32, err: ErrorCode) {
+            let mut callbacks = STORE_KEY_METADATA_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err)
+        }
+
+        let mut callbacks = STORE_KEY_METADATA_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(store_key_metadata_callback))
+    }
+
+    pub fn closure_to_get_did_metadata_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                             Option<extern fn(command_handle: i32,
+                                                                                                              err: ErrorCode,
+                                                                                                              metadata: *const c_char)>) {
+        lazy_static! {
+            static ref GET_KEY_META_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn get_key_metadata_callback(command_handle: i32, err: ErrorCode, metadata: *const c_char) {
+            let mut callbacks = GET_KEY_META_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let metadata = unsafe { CStr::from_ptr(metadata).to_str().unwrap().to_string() };
+            cb(err, metadata)
+        }
+
+        let mut callbacks = GET_KEY_META_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(get_key_metadata_callback))
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Hyperledger.Indy.LedgerApi;
 using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
+using System;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.IndyNativeMethods;
 
@@ -149,7 +150,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// </summary>
         /// <remarks>
         /// <para>This method creates both primary and revocation keys for the given
-        /// signature type and schema and stores them in the provided <see cref="Wallet"/>.
+        /// signature type and schema and stores them in the provided <paramref name="wallet"/>.
         /// The generated claim definition is returned as a JSON string containing information about the 
         /// signature type, schema, the issuer's public key and the unique identifier of the public key 
         /// in the wallet.
@@ -166,6 +167,10 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// JSON string containing the claim definition.</returns>
         public static Task<string> IssuerCreateAndStoreClaimDefAsync(Wallet wallet, string issuerDid, string schemaJson, string signatureType, bool createNonRevoc)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(issuerDid, "issuerDid");
+            ParamGuard.NotNullOrWhiteSpace(schemaJson, "schemaJson");
+            
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -188,7 +193,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// Creates a new revocation registry for the provided claim definition.
         /// </summary>
         /// <remarks>
-        /// The revocation registry is stored in the provided <see cref="Wallet"/> and is identified by
+        /// The revocation registry is stored in the provided <paramref name="wallet"/> and is identified by
         /// a unique key which is returned in the revocation registry JSON string returned by the method.
         /// </remarks>
         /// <param name="wallet">The wallet to store the revocation registry in.</param>
@@ -199,6 +204,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to a JSON string containing the revocation registry.</returns>
         public static Task<string> IssuerCreateAndStoreRevocRegAsync(Wallet wallet, string issuerDid, int schemaSeqNo, int maxClaimNum)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(issuerDid, "issuerDid");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -269,6 +277,10 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// an <see cref="IssuerCreateClaimResult"/>.</returns>
         public static Task<IssuerCreateClaimResult> IssuerCreateClaimAsync(Wallet wallet, string claimReqJson, string claimJson, int userRevocIndex)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(claimReqJson, "claimReqJson");
+            ParamGuard.NotNullOrWhiteSpace(claimJson, "claimJson");
+
             var taskCompletionSource = new TaskCompletionSource<IssuerCreateClaimResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -303,6 +315,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to a revocation registry update JSON with a revoked claim.</returns>
         public static Task<string> IssuerRevokeClaimAsync(Wallet wallet, string issuerDid, int schemaSequenceNumber, int userRevocIndex)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(issuerDid, "issuerDid");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -339,6 +354,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <returns>An asynchronous <see cref="Task"/> that completes when the operation has completed.</returns>
         public static Task ProverStoreClaimOfferAsync(Wallet wallet, string claimOfferJson)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(claimOfferJson, "claimOfferJson");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -360,9 +378,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <remarks>
         /// <para>
         /// Claim offers stored with the <see cref="ProverStoreClaimOfferAsync(Wallet, string)"/> can be
-        /// retrieved by searching on the DID of the issuer and/or the schema sequence number.  To filter
-        /// the claim offers a <paramref name="filterJson"/> parameter must be provided with a JSON
-        /// string which can include the following members:
+        /// retrieved from the <paramref name="wallet"/> by searching on the DID of the issuer and/or the schema 
+        /// sequence number.  To filter the claim offers a <paramref name="filterJson"/> parameter must be provided with 
+        /// a JSON string which can include the following members:
         /// <code>
         /// {
         ///     "issuer_did": string,
@@ -392,6 +410,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to a JSON string with a list of claim offers matching the filter.</returns>
         public static Task<string> ProverGetClaimOffersAsync(Wallet wallet, string filterJson)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(filterJson, "filterJson");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -418,6 +439,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <returns>An asynchronous <see cref="Task"/> that completes when the operation has completed.</returns>
         public static Task ProverCreateMasterSecretAsync(Wallet wallet, string masterSecretName)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(masterSecretName, "masterSecretName");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -471,6 +495,12 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to a JSON string containing the claim request.</returns>
         public static Task<string> ProverCreateAndStoreClaimReqAsync(Wallet wallet, string proverDid, string claimOfferJson, string claimDefJson, string masterSecretName)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(proverDid, "proverDid");
+            ParamGuard.NotNullOrWhiteSpace(claimOfferJson, "claimOfferJson");
+            ParamGuard.NotNullOrWhiteSpace(claimDefJson, "claimDefJson");
+            ParamGuard.NotNullOrWhiteSpace(masterSecretName, "masterSecretName");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -520,6 +550,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <returns>An asynchronous <see cref="Task"/> that completes when the operation has completed.</returns>
         public static Task ProverStoreClaimAsync(Wallet wallet, string claimsJson)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(claimsJson, "claimsJson");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -574,6 +607,8 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to a JSON string containing the claim request.</returns>
         public static Task<string> ProverGetClaimsAsync(Wallet wallet, string filterJson)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -636,6 +671,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to a JSON string containing the claims for the proof request.</returns>
         public static Task<string> ProverGetClaimsForProofReqAsync(Wallet wallet, string proofRequestJson)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(proofRequestJson, "proofRequestJson");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -764,6 +802,14 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to a JSON string containing the proof.</returns>
         public static Task<string> ProverCreateProofAsync(Wallet wallet, string proofReqJson, string requestedClaimsJson, string schemasJson, string masterSecretName, string claimDefsJson, string revocRegsJson)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(proofReqJson, "proofReqJson");
+            ParamGuard.NotNullOrWhiteSpace(requestedClaimsJson, "requestedClaimsJson");
+            ParamGuard.NotNullOrWhiteSpace(schemasJson, "schemasJson");
+            ParamGuard.NotNullOrWhiteSpace(masterSecretName, "masterSecretName");
+            ParamGuard.NotNullOrWhiteSpace(claimDefsJson, "claimDefsJson");
+            ParamGuard.NotNullOrWhiteSpace(revocRegsJson, "revocRegsJson");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -873,6 +919,12 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// to true if the proof is valid, otherwise false.</returns>
         public static Task<bool> VerifierVerifyProofAsync(string proofRequestJson, string proofJson, string schemasJson, string claimDefsJson, string revocRegsJson)
         {
+            ParamGuard.NotNullOrWhiteSpace(proofRequestJson, "proofRequestJson");
+            ParamGuard.NotNullOrWhiteSpace(proofJson, "proofJson");
+            ParamGuard.NotNullOrWhiteSpace(schemasJson, "schemasJson");
+            ParamGuard.NotNullOrWhiteSpace(claimDefsJson, "claimDefsJson");
+            ParamGuard.NotNullOrWhiteSpace(revocRegsJson, "revocRegsJson");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 

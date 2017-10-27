@@ -2,7 +2,6 @@
 using Hyperledger.Indy.SignusApi;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 using System;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,15 +16,14 @@ namespace Hyperledger.Indy.Test.DemoTests
         {
             //1. Create and Open Pool
             var poolName = PoolUtils.CreatePoolLedgerConfig();
-
             var pool = await Pool.OpenPoolLedgerAsync(poolName, "{}");
 
             //2. Create and Open My Wallet
-            await Wallet.CreateWalletAsync(poolName, "myWallet", "default", null, null);
+            await Wallet.CreateWalletAsync(poolName, "myWallet", TYPE, null, null);
             var myWallet = await Wallet.OpenWalletAsync("myWallet", null, null);
 
             // 3. Create and Open Trustee Wallet
-            await Wallet.CreateWalletAsync(poolName, "theirWallet", "default", null, null);
+            await Wallet.CreateWalletAsync(poolName, "theirWallet", TYPE, null, null);
             var theirWallet = await Wallet.OpenWalletAsync("theirWallet", null, null);
 
             //4. Create My Did

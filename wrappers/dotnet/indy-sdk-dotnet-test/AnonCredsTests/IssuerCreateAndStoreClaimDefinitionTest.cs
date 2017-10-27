@@ -11,9 +11,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
     public class IssuerCreateAndStoreClaimDefinitionTest : AnonCredsIntegrationTestBase
     {
         private  Wallet _wallet;
-        private  string _walletName = "createAndStoreClaimDefWallet";
-        private new string _issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
-        private  string _gvtSchemaJson = "{\n" +
+        private const string _walletName = "createAndStoreClaimDefWallet";
+        private const string _issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
+        private const string _gvtSchemaJson = "{\n" +
                 "                    \"seqNo\":1,\n" +
                 "                    \"data\": {\n" +
                 "                        \"name\":\"gvt\",\n" +
@@ -60,11 +60,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         {
             var schema = "{\"seqNo\":1, \"name\":\"name\",\"version\":\"1.0\", \"keys\":[\"name\"]}";
            
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 AnonCreds.IssuerCreateAndStoreClaimDefAsync(_wallet, _issuerDid, schema, null, false)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -79,11 +77,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "                    }\n" +
                 "                 }";
 
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 AnonCreds.IssuerCreateAndStoreClaimDefAsync(_wallet, _issuerDid, schema, null, false)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
 
         [TestMethod]
@@ -106,11 +102,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         [TestMethod]
         public async Task TestIssuerCreateAndStoreClaimDefWorksForInvalidCryptoType()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IndyException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 AnonCreds.IssuerCreateAndStoreClaimDefAsync(_wallet, _issuerDid, _gvtSchemaJson, "type", false)
             );
-
-            Assert.AreEqual(ErrorCode.CommonInvalidStructure, ex.ErrorCode);
         }
     }
 }

@@ -20,7 +20,7 @@ namespace Hyperledger.Indy.AgentApi
     /// </para>
     /// <para>Messages received on a connection result in an <see cref="AgentMessageEvent"/> being raised
     /// asynchronously for each message and these events can be obtained by calling the 
-    /// <see cref="WaitForMessage"/> method, which will return a <see cref="Task{AgentMessageEvent}"/> that will resolve to
+    /// <see cref="WaitForMessageAsync"/> method, which will return a <see cref="Task{T}"/> that will resolve to
     /// the first received event.  
     /// </para>
     /// <para>When a connection is no longer required it must be closed using its <see cref="CloseAsync"/> 
@@ -54,9 +54,9 @@ namespace Hyperledger.Indy.AgentApi
 
             var connection = (AgentConnection)taskCompletionSource.Task.AsyncState;
             connection.Handle = connection_handle;
+            connection._requiresClose = true;
 
             taskCompletionSource.SetResult(connection);
-
         };
 
         /// <summary>
@@ -67,14 +67,14 @@ namespace Hyperledger.Indy.AgentApi
         /// initiating the connection) and the other for the receiver identity (who the connection is being 
         /// established with).
         /// </para>
-        /// <para>The <see cref="Wallet"/> provided when creating the connection must contain information about
+        /// <para>The <paramref name="wallet"/> provided when creating the connection must contain information about
         /// the sender identity which must have been added using the <see cref="Signus.CreateAndStoreMyDidAsync(Wallet, string)"/> 
         /// method prior to attempting to create the connection.
         /// </para>
         /// <para>The identity information for the receiver can also be stored in the wallet using
         /// the <see cref="Signus.StoreTheirDidAsync(Wallet, string)"/> method, however if no record is
         /// present in the wallet the identity information will be established from the ledger in the 
-        /// provided node <see cref="Pool"/> and will automatically be cached in the provided wallet.
+        /// provided <paramref name="pool"/> and will automatically be cached in the provided wallet.
         /// </para>
         /// </remarks>
         /// <seealso cref="Pool"/>
@@ -88,6 +88,11 @@ namespace Hyperledger.Indy.AgentApi
         /// when the connection has been established.</returns>
         public static Task<AgentConnection> ConnectAsync(Pool pool, Wallet wallet, string senderDid, string receiverDid)
         {
+            ParamGuard.NotNull(pool, "pool");
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(senderDid, "senderDid");
+            ParamGuard.NotNullOrWhiteSpace(receiverDid, "receiverDid");
+
             var connection = new AgentConnection();
 
             var taskCompletionSource = new TaskCompletionSource<AgentConnection>(connection);
@@ -136,7 +141,7 @@ namespace Hyperledger.Indy.AgentApi
         /// <summary>
         /// Whether or not the close function has been called.
         /// </summary>
-        private bool _closeRequested = false;
+        private bool _requiresClose = false;
 
         /// <summary>
         /// Gets the handle for the connection.
@@ -189,6 +194,8 @@ namespace Hyperledger.Indy.AgentApi
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public Task SendAsync(string message)
         {
+            ParamGuard.NotNull(message, "message");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -218,7 +225,7 @@ namespace Hyperledger.Indy.AgentApi
         /// </remarks>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to an
         /// <see cref="AgentMessageEvent"/> when a message is received.</returns>
-        public Task<AgentMessageEvent> WaitForMessage()
+        public Task<AgentMessageEvent> WaitForMessageAsync()
         {
             var taskCompletionSource = new TaskCompletionSource<AgentMessageEvent>();
             var tuple = Tuple.Create(Handle, taskCompletionSource);
@@ -237,7 +244,9 @@ namespace Hyperledger.Indy.AgentApi
         /// </remarks>
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public Task CloseAsync()
-        {           
+        {
+            _requiresClose = false;
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -249,7 +258,7 @@ namespace Hyperledger.Indy.AgentApi
 
             CallbackHelper.CheckResult(result);
 
-            _closeRequested = true;
+            
             GC.SuppressFinalize(this);
 
             return taskCompletionSource.Task;
@@ -260,7 +269,7 @@ namespace Hyperledger.Indy.AgentApi
         /// </summary>
         public async void Dispose()
         {
-            if (!_closeRequested)
+            if (_requiresClose)
                 await CloseAsync();
         }
 
@@ -269,7 +278,7 @@ namespace Hyperledger.Indy.AgentApi
         /// </summary>
         ~AgentConnection()
         {
-            if (!_closeRequested)
+            if (_requiresClose)
             {
                 IndyNativeMethods.indy_agent_close_connection(
                    -1,

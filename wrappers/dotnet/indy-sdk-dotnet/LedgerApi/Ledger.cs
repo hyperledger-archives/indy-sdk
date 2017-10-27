@@ -2,6 +2,7 @@
 using Hyperledger.Indy.SignusApi;
 using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
+using System;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.IndyNativeMethods;
 
@@ -92,6 +93,10 @@ namespace Hyperledger.Indy.LedgerApi
         /// message.</returns>
         public static Task<string> SignRequestAsync(Wallet wallet, string submitterDid, string requestJson)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(requestJson, "requestJson");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -113,8 +118,8 @@ namespace Hyperledger.Indy.LedgerApi
         /// <remarks>
         /// This method adds information associated with the submitter specified by the
         /// <paramref name="submitterDid"/> to the JSON provided in the <paramref name="requestJson"/> parameter
-        /// then signs it with the submitter's signing key from the provided wallet and sends the signed 
-        /// request message the to validator <see cref="Pool"/>.
+        /// then signs it with the submitter's signing key from the provided <paramref name="wallet"/> and sends the signed 
+        /// request message to the specified validator <paramref name="pool"/>.   
         /// </remarks>
         /// <param name="pool">The validator pool to submit the request to.</param>
         /// <param name="wallet">The wallet containing the submitter keys to sign the request with.</param>
@@ -124,6 +129,11 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the result of submission when the operation completes.</returns>
         public static Task<string> SignAndSubmitRequestAsync(Pool pool, Wallet wallet, string submitterDid, string requestJson)
         {
+            ParamGuard.NotNull(pool, "pool");
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(requestJson, "requestJson");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -145,25 +155,28 @@ namespace Hyperledger.Indy.LedgerApi
         /// Submits a request to the ledger.
         /// </summary>
         /// <remarks>
-        /// This method publishes a message to the validator pool as-is and assumes that the message was
-        /// previously prepared for submission.  Requests can be signed prior to using this method with a
+        /// This method publishes a message to the validator pool specified in the <paramref name="pool"/> parameter as-is 
+        /// and assumes that the message was previously prepared for submission.  Requests can be signed prior to using this 
         /// call to the <see cref="SignRequestAsync(Wallet, string, string)"/> method, or messages can be 
         /// both signed and submitted using the <see cref="SignAndSubmitRequestAsync(Pool, Wallet, string, string)"/>
         /// method.
         /// </remarks>
         /// <param name="pool">The validator pool to submit the request to.</param>
-        /// <param name="requstJson">The request to submit.</param>
+        /// <param name="requestJson">The request to submit.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a JSON <see cref="string"/> 
         /// containing the results when the operation completes.</returns>
-        public static Task<string> SubmitRequestAsync(Pool pool, string requstJson)
+        public static Task<string> SubmitRequestAsync(Pool pool, string requestJson)
         {
+            ParamGuard.NotNull(pool, "pool");
+            ParamGuard.NotNullOrWhiteSpace(requestJson, "requestJson");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
             var result = IndyNativeMethods.indy_submit_request(
                 commandHandle,
                 pool.Handle,
-                requstJson,
+                requestJson,
                 _submitRequestCallback);
 
             CallbackHelper.CheckResult(result);
@@ -190,6 +203,9 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON.</returns>
         public static Task<string> BuildGetDdoRequestAsync(string submitterDid, string targetDid)
         {
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(targetDid, "targetDid");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -232,6 +248,9 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildNymRequestAsync(string submitterDid, string targetDid, string verKey, string alias, string role)
         {
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(targetDid, "targetDid");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -272,6 +291,12 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildAttribRequestAsync(string submitterDid, string targetDid, string hash, string raw, string enc)
         {
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(targetDid, "targetDid");
+
+            if (string.IsNullOrWhiteSpace(hash) && string.IsNullOrWhiteSpace(submitterDid) && string.IsNullOrWhiteSpace(enc))
+                throw new ArgumentException("At least one of the 'hash', 'submitterDid' or 'enc' parameters must have a value.");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -306,6 +331,10 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildGetAttribRequestAsync(string submitterDid, string targetDid, string data)
         {
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(targetDid, "targetDid");
+            ParamGuard.NotNullOrWhiteSpace(data, "data");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -337,6 +366,9 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildGetNymRequestAsync(string submitterDid, string targetDid)
         {
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(targetDid, "targetDid");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -380,6 +412,9 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildSchemaRequestAsync(string submitterDid, string data)
         {
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(data, "data");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -421,6 +456,10 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildGetSchemaRequestAsync(string submitterDid, string dest, string data)
         {
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(dest, "dest");
+            ParamGuard.NotNullOrWhiteSpace(data, "data");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -478,6 +517,10 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildClaimDefTxnAsync(string submitterDid, int xref, string signatureType, string data)
         {
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(signatureType, "signatureType");
+            ParamGuard.NotNullOrWhiteSpace(data, "data");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -511,6 +554,10 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildGetClaimDefTxnAsync(string submitterDid, int xref, string signatureType, string origin)
         {
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(signatureType, "signatureType");
+            ParamGuard.NotNullOrWhiteSpace(origin, "origin");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -538,6 +585,10 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildNodeRequestAsync(string submitterDid, string targetDid, string data)
         {
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(targetDid, "targetDid");
+            ParamGuard.NotNullOrWhiteSpace(data, "data");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -563,6 +614,7 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildGetTxnRequestAsync(string submitterDid, int data)
         {
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);

@@ -15,39 +15,35 @@
  
  The claim definition in the wallet is identifying by a returned unique key.
  
- @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param issuerDid DID of the issuer signing claim_def transaction to the Ledger
- @param schema Schema as a json
+ @param issuerDID DID of the issuer signing claim_def transaction to the Ledger
+ @param schemaJSON Schema as a json
  @param signatureType Signature type (optional). Currently only 'CL' is supported.
  @param createNonRevoc Whether to request non-revocation claim.
- @param handler Callback that takes command result as parameter. Returns claim definition json containing information about signature type, schema and issuer's public key. Unique number identifying the public key in the wallet.
-
- @return Error Code.
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter. Returns claim definition json containing information about signature type, schema and issuer's public key. Unique number identifying the public key in the wallet.
 */
-+ (NSError *)issuerCreateAndStoreClaimDefWithWalletHandle:(IndyHandle)walletHandle
-                                                issuerDid:(NSString *)issuerDid
-                                               schemaJSON:(NSString *)schema
-                                            signatureType:(NSString *)signatureType
-                                           createNonRevoc:(BOOL)createNonRevoc
-                                               completion:(void (^)(NSError *error, NSString *claimDefJSON)) handler;
++ (void)issuerCreateAndStoreClaimDefForIssuerDID:(NSString *)issuerDID
+                                      schemaJSON:(NSString *)schemaJSON
+                                   signatureType:(NSString *)signatureType
+                                  createNonRevoc:(BOOL)createNonRevoc
+                                    walletHandle:(IndyHandle)walletHandle
+                                      completion:(void (^)(NSError *error, NSString *claimDefJSON)) completion;
 
 /**
  Creates a new revocation registry for the given claim definition.
  Stores it in a secure wallet identifying by the returned key.
  
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param issuerDid DID of the issuer signing revoc_reg transaction to the Ledger
+ @param issuerDID DID of the issuer signing revoc_reg transaction to the Ledger
  @param schemaSeqNo Seq no of a schema transaction in Ledger
  @param maxClaimNum Maximum number of claims the new registry can process.
- @param handler Callback that takes command result as parameter. Returns revoc registry json and unique number identifying the revocation registry in the wallet.
- 
- @return Error Code
+ @param completion Callback that takes command result as parameter. Returns revoc registry json and unique number identifying the revocation registry in the wallet.
  */
-+ (NSError *)issuerCreateAndStoreRevocRegWithWalletHandle:(IndyHandle)walletHandle
-                                                issuerDid:(NSString *)issuerDid
-                                              schemaSeqNo:(NSNumber *)schemaSeqNo
-                                              maxClaimNum:(NSNumber *)maxClaimNum
-                                               completion:(void (^)(NSError *error, NSString *revocRegJSON, NSString *revocRegUUID)) handler;
++ (void)issuerCreateAndStoreRevocRegForIssuerDid:(NSString *)issuerDID
+                                     schemaSeqNo:(NSNumber *)schemaSeqNo
+                                     maxClaimNum:(NSNumber *)maxClaimNum
+                                    walletHandle:(IndyHandle)walletHandle
+                                      completion:(void (^)(NSError *error, NSString *revocRegJSON, NSString *revocRegUUID)) completion;
 
 /**
  Signs a given claim for the given user by a given key (claim ef).
@@ -59,7 +55,7 @@
  {
  "blinded_ms" : <blinded_master_secret>,
  "schema_seq_no" : <schema_seq_no>,
- "issuer_did" : <issuer_did>
+ "issuer_DID" : <issuer_DID>
  }
  @endcode
  
@@ -78,49 +74,44 @@
  "claim": <see claim_json above>,
  "signature": <signature>,
  "revoc_reg_seq_no", string,
- "issuer_did", string,
+ "issuer_DID", string,
  "schema_seq_no", string,
  }
  
  @endcode
 
- 
- @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param claimReqJSON Claim request with a blinded secret from the user (returned by IndyAnoncreds::proverCreateAndStoreClaimReqWithWalletHandle).
-        Also contains schema_seq_no and issuer_did.
+ @param claimRequestJSON Claim request with a blinded secret from the user (returned by IndyAnoncreds::proverCreateAndStoreClaimReqWithClaimDef).
+        Also contains schema_seq_no and issuer_DID.
  
  @param claimJSON Claim containing attribute values for each of requested attribute names.
  
  @param userRevocIndex Index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
- @param handler Callback that takes command result as parameter. Returns revocation registry update json with a newly issued claim and claim json containing issued claim, issuer_did, schema_seq_no, and revoc_reg_seq_no
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter. Returns revocation registry update json with a newly issued claim and claim json containing issued claim, issuer_DID, schema_seq_no, and revoc_reg_seq_no
  used for issuance.
-
- @return Error Code.
  */
-+ (NSError *)issuerCreateClaimWithWalletHandle:(IndyHandle)walletHandle
-                                  claimReqJSON:(NSString *)claimReqJSON
-                                     claimJSON:(NSString *)claimJSON
-                                userRevocIndex:(NSNumber *)userRevocIndex
-                                    completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON, NSString *xclaimJSON)) handler;
++ (void)issuerCreateClaimWithRequest:(NSString *)claimRequestJSON
+                           claimJSON:(NSString *)claimJSON
+                      userRevocIndex:(NSNumber *)userRevocIndex
+                        walletHandle:(IndyHandle)walletHandle
+                          completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON, NSString *xclaimJSON)) completion;
 
 /**
  Revokes a user identified by a revoc_id in a given revoc-registry.
  The corresponding claim definition and revocation registry must be already
  created an stored into the wallet.
  
- @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param issuerDid DID of the issuer signing claim_def transaction to the Ledger.
+ @param issuerDID DID of the issuer signing claim_def transaction to the Ledger.
  @param schemaSeqNo Seq no of a schema transaction in Ledger.
  @param userRevocIndex Index of the user in the revocation registry.
- @param handler Callback that takes command result as parameter. Returns revocation registry update json with a revoked claim.
- 
- @return Error Code
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter. Returns revocation registry update json with a revoked claim.
  */
-+ (NSError *)issuerRevokeClaimWithWalletHandle:(IndyHandle)walletHandle
-                                     issuerDid:(NSString *)issuerDid
-                                   schemaSeqNo:(NSNumber *)schemaSeqNo
-                                userRevocIndex:(NSNumber *)userRevocIndex
-                                    completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) handler;
++ (void)issuerRevokeClaimForIssuerDID:(NSString *)issuerDID
+                          schemaSeqNo:(NSNumber *)schemaSeqNo
+                       userRevocIndex:(NSNumber *)userRevocIndex
+                         walletHandle:(IndyHandle)walletHandle
+                           completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) completion;
 
 /**
  Stores a claim offer from the given issuer in a secure storage.
@@ -128,19 +119,17 @@
  @code
  Example claimOfferJSON:
  {
-    "issuer_did": string,
+    "issuer_DID": string,
     "schema_seq_no": string
  }
  @endcode
  
- @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param claimOfferJSON Claim offer as a json containing information about the issuer and a claim.
-
- @return Error Code.
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  */
-+ (NSError *)proverStoreClaimOfferWithWalletHandle:(IndyHandle)walletHandle
-                                    claimOfferJSON:(NSString *)claimOfferJSON
-                                        completion:(void (^)(NSError *error)) handler;
++ (void)proverStoreClaimOffer:(NSString *)claimOfferJSON
+             WithWalletHandle:(IndyHandle)walletHandle
+                   completion:(void (^)(NSError *error)) completion;
 
 /**
  Gets all stored claim offers (see IndyAnoncreds::proverStoreClaimOfferWithWalletHandle).
@@ -149,7 +138,7 @@
  @code
  Example filterJSON:
  {
- "issuer_did": string,
+ "issuer_DID": string,
  "schema_seq_no": string
  }
  @endcode
@@ -157,36 +146,33 @@
  @code
  Example claimOffersJSON:
  {
- [{"issuer_did": string,
+ [{"issuer_DID": string,
  "schema_seq_no": string}]
  }
  @endcode
 
- @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param filterJSON Optional filter to get claim offers for specific Issuer, claim_def or schema only only
  Each of the filters is optional.
- @param handler Returns A json with a list of claim offers for the filter.
-
- @return Error Code
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Returns A json with a list of claim offers for the filter.
  */
-+ (NSError *)proverGetClaimOffersWithWalletHandle:(IndyHandle)walletHandle
-                                       filterJSON:(NSString *)filterJSON
-                                       completion:(void (^)(NSError *error, NSString *claimOffersJSON)) handler;
++ (void)proverGetClaimOffersWithFilter:(NSString *)filterJSON
+                          walletHandle:(IndyHandle)walletHandle
+                            completion:(void (^)(NSError *error, NSString *claimOffersJSON)) completion;
 
 
 /**
  Creates a master secret with a given name and stores it in the wallet.
  The name must be unique.
  
- @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param masterSecretName A new master secret name.
- @param handler Returns error code.
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Returns error code.
  
- @return Error Code
  */
-+ (NSError *)proverCreateMasterSecretWithWalletHandle:(IndyHandle)walletHandle
-                                     masterSecretName:(NSString *)masterSecretName
-                                           completion:(void (^)(NSError *error)) handler;
++ (void)proverCreateMasterSecretNamed:(NSString *)masterSecretName
+                         walletHandle:(IndyHandle)walletHandle
+                           completion:(void (^)(NSError *error)) completion;
 
 /**
  
@@ -205,7 +191,7 @@
  @code
  Example claimOfferJSON:
  {
- "issuer_did": string,
+ "issuer_DID": string,
  "schema_seq_no": string
  }
  @endcode
@@ -215,30 +201,28 @@
  {
  "blinded_ms" : <blinded_master_secret>,
  "schema_seq_no" : <schema_seq_no>,
- "issuer_did" : <issuer_did>
+ "issuer_DID" : <issuer_DID>
  }
  @endcode
  
- @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param proverDid DID of the prover
+ @param claimDefJSON Claim definition json associated with issuer_DID and schema_seq_no in the claim_offer.
+ @param proverDID DID of the prover
  @param claimOfferJSON Claim offer as a json containing information about the issuer and a claim.
- @param claimDefJSON Claim definition json associated with issuer_did and schema_seq_no in the claim_offer.
  @param masterSecretName Name of the master secret stored in the wallet
- @handler Callback that takes command result as parameter. Returns Claim request json.
-
- @return Error Code.
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter. Returns Claim request json.
  */
-+ (NSError *)proverCreateAndStoreClaimReqWithWalletHandle:(IndyHandle)walletHandle
-                                                proverDid:(NSString *)proverDid
-                                           claimOfferJSON:(NSString *)claimOfferJSON
-                                             claimDefJSON:(NSString *)claimDefJSON
-                                         masterSecretName:(NSString *)masterSecretName
-                                               completion:(void (^)(NSError *error, NSString *claimReqJSON)) handler;
++ (void)proverCreateAndStoreClaimReqWithClaimDef:(NSString *)claimDefJSON
+                                       proverDID:(NSString *)proverDID
+                                  claimOfferJSON:(NSString *)claimOfferJSON
+                                masterSecretName:(NSString *)masterSecretName
+                                    walletHandle:(IndyHandle)walletHandle
+                                      completion:(void (^)(NSError *error, NSString *claimReqJSON)) completion;
 
 /**
  Updates the claim by a master secret and stores in a secure wallet.  
  
- The claim contains the information about schema_seq_no, issuer_did, revoc_reg_seq_no (see issuer_create_claim).  
+ The claim contains the information about schema_seq_no, issuer_DID, revoc_reg_seq_no (see issuer_create_claim).  
  
  Seq_no is a sequence number of the corresponding transaction in the ledger.  
  
@@ -251,20 +235,17 @@
          "signature": <signature>,
          "schema_seq_no": string,
          "revoc_reg_seq_no", string
-         "issuer_did", string
+         "issuer_DID", string
       }
  @endcode
  
- @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param claimsJson Claim json. See example above.
- 
- @param handler Callback that takes command result as parameter.
- 
- @return Error Code.
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter.
  */
-+ (NSError *)proverStoreClaimWithWalletHandle:(IndyHandle)walletHandle
-                                   claimsJSON:(NSString *)claimsJson
-                                   completion:(void (^)(NSError *error)) handler;
++ (void)proverStoreClaim:(NSString *)claimsJson
+            walletHandle:(IndyHandle)walletHandle
+              completion:(void (^)(NSError *error)) completion;
 
 /**
  Gets human readable claims according to the filter.  
@@ -276,7 +257,7 @@
  @code
  Example filterJSON:
  {
-    "issuer_did": string,
+    "issuer_DID": string,
     "schema_seq_no": string
  }
  @endcode
@@ -287,21 +268,19 @@
           "claim_uuid": <string>,
           "attrs": [{"attr_name" : "attr_value"}],
           "schema_seq_no": string,
-          "issuer_did": string,
+          "issuer_DID": string,
           "revoc_reg_seq_no": string,
       }]
  @endcode
  
- @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param filterJSON Filter for claims
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter. Returns claims json. See example above.
 
- @param handler Callback that takes command result as parameter. Returns claims json. See example above.
-
- @return Error Code
  */
-+ (NSError *)proverGetClaimsWithWalletHandle:(IndyHandle)walletHandle
-                                  filterJSON:(NSString *)filterJSON
-                                  completion:(void (^)(NSError *error, NSString *claimsJSON)) handler;
++ (void)proverGetClaimsWithFilter:(NSString *)filterJSON
+                     walletHandle:(IndyHandle)walletHandle
+                       completion:(void (^)(NSError *error, NSString *claimsJSON)) completion;
 
 /**
  Gets human readable claims matching the given proof request.
@@ -333,21 +312,20 @@
           "claim_uuid": <string>,
           "attrs": [{"attr_name" : "attr_value"}],
           "schema_seq_no": string,
-          "issuer_did": string,
+          "issuer_DID": string,
           "revoc_reg_seq_no": string,
       }
  
  @endcode
  
- @param walletHandle Wallet handler (created by IndyWallet::openWalletWithNam).
  @param proofReqJSON Proof request json. See example above.
- @param handler Callback that takes command result as parameter. Returns json with claims for the given pool request. Claim consists of uuid, human-readable attributes (key-value map), schema_seq_no, issuer_did and revoc_reg_seq_no. See example above.
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithNam).
+ @param completion Callback that takes command result as parameter. Returns json with claims for the given pool request. Claim consists of uuid, human-readable attributes (key-value map), schema_seq_no, issuer_DID and revoc_reg_seq_no. See example above.
  
- @return Error Code
  */
-+ (NSError *)proverGetClaimsForProofReqWithWalletHandle:(IndyHandle)walletHandle
-                                           proofReqJSON:(NSString *)proofReqJSON
-                                             completion:(void (^)(NSError *error, NSString *claimsJSON)) handler;
++ (void)proverGetClaimsForProofReq:(NSString *)proofReqJSON
+                      walletHandle:(IndyHandle)walletHandle
+                        completion:(void (^)(NSError *error, NSString *claimsJSON)) completion;
 
 /**
  Creates a proof according to the given proof request.  
@@ -424,19 +402,16 @@
               "requested_predicate_2_uuid": [claim_proof3_uuid],
           }
           "claim_proofs": {
-              "claim_proof1_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-              "claim_proof2_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-              "claim_proof3_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
+              "claim_proof1_uuid": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no],
+              "claim_proof2_uuid": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no],
+              "claim_proof3_uuid": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no]
           },
          "aggregated_proof": <aggregated_proof>
       }
  
  @endcode
  
- 
- 
- @param walletHandle Wallet handler (created by IndyWallet::openWalletWithNam).
- @param proofReqJSON Proof request json as come from the verifier. See example above.
+ @param proofRequestJSON Proof request json as come from the verifier. See example above.
 
  @param requestedClaimsJSON Either a claim or self-attested attribute for each requested attribute. See example above.
 
@@ -448,19 +423,18 @@
 
  @param revocRegsJSON All revocation registry jsons participating in the proof request.
  
- @param handler Callback that takes command result as parameter. Returns proof json: For each requested attribute either a proof (with optionally revealed attribute value) or self-attested attribute value is provided. Each proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no. There ais also aggregated proof part common for all claim proofs.
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithNam).
  
- @return ErrorCode
- 
+ @param completion Callback that takes command result as parameter. Returns proof json: For each requested attribute either a proof (with optionally revealed attribute value) or self-attested attribute value is provided. Each proof is associated with a claim and corresponding schema_seq_no, issuer_DID and revoc_reg_seq_no. There ais also aggregated proof part common for all claim proofs.
  */
-+ (NSError *)proverCreateProofWithWalletHandle:(IndyHandle)walletHandle
-                                  proofReqJSON:(NSString *)proofReqJSON
-                           requestedClaimsJSON:(NSString *)requestedClaimsJSON
-                                   schemasJSON:(NSString *)schemasJSON
-                              masterSecretName:(NSString *)masterSecretName
-                                 claimDefsJSON:(NSString *)claimDefsJSON
-                                 revocRegsJSON:(NSString *)revocRegsJSON
-                                    completion:(void (^)(NSError *error, NSString *proofJSON)) handler;
++ (void)proverCreateProofForRequest:(NSString *)proofRequestJSON
+                requestedClaimsJSON:(NSString *)requestedClaimsJSON
+                        schemasJSON:(NSString *)schemasJSON
+                   masterSecretName:(NSString *)masterSecretName
+                      claimDefsJSON:(NSString *)claimDefsJSON
+                      revocRegsJSON:(NSString *)revocRegsJSON
+                       walletHandle:(IndyHandle)walletHandle
+                         completion:(void (^)(NSError *error, NSString *proofJSON)) completion;
 
 /**
  Verifies a proof (of multiple claim).
@@ -490,9 +464,9 @@
               "requested_predicate_2_uuid": [claim_proof3_uuid],
           }
           "claim_proofs": {
-              "claim_proof1_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-              "claim_proof2_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-              "claim_proof3_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
+              "claim_proof1_uuid": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no],
+              "claim_proof2_uuid": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no],
+              "claim_proof3_uuid": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no]
           },
           "aggregated_proof": <aggregated_proof>
       }
@@ -525,12 +499,12 @@
         }
  @endcode
  
- @param proofReqJSON Initial proof request as sent by the verifier. See example above.
+ @param proofRequestJson Initial proof request as sent by the verifier. See example above.
 
  @param proofJSON Proof json. For each requested attribute either a proof (with optionally revealed attribute value) or
         self-attested attribute value is provided.  
  
-        Each proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.
+        Each proof is associated with a claim and corresponding schema_seq_no, issuer_DID and revoc_reg_seq_no.
         There ais also aggregated proof part common for all claim proofs. See example above.
 
  @param schemasJSON All schema jsons participating in the proof. See example above.
@@ -539,14 +513,13 @@
 
  @param revocRegsJSON All revocation registry jsons participating in the proof.
 
- @param handler Callback that takes command result as parameter. Returns result flag: valid: true - if signature is valid, false - otherwise.
+ @param completion Callback that takes command result as parameter. Returns result flag: valid: true - if signature is valid, false - otherwise.
 
- @return Error Code
  */
-+ (NSError *)verifierVerifyProofWithWalletHandle:(NSString *)proofReqJSON
-                                       proofJSON:(NSString *)proofJSON
-                                     schemasJSON:(NSString *)schemasJSON
-                                   claimDefsJSON:(NSString *)claimDefsJSON
-                                   revocRegsJSON:(NSString *)revocRegsJSON
-                                      completion:(void (^)(NSError *error, BOOL valid)) handler;
++ (void)verifierVerifyProofRequest:(NSString *)proofRequestJson
+                         proofJSON:(NSString *)proofJSON
+                       schemasJSON:(NSString *)schemasJSON
+                     claimDefsJSON:(NSString *)claimDefsJSON
+                     revocRegsJSON:(NSString *)revocRegsJSON
+                        completion:(void (^)(NSError *error, BOOL valid)) completion;
 @end

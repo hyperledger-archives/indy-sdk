@@ -1,5 +1,3 @@
-#![warn(unused_variables)] /* FIXME move up */
-
 #[macro_use]
 mod utils;
 
@@ -10,6 +8,7 @@ pub mod ledger;
 pub mod pool;
 pub mod signus;
 pub mod wallet;
+pub mod pairwise;
 
 use commands::agent::{AgentCommand, AgentCommandExecutor};
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
@@ -17,10 +16,10 @@ use commands::ledger::{LedgerCommand, LedgerCommandExecutor};
 use commands::pool::{PoolCommand, PoolCommandExecutor};
 use commands::signus::{SignusCommand, SignusCommandExecutor};
 use commands::wallet::{WalletCommand, WalletCommandExecutor};
+use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 
 use errors::common::CommonError;
 
-use services::agent::AgentService;
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
@@ -40,7 +39,8 @@ pub enum Command {
     Ledger(LedgerCommand),
     Pool(PoolCommand),
     Signus(SignusCommand),
-    Wallet(WalletCommand)
+    Wallet(WalletCommand),
+    Pairwise(PairwiseCommand)
 }
 
 pub struct CommandExecutor {
@@ -67,19 +67,19 @@ impl CommandExecutor {
             worker: Some(thread::spawn(move || {
                 info!(target: "command_executor", "Worker thread started");
 
-                let agent_service = Rc::new(AgentService::new());
                 let anoncreds_service = Rc::new(AnoncredsService::new());
                 let pool_service = Rc::new(PoolService::new());
                 let wallet_service = Rc::new(WalletService::new());
                 let signus_service = Rc::new(SignusService::new());
                 let ledger_service = Rc::new(LedgerService::new());
 
-                let agent_command_executor = AgentCommandExecutor::new(agent_service.clone(), ledger_service.clone(), pool_service.clone(), wallet_service.clone());
+                let agent_command_executor = AgentCommandExecutor::new(signus_service.clone(), wallet_service.clone());
                 let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone());
-                let ledger_command_executor = LedgerCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), signus_service.clone(), wallet_service.clone(), ledger_service.clone());
+                let ledger_command_executor = LedgerCommandExecutor::new(pool_service.clone(), signus_service.clone(), wallet_service.clone(), ledger_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
-                let signus_command_executor = SignusCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone(), signus_service.clone(), ledger_service.clone());
+                let signus_command_executor = SignusCommandExecutor::new(pool_service.clone(), wallet_service.clone(), signus_service.clone(), ledger_service.clone());
                 let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
+                let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
 
                 loop {
                     match receiver.recv() {
@@ -106,6 +106,10 @@ impl CommandExecutor {
                         Ok(Command::Wallet(cmd)) => {
                             info!(target: "command_executor", "WalletCommand command received");
                             wallet_command_executor.execute(cmd);
+                        }
+                        Ok(Command::Pairwise(cmd)) => {
+                            info!(target: "command_executor", "PairwiseCommand command received");
+                            pairwise_command_executor.execute(cmd);
                         }
                         Ok(Command::Exit) => {
                             info!(target: "command_executor", "Exit command received");

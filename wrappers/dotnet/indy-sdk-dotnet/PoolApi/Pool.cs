@@ -25,7 +25,8 @@ namespace Hyperledger.Indy.PoolApi
         };
 
         /// <summary>
-        /// Creates a new local pool configuration that can be used later to open a connection to pool nodes.
+        /// Creates a new local pool configuration with the specified name that can be used later to open a connection to 
+        /// pool nodes.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -49,6 +50,8 @@ namespace Hyperledger.Indy.PoolApi
         /// the configuration is created.</returns>
         public static Task CreatePoolLedgerConfigAsync(string configName, string config)
         {
+            ParamGuard.NotNullOrWhiteSpace(configName, "configName");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -73,6 +76,8 @@ namespace Hyperledger.Indy.PoolApi
         /// the configuration is deleted.</returns>
         public static Task DeletePoolLedgerConfigAsync(string configName)
         {
+            ParamGuard.NotNullOrWhiteSpace(configName, "configName");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -117,6 +122,8 @@ namespace Hyperledger.Indy.PoolApi
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a Pool instance once the pool is opened.</returns>
         public static Task<Pool> OpenPoolLedgerAsync(string configName, string config)
         {
+            ParamGuard.NotNullOrWhiteSpace(configName, "configName");
+
             var taskCompletionSource = new TaskCompletionSource<Pool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -135,7 +142,7 @@ namespace Hyperledger.Indy.PoolApi
         /// <summary>
         /// Whether or not the close function has been called.
         /// </summary>
-        private bool _closeRequested = false;
+        private bool _requiresClose = false;
 
         /// <summary>
         /// Gets the handle for the pool.
@@ -149,6 +156,7 @@ namespace Hyperledger.Indy.PoolApi
         private Pool(IntPtr handle)
         {
             Handle = handle;
+            _requiresClose = true;
         }
 
         /// <summary>
@@ -181,6 +189,8 @@ namespace Hyperledger.Indy.PoolApi
         /// <returns>An asynchronous <see cref="Task"/> that completes when the operation completes.</returns>
         public Task CloseAsync()
         {
+            _requiresClose = false;
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -192,7 +202,6 @@ namespace Hyperledger.Indy.PoolApi
 
             CallbackHelper.CheckResult(result);
 
-            _closeRequested = true;
             GC.SuppressFinalize(this);
 
             return taskCompletionSource.Task;
@@ -203,7 +212,7 @@ namespace Hyperledger.Indy.PoolApi
         /// </summary>
         public async void Dispose()
         {
-            if (!_closeRequested)
+            if (_requiresClose)
                 await CloseAsync();
         }
 
@@ -212,7 +221,7 @@ namespace Hyperledger.Indy.PoolApi
         /// </summary>
         ~Pool()
         {
-            if (!_closeRequested)
+            if (_requiresClose)
             {
                 IndyNativeMethods.indy_close_pool_ledger(
                    -1,

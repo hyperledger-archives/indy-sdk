@@ -10,13 +10,16 @@
 
 @implementation IndySignus
 
-+ (NSError *)createAndStoreMyDidWithWalletHandle:(IndyHandle)walletHandle
-                                         didJSON:(NSString *)didJson
-                                      completion:(void (^)(NSError *error, NSString *did, NSString *verkey, NSString *pk)) handler
++ (void)createAndStoreMyDid:(NSString *)didJson
+               walletHandle:(IndyHandle)walletHandle
+                 completion:(void (^)(NSError *error,
+                                      NSString *did,
+                                      NSString *verkey,
+                                      NSString *pk)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_create_and_store_my_did( handle,
                                        walletHandle,
@@ -25,42 +28,70 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil, nil, nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
-    
 }
 
-+ (NSError *)replaceKeysWithWalletHandle:(IndyHandle)walletHandle
-                                     did:(NSString *)did
-                            identityJSON:(NSString *)identityJSON
-                              completion:(void (^)(NSError *error, NSString *verkey, NSString *pk)) handler
++ (void)replaceKeysStartForDid:(NSString *)did
+                  identityJson:(NSString *)identityJson
+                  walletHandle:(IndyHandle)walletHandle
+                    completion:(void (^)(NSError *error,
+                                         NSString *verkey,
+                                         NSString *pk)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
-    ret = indy_replace_keys( handle,
-                            walletHandle,
-                            [did UTF8String],
-                            [identityJSON UTF8String],
-                            IndyWrapperCommon4PCallback
-                            );
+    ret = indy_replace_keys_start(handle,
+                                  walletHandle,
+                                  [did UTF8String],
+                                  [identityJson UTF8String],
+                                  IndyWrapperCommon4PCallback);
+    
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil, nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)storeTheirDidWithWalletHandle:(IndyHandle)walletHandle
-                              identityJSON:(NSString *)identityJSON
-                                completion:(void (^)(NSError *error)) handler
++ (void)replaceKeysApplyForDid:(NSString *)did
+                  walletHandle:(IndyHandle)walletHandle
+                    completion:(void (^)(NSError *error)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+    
+    ret = indy_replace_keys_apply(handle,
+                                  walletHandle,
+                                  [did UTF8String],
+                                  IndyWrapperCommon2PCallback);
+    
+    if( ret != Success )
+    {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret]);
+        });
+    }
+}
+
++ (void)storeTheirDid:(NSString *)identityJSON
+         walletHandle:(IndyHandle)walletHandle
+           completion:(void (^)(NSError *error)) completion
+{
+    indy_error_t ret;
+    
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     ret = indy_store_their_did( handle,
                                walletHandle,
@@ -70,20 +101,22 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret]);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)signWithWalletHandle:(IndyHandle)walletHandle
-                              did:(NSString *)did
-                          message:(NSData*)message
-                       completion:(void (^)(NSError *error,
-                                            NSData *signature)) handler
++ (void)signMessage:(NSData*)message
+                did:(NSString *)did
+       walletHandle:(IndyHandle)walletHandle
+         completion:(void (^)(NSError *error,
+                              NSData *signature)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     uint32_t messageLen = (uint32_t)[message length];
     uint8_t *messageRaw = (uint8_t *)[message bytes];
@@ -97,21 +130,24 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)verifySignatureWithWalletHandle:(IndyHandle)walletHandle
-                                  poolHandle:(IndyHandle)poolHandle
-                                         did:(NSString *)did
-                                     message:(NSData *)message
-                                   signature:(NSData *)signature
-                                  completion:(void (^)(NSError *error, BOOL valid)) handler
++ (void)verifySignature:(NSData *)signature
+             forMessage:(NSData *)message
+                    did:(NSString *)did
+           walletHandle:(IndyHandle)walletHandle
+             poolHandle:(IndyHandle)poolHandle
+             completion:(void (^)(NSError *error,
+                                  BOOL valid)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     uint32_t messageLen = (uint32_t)[message length];
     uint8_t *messageRaw = (uint8_t *)[message bytes];
@@ -130,21 +166,25 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], false);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)encryptWithWalletHandle:(IndyHandle)walletHandle
-                                pool:(IndyHandle)poolHandle
-                               myDid:(NSString *)myDid
-                                 did:(NSString *)did
-                             message:(NSData *)message
-                          completion:(void (^)(NSError *error, NSData *encryptedMsg, NSData *nonce)) handler
++ (void)encryptMessage:(NSData *)message
+                 myDid:(NSString *)myDid
+                   did:(NSString *)did
+          walletHandle:(IndyHandle)walletHandle
+                  pool:(IndyHandle)poolHandle
+            completion:(void (^)(NSError *error,
+                                 NSData *encryptedMsg,
+                                 NSData *nonce)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     uint32_t messageLen = (uint32_t)[message length];
     uint8_t *messageRaw = (uint8_t *)[message bytes];
@@ -161,21 +201,24 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil, nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
-+ (NSError *)decryptWithWalletHandle:(IndyHandle)walletHandle
-                               myDid:(NSString *)myDid
-                                 did:(NSString *)did
-                    encryptedMessage:(NSData *)encryptedMessage
-                               nonce:(NSData *)nonce
-                          completion:(void (^)(NSError *error, NSData *decryptedMessage)) handler
++ (void)decryptMessage:(NSData *)encryptedMessage
+                 myDid:(NSString *)myDid
+                   did:(NSString *)did
+                 nonce:(NSData *)nonce
+          walletHandle:(IndyHandle)walletHandle
+            completion:(void (^)(NSError *error,
+                                 NSData *decryptedMessage)) completion
 {
     indy_error_t ret;
     
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:handler];
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
     uint32_t messageLen = (uint32_t)[encryptedMessage length];
     uint8_t *messageRaw = (uint8_t *)[encryptedMessage bytes];
@@ -195,9 +238,11 @@
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
     }
-    
-    return [NSError errorFromIndyError: ret];
 }
 
 @end

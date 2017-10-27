@@ -1,4 +1,6 @@
-﻿namespace Hyperledger.Indy.AgentApi
+﻿using System;
+
+namespace Hyperledger.Indy.AgentApi
 {
     /// <summary>
     /// Event raised when a message is received on an <see cref="AgentConnection"/>.
@@ -6,7 +8,7 @@
     /// <remarks>
     /// <para>The AgentMessageEvent is raised asynchronously when a message is received on 
     /// an <see cref="AgentConnection"/>.  These events are queued and events for a specific 
-    /// connection can be obtained by calling the connection's <see cref="AgentConnection.WaitForMessage"/>
+    /// connection can be obtained by calling the connection's <see cref="AgentConnection.WaitForMessageAsync"/>
     /// method.
     /// </para>
     /// <note type="note">Messages received on a connection arrived encrypted, however the <see cref="Message"/> 
@@ -24,8 +26,8 @@
         internal AgentMessageEvent(AgentConnection connection, ErrorCode result, string message) :
             base(connection.Handle, result)
         {
-            Connection = connection;
-            Message = message;
+            Connection = connection ?? throw new ArgumentNullException("connection");
+            Message = message ?? throw new ArgumentNullException("message");
         }
 
         /// <summary>

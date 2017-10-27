@@ -22,7 +22,7 @@ namespace Hyperledger.Indy.AgentApi
     /// method.
     /// </para>
     /// <para>When an open listener receives an incoming connection an <see cref="AgentConnectionEvent"/> 
-    /// is raised asynchronously and these events can be obtained by calling the <see cref="WaitForConnection"/> 
+    /// is raised asynchronously and these events can be obtained by calling the <see cref="WaitForConnectionAsync"/> 
     /// method on the listener instance, which will return a <see cref="Task{AgentConnectionEvent}"/> that will resolve to
     /// the first received event for that listener.  
     /// </para>
@@ -57,6 +57,7 @@ namespace Hyperledger.Indy.AgentApi
 
             var listener = (AgentListener)taskCompletionSource.Task.AsyncState;
             listener.Handle = listener_handle;
+            listener._requiresClose = true;
 
             taskCompletionSource.SetResult(listener);
         };
@@ -65,7 +66,7 @@ namespace Hyperledger.Indy.AgentApi
         /// Creates a new AgentListener that listens for incoming connections on the specified endpoint.
         /// </summary>
         /// <remarks>
-        /// The endpoint specified must be in the format <c>address:port</c> where <c>address</c> is
+        /// The <paramref name="endpoint"/> specified must be in the format <c>address:port</c> where <c>address</c> is
         /// an IP address or host address and <c>port</c> is a numeric port number.
         /// </remarks>
         /// <param name="endpoint">The endpoint on which the incoming connections will listened for.</param>
@@ -73,6 +74,8 @@ namespace Hyperledger.Indy.AgentApi
         /// once the listener has been created.</returns>
         public static Task<AgentListener> ListenAsync(string endpoint)
         {
+            ParamGuard.NotNullOrWhiteSpace(endpoint, "endpoint");
+
             var listener = new AgentListener();
 
             var taskCompletionSource = new TaskCompletionSource<AgentListener>(listener);
@@ -124,7 +127,7 @@ namespace Hyperledger.Indy.AgentApi
         /// <summary>
         /// Whether or not the close function has been called.
         /// </summary>
-        private bool _closeRequested = false;
+        private bool _requiresClose = false;
 
         /// <summary>
         /// Gets the handle for the listener.
@@ -190,7 +193,7 @@ namespace Hyperledger.Indy.AgentApi
         /// automatically rejected.  This method adds an identity to the listener that will be authorized 
         /// to accept connections.
         /// </para>
-        /// <para>This method will perform a <see cref="Wallet"/> lookup to find the identity information 
+        /// <para>This method will perform a lookup against the <paramref name="wallet"/> to find the identity information 
         /// for the DID to add and consequently the DID must have already been saved in the wallet using 
         /// the <see cref="Hyperledger.Indy.SignusApi.CreateAndStoreMyDidResult"/> method prior to attempting to
         /// add it to the listener.
@@ -206,6 +209,10 @@ namespace Hyperledger.Indy.AgentApi
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public Task AddIdentityAsync(Pool pool, Wallet wallet, string did)
         {
+            ParamGuard.NotNull(pool, "pool");
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(did, "did");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -228,7 +235,7 @@ namespace Hyperledger.Indy.AgentApi
         /// </summary>
         /// <remarks>
         /// <para>Once an identity has been added to an AgentListner using the <see cref="AddIdentityAsync(Pool, Wallet, string)"/>
-        /// it can be removed using this method. A <see cref="Wallet"/> lookup will be performed to find 
+        /// it can be removed using this method. A lookup will be performed against the <paramref name="wallet"/> to find 
         /// the identity information for the DID so the wallet containing the DID must be provided.
         /// </para>
         /// </remarks>
@@ -237,6 +244,9 @@ namespace Hyperledger.Indy.AgentApi
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public Task RemoveIdentityAsync(Wallet wallet, string did)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(did, "did");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -267,7 +277,7 @@ namespace Hyperledger.Indy.AgentApi
         /// <seealso cref="AgentConnection"/>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to an 
         /// <see cref="AgentConnectionEvent"/> when a connection is established.</returns>
-        public Task<AgentConnectionEvent> WaitForConnection()
+        public Task<AgentConnectionEvent> WaitForConnectionAsync()
         {
             var taskCompletionSource = new TaskCompletionSource<AgentConnectionEvent>();
             var tuple = Tuple.Create(Handle, taskCompletionSource);
@@ -292,8 +302,7 @@ namespace Hyperledger.Indy.AgentApi
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public Task CloseAsync()
         {
-            if (_closeRequested)
-                return Task.FromResult(true);
+            _requiresClose = false;
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -305,8 +314,6 @@ namespace Hyperledger.Indy.AgentApi
                 );
 
             CallbackHelper.CheckResult(result);
-
-            _closeRequested = true;
             GC.SuppressFinalize(this);
 
             return taskCompletionSource.Task;
@@ -317,7 +324,7 @@ namespace Hyperledger.Indy.AgentApi
         /// </summary>
         public async void Dispose()
         {
-            if (!_closeRequested)
+            if (_requiresClose)
                 await CloseAsync();
         }
 
@@ -326,7 +333,7 @@ namespace Hyperledger.Indy.AgentApi
         /// </summary>
         ~AgentListener()
         {
-            if (!_closeRequested)
+            if (_requiresClose)
             {
                 IndyNativeMethods.indy_agent_close_listener(
                     -1,

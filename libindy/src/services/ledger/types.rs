@@ -18,22 +18,28 @@ use services::ledger::constants::{
 
 #[derive(Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct Request<T: JsonEncodable> {
+pub struct Request<T: serde::Serialize> {
     pub req_id: u64,
     pub identifier: String,
     pub operation: T,
+    pub protocol_version: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub signature: Option<String>
 }
 
-impl<T: JsonEncodable> Request<T> {
-    pub fn new(req_id: u64, identifier: String, operation: T) -> Request<T> {
+impl<T: serde::Serialize> Request<T> {
+    fn new(req_id: u64, identifier: String, operation: T, protocol_version: u64) -> Request<T> {
         Request {
             req_id: req_id,
             identifier: identifier,
             operation: operation,
+            protocol_version: protocol_version,
             signature: None
         }
+    }
+
+    pub fn build_request(identifier: String, operation: T) -> Result<String, serde_json::Error> {
+        serde_json::to_string(&Request::new(super::LedgerService::get_req_id(), identifier, operation, 1))
     }
 }
 
@@ -336,18 +342,20 @@ pub struct NodeOperationData {
     pub client_ip: String,
     pub client_port: i32,
     pub alias: String,
-    pub services: Vec<Services>
+    pub services: Vec<Services>,
+    pub blskey: String
 }
 
 impl NodeOperationData {
-    pub fn new(node_ip: String, node_port: i32, client_ip: String, client_port: i32, alias: String, services: Vec<Services>) -> NodeOperationData {
+    pub fn new(node_ip: String, node_port: i32, client_ip: String, client_port: i32, alias: String, services: Vec<Services>, blskey: String) -> NodeOperationData {
         NodeOperationData {
             node_ip: node_ip,
             node_port: node_port,
             client_ip: client_ip,
             client_port: client_port,
             alias: alias,
-            services: services
+            services: services,
+            blskey: blskey
         }
     }
 }

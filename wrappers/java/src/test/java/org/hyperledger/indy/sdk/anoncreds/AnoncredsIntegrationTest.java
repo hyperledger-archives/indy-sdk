@@ -38,6 +38,15 @@ public class AnoncredsIntegrationTest {
 	public static void  setUp() throws Exception{
 		InitHelper.init();
 	}
+	
+	@AfterClass
+	public static void cleanUp() throws Exception{
+		
+		if (walletOpened){
+			wallet.closeWallet().get();			
+			walletOpened = false;
+		}
+	}
 
 	void initCommonWallet() throws Exception {
 

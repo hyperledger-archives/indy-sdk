@@ -5,10 +5,11 @@ import java.util.concurrent.CompletableFuture;
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
+import org.hyperledger.indy.sdk.ParamGuard;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.signus.SignusResults.EncryptResult;
-import org.hyperledger.indy.sdk.signus.SignusResults.ReplaceKeysResult;
+import org.hyperledger.indy.sdk.signus.SignusResults.EndpointForDidResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import com.sun.jna.Callback;
@@ -37,28 +38,44 @@ public class Signus extends IndyJava.API {
 	private static Callback createAndStoreMyDidCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String did, String verkey, String pk) {
+		public void callback(int xcommand_handle, int err, String did, String verkey) {
 
 			CompletableFuture<CreateAndStoreMyDidResult> future = (CompletableFuture<CreateAndStoreMyDidResult>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			CreateAndStoreMyDidResult result = new CreateAndStoreMyDidResult(did, verkey, pk);
+			CreateAndStoreMyDidResult result = new CreateAndStoreMyDidResult(did, verkey);
 			future.complete(result);
 		}
 	};
 
 	/**
-	 * Callback used when replaceKeys completes.
+	 * Callback used when replaceKeysStart completes.
 	 */
-	private static Callback replaceKeysCb = new Callback() {
+	private static Callback replaceKeysStartCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String verkey, String pk) {
+		public void callback(int xcommand_handle, int err, String verkey) {
 
-			CompletableFuture<ReplaceKeysResult> future = (CompletableFuture<ReplaceKeysResult>) removeFuture(xcommand_handle);
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			ReplaceKeysResult result = new ReplaceKeysResult(verkey, pk);
+			String result = verkey;
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Callback used when replaceKeysApply completes.
+	 */
+	private static Callback replaceKeysApplyCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
 			future.complete(result);
 		}
 	};
@@ -151,14 +168,177 @@ public class Signus extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when sealed encrypt completes.
+	 */
+	private static Callback encryptSealedCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, Pointer encrypted_msg_raw, int encrypted_msg_len) {
+
+			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			byte[] encryptedMsg = new byte[encrypted_msg_len];
+			encrypted_msg_raw.read(0, encryptedMsg, 0, encrypted_msg_len);
+
+			future.complete(encryptedMsg);
+		}
+	};
+
+	/**
+	 * Callback used when sealed decrypt completes.
+	 */
+	private static Callback decryptSealedCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, Pointer decrypted_msg_raw, int decrypted_msg_len) {
+
+			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			byte[] result = new byte[decrypted_msg_len];
+			decrypted_msg_raw.read(0, result, 0, decrypted_msg_len);
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Callback used when createKey completes.
+	 */
+	private static Callback createKeyCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String verkey) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = verkey;
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Callback used when setKeyMetadata completes.
+	 */
+	private static Callback setKeyMetadataCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Callback used when getKeyMetadata completes.
+	 */
+	private static Callback getKeyMetadataCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String metadata) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = metadata;
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Callback used when keyForDid completes.
+	 */
+	private static Callback keyForDidCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String key) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = key;
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Callback used when setEndpointForDid completes.
+	 */
+	private static Callback setEndpointForDidCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Callback used when getEndpointForDid completes.
+	 */
+	private static Callback getEndpointForDidCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String endpoint, String transport_vk) {
+
+			CompletableFuture<EndpointForDidResult> future = (CompletableFuture<EndpointForDidResult>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			EndpointForDidResult result = new EndpointForDidResult(endpoint, transport_vk);
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Callback used when setDidMetadata completes.
+	 */
+	private static Callback setDidMetadataCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err) {
+
+			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			Void result = null;
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Callback used when getDidMetadata completes.
+	 */
+	private static Callback getDidMetadataCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String metadata) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = metadata;
+			future.complete(result);
+		}
+	};
+
 	/*
 	 * STATIC METHODS
 	 */
 
 	/**
 	 * Creates keys (signing and encryption keys) for a new DID owned by the caller.
-	 * 
-	 * @param wallet The wallet.
+	 *
+	 * @param wallet  The wallet.
 	 * @param didJson Identity information as json.
 	 * @return A future that resolves to a CreateAndStoreMyDidResult instance.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -167,14 +347,17 @@ public class Signus extends IndyJava.API {
 			Wallet wallet,
 			String didJson) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(didJson, "didJson");
+
 		CompletableFuture<CreateAndStoreMyDidResult> future = new CompletableFuture<CreateAndStoreMyDidResult>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_create_and_store_my_did(
-				commandHandle, 
-				walletHandle, 
+				commandHandle,
+				walletHandle,
 				didJson,
 				createAndStoreMyDidCb);
 
@@ -185,29 +368,64 @@ public class Signus extends IndyJava.API {
 
 	/**
 	 * Generated new signing and encryption keys for an existing DID owned by the caller.
-	 * 
-	 * @param wallet The wallet.
-	 * @param did The DID
+	 *
+	 * @param wallet       The wallet.
+	 * @param did          The DID
 	 * @param identityJson identity information as json.
-	 * @return A future that resolves to a ReplaceKeysResult instance.
+	 * @return A future that resolves to a ReplaceKeysStartResult instance.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
-	 */	
-	public static CompletableFuture<ReplaceKeysResult> replaceKeys(
+	 */
+	public static CompletableFuture<String> replaceKeysStart(
 			Wallet wallet,
 			String did,
 			String identityJson) throws IndyException {
 
-		CompletableFuture<ReplaceKeysResult> future = new CompletableFuture<ReplaceKeysResult>();
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+		ParamGuard.notNullOrWhiteSpace(identityJson, "identityJson");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibIndy.api.indy_replace_keys(
-				commandHandle, 
-				walletHandle, 
+		int result = LibIndy.api.indy_replace_keys_start(
+				commandHandle,
+				walletHandle,
 				did,
 				identityJson,
-				replaceKeysCb);
+				replaceKeysStartCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Apply temporary keys as main for an existing DID.
+	 *
+	 * @param wallet The wallet.
+	 * @param did    The DID
+	 * @return A future that resolves no value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<Void> replaceKeysApply(
+			Wallet wallet,
+			String did) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_replace_keys_apply(
+				commandHandle,
+				walletHandle,
+				did,
+				replaceKeysApplyCb);
 
 		checkResult(result);
 
@@ -216,8 +434,8 @@ public class Signus extends IndyJava.API {
 
 	/**
 	 * Saves their DID for a pairwise connection in a secured Wallet so that it can be used to verify transaction.
-	 * 
-	 * @param wallet The wallet.
+	 *
+	 * @param wallet       The wallet.
 	 * @param identityJson Identity information as json.
 	 * @return A future that does not resolve any value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -226,14 +444,17 @@ public class Signus extends IndyJava.API {
 			Wallet wallet,
 			String identityJson) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(identityJson, "identityJson");
+
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_store_their_did(
-				commandHandle, 
-				walletHandle, 
+				commandHandle,
+				walletHandle,
 				identityJson,
 				storeTheirDidCb);
 
@@ -244,9 +465,9 @@ public class Signus extends IndyJava.API {
 
 	/**
 	 * Signs a message by a signing key associated with my DID. The DID with a signing key.
-	 * 
-	 * @param wallet The wallet.
-	 * @param did signing DID
+	 *
+	 * @param wallet  The wallet.
+	 * @param did     signing DID
 	 * @param message a message to be signed
 	 * @return A future that resolves to a a signature string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -256,14 +477,18 @@ public class Signus extends IndyJava.API {
 			String did,
 			byte[] message) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+		ParamGuard.notNull(message, "message");
+
 		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_sign(
-				commandHandle, 
-				walletHandle, 
+				commandHandle,
+				walletHandle,
 				did,
 				message,
 				message.length,
@@ -276,11 +501,11 @@ public class Signus extends IndyJava.API {
 
 	/**
 	 * Verify a signature created by a key associated with a DID.
-	 * 
-	 * @param wallet The wallet.
-	 * @param pool The pool.
-	 * @param did DID that signed the message
-	 * @param message message
+	 *
+	 * @param wallet    The wallet.
+	 * @param pool      The pool.
+	 * @param did       DID that signed the message
+	 * @param message   message
 	 * @param signature a signature to be verified
 	 * @return A future that resolves to true if signature is valid, otherwise false.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -292,6 +517,12 @@ public class Signus extends IndyJava.API {
 			byte[] message,
 			byte[] signature) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNull(pool, "pool");
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+		ParamGuard.notNull(message, "message");
+		ParamGuard.notNull(signature, "signature");
+
 		CompletableFuture<Boolean> future = new CompletableFuture<Boolean>();
 		int commandHandle = addFuture(future);
 
@@ -299,8 +530,8 @@ public class Signus extends IndyJava.API {
 		int poolHandle = pool.getPoolHandle();
 
 		int result = LibIndy.api.indy_verify_signature(
-				commandHandle, 
-				walletHandle, 
+				commandHandle,
+				walletHandle,
 				poolHandle,
 				did,
 				message,
@@ -315,12 +546,12 @@ public class Signus extends IndyJava.API {
 	}
 
 	/**
-	 * Encrypts a message by a public key associated with a DID.
-	 * 
-	 * @param wallet The wallet.
-	 * @param pool The pool.
-	 * @param myDid encrypting DID
-	 * @param did encrypting DID
+	 * Encrypts a message by public-key (associated with their did) authenticated-encryption scheme
+	 *
+	 * @param wallet  The wallet.
+	 * @param pool    The pool.
+	 * @param myDid   encrypting DID
+	 * @param did     encrypting DID
 	 * @param message a message to be signed
 	 * @return A future that resolves to a JSON string containing an encrypted message and nonce.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -332,6 +563,12 @@ public class Signus extends IndyJava.API {
 			String did,
 			byte[] message) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNull(pool, "pool");
+		ParamGuard.notNullOrWhiteSpace(myDid, "myDid");
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+		ParamGuard.notNull(message, "message");
+
 		CompletableFuture<EncryptResult> future = new CompletableFuture<EncryptResult>();
 		int commandHandle = addFuture(future);
 
@@ -339,9 +576,9 @@ public class Signus extends IndyJava.API {
 		int poolHandle = pool.getPoolHandle();
 
 		int result = LibIndy.api.indy_encrypt(
-				commandHandle, 
-				walletHandle, 
-				poolHandle, 
+				commandHandle,
+				walletHandle,
+				poolHandle,
 				myDid,
 				did,
 				message,
@@ -354,31 +591,41 @@ public class Signus extends IndyJava.API {
 	}
 
 	/**
-	 * Decrypts a message encrypted by a public key associated with my DID.
-	 * 
-	 * @param wallet The wallet.
-	 * @param myDid DID
-	 * @param did DID that signed the message
+	 * Decrypts a message by public-key authenticated-encryption scheme using nonce.
+	 *
+	 * @param wallet       The wallet.
+	 * @param pool       The pool.
+	 * @param myDid        DID
+	 * @param did          DID that signed the message
 	 * @param encryptedMsg encrypted message
-	 * @param nonce nonce that encrypted message
+	 * @param nonce        nonce that encrypted message
 	 * @return A future that resolves to a JSON string containing the decrypted message.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<byte[]> decrypt(
 			Wallet wallet,
+			Pool pool,
 			String myDid,
 			String did,
 			byte[] encryptedMsg,
 			byte[] nonce) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(myDid, "myDid");
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+		ParamGuard.notNull(encryptedMsg, "encryptedMsg");
+		ParamGuard.notNull(nonce, "nonce");
+
 		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
+		int poolHandle = pool.getPoolHandle();
 
 		int result = LibIndy.api.indy_decrypt(
-				commandHandle, 
-				walletHandle, 
+				commandHandle,
+				walletHandle,
+				poolHandle,
 				myDid,
 				did,
 				encryptedMsg,
@@ -386,6 +633,343 @@ public class Signus extends IndyJava.API {
 				nonce,
 				nonce.length,
 				decryptCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Encrypts a message by public-key (associated with did) anonymous-encryption scheme.
+	 *
+	 * @param wallet  The wallet.
+	 * @param pool    The pool.
+	 * @param did     encrypted DID
+	 * @param message a message to be signed
+	 * @return A future that resolves to a JSON string containing an encrypted message and nonce.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<byte[]> encryptSealed(
+			Wallet wallet,
+			Pool pool,
+			String did,
+			byte[] message) throws IndyException {
+
+		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+		int poolHandle = pool.getPoolHandle();
+
+		int result = LibIndy.api.indy_encrypt_sealed(
+				commandHandle,
+				walletHandle,
+				poolHandle,
+				did,
+				message,
+				message.length,
+				encryptSealedCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Decrypts a message by public-key anonymous-encryption scheme.
+	 *
+	 * @param wallet       The wallet.
+	 * @param did          DID that signed the message
+	 * @param encryptedMsg encrypted message
+	 * @return A future that resolves to a JSON string containing the decrypted message.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<byte[]> decryptSealed(
+			Wallet wallet,
+			String did,
+			byte[] encryptedMsg) throws IndyException {
+
+		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_decrypt_sealed(
+				commandHandle,
+				walletHandle,
+				did,
+				encryptedMsg,
+				encryptedMsg.length,
+				decryptSealedCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Creates keys pair and stores in the wallet.
+	 *
+	 * @param wallet  The wallet.
+	 * @param keyJson Key information as json.
+	 *                {
+	 *                "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+	 *                "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
+	 *                }
+	 * @return A future resolving to a verkey
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> createKey(
+			Wallet wallet,
+			String keyJson) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNull(keyJson, "keyJson");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_create_key(
+				commandHandle,
+				walletHandle,
+				keyJson,
+				createKeyCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Saves/replaces the meta information for the giving key in the wallet.
+	 *
+	 * @param wallet   The wallet.
+	 * @param verkey   The key (verkey, key id) to store metadata.
+	 * @param metadata The meta information that will be store with the key.
+	 * @return A future that resolves no value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<Void> setKeyMetadata(
+			Wallet wallet,
+			String verkey,
+			String metadata) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(verkey, "verkey");
+		ParamGuard.notNull(metadata, "metadata");
+
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_set_key_metadata(
+				commandHandle,
+				walletHandle,
+				verkey,
+				metadata,
+				setKeyMetadataCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Retrieves the meta information for the giving key in the wallet.
+	 *
+	 * @param wallet The wallet.
+	 * @param verkey The key (verkey, key id) to retrieve metadata.
+	 * @return A future resolving to a metadata
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> getKeyMetadata(
+			Wallet wallet,
+			String verkey) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(verkey, "verkey");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_get_key_metadata(
+				commandHandle,
+				walletHandle,
+				verkey,
+				getKeyMetadataCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Retrieves the key for the giving did in the wallet or pool.
+	 *
+	 * @param pool   The pool.
+	 * @param wallet The wallet.
+	 * @param did
+	 * @return A future resolving to a verkey
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> keyForDid(
+			Pool pool,
+			Wallet wallet,
+			String did) throws IndyException {
+
+		ParamGuard.notNull(pool, "pool");
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+		int poolHandle = pool.getPoolHandle();
+
+		int result = LibIndy.api.indy_key_for_did(
+				commandHandle,
+				poolHandle,
+				walletHandle,
+				did,
+				keyForDidCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * @param wallet       The wallet.
+	 * @param did          The encrypted Did.
+	 * @param address      .
+	 * @param transportKey .
+	 * @return A future that resolves no value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<Void> setEndpointForDid(
+			Wallet wallet,
+			String did,
+			String address,
+			String transportKey) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+		ParamGuard.notNull(address, "address");
+		ParamGuard.notNullOrWhiteSpace(transportKey, "transportKey");
+
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_set_endpoint_for_did(
+				commandHandle,
+				walletHandle,
+				did,
+				address,
+				transportKey,
+				setEndpointForDidCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * @param wallet The wallet.
+	 * @param did
+	 * @return A future resolving to a endpoint object
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<EndpointForDidResult> getEndpointForDid(
+			Wallet wallet,
+			String did) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+
+		CompletableFuture<EndpointForDidResult> future = new CompletableFuture<EndpointForDidResult>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_get_endpoint_for_did(
+				commandHandle,
+				walletHandle,
+				did,
+				getEndpointForDidCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Saves/replaces the meta information for the giving DID in the wallet.
+	 *
+	 * @param wallet   The wallet.
+	 * @param did      The encrypted Did.
+	 * @param metadata The meta information that will be store with the DID.
+	 * @return A future that resolves no value.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<Void> setDidMetadata(
+			Wallet wallet,
+			String did,
+			String metadata) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+		ParamGuard.notNull(metadata, "metadata");
+
+		CompletableFuture<Void> future = new CompletableFuture<Void>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_set_did_metadata(
+				commandHandle,
+				walletHandle,
+				did,
+				metadata,
+				setDidMetadataCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Retrieves the meta information for the giving DID in the wallet.
+	 *
+	 * @param wallet The wallet.
+	 * @param did
+	 * @return A future resolving to a metadata
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> getDidMetadata(
+			Wallet wallet,
+			String did) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_get_did_metadata(
+				commandHandle,
+				walletHandle,
+				did,
+				getDidMetadataCb);
 
 		checkResult(result);
 

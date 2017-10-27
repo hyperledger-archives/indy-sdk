@@ -3,19 +3,12 @@ extern crate libc;
 use std::sync::mpsc::channel;
 use std::ffi::CString;
 
-use indy::api::signus::{
-    indy_sign,
-    indy_create_and_store_my_did,
-    indy_store_their_did,
-    indy_replace_keys,
-    indy_verify_signature,
-    indy_encrypt,
-    indy_decrypt
-};
+use indy::api::signus::*;
 use indy::api::ErrorCode;
 
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
+use utils::ledger::LedgerUtils;
 
 pub struct SignusUtils {}
 
@@ -52,10 +45,10 @@ impl SignusUtils {
         Ok(signature)
     }
 
-    pub fn create_and_store_my_did(wallet_handle: i32, seed: Option<&str>) -> Result<(String, String, String), ErrorCode> {
+    pub fn create_and_store_my_did(wallet_handle: i32, seed: Option<&str>) -> Result<(String, String), ErrorCode> {
         let (create_and_store_my_did_sender, create_and_store_my_did_receiver) = channel();
-        let create_and_store_my_did_cb = Box::new(move |err, did, verkey, public_key| {
-            create_and_store_my_did_sender.send((err, did, verkey, public_key)).unwrap();
+        let create_and_store_my_did_cb = Box::new(move |err, did, verkey| {
+            create_and_store_my_did_sender.send((err, did, verkey)).unwrap();
         });
         let (create_and_store_my_did_command_handle, create_and_store_my_did_callback) = CallbackUtils::closure_to_create_and_store_my_did_cb(create_and_store_my_did_cb);
 
@@ -72,18 +65,18 @@ impl SignusUtils {
         if err != ErrorCode::Success {
             return Err(err);
         }
-        let (err, my_did, my_verkey, my_pk) = create_and_store_my_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        let (err, my_did, my_verkey) = create_and_store_my_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
         if err != ErrorCode::Success {
             return Err(err);
         }
-        Ok((my_did, my_verkey, my_pk))
+        Ok((my_did, my_verkey))
     }
 
-    pub fn create_my_did(wallet_handle: i32, my_did_json: &str) -> Result<(String, String, String), ErrorCode> {
+    pub fn create_my_did(wallet_handle: i32, my_did_json: &str) -> Result<(String, String), ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, did, verkey, public_key| {
-            sender.send((err, did, verkey, public_key)).unwrap();
+        let cb = Box::new(move |err, did, verkey| {
+            sender.send((err, did, verkey)).unwrap();
         });
 
         let (command_handle, cb) = CallbackUtils::closure_to_create_and_store_my_did_cb(cb);
@@ -100,13 +93,13 @@ impl SignusUtils {
             return Err(err);
         }
 
-        let (err, my_did, my_verkey, my_pk) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        let (err, my_did, my_verkey) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        Ok((my_did, my_verkey, my_pk))
+        Ok((my_did, my_verkey))
     }
 
     pub fn store_their_did(wallet_handle: i32, identity_json: &str) -> Result<(), ErrorCode> {
@@ -170,36 +163,77 @@ impl SignusUtils {
         Ok(())
     }
 
-    pub fn replace_keys(wallet_handle: i32, did: &str, identity_json: &str) -> Result<(String, String), ErrorCode> {
+    pub fn replace_keys_start(wallet_handle: i32, did: &str, identity_json: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, verkey, public_key| {
-            sender.send((err, verkey, public_key)).unwrap();
+        let cb = Box::new(move |err, verkey| {
+            sender.send((err, verkey)).unwrap();
         });
 
-        let (command_handle, cb) = CallbackUtils::closure_to_replace_keys_cb(cb);
+        let (command_handle, cb) = CallbackUtils::closure_to_replace_keys_start_cb(cb);
 
         let did = CString::new(did).unwrap();
         let identity_json = CString::new(identity_json).unwrap();
 
         let err =
-            indy_replace_keys(command_handle,
-                              wallet_handle,
-                              did.as_ptr(),
-                              identity_json.as_ptr(),
-                              cb);
+            indy_replace_keys_start(command_handle,
+                                    wallet_handle,
+                                    did.as_ptr(),
+                                    identity_json.as_ptr(),
+                                    cb);
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        let (err, my_verkey, my_pk) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        let (err, my_verkey) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        Ok((my_verkey, my_pk))
+        Ok(my_verkey)
+    }
+
+    pub fn replace_keys_apply(wallet_handle: i32, did: &str) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err| {
+            sender.send((err)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_replace_keys_apply_cb(cb);
+
+        let did = CString::new(did).unwrap();
+
+        let err =
+            indy_replace_keys_apply(command_handle,
+                                    wallet_handle,
+                                    did.as_ptr(),
+                                    cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let err = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(())
+    }
+
+    pub fn replace_keys(pool_handle: i32, wallet_handle: i32, did: &str) -> Result<String, ErrorCode> {
+        let verkey = SignusUtils::replace_keys_start(wallet_handle, did, "{}").unwrap();
+
+        let nym_request = LedgerUtils::build_nym_request(did, did, Some(&verkey), None, None).unwrap();
+        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, did, &nym_request).unwrap();
+
+        SignusUtils::replace_keys_apply(wallet_handle, did).unwrap();
+
+        Ok(verkey)
     }
 
     pub fn verify(wallet_handle: i32, pool_handle: i32, did: &str, msg: &[u8], signature: &[u8]) -> Result<bool, ErrorCode> {
@@ -272,7 +306,7 @@ impl SignusUtils {
         Ok((encrypted_msg, nonce))
     }
 
-    pub fn decrypt(wallet_handle: i32, my_did: &str, did: &str, encrypted_msg: &[u8], nonce: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+    pub fn decrypt(wallet_handle: i32, pool_handle: i32, my_did: &str, did: &str, encrypted_msg: &[u8], nonce: &[u8]) -> Result<Vec<u8>, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, decrypted_msg| {
@@ -287,6 +321,7 @@ impl SignusUtils {
         let err =
             indy_decrypt(command_handle,
                          wallet_handle,
+                         pool_handle,
                          my_did.as_ptr(),
                          did.as_ptr(),
                          encrypted_msg.as_ptr() as *const u8,
@@ -306,5 +341,372 @@ impl SignusUtils {
         }
 
         Ok(decrypted_msg)
+    }
+
+    pub fn encrypt_sealed(wallet_handle: i32, pool_handle: i32, did: &str, msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, encrypted_msg| {
+            sender.send((err, encrypted_msg)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_encrypt_sealed_cb(cb);
+
+        let did = CString::new(did).unwrap();
+
+        let err =
+            indy_encrypt_sealed(command_handle,
+                                wallet_handle,
+                                pool_handle,
+                                did.as_ptr(),
+                                msg.as_ptr() as *const u8,
+                                msg.len() as u32,
+                                cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, encrypted_msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(encrypted_msg)
+    }
+
+    pub fn decrypt_sealed(wallet_handle: i32, did: &str, encrypted_msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, decrypted_msg| {
+            sender.send((err, decrypted_msg)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_decrypt_sealed_cb(cb);
+
+        let did = CString::new(did).unwrap();
+
+        let err =
+            indy_decrypt_sealed(command_handle,
+                                wallet_handle,
+                                did.as_ptr(),
+                                encrypted_msg.as_ptr() as *const u8,
+                                encrypted_msg.len() as u32,
+                                cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, decrypted_msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(decrypted_msg)
+    }
+
+    pub fn create_key(wallet_handle: i32, seed: Option<&str>) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err, verkey| {
+            sender.send((err, verkey)).unwrap();
+        });
+        let (command_handle, callback) = CallbackUtils::closure_to_create_key_cb(cb);
+
+        let key_json = seed.map_or("{}".to_string(), |seed| format!(r#"{{"seed":"{}"}}"#, seed));
+        let key_json = CString::new(key_json).unwrap();
+
+        let err = indy_create_key(command_handle,
+                                  wallet_handle,
+                                  key_json.as_ptr(),
+                                  callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let (err, verkey) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok(verkey)
+    }
+
+    pub fn set_key_metadata(wallet_handle: i32, verkey: &str, metadata: &str) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err| {
+            sender.send((err)).unwrap();
+        });
+        let (command_handle, callback) = CallbackUtils::closure_to_store_key_metadata_cb(cb);
+
+        let verkey = CString::new(verkey).unwrap();
+        let metadata = CString::new(metadata).unwrap();
+
+        let err = indy_set_key_metadata(command_handle,
+                                        wallet_handle,
+                                        verkey.as_ptr(),
+                                        metadata.as_ptr(),
+                                        callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let err = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok(())
+    }
+
+    pub fn get_key_metadata(wallet_handle: i32, verkey: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err, metadata| {
+            sender.send((err, metadata)).unwrap();
+        });
+        let (command_handle, callback) = CallbackUtils::closure_to_get_key_metadata_cb(cb);
+
+        let verkey = CString::new(verkey).unwrap();
+
+        let err = indy_get_key_metadata(command_handle,
+                                        wallet_handle,
+                                        verkey.as_ptr(),
+                                        callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let (err, metadata) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok(metadata)
+    }
+
+    //    pub fn sign_vk(wallet_handle: i32, verkey: &str, msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+    //        let (sender, receiver) = channel();
+    //
+    //        let cb = Box::new(move |err, signature| {
+    //            sender.send((err, signature)).unwrap();
+    //        });
+    //
+    //        let (command_handle, cb) = CallbackUtils::closure_to_sign_cb(cb);
+    //
+    //        let verkey = CString::new(verkey).unwrap();
+    //
+    //        let err =
+    //            indy_sign_vk(command_handle,
+    //                         wallet_handle,
+    //                         verkey.as_ptr(),
+    //                         msg.as_ptr() as *const u8,
+    //                         msg.len() as u32,
+    //                         cb);
+    //
+    //        if err != ErrorCode::Success {
+    //            return Err(err);
+    //        }
+    //
+    //        let (err, signature) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    //
+    //        if err != ErrorCode::Success {
+    //            return Err(err);
+    //        }
+    //
+    //        Ok(signature)
+    //    }
+    //
+    //    pub fn verify_vk(wallet_handle: i32, verkey: &str, msg: &[u8], signature: &[u8]) -> Result<bool, ErrorCode> {
+    //        let (sender, receiver) = channel();
+    //
+    //        let cb = Box::new(move |err, valid| {
+    //            sender.send((err, valid)).unwrap();
+    //        });
+    //
+    //        let (command_handle, cb) = CallbackUtils::closure_to_verify_signature_cb(cb);
+    //
+    //        let verkey = CString::new(verkey).unwrap();
+    //
+    //        let err =
+    //            indy_verify_vk_signature(command_handle,
+    //                                     wallet_handle,
+    //                                     verkey.as_ptr(),
+    //                                     msg.as_ptr() as *const u8,
+    //                                     msg.len() as u32,
+    //                                     signature.as_ptr() as *const u8,
+    //                                     signature.len() as u32,
+    //                                     cb);
+    //
+    //        if err != ErrorCode::Success {
+    //            return Err(err);
+    //        }
+    //
+    //        let (err, valid) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    //
+    //        if err != ErrorCode::Success {
+    //            return Err(err);
+    //        }
+    //
+    //        Ok(valid)
+    //    }
+    //
+    //    pub fn encrypt_vk(wallet_handle: i32, sender_vk: &str, recepient_vk: &str, msg: &[u8]) -> Result<(Vec<u8>, Vec<u8>), ErrorCode> {
+    //        let (sender, receiver) = channel();
+    //
+    //        let cb = Box::new(move |err, encrypted_msg, nonce| {
+    //            sender.send((err, encrypted_msg, nonce)).unwrap();
+    //        });
+    //
+    //        let (command_handle, cb) = CallbackUtils::closure_to_encrypt_cb(cb);
+    //
+    //        let my_did = CString::new(my_did).unwrap();
+    //        let did = CString::new(did).unwrap();
+    //
+    //        let err =
+    //            indy_encrypt_vk(command_handle,
+    //                            wallet_handle,
+    //                            my_did.as_ptr(),
+    //                            did.as_ptr(),
+    //                            msg.as_ptr() as *const u8,
+    //                            msg.len() as u32,
+    //                            cb);
+    //
+    //        if err != ErrorCode::Success {
+    //            return Err(err);
+    //        }
+    //
+    //        let (err, encrypted_msg, nonce) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    //
+    //        if err != ErrorCode::Success {
+    //            return Err(err);
+    //        }
+    //
+    //        Ok((encrypted_msg, nonce))
+    //    }
+
+    pub fn key_for_did(pool_handle: i32, wallet_handle: i32, did: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err, verkey| {
+            sender.send((err, verkey)).unwrap();
+        });
+        let (command_handle, callback) = CallbackUtils::closure_to_key_for_did_cb(cb);
+
+        let did = CString::new(did).unwrap();
+
+        let err = indy_key_for_did(command_handle,
+                                   pool_handle,
+                                   wallet_handle,
+                                   did.as_ptr(),
+                                   callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let (err, verkey) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok(verkey)
+    }
+
+    pub fn set_endpoint_for_did(wallet_handle: i32, did: &str, address: &str, transport_key: &str) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err| {
+            sender.send((err)).unwrap();
+        });
+        let (command_handle, callback) = CallbackUtils::closure_to_set_endpoint_for_did_cb(cb);
+
+        let did = CString::new(did).unwrap();
+        let address = CString::new(address).unwrap();
+        let transport_key = CString::new(transport_key).unwrap();
+
+        let err = indy_set_endpoint_for_did(command_handle,
+                                            wallet_handle,
+                                            did.as_ptr(),
+                                            address.as_ptr(),
+                                            transport_key.as_ptr(),
+                                            callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let err = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok(())
+    }
+
+    pub fn get_endpoint_for_did(wallet_handle: i32, did: &str) -> Result<(String, String), ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err, endpoint, transport_vk| {
+            sender.send((err, endpoint, transport_vk)).unwrap();
+        });
+        let (command_handle, callback) = CallbackUtils::closure_to_get_endpoint_for_did_cb(cb);
+
+        let did = CString::new(did).unwrap();
+
+        let err = indy_get_endpoint_for_did(command_handle,
+                                            wallet_handle,
+                                            did.as_ptr(),
+                                            callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let (err, endpoint, transport_vk) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok((endpoint, transport_vk))
+    }
+
+    pub fn set_did_metadata(wallet_handle: i32, did: &str, metadata: &str) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err| {
+            sender.send((err)).unwrap();
+        });
+        let (command_handle, callback) = CallbackUtils::closure_to_store_did_metadata_cb(cb);
+
+        let did = CString::new(did).unwrap();
+        let metadata = CString::new(metadata).unwrap();
+
+        let err = indy_set_did_metadata(command_handle,
+                                        wallet_handle,
+                                        did.as_ptr(),
+                                        metadata.as_ptr(),
+                                        callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let err = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok(())
+    }
+
+    pub fn get_did_metadata(wallet_handle: i32, did: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err, metadata| {
+            sender.send((err, metadata)).unwrap();
+        });
+        let (command_handle, callback) = CallbackUtils::closure_to_get_did_metadata_cb(cb);
+
+        let did = CString::new(did).unwrap();
+
+        let err = indy_get_did_metadata(command_handle,
+                                        wallet_handle,
+                                        did.as_ptr(),
+                                        callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let (err, metadata) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok(metadata)
     }
 }

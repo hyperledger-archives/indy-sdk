@@ -1,13 +1,12 @@
 package org.hyperledger.indy.sdk.pool;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.junit.Test;
 
 import java.io.File;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertTrue;
 
 public class CreatePoolTest extends IndyIntegrationTest {
@@ -17,6 +16,7 @@ public class CreatePoolTest extends IndyIntegrationTest {
 		File file = new File("testCreatePoolWorks.txn");
 		file.deleteOnExit();
 		assertTrue(file.createNewFile());
+		PoolUtils.writeTransactions(file, 1);
 
 		Pool.createPoolLedgerConfig("testCreatePoolWorks", null).get();
 	}
@@ -32,7 +32,7 @@ public class CreatePoolTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCreatePoolWorksForEmptyName() throws Exception {
-		thrown.expect(new ErrorCodeMatcher(ErrorCode.CommonInvalidParam2));
+		thrown.expect(IllegalArgumentException.class);
 
 		File genesisTxnFile = PoolUtils.createGenesisTxnFile("genesis.txn");
 
@@ -43,7 +43,7 @@ public class CreatePoolTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCreatePoolWorksForTwice() throws Exception {
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.PoolLedgerConfigAlreadyExistsError));
+		thrown.expectCause(isA(PoolLedgerConfigExistsException.class));
 
 		File genesisTxnFile = PoolUtils.createGenesisTxnFile("genesis.txn");
 

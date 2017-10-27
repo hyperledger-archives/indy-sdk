@@ -1,16 +1,14 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
-import org.hyperledger.indy.sdk.utils.StorageUtils;
+import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.wallet.InMemWalletType;
 import org.hyperledger.indy.sdk.wallet.Wallet;
-import org.hyperledger.indy.sdk.wallet.WalletType;
 import org.json.JSONArray;
 import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -93,7 +91,7 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		initCommonWallet();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String filter = String.format("{\"schema_seq_no\":\"%d\"}", 1);
 

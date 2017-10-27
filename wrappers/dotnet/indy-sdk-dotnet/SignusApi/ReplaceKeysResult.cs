@@ -1,19 +1,21 @@
-﻿namespace Hyperledger.Indy.SignusApi
+﻿using System;
+
+namespace Hyperledger.Indy.SignusApi
 {
     /// <summary>
     /// Result of replacing keys.
     /// </summary>
-    public class ReplaceKeysResult
+    public sealed class ReplaceKeysStartResult
     {
         /// <summary>
         /// Initializes a new ReplaceKeysResult.
         /// </summary>
         /// <param name="verKey">The verification key.</param>
         /// <param name="pk">The primary key.</param>
-        internal ReplaceKeysResult(string verKey, string pk)
+        internal ReplaceKeysStartResult(string verKey, string pk)
         {
-            VerKey = verKey;
-            Pk = pk;
+            VerKey = verKey ?? throw new ArgumentNullException("verKey"); 
+            Pk = pk ?? throw new ArgumentNullException("pk"); 
         }
 
         /// <summary>
