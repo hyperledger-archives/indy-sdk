@@ -34,3 +34,10 @@ Builded binaries can be downloaded from https://repo.sovrin.org/:
 * windows/libindy/deps/ - Windows zip archive with dependencies (DLLs and headers) to build libindy from sources
 * ios/libindy/stable/ - Pods for iOS
 * rhel/libindy/{master,stable,rc} - RHEL rpms
+
+Alternatively Ubundu deb packages can be installed by running following commands:
+```
+apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
+sudo add-apt-repository https://repo.sovrin.org/sdk/deb
+sudo apt-get install -y libindy
+```
