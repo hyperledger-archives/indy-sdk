@@ -23,12 +23,11 @@
  
  @param name Name of the pool ledger configuration.
  @param poolConfig Pool configuration json. if NULL, then default config will be used. See example above.
- 
- @return Error Code
+ @param completion Completion block, returns error code.
  */
-+ (NSError *)createPoolLedgerConfigWithPoolName:(NSString *)name
-                                     poolConfig:(NSString *)poolConfig
-                                     completion:(void (^)(NSError *error)) handler;
++ (void)createPoolLedgerConfigWithPoolName:(NSString *)name
+                                poolConfig:(NSString *)poolConfig
+                                completion:(void (^)(NSError *error)) completion;
 
 /**
  Opens pool ledger and performs connecting to pool nodes.
@@ -52,45 +51,37 @@
  
  @param name Name of the pool ledger configuration.
  @param poolConfig Runtime pool configuration json. Optional. If NULL, then default config will be used. See example above.
- @param handler Callback returns handle to opened pool to use in methods that require pool connection.
- 
- @return Error Code
+ @param completion Callback returns handle to opened pool to use in methods that require pool connection.
  */
-+ (NSError *)openPoolLedgerWithName:(NSString *)name
-                         poolConfig:(NSString *)poolConfig
-                         completion:(void (^)(NSError *error, IndyHandle poolHandle)) handler;
++ (void)openPoolLedgerWithName:(NSString *)name
+                    poolConfig:(NSString *)poolConfig
+                    completion:(void (^)(NSError *error, IndyHandle poolHandle)) completion;
 
 /**
  Refreshes a local copy of a pool ledger and updates pool nodes connections.
  
  @param poolHandle Pool handle returned by IndyPool::openPoolLedgerWithName
- @param handler Callback, returns error code.
- 
- @return Error Code
+ @param completion Callback, returns error code.
  */
-+ (NSError *)refreshPoolLedgerWithHandle:(IndyHandle)poolHandle
-                              completion:(void (^)(NSError *error)) handler;
++ (void)refreshPoolLedgerWithHandle:(IndyHandle)poolHandle
+                         completion:(void (^)(NSError *error)) completion;
 
 /**
  Closes opened pool ledger, opened nodes connections and frees allocated resources.
  
  @param poolHandle Pool handle returned by IndyPool::openPoolLedgerWithName.
- @param handler Completion callback, returns error code.
-
- @return Error Code
+ @param completion Completion callback, returns error code.
  */
-+ (NSError *)closePoolLedgerWithHandle:(IndyHandle)poolHandle
-                            completion:(void (^)(NSError *error)) handler;
++ (void)closePoolLedgerWithHandle:(IndyHandle)poolHandle
+                       completion:(void (^)(NSError *error)) completion;
 
 /**
  Deletes created pool ledger configuration.
 
  @param name Name of the pool ledger configuration to delete.
- @param handler Completion callback, returns error code.
- 
- @return Error Code
+ @param completion Completion callback, returns error code.
  */
-+ (NSError *)deletePoolLedgerConfigWithName:(NSString *)name
-                                 completion:(void (^)(NSError *error)) handler;
++ (void)deletePoolLedgerConfigWithName:(NSString *)name
+                            completion:(void (^)(NSError *error)) completion;
 
 @end

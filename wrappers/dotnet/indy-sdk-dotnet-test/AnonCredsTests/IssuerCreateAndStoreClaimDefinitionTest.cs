@@ -11,9 +11,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
     public class IssuerCreateAndStoreClaimDefinitionTest : AnonCredsIntegrationTestBase
     {
         private  Wallet _wallet;
-        private  string _walletName = "createAndStoreClaimDefWallet";
-        private new string _issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
-        private  string _gvtSchemaJson = "{\n" +
+        private const string _walletName = "createAndStoreClaimDefWallet";
+        private const string _issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
+        private const string _gvtSchemaJson = "{\n" +
                 "                    \"seqNo\":1,\n" +
                 "                    \"data\": {\n" +
                 "                        \"name\":\"gvt\",\n" +

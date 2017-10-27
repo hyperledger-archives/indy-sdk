@@ -1,5 +1,6 @@
 ﻿using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.WalletTests
@@ -10,48 +11,56 @@ namespace Hyperledger.Indy.Test.WalletTests
         [TestMethod]
         public async Task TestCreateWalletWorks()
         {
-            await Wallet.CreateWalletAsync("default", "createWalletWorks", "default", null, null);
+            await Wallet.CreateWalletAsync(POOL, WALLET, TYPE, null, null);
+        }
+
+        [TestMethod]
+        public async Task TestCreateWalletWorksForPlugged()
+        {
+            await Wallet.CreateWalletAsync(POOL, "pluggedWalletCreate", "inmem", null, null);
         }
 
         [TestMethod]
         public async Task TestCreateWalletWorksForEmptyType()
         {
-            await Wallet.CreateWalletAsync("default", "createWalletWorks", null, null, null);
+            await Wallet.CreateWalletAsync(POOL, WALLET, null, null, null);
         }
 
         [TestMethod]
         public async Task TestCreateWalletWorksForConfigJson()
         {
-            await Wallet.CreateWalletAsync("default", "createWalletWorks", null, "{\"freshness_time\":1000}", null);
+            await Wallet.CreateWalletAsync(POOL, WALLET, null, "{\"freshness_time\":1000}", null);
         }
 
         [TestMethod]
         public async Task TestCreateWalletWorksForUnknownType()
         {
             var ex = await Assert.ThrowsExceptionAsync<UnknownWalletTypeException>(() =>
-                Wallet.CreateWalletAsync("default", "createWalletWorks", "unknown_type", null, null)
+                Wallet.CreateWalletAsync(POOL, WALLET, "unknown_type", null, null)
             );
+        }
+
+        [TestMethod]
+        public async Task TestCreateWalletWorksForEmptyName()
+        {
+            var ex = await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                Wallet.CreateWalletAsync(POOL, string.Empty, TYPE, null, null)
+            );
+
+            Assert.AreEqual("name", ex.ParamName);
         }
 
         [TestMethod]
         public async Task TestCreateWalletFailsForDuplicateName()
         {
-            var poolName = "default";
-            var walletName = "deleteWalletWorks";
-            var type = "default";
-
-            await Wallet.CreateWalletAsync(poolName, walletName, type, null, null);
+            await Wallet.CreateWalletAsync(POOL, WALLET, TYPE, null, null);
 
             var ex = await Assert.ThrowsExceptionAsync<WalletExistsException>(() =>
-                Wallet.CreateWalletAsync(poolName, walletName, type, null, null)
+                Wallet.CreateWalletAsync(POOL, WALLET, TYPE, null, null)
             );
         }
 
-        [TestMethod]
-        public async Task TestCreateWalletWorksForPlugged()
-        {       
-            await Wallet.CreateWalletAsync("default", "createPluggedWalletWorks", "inmem", null, null);
-        }
+        
 
     }
 }

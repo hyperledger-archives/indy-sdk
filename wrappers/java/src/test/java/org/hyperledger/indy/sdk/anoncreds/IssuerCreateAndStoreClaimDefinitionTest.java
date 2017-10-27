@@ -1,7 +1,8 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
+import static org.hamcrest.CoreMatchers.*;
+
+import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import static org.junit.Assert.assertNotNull;
@@ -63,7 +64,7 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 	public void testIssuerCreateAndStoreClaimDefWorksForInvalidSchemaJson() throws Exception {
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String schema = "{\"seqNo\":1, \"name\":\"name\",\"version\":\"1.0\", \"keys\":[\"name\"]}";
 
@@ -74,7 +75,7 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 	public void testIssuerCreateAndStoreClaimDefWorksForEmptyKeys() throws Exception {
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String schema = "{\n" +
 				"                    \"seqNo\":1,\n" +
@@ -109,7 +110,7 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 	public void testIssuerCreateAndStoreClaimDefWorksForInvalidCryptoType() throws Exception {
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, gvtSchemaJson, "type", false).get();
 	}

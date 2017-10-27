@@ -178,7 +178,7 @@ pub  extern fn indy_set_pairwise_metadata(command_handle: i32,
                                           metadata: *const c_char,
                                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(their_did, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(metadata, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(metadata, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()

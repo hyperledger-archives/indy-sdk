@@ -1,43 +1,21 @@
-﻿using Hyperledger.Indy.Test.Util.Base58Check;
-using Hyperledger.Indy.SignusApi;
-using Hyperledger.Indy.WalletApi;
+﻿using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.Test.Util.Base58Check;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.SignusTests
 {
     [TestClass]
-    public class CreateMyDidTest : IndyIntegrationTestBase
+    public class CreateMyDidTest : IndyIntegrationTestWithSingleWallet
     {
-        private Wallet _wallet;
-        private string _walletName = "SignusWallet";
-        private string _seed = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-        private string _did = "8wZcEriaNLNKtteJvx7f8i";
-        private string _expectedVerkey = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-        private string _existsCryptoType = "ed25519";
-
-        [TestInitialize]
-        public async Task CreateWallet()
-        {
-            await Wallet.CreateWalletAsync("default", _walletName, "default", null, null);
-            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
-        }
-
-        [TestCleanup]
-        public async Task DeleteWallet()
-        {
-            if(_wallet != null)
-                await _wallet.CloseAsync();
-
-            await Wallet.DeleteWalletAsync(_walletName, null);
-        }
+        private const string _expectedDid = "VsKV7grR1BUE29mG2Fm2kX";
+        private const string _expectedVerkey = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
+        private const string _existsCryptoType = "ed25519";
         
         [TestMethod]
         public async Task TestCreateMyDidWorksForEmptyJson()
         {
-            var json = "{}";
-
-            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
+            var result = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
             Assert.IsNotNull(result);
 
             Assert.AreEqual(16, Base58CheckEncoding.DecodePlain(result.Did).Length);
@@ -47,23 +25,19 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestCreateMyDidWorksForSeed()
         {
-            var json = string.Format("{{\"seed\":\"{0}\"}}", _seed);
-
-            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
+            var result = await Signus.CreateAndStoreMyDidAsync(wallet, MY1_IDENTITY_JSON);
             Assert.IsNotNull(result);
 
-            var expectedDid = "NcYxiDXkpYi6ov5FcYDi1e";
-
-            Assert.AreEqual(expectedDid, result.Did);
+            Assert.AreEqual(_expectedDid, result.Did);
             Assert.AreEqual(_expectedVerkey, result.VerKey);
         }
 
         [TestMethod]
         public async Task TestCreateMyDidWorksAsCid()
         {
-            var json = string.Format("{{\"seed\":\"{0}\",\"cid\":true}}", _seed);
+            var json = string.Format("{{\"seed\":\"{0}\",\"cid\":true}}", MY1_SEED);
 
-            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
+            var result = await Signus.CreateAndStoreMyDidAsync(wallet, json);
             Assert.IsNotNull(result);
 
             Assert.AreEqual(_expectedVerkey, result.Did);
@@ -73,20 +47,20 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestCreateMyDidWorksForPassedDid()
         {
-            var json = string.Format("{{\"did\":\"{0}\",\"cid\":false}}", _did);
+            var json = string.Format("{{\"did\":\"{0}\",\"cid\":false}}", DID1);
 
-            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
+            var result = await Signus.CreateAndStoreMyDidAsync(wallet, json);
             Assert.IsNotNull(result);
 
-            Assert.AreEqual(_did, result.Did);
+            Assert.AreEqual(DID1, result.Did);
         }
 
         [TestMethod]
         public async Task TestCreateMyDidWorksForCorrectCryptoType()
         {
-            var json = string.Format("{{\"crypto_type\":\"{0}\"}}", _existsCryptoType);
+            var json = string.Format("{{\"seed\":\"{0}\",\"crypto_type\":\"{1}\"}}", MY1_SEED, _existsCryptoType);
 
-            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
+            var result = await Signus.CreateAndStoreMyDidAsync(wallet, json);
             Assert.IsNotNull(result);
         }
 
@@ -96,29 +70,29 @@ namespace Hyperledger.Indy.Test.SignusTests
             var json = "{\"seed\":\"aaaaaaaaaaa\"}";
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                Signus.CreateAndStoreMyDidAsync(_wallet, json)
+                Signus.CreateAndStoreMyDidAsync(wallet, json)
             );
         }
 
         [TestMethod]
         public async Task TestCreateMyDidWorksForInvalidCryptoType()
         {
-            var json = "{\"crypto_type\":\"crypto_type\"}";
+            var json = string.Format("{{\"seed\":\"{0}\",\"crypto_type\":\"crypto_type\"}}", MY1_SEED);
 
             var ex = await Assert.ThrowsExceptionAsync<UnknownCryptoException>(() =>
-                Signus.CreateAndStoreMyDidAsync(_wallet, json)
+                Signus.CreateAndStoreMyDidAsync(wallet, json)
             );
         }
 
         [TestMethod]
         public async Task TestCreateMyDidWorksForAllParams()
         {
-            var json = string.Format("{{\"did\":\"{0}\",\"seed\":\"{1}\",\"crypto_type\":\"{2}\",\"cid\":true}}", _did, _seed, _existsCryptoType);
+            var json = string.Format("{{\"did\":\"{0}\",\"seed\":\"{1}\",\"crypto_type\":\"{2}\",\"cid\":true}}", DID1, MY1_SEED, _existsCryptoType);
 
-            var result = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
+            var result = await Signus.CreateAndStoreMyDidAsync(wallet, json);
             Assert.IsNotNull(result);
 
-            Assert.AreEqual(_did, result.Did);
+            Assert.AreEqual(DID1, result.Did);
             Assert.AreEqual(_expectedVerkey, result.VerKey);
         }
 

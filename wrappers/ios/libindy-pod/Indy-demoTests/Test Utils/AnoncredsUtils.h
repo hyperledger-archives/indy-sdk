@@ -40,8 +40,8 @@
 - (NSArray *)getUniqueClaimsFrom:(NSDictionary *)proofClaims;
 
 
-- (NSError *)proverCreateMasterSecret:(IndyHandle)walletHandle
-                     masterSecretName:(NSString *)name;
+- (NSError *)proverCreateMasterSecretNamed:(NSString *)masterSecretName
+                              walletHandle:(IndyHandle)walletHandle;
 
 - (NSError *)proverStoreClaimOffer:(IndyHandle)walletHandle
                     claimOfferJson:(NSString *)str;
@@ -50,11 +50,11 @@
                        filterJson:(NSString *)filterJson
                outClaimOffersJSON:(NSString **)outJson;
 
-- (NSError *)proverCreateAndStoreClaimReq:(IndyHandle)walletHandle
-                                proverDid:(NSString *)pd
-                           claimOfferJson:(NSString *)coj
-                             claimDefJson:(NSString *)cdj
+- (NSError *)proverCreateAndStoreClaimReqWithDef:(NSString *)claimDefJSON
+                                proverDid:(NSString *)proverDid
+                           claimOfferJson:(NSString *)claimOfferJSON
                          masterSecretName:(NSString *)name
+                             walletHandle:(IndyHandle)walletHandle
                           outClaimReqJson:(NSString **)outJson;
 
 - (NSError *)issuerCreateClaimWithWalletHandle:(IndyHandle)walletHandle

@@ -6,14 +6,9 @@ import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.ParamGuard;
-import org.hyperledger.indy.sdk.pool.Pool;
-import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
-import org.hyperledger.indy.sdk.signus.SignusResults.EncryptResult;
-import org.hyperledger.indy.sdk.signus.SignusResults.ReplaceKeysStartResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import com.sun.jna.Callback;
-import com.sun.jna.Pointer;
 
 /**
  * pairwise.rs API
@@ -259,8 +254,7 @@ public class Pairwise extends IndyJava.API {
 
 		ParamGuard.notNull(wallet, "wallet");
 		ParamGuard.notNullOrWhiteSpace(theirDid, "theirDid");
-		ParamGuard.notNullOrWhiteSpace(metadata, "metadata");		
-		
+
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 

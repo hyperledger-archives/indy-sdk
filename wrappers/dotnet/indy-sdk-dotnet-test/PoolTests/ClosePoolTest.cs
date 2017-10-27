@@ -12,10 +12,10 @@ namespace Hyperledger.Indy.Test.PoolTests
         {
             var pool = await PoolUtils.CreateAndOpenPoolLedgerAsync();
             Assert.IsNotNull(pool);
-            _openedPools.Add(pool);
+            openedPools.Add(pool);
 
             await pool.CloseAsync();
-            _openedPools.Remove(pool);
+            openedPools.Remove(pool);
         }
 
         [TestMethod]
@@ -23,12 +23,12 @@ namespace Hyperledger.Indy.Test.PoolTests
         {
             var pool = await PoolUtils.CreateAndOpenPoolLedgerAsync();
             Assert.IsNotNull(pool);
-            _openedPools.Add(pool);
+            openedPools.Add(pool);
 
             await pool.CloseAsync();
-            _openedPools.Remove(pool);
+            openedPools.Remove(pool);
 
-            var ex = await Assert.ThrowsExceptionAsync<PoolClosedException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<InvalidPoolException>(() =>
                 pool.CloseAsync()
             );
         }
@@ -44,7 +44,7 @@ namespace Hyperledger.Indy.Test.PoolTests
             await pool.CloseAsync();
 
             pool = await Pool.OpenPoolLedgerAsync(poolName, null);
-            _openedPools.Add(pool);
+            openedPools.Add(pool);
         }
     }
 }

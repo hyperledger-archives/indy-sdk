@@ -1,9 +1,9 @@
 package org.hyperledger.indy.sdk.wallet;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
+import org.hyperledger.indy.sdk.IOException;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 
 import org.junit.Test;
@@ -39,7 +39,7 @@ public class OpenWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testOpenWalletWorksForNotCreatedWallet() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonIOError));
+		thrown.expectCause(isA(IOException.class));
 
 		Wallet.openWallet("openWalletWorksForNotCreatedWallet", null, null).get();
 	}
@@ -47,7 +47,7 @@ public class OpenWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testOpenWalletWorksForTwice() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletAlreadyOpenedError));
+		thrown.expectCause(isA(WalletAlreadyOpenedException.class));
 
 		Wallet.createWallet(POOL, "openWalletWorksForTwice", TYPE, null, null).get();
 

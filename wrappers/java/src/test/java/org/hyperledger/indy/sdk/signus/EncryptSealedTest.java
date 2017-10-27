@@ -1,8 +1,7 @@
 package org.hyperledger.indy.sdk.signus;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
+import org.hyperledger.indy.sdk.InvalidStateException;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.junit.Before;
@@ -10,6 +9,7 @@ import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 
 public class EncryptSealedTest extends IndyIntegrationTestWithPoolAndSingleWallet {
@@ -40,15 +40,6 @@ public class EncryptSealedTest extends IndyIntegrationTestWithPoolAndSingleWalle
 	}
 
 	@Test
-	public void testEncryptSealedWorksForGetPkFromLedger() throws Exception {
-		String identityJson = String.format("{\"did\":\"%s\"}", did);
-		Signus.storeTheirDid(wallet, identityJson).get();
-
-		byte[] encryptResult = Signus.encryptSealed(wallet, pool, did, MESSAGE).get();
-		assertNotNull(encryptResult);
-	}
-
-	@Test
 	public void testEncryptSealedWorksForGetNymFromLedger() throws Exception {
 		byte[] encryptResult = Signus.encryptSealed(wallet, pool, did, MESSAGE).get();
 		assertNotNull(encryptResult);
@@ -57,7 +48,7 @@ public class EncryptSealedTest extends IndyIntegrationTestWithPoolAndSingleWalle
 	@Test
 	public void testEncryptSealedWorksForNotFoundNym() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidState));
+		thrown.expectCause(isA(InvalidStateException.class));
 		
 		Signus.encryptSealed(wallet, pool, DID1, MESSAGE).get();
 	}

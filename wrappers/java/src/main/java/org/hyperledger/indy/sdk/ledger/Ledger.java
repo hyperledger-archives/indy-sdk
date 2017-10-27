@@ -356,7 +356,7 @@ public class Ledger extends IndyJava.API {
 				walletHandle,
 				submitterDid,
 				requestJson,
-				signAndSubmitRequestCb);
+				signRequestCb);
 
 		checkResult(result);
 

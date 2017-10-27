@@ -1,9 +1,9 @@
 package org.hyperledger.indy.sdk.wallet;
 
+import static org.hamcrest.CoreMatchers.isA;
+
 import java.util.concurrent.ExecutionException;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.junit.Test;
 
@@ -33,7 +33,7 @@ public class CreateWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testCreateWalletWorksForUnknowType() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletUnknownTypeError));
+		thrown.expectCause(isA(UnknownWalletTypeException.class));
 
 		Wallet.createWallet(POOL, WALLET, "unknow_type", null, null).get();
 	}
@@ -48,7 +48,7 @@ public class CreateWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testCreateWalletWorksForDuplicateName() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletAlreadyExistsError));
+		thrown.expectCause(isA(WalletExistsException.class));
 
 		Wallet.createWallet(POOL, WALLET, TYPE, null, null).get();
 		Wallet.createWallet(POOL, WALLET, TYPE, null, null).get();

@@ -1,7 +1,5 @@
 ﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.SignusApi;
-using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
@@ -9,38 +7,12 @@ using System.Threading.Tasks;
 namespace Hyperledger.Indy.Test.LedgerTests
 {
     [TestClass]
-    public class AttribRequestTest : IndyIntegrationTestBase
-    {
-        private Pool _pool;
-        private Wallet _wallet;
-        private string _walletName = "ledgerWallet";
-        private string _identifier = "Th7MpTaRZVRYnPiabds81Y";
-        private string _dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
-        private string _endpoint = "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}";
-
-
-        [TestInitialize]
-        public async Task OpenPool()
-        {
-            string poolName = PoolUtils.CreatePoolLedgerConfig();
-            _pool = await Pool.OpenPoolLedgerAsync(poolName, null);
-
-            await Wallet.CreateWalletAsync(poolName, _walletName, "default", null, null);
-            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
-        }
-
-        [TestCleanup]
-        public async Task ClosePool()
-        {
-            if(_pool != null)
-                await _pool.CloseAsync();
-
-            if(_wallet != null)
-                await _wallet.CloseAsync();
-
-            await Wallet.DeleteWalletAsync(_walletName, null);
-        }
-
+    public class AttribRequestTest : IndyIntegrationTestWithPoolAndSingleWallet
+    {        
+        private const string _identifier = "Th7MpTaRZVRYnPiabds81Y";
+        private const string _dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
+        private const string _endpoint = "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}";
+               
         [TestMethod]
         public async Task TestBuildAttribRequestWorksForRawData()
         {
@@ -84,38 +56,34 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestSendAttribRequestWorksWithoutSignature()
         {
-            var json = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-
-            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, json);
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var trusteeDid = trusteeDidResult.Did;
 
             var attribRequest = await Ledger.BuildAttribRequestAsync(trusteeDid, trusteeDid, null, _endpoint, null);
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
-                Ledger.SubmitRequestAsync(_pool, attribRequest)
+                Ledger.SubmitRequestAsync(pool, attribRequest)
             );
         }
 
         [TestMethod]
         public async Task  TestAttribRequestWorks()
         {
-            var trusteeJson = "{\"seed\":\"000000000000000000000000Trustee1\"}";
-
-            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, trusteeJson);
+            var trusteeDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var trusteeDid = trusteeDidResult.Did;
 
-            var myDidResult = await Signus.CreateAndStoreMyDidAsync(_wallet, "{}");
+            var myDidResult = await Signus.CreateAndStoreMyDidAsync(wallet, "{}");
             var myDid = myDidResult.Did;
             var myVerkey = myDidResult.VerKey;
 
             var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, null);
-            await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, trusteeDid, nymRequest);
+            await Ledger.SignAndSubmitRequestAsync(pool, wallet, trusteeDid, nymRequest);
 
             var attribRequest = await Ledger.BuildAttribRequestAsync(myDid, myDid, null, _endpoint, null);
-            await Ledger.SignAndSubmitRequestAsync(_pool, _wallet, myDid, attribRequest);
+            await Ledger.SignAndSubmitRequestAsync(pool, wallet, myDid, attribRequest);
 
             var getAttribRequest = await Ledger.BuildGetAttribRequestAsync(myDid, myDid, "endpoint");
-            var getAttribResponse = await Ledger.SubmitRequestAsync(_pool, getAttribRequest);
+            var getAttribResponse = await Ledger.SubmitRequestAsync(pool, getAttribRequest);
 
             var jsonObject = JObject.Parse(getAttribResponse);
 

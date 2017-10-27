@@ -26,22 +26,15 @@
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
-    NSError *ret;
     
-    ret = [IndyPairwise isPairwiseExistsForDid:theirDid
-                                  walletHandle:walletHandle
-                                    completion:^(NSError* error, BOOL isExists)
-                      {
-                          err = error;
-                          if (exists) {*exists = isExists;}
-                          [completionExpectation fulfill];
-                      }];
-
-    
-    if( ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyPairwise isPairwiseExistsForDid:theirDid
+                            walletHandle:walletHandle
+                              completion:^(NSError* error, BOOL isExists)
+     {
+         err = error;
+         if (exists) {*exists = isExists;}
+         [completionExpectation fulfill];
+     }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
@@ -55,21 +48,15 @@
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
-    NSError *ret;
     
-    ret = [IndyPairwise createPairwiseForTheirDid:theirDid
-                                            myDid:myDid
-                                         metadata:metadata
-                                     walletHandle:walletHandle
-                                       completion:^(NSError *error) {
-                                           err = error;
-                                           [completionExpectation fulfill];
-                                       }];
-    
-    if( ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyPairwise createPairwiseForTheirDid:theirDid
+                                      myDid:myDid
+                                   metadata:metadata
+                               walletHandle:walletHandle
+                                 completion:^(NSError *error) {
+                                     err = error;
+                                     [completionExpectation fulfill];
+                                 }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
@@ -81,19 +68,14 @@
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
-    NSError *ret;
 
-    ret = [IndyPairwise listPairwiseFromWalletHandle:walletHandle
-                                          completion:^(NSError *error, NSString *listPairwise) {
-                                              err = error;
-                                              if (pairwiseList) {*pairwiseList = listPairwise;}
-                                              [completionExpectation fulfill];
-                                          }];
-    if( ret.code != Success)
-    {
-        return ret;
-    }
-    
+    [IndyPairwise listPairwiseFromWalletHandle:walletHandle
+                                    completion:^(NSError *error, NSString *listPairwise) {
+                                        err = error;
+                                        if (pairwiseList) {*pairwiseList = listPairwise;}
+                                        [completionExpectation fulfill];
+                                    }];
+  
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     return err;
@@ -105,20 +87,14 @@
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
-    NSError *ret;
     
-    ret = [IndyPairwise getPairwiseForTheirDid:theirDid
-                                  walletHandle:walletHandle
-                                    completion:^(NSError *error, NSString *pairwiseInfoJson) {
-                                        err = error;
-                                        if (pairwiseJson) {*pairwiseJson = pairwiseInfoJson;}
-                                        [completionExpectation fulfill];
-                                    }];
-    
-    if( ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyPairwise getPairwiseForTheirDid:theirDid
+                            walletHandle:walletHandle
+                              completion:^(NSError *error, NSString *pairwiseInfoJson) {
+                                  err = error;
+                                  if (pairwiseJson) {*pairwiseJson = pairwiseInfoJson;}
+                                  [completionExpectation fulfill];
+                              }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
@@ -131,24 +107,18 @@
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
-    NSError *ret;
     
-    ret = [IndyPairwise setPairwiseMetadata:metadata
-                                forTheirDid:theirDid
-                               walletHandle:walletHandle
-                                 completion:^(NSError *error) {
-                                     err = error;
-                                     [completionExpectation fulfill];
-                                 }];
-    if( ret.code != Success)
-    {
-        return ret;
-    }
+    [IndyPairwise setPairwiseMetadata:metadata
+                          forTheirDid:theirDid
+                         walletHandle:walletHandle
+                           completion:^(NSError *error) {
+                               err = error;
+                               [completionExpectation fulfill];
+                           }];
     
     [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
     
     return err;
 }
-
 
 @end

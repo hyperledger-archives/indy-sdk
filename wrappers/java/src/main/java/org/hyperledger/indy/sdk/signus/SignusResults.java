@@ -19,8 +19,8 @@ public final class SignusResults {
 	 */
 	public static class CreateAndStoreMyDidResult extends IndyJava.Result {
 
-		private String did, verkey, pk;
-		CreateAndStoreMyDidResult(String did, String verkey, String pk) { this.did = did; this.verkey = verkey; this.pk = pk; }
+		private String did, verkey;
+		CreateAndStoreMyDidResult(String did, String verkey) { this.did = did; this.verkey = verkey; }
 		
 		/**
 		 * Gets the DID.
@@ -35,36 +35,6 @@ public final class SignusResults {
 		 * @return The verification key.
 		 */
 		public String getVerkey() { return this.verkey; }
-		
-		/**
-		 * Gets the public key.
-		 * 
-		 * @return The public key.
-		 */
-		public String getPk() { return this.pk; }
-	}
-
-	/**
-	 * Result from calling replaceKeys.
-	 */
-	public static class ReplaceKeysStartResult extends IndyJava.Result {
-
-		private String verkey, pk;
-		ReplaceKeysStartResult(String verkey, String pk) { this.verkey = verkey; this.pk = pk; }
-		
-		/**
-		 * Gets the verification key.
-		 * 
-		 * @return The verification key.
-		 */
-		public String getVerkey() { return this.verkey; }
-		
-		/**
-		 * Gets the public key.
-		 * 
-		 * @return The public key.
-		 */
-		public String getPk() { return this.pk; }
 	}
 
 	/**
@@ -88,5 +58,28 @@ public final class SignusResults {
 		 * @return The nonce.
 		 */
 		public byte[] getNonce() { return this.nonce; }
+	}
+
+	/**
+	 * Result from calling endpointForDid.
+	 */
+	public static class EndpointForDidResult extends IndyJava.Result {
+
+		private String address, transportKey;
+		EndpointForDidResult(String address, String transportKey) { this.address = address; this.transportKey = transportKey;}
+
+		/**
+		 * Gets the Endpoint.
+		 *
+		 * @return The Endpoint.
+		 */
+		public String getAddress() { return this.address; }
+
+		/**
+		 * Gets the transport key.
+		 *
+		 * @return The transport key.
+		 */
+		public String getTransportKey() { return this.transportKey; }
 	}
 }

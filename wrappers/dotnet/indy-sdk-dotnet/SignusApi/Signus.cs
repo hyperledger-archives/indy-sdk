@@ -1,7 +1,6 @@
 ﻿using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
-using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.IndyNativeMethods;
@@ -98,6 +97,38 @@ namespace Hyperledger.Indy.SignusApi
         /// Gets the callback to use when the command for DecryptAsync has completed.
         /// </summary>
         private static DecryptResultDelegate _decryptCallback = (xcommand_handle, err, decrypted_msg_raw, decrypted_msg_len) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            var decryptedMsgBytes = new byte[decrypted_msg_len];
+            Marshal.Copy(decrypted_msg_raw, decryptedMsgBytes, 0, decrypted_msg_len);
+
+            taskCompletionSource.SetResult(decryptedMsgBytes);
+        };
+
+        /// <summary>
+        /// Gets the callback to use when the command for EncryptAsync has completed.
+        /// </summary>
+        private static EncryptSealedResultDelegate _encryptSealedCallback = (xcommand_handle, err, encrypted_msg_raw, encrypted_msg_len) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            var encryptedMessageBytes = new byte[encrypted_msg_len];
+            Marshal.Copy(encrypted_msg_raw, encryptedMessageBytes, 0, encrypted_msg_len);
+
+            taskCompletionSource.SetResult(encryptedMessageBytes);
+        };
+
+        /// <summary>
+        /// Gets the callback to use when the command for DecryptAsync has completed.
+        /// </summary>
+        private static DecryptResultDelegate _decryptSealedCallback = (xcommand_handle, err, decrypted_msg_raw, decrypted_msg_len) =>
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
@@ -450,6 +481,74 @@ namespace Hyperledger.Indy.SignusApi
                 nonce,
                 nonce.Length,
                 _decryptCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Encrypts the provided message with the public key of the specified DID using the anonymous-encryption scheme.
+        /// </summary>
+        /// <remarks>
+        /// <para>If the wallet specified in the <paramref name="wallet"/> parameter contains the public key
+        /// associated with the DID specified in the <paramref name="did"/> parameter and the value has
+        /// not expired then this key will be used for encryption.
+        /// </para>
+        /// <para>On the other hand, if the public key is not present in the wallet or has expired the public
+        /// key will be read from the ledger in the node pool specified in the <paramref name="pool"/> 
+        /// parameter and the wallet will be updated with the new public key if required.
+        /// </para>
+        /// <para>For further information on registering a public key for a DID see the 
+        /// <see cref="StoreTheirDidAsync(Wallet, string)"/>method and for information on the expiry of 
+        /// values in a wallet see the <see cref="Wallet.CreateWalletAsync(string, string, string, string, string)"/>
+        /// and <see cref="Wallet.OpenWalletAsync(string, string, string)"/> methods.
+        /// </para>
+        /// </remarks>
+        /// <param name="wallet">The wallet containing the DID to use for encryption.</param>
+        /// <param name="pool">The node pool to read the public key from if required.</param>
+        /// <param name="did">The DID the message is to be encrypted for.</param>
+        /// <param name="msg">The message to encrypt.</param>
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the encrypted message once encryption is complete.</returns>
+        public static Task<byte[]> EncryptSealedAsync(Wallet wallet, Pool pool, string did, byte[] msg)
+        {
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = IndyNativeMethods.indy_encrypt_sealed(
+                commandHandle,
+                wallet.Handle,
+                pool.Handle,
+                did,
+                msg,
+                msg.Length,
+                _encryptSealedCallback);
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Decrypts the provided message using the public key associated with the specified DID using the anonymous-encryption scheme.
+        /// </summary>        
+        /// <param name="wallet">The wallet containing the DID and associated secret key to use for decryption.</param>
+        /// <param name="did">The DID of the encrypting party to use for verification.</param>
+        /// <param name="encryptedMsg">The message to decrypt.</param>
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the decrypted message.</returns>
+        public static Task<byte[]> DecryptSealedAsync(Wallet wallet, string did, byte[] encryptedMsg)
+        {
+            var taskCompletionSource = new TaskCompletionSource<byte[]>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = IndyNativeMethods.indy_decrypt_sealed(
+                commandHandle,
+                wallet.Handle,
+                did,
+                encryptedMsg,
+                encryptedMsg.Length,
+                _decryptSealedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);

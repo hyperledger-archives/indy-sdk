@@ -21,7 +21,7 @@ namespace Hyperledger.Indy.Test.PoolTests
             var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
             Assert.IsNotNull(pool);
-            _openedPools.Add(pool);
+            openedPools.Add(pool);
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStateException>(() =>
                 Pool.DeletePoolLedgerConfigAsync(poolName)

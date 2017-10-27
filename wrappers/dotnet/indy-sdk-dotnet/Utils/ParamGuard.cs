@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Hyperledger.Indy.Utils
 {
@@ -29,7 +27,7 @@ namespace Hyperledger.Indy.Utils
         /// <exception cref="ArgumentException">Thrown if param was null or contained whitespace.</exception>
         public static void NotNullOrWhiteSpace(string param, string paramName)
         {
-            if (param == null)
+            if (string.IsNullOrWhiteSpace(param))
                 throw new ArgumentException("A value must be provided.", paramName);
         }
     }

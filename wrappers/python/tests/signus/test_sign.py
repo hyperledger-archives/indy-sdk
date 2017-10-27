@@ -5,12 +5,10 @@ from indy.error import ErrorCode
 import json
 import pytest
 
-message = '{"reqId":1496822211362017764}'.encode('utf-8')
-
 
 @pytest.mark.asyncio
-async def test_sign_works(wallet_handle, seed_my1):
-    (did, _, _) = await signus.create_and_store_my_did(wallet_handle, json.dumps({"seed": seed_my1}))
+async def test_sign_works(wallet_handle, seed_my1, message):
+    (did, _) = await signus.create_and_store_my_did(wallet_handle, json.dumps({"seed": seed_my1}))
 
     expected_signature = bytes(
         [169, 215, 8, 225, 7, 107, 110, 9, 193, 162, 202, 214, 162, 66, 238, 211, 63, 209, 12, 196, 8, 211, 55, 27, 120,
@@ -22,15 +20,15 @@ async def test_sign_works(wallet_handle, seed_my1):
 
 
 @pytest.mark.asyncio
-async def test_sign_works_for_unknown_did(wallet_handle):
+async def test_sign_works_for_unknown_did(wallet_handle, message, did_my1):
     with pytest.raises(IndyError) as e:
-        await signus.sign(wallet_handle, 'unknownDid', message)
+        await signus.sign(wallet_handle, did_my1, message)
     assert ErrorCode.WalletNotFoundError == e.value.error_code
 
 
 @pytest.mark.asyncio
-async def test_sign_works_for_invalid_handle(wallet_handle):
+async def test_sign_works_for_invalid_handle(wallet_handle, message):
     with pytest.raises(IndyError) as e:
-        (did, _, _) = await signus.create_and_store_my_did(wallet_handle, '{}')
+        (did, _) = await signus.create_and_store_my_did(wallet_handle, '{}')
         await signus.sign(wallet_handle + 1, did, message)
     assert ErrorCode.WalletInvalidHandle == e.value.error_code

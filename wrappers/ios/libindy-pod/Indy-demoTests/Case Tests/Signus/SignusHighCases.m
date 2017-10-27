@@ -615,6 +615,29 @@
     [TestUtils cleanupStorage];
 }
 
+- (void)testStoreTheitDidWorksWithAbbreviatedVerkey
+{
+    [TestUtils cleanupStorage];
+    
+    NSError *ret = nil;
+    
+    // 1. Create and open wallet, get wallet handle
+    IndyHandle walletHandle = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
+                                                                  xtype:nil
+                                                                 handle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
+    
+    // 2. Store their did
+    NSString *identityJson = @"{\"did\":\"8wZcEriaNLNKtteJvx7f8i\", \"verkey\":\"~NcYxiDXkpYi6ov5FcYDi1e\"}";
+    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+                                                         identityJson:identityJson];
+    XCTAssertEqual(ret.code, Success, @"SignusUtils:storeTheirDidWithWalletHandle() failed");
+    
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    [TestUtils cleanupStorage];
+}
+
 // MARK: - Sign
 
 - (void)testSignWorks

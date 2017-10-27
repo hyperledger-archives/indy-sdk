@@ -1,14 +1,14 @@
 package org.hyperledger.indy.sdk.demo;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
+import org.hyperledger.indy.sdk.ledger.InvalidLedgerTransactionException;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
-import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.isA;
 
 import java.util.concurrent.ExecutionException;
 
@@ -34,8 +34,7 @@ public class ReplaceKeysDemoTest extends IndyIntegrationTestWithPoolAndSingleWal
 		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
 
 		// 4. Start replacing of keys
-		SignusResults.ReplaceKeysStartResult newKeys = Signus.replaceKeysStart(wallet, myDid, "{}").get();
-		String newVerkey = newKeys.getVerkey();
+		String newVerkey = Signus.replaceKeysStart(wallet, myDid, "{}").get();
 
 		// 5. Build and send Nym Request with new key
 		nymRequest = Ledger.buildNymRequest(myDid, myDid, newVerkey, null, null).get();
@@ -74,7 +73,7 @@ public class ReplaceKeysDemoTest extends IndyIntegrationTestWithPoolAndSingleWal
 		Signus.replaceKeysApply(wallet, myDid).get();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
+		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
 
 		// 6. Send schema request
 		String schemaRequest = Ledger.buildSchemaRequest(myDid, SCHEMA_DATA).get();
