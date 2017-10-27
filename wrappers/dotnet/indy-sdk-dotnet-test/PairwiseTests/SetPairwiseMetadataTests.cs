@@ -24,7 +24,6 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         }
 
         [TestMethod]
-        [Ignore] //Bug in SDK?
         public async Task TestSetPairwiseMetadataWorksWithNull()
         {
             await Pairwise.CreateAsync(wallet, theirDid, myDid, METADATA);
@@ -40,7 +39,6 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         }
 
         [TestMethod]
-        [Ignore] //Bug in SDK?
         public async Task TestSetPairwiseMetadataWorksWithEmptyString()
         {
             await Pairwise.CreateAsync(wallet, theirDid, myDid, METADATA);
