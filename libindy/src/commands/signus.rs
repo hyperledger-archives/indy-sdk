@@ -66,6 +66,16 @@ pub enum SignusCommand {
         Vec<u8>, // encrypted msg
         Vec<u8>, // nonce
         Box<Fn(Result<Vec<u8>, IndyError>) + Send>),
+    CryptoSign(
+        i32, // wallet handle
+        String, // my vk
+        Vec<u8>, // msg
+        Box<Fn(Result<Vec<u8>, IndyError>) + Send>),
+    CryptoVerify(
+        String, // their vk
+        Vec<u8>, // msg
+        Vec<u8>, // signature
+        Box<Fn(Result<bool, IndyError>) + Send>),
     EncryptSealed(
         i32, // wallet handle
         i32, // pool handle
@@ -81,6 +91,28 @@ pub enum SignusCommand {
         i32, // wallet handle
         String, // key info json
         Box<Fn(Result<String/*verkey*/, IndyError>) + Send>),
+    CryptoBox(
+        i32, // wallet handle
+        String, // my vk
+        String, // their vk
+        Vec<u8>, // msg
+        Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>) + Send>),
+    CryptoBoxOpen(
+        i32, // wallet handle
+        String, // my vk
+        String, // their vk
+        Vec<u8>, // encrypted msg
+        Vec<u8>, // nonce
+        Box<Fn(Result<Vec<u8>, IndyError>) + Send>),
+    CryptoBoxSeal(
+        String, // their did
+        Vec<u8>, // msg
+        Box<Fn(Result<Vec<u8>, IndyError>) + Send>),
+    CryptoBoxSealOpen(
+        i32, // wallet handle
+        String, // my vk
+        Vec<u8>, // msg
+        Box<Fn(Result<Vec<u8>, IndyError>) + Send>),
     SetKeyMetadata(
         i32, // wallet handle
         String, // verkey
@@ -200,6 +232,30 @@ impl SignusCommandExecutor {
             SignusCommand::CreateKey(wallet_handle, key_info_json, cb) => {
                 info!("CreateKey command received");
                 cb(self.create_key(wallet_handle, key_info_json));
+            }
+            SignusCommand::CryptoSign(wallet_handle, my_vk, msg, cb) => {
+                info!("CryptoSign command received");
+                cb(self.crypto_sign(wallet_handle, &my_vk, &msg));
+            }
+            SignusCommand::CryptoVerify(their_vk, msg, signature, cb) => {
+                info!("CryptoVerify command received");
+                cb(self.crypto_verify(their_vk, msg, signature));
+            }
+            SignusCommand::CryptoBox(wallet_handle, my_vk, their_vk, msg, cb) => {
+                info!("CryptoBox command received");
+                cb(self.crypto_box(wallet_handle, my_vk, their_vk, msg));
+            }
+            SignusCommand::CryptoBoxOpen(wallet_handle, my_vk, their_vk, encrypted_msg, nonce, cb) => {
+                info!("CryptoBoxOpen command received");
+                cb(self.crypto_box_open(wallet_handle, my_vk, their_vk, encrypted_msg, nonce));
+            }
+            SignusCommand::CryptoBoxSeal(their_vk, msg, cb) => {
+                info!("CryptoBoxSeal command received");
+                cb(self.crypto_box_seal(their_vk, msg));
+            }
+            SignusCommand::CryptoBoxSealOpen(wallet_handle, my_vk, encrypted_msg, cb) => {
+                info!("CryptoBoxSealOpen command received");
+                cb(self.crypto_box_seal_open(wallet_handle, my_vk, encrypted_msg));
             }
             SignusCommand::SetKeyMetadata(wallet_handle, verkey, metadata, cb) => {
                 info!("SetKeyMetadata command received");
@@ -374,7 +430,7 @@ impl SignusCommandExecutor {
                                            cb);
 
         let res = try_cb!(self.signus_service.encrypt(&my_key, &their_did.verkey, &msg), cb);
-        cb(Ok(res));
+        cb(Ok(res))
     }
 
     fn decrypt(&self,
@@ -409,7 +465,7 @@ impl SignusCommandExecutor {
                                            cb);
 
         let res = try_cb!(self.signus_service.decrypt(&my_key, &their_did.verkey, &encrypted_msg, &nonce), cb);
-        cb(Ok(res));
+        cb(Ok(res))
     }
 
     fn encrypt_sealed(&self,
@@ -433,7 +489,7 @@ impl SignusCommandExecutor {
                                            cb);
 
         let res = try_cb!(self.signus_service.encrypt_sealed(&their_did.verkey, &msg), cb);
-        cb(Ok(res));
+        cb(Ok(res))
     }
 
     fn decrypt_sealed(&self,
@@ -460,6 +516,78 @@ impl SignusCommandExecutor {
         self._wallet_set_key(wallet_handle, &key)?;
 
         let res = key.verkey;
+        Ok(res)
+    }
+
+    fn crypto_sign(&self,
+                   wallet_handle: i32,
+                   my_vk: &str,
+                   msg: &[u8]) -> Result<Vec<u8>, IndyError> {
+        self.signus_service.validate_key(my_vk)?;
+
+        let key = self._wallet_get_key(wallet_handle, &my_vk)?;
+
+        let res = self.signus_service.sign(&key, msg)?;
+        Ok(res)
+    }
+
+    fn crypto_verify(&self,
+                     their_vk: String,
+                     msg: Vec<u8>,
+                     signature: Vec<u8>) -> Result<bool, IndyError> {
+        self.signus_service.validate_key(&their_vk)?;
+
+        let res = self.signus_service.verify(&their_vk, &msg, &signature)?;
+        Ok(res)
+    }
+
+    fn crypto_box(&self,
+                  wallet_handle: i32,
+                  my_vk: String,
+                  their_vk: String,
+                  msg: Vec<u8>) -> Result<(Vec<u8>, Vec<u8>), IndyError> {
+        self.signus_service.validate_key(&my_vk)?;
+        self.signus_service.validate_key(&their_vk)?;
+
+        let my_key = self._wallet_get_key(wallet_handle, &my_vk)?;
+
+        let res = self.signus_service.encrypt(&my_key, &their_vk, &msg)?;
+        Ok(res)
+    }
+
+    fn crypto_box_open(&self,
+                       wallet_handle: i32,
+                       my_vk: String,
+                       their_vk: String,
+                       encrypted_msg: Vec<u8>,
+                       nonce: Vec<u8>) -> Result<Vec<u8>, IndyError> {
+        self.signus_service.validate_key(&my_vk)?;
+        self.signus_service.validate_key(&their_vk)?;
+
+        let my_key = self._wallet_get_key(wallet_handle, &my_vk)?;
+
+        let res = self.signus_service.decrypt(&my_key, &their_vk, &encrypted_msg, &nonce)?;
+        Ok(res)
+    }
+
+    fn crypto_box_seal(&self,
+                       their_vk: String,
+                       msg: Vec<u8>) -> Result<Vec<u8>, IndyError> {
+        self.signus_service.validate_key(&their_vk)?;
+
+        let res = self.signus_service.encrypt_sealed(&their_vk, &msg)?;
+        Ok(res)
+    }
+
+    fn crypto_box_seal_open(&self,
+                            wallet_handle: i32,
+                            my_vk: String,
+                            encrypted_msg: Vec<u8>) -> Result<Vec<u8>, IndyError> {
+        self.signus_service.validate_key(&my_vk)?;
+
+        let key = self._wallet_get_key(wallet_handle, &my_vk)?;
+
+        let res = self.signus_service.decrypt_sealed(&key, &encrypted_msg)?;
         Ok(res)
     }
 
