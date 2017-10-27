@@ -12,22 +12,22 @@ namespace Hyperledger.Indy.SignusApi
         /// <summary>
         /// Initializes a new EndpointForDidResult.
         /// </summary>
-        /// <param name="endpoint">The endpoint.</param>
-        /// <param name="transportVk">The trasport verification key.</param>
-        internal EndpointForDidResult(string endpoint, string transportVk)
+        /// <param name="address">The address.</param>
+        /// <param name="transportKey">The transport verification key.</param>
+        internal EndpointForDidResult(string address, string transportKey)
         {
-            Endpoint = endpoint;
-            TransportVk = transportVk;
+            Address = address;
+            TransportKey = transportKey;
         }
 
         /// <summary>
-        /// Gets the endpoint.
+        /// Gets the address.
         /// </summary>
-        public string Endpoint { get; private set; }
+        public string Address { get; private set; }
 
         /// <summary>
         /// Gets the transport verification key.
         /// </summary>
-        public string TransportVk { get; private set; }
+        public string TransportKey { get; private set; }
     }
 }

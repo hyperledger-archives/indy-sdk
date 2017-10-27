@@ -517,7 +517,8 @@ namespace Hyperledger.Indy.SignusApi
         /// <remarks>
         /// <para>
         /// The DID specified in the <paramref name="myDid"/> parameter must have been previously created 
-        /// with a secret key and stored in the wallet specified in the <paramref name="wallet"/> parameter.
+        /// with a secret key and stored in the wallet specified in the <paramref name="wallet"/> parameter or
+        /// exist on the ledger on the node pool specified in the <paramref name="pool"/> parameter.
         /// </para>
         /// <para>
         /// For further information on storing a DID and its secret key see the 
@@ -525,14 +526,16 @@ namespace Hyperledger.Indy.SignusApi
         /// </para>
         /// </remarks>
         /// <param name="wallet">The wallet containing the DID and associated secret key to use for decryption.</param>
+        /// <param name="pool">The pool to use for resolving keys associated with the <paramref name="did"/> if not present in the wallet.</param>
         /// <param name="myDid">The DID to use for decryption.</param>
         /// <param name="did">The DID of the encrypting party to use for verification.</param>
         /// <param name="encryptedMsg">The message to decrypt.</param>
         /// <param name="nonce">The nonce used to encrypt the message.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the decrypted message.</returns>
-        public static Task<byte[]> DecryptAsync(Wallet wallet, string myDid, string did, byte[] encryptedMsg, byte[] nonce)
+        public static Task<byte[]> DecryptAsync(Wallet wallet, Pool pool, string myDid, string did, byte[] encryptedMsg, byte[] nonce)
         {
             ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNull(pool, "pool");
             ParamGuard.NotNullOrWhiteSpace(myDid, "myDid");
             ParamGuard.NotNullOrWhiteSpace(did, "did");
             ParamGuard.NotNull(encryptedMsg, "encryptedMsg");
@@ -544,6 +547,7 @@ namespace Hyperledger.Indy.SignusApi
             var commandResult = IndyNativeMethods.indy_decrypt(
                 commandHandle,
                 wallet.Handle,
+                pool.Handle,
                 myDid,
                 did,
                 encryptedMsg,
@@ -654,7 +658,7 @@ namespace Hyperledger.Indy.SignusApi
         /// <param name="wallet">The wallet to create the key in.</param>
         /// <param name="keyJson">The JSON string describing the key.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the verification key of the generated key-pair.</returns>
-        /// <exception cref="InvalidStructureException">Thrown if the value passed to the <paramref name="keyJson"/> parameter is malformed.</exception>
+        /// <exception cref="InvalidStructureException">Thrown if the value passed to the <paramref name="keyJson"/> parameter is malformed or contains invalid data.</exception>
         public static Task<string> CreateKeyAsync(Wallet wallet, string keyJson)
         {
             ParamGuard.NotNull(wallet, "wallet");
@@ -715,7 +719,7 @@ namespace Hyperledger.Indy.SignusApi
         /// <param name="wallet">The wallet containing the key-pair.</param>
         /// <param name="verKey">The verification key of the key-pair.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the metadata associated with the key-pair.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if the wallet does not contain a key-pair matching the provided <paramref name="verKey"/>.</exception>
+        /// <exception cref="WalletValueNotFoundException">Thrown if the wallet does not contain a key-pair matching the provided <paramref name="verKey"/> or they key-pair has no metadata.</exception>
         public static Task<string> GetKeyMetadataAsync(Wallet wallet, string verKey)
         {
             ParamGuard.NotNull(wallet, "wallet");
@@ -872,11 +876,10 @@ namespace Hyperledger.Indy.SignusApi
         /// <summary>
         /// Gets the metadata associated with the specified DID.
         /// </summary>
-        /// <remarks>If no metadata has been previously set on the DID the return value can be null.</remarks>
         /// <param name="wallet">The wallet that contains the DID.</param>
         /// <param name="did">The DID to get the metadata for.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the metadata associated with the DID.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if the wallet does not contain the specified <paramref name="did"/>.</exception>
+        /// <exception cref="WalletValueNotFoundException">Thrown if the wallet does not contain the specified <paramref name="did"/> or the DID did not have any metadata.</exception>
         /// <exception cref="InvalidStructureException">Thrown if the value provided in the <paramref name="did"/> parameter is malformed.</exception>
         public static Task<string> GetDidMetadataAsync(Wallet wallet, string did)
         {

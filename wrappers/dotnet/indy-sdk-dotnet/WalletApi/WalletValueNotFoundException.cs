@@ -5,7 +5,7 @@
     /// </summary>
     public class WalletValueNotFoundException : IndyException
     {
-        const string message = "The no value with the specified key exists in the wallet from which it was requested.";
+        const string message = "No value with the specified key exists in the wallet from which it was requested.";
 
         /// <summary>
         /// Initializes a new WalletValueNotFoundException.

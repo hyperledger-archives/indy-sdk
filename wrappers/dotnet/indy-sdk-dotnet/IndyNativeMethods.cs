@@ -574,6 +574,7 @@ namespace Hyperledger.Indy
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
+        /// <param name="pool_handle">pool handle (created by open_pool).</param>
         /// <param name="my_did">DID</param>
         /// <param name="did">DID that signed the message</param>
         /// <param name="encrypted_msg_raw">encrypted message as a byte array.</param>
@@ -583,7 +584,7 @@ namespace Hyperledger.Indy
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_decrypt(int command_handle, IntPtr wallet_handle, string my_did, string did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, DecryptResultDelegate cb);
+        internal static extern int indy_decrypt(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string my_did, string did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, DecryptResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the indy_decrypt function.
