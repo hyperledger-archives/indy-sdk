@@ -31,7 +31,6 @@ use indy::api::ledger::{
 use indy::api::pool::*;
 use indy::api::wallet::*;
 use indy::api::signus::*;
-use indy::api::agent::*;
 
 use utils::callback::CallbackUtils;
 
@@ -603,6 +602,8 @@ fn ledger_demo_works() {
 fn signus_demo_works() {
     TestUtils::cleanup_storage();
 
+    let (create_sender, create_receiver) = channel();
+    let (open_sender, open_receiver) = channel();
     let (create_my_wallet_sender, create_my_wallet_receiver) = channel();
     let (create_their_wallet_sender, create_their_wallet_receiver) = channel();
     let (open_my_wallet_sender, open_my_wallet_receiver) = channel();
@@ -612,9 +613,12 @@ fn signus_demo_works() {
     let (store_their_did_sender, store_their_did_receiver) = channel();
     let (sign_sender, sign_receiver) = channel();
     let (verify_sender, verify_receiver) = channel();
+    let (close_pool_sender, close_pool_receiver) = channel();
     let (close_my_wallet_sender, close_my_wallet_receiver) = channel();
     let (close_their_wallet_sender, close_their_wallet_receiver) = channel();
 
+    let create_cb = Box::new(move |err| { create_sender.send(err).unwrap(); });
+    let open_cb = Box::new(move |err, pool_handle| { open_sender.send((err, pool_handle)).unwrap(); });
     let create_my_wallet_cb = Box::new(move |err| { create_my_wallet_sender.send(err).unwrap(); });
     let create_their_wallet_cb = Box::new(move |err| { create_their_wallet_sender.send(err).unwrap(); });
     let open_my_wallet_cb = Box::new(move |err, handle| { open_my_wallet_sender.send((err, handle)).unwrap(); });
@@ -624,9 +628,12 @@ fn signus_demo_works() {
     let sign_cb = Box::new(move |err, signature| { sign_sender.send((err, signature)).unwrap(); });
     let store_their_did_cb = Box::new(move |err| { store_their_did_sender.send((err)).unwrap(); });
     let verify_cb = Box::new(move |err, valid| { verify_sender.send((err, valid)).unwrap(); });
+    let close_pool_cb = Box::new(move |err_code| close_pool_sender.send(err_code).unwrap());
     let close_my_wallet_cb = Box::new(move |err_code| close_my_wallet_sender.send(err_code).unwrap());
     let close_their_wallet_cb = Box::new(move |err_code| close_their_wallet_sender.send(err_code).unwrap());
 
+    let (open_command_handle, open_callback) = CallbackUtils::closure_to_open_pool_ledger_cb(open_cb);
+    let (create_command_handle, create_callback) = CallbackUtils::closure_to_create_pool_ledger_cb(create_cb);
     let (create_my_wallet_command_handle, create_my_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_my_wallet_cb);
     let (create_their_wallet_command_handle, create_their_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_their_wallet_cb);
     let (open_my_wallet_command_handle, open_my_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_my_wallet_cb);
@@ -636,6 +643,7 @@ fn signus_demo_works() {
     let (store_their_did_command_handle, store_their_did_callback) = CallbackUtils::closure_to_store_their_did_cb(store_their_did_cb);
     let (sign_command_handle, sign_callback) = CallbackUtils::closure_to_sign_cb(sign_cb);
     let (verify_command_handle, verify_callback) = CallbackUtils::closure_to_verify_signature_cb(verify_cb);
+    let (close_pool_command_handle, close_pool_callback) = CallbackUtils::closure_to_close_pool_ledger_cb(close_pool_cb);
     let (close_my_wallet_command_handle, close_my_wallet_callback) = CallbackUtils::closure_to_delete_wallet_cb(close_my_wallet_cb);
     let (close_their_wallet_command_handle, close_their_wallet_callback) = CallbackUtils::closure_to_delete_wallet_cb(close_their_wallet_cb);
 
@@ -643,9 +651,33 @@ fn signus_demo_works() {
     let my_wallet_name = "my_wallet";
     let their_wallet_name = "their_wallet";
     let xtype = "default";
+    let c_pool_name = CString::new(pool_name).unwrap();
+
+    // 1. Create ledger config from genesis txn file
+    let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
+    let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
+    let c_pool_config = CString::new(pool_config).unwrap();
+
+    let err = indy_create_pool_ledger_config(create_command_handle,
+                                             c_pool_name.as_ptr(),
+                                             c_pool_config.as_ptr(),
+                                             create_callback);
+    assert_eq!(err, ErrorCode::Success);
+    let err = create_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    assert_eq!(err, ErrorCode::Success);
+
+    // 2. Open pool ledger
+    let err = indy_open_pool_ledger(open_command_handle,
+                                    c_pool_name.as_ptr(),
+                                    null(),
+                                    open_callback);
+    assert_eq!(err, ErrorCode::Success);
+    let (err, pool_handle) = open_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    assert_eq!(err, ErrorCode::Success);
+    thread::sleep(TimeoutUtils::short_timeout());
 
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
-    //1. Create My Wallet
+    // 3. Create My Wallet
     let err =
         indy_create_wallet(create_my_wallet_command_handle,
                            CString::new(pool_name).unwrap().as_ptr(),
@@ -659,7 +691,7 @@ fn signus_demo_works() {
     let err = create_my_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    //2. Open My Wallet. Gets My wallet handle
+    // 4. Open My Wallet. Gets My wallet handle
     let err =
         indy_open_wallet(open_my_wallet_command_handle,
                          CString::new(my_wallet_name).unwrap().as_ptr(),
@@ -672,7 +704,7 @@ fn signus_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
 
-    //3. Create Their Wallet
+    // 5. Create Their Wallet
     let err =
         indy_create_wallet(create_their_wallet_command_handle,
                            CString::new(pool_name).unwrap().as_ptr(),
@@ -686,7 +718,7 @@ fn signus_demo_works() {
     let err = create_their_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    //4. Open Their Wallet. Gets Their wallet handle
+    // 6. Open Their Wallet. Gets Their wallet handle
     let err =
         indy_open_wallet(open_their_wallet_command_handle,
                          CString::new(their_wallet_name).unwrap().as_ptr(),
@@ -698,7 +730,7 @@ fn signus_demo_works() {
     let (err, their_wallet_handle) = open_their_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    // 5. Create My DID
+    // 7. Create My DID
     let my_did_json = "{}";
     let err =
         indy_create_and_store_my_did(create_and_store_my_did_command_handle,
@@ -712,7 +744,7 @@ fn signus_demo_works() {
     info!("verkey {:?}", my_verkey);
     assert_eq!(ErrorCode::Success, err);
 
-    // 6. Create Their DID
+    // 8. Create Their DID
     let their_did_json = "{}";
     let err =
         indy_create_and_store_my_did(create_and_store_their_did_command_handle,
@@ -726,7 +758,7 @@ fn signus_demo_works() {
     info!("their_verkey {:?}", their_verkey);
     assert_eq!(ErrorCode::Success, err);
 
-    // 7. Store Their DID
+    // 9. Store Their DID
     let their_identity_json = format!(r#"{{"did":"{}",
                                         "verkey":"{}"
                                       }}"#,
@@ -742,7 +774,7 @@ fn signus_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
 
-    // 8. Their Sign message
+    // 10. Their Sign message
     let message = r#"{
         "reqId":1495034346617224651,
         "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
@@ -767,11 +799,11 @@ fn signus_demo_works() {
     let (err, signature) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    // 9. I Verify message
+    // 11. I Verify message
     let err =
         indy_verify_signature(verify_command_handle,
                               my_wallet_handle,
-                              1,
+                              pool_handle,
                               CString::new(their_did).unwrap().as_ptr(),
                               message_ptr,
                               message_len,
@@ -785,13 +817,19 @@ fn signus_demo_works() {
     assert!(valid);
     assert_eq!(ErrorCode::Success, err);
 
-    // 10. Close my wallet
+    // 12. Close pool
+    let res = indy_close_pool_ledger(close_pool_command_handle, pool_handle, close_pool_callback);
+    assert_eq!(res, ErrorCode::Success);
+    let res = close_pool_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    assert_eq!(res, ErrorCode::Success);
+
+    // 13. Close my wallet
     let res = indy_close_wallet(close_my_wallet_command_handle, my_wallet_handle, close_my_wallet_callback);
     assert_eq!(res, ErrorCode::Success);
     let res = close_my_wallet_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
     assert_eq!(res, ErrorCode::Success);
 
-    // 11. Close their wallet
+    // 14. Close their wallet
     let res = indy_close_wallet(close_their_wallet_command_handle, their_wallet_handle, close_their_wallet_callback);
     assert_eq!(res, ErrorCode::Success);
     let res = close_their_wallet_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
