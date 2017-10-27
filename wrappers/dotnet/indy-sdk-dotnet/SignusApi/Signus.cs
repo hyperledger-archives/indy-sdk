@@ -285,6 +285,10 @@ namespace Hyperledger.Indy.SignusApi
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the new verification key when the operation completes.</returns>
         public static Task<string> ReplaceKeysStartAsync(Wallet wallet, string did, string identityJson)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(did, "did");
+            ParamGuard.NotNullOrWhiteSpace(identityJson, "identityJson");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -308,6 +312,9 @@ namespace Hyperledger.Indy.SignusApi
         /// <returns>An asynchronous <see cref="Task"/> that  with no return value the completes when the operation completes.</returns>
         public static Task ReplaceKeysApplyAsync(Wallet wallet, string did)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(did, "did");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -401,8 +408,7 @@ namespace Hyperledger.Indy.SignusApi
 
             return taskCompletionSource.Task;
         }
-
-
+        
         /// <summary>
         /// Verifies a signature created by a key associated with the specified DID.
         /// </summary>
@@ -684,7 +690,6 @@ namespace Hyperledger.Indy.SignusApi
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(verKey, "verKey");
-            ParamGuard.NotNull(metadata, "metadata");
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -847,7 +852,6 @@ namespace Hyperledger.Indy.SignusApi
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(did, "did");
-            ParamGuard.NotNull(metadata, "metadata");
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
