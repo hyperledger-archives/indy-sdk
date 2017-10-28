@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Indy.AgentApi;
+using Hyperledger.Indy.CryptoApi;
 using Hyperledger.Indy.SignusApi;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -39,7 +40,7 @@ namespace Hyperledger.Indy.Test.AgentTests
         {
             var paramJson = string.Format("{{\"seed\":\"{0}\"}}", MY1_SEED);
 
-            var senderVk = await Signus.CreateKeyAsync(wallet, paramJson);
+            var senderVk = await Crypto.CreateKeyAsync(wallet, paramJson);
             var encryptedMsg = await Agent.PrepMsgAsync(wallet, senderVk, VERKEY_FOR_MY2_SEED, MESSAGE);
 
             await CheckMessage(senderVk, encryptedMsg);
@@ -84,7 +85,7 @@ namespace Hyperledger.Indy.Test.AgentTests
         public async Task TestPrepMsgWorksForInvalidRecipientVk()
         {
             var paramJson = string.Format("{{\"seed\":\"{0}\"}}", MY1_SEED);
-            var senderVk = await Signus.CreateKeyAsync(wallet, paramJson);
+            var senderVk = await Crypto.CreateKeyAsync(wallet, paramJson);
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 Agent.PrepMsgAsync(wallet, senderVk, INVALID_VERKEY, MESSAGE)
