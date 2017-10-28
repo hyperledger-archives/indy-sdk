@@ -3,7 +3,7 @@ using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using static Hyperledger.Indy.IndyNativeMethods;
+using static Hyperledger.Indy.CryptoApi.NativeMethods;
 
 namespace Hyperledger.Indy.CryptoApi
 {
@@ -15,7 +15,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <summary>
         /// Gets the callback to use when the indy_create_key command has completed.
         /// </summary>
-        private static CryptoCreateKeyCompletedDelegate _createKeyCompletedCallback = (xcommand_handle, err, verkey) =>
+        private static CreateKeyCompletedDelegate _createKeyCompletedCallback = (xcommand_handle, err, verkey) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -28,7 +28,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <summary>
         /// Gets the callback to use when the indy_get_key_metadata command has completed.
         /// </summary>
-        private static CryptoGetKeyMetadataCompletedDelegate _getKeyMetadataCompletedCallback = (xcommand_handle, err, metadata) =>
+        private static GetKeyMetadataCompletedDelegate _getKeyMetadataCompletedCallback = (xcommand_handle, err, metadata) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -41,7 +41,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <summary>
         /// Gets the callback to use when the indy_crypto_sign command has completed.
         /// </summary>
-        private static CryptoSignCompletedDelegate _cryptoSignCompletedCallback = (xcommand_handle, err, signature_raw, signature_len) =>
+        private static SignCompletedDelegate _cryptoSignCompletedCallback = (xcommand_handle, err, signature_raw, signature_len) =>
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
@@ -57,7 +57,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <summary>
         /// Gets the callback to use when the indy_crypto_verify command  has completed.
         /// </summary>
-        private static CryptoVerifyCompletedDelegate _cryptoVerifyCompletedCallback = (xcommand_handle, err, valid) =>
+        private static VerifyCompletedDelegate _cryptoVerifyCompletedCallback = (xcommand_handle, err, valid) =>
         {
             var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
 
@@ -70,7 +70,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <summary>
         /// Gets the callback to use when the indy_crypto_box command has completed.
         /// </summary>
-        private static CryptoBoxCompletedDelegate _cryptoBoxCompletedCallback = (xcommand_handle, err, encrypted_msg_raw, encrypted_msg_len, nonce_raw, nonce_len) =>
+        private static BoxCompletedDelegate _cryptoBoxCompletedCallback = (xcommand_handle, err, encrypted_msg_raw, encrypted_msg_len, nonce_raw, nonce_len) =>
         {
             var taskCompletionSource = PendingCommands.Remove<BoxResult>(xcommand_handle);
 
@@ -91,7 +91,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <summary>
         /// Gets the callback to use when the indy_crypto_box_open command has completed.
         /// </summary>
-        private static CryptoBoxOpenCompletedDelegate _cryptoBoxOpenCompletedCallback = (xcommand_handle, err, decrypted_msg_raw, decrypted_msg_len) =>
+        private static BoxOpenCompletedDelegate _cryptoBoxOpenCompletedCallback = (xcommand_handle, err, decrypted_msg_raw, decrypted_msg_len) =>
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
@@ -107,7 +107,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <summary>
         /// Gets the callback to use when the indy_crypto_box_seal command has completed.
         /// </summary>
-        private static CryptoBoxSealCompletedDelegate _cryptoBoxSealCompletedCallback = (xcommand_handle, err, encrypted_msg_raw, encrypted_msg_len) =>
+        private static BoxSealCompletedDelegate _cryptoBoxSealCompletedCallback = (xcommand_handle, err, encrypted_msg_raw, encrypted_msg_len) =>
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
@@ -123,7 +123,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <summary>
         /// Gets the callback to use when the indy_crypto_box_seal_open command has completed.
         /// </summary>
-        private static CryptoBoxSealOpenCompletedDelegate _cryptoBoxSealOpenCompletedCallback = (xcommand_handle, err, decrypted_msg_raw, decrypted_msg_len) =>
+        private static BoxSealOpenCompletedDelegate _cryptoBoxSealOpenCompletedCallback = (xcommand_handle, err, decrypted_msg_raw, decrypted_msg_len) =>
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
@@ -164,7 +164,7 @@ namespace Hyperledger.Indy.CryptoApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_create_key(
+            var commandResult = NativeMethods.indy_create_key(
                 commandHandle,
                 wallet.Handle,
                 keyJson,
@@ -195,7 +195,7 @@ namespace Hyperledger.Indy.CryptoApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_set_key_metadata(
+            var commandResult = NativeMethods.indy_set_key_metadata(
                 commandHandle,
                 wallet.Handle,
                 verKey,
@@ -225,7 +225,7 @@ namespace Hyperledger.Indy.CryptoApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_get_key_metadata(
+            var commandResult = NativeMethods.indy_get_key_metadata(
                 commandHandle,
                 wallet.Handle,
                 verKey,
@@ -262,7 +262,7 @@ namespace Hyperledger.Indy.CryptoApi
             var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_crypto_sign(
+            var commandResult = NativeMethods.indy_crypto_sign(
                 commandHandle,
                 wallet.Handle,
                 myVk,
@@ -296,7 +296,7 @@ namespace Hyperledger.Indy.CryptoApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_crypto_verify(
+            var commandResult = NativeMethods.indy_crypto_verify(
                 commandHandle,
                 theirVk,
                 message,
@@ -350,7 +350,7 @@ namespace Hyperledger.Indy.CryptoApi
             var taskCompletionSource = new TaskCompletionSource<BoxResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_crypto_box(
+            var commandResult = NativeMethods.indy_crypto_box(
                 commandHandle,
                 wallet.Handle,
                 myVk,
@@ -408,7 +408,7 @@ namespace Hyperledger.Indy.CryptoApi
             var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_crypto_box_open(
+            var commandResult = NativeMethods.indy_crypto_box_open(
                 commandHandle,
                 wallet.Handle,
                 myVk,
@@ -454,7 +454,7 @@ namespace Hyperledger.Indy.CryptoApi
             var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_crypto_box_seal(
+            var commandResult = NativeMethods.indy_crypto_box_seal(
                 commandHandle,
                 theirVk,
                 message,
@@ -500,7 +500,7 @@ namespace Hyperledger.Indy.CryptoApi
             var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_crypto_box_seal_open(
+            var commandResult = NativeMethods.indy_crypto_box_seal_open(
                 commandHandle,
                 wallet.Handle,
                 myVk,
