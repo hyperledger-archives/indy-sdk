@@ -1,4 +1,6 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Hyperledger.Indy.CryptoApi;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.CryptoTests
@@ -6,11 +8,13 @@ namespace Hyperledger.Indy.Test.CryptoTests
     [TestClass]
     public class BoxSealTest : CryptoIntegrationTestBase
     {
-        [TestMethod]
-        [Ignore]
+        [TestMethod] //Not sure if this is a good test, but since the encrypted content is not static...
         public async Task TestBoxSealWorks()
         {
-            //Not sure of the best way to implement this test...
+            var encryptedMessage = await Crypto.BoxSealAsync(recipientVerKey, MESSAGE);
+
+            var decryptedMessage = await Crypto.BoxSealOpenAsync(wallet, recipientVerKey, encryptedMessage);
+            Assert.IsTrue(MESSAGE.SequenceEqual(decryptedMessage));
         }
     }
 }

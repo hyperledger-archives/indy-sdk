@@ -1,6 +1,7 @@
 ﻿using Hyperledger.Indy.CryptoApi;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.CryptoTests
@@ -8,11 +9,13 @@ namespace Hyperledger.Indy.Test.CryptoTests
     [TestClass]
     public class BoxTest : CryptoIntegrationTestBase
     {
-        [TestMethod]
-        [Ignore]
+        [TestMethod] //Not sure if this is a good test, but since the encrypted content is not static...
         public async Task TestBoxWorks()
         {
-            //Not sure how to implement this test.
+            var boxResult = await Crypto.BoxAsync(wallet, senderVerKey, recipientVerKey, MESSAGE);
+
+            var decryptedMessage = await Crypto.BoxOpenAsync(wallet, recipientVerKey, senderVerKey, boxResult.EncryptedMessage, boxResult.Nonce);
+            Assert.IsTrue(MESSAGE.SequenceEqual(decryptedMessage));
         }
 
         [TestMethod]
