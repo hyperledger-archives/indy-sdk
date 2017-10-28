@@ -613,12 +613,7 @@ namespace Hyperledger.Indy.SignusApi
 
             return taskCompletionSource.Task;
         }
-
         
-        
-
-        
-
         /// <summary>
         /// Gets the verification key for the specified DID.
         /// </summary>
