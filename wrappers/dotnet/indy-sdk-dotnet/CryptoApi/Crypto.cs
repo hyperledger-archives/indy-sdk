@@ -252,6 +252,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="myVk">The verification key of the key-pair to sign with.</param>
         /// <param name="message">The message to sign</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the signature.</returns>
+        /// <exception cref="WalletValueNotFoundException">Thrown if <paramref name="myVk"/> is not present in the <paramref name="wallet"/>.</exception>
         public static Task<byte[]> SignAsync(Wallet wallet, string myVk, byte[] message)
         {
             ParamGuard.NotNull(wallet, "wallet");
@@ -338,6 +339,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="theirVk">The verification key of the party that is the intended recipient of the message.</param>
         /// <param name="message">The message to encrypt.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="BoxResult"/> when the operation completes.</returns>
+        /// <exception cref="WalletValueNotFoundException">Thrown if <paramref name="myVk"/> is not in the <paramref name="wallet"/>.</exception>
         public static Task<BoxResult> BoxAsync(Wallet wallet, string myVk, string theirVk, byte[] message)
         {
             ParamGuard.NotNull(wallet, "wallet");
@@ -386,12 +388,15 @@ namespace Hyperledger.Indy.CryptoApi
         /// its verification key which can be used as the <paramref name="myVk"/> and/or <paramref name="theirVk"/> parameters when calling this method.
         /// </note>
         /// </remarks>
-        /// <param name="wallet">The wallet containing the keys.</param>
+        /// <param name="wallet">The wallet containing the t.</param>
         /// <param name="myVk">The verification key of recipient of an encrypted message.</param>
         /// <param name="theirVk">The verification key of the party that encrypted the message.</param>
         /// <param name="encryptedMessage">The encrypted message.</param>
         /// <param name="nonce">The nonce used for encrypting the message.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the decrypted message.</returns>
+        /// <exception cref="WalletValueNotFoundException">Thrown if the <paramref name="theirVk"/> is not present in the <paramref name="wallet"/>.</exception>
+        /// <exception cref="InvalidStructureException">Thrown if <paramref name="myVk"/> is not in the <paramref name="wallet"/> or the <paramref name="nonce"/>
+        /// does not match the <paramref name="encryptedMessage"/>.</exception>
         public static Task<byte[]> BoxOpenAsync(Wallet wallet, string myVk, string theirVk, byte[] encryptedMessage, byte[] nonce)
         {
             ParamGuard.NotNull(wallet, "wallet");
@@ -484,6 +489,8 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="myVk">The verification key of the intended recipient of the encrypted message.</param>
         /// <param name="encryptedMessage">The encrypted message to decrypt.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the decrypted message.</returns>
+        /// <exception cref="WalletValueNotFoundException">Thrown if <paramref name="myVk"/> is not present in the <paramref name="wallet"/>.</exception>
+        /// <exception cref="InvalidStructureException">Thrown if <paramref name="myVk"/> was not used to encrypt <paramref name="encryptedMessage"/>.</exception>
         public static Task<byte[]> BoxSealOpenAsync(Wallet wallet, string myVk, byte[] encryptedMessage)
         {
             ParamGuard.NotNull(wallet, "wallet");
