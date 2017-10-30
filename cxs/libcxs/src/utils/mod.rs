@@ -1,5 +1,9 @@
 #[macro_use]
+pub mod ccallback;
+
+#[macro_use]
 pub mod cstring;
+
 pub mod pool;
 pub mod wallet;
 pub mod init;
