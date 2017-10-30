@@ -203,7 +203,7 @@ pub extern fn cxs_connection_connect(connection_handle: u32, connection_options:
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
 pub extern fn cxs_connection_serialize(connection_handle: u32, cb: Option<extern fn(xconnection_handle: u32, err: u32, claim_state: *const c_char)>) -> u32 {
-//    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
     thread::spawn(move|| {
 
