@@ -10,8 +10,8 @@ use rand::Rng;
 use std::sync::Mutex;
 use std::collections::HashMap;
 use settings;
-use ::utils::messages::GeneralMessage;
-use ::utils::messages;
+use messages::GeneralMessage;
+use messages;
 
 lazy_static! {
     static ref CONNECTION_MAP: Mutex<HashMap<u32, Box<Connection>>> = Default::default();
@@ -301,16 +301,8 @@ pub fn update_state(handle: u32) -> u32{
 
     let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
-    let uid = "123";
-    let msg_type = "Any type";
-    let status_code = "1";
-    let payload = "payload";
     let json_msg = match messages::get_messages()
         .to(&pw_did)
-        .uid(&uid)
-        .msg_type(&msg_type)
-        .status_code(&status_code)
-        .include_edge_payload(&payload)
         .serialize_message(){
         Ok(x) => x,
         Err(x) => return x,
