@@ -26,8 +26,6 @@ pub const ENCRYPTED_MESSAGE: &'static [u8; 45] = &[187, 227, 10, 29, 46, 178, 12
 pub const SIGNATURE: &'static [u8; 64] = &[169, 215, 8, 225, 7, 107, 110, 9, 193, 162, 202, 214, 162, 66, 238, 211, 63, 209, 12, 196, 8, 211, 55, 27, 120, 94, 204, 147, 53, 104, 103, 61, 60, 249, 237, 127, 103, 46, 220, 223, 10, 95, 75, 53, 245, 210, 241, 151, 191, 41, 48, 30, 9, 16, 78, 252, 157, 206, 210, 145, 125, 133, 109, 11];
 pub const INVALID_BASE58_DID: &'static str = "invalid_base58string";
 
-#[test]
-fn indy_set_did_metadata_works() {}
 
 mod high_cases {
     use super::*;
@@ -304,8 +302,239 @@ mod high_cases {
 
         #[test]
         fn indy_crypto_verify_works_for_other_signer() {
-            let valid = CryptoUtils::crypto_verify(&VERKEY_FOR_MY2_SEED, MESSAGE.as_bytes(), SIGNATURE).unwrap();
+            let valid = CryptoUtils::crypto_verify(&VERKEY_MY2, MESSAGE.as_bytes(), SIGNATURE).unwrap();
             assert!(!valid);
+        }
+    }
+
+    mod crypto_box {
+        use super::*;
+
+        #[test]
+        fn indy_crypto_box_works() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let my_vk = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            CryptoUtils::crypto_box(wallet_handle, &my_vk, VERKEY_MY2, MESSAGE.as_bytes()).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_crypto_box_works_for_unknown_coder() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let res = CryptoUtils::crypto_box(wallet_handle, VERKEY_MY1, VERKEY_MY2, MESSAGE.as_bytes());
+            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_crypto_box_works_for_invalid_wallet_handle() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let my_vk = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let invalid_wallet_handle = wallet_handle + 1;
+            let res = CryptoUtils::crypto_box(invalid_wallet_handle, &my_vk, VERKEY_MY2, MESSAGE.as_bytes());
+            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod crypto_box_open {
+        use super::*;
+
+        #[test]
+        fn indy_crypto_box_open_works() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let my_vk = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let decrypted_message = CryptoUtils::crypto_box_open(wallet_handle, &my_vk, VERKEY_TRUSTEE, ENCRYPTED_MESSAGE, NONCE).unwrap();
+            assert_eq!(MESSAGE.as_bytes().to_vec(), decrypted_message);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_crypto_box_open_works_for_unknown_my_key() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let res = CryptoUtils::crypto_box_open(wallet_handle, VERKEY_MY1, VERKEY_TRUSTEE, ENCRYPTED_MESSAGE, NONCE);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_crypto_box_open_works_for_other_coder_key() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let my_vk = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let res = CryptoUtils::crypto_box_open(wallet_handle, &my_vk, VERKEY_MY2, ENCRYPTED_MESSAGE, NONCE);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_crypto_box_open_works_for_nonce_not_correspond_message() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let my_vk = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let nonce = "acS2SQgDdfE3Goxa1AhcWCa4kEMqSelv7";
+            let res = CryptoUtils::crypto_box_open(wallet_handle, &my_vk, VERKEY_TRUSTEE, ENCRYPTED_MESSAGE, nonce.as_bytes());
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_crypto_box_open_works_for_invalid_wallet_handle() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let my_vk = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let invalid_wallet_handle = wallet_handle + 1;
+            let res = CryptoUtils::crypto_box_open(invalid_wallet_handle, &my_vk, VERKEY_TRUSTEE, ENCRYPTED_MESSAGE, NONCE);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod crypto_box_seal {
+        use super::*;
+
+        #[test]
+        fn indy_crypto_box_seal_works() {
+            TestUtils::cleanup_storage();
+
+            CryptoUtils::crypto_box_seal(VERKEY_MY1, MESSAGE.as_bytes()).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_crypto_box_seal_works_for_invalid_key() {
+            TestUtils::cleanup_storage();
+
+            let res = CryptoUtils::crypto_box_seal(INVALID_BASE58_VERKEY, MESSAGE.as_bytes());
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod crypto_box_seal_open {
+        use super::*;
+
+        #[test]
+        fn indy_crypto_box_seal_open_works() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let verkey = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let encrypted_message = CryptoUtils::crypto_box_seal(&verkey, MESSAGE.as_bytes()).unwrap();
+
+            let decrypted_message = CryptoUtils::crypto_box_seal_open(wallet_handle, &verkey, &encrypted_message).unwrap();
+            assert_eq!(MESSAGE.as_bytes().to_vec(), decrypted_message);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_crypto_box_seal_open_works_for_other_key() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let encrypted_message = CryptoUtils::crypto_box_seal(VERKEY_TRUSTEE, MESSAGE.as_bytes()).unwrap();
+
+            let verkey = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let res = CryptoUtils::crypto_box_seal_open(wallet_handle, &verkey, &encrypted_message);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_crypto_box_seal_open_works_for_unknown_key() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let encrypted_message = CryptoUtils::crypto_box_seal(VERKEY_MY1, MESSAGE.as_bytes()).unwrap();
+            let res = CryptoUtils::crypto_box_seal_open(wallet_handle, VERKEY_MY1, &encrypted_message);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_crypto_box_seal_open_works_for_invalid_wallet_handle() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let verkey = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let encrypted_message = CryptoUtils::crypto_box_seal(&verkey, MESSAGE.as_bytes()).unwrap();
+
+            let wallet_invalid_handle = wallet_handle + 1;
+            let res = CryptoUtils::crypto_box_seal_open(wallet_invalid_handle, &verkey, &encrypted_message);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
         }
     }
 }
@@ -321,6 +550,115 @@ mod medium_cases {
             let signature: Vec<u8> = vec![20, 191, 100, 213, 101, 12, 197, 198, 203, 49, 89, 220, 205, 192, 224, 221, 97, 77, 220, 190];
             let res = CryptoUtils::crypto_verify(&VERKEY_MY1, MESSAGE.as_bytes(), &signature);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+        }
+    }
+
+    mod crypto_box {
+        use super::*;
+
+        #[test]
+        fn indy_crypto_box_works_for_invalid_my_pk() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let res = CryptoUtils::crypto_box(wallet_handle, INVALID_BASE58_VERKEY, VERKEY_MY2, MESSAGE.as_bytes());
+            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_crypto_box_works_for_invalid_their_pk() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let my_vk = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let res = CryptoUtils::crypto_box(wallet_handle, &my_vk, INVALID_BASE58_VERKEY, MESSAGE.as_bytes());
+            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod crypto_box_open {
+        use super::*;
+
+
+        #[test]
+        fn indy_crypto_box_open_works_for_invalid_my_key() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let res = CryptoUtils::crypto_box_open(wallet_handle, INVALID_BASE58_VERKEY, VERKEY_TRUSTEE, ENCRYPTED_MESSAGE, NONCE);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_crypto_box_open_works_for_invalid_their_key() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let my_vk = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let res = CryptoUtils::crypto_box_open(wallet_handle, &my_vk, INVALID_BASE58_VERKEY, ENCRYPTED_MESSAGE, NONCE);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_crypto_box_open_works_for_invalid_nonce() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let my_vk = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let nonce = vec![24, 99, 107, 70, 58, 6, 252, 149, 225];
+            let res = CryptoUtils::crypto_box_open(wallet_handle, &my_vk, VERKEY_TRUSTEE, ENCRYPTED_MESSAGE, &nonce);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+
+    mod crypto_box_seal_open {
+        use super::*;
+
+        #[test]
+        fn indy_crypto_box_seal_open_works_for_invalid_key() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let verkey = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let encrypted_message = CryptoUtils::crypto_box_seal(&verkey, MESSAGE.as_bytes()).unwrap();
+
+            let res = CryptoUtils::crypto_box_seal_open(wallet_handle, INVALID_BASE58_VERKEY, &encrypted_message);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
         }
     }
 }
