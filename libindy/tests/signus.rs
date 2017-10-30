@@ -190,20 +190,22 @@ mod high_cases {
         fn indy_set_endpoint_for_did_works_for_replace() {
             TestUtils::cleanup_storage();
 
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             SignusUtils::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
-            let (endpoint, key) = SignusUtils::get_endpoint_for_did(wallet_handle, DID).unwrap();
+            let (endpoint, key) = SignusUtils::get_endpoint_for_did(wallet_handle, pool_handle, DID).unwrap();
             assert_eq!(ENDPOINT, endpoint);
             assert_eq!(VERKEY, key);
 
             let new_endpoint = "10.10.10.1:9710";
             SignusUtils::set_endpoint_for_did(wallet_handle, DID, new_endpoint, VERKEY_MY2).unwrap();
-            let (updated_endpoint, updated_key) = SignusUtils::get_endpoint_for_did(wallet_handle, DID).unwrap();
+            let (updated_endpoint, updated_key) = SignusUtils::get_endpoint_for_did(wallet_handle, pool_handle, DID).unwrap();
             assert_eq!(new_endpoint, updated_endpoint);
             assert_eq!(VERKEY_MY2, updated_key);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -259,18 +261,45 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn indy_get_endpoint_works() {
+        fn indy_get_endpoint_for_did_works() {
             TestUtils::cleanup_storage();
 
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             SignusUtils::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
 
-            let (endpoint, key) = SignusUtils::get_endpoint_for_did(wallet_handle, DID).unwrap();
+            let (endpoint, key) = SignusUtils::get_endpoint_for_did(wallet_handle, pool_handle, DID).unwrap();
             assert_eq!(ENDPOINT, endpoint);
             assert_eq!(VERKEY, key);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_get_endpoint_for_did_works_from_ledger() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (trustee_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+
+            let attrib_data = format!(r#"{{"endpoint":{{"ha":"{}", "verkey":"{}"}}}}"#, ENDPOINT, VERKEY_TRUSTEE);
+            let attrib_request = LedgerUtils::build_attrib_request(&trustee_did, &trustee_did,
+                                                                   None, Some(&attrib_data), None).unwrap();
+
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
+
+            let (endpoint, key) = SignusUtils::get_endpoint_for_did(wallet_handle, pool_handle, &trustee_did).unwrap();
+            assert_eq!(ENDPOINT, endpoint);
+            assert_eq!(VERKEY_TRUSTEE, key);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -279,29 +308,70 @@ mod high_cases {
         fn indy_get_endpoint_for_did_works_for_unknown_did() {
             TestUtils::cleanup_storage();
 
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let res = SignusUtils::get_endpoint_for_did(wallet_handle, DID);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            let res = SignusUtils::get_endpoint_for_did(wallet_handle, pool_handle, DID);
+            assert_eq!(ErrorCode::CommonInvalidState, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
 
         #[test]
-        fn indy_get_endpoint_for_did_works_invalid_handle() {
+        fn indy_get_endpoint_for_did_works_invalid_poll_handle() {
             TestUtils::cleanup_storage();
 
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            SignusUtils::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
+
+            let invalid_pool_handle = pool_handle + 1;
+            let res = SignusUtils::get_endpoint_for_did(wallet_handle, invalid_pool_handle, DID);
+            assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_get_endpoint_for_did_works_invalid_wallet_handle() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             SignusUtils::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 1;
-            let res = SignusUtils::get_endpoint_for_did(invalid_wallet_handle, DID);
+            let res = SignusUtils::get_endpoint_for_did(invalid_wallet_handle, pool_handle, DID);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_get_endpoint_for_did_works_incompatible_wallet_and_pool() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet("other_pool", None).unwrap();
+
+            SignusUtils::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
+
+            let res = SignusUtils::get_endpoint_for_did(wallet_handle, pool_handle, DID);
+            assert_eq!(ErrorCode::WalletIncompatiblePoolError, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }

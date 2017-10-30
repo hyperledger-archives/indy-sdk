@@ -270,8 +270,10 @@ impl ClaimDefOperationData {
 
 //FIXME workaround for ledger: serialize required dictionary as empty instead of using null
 extern crate serde;
+
 use self::serde::Serializer;
 use self::serde::ser::SerializeMap;
+
 fn empty_map_instead_of_null<S>(x: &Option<RevocationPublicKey>, s: S) -> Result<S::Ok, S::Error>
     where S: Serializer {
     if let &Some(ref x) = x {
@@ -431,3 +433,46 @@ pub struct GetNymResultData {
 }
 
 impl<'a> JsonDecodable<'a> for GetNymResultData {}
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetAttribReplyResult {
+    pub  identifier: String,
+    pub  req_id: u64,
+    #[serde(rename = "type")]
+    pub  _type: String,
+    pub  data: String,
+    pub  dest: String,
+    pub  raw: String,
+    pub  seq_no: Option<i32>
+}
+
+impl<'a> JsonDecodable<'a> for GetAttribReplyResult {}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct AttribData {
+    pub endpoint: Endpoint
+}
+
+impl<'a> JsonDecodable<'a> for AttribData {}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Endpoint {
+    pub ha: String,
+    pub verkey: String
+}
+
+impl Endpoint {
+    pub fn new(ha: String, verkey: String) -> Endpoint {
+        Endpoint {
+            ha: ha,
+            verkey: verkey
+        }
+    }
+}
+
+impl JsonEncodable for Endpoint {}
+
+impl<'a> JsonDecodable<'a> for Endpoint {}
+

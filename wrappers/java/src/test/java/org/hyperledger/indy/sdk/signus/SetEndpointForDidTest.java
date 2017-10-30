@@ -1,6 +1,6 @@
 package org.hyperledger.indy.sdk.signus;
 
-import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
+import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.junit.Test;
 
@@ -10,7 +10,7 @@ import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 
 
-public class SetEndpointForDidTest extends IndyIntegrationTestWithSingleWallet {
+public class SetEndpointForDidTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
 	@Test
 	public void testSetEndpointForDidWorks() throws Exception {
@@ -20,13 +20,13 @@ public class SetEndpointForDidTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testSetEndpointForDidWorksForReplace() throws Exception {
 		Signus.setEndpointForDid(wallet, DID, ENDPOINT, VERKEY).get();
-		SignusResults.EndpointForDidResult receivedEndpoint = Signus.getEndpointForDid(wallet, DID).get();
+		SignusResults.EndpointForDidResult receivedEndpoint = Signus.getEndpointForDid(wallet, pool, DID).get();
 		assertEquals(ENDPOINT, receivedEndpoint.getAddress());
 		assertEquals(VERKEY, receivedEndpoint.getTransportKey());
 
 		String newEndpoin = "10.10.10.1:9710";
 		Signus.setEndpointForDid(wallet, DID, newEndpoin, VERKEY_MY2).get();
-		SignusResults.EndpointForDidResult updatedEndpoint = Signus.getEndpointForDid(wallet, DID).get();
+		SignusResults.EndpointForDidResult updatedEndpoint = Signus.getEndpointForDid(wallet, pool, DID).get();
 		assertEquals(newEndpoin, updatedEndpoint.getAddress());
 		assertEquals(VERKEY_MY2, updatedEndpoint.getTransportKey());
 	}

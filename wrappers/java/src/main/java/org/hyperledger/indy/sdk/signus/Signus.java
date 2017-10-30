@@ -734,25 +734,30 @@ public class Signus extends IndyJava.API {
 
 	/**
 	 * @param wallet The wallet.
+	 * @param pool The pool.
 	 * @param did
 	 * @return A future resolving to a endpoint object
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<EndpointForDidResult> getEndpointForDid(
 			Wallet wallet,
+			Pool pool,
 			String did) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNull(pool, "pool");
 		ParamGuard.notNullOrWhiteSpace(did, "did");
 
 		CompletableFuture<EndpointForDidResult> future = new CompletableFuture<EndpointForDidResult>();
 		int commandHandle = addFuture(future);
 
+		int poolHandle = pool.getPoolHandle();
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_get_endpoint_for_did(
 				commandHandle,
 				walletHandle,
+				poolHandle,
 				did,
 				getEndpointForDidCb);
 
