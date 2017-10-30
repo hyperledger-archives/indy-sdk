@@ -39,6 +39,6 @@ public class ReplaceKeysApplyTest extends IndyIntegrationTestWithSingleWallet {
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
 		Signus.replaceKeysStart(wallet, did, "{}").get();
-		Signus.replaceKeysApply(wallet, DID1).get();
+		Signus.replaceKeysApply(wallet, DID).get();
 	}
 }

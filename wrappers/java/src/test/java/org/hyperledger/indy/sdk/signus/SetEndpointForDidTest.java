@@ -14,21 +14,21 @@ public class SetEndpointForDidTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testSetEndpointForDidWorks() throws Exception {
-		Signus.setEndpointForDid(wallet, DID1, ENDPOINT, VERKEY).get();
+		Signus.setEndpointForDid(wallet, DID, ENDPOINT, VERKEY).get();
 	}
 
 	@Test
 	public void testSetEndpointForDidWorksForReplace() throws Exception {
-		Signus.setEndpointForDid(wallet, DID1, ENDPOINT, VERKEY).get();
-		SignusResults.EndpointForDidResult receivedEndpoint = Signus.getEndpointForDid(wallet, DID1).get();
+		Signus.setEndpointForDid(wallet, DID, ENDPOINT, VERKEY).get();
+		SignusResults.EndpointForDidResult receivedEndpoint = Signus.getEndpointForDid(wallet, DID).get();
 		assertEquals(ENDPOINT, receivedEndpoint.getAddress());
 		assertEquals(VERKEY, receivedEndpoint.getTransportKey());
 
 		String newEndpoin = "10.10.10.1:9710";
-		Signus.setEndpointForDid(wallet, DID1, newEndpoin, VERKEY_FOR_MY2_SEED).get();
-		SignusResults.EndpointForDidResult updatedEndpoint = Signus.getEndpointForDid(wallet, DID1).get();
+		Signus.setEndpointForDid(wallet, DID, newEndpoin, VERKEY_MY2).get();
+		SignusResults.EndpointForDidResult updatedEndpoint = Signus.getEndpointForDid(wallet, DID).get();
 		assertEquals(newEndpoin, updatedEndpoint.getAddress());
-		assertEquals(VERKEY_FOR_MY2_SEED, updatedEndpoint.getTransportKey());
+		assertEquals(VERKEY_MY2, updatedEndpoint.getTransportKey());
 	}
 
 	@Test
@@ -36,7 +36,7 @@ public class SetEndpointForDidTest extends IndyIntegrationTestWithSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Signus.setEndpointForDid(wallet, "invalid_base58string", ENDPOINT, VERKEY).get();
+		Signus.setEndpointForDid(wallet, INVALID_DID, ENDPOINT, VERKEY).get();
 	}
 
 	@Test
@@ -44,6 +44,6 @@ public class SetEndpointForDidTest extends IndyIntegrationTestWithSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Signus.setEndpointForDid(wallet, DID1, ENDPOINT, INVALID_VERKEY).get();
+		Signus.setEndpointForDid(wallet, DID, ENDPOINT, INVALID_VERKEY).get();
 	}
 }

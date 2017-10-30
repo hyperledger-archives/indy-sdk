@@ -1,13 +1,13 @@
-package org.hyperledger.indy.sdk.signus;
+package org.hyperledger.indy.sdk.crypto;
 
 import org.hyperledger.indy.sdk.IndyJava;
 
 /**
- * signus.rs JSON parameters
+ * crypto.rs JSON parameters
  */
-public final class SignusJSONParameters {
+public final class CryptoJSONParameters {
 
-	private SignusJSONParameters() {
+	private CryptoJSONParameters() {
 
 	}
 
@@ -19,6 +19,16 @@ public final class SignusJSONParameters {
 			if (seed != null) this.map.put("seed", seed);
 			if (cryptoType != null) this.map.put("crypto_type", cryptoType);
 			if (cid != null) this.map.put("cid", cid);
+		}
+	}
+
+
+	public static class CreateKeyJSONParameter extends IndyJava.JsonParameter {
+
+		public CreateKeyJSONParameter(String seed, String cryptoType) {
+
+			if (seed != null) this.map.put("seed", seed);
+			if (cryptoType != null) this.map.put("crypto_type", cryptoType);
 		}
 	}
 }

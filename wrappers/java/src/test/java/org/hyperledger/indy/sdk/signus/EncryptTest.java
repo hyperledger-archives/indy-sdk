@@ -57,7 +57,7 @@ public class EncryptTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 		String identityJson = String.format(IDENTITY_JSON_TEMPLATE, trusteeDid, trusteeVerkey);
 		Signus.storeTheirDid(wallet, identityJson).get();
 
-		Signus.encrypt(wallet, pool, DID1, trusteeDid, MESSAGE).get();
+		Signus.encrypt(wallet, pool, DID, trusteeDid, MESSAGE).get();
 	}
 
 	@Test
@@ -65,6 +65,6 @@ public class EncryptTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStateException.class));
 
-		Signus.encrypt(wallet, pool, trusteeDid, DID1, MESSAGE).get();
+		Signus.encrypt(wallet, pool, trusteeDid, DID, MESSAGE).get();
 	}
 }

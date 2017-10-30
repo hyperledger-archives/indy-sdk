@@ -2,6 +2,8 @@ package org.hyperledger.indy.sdk.agent;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
+import org.hyperledger.indy.sdk.crypto.Crypto;
+import org.hyperledger.indy.sdk.crypto.CryptoJSONParameters;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults;
@@ -43,10 +45,10 @@ public class AgentPrepMsgTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testPrepMsgWorksForCreatedKey() throws Exception {
-		String paramJson = new SignusJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();
-		String senderVk = Signus.createKey(wallet, paramJson).get();
+		String paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();
+		String senderVk = Crypto.createKey(wallet, paramJson).get();
 
-		byte[] encryptedMsg = Agent.prepMsg(wallet, senderVk, VERKEY_FOR_MY2_SEED, MESSAGE).get();
+		byte[] encryptedMsg = Agent.prepMsg(wallet, senderVk, VERKEY_MY2, MESSAGE).get();
 
 		checkMessage(senderVk, encryptedMsg);
 	}
@@ -57,7 +59,7 @@ public class AgentPrepMsgTest extends IndyIntegrationTestWithSingleWallet {
 		SignusResults.CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(wallet, didJson).get();
 		String senderVk = result.getVerkey();
 
-		byte[] encryptedMsg = Agent.prepMsg(wallet, senderVk, VERKEY_FOR_MY2_SEED, MESSAGE).get();
+		byte[] encryptedMsg = Agent.prepMsg(wallet, senderVk, VERKEY_MY2, MESSAGE).get();
 
 		checkMessage(senderVk, encryptedMsg);
 	}
@@ -68,7 +70,7 @@ public class AgentPrepMsgTest extends IndyIntegrationTestWithSingleWallet {
 		SignusResults.CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(wallet, didJson).get();
 		String senderVk = result.getVerkey();
 
-		byte[] encryptedMsg = Agent.prepMsg(wallet, senderVk, VERKEY_FOR_MY2_SEED, MESSAGE).get();
+		byte[] encryptedMsg = Agent.prepMsg(wallet, senderVk, VERKEY_MY2, MESSAGE).get();
 
 		checkMessage(senderVk, encryptedMsg);
 	}
@@ -78,13 +80,13 @@ public class AgentPrepMsgTest extends IndyIntegrationTestWithSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Agent.prepMsg(wallet, VERKEY, VERKEY_FOR_MY2_SEED, MESSAGE).get();
+		Agent.prepMsg(wallet, VERKEY, VERKEY_MY2, MESSAGE).get();
 	}
 
 	@Test
 	public void testPrepMsgWorksForInvalidRecipientVk() throws Exception {
-		String paramJson = new SignusJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();
-		String senderVk = Signus.createKey(wallet, paramJson).get();
+		String paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();
+		String senderVk = Crypto.createKey(wallet, paramJson).get();
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));

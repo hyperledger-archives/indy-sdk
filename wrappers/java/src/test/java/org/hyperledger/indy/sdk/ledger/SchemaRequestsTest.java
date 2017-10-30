@@ -24,9 +24,9 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 				"\"operation\":{" +
 				"\"type\":\"101\"," +
 				"\"data\":%s" +
-				"}", DID1, data);
+				"}", DID, data);
 
-		String schemaRequest = Ledger.buildSchemaRequest(DID1, data).get();
+		String schemaRequest = Ledger.buildSchemaRequest(DID, data).get();
 
 		assertTrue(schemaRequest.replace("\\", "").contains(expectedResult));
 	}
@@ -40,9 +40,9 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 				"\"type\":\"107\"," +
 				"\"dest\":\"%s\"," +
 				"\"data\":%s" +
-				"}", DID1, DID1, data);
+				"}", DID, DID, data);
 
-		String getSchemaRequest = Ledger.buildGetSchemaRequest(DID1, DID1, data).get();
+		String getSchemaRequest = Ledger.buildGetSchemaRequest(DID, DID, data).get();
 
 		assertTrue(getSchemaRequest.contains(expectedResult));
 	}
@@ -103,6 +103,6 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 
 		String data = "{\"name\":\"name\",\"version\":\"1.0\"}";
 
-		Ledger.buildSchemaRequest(DID1, data).get();
+		Ledger.buildSchemaRequest(DID, data).get();
 	}
 }
