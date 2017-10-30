@@ -3,7 +3,6 @@
 extern crate serde;
 extern crate rand;
 extern crate reqwest;
-extern crate mockito;
 extern crate config;
 extern crate url;
 
@@ -22,11 +21,13 @@ extern crate lazy_static;
 #[macro_use]
 mod utils;
 mod settings;
+mod messages;
 
 use std::path::Path;
 
 pub mod api;
 pub mod connection;
+pub mod issuer_claim;
 
 pub fn create_path(s:&str) -> &Path {
     Path::new(s)

@@ -2,8 +2,8 @@ extern crate rust_base58;
 extern crate serde_json;
 
 use utils::error;
-use utils::messages::validation;
-use utils::messages::GeneralMessage;
+use messages::validation;
+use messages::GeneralMessage;
 
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
@@ -414,7 +414,7 @@ impl GeneralMessage for AcceptInvitation{
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::messages::{create_keys, accept_invitation, update_data, send_invite};
+    use messages::{create_keys, accept_invitation, update_data, send_invite};
 
     #[test]
     fn test_create_key_returns_message_with_create_key_as_payload(){

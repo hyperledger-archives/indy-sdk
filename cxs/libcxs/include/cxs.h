@@ -23,6 +23,7 @@ typedef unsigned int cxs_claimdef_handle_t;
 typedef unsigned int cxs_connection_handle_t;
 typedef unsigned int cxs_claim_handle_t;
 typedef unsigned int cxs_proof_handle_t;
+typedef unsigned int cxs_command_handle_t;
 
 typedef struct {
 
@@ -107,9 +108,6 @@ cxs_error_t cxs_connection_get_state(cxs_connection_handle_t connection_handle, 
 /** Releases the connection from memory. */
 cxs_error_t cxs_connection_release(cxs_connection_handle_t connection_handle);
 
-/** Populate status_array with the state of each connection handle. */
-cxs_error_t cxs_connection_list_state(cxs_status_t *status_array);
-
 /**
  * claim issuer object
  *
@@ -117,32 +115,28 @@ cxs_error_t cxs_connection_list_state(cxs_status_t *status_array);
  */
 
 /** Creates a claim object from the specified claimdef handle. Populates a handle the new claim. */
-cxs_error_t cxs_claim_create(cxs_claimdef_handle_t claimdef_handle, const char * claim_data, cxs_claim_handle_t *claim_handle);
-
-/** Sets the specific connection for this claim. The claim is tied to the specified identity owner. */
-cxs_error_t cxs_claim_set_connection(cxs_claim_handle_t claim_handle, cxs_connection_handle_t connection_handle);
+cxs_error_t cxs_issuer_create_claim(cxs_command_handle_t, const char *source_id, cxs_claimdef_handle_t claimdef_handle, const char * claim_data, void (*cb)(cxs_command_handle_t command_handle, cxs_error_t err, cxs_claim_handle_t *claim_handle));
 
 /** Asynchronously sends the claim offer to the connection. */
-cxs_error_t cxs_claim_send_offer(cxs_claim_handle_t claim_handle);
+cxs_error_t cxs_issuer_send_claim_offer(cxs_claim_handle_t claim_handle, cxs_connection_handle_t connection_handle);
 
 /** Populates claim_request with the latest claim request received. */
-cxs_error_t cxs_claim_get_claim_request(cxs_claim_handle_t claim_handle, char *claim_request);
+cxs_error_t cxs_issuer_get_claim_request(cxs_claim_handle_t claim_handle, char *claim_request);
 
 /** Sets the claim request in an accepted state. */
-cxs_error_t cxs_claim_accepted(cxs_claim_handle_t claim_handle);
+cxs_error_t cxs_issuer_accept_claim(cxs_claim_handle_t claim_handle);
 
 /** Asynchronously send the claim to the connection. Populates a handle to the new transaction. */
-cxs_error_t cxs_claim_send(cxs_claim_handle_t claim_handle);
+cxs_error_t cxs_issuer_send_claim(cxs_claim_handle_t claim_handle, cxs_connection_handle_t connection_handle);
 
 /** Terminates a claim for the specified reason. */
-cxs_error_t cxs_claim_terminate(cxs_claim_handle_t claim_handle, cxs_claim_state_t state_type, const char *msg);
-
-/** Populate status_array with the state of each claim handle. */
-cxs_error_t cxs_claim_list_state(cxs_status_t *status_array);
+cxs_error_t cxs_issuer_terminate_claim(cxs_claim_handle_t claim_handle, cxs_claim_state_t state_type, const char *msg);
 
 /** Populates status with the current state of this claim. */
-cxs_error_t cxs_claim_get_state(cxs_claim_handle_t claim_handle, char *status);
+cxs_error_t cxs_issuer_claim_serialize(cxs_claim_handle_t claim_handle, void (*cb)(cxs_claim_handle_t claim_handle, cxs_error_t err, const char *state));
 
+/** Re-creates a claim object from the specified serialization. */
+cxs_error_t cxs_issuer_claim_deserialize(cxs_command_handle_t, const char *serialized_claim, void (*cb)(cxs_command_handle_t command_handle, cxs_error_t err, cxs_claim_handle_t *claim_handle));
 
 /**
  * proof object

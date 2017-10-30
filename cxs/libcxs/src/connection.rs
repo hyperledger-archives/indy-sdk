@@ -10,8 +10,8 @@ use rand::Rng;
 use std::sync::Mutex;
 use std::collections::HashMap;
 use settings;
-use ::utils::messages::GeneralMessage;
-use ::utils::messages;
+use messages::GeneralMessage;
+use messages;
 
 lazy_static! {
     static ref CONNECTION_MAP: Mutex<HashMap<u32, Box<Connection>>> = Default::default();
@@ -105,6 +105,16 @@ fn find_connection(did: &str) -> u32 {
     return 0;
 }
 
+pub fn is_valid_connection_handle(handle: u32) -> bool {
+    let connection_table = CONNECTION_MAP.lock().unwrap();
+
+    if let Some(cxn) = connection_table.get(&handle) {
+        true
+    } else {
+        false
+    }
+}
+
 pub fn set_pw_did(handle: u32, did: &str) {
     let mut connection_table = CONNECTION_MAP.lock().unwrap();
 
@@ -118,10 +128,8 @@ pub fn set_state(handle: u32, state: CxsStateType) {
 
     if let Some(cxn) = connection_table.get_mut(&handle) {
         cxn.set_state(state);
-        ;
     }
 }
-
 
 pub fn get_pw_did(handle: u32) -> Result<String, u32> {
     let connection_table = CONNECTION_MAP.lock().unwrap();
@@ -301,16 +309,8 @@ pub fn update_state(handle: u32) -> u32{
 
     let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
-    let uid = "123";
-    let msg_type = "Any type";
-    let status_code = "1";
-    let payload = "payload";
     let json_msg = match messages::get_messages()
         .to(&pw_did)
-        .uid(&uid)
-        .msg_type(&msg_type)
-        .status_code(&status_code)
-        .include_edge_payload(&payload)
         .serialize_message(){
         Ok(x) => x,
         Err(x) => return x,
@@ -375,6 +375,7 @@ pub fn release(handle: u32) -> u32 {
 
     rc
 }
+
 fn get_invite_detail(response: &str) -> String {
     match serde_json::from_str(response) {
         Ok(json) => {
@@ -391,15 +392,14 @@ fn get_invite_detail(response: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    extern crate mockito;
     use super::*;
     use utils::wallet;
     use std::thread;
     use std::time::Duration;
-    use mockito;
 
     #[test]
     fn test_create_connection() {
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         let _m = mockito::mock("POST", "/agency/route")

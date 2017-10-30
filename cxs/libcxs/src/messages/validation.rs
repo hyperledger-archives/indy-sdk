@@ -1,6 +1,6 @@
 extern crate rust_base58;
 
-use self::rust_base58::{FromBase58, ToBase58};
+use self::rust_base58::{FromBase58};
 use utils::error;
 use url::Url;
 
