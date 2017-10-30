@@ -18,8 +18,8 @@ public class DecryptTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 	private String trusteeDid;
 	private String myDid;
 	private String myVerkey;
-	private byte[] encryptedMessage = {-105, 30, 89, 75, 76, 28, -59, -45, 105, -46, 20, 124, -85, -13, 109, 29, -88, -82, -8, -6, -50, -84, -53, -48, -49, 56, 124, 114, 82, 126, 74, 99, -72, -78, -117, 96, 60, 119, 50, -40, 121, 21, 57, -68, 89};
-	private byte[] nonce = {-14, 102, -41, -57, 1, 4, 75, -46, -91, 87, 14, 41, -39, 48, 42, -126, -121, 84, -58, 59, -27, 51, -32, -23};
+	private byte[] encryptedMessage = {- 105, 30, 89, 75, 76, 28, - 59, - 45, 105, - 46, 20, 124, - 85, - 13, 109, 29, - 88, - 82, - 8, - 6, - 50, - 84, - 53, - 48, - 49, 56, 124, 114, 82, 126, 74, 99, - 72, - 78, - 117, 96, 60, 119, 50, - 40, 121, 21, 57, - 68, 89};
+	private byte[] nonce = {- 14, 102, - 41, - 57, 1, 4, 75, - 46, - 91, 87, 14, 41, - 39, 48, 42, - 126, - 121, 84, - 58, 59, - 27, 51, - 32, - 23};
 
 	@Before
 	public void before() throws Exception {
@@ -37,7 +37,7 @@ public class DecryptTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
 	@Test
 	public void testDecryptWorks() throws Exception {
-		byte[] decryptedMessage = Signus.decrypt(wallet, myDid, trusteeDid, encryptedMessage, nonce).get();
+		byte[] decryptedMessage = Signus.decrypt(wallet, pool, myDid, trusteeDid, encryptedMessage, nonce).get();
 		assertTrue(Arrays.equals(MESSAGE, decryptedMessage));
 	}
 
@@ -51,7 +51,7 @@ public class DecryptTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
 		SignusResults.EncryptResult encryptResult = Signus.encrypt(wallet, pool, myDid, myDid, MESSAGE).get();
 
-		Signus.decrypt(wallet, myDid, trusteeDid, encryptResult.getEncryptedMessage(), encryptResult.getNonce()).get();
+		Signus.decrypt(wallet, pool, myDid, trusteeDid, encryptResult.getEncryptedMessage(), encryptResult.getNonce()).get();
 	}
 
 	@Test
@@ -59,9 +59,9 @@ public class DecryptTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		byte[] nonce = {46, 33, -4, 67, 1, 44, 57, -46, -91, 87, 14, 41, -39, 48, 42, -126, -121, 84, -58, 59, -27, 51, -32, -23};
+		byte[] nonce = {46, 33, - 4, 67, 1, 44, 57, - 46, - 91, 87, 14, 41, - 39, 48, 42, - 126, - 121, 84, - 58, 59, - 27, 51, - 32, - 23};
 
-		Signus.decrypt(wallet, myDid, trusteeDid, encryptedMessage, nonce).get();
+		Signus.decrypt(wallet, pool, myDid, trusteeDid, encryptedMessage, nonce).get();
 	}
 
 	@Test
@@ -69,6 +69,6 @@ public class DecryptTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Signus.decrypt(wallet, "unknowDid", trusteeDid, encryptedMessage, nonce).get();
+		Signus.decrypt(wallet, pool, DID1, trusteeDid, encryptedMessage, nonce).get();
 	}
 }

@@ -5,7 +5,6 @@ import org.hyperledger.indy.sdk.ledger.InvalidLedgerTransactionException;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
-import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
 import org.junit.Test;
 
@@ -35,8 +34,7 @@ public class ReplaceKeysDemoTest extends IndyIntegrationTestWithPoolAndSingleWal
 		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
 
 		// 4. Start replacing of keys
-		SignusResults.ReplaceKeysStartResult newKeys = Signus.replaceKeysStart(wallet, myDid, "{}").get();
-		String newVerkey = newKeys.getVerkey();
+		String newVerkey = Signus.replaceKeysStart(wallet, myDid, "{}").get();
 
 		// 5. Build and send Nym Request with new key
 		nymRequest = Ledger.buildNymRequest(myDid, myDid, newVerkey, null, null).get();

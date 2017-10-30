@@ -137,7 +137,7 @@ async def get_pairwise(wallet_handle: int,
 
 async def set_pairwise_metadata(wallet_handle: int,
                                 their_did: str,
-                                metadata: str) -> None:
+                                metadata: Optional[str]) -> None:
     """
     Save some data in the Wallet for pairwise associated with Did.
 
@@ -159,7 +159,7 @@ async def set_pairwise_metadata(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_their_did = c_char_p(their_did.encode('utf-8'))
-    c_metadata = c_char_p(metadata.encode('utf-8'))
+    c_metadata = c_char_p(metadata.encode('utf-8')) if metadata is not None else None
 
     await do_call('indy_set_pairwise_metadata',
                   c_wallet_handle,

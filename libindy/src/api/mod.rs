@@ -1,9 +1,8 @@
-#![warn(unused_variables)] /* FIXME move up */
-
 extern crate libc;
 
 pub mod agent;
 pub mod anoncreds;
+pub mod crypto;
 pub mod signus;
 pub mod ledger;
 pub mod pool;
