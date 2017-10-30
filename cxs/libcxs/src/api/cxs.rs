@@ -8,6 +8,8 @@ use utils::error;
 use std::ptr;
 use settings;
 use connection::{build_connection, connect, to_string, get_state, release};
+use std::thread;
+
 
 /// Possible values in the Config file:
 ///
@@ -200,20 +202,34 @@ pub extern fn cxs_connection_connect(connection_handle: u32, connection_options:
 
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
-pub extern fn cxs_connection_serialize(connection_handle: u32, cb: Option<extern fn(xconnection_handle: u32, err: u32, claim_state: *const c_char)>) -> *mut c_char {
-    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+pub extern fn cxs_connection_serialize(connection_handle: u32, cb: Option<extern fn(xconnection_handle: u32, err: u32, claim_state: *const c_char)>) -> u32 {
+//    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
+    thread::spawn(move|| {
 
-    let json_string = to_string(connection_handle);
+        let (data, err) = match to_string(connection_handle) {
+            Ok(x) => {
+                info!("serializing handle: {} with data: {}",connection_handle, x);
+                (x, error::SUCCESS.code_num)
+            },
+            Err(_) => {
+                warn!("could not serialize handle {}",connection_handle);
+                (String::new(), error::UNKNOWN_ERROR.code_num)
+            },
+        };
 
-    if json_string.is_empty() {
-        return ptr::null_mut()
-    }
-    else {
-        let msg = CStringUtils::string_to_cstring(json_string);
+        let request_result_string = CStringUtils::string_to_cstring(data);
 
-        msg.into_raw()
-    }
+        cb(claim_handle, err, request_result_string.as_ptr());
+//        let json_string = to_string(connection_handle);
+//
+//        let msg = CStringUtils::string_to_cstring(json_string);
+//
+//        msg.into_raw();
+//        cb(connection_handle, 0, msg);
+    });
+
+    error::SUCCESS.code_num
 }
 
 #[no_mangle]

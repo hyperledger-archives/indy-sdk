@@ -38,10 +38,28 @@ export class Connection implements IConnections {
     await this._waitFor(() => this._connect(options) === 0, timeout)
   }
 
-  getData (): IConnectionData {
-    const dataToRelease = this.RUST_API.cxs_connection_get_data(this.connectionHandle)
-    // this.RUST_API.free(dataToRelease)
-    return JSON.parse(dataToRelease)
+  async getData (): Promise<IConnectionData> {
+    let data = await this._serialize();
+    return JSON.parse(data)
+  }
+
+  private async _serialize(): Promise<string> {
+    let data: string = ""
+    let callback = this.RUST_API.Callback('void', ['uint32', 'uint32', 'string'],
+        function(handle, err, _data) {
+            //check for error
+            if(_data == null){
+              data = "";
+            } else {
+              data = _data;
+            }
+        })
+
+    //todo: check for serialize error
+    await this.RUST_API.cxs_connection_serialize(this.connectionHandle, callback)
+    return new Promise<string>(resolve => {
+        resolve(data);
+    })
   }
 
   getState (): StateType {
