@@ -200,7 +200,10 @@ pub extern fn cxs_connection_connect(connection_handle: u32, connection_options:
 
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
-pub extern fn cxs_connection_serialize(connection_handle: u32, Option<extern fn(xclaim_handle: u32, err: u32, claim_state: *const c_char)>) -> *mut c_char {
+pub extern fn cxs_connection_serialize(connection_handle: u32, cb: Option<extern fn(xconnection_handle: u32, err: u32, claim_state: *const c_char)>) -> *mut c_char {
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+
     let json_string = to_string(connection_handle);
 
     if json_string.is_empty() {
