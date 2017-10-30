@@ -199,7 +199,8 @@ pub extern fn cxs_connection_connect(connection_handle: u32, connection_options:
 }
 
 #[no_mangle]
-pub extern fn cxs_connection_get_data(connection_handle: u32) -> *mut c_char {
+#[allow(unused_variables, unused_mut)]
+pub extern fn cxs_connection_serialize(connection_handle: u32, Option<extern fn(xclaim_handle: u32, err: u32, claim_state: *const c_char)>) -> *mut c_char {
     let json_string = to_string(connection_handle);
 
     if json_string.is_empty() {
