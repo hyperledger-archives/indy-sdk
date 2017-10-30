@@ -82,12 +82,13 @@ pub extern fn cxs_connection_release(connection_handle: u32) -> u32 {
 
 #[cfg(test)]
 mod tests {
+    extern crate mockito;
+
     use super::*;
     use settings;
     use std::ffi::CString;
     use std::ptr;
     use utils::error;
-    use mockito;
     use utils::wallet;
     use std::thread;
     use std::time::Duration;

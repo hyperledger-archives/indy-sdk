@@ -392,11 +392,11 @@ fn get_invite_detail(response: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    extern crate mockito;
     use super::*;
     use utils::wallet;
     use std::thread;
     use std::time::Duration;
-    use mockito;
 
     #[test]
     fn test_create_connection() {
