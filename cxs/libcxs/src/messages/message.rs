@@ -2,7 +2,7 @@ extern crate rust_base58;
 extern crate serde_json;
 
 use utils::error;
-use utils::messages::GeneralMessage;
+use messages::GeneralMessage;
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
@@ -34,7 +34,7 @@ impl GetMessages{
         GetMessages {
             to_did: String::new(),
             payload: GetMessagesPayload{
-                msg_type: "getMsgs".to_string(),
+                msg_type: "GET_MSGS".to_string(),
                 message: String::new(),
                 uid: String::new(),
                 status_code: String::new(),
@@ -94,7 +94,7 @@ impl GeneralMessage for GetMessages{
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::messages::{get_messages};
+    use messages::{get_messages};
 
 
     #[test]
@@ -121,7 +121,7 @@ mod tests {
         \"{\\\"includeEdgePayload\\\":\\\"Some Data\\\",\
             \\\"msgType\\\":\\\"message\\\",\
             \\\"statusCode\\\":\\\"0\\\",\
-            \\\"type\\\":\\\"getMsgs\\\",\
+            \\\"type\\\":\\\"GET_MSGS\\\",\
             \\\"uid\\\":\\\"123\\\"}\",\
         \"to\":\"8XFh8yBzrpJQmNyZzgoTqB\"}");
     }
