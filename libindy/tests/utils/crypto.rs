@@ -8,12 +8,10 @@ use indy::api::ErrorCode;
 
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
-use utils::ledger::LedgerUtils;
 
 pub struct CryptoUtils {}
 
 impl CryptoUtils {
-
     pub fn create_key(wallet_handle: i32, seed: Option<&str>) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
         let cb = Box::new(move |err, verkey| {
@@ -89,72 +87,70 @@ impl CryptoUtils {
         Ok(metadata)
     }
 
-    //    pub fn sign_vk(wallet_handle: i32, verkey: &str, msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
-    //        let (sender, receiver) = channel();
-    //
-    //        let cb = Box::new(move |err, signature| {
-    //            sender.send((err, signature)).unwrap();
-    //        });
-    //
-    //        let (command_handle, cb) = CallbackUtils::closure_to_sign_cb(cb);
-    //
-    //        let verkey = CString::new(verkey).unwrap();
-    //
-    //        let err =
-    //            indy_sign_vk(command_handle,
-    //                         wallet_handle,
-    //                         verkey.as_ptr(),
-    //                         msg.as_ptr() as *const u8,
-    //                         msg.len() as u32,
-    //                         cb);
-    //
-    //        if err != ErrorCode::Success {
-    //            return Err(err);
-    //        }
-    //
-    //        let (err, signature) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    //
-    //        if err != ErrorCode::Success {
-    //            return Err(err);
-    //        }
-    //
-    //        Ok(signature)
-    //    }
-    //
-    //    pub fn verify_vk(wallet_handle: i32, verkey: &str, msg: &[u8], signature: &[u8]) -> Result<bool, ErrorCode> {
-    //        let (sender, receiver) = channel();
-    //
-    //        let cb = Box::new(move |err, valid| {
-    //            sender.send((err, valid)).unwrap();
-    //        });
-    //
-    //        let (command_handle, cb) = CallbackUtils::closure_to_verify_signature_cb(cb);
-    //
-    //        let verkey = CString::new(verkey).unwrap();
-    //
-    //        let err =
-    //            indy_verify_vk_signature(command_handle,
-    //                                     wallet_handle,
-    //                                     verkey.as_ptr(),
-    //                                     msg.as_ptr() as *const u8,
-    //                                     msg.len() as u32,
-    //                                     signature.as_ptr() as *const u8,
-    //                                     signature.len() as u32,
-    //                                     cb);
-    //
-    //        if err != ErrorCode::Success {
-    //            return Err(err);
-    //        }
-    //
-    //        let (err, valid) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    //
-    //        if err != ErrorCode::Success {
-    //            return Err(err);
-    //        }
-    //
-    //        Ok(valid)
-    //    }
-    //
+    pub fn crypto_sign(wallet_handle: i32, my_vk: &str, msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, signature| {
+            sender.send((err, signature)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_crypto_sign_cb(cb);
+
+        let my_vk = CString::new(my_vk).unwrap();
+
+        let err =
+            indy_crypto_sign(command_handle,
+                             wallet_handle,
+                             my_vk.as_ptr(),
+                             msg.as_ptr() as *const u8,
+                             msg.len() as u32,
+                             cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, signature) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(signature)
+    }
+
+    pub fn crypto_verify(their_vk: &str, msg: &[u8], signature: &[u8]) -> Result<bool, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, valid| {
+            sender.send((err, valid)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_crypto_verify_cb(cb);
+
+        let their_vk = CString::new(their_vk).unwrap();
+
+        let err = indy_crypto_verify(command_handle,
+                                     their_vk.as_ptr(),
+                                     msg.as_ptr() as *const u8,
+                                     msg.len() as u32,
+                                     signature.as_ptr() as *const u8,
+                                     signature.len() as u32,
+                                     cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, valid) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(valid)
+    }
+
     //    pub fn encrypt_vk(wallet_handle: i32, sender_vk: &str, recepient_vk: &str, msg: &[u8]) -> Result<(Vec<u8>, Vec<u8>), ErrorCode> {
     //        let (sender, receiver) = channel();
     //

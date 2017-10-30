@@ -18,21 +18,16 @@ mod utils;
 use utils::wallet::WalletUtils;
 use utils::crypto::CryptoUtils;
 use utils::test::TestUtils;
-use utils::pool::PoolUtils;
-use utils::ledger::LedgerUtils;
 use utils::constants::*;
 
 use indy::api::ErrorCode;
-
-use std::{thread, time};
 
 pub const ENCRYPTED_MESSAGE: &'static [u8; 45] = &[187, 227, 10, 29, 46, 178, 12, 179, 197, 69, 171, 70, 228, 204, 52, 22, 199, 54, 62, 13, 115, 5, 216, 66, 20, 131, 121, 29, 251, 224, 253, 201, 75, 73, 225, 237, 219, 133, 35, 217, 131, 135, 232, 129, 32];
 pub const SIGNATURE: &'static [u8; 64] = &[169, 215, 8, 225, 7, 107, 110, 9, 193, 162, 202, 214, 162, 66, 238, 211, 63, 209, 12, 196, 8, 211, 55, 27, 120, 94, 204, 147, 53, 104, 103, 61, 60, 249, 237, 127, 103, 46, 220, 223, 10, 95, 75, 53, 245, 210, 241, 151, 191, 41, 48, 30, 9, 16, 78, 252, 157, 206, 210, 145, 125, 133, 109, 11];
 pub const INVALID_BASE58_DID: &'static str = "invalid_base58string";
 
 #[test]
-fn indy_set_did_metadata_works() {
-}
+fn indy_set_did_metadata_works() {}
 
 mod high_cases {
     use super::*;
@@ -229,6 +224,103 @@ mod high_cases {
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
+        }
+    }
+
+    mod crypto_sign {
+        use super::*;
+
+        #[test]
+        fn indy_crypto_sign_works() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let my_vk = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let signature = CryptoUtils::crypto_sign(wallet_handle, &my_vk, MESSAGE.as_bytes()).unwrap();
+            assert_eq!(SIGNATURE.to_vec(), signature);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_crypto_sign_works_for_unknow_signer() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let res = CryptoUtils::crypto_sign(wallet_handle, VERKEY, MESSAGE.as_bytes());
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_crypto_sign_works_for_invalid_wallet_handle() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let my_vk = CryptoUtils::create_key(wallet_handle, None).unwrap();
+
+            let invalid_wallet_handle = wallet_handle + 1;
+            let res = CryptoUtils::crypto_sign(invalid_wallet_handle, &my_vk, MESSAGE.as_bytes());
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod crypto_verify {
+        use super::*;
+
+        #[test]
+        fn indy_crypto_verify_works() {
+            let valid = CryptoUtils::crypto_verify(&VERKEY_MY1, MESSAGE.as_bytes(), SIGNATURE).unwrap();
+            assert!(valid);
+        }
+
+        #[test]
+        fn indy_crypto_verify_works_for_verkey_with_correct_crypto_type() {
+            let verkey = VERKEY_MY1.to_owned() + ":ed25519";
+            let valid = CryptoUtils::crypto_verify(&verkey, MESSAGE.as_bytes(), SIGNATURE).unwrap();
+            assert!(valid);
+        }
+
+        #[test]
+        fn indy_crypto_verify_works_for_verkey_with_invalid_crypto_type() {
+            let verkey = VERKEY_MY1.to_owned() + ":unknown_crypto";
+            let res = CryptoUtils::crypto_verify(&verkey, MESSAGE.as_bytes(), SIGNATURE);
+            assert_eq!(ErrorCode::SignusUnknownCryptoError, res.unwrap_err());
+        }
+
+
+        #[test]
+        fn indy_crypto_verify_works_for_other_signer() {
+            let valid = CryptoUtils::crypto_verify(&VERKEY_FOR_MY2_SEED, MESSAGE.as_bytes(), SIGNATURE).unwrap();
+            assert!(!valid);
+        }
+    }
+}
+
+mod medium_cases {
+    use super::*;
+
+    mod crypto_verify {
+        use super::*;
+
+        #[test]
+        fn indy_crypto_verify_works_for_invalid_signature_len() {
+            let signature: Vec<u8> = vec![20, 191, 100, 213, 101, 12, 197, 198, 203, 49, 89, 220, 205, 192, 224, 221, 97, 77, 220, 190];
+            let res = CryptoUtils::crypto_verify(&VERKEY_MY1, MESSAGE.as_bytes(), &signature);
+            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
         }
     }
 }
