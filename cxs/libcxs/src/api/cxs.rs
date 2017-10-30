@@ -207,26 +207,17 @@ pub extern fn cxs_connection_serialize(connection_handle: u32, cb: Option<extern
 
     thread::spawn(move|| {
 
-        let (data, err) = match to_string(connection_handle) {
-            Ok(x) => {
-                info!("serializing handle: {} with data: {}",connection_handle, x);
-                (x, error::SUCCESS.code_num)
-            },
-            Err(_) => {
-                warn!("could not serialize handle {}",connection_handle);
-                (String::new(), error::UNKNOWN_ERROR.code_num)
-            },
-        };
+        let json_string = to_string(connection_handle);
 
-        let request_result_string = CStringUtils::string_to_cstring(data);
+        if json_string.is_empty() {
+            warn!("could not serialize handle {}",connection_handle);
+        }
+        else {
+            info!("serializing handle: {} with data: {}",connection_handle, json_string);
+        }
+        let msg = CStringUtils::string_to_cstring(json_string);
 
-        cb(claim_handle, err, request_result_string.as_ptr());
-//        let json_string = to_string(connection_handle);
-//
-//        let msg = CStringUtils::string_to_cstring(json_string);
-//
-//        msg.into_raw();
-//        cb(connection_handle, 0, msg);
+        cb(connection_handle, 0, msg.as_ptr());
     });
 
     error::SUCCESS.code_num
