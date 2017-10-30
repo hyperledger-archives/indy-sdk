@@ -1,5 +1,3 @@
-extern crate mockito;
-
 use settings;
 use std::io::Read;
 use reqwest;
@@ -27,8 +25,8 @@ pub fn post(body_content: &str, url: &str) -> Result<String,String> {
 
 #[cfg(test)]
 mod tests {
+    extern crate mockito;
     use super::*;
-    use mockito;
     use utils::httpclient;
 
     const URL: &'static str = mockito::SERVER_URL;

@@ -3,7 +3,6 @@
 extern crate serde;
 extern crate rand;
 extern crate reqwest;
-extern crate mockito;
 extern crate config;
 extern crate url;
 
