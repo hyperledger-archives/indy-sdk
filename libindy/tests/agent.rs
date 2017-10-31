@@ -245,8 +245,7 @@ mod high_cases {
             let recipient_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (recipient_did, recipient_vk) = SignusUtils::create_and_store_my_did(recipient_wallet_handle, Some(MY2_SEED)).unwrap();
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, recipient_did, recipient_vk);
-            SignusUtils::store_their_did(sender_wallet_handle, &identity_json).unwrap();
+            SignusUtils::store_their_did_from_parts(sender_wallet_handle, &recipient_did, &recipient_vk).unwrap();
 
             let msg = format!(r#"{{"auth":true,"nonce":"Th7MpTaRZVRYnPiabds81Y12","sender":"{:?}","msg":"unencrypted message"}}"#, VERKEY);
             let encrypted_msg = SignusUtils::encrypt_sealed(sender_wallet_handle, pool_handle, &recipient_did, msg.as_bytes()).unwrap();

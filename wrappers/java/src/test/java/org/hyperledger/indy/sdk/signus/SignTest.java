@@ -16,7 +16,7 @@ public class SignTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testSignWorks() throws Exception {
-		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, MY1_IDENTITY_JSON).get();
+		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, TRUSTEE_IDENTITY_JSON).get();
 		byte[] signature = Signus.sign(this.wallet, result.getDid(), MESSAGE).get();
 		assertTrue(Arrays.equals(SIGNATURE, signature));
 	}

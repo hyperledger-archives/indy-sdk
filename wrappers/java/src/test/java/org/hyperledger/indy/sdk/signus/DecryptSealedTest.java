@@ -22,13 +22,13 @@ public class DecryptSealedTest extends IndyIntegrationTestWithPoolAndSingleWalle
 
 	@Before
 	public void before() throws Exception {
-		CreateAndStoreMyDidResult trusteeNym = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		trusteeDid = trusteeNym.getDid();
-		trusteeVerkey = trusteeNym.getVerkey();
-
 		CreateAndStoreMyDidResult myNym = Signus.createAndStoreMyDid(wallet, MY1_IDENTITY_JSON).get();
 		myDid = myNym.getDid();
 		myVerkey = myNym.getVerkey();
+
+		CreateAndStoreMyDidResult trusteeNym = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		trusteeDid = trusteeNym.getDid();
+		trusteeVerkey = trusteeNym.getVerkey();
 
 		String identityJson = String.format(IDENTITY_JSON_TEMPLATE, trusteeDid, trusteeVerkey);
 		Signus.storeTheirDid(wallet, identityJson).get();
