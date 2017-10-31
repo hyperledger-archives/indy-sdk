@@ -1,6 +1,8 @@
 extern crate cxs;
 extern crate tempfile;
+extern crate libc;
 
+use self::libc::c_char;
 use tempfile::NamedTempFileOptions;
 use std::io::Write;
 use std::thread;
@@ -24,6 +26,12 @@ static CONFIG: &'static str = r#"
 
 #[ignore]
 #[test]
+//#[cfg(test)]
+//mod tests {
+//    use super::*;
+//    use cxs::utils::cstring::CStringUtils;
+//
+//}
 fn connection_ete() {
     let mut file = NamedTempFileOptions::new()
         .suffix(".json")
@@ -45,13 +53,20 @@ fn connection_ete() {
     r = api::connection::cxs_connection_connect(handle, options.as_ptr());
     assert!(r == 0);
     thread::sleep(Duration::from_secs(1));
-    unsafe {
-        print!("{}", CString::from_raw(api::connection::cxs_connection_get_data(handle)).into_string().unwrap());
-    }
+
+    assert!(0 == api::connection::cxs_connection_serialize(handle, Some(serialize_cb)));
+
 
 //    while true {
 //        let mut status: u32 = 0;
 //        print!("{}", api::connection::cxs_connection_get_state(handle, &mut status));
 //        thread::sleep(Duration::from_secs(5))
 //    }
+}
+
+extern "C" fn serialize_cb(handle: u32, err: u32, claim_string: *const c_char) {
+    assert_eq!(err, 0);
+    if claim_string.is_null() {
+        panic!("claim_string is empty");
+    }
 }

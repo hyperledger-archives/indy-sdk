@@ -7,14 +7,53 @@ const path = parentDir.dirname(currentDir) + '/lib/libcxs.so'
 const cxs = require('../dist/index.js')
 const assert = chai.assert
 
+
+
 const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
 
+// const getDataPromise = (getData, handle) => {
+//
+//     const data = new Promise( function (resolve, reject) {
+//         var callback = getCallback('void', ['uint32', 'uint32', 'string'],
+//             function(handle, err, data) {
+//                 console.log("here")
+//                 if (err) {
+//                     reject(err)
+//                     return
+//                 }
+//                 resolve(data)
+//             })
+//         getData(
+//             handle,
+//             callback
+//             )
+//     })
+//     process.on('exit', function() {
+//         callback
+//     })
+//
+//     return data
+// }
+
+// const waitFor2 = async (getData) => {
+//     var result =getDataPromise(getData)
+//     await sleep(1000)
+//     result.then(function(data) {
+//         if (!data) {
+//             return getDataPromise(getData)
+//         } else {
+//             return data
+//         }
+//     })
+//
+// }
+
 const waitFor = async (predicate) => {
-  if (!predicate()) {
-    await sleep(1000)
-    return waitFor(predicate)
-  }
-  return predicate()
+    if (!predicate()) {
+        await sleep(1000)
+        return waitFor(predicate)
+    }
+    return predicate()
 }
 
 // console.log(release(handle)) // tslint:disable-line
@@ -148,34 +187,52 @@ describe('A Connection object with ', function () {
     })
   })
 
-  // it('connection and GC deletes object should return empty string whet get_data is called ', function () {
-  //   this.timeout(30000)
-  //   var connection = new Connection(path)
-  //   connection.create({ id: '234' })
-  //   connection._connect({ sms: true })
-  //   const getData = connection.RUST_API.cxs_connection_serialize
-  //   const handle = connection.connectionHandle
-  //   var result = connection.getData()
-  //   result.then(function(data) {
-  //       assert.notEqual(data, "")
-  //   })
-  //
-  //   connection = null
-  //   global.gc()
-  //
-  //       // this will timeout if condition is never met
-  //       // get_data will return "" because the connection object was released
-  //   return waitFor(() => !new Promise<string>((resolve, reject) =>
-  //     getData(
-  //         this.connectionHandle,
-  //         ffi.Callback('void', ['uint32', 'uint32', 'string'],
-  //             function(handle, err, data) {
-  //                 if (err) {
-  //                     reject(err)
-  //                     return
-  //                 }
-  //                 resolve(data)
-  //             }))
-  // ))
-  // })
+  it('connection and GC deletes object should return empty string when get_data is called ', async function () {
+
+      this.timeout(30000)
+      var connection = new Connection(path)
+      connection.create({ id: '234' })
+      connection._connect({ sms: true })
+      const getData = connection.RUST_API.cxs_connection_serialize
+      const handle = connection.connectionHandle
+      assert.notEqual(connection.getData(handle), null)
+
+      connection = null
+      global.gc()
+
+      var isComplete = false
+      const Callback = require('ffi').Callback
+
+        while(!isComplete){
+          var callback = null
+          const data = await new Promise( function (resolve, reject) {
+              callback = Callback('void', ['uint32', 'uint32', 'string'],
+                  function(handle, err, data) {
+                      if (err) {
+                          reject(err)
+                          return
+                      }
+                      resolve(data)
+                  })
+              getData(
+                  handle,
+                  callback
+              )
+          })
+          if(!data){
+              isComplete = true;
+          }
+          process.on('exit', function() {
+              callback
+          })
+      }
+
+
+      // this will timeout if condition is never met
+      // get_data will return "" because the connection object was released
+
+      // return waitFor(() => !getDataPromise(getData, handle))
+      return isComplete
+  })
+
 })
