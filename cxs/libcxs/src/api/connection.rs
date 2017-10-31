@@ -229,16 +229,9 @@ mod tests {
         assert!(handle > 0);
 
         let data = cxs_connection_serialize(handle, Some(serialize_cb));
-
         assert_eq!(data, 0);
     }
 
-    #[test]
-    fn test_cxs_connection_serialize_fails() {
-        let data = cxs_connection_serialize(0, Some(serialize_cb));
-
-        assert_eq!(data, 0);
-    }
 
     #[test]
     fn test_cxs_connection_release() {
