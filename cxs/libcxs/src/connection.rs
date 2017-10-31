@@ -197,8 +197,8 @@ pub fn create_agent_pairwise(handle: u32) -> Result<u32, u32> {
     let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
     let json_msg = match messages::create_keys()
-        .to(&pw_did)
-        .for_did(&enterprise_did)
+        .for_did(&pw_did)
+        .to(&enterprise_did)
         .for_verkey(&pw_verkey)
         .nonce("anything")
         .serialize_message(){
