@@ -154,30 +154,6 @@ pub extern fn cxs_claimdef_get(claimdef_handle: u32, data: *mut c_char) -> u32 {
 
 
 /**
- * claim object
- */
-
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_claim_create(claimdef_handle: u32, claim_data: *const c_char, claim_handle: *mut u32) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables)]
-pub extern fn cxs_claim_set_connection(claim_handle: u32, connection_handle: u32) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_claim_send_offer(claim_handle: u32) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_claim_get_claim_request(claim_handle: u32, claim_request: *mut c_char) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_claim_send(claim_handle: u32) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables)]
-pub extern fn cxs_claim_terminate(claim_handle: u32, termination_type: u32, msg: *const c_char) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_claim_list_state(status_array: *mut CxsStatus) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_claim_get_state(claim_handle: u32, status: *mut c_char) -> u32 { error::SUCCESS.code_num }
-
-
-/**
-=======
->>>>>>> master
  * proof object
  */
 
