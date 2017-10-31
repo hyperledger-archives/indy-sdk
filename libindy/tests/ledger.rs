@@ -33,6 +33,7 @@ use utils::constants::*;
 
 pub const MESSAGE: &'static str = r#"{"reqId":1495034346617224651}"#;
 pub const GET_SCHEMA_DATA: &'static str = r#"{"name":"name","version":"1.0"}"#;
+pub const ATTRIB_RAW_DATA: &'static str = r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#;
 pub const NODE_DATA: &'static str = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1, "alias":"some", "services": ["VALIDATOR"], "blskey": "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}"#;
 
 
