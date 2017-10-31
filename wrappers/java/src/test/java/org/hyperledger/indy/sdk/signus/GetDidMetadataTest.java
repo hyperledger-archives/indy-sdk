@@ -14,15 +14,15 @@ public class GetDidMetadataTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testGetDidMetadataWorks() throws Exception {
-		Signus.setDidMetadata(wallet, DID1, METADATA).get();
-		String receivedMetadata = Signus.getDidMetadata(wallet, DID1).get();
+		Signus.setDidMetadata(wallet, DID, METADATA).get();
+		String receivedMetadata = Signus.getDidMetadata(wallet, DID).get();
 		assertEquals(METADATA, receivedMetadata);
 	}
 
 	@Test
 	public void testGetDidMetadataWorksForEmptyString() throws Exception {
-		Signus.setDidMetadata(wallet, DID1, "").get();
-		String receivedMetadata = Signus.getDidMetadata(wallet, DID1).get();
+		Signus.setDidMetadata(wallet, DID, "").get();
+		String receivedMetadata = Signus.getDidMetadata(wallet, DID).get();
 		assertEquals("", receivedMetadata);
 	}
 
@@ -31,6 +31,6 @@ public class GetDidMetadataTest extends IndyIntegrationTestWithSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Signus.getDidMetadata(wallet, DID1).get();
+		Signus.getDidMetadata(wallet, DID).get();
 	}
 }

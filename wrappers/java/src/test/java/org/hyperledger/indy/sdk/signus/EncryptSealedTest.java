@@ -50,6 +50,6 @@ public class EncryptSealedTest extends IndyIntegrationTestWithPoolAndSingleWalle
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStateException.class));
 		
-		Signus.encryptSealed(wallet, pool, DID1, MESSAGE).get();
+		Signus.encryptSealed(wallet, pool, DID, MESSAGE).get();
 	}
 }

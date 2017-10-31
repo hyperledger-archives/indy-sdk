@@ -151,37 +151,136 @@ impl CryptoUtils {
         Ok(valid)
     }
 
-    //    pub fn encrypt_vk(wallet_handle: i32, sender_vk: &str, recepient_vk: &str, msg: &[u8]) -> Result<(Vec<u8>, Vec<u8>), ErrorCode> {
-    //        let (sender, receiver) = channel();
-    //
-    //        let cb = Box::new(move |err, encrypted_msg, nonce| {
-    //            sender.send((err, encrypted_msg, nonce)).unwrap();
-    //        });
-    //
-    //        let (command_handle, cb) = CallbackUtils::closure_to_encrypt_cb(cb);
-    //
-    //        let my_did = CString::new(my_did).unwrap();
-    //        let did = CString::new(did).unwrap();
-    //
-    //        let err =
-    //            indy_encrypt_vk(command_handle,
-    //                            wallet_handle,
-    //                            my_did.as_ptr(),
-    //                            did.as_ptr(),
-    //                            msg.as_ptr() as *const u8,
-    //                            msg.len() as u32,
-    //                            cb);
-    //
-    //        if err != ErrorCode::Success {
-    //            return Err(err);
-    //        }
-    //
-    //        let (err, encrypted_msg, nonce) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    //
-    //        if err != ErrorCode::Success {
-    //            return Err(err);
-    //        }
-    //
-    //        Ok((encrypted_msg, nonce))
-    //    }
+    pub fn crypto_box(wallet_handle: i32, my_vk: &str, their_vk: &str, msg: &[u8]) -> Result<(Vec<u8>, Vec<u8>), ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, encrypted_msg, nonce| {
+            sender.send((err, encrypted_msg, nonce)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_encrypt_cb(cb);
+
+        let my_vk = CString::new(my_vk).unwrap();
+        let their_vk = CString::new(their_vk).unwrap();
+
+        let err =
+            indy_crypto_box(command_handle,
+                            wallet_handle,
+                            my_vk.as_ptr(),
+                            their_vk.as_ptr(),
+                            msg.as_ptr() as *const u8,
+                            msg.len() as u32,
+                            cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, encrypted_msg, nonce) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok((encrypted_msg, nonce))
+    }
+
+    pub fn crypto_box_open(wallet_handle: i32, my_vk: &str, their_vk: &str, msg: &[u8], nonce: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, decrypted_msg| {
+            sender.send((err, decrypted_msg)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_decrypt_cb(cb);
+
+        let my_vk = CString::new(my_vk).unwrap();
+        let their_vk = CString::new(their_vk).unwrap();
+
+        let err =
+            indy_crypto_box_open(command_handle,
+                                 wallet_handle,
+                                 my_vk.as_ptr(),
+                                 their_vk.as_ptr(),
+                                 msg.as_ptr() as *const u8,
+                                 msg.len() as u32,
+                                 nonce.as_ptr() as *const u8,
+                                 nonce.len() as u32,
+                                 cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, decrypted_msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(decrypted_msg)
+    }
+
+    pub fn crypto_box_seal(key: &str, msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, encrypted_msg| {
+            sender.send((err, encrypted_msg)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_encrypt_sealed_cb(cb);
+
+        let key = CString::new(key).unwrap();
+
+        let err =
+            indy_crypto_box_seal(command_handle,
+                                 key.as_ptr(),
+                                 msg.as_ptr() as *const u8,
+                                 msg.len() as u32,
+                                 cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, encrypted_msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(encrypted_msg)
+    }
+
+    pub fn crypto_box_seal_open(wallet_handle: i32, key: &str, encrypted_msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, decrypted_msg| {
+            sender.send((err, decrypted_msg)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_decrypt_sealed_cb(cb);
+
+        let key = CString::new(key).unwrap();
+
+        let err =
+            indy_crypto_box_seal_open(command_handle,
+                                      wallet_handle,
+                                      key.as_ptr(),
+                                      encrypted_msg.as_ptr() as *const u8,
+                                      encrypted_msg.len() as u32,
+                                      cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, decrypted_msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(decrypted_msg)
+    }
 }

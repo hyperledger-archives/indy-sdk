@@ -22,5 +22,6 @@ pub const VERKEY_MY1: &'static str = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4v
 pub const INVALID_VERKEY_LENGTH: &'static str = "invalidVerkeyLength";
 pub const INVALID_BASE58_VERKEY: &'static str = "CnEDk___MnmiHXEV1WFgbV___eYnPqs___TdcZaNhFVW";
 pub const NONCE: &'static [u8; 24] = &[242, 246, 53, 153, 106, 37, 185, 65, 212, 14, 109, 131, 200, 169, 94, 110, 51, 47, 101, 89, 0, 171, 105, 183];
-pub const VERKEY_FOR_MY2_SEED: &'static str = "kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn";
+pub const VERKEY_MY2: &'static str = "kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn";
+pub const VERKEY_TRUSTEE: &'static str = "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL";
 pub const METADATA: &'static str = "some_metadata";

@@ -257,7 +257,6 @@ pub  extern fn indy_crypto_verify(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handle (created by open_wallet).
-/// pool_handle: pool handle.
 /// my_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
 /// their_vk: id (verkey) of their key
 /// message_raw: a pointer to first byte of message that to be encrypted

@@ -14,8 +14,8 @@ public class GetEndpointForDidTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testGetEndpointForDidWorks() throws Exception {
-		Signus.setEndpointForDid(wallet, DID1, ENDPOINT, VERKEY).get();
-		SignusResults.EndpointForDidResult receivedEndpoint = Signus.getEndpointForDid(wallet, DID1).get();
+		Signus.setEndpointForDid(wallet, DID, ENDPOINT, VERKEY).get();
+		SignusResults.EndpointForDidResult receivedEndpoint = Signus.getEndpointForDid(wallet, DID).get();
 		assertEquals(ENDPOINT, receivedEndpoint.getAddress());
 		assertEquals(VERKEY, receivedEndpoint.getTransportKey());
 	}
@@ -25,6 +25,6 @@ public class GetEndpointForDidTest extends IndyIntegrationTestWithSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Signus.getEndpointForDid(wallet, DID1).get();
+		Signus.getEndpointForDid(wallet, DID).get();
 	}
 }
