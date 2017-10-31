@@ -10,7 +10,6 @@ var CXSRuntimeConfig = rustlib.CXSRuntimeConfig
 var ref = require('ref')
 var Callback = require('ffi').Callback
 
-
 describe('call to cxs_init with provided path', function () {
   var path = parentDir.dirname(currentDir)
   path += '/lib/libcxs.so'
@@ -40,23 +39,21 @@ describe('Using the cxs ffi directly ', function () {
     assert.equal(run._ffi.cxs_connection_connect(2, 'SMS'), 1003)
   })
 
-  it('a call to cxs_connection_get_data should return 0', function () {
-      const result = new Promise( function (resolve, reject) {
-          run._ffi.cxs_connection_serialize(
-              1,
-              Callback('void', ['uint32', 'uint32', 'string'],
-                  function(handle, err, data) {
-                      if (err) {
-                          reject(err)
-                          return
-                      }
-                      resolve(data)
-                  })
-          )
-      })
-      result.then(function(data) {
-          assert.equal(data, "")
-      })
+  it('a call to cxs_connection_get_data should return 0', async function () {
+    const result = await new Promise(function (resolve, reject) {
+      run._ffi.cxs_connection_serialize(
+        1,
+        Callback('void', ['uint32', 'uint32', 'string'],
+          function (handle, err, data) {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve(data)
+          })
+      )
+    })
+    assert.equal(result, null)
   })
 
   it('a call to cxs_connection_get_state should return 0', function () {

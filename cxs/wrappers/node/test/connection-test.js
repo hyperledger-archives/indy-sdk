@@ -8,17 +8,14 @@ const cxs = require('../dist/index.js')
 const assert = chai.assert
 const ffi = require('ffi')
 
-
-
 const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
 
-
 const waitFor = async (predicate) => {
-    if (!predicate()) {
-        await sleep(1000)
-        return waitFor(predicate)
-    }
-    return predicate()
+  if (!predicate()) {
+    await sleep(1000)
+    return waitFor(predicate)
+  }
+  return predicate()
 }
 
 // console.log(release(handle)) // tslint:disable-line
@@ -141,48 +138,45 @@ describe('A Connection object with ', function () {
   })
 
   it('connection and GC deletes object should return null when get_data is called ', async function () {
+    this.timeout(30000)
+    let connection = new Connection(path)
+    connection.create({ id: '234' })
+    connection._connect({ sms: true })
+    const getData = connection.RUST_API.cxs_connection_serialize
+    const handle = connection.connectionHandle
+    const data = await connection.getData()
+    assert.notEqual(data, null)
 
-      this.timeout(30000)
-      let connection = new Connection(path)
-      connection.create({ id: '234' })
-      connection._connect({ sms: true })
-      const getData = connection.RUST_API.cxs_connection_serialize
-      const handle = connection.connectionHandle
-      const data = await connection.getData()
-      assert.notEqual(data, null)
+    connection = null
+    global.gc()
 
-      connection = null
-      global.gc()
+    let isComplete = false
+    //  hold on to callbacks so it doesn't become garbage collected
+    const callbacks = []
 
-      let isComplete = false
-      //hold on to callbacks so it doesn't become garbage collected
-      const callbacks = []
-
-        while(!isComplete){
-
-          const data = await new Promise( function (resolve, reject) {
-              const callback = ffi.Callback('void', ['uint32', 'uint32', 'string'],
-                  function(handle, err, data) {
-                      if (err) {
-                          reject(err)
-                          return
-                      }
-                      resolve(data)
-                  })
-              callbacks.push(callback)
-              getData(
-                  handle,
-                  callback
-              )
+    while (!isComplete) {
+      const data = await new Promise(function (resolve, reject) {
+        const callback = ffi.Callback('void', ['uint32', 'uint32', 'string'],
+          function (handle, err, data) {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve(data)
           })
-          if(!data){
-              isComplete = true;
-          }
+        callbacks.push(callback)
+        getData(
+          handle,
+          callback
+        )
+      })
+      if (!data) {
+        isComplete = true
       }
+    }
 
       // this will timeout if condition is never met
       // get_data will return "" because the connection object was released
-      return isComplete
+    return isComplete
   })
-
 })
