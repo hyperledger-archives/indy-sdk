@@ -39,20 +39,26 @@ export class Connection implements IConnections {
   }
 
     async getData (): Promise<IConnectionData> {
-    const data = await new Promise<string>((resolve, reject) =>
-        this.RUST_API.cxs_connection_serialize(
-            this.connectionHandle,
-            ffi.Callback('void', ['uint32', 'uint32', 'string'],
-                function(handle, err, data) {
-                    if (err) {
-                        reject(err)
-                        return
-                    }
-                    resolve(data)
-                }))
-    )
-    return JSON.parse(data)
-  }
+        const data = await new Promise<string>((resolve, reject) =>
+            this.RUST_API.cxs_connection_serialize(
+                this.connectionHandle,
+                ffi.Callback('void', ['uint32', 'uint32', 'string'],
+                    function(handle, err, data) {
+                      console.log(`\n\ngetData inside ${data}`)
+
+                        if (err) {
+                            reject(err)
+                            return
+                        }
+                        if (data == "") {
+                          resolve(null)
+                        }else {
+                            resolve(data)
+                        }
+                    }))
+        )
+        return JSON.parse(data)
+    }
 
   getState (): StateType {
     const statusPtr = alloc(refTypes.uint32)

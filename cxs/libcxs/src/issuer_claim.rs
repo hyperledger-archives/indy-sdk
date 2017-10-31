@@ -7,6 +7,11 @@ use std::collections::HashMap;
 use rand::Rng;
 use api::CxsStateType;
 use utils::error;
+use utils::httpclient;
+use messages;
+use messages::GeneralMessage;
+use connection;
+use settings;
 
 lazy_static! {
     static ref ISSUER_CLAIM_MAP: Mutex<HashMap<u32, Box<IssuerClaim>>> = Default::default();
@@ -28,8 +33,37 @@ impl IssuerClaim {
         Ok(error::SUCCESS.code_num)
     }
 
-    fn send_claim_offer(&mut self, connection_handle: u32) -> Result<u32, String> {
-        Ok(error::SUCCESS.code_num)
+    fn send_claim_offer(&mut self, connection_handle: u32) -> Result<u32, u32> {
+        if connection::is_valid_connection_handle(connection_handle) == false {
+            warn!("invalid connection handle ({}) in send_claim_offer", connection_handle);
+            return Err(error::INVALID_CONNECTION_HANDLE.code_num);
+        }
+
+        //TODO: call to libindy to encrypt payload
+        let data = format!("{{ \"claimDefNo\":\"{}\",\"claimAttributes\":\"{}\"}}",self.claim_def,self.claim_attributes);
+        let to = connection::get_pw_did(connection_handle).unwrap();
+
+        let json_msg = match messages::send_message()
+            .to(&to)
+            .msg_type("claimOffer")
+            .edge_agent_payload(&data)
+            .serialize_message(){
+            Ok(x) => x,
+            Err(x) => return Err(x),
+        };
+
+        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+
+        match httpclient::post(&json_msg,&url) {
+            Err(_) => {
+                println!("better message");
+                return Err(error::POST_MSG_FAILURE.code_num);
+            },
+            Ok(response) => {
+                self.state = CxsStateType::CxsStateOfferSent;
+                return Ok(error::SUCCESS.code_num);
+            }
+        }
     }
 }
 
@@ -113,7 +147,7 @@ pub fn send_claim_offer(handle: u32, connection_handle: u32) -> Result<u32,u32> 
     match result {
         Some(c) => match c.send_claim_offer(connection_handle) {
             Ok(_) => Ok(error::SUCCESS.code_num),
-            Err(_) => Err(error::UNKNOWN_ERROR.code_num),
+            Err(x) => Err(x),
         },
         None => Err(error::INVALID_ISSUER_CLAIM_HANDLE.code_num),
     }
@@ -121,10 +155,16 @@ pub fn send_claim_offer(handle: u32, connection_handle: u32) -> Result<u32,u32> 
 
 #[cfg(test)]
 mod tests {
+    use settings;
+    use connection::build_connection;
+    use std::thread;
+    use std::time::Duration;
     use super::*;
 
     #[test]
     fn test_issuer_claim_create_succeeds() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         match issuer_claim_create(0, None, "{\"attr\":\"value\"}".to_owned()) {
             Ok(x) => assert!(x > 0),
             Err(_) => assert_eq!(0,1), //fail if we get here
@@ -133,6 +173,8 @@ mod tests {
 
     #[test]
     fn test_to_string_succeeds() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle = issuer_claim_create(0, None,"{\"attr\":\"value\"}".to_owned()).unwrap();
         let string = to_string(handle).unwrap();
         assert!(!string.is_empty());
@@ -140,12 +182,18 @@ mod tests {
 
     #[test]
     fn test_send_claim_offer() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let connection_handle = build_connection(Some("test_send_claim_offer".to_owned()),None,None);
         let handle = issuer_claim_create(0, None,"{\"attr\":\"value\"}".to_owned()).unwrap();
-        assert_eq!(send_claim_offer(handle,0).unwrap(),error::SUCCESS.code_num);
+        thread::sleep(Duration::from_secs(1));
+        assert_eq!(send_claim_offer(handle,connection_handle).unwrap(),error::SUCCESS.code_num);
     }
 
     #[test]
     fn test_from_string_succeeds() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle = issuer_claim_create(0, None,"{\"attr\":\"value\"}".to_owned()).unwrap();
         let string = to_string(handle).unwrap();
         assert!(!string.is_empty());
