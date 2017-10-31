@@ -154,7 +154,7 @@ extern "C" {
                                         const char *const key_json,
 
                                         void              (*cb)(indy_handle_t     command_handle,
-                                                                indy_error_t      err
+                                                                indy_error_t      err,
                                                                 const char *const vk)
                                        );
 
@@ -177,7 +177,7 @@ extern "C" {
     /// Common*
     /// Wallet*
     /// Crypto*
-    extern indy_error_t indy_set_key_metadata(indy_handle_t     command_handle
+    extern indy_error_t indy_set_key_metadata(indy_handle_t     command_handle,
                                               indy_handle_t     wallet_handle,
                                               const char *const verkey,
                                               const char *const metadata,
@@ -205,7 +205,7 @@ extern "C" {
     /// Common*
     /// Wallet*
     /// Crypto*
-    extern indy_error_t indy_get_key_metadata(indy_handle_t     command_handle
+    extern indy_error_t indy_get_key_metadata(indy_handle_t     command_handle,
                                               indy_handle_t     wallet_handle,
                                               const char *const verkey,
 
@@ -214,7 +214,7 @@ extern "C" {
                                                                       const char *const metadata)
                                              );
 
-    extern indy_error_t indy_key_for_did(indy_handle_t     command_handle
+    extern indy_error_t indy_key_for_did(indy_handle_t     command_handle,
                                          indy_handle_t     pool_handle,
                                          indy_handle_t     wallet_handle,
                                          const char *const did,
@@ -224,7 +224,7 @@ extern "C" {
                                                                  const char *const key)
                                         );
 
-    extern indy_error_t indy_set_endpoint_for_did(indy_handle_t     command_handle
+    extern indy_error_t indy_set_endpoint_for_did(indy_handle_t     command_handle,
                                                   indy_handle_t     wallet_handle,
                                                   const char *const did,
                                                   const char *const address,
@@ -234,7 +234,7 @@ extern "C" {
                                                                           indy_error_t      err)
                                                  );
 
-    extern indy_error_t indy_get_endpoint_for_did(indy_handle_t     command_handle
+    extern indy_error_t indy_get_endpoint_for_did(indy_handle_t     command_handle,
                                                   indy_handle_t     wallet_handle,
                                                   indy_handle_t     pool_handle,
                                                   const char *const did,
@@ -264,7 +264,7 @@ extern "C" {
     /// Common*
     /// Wallet*
     /// Crypto*
-    extern indy_error_t indy_set_did_metadata(indy_handle_t     command_handle
+    extern indy_error_t indy_set_did_metadata(indy_handle_t     command_handle,
                                               indy_handle_t     wallet_handle,
                                               const char *const did,
                                               const char *const metadata,
@@ -292,7 +292,7 @@ extern "C" {
     /// Common*
     /// Wallet*
     /// Crypto*
-    extern indy_error_t indy_get_did_metadata(indy_handle_t     command_handle
+    extern indy_error_t indy_get_did_metadata(indy_handle_t     command_handle,
                                               indy_handle_t     wallet_handle,
                                               const char *const did,
 
