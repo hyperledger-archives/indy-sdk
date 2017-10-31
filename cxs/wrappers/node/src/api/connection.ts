@@ -44,7 +44,6 @@ export class Connection implements IConnections {
                 this.connectionHandle,
                 ffi.Callback('void', ['uint32', 'uint32', 'string'],
                     function(handle, err, data) {
-                      console.log(`\n\ngetData inside ${data}`)
 
                         if (err) {
                             reject(err)

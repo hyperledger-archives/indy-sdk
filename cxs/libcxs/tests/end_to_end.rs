@@ -1,5 +1,6 @@
 extern crate cxs;
 extern crate tempfile;
+extern crate libc;
 extern crate mockito;
 
 use self::libc::c_char;
@@ -14,6 +15,14 @@ use cxs::api;
 extern "C" fn send_offer_cb(command_handle: u32, err: u32) {
     if err != 0 {panic!("failed to send claim offer")}
     println!("Claim offer sent!");
+}
+
+#[allow(unused_variables)]
+extern "C" fn serialize_cb(handle: u32, err: u32, claim_string: *const c_char) {
+    assert_eq!(err, 0);
+    if claim_string.is_null() {
+        panic!("claim_string is empty");
+    }
 }
 
 #[allow(unused_variables)]
@@ -59,17 +68,7 @@ extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_hand
     _m.assert();
 
     thread::sleep(Duration::from_secs(1));
-//    assert!(0 == api::connection::cxs_connection_serialize(handle, Some(serialize_cb)));
-
-    let data = api::connection::cxs_connection_get_data(connection_handle);
-    let mut final_string = String::new();
-
-    unsafe {
-        let c_string = CString::from_raw(data);
-        final_string = c_string.into_string().unwrap();
-    }
-
-    println!("final connection: {}", final_string);
+    assert!(0 == api::connection::cxs_connection_serialize(connection_handle, Some(serialize_cb)));
 
     let _m = mockito::mock("POST", "/agency/route")
         .with_status(202)
@@ -120,11 +119,4 @@ fn claim_offer_ete() {
 
     assert_eq!(rc,0);
     thread::sleep(Duration::from_secs(4));
-}
-
-extern "C" fn serialize_cb(handle: u32, err: u32, claim_string: *const c_char) {
-    assert_eq!(err, 0);
-    if claim_string.is_null() {
-        panic!("claim_string is empty");
-    }
 }
