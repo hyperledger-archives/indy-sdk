@@ -127,6 +127,8 @@ mod tests {
     use std::ffi::CString;
     use std::ptr;
     use std::time::Duration;
+    use settings;
+    use connection::build_connection;
 
     extern "C" fn create_cb(command_handle: u32, err: u32, claim_handle: u32) {
         assert_eq!(err, 0);
@@ -158,34 +160,43 @@ mod tests {
     extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_handle: u32) {
         if err != 0 {panic!("failed to create claim handle in create_and_send_offer_cb!")}
 
-        if cxs_issuer_send_claim_offer(command_handle, claim_handle, 32, Some(send_offer_cb)) != error::SUCCESS.code_num {
+        let connection_handle = build_connection(Some("test_send_claim_offer".to_owned()),None,None);
+        thread::sleep(Duration::from_millis(500));
+        if cxs_issuer_send_claim_offer(command_handle, claim_handle, connection_handle, Some(send_offer_cb)) != error::SUCCESS.code_num {
             panic!("failed to send claim offer");
         }
-        thread::sleep(Duration::from_millis(200));
     }
 
     #[test]
     fn test_cxs_issuer_create_claim_success() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         assert_eq!(cxs_issuer_create_claim(0, ptr::null(), 32, CString::new("{\"attr\":\"value\"}").unwrap().into_raw(),Some(create_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 
     #[test]
     fn test_cxs_issuer_create_claim_fails() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         assert_eq!(cxs_issuer_create_claim(0, ptr::null(),32,ptr::null(),Some(create_cb)), error::INVALID_OPTION.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 
     #[test]
     fn test_cxs_issuer_claim_serialize() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         assert_eq!(cxs_issuer_create_claim(0, ptr::null(),32, CString::new("{\"attr\":\"value\"}").unwrap().into_raw(),Some(create_and_serialize_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_millis(200));
     }
 
     #[test]
     fn test_cxs_issuer_send_claim_offer() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         assert_eq!(cxs_issuer_create_claim(0, ptr::null(),32, CString::new("{\"attr\":\"value\"}").unwrap().into_raw(),Some(create_and_send_offer_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+        thread::sleep(Duration::from_millis(1000));
     }
 
     extern "C" fn create_and_deserialize_cb(command_handle: u32, err: u32, claim_handle: u32) {
@@ -211,6 +222,8 @@ mod tests {
 
     #[test]
     fn test_cxs_issuer_claim_deserialize_succeeds() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         //this is a nasty thread of callbacks -> create_and_deserialize_cb -> serialize_and_deserialize_cb -> create_and_serialize_cb -> serialize_cb
         assert_eq!(cxs_issuer_create_claim(0, ptr::null(), 32, CString::new("{\"attr\":\"value\"}").unwrap().into_raw(),Some(create_and_deserialize_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(1000));
