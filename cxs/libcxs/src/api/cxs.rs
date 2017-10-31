@@ -6,6 +6,7 @@ use utils::cstring::CStringUtils;
 use utils::{pool, wallet};
 use utils::error;
 use settings;
+use std::thread;
 
 /// Possible values in the Config file:
 ///
@@ -24,12 +25,16 @@ use settings;
 /// logo_url: url for enterprise's logo
 /// A example file is at libcxs/sample_config/config.json
 #[no_mangle]
-pub extern fn cxs_init (config_path:*const c_char) -> u32 {
+pub extern fn cxs_init (command_handle: u32,
+                        config_path:*const c_char,
+                        cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
 
     //TODO: ensure routine is NOT idempotent, return error if already initialized
     ::utils::logger::LoggerUtils::init();
 
     settings::set_defaults();
+
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
     if !config_path.is_null() {
         check_useful_c_str!(config_path,error::UNKNOWN_ERROR.code_num);
@@ -67,19 +72,7 @@ pub extern fn cxs_init (config_path:*const c_char) -> u32 {
         Ok(v) => v,
     };
 
-    match pool::create_pool_config(&pool_name, &config_name) {
-        0 => 0,
-        x => return x,
-    };
-
-    info!("Initializing wallet with name: {} and pool: {}", &wallet_name, &pool_name);
-    match wallet::init_wallet(&pool_name, &wallet_name, &wallet_type) {
-        0 => 0,
-        x => return x,
-    };
-
-
-    let agency_pairwise_did = match settings::get_config_value(settings::CONFIG_AGENCY_PAIRWISE_DID) {
+        let agency_pairwise_did = match settings::get_config_value(settings::CONFIG_AGENCY_PAIRWISE_DID) {
         Err(x) => return x,
         Ok(v) => v,
     };
@@ -119,7 +112,16 @@ pub extern fn cxs_init (config_path:*const c_char) -> u32 {
         Ok(v) => v,
     };
 
-    return error::SUCCESS.code_num
+    info!("Initializing wallet with name: {} and pool: {}", &wallet_name, &pool_name);
+
+    thread::spawn(move|| {
+        let crc = pool::create_pool_config(&pool_name, &config_name);
+        let wrc = wallet::init_wallet(&pool_name, &wallet_name, &wallet_type);
+
+        cb(command_handle,(crc|wrc));
+    });
+
+    error::SUCCESS.code_num
 }
 
 
@@ -187,6 +189,11 @@ mod tests {
     use std::fs;
     use std::ptr;
 
+    extern "C" fn init_cb(command_handle: u32, err: u32) {
+        if err != 0 {panic!("create_cb failed")}
+        println!("successfully called init_cb")
+    }
+
     #[test]
     fn test_init_with_file() {
         settings::set_defaults();
@@ -208,7 +215,7 @@ mod tests {
             Ok(_) => println!("sample config ready"),
         }
 
-        let result = cxs_init(CString::new(config_path).unwrap().into_raw());
+        let result = cxs_init(0,CString::new(config_path).unwrap().into_raw(),Some(init_cb));
         assert_eq!(result,0);
         // Leave file around or other concurrent tests will fail
 //        fs::remove_file(config_path).unwrap();
@@ -219,14 +226,14 @@ mod tests {
     #[test]
     fn test_init_bad_path() {
         let empty_str = CString::new("").unwrap().into_raw();
-        assert_eq!(error::UNKNOWN_ERROR.code_num,cxs_init(empty_str));
+        assert_eq!(error::UNKNOWN_ERROR.code_num,cxs_init(0,empty_str,Some(init_cb)));
     }
 
     #[test]
     fn test_init_no_config_path() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let result = cxs_init(ptr::null());
+        let result = cxs_init(0,ptr::null(),Some(init_cb));
         assert_eq!(result,0);
         pool::delete_pool_config("config1");
     }

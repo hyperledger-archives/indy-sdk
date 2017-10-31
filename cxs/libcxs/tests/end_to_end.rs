@@ -9,13 +9,31 @@ use std::time::Duration;
 use std::ffi::CString;
 use cxs::api;
 
+static mut CONNECTION_HANDLE: u32 = 0;
+static mut CLAIM_SENT: bool = false;
+
 #[allow(unused_variables)]
 extern "C" fn send_offer_cb(command_handle: u32, err: u32) {
     if err != 0 {panic!("failed to send claim offer")}
+    unsafe {CLAIM_SENT = true;};
     println!("Claim offer sent!");
 }
 
 #[allow(unused_variables)]
+extern "C" fn generic_cb(command_handle:u32, err:u32) {
+    if err != 0 {panic!("failed connect")}
+    println!("connection established!");
+}
+
+#[allow(unused_variables)]
+extern "C" fn create_connection_cb(command_handle: u32, err: u32, connection_handle: u32) {
+    if err != 0 {panic!("failed to send claim offer")}
+    if connection_handle == 0 {panic!("received invalid connection handle")}
+    unsafe {CONNECTION_HANDLE = connection_handle;}
+}
+
+#[allow(unused_variables)]
+#[allow(unused_assignments)]
 extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_handle: u32) {
     if err != 0 {panic!("failed to create claim handle in create_and_send_offer_cb!")}
 
@@ -23,16 +41,19 @@ extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_hand
         .with_status(202)
         .with_header("content-type", "text/plain")
         .with_body("nice!")
-        .expect(2)
+        .expect(3)
         .create();
 
-    let mut connection_handle: u32 = 0;
-    let rc = api::connection::cxs_connection_create(CString::new("test_cxs_connection_connect").unwrap().into_raw(),
-                                   std::ptr::null_mut(),
-                                   std::ptr::null(),
-                                   &mut connection_handle);
+    let mut connection_handle = 0;
+    let rc = api::connection::cxs_connection_create(0,CString::new("test_cxs_connection_connect").unwrap().into_raw(),Some(create_connection_cb));
     assert_eq!(rc, 0);
     thread::sleep(Duration::from_secs(1));
+    loop {
+        unsafe {
+            if CONNECTION_HANDLE > 0 {connection_handle = CONNECTION_HANDLE; break;}
+            else {thread::sleep(Duration::from_millis(50));}
+        }
+    }
     assert!(connection_handle > 0);
     _m.assert();
 
@@ -53,11 +74,11 @@ extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_hand
         .expect(1)
         .create();
 
-    let rc = api::connection::cxs_connection_connect(connection_handle, CString::new("{}").unwrap().into_raw());
+    let rc = api::connection::cxs_connection_connect(0,connection_handle, CString::new("{}").unwrap().into_raw(),Some(generic_cb));
     assert_eq!(rc, 0);
-    _m.assert();
 
     thread::sleep(Duration::from_secs(1));
+    _m.assert();
     let data = api::connection::cxs_connection_get_data(connection_handle);
     let mut final_string = String::new();
 
@@ -104,7 +125,7 @@ fn claim_offer_ete() {
     file.write_all(config_string.as_bytes()).unwrap();
 
     let path = CString::new(file.path().to_str().unwrap()).unwrap();
-    let r = api::cxs::cxs_init(path.as_ptr());
+    let r = api::cxs::cxs_init(0,path.as_ptr(),Some(generic_cb));
     assert_eq!(r,0);
     thread::sleep(Duration::from_secs(1));
     let id = CString::new("{\"id\":\"ckmMPiEDcH4R5URY\"}").unwrap();
@@ -117,4 +138,5 @@ fn claim_offer_ete() {
 
     assert_eq!(rc,0);
     thread::sleep(Duration::from_secs(4));
+    unsafe {assert_eq!(CLAIM_SENT,true);}
 }

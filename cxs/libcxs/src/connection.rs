@@ -41,6 +41,7 @@ struct Connection {
 
 impl Connection {
     fn connect(&mut self, options: String) -> u32 {
+        info!("handle {} called connect", self.handle);
         if self.state != CxsStateType::CxsStateInitialized {
             info!("connection {} in state {} not ready to connect",self.handle,self.state as u32);
             return error::NOT_READY.code_num;
@@ -92,11 +93,11 @@ impl Connection {
     fn set_endpoint(&mut self, endpoint: &str) { self.endpoint = endpoint.to_string(); }
 }
 
-fn find_connection(did: &str) -> u32 {
+fn find_connection(source_id: &str) -> u32 {
     let connection_table = CONNECTION_MAP.lock().unwrap();
 
     for (handle, connection) in connection_table.iter() { //TODO this could be very slow with lots of objects
-        if connection.pw_did == did {
+        if connection.source_id == source_id {
             return *handle;
         }
     };
@@ -107,27 +108,20 @@ fn find_connection(did: &str) -> u32 {
 pub fn is_valid_connection_handle(handle: u32) -> bool {
     let connection_table = CONNECTION_MAP.lock().unwrap();
 
-    if let Some(cxn) = connection_table.get(&handle) {
-        true
-    } else {
-        false
-    }
+    if let Some(cxn) = connection_table.get(&handle) { true }
+    else { false }
 }
 
 pub fn set_pw_did(handle: u32, did: &str) {
     let mut connection_table = CONNECTION_MAP.lock().unwrap();
 
-    if let Some(cxn) = connection_table.get_mut(&handle) {
-        cxn.set_pw_did(did);
-    }
+    if let Some(cxn) = connection_table.get_mut(&handle) { cxn.set_pw_did(did); }
 }
 
 pub fn set_state(handle: u32, state: CxsStateType) {
     let mut connection_table = CONNECTION_MAP.lock().unwrap();
 
-    if let Some(cxn) = connection_table.get_mut(&handle) {
-        cxn.set_state(state);
-    }
+    if let Some(cxn) = connection_table.get_mut(&handle) { cxn.set_state(state); }
 }
 
 pub fn get_pw_did(handle: u32) -> Result<String, u32> {
@@ -236,25 +230,20 @@ pub fn update_agent_profile(handle: u32) -> Result<u32, u32> {
 }
 
 //TODO may want to split between the code path where did is pass and is not passed
-pub fn build_connection (source_id: Option<String>,
-                         did: Option<String>,
-                         their_did: Option<String>) -> u32 {
-    // creating wallet
+pub fn build_connection(source_id: String) -> u32 {
+    info!("building connection with {}", source_id);
 
-    let source_id_unwrap = source_id.unwrap_or("".to_string());
+    // Check to make sure source_id is unique
 
-    info!("building connection with {}", source_id_unwrap);
-    // Check to make sure info_string is unique
-    if did.is_some() {
-        let new_handle = find_connection(&did.clone().unwrap_or_default());
-        if new_handle > 0 {return new_handle}
-    }
+    let new_handle = find_connection(&source_id);
+    if new_handle > 0 {return new_handle}
+
     let new_handle = rand::thread_rng().gen::<u32>();
     info!("creating connection with handle {}", new_handle);
     // This is a new connection
 
     let c = Box::new(Connection {
-        source_id: source_id_unwrap,
+        source_id,
         handle: new_handle,
         pw_did: String::new(),
         pw_verkey: String::new(),
@@ -272,29 +261,14 @@ pub fn build_connection (source_id: Option<String>,
     }
 
 
-    if did.is_none() { //TODO need better input validation
-        let did_json = "{}";
+    let did_json = "{}";
 
-        info!("creating new connection from empty data");
-        match wallet::create_and_store_my_did(new_handle, did_json) {
-            Ok(_) => info!("successfully created new did"),
-            Err(x) => error!("could not create DID: {}", x),
-        };
-    }
-    else {
-        //TODO need to get VERKEY ?MAYBE?
-        let did_clone = did.clone().unwrap();
+    info!("creating new connection from empty data");
+    match wallet::create_and_store_my_did(new_handle, did_json) {
+        Ok(_) => info!("successfully created new did"),
+        Err(x) => error!("could not create DID: {}", x),
+    };
 
-        let did_json =format!("{{\"did\":\"{}\"}}", did_clone);
-
-        info!("creating new connection from data: {}", did_json);
-        match wallet::create_and_store_my_did(new_handle, &did_json) {
-            Ok(_) => info!("successfully created did"),
-            Err(x) => error!("could not create DID: {}", x),
-        };
-
-        set_pw_did(new_handle, &did.unwrap());
-    }
     new_handle
 }
 
@@ -396,6 +370,12 @@ mod tests {
     use std::thread;
     use std::time::Duration;
 
+    extern "C" fn create_cb(command_handle: u32, err: u32, connection_handle: u32) {
+        assert_eq!(err, 0);
+        assert!(connection_handle > 0);
+        println!("successfully called create_cb")
+    }
+
     #[test]
     fn test_create_connection() {
         settings::set_defaults();
@@ -409,9 +389,7 @@ mod tests {
 
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
         wallet::tests::make_wallet("test_create_connection");
-        let handle = build_connection(Some("test_create_connection".to_owned()),
-                                      None,
-                                      None);
+        let handle = build_connection("test_create_connection".to_owned());
         assert!(handle > 0);
         thread::sleep(Duration::from_secs(1));
         assert!(!get_pw_did(handle).unwrap().is_empty());
@@ -438,12 +416,8 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection(Some("test_create_idempotency".to_owned()),
-                                      Some("PLgUY9J3a9aRhvpFWMKMyb".to_string()),
-                                      None);
-        let handle2 = build_connection(Some("test_create_idempotency".to_owned()),
-                                       Some("PLgUY9J3a9aRhvpFWMKMyb".to_string()),
-                                       None);
+        let handle = build_connection("test_create_idempotency".to_owned());
+        let handle2 = build_connection("test_create_idempotency".to_owned());
         assert_eq!(handle,handle2);
         release(handle);
         release(handle2);
@@ -453,14 +427,10 @@ mod tests {
     fn test_create_drop_create() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection(Some("test_create_drop_create".to_owned()),
-                                      Some("PLgUY9J3a9aRhvpFWMKMyb".to_string()),
-                                      None);
+        let handle = build_connection("test_create_drop_create".to_owned());
         let did1 = get_pw_did(handle).unwrap();
         release(handle);
-        let handle2 = build_connection(Some("test_create_drop_create".to_owned()),
-                                       Some("PLgUY9J3a9aRhvpFWMKMyb".to_string()),
-                                       None);
+        let handle2 = build_connection("test_create_drop_create".to_owned());
         assert_ne!(handle,handle2);
         let did2 = get_pw_did(handle2).unwrap();
         assert_eq!(did1, did2);
@@ -471,9 +441,7 @@ mod tests {
     fn test_connection_release() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection(Some("test_cxn_release".to_owned()),
-                                      None,
-                                      None);
+        let handle = build_connection("test_cxn_release".to_owned());
         assert!(handle > 0);
         let rc = release(handle);
         assert_eq!(rc, error::SUCCESS.code_num);
@@ -483,9 +451,7 @@ mod tests {
     fn test_state_not_connected() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection(Some("test_state_not_connected".to_owned()),
-                                      None,
-                                      None);
+        let handle = build_connection("test_state_not_connected".to_owned());
         thread::sleep(Duration::from_secs(1));
         let state = get_state(handle);
         assert_eq!(state, CxsStateType::CxsStateInitialized as u32);
@@ -520,7 +486,7 @@ mod tests {
     fn test_get_string() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection(Some("".to_owned()), None, None);
+        let handle = build_connection("".to_owned());
         let string = to_string(handle);
         println!("string: {}", string);
         assert!(string.len() > 10);
@@ -531,11 +497,11 @@ mod tests {
     fn test_many_handles() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle1 = build_connection(Some("handle1".to_owned()), None, None);
-        let handle2 = build_connection(Some("handle2".to_owned()), None, None);
-        let handle3 = build_connection(Some("handle3".to_owned()), None, None);
-        let handle4 = build_connection(Some("handle4".to_owned()), None, None);
-        let handle5 = build_connection(Some("handle5".to_owned()), None, None);
+        let handle1 = build_connection("handle1".to_owned());
+        let handle2 = build_connection("handle2".to_owned());
+        let handle3 = build_connection("handle3".to_owned());
+        let handle4 = build_connection("handle4".to_owned());
+        let handle5 = build_connection("handle5".to_owned());
 
         connect(handle1, "{}".to_string());
         connect(handle2, "{}".to_string());
@@ -570,9 +536,7 @@ mod tests {
     fn test_set_get_pw_verkey() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection(Some("test_set_get_pw_verkey".to_owned()),
-                                      None,
-                                      None);
+        let handle = build_connection("test_set_get_pw_verkey".to_owned());
         thread::sleep(Duration::from_secs(1));
         assert!(!get_pw_did(handle).unwrap().is_empty());
         assert!(!get_pw_verkey(handle).unwrap().is_empty());
@@ -591,7 +555,7 @@ mod tests {
 
         let c = Box::new(Connection {
             source_id: "1".to_string(),
-            handle: handle,
+            handle,
             pw_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
             pw_verkey: "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string(),
             did_endpoint: String::new(),
@@ -650,7 +614,7 @@ mod tests {
         let endpoint = "hello";
         let test_name = "test_get_set_uuid_and_endpoint";
         let wallet_name = test_name;
-        let handle = build_connection(Some(test_name.to_owned()), None, None);
+        let handle = build_connection(test_name.to_owned());
         assert_eq!(get_endpoint(handle).unwrap(), "");
         set_uuid(handle, uuid);
         set_endpoint(handle, endpoint);
@@ -673,7 +637,7 @@ mod tests {
 
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
         wallet::tests::make_wallet(test_name);
-        let handle = build_connection(Some(test_name.to_owned()), None, None);
+        let handle = build_connection(test_name.to_owned());
         assert!(handle > 0);
         thread::sleep(Duration::from_secs(1));
         assert!(!get_pw_did(handle).unwrap().is_empty());

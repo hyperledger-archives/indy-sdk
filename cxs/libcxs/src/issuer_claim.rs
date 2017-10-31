@@ -75,7 +75,7 @@ pub fn issuer_claim_create(claim_def_handle: u32,
 
     let source_id_unwrap = source_id.unwrap_or("".to_string());
 
-    let new_issuer_claim = Box::new(IssuerClaim {
+    let mut new_issuer_claim = Box::new(IssuerClaim {
         handle: new_handle,
         source_id: source_id_unwrap,
         claim_def: claim_def_handle,
@@ -89,6 +89,7 @@ pub fn issuer_claim_create(claim_def_handle: u32,
         Err(x) => return Err(x),
     };
 
+    new_issuer_claim.state = CxsStateType::CxsStateInitialized;
     {
         let mut m = ISSUER_CLAIM_MAP.lock().unwrap();
         info!("inserting handle {} into claim_issuer table", new_handle);
@@ -184,7 +185,7 @@ mod tests {
     fn test_send_claim_offer() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let connection_handle = build_connection(Some("test_send_claim_offer".to_owned()),None,None);
+        let connection_handle = build_connection("test_send_claim_offer".to_owned());
         let handle = issuer_claim_create(0, None,"{\"attr\":\"value\"}".to_owned()).unwrap();
         thread::sleep(Duration::from_secs(1));
         assert_eq!(send_claim_offer(handle,connection_handle).unwrap(),error::SUCCESS.code_num);

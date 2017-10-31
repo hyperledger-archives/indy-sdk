@@ -160,7 +160,7 @@ mod tests {
     extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_handle: u32) {
         if err != 0 {panic!("failed to create claim handle in create_and_send_offer_cb!")}
 
-        let connection_handle = build_connection(Some("test_send_claim_offer".to_owned()),None,None);
+        let connection_handle = build_connection("test_send_claim_offer".to_owned());
         thread::sleep(Duration::from_millis(500));
         if cxs_issuer_send_claim_offer(command_handle, claim_handle, connection_handle, Some(send_offer_cb)) != error::SUCCESS.code_num {
             panic!("failed to send claim offer");
