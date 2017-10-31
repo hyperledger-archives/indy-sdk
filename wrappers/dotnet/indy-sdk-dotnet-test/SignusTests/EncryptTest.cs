@@ -1,5 +1,6 @@
 ﻿using Hyperledger.Indy.LedgerApi;
 using Hyperledger.Indy.SignusApi;
+using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 

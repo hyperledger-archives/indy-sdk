@@ -17,6 +17,7 @@ pub mod logger;
 
 pub mod inmem_wallet;
 
+#[allow(unused_macros)]
 #[macro_use]
 pub mod result;
 
@@ -26,3 +27,6 @@ pub mod sequence;
 pub mod test;
 
 pub mod timeout;
+
+#[macro_use]
+pub mod try;

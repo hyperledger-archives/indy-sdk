@@ -12,7 +12,6 @@ extern crate sha2;
 extern crate zmq_pw as zmq;
 extern crate rmp_serde;
 extern crate indy_crypto;
-extern crate base64;
 
 
 use self::byteorder::{ByteOrder, LittleEndian};
@@ -28,6 +27,7 @@ use std::fmt::Debug;
 use std::io::{BufRead, Write};
 use std::error::Error;
 
+use base64;
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use commands::pool::PoolCommand;

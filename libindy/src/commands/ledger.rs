@@ -7,10 +7,9 @@ use errors::pool::PoolError;
 use errors::signus::SignusError;
 use errors::indy::IndyError;
 
-use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
 use services::signus::SignusService;
-use services::signus::types::MyDid;
+use services::signus::types::{Did, Key};
 use services::wallet::WalletService;
 use services::ledger::LedgerService;
 
@@ -107,7 +106,6 @@ pub enum LedgerCommand {
 }
 
 pub struct LedgerCommandExecutor {
-    anoncreds_service: Rc<AnoncredsService>,
     pool_service: Rc<PoolService>,
     signus_service: Rc<SignusService>,
     wallet_service: Rc<WalletService>,
@@ -117,13 +115,11 @@ pub struct LedgerCommandExecutor {
 }
 
 impl LedgerCommandExecutor {
-    pub fn new(anoncreds_service: Rc<AnoncredsService>,
-               pool_service: Rc<PoolService>,
+    pub fn new(pool_service: Rc<PoolService>,
                signus_service: Rc<SignusService>,
                wallet_service: Rc<WalletService>,
                ledger_service: Rc<LedgerService>) -> LedgerCommandExecutor {
         LedgerCommandExecutor {
-            anoncreds_service: anoncreds_service,
             pool_service: pool_service,
             signus_service: signus_service,
             wallet_service: wallet_service,
@@ -227,8 +223,12 @@ impl LedgerCommandExecutor {
                      request_json: &str,
     ) -> Result<String, IndyError> {
         let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", submitter_did))?;
-        let my_did = MyDid::from_json(&my_did_json)
+        let my_did = Did::from_json(&my_did_json)
             .map_err(|err| CommonError::InvalidState(format!("Invalid my_did_json: {}", err.to_string())))?;
+
+        let my_key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", my_did.verkey))?;
+        let my_key = Key::from_json(&my_key_json)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid my_key_json: {}", err.to_string())))?;
 
         let mut request: Value = serde_json::from_str(request_json)
             .map_err(|err|
@@ -240,7 +240,7 @@ impl LedgerCommandExecutor {
                 CommonError::InvalidStructure(format!("Message is invalid json: {}", request)))));
         }
         let serialized_request = serialize_signature(request.clone())?;
-        let signature = self.signus_service.sign(&my_did, &serialized_request.as_bytes().to_vec())?;
+        let signature = self.signus_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
 
         request["signature"] = Value::String(Base58::encode(&signature));
         let signed_request: String = serde_json::to_string(&request)

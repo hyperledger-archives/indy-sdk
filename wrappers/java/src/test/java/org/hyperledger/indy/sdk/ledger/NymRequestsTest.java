@@ -1,8 +1,7 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
+import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults;
@@ -11,6 +10,7 @@ import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -65,7 +65,7 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 	@Test
 	public void testNymRequestWorksWithoutSignature() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
+		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
 
 		SignusResults.CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(wallet, "{}").get();
 		String did = result.getDid();
@@ -116,7 +116,7 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 	@Test
 	public void testSendNymRequestsWorksForWrongSignerRole() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
+		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
 
 		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
@@ -137,7 +137,7 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 	@Test
 	public void testSendNymRequestsWorksForUnknownSigner() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
+		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
 
 		String identityJson =
 				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee9", null, null).toJson();
@@ -177,7 +177,7 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 	@Test
 	public void testSendNymRequestsWorksForWrongRole() throws Exception {
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		Ledger.buildNymRequest(DID1, dest, null, null, "WRONG_ROLE").get();
 	}

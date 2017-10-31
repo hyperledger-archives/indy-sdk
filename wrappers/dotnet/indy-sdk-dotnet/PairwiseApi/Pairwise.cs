@@ -81,7 +81,7 @@ namespace Hyperledger.Indy.PairwiseApi
         }
 
         /// <summary>
-        /// Creates a new pairwise record in the provided wallet between two specified DIDs.
+        /// Creates a new pairwise record between two specified DIDs in the provided wallet.
         /// </summary>
         /// <param name="wallet">The wallet to store create the pairwise record in.</param>
         /// <param name="theirDid">The DID of the remote party.</param>
@@ -109,9 +109,6 @@ namespace Hyperledger.Indy.PairwiseApi
         /// <summary>
         /// Lists all pairwise relationships stored in the specified wallet.
         /// </summary>
-        /// <param name="wallet">The wallet to get the pairwise records from.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a JSON string containing
-        /// an array of all pairwise relationships stored in the wallet.</returns>
         /// <remarks>
         /// The JSON string that this method resolves to will contain a array of objects each of which
         /// describes a pairwise record for two DIDs, a DID belonging to the record owner (my_did) and the 
@@ -128,6 +125,9 @@ namespace Hyperledger.Indy.PairwiseApi
         /// Note that this call does not return any metadata associated with the pairwise records; to get the
         /// metadata use the <see cref="GetAsync(Wallet, string)"/> method.
         /// </remarks>
+        /// <param name="wallet">The wallet to get the pairwise records from.</param>
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a JSON string containing
+        /// an array of all pairwise relationships stored in the wallet.</returns>
         public static Task<string> ListAsync(Wallet wallet)
         {
             var taskCompletionSource = new TaskCompletionSource<string>();
@@ -146,10 +146,6 @@ namespace Hyperledger.Indy.PairwiseApi
         /// <summary>
         /// Gets the pairwise record associated with the specified DID from the provided wallet.
         /// </summary>
-        /// <param name="wallet">The wallet to get the pairwise record from.</param>
-        /// <param name="theirDid">The DID belonging to another party to get the pairwise record for.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a JSON string containing
-        /// a pairwise record.</returns>
         /// <remarks>
         /// The JSON string that this method resolves to will contain a single pairwise record for two DIDs, 
         /// the DID belonging to the record owner (my_did), the associated DID belonging to the other party 
@@ -165,6 +161,10 @@ namespace Hyperledger.Indy.PairwiseApi
         /// 
         /// Note that if no metadata is present in a record the JSON will omit the <c>metadata</c>key.
         /// </remarks>
+        /// <param name="wallet">The wallet to get the pairwise record from.</param>
+        /// <param name="theirDid">The DID belonging to another party to get the pairwise record for.</param>
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a JSON string containing
+        /// a pairwise record.</returns>
         public static Task<string> GetAsync(Wallet wallet, string theirDid)
         {
             var taskCompletionSource = new TaskCompletionSource<string>();
@@ -184,13 +184,14 @@ namespace Hyperledger.Indy.PairwiseApi
         /// <summary>
         /// Sets the metadata on the existing pairwise record for the specified DID in the provided wallet.
         /// </summary>
+        /// <remarks>
+        /// If the pairwise record already contains any existing metadata it will be replaced with the value provided 
+        /// in the <paramref name="metadata"/> parameter.  To remove all metadata for a record provide <c>null</c> in the
+        /// <paramref name="metadata"/> parameter.
+        /// </remarks>
         /// <param name="wallet">The wallet containing the pairwise record.</param>
         /// <param name="theirDid">The DID belonging to another party the pairwise record exists for.</param>
         /// <param name="metadata">The metadata to set on the pairwise record.</param>
-        /// <remarks>
-        /// If the pairwise record already contains any existing metadata it will be replaced with the value provided 
-        /// in the <c>metadata</c> parameter.  To remove all metadata for a record provide <c>null</c> in the
-        /// <c>metadata</c> parameter.</remarks>
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public static Task SetMetadataAsync(Wallet wallet, string theirDid, string metadata)
         {

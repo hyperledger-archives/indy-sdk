@@ -11,10 +11,10 @@ UNKNOWN_DID = 'NcYxiDXkpYi6ov5FcYDi1e'
 
 
 @pytest.mark.asyncio
-async def test_create_pairwise_works(wallet_handle, identity_my2, identity_trustee1):
+async def test_create_pairwise_works(wallet_handle, identity_my2, identity_trustee1, metadata):
     (my_did, _) = identity_my2
     (their_did, _) = identity_trustee1
-    await pairwise.create_pairwise(wallet_handle, their_did, my_did, 'some metadata')
+    await pairwise.create_pairwise(wallet_handle, their_did, my_did, metadata)
 
 
 @pytest.mark.asyncio

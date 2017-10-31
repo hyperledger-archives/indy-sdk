@@ -22,51 +22,60 @@ def event_loop():
 
 @pytest.fixture
 def seed_trustee1():
-    logger = logging.getLogger(__name__)
-    logger.debug("seed_trustee1: >>>")
-
-    res = "000000000000000000000000Trustee1"
-
-    logger.debug("seed_trustee1: <<< res: %r", res)
-    return res
+    return "000000000000000000000000Trustee1"
 
 
 @pytest.fixture
 def seed_steward1():
-    logger = logging.getLogger(__name__)
-    logger.debug("seed_trustee1: >>>")
-
-    res = "000000000000000000000000Steward1"
-
-    logger.debug("seed_trustee1: <<< res: %r", res)
-    return res
+    return "000000000000000000000000Steward1"
 
 
 @pytest.fixture
 def seed_my1():
-    logger = logging.getLogger(__name__)
-    logger.debug("seed_my1: >>>")
-
-    res = "00000000000000000000000000000My1"
-
-    logger.debug("seed_my1: <<< res: %r", res)
-    return res
+    return "00000000000000000000000000000My1"
 
 
 @pytest.fixture
 def seed_my2():
-    logger = logging.getLogger(__name__)
-    logger.debug("seed_my2: >>>")
+    return "00000000000000000000000000000My2"
 
-    res = "00000000000000000000000000000My2"
 
-    logger.debug("seed_my2: <<< res: %r", res)
-    return res
+@pytest.fixture
+def did_my1():
+    return "VsKV7grR1BUE29mG2Fm2kX"
+
+@pytest.fixture
+def did_my2():
+    return "2PRyVHmkXQnQzJQKxHxnXC"
+
+@pytest.fixture
+def verkey_my1():
+    return "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
+
+
+@pytest.fixture
+def verkey_my2():
+    return "kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn"
+
+
+@pytest.fixture
+def message():
+    return '{"reqId":1496822211362017764}'.encode('utf-8')
 
 
 @pytest.fixture
 def endpoint():
     return "127.0.0.1:9700"
+
+
+@pytest.fixture
+def crypto_type():
+    return "ed25519"
+
+
+@pytest.fixture
+def metadata():
+    return "ed25519"
 
 
 @pytest.fixture
@@ -388,37 +397,36 @@ def pool_handle(event_loop, pool_name, pool_ledger_config, pool_config, pool_han
 
 @pytest.fixture
 async def identity_trustee1(wallet_handle, seed_trustee1):
-    (trustee_did, trustee_verkey, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                                            json.dumps({"seed": seed_trustee1}))
-    return (trustee_did, trustee_verkey)
+    (trustee_did, trustee_verkey) = await signus.create_and_store_my_did(wallet_handle,
+                                                                         json.dumps({"seed": seed_trustee1}))
+    return trustee_did, trustee_verkey
 
 
 @pytest.fixture
 async def identity_steward1(wallet_handle, seed_steward1):
-    (steward_did, steward_verkey, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                                            json.dumps({"seed": seed_steward1}))
-    return (steward_did, steward_verkey)
+    (steward_did, steward_verkey) = await signus.create_and_store_my_did(wallet_handle,
+                                                                         json.dumps({"seed": seed_steward1}))
+    return steward_did, steward_verkey
 
 
 @pytest.fixture
 async def identity_my1(wallet_handle, pool_handle, identity_trustee1, seed_my1, ):
     (trustee_did, trustee_verkey) = identity_trustee1
 
-    (my_did, my_verkey, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                                  json.dumps({"seed": seed_my1}))
+    (my_did, my_verkey) = await signus.create_and_store_my_did(wallet_handle,
+                                                               json.dumps({"seed": seed_my1, 'cid': True}))
 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
-    return (my_did, my_verkey)
+    return my_did, my_verkey
 
 
 @pytest.fixture
 async def identity_my2(wallet_handle, identity_trustee1, seed_my2, ):
     (trustee_did, trustee_verkey) = identity_trustee1
 
-    (my_did, my_verkey, _) = await signus.create_and_store_my_did(wallet_handle,
-                                                                  json.dumps({"seed": seed_my2}))
+    (my_did, my_verkey) = await signus.create_and_store_my_did(wallet_handle, json.dumps({"seed": seed_my2}))
 
     await signus.store_their_did(wallet_handle, json.dumps({'did': trustee_did, 'verkey': trustee_verkey}))
-    return (my_did, my_verkey)
+    return my_did, my_verkey

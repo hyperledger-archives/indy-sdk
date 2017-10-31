@@ -106,10 +106,7 @@ extern "C" {
     /// identity_json: Identity information as json. Example:
     ///     {
     ///        "did": string, (required)
-    ///        "verkey": string (optional, if only pk is provided),
-    ///        "pk": string (optional, if only verification key is provided),
-    ///        "crypto_type": string, (optional; if not set then ed25519 curve is used;
-    ///               currently only 'ed25519' value is supported for this field)
+    ///        "verkey": string (optional, can be avoided if did is cryptonym: did == verkey)
     ///     }
     /// cb: Callback that takes command result as parameter.
     ///
@@ -128,6 +125,180 @@ extern "C" {
                                              void           (*cb)(indy_handle_t xcommand_handle,
                                                                   indy_error_t  err)
                                             );
+
+    /// Creates keys pair and stores in the wallet.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// key_json: Key information as json. Example:
+    /// {
+    ///     "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+    ///     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
+    /// }
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: command handle to map callback to caller context.
+    /// - err: Error code.
+    /// - verkey: Ver key of generated key pair, also used as key identifier
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
+    extern indy_error_t indy_create_key(indy_handle_t     command_handle,
+                                        indy_handle_t     wallet_handle,
+                                        const char *const key_json,
+
+                                        void              (*cb)(indy_handle_t     command_handle,
+                                                                indy_error_t      err
+                                                                const char *const vk)
+                                       );
+
+    /// Saves/replaces the meta information for the giving key in the wallet.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// verkey - the key (verkey, key id) to store metadata.
+    /// metadata - the meta information that will be store with the key.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: command handle to map callback to caller context.
+    /// - err: Error code.
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
+    extern indy_error_t indy_set_key_metadata(indy_handle_t     command_handle
+                                              indy_handle_t     wallet_handle,
+                                              const char *const verkey,
+                                              const char *const metadata,
+
+                                              void              (*cb)(indy_handle_t     command_handle,
+                                                                      indy_error_t      err)
+                                              );
+
+    /// Retrieves the meta information for the giving key in the wallet.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// verkey - The key (verkey, key id) to retrieve metadata.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - err: Error code.
+    /// - metadata - The meta information stored with the key; Can be null if no metadata was saved for this key.
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
+    extern indy_error_t indy_get_key_metadata(indy_handle_t     command_handle
+                                              indy_handle_t     wallet_handle,
+                                              const char *const verkey,
+
+                                              void              (*cb)(indy_handle_t     command_handle,
+                                                                      indy_error_t      err,
+                                                                      const char *const metadata)
+                                             );
+
+    extern indy_error_t indy_key_for_did(indy_handle_t     command_handle
+                                         indy_handle_t     pool_handle,
+                                         indy_handle_t     wallet_handle,
+                                         const char *const did,
+
+                                         void              (*cb)(indy_handle_t     command_handle,
+                                                                 indy_error_t      err,
+                                                                 const char *const key)
+                                        );
+
+    extern indy_error_t indy_set_endpoint_for_did(indy_handle_t     command_handle
+                                                  indy_handle_t     wallet_handle,
+                                                  const char *const did,
+                                                  const char *const address,
+                                                  const char *const transport_key,
+
+                                                  void              (*cb)(indy_handle_t     command_handle,
+                                                                          indy_error_t      err)
+                                                 );
+
+    extern indy_error_t indy_get_endpoint_for_did(indy_handle_t     command_handle
+                                                  indy_handle_t     wallet_handle,
+                                                  const char *const did,
+
+                                                  void              (*cb)(indy_handle_t     command_handle,
+                                                                          indy_error_t      err,
+                                                                          const char *const address,
+                                                                          const char *const transport_vk)
+                                                 );
+
+    /// Saves/replaces the meta information for the giving DID in the wallet.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// did - the DID to store metadata.
+    /// metadata - the meta information that will be store with the DID.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: command handle to map callback to caller context.
+    /// - err: Error code.
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
+    extern indy_error_t indy_set_did_metadata(indy_handle_t     command_handle
+                                              indy_handle_t     wallet_handle,
+                                              const char *const did,
+                                              const char *const metadata,
+
+                                              void              (*cb)(indy_handle_t     command_handle,
+                                                                      indy_error_t      err)
+                                             );
+
+    /// Retrieves the meta information for the giving DID in the wallet.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// did - The DID to retrieve metadata.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - err: Error code.
+    /// - metadata - The meta information stored with the DID; Can be null if no metadata was saved for this DID.
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
+    extern indy_error_t indy_get_did_metadata(indy_handle_t     command_handle
+                                              indy_handle_t     wallet_handle,
+                                              const char *const did,
+
+                                              void              (*cb)(indy_handle_t     command_handle,
+                                                                      indy_error_t      err,
+                                                                      const char *const metadata)
+                                             );
 
     /// Signs a message by a signing key associated with my DID. The DID with a signing key
     /// must be already created and stored in a secured wallet (see create_and_store_my_identity)
@@ -211,8 +382,8 @@ extern "C" {
     /// whether public key is still the same and updates public key for the DID if needed.
     ///
     /// #Params
-    /// wallet_handle: wallet handler (created by open_wallet).
     /// command_handle: command handle to map callback to user context.
+    /// wallet_handle: wallet handler (created by open_wallet).
     /// pool_handle: pool handle.
     /// my_did: encrypted DID
     /// their_did: encrypted DID
@@ -233,7 +404,7 @@ extern "C" {
                                      indy_handle_t      wallet_handle,
                                      indy_handle_t      pool_handle,
                                      const char *       my_did,
-                                     const char *       did,
+                                     const char *       their_did,
                                      const indy_u8_t *  message_raw,
                                      indy_u32_t         message_len,
 
@@ -250,8 +421,9 @@ extern "C" {
     /// stored in a secured wallet (see wallet_create_and_store_my_identity)
     ///
     /// #Params
-    /// wallet_handle: wallet handler (created by open_wallet).
     /// command_handle: command handle to map callback to user context.
+    /// wallet_handle: wallet handler (created by open_wallet).
+    /// pool_handle: pool handle.
     /// my_did: encrypted DID
     /// their_did: encrypted DID that signed the message
     /// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
@@ -270,8 +442,9 @@ extern "C" {
     
     extern indy_error_t indy_decrypt(indy_handle_t      command_handle,
                                      indy_handle_t      wallet_handle,
+                                     indy_handle_t      pool_handle,
                                      const char *       my_did,
-                                     const char *       did,
+                                     const char *       their_did,
                                      const indy_u8_t*   encrypted_msg_raw,
                                      indy_u32_t         encrypted_msg_len,
                                      const indy_u8_t*   nonce_raw,
@@ -352,6 +525,15 @@ extern "C" {
                                                                  const indy_u8_t*  decrypted_msg_raw,
                                                                  indy_u32_t        decrypted_msg_len)
                                            );
+
+/* TODO implement for key-based approach:
+ indy_sign(signer_vk, msg) -> signature
+ indy_verify(signer_vk, msg, signature) -> bool
+ indy_encrypt(sender_vk, recepient_vk, msg) -> (nonce, encrypted_msg)
+ indy_decrypt(sender_vk, recepient_vk, encrypted_msg, nonce) -> msg
+ indy_encrypt_anonymous(recepient_vk, msg) -> encrypted_msg
+ indy_decrypt_anonymous(recepient_vk, encrypted_msg) -> msg
+*/
 
 #ifdef __cplusplus
 }

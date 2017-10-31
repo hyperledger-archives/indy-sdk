@@ -40,6 +40,15 @@ macro_rules! check_useful_c_str {
     }
 }
 
+macro_rules! check_useful_c_str_empty_accepted {
+    ($x:ident, $e:expr) => {
+        let $x = match CStringUtils::c_str_to_string($x) {
+            Ok(Some(val)) => val,
+            _ => return $e,
+        };
+    }
+}
+
 macro_rules! check_useful_opt_c_str {
     ($x:ident, $e:expr) => {
         let $x = match CStringUtils::c_str_to_string($x) {
