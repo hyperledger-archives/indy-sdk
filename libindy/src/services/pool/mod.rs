@@ -189,12 +189,11 @@ impl TransactionHandler {
                 debug!("TransactionHandler::process_reply: proof_valid: {:?}", proof_valid);
 
                 proof_valid && {
-                    let (signature, participants, pool_state_root) = data_to_check_proof_signature.unwrap();
+                    let (signature, participants, value) = data_to_check_proof_signature.unwrap();
                     let signature_valid = self::state_proof::verify_proof_signature(
                         signature,
                         participants.as_slice(),
-                        root_hash,
-                        pool_state_root,
+                        &value,
                         self.nodes.as_slice(), self.f, &self.gen);
                     debug!("TransactionHandler::process_reply: signature_valid: {:?}", signature_valid);
                     signature_valid
@@ -488,18 +487,19 @@ impl TransactionHandler {
         }
     }
 
-    fn parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option<(&str, Vec<&str>, &str)> {
+    fn parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option<(&str, Vec<&str>, Vec<u8>)> {
         match (json_msg["state_proof"]["multi_signature"]["signature"].as_str(),
                json_msg["state_proof"]["multi_signature"]["participants"].as_array(),
-               json_msg["state_proof"]["multi_signature"]["pool_state_root"].as_str()) {
-            (Some(signature), Some(participants), Some(pool_state_root)) => {
+               rmp_serde::to_vec_named(&json_msg["state_proof"]["multi_signature"]["value"])
+                   .map_err(map_err_trace!())) {
+            (Some(signature), Some(participants), Ok(value)) => {
                 let participants_unwrap: Vec<&str> = participants
                     .iter()
                     .flat_map(SJsonValue::as_str)
                     .collect();
 
                 if participants.len() == participants_unwrap.len() {
-                    Some((signature, participants_unwrap, pool_state_root))
+                    Some((signature, participants_unwrap, value))
                 } else {
                     None
                 }
