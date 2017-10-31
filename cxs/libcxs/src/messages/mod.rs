@@ -3,7 +3,7 @@ pub mod validation;
 pub mod message;
 
 use self::invite::{CreateKeyMsg, SendInvite, AcceptInvitation, UpdateProfileData};
-use self::message::{GetMessages};
+use self::message::{GetMessages, SendMessage};
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
 pub enum MessageType {
@@ -58,6 +58,6 @@ pub fn accept_invitation() -> AcceptInvitation{
     AcceptInvitation::create()
 }
 
-pub fn get_messages() -> GetMessages {
-    GetMessages::create()
-}
+pub fn get_messages() -> GetMessages { GetMessages::create() }
+
+pub fn send_message() -> SendMessage { SendMessage::create() }
