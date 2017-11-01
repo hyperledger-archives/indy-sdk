@@ -105,7 +105,7 @@ fn find_connection(source_id: &str) -> u32 {
     return 0;
 }
 
-pub fn is_valid_connection_handle(handle: u32) -> bool {
+pub fn is_valid_handle(handle: u32) -> bool {
     let connection_table = CONNECTION_MAP.lock().unwrap();
 
     if let Some(cxn) = connection_table.get(&handle) { true }
@@ -343,6 +343,8 @@ pub fn from_string(connection_data: &str) -> Result<u32,u32> {
     };
 
     let new_handle = derived_connection.handle;
+
+    if is_valid_handle(new_handle) {return Ok(new_handle);}
 
     let connection = Box::from(derived_connection);
 

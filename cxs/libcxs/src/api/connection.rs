@@ -7,7 +7,7 @@ use std::ptr;
 use api::CxsStateType;
 use std::thread;
 use std::time::Duration;
-use connection::{build_connection, connect, to_string, get_state, release, is_valid_connection_handle, update_state, from_string};
+use connection::{build_connection, connect, to_string, get_state, release, is_valid_handle, update_state, from_string};
 
 /**
  * connection object
@@ -49,7 +49,7 @@ pub extern fn cxs_connection_connect(command_handle:u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    if !is_valid_connection_handle(connection_handle) {
+    if !is_valid_handle(connection_handle) {
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
@@ -74,7 +74,7 @@ pub extern fn cxs_connection_connect(command_handle:u32,
 pub extern fn cxs_connection_serialize(connection_handle: u32, cb: Option<extern fn(xconnection_handle: u32, err: u32, claim_state: *const c_char)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    if !is_valid_connection_handle(connection_handle) {
+    if !is_valid_handle(connection_handle) {
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
@@ -124,7 +124,7 @@ pub extern fn cxs_connection_update_state(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    if !is_valid_connection_handle(connection_handle) {
+    if !is_valid_handle(connection_handle) {
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
@@ -218,10 +218,10 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle = build_connection("test_cxs_connection_update_state".to_owned());
         assert!(handle > 0);
-        thread::sleep(Duration::from_millis(200));
+        thread::sleep(Duration::from_millis(300));
         let rc = cxs_connection_update_state(0,handle,Some(update_state_cb));
         assert_eq!(rc, error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+        thread::sleep(Duration::from_millis(300));
     }
 
     #[test]

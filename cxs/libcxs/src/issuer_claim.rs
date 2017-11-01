@@ -34,7 +34,7 @@ impl IssuerClaim {
     }
 
     fn send_claim_offer(&mut self, connection_handle: u32) -> Result<u32, u32> {
-        if connection::is_valid_connection_handle(connection_handle) == false {
+        if connection::is_valid_handle(connection_handle) == false {
             warn!("invalid connection handle ({}) in send_claim_offer", connection_handle);
             return Err(error::INVALID_CONNECTION_HANDLE.code_num);
         }
@@ -125,6 +125,13 @@ pub fn release(handle: u32) -> u32 {
     rc
 }
 
+pub fn is_valid_handle(handle: u32) -> bool {
+    let table = ISSUER_CLAIM_MAP.lock().unwrap();
+
+    if let Some(cxn) = table.get(&handle) { true }
+    else { false }
+}
+
 pub fn to_string(handle: u32) -> Result<String,u32> {
     let t = ISSUER_CLAIM_MAP.lock().unwrap();
     let result = t.get(&handle);
@@ -143,6 +150,7 @@ pub fn from_string(claim_data: &str) -> Result<u32,u32> {
 
     let new_handle = derived_claim.handle;
 
+    if is_valid_handle(new_handle) {return Ok(new_handle);}
     let claim = Box::from(derived_claim);
 
     {
