@@ -66,7 +66,7 @@ RUN apt-get install -y devscripts
 
 USER indy
 RUN git clone https://github.com/hyperledger/indy-anoncreds.git
-RUN cd indy-anoncreds && git checkout 1.0.10-stable
+RUN cd indy-anoncreds
 RUN virtualenv -p python3.5 /home/indy/test
 RUN cp -r /usr/local/lib/python3.5/dist-packages/Charm_Crypto-0.0.0.egg-info /home/indy/test/lib/python3.5/site-packages/Charm_Crypto-0.0.0.egg-info
 RUN cp -r /usr/local/lib/python3.5/dist-packages/charm /home/indy/test/lib/python3.5/site-packages/charm
