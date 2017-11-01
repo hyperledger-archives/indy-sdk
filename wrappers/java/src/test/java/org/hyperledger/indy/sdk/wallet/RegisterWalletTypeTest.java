@@ -48,18 +48,18 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 
 		String schema = "{\"seqNo\":1,\"data\": {\"name\":\"gvt\",\"version\":\"1.0\",\"keys\":[\"age\",\"sex\",\"height\",\"name\"]}}";
-		String claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, DID1, schema, null, false).get();
+		String claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, DID, schema, null, false).get();
 
 		String claimOfferTemplate = "{\"issuer_did\":\"%s\",\"schema_seq_no\":%d}";
-		Anoncreds.proverStoreClaimOffer(wallet, String.format(claimOfferTemplate, DID1, 1)).get();
-		Anoncreds.proverStoreClaimOffer(wallet, String.format(claimOfferTemplate, DID1, 2)).get();
+		Anoncreds.proverStoreClaimOffer(wallet, String.format(claimOfferTemplate, DID, 1)).get();
+		Anoncreds.proverStoreClaimOffer(wallet, String.format(claimOfferTemplate, DID, 2)).get();
 		String issuerDid2 = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 		Anoncreds.proverStoreClaimOffer(wallet, String.format(claimOfferTemplate, issuerDid2, 2)).get();
 
 		String masterSecretName = "master_secret_name";
 		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
 
-		String claimOffer = String.format("{\"issuer_did\":\"%s\",\"schema_seq_no\":%d}", DID1, 1);
+		String claimOffer = String.format("{\"issuer_did\":\"%s\",\"schema_seq_no\":%d}", DID, 1);
 
 		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", claimOffer, claimDef, masterSecretName).get();
 
@@ -74,7 +74,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
 		Anoncreds.proverStoreClaim(wallet, claimJson).get();
 
-		String filter = String.format("{\"issuer_did\":\"%s\"}", DID1);
+		String filter = String.format("{\"issuer_did\":\"%s\"}", DID);
 
 		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
 

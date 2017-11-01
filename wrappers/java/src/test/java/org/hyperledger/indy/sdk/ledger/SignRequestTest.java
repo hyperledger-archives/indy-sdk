@@ -47,7 +47,7 @@ public class SignRequestTest extends IndyIntegrationTestWithSingleWallet {
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
 		String msg = "{\"reqId\":1496822211362017764}";
-		Ledger.signRequest(this.wallet, DID1, msg).get();
+		Ledger.signRequest(this.wallet, DID, msg).get();
 	}
 
 	@Test

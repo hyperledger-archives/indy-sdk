@@ -109,7 +109,6 @@
                        "\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\","
                        "\"type\":\"0\"}", nodeIp, nodeIp];
     
-    
     NSArray *nodesArray = [NSArray arrayWithObjects:node1, node2, node3, node4, nil];
     NSArray *requiredNodes = [nodesArray subarrayWithRange:NSMakeRange(0, nodes)];
    

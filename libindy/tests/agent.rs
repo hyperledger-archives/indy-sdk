@@ -59,7 +59,7 @@ mod high_cases {
 
             let sender_vk = CryptoUtils::create_key(sender_wallet_handle, Some(MY1_SEED)).unwrap();
 
-            let encrypted_msg = AgentUtils::prep_msg(sender_wallet_handle, &sender_vk, VERKEY_FOR_MY2_SEED, MESSAGE.as_bytes()).unwrap();
+            let encrypted_msg = AgentUtils::prep_msg(sender_wallet_handle, &sender_vk, VERKEY_MY2, MESSAGE.as_bytes()).unwrap();
             check_message(&sender_vk, &encrypted_msg);
 
             WalletUtils::close_wallet(sender_wallet_handle).unwrap();
@@ -75,7 +75,7 @@ mod high_cases {
 
             let (_, sender_vk) = SignusUtils::create_and_store_my_did(sender_wallet_handle, Some(MY1_SEED)).unwrap();
 
-            let encrypted_msg = AgentUtils::prep_msg(sender_wallet_handle, &sender_vk, VERKEY_FOR_MY2_SEED, MESSAGE.as_bytes()).unwrap();
+            let encrypted_msg = AgentUtils::prep_msg(sender_wallet_handle, &sender_vk, VERKEY_MY2, MESSAGE.as_bytes()).unwrap();
             check_message(&sender_vk, &encrypted_msg);
 
             WalletUtils::close_wallet(sender_wallet_handle).unwrap();
@@ -91,7 +91,7 @@ mod high_cases {
 
             let (_, sender_vk) = SignusUtils::create_my_did(sender_wallet_handle, &format!(r#"{{"seed":"{}", "cid":true}}"#, MY1_SEED)).unwrap();
 
-            let encrypted_msg = AgentUtils::prep_msg(sender_wallet_handle, &sender_vk, VERKEY_FOR_MY2_SEED, MESSAGE.as_bytes()).unwrap();
+            let encrypted_msg = AgentUtils::prep_msg(sender_wallet_handle, &sender_vk, VERKEY_MY2, MESSAGE.as_bytes()).unwrap();
             check_message(&sender_vk, &encrypted_msg);
 
             WalletUtils::close_wallet(sender_wallet_handle).unwrap();
@@ -105,7 +105,7 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let res = AgentUtils::prep_msg(wallet_handle, VERKEY_FOR_MY2_SEED, VERKEY, MESSAGE.as_bytes());
+            let res = AgentUtils::prep_msg(wallet_handle, VERKEY_MY2, VERKEY, MESSAGE.as_bytes());
             assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -170,7 +170,7 @@ mod high_cases {
         fn indy_prep_anonymous_msg_works() {
             TestUtils::cleanup_storage();
 
-            let encrypted_msg = AgentUtils::prep_anonymous_msg(VERKEY_FOR_MY2_SEED, &MESSAGE.as_bytes()).unwrap();
+            let encrypted_msg = AgentUtils::prep_anonymous_msg(VERKEY_MY2, &MESSAGE.as_bytes()).unwrap();
             check_message(&encrypted_msg);
 
             TestUtils::cleanup_storage();
@@ -245,8 +245,7 @@ mod high_cases {
             let recipient_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (recipient_did, recipient_vk) = SignusUtils::create_and_store_my_did(recipient_wallet_handle, Some(MY2_SEED)).unwrap();
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, recipient_did, recipient_vk);
-            SignusUtils::store_their_did(sender_wallet_handle, &identity_json).unwrap();
+            SignusUtils::store_their_did_from_parts(sender_wallet_handle, &recipient_did, &recipient_vk).unwrap();
 
             let msg = format!(r#"{{"auth":true,"nonce":"Th7MpTaRZVRYnPiabds81Y12","sender":"{:?}","msg":"unencrypted message"}}"#, VERKEY);
             let encrypted_msg = SignusUtils::encrypt_sealed(sender_wallet_handle, pool_handle, &recipient_did, msg.as_bytes()).unwrap();

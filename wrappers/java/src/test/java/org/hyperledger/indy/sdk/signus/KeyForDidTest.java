@@ -25,10 +25,10 @@ public class KeyForDidTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
 	@Test
 	public void testKeyForDidWorksForTheirDid() throws Exception {
-		Signus.storeTheirDid(wallet, String.format("{\"did\":\"%s\", \"verkey\":\"%s\"}", DID_FOR_MY1_SEED, VERKEY_FOR_MY1_SEED)).get();
+		Signus.storeTheirDid(wallet, String.format(IDENTITY_JSON_TEMPLATE, DID_MY1, VERKEY_MY1)).get();
 
-		String receivedKey = Signus.keyForDid(pool, wallet, DID_FOR_MY1_SEED).get();
-		assertEquals(VERKEY_FOR_MY1_SEED, receivedKey);
+		String receivedKey = Signus.keyForDid(pool, wallet, DID_MY1).get();
+		assertEquals(VERKEY_MY1, receivedKey);
 	}
 
 	@Test
@@ -36,12 +36,12 @@ public class KeyForDidTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 		SignusResults.CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = result.getDid();
 
-		Signus.storeTheirDid(wallet, String.format("{\"did\":\"%s\", \"verkey\":\"%s\"}",  DID_FOR_MY1_SEED, VERKEY_FOR_MY1_SEED)).get();
-		String nymRequest = Ledger.buildNymRequest(trusteeDid,  DID_FOR_MY1_SEED, VERKEY_FOR_MY1_SEED, null, null).get();
+		Signus.storeTheirDid(wallet, String.format(IDENTITY_JSON_TEMPLATE,  DID_MY1, VERKEY_MY1)).get();
+		String nymRequest = Ledger.buildNymRequest(trusteeDid,  DID_MY1, VERKEY_MY1, null, null).get();
 		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
 
-		String receivedKey = Signus.keyForDid(pool, wallet, DID_FOR_MY1_SEED).get();
-		assertEquals(VERKEY_FOR_MY1_SEED, receivedKey);
+		String receivedKey = Signus.keyForDid(pool, wallet, DID_MY1).get();
+		assertEquals(VERKEY_MY1, receivedKey);
 	}
 
 	@Test
@@ -49,6 +49,6 @@ public class KeyForDidTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStateException.class));
 
-		Signus.keyForDid(pool, wallet, DID_FOR_MY2_SEED).get();
+		Signus.keyForDid(pool, wallet, DID_MY2).get();
 	}
 }

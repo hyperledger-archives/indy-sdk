@@ -652,17 +652,20 @@ async def set_endpoint_for_did(wallet_handle: int,
 
 
 async def get_endpoint_for_did(wallet_handle: int,
+                               pool_handle: int,
                                did: str) -> (str, Optional[str]):
     """
 
     :param wallet_handle: Wallet handle (created by open_wallet).
+    :param pool_handle: Pool handle (created by open_pool).
     :param did:
     :return: (endpoint, transport_vk)
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("get_endpoint_for_did: >>> wallet_handle: %r, did: %r",
+    logger.debug("get_endpoint_for_did: >>> wallet_handle: %r, pool_handle: %r, did: %r",
                  wallet_handle,
+                 pool_handle,
                  did)
 
     if not hasattr(get_endpoint_for_did, "cb"):
@@ -670,10 +673,12 @@ async def get_endpoint_for_did(wallet_handle: int,
         get_endpoint_for_did.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
+    c_pool_handle = c_int32(pool_handle)
     c_did = c_char_p(did.encode('utf-8'))
 
     endpoint, transport_vk = await do_call('indy_get_endpoint_for_did',
                                            c_wallet_handle,
+                                           c_pool_handle,
                                            c_did,
                                            get_endpoint_for_did.cb)
 

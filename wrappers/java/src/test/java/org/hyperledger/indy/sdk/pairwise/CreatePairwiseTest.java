@@ -24,7 +24,7 @@ public class CreatePairwiseTest extends PairwiseIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Pairwise.createPairwise(wallet, theirDid, DID1, null).get();
+		Pairwise.createPairwise(wallet, theirDid, DID, null).get();
 	}
 
 	@Test
@@ -32,6 +32,6 @@ public class CreatePairwiseTest extends PairwiseIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Pairwise.createPairwise(wallet, DID1, myDid, null).get();
+		Pairwise.createPairwise(wallet, DID, myDid, null).get();
 	}
 }
