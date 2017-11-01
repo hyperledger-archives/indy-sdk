@@ -24,9 +24,9 @@ RUN echo "deb https://repo.sovrin.org/deb xenial $indy_stream" >> /etc/apt/sourc
 
 RUN useradd -ms /bin/bash -u $uid indy
 
-ARG indy_plenum_ver=1.1.143
+ARG indy_plenum_ver=1.2.161
 ARG indy_anoncreds_ver=1.0.32
-ARG indy_node_ver=1.1.159
+ARG indy_node_ver=1.2.192
 ARG python3_indy_crypto_ver=0.1.6
 ARG indy_crypto_ver=0.1.6
 
@@ -36,6 +36,7 @@ RUN apt-get update -y && apt-get install -y \
         indy-node=${indy_node_ver} \
         python3-indy-crypto=${python3_indy_crypto_ver} \
         libindy-crypto=${indy_crypto_ver} \
+        sovrin \
         vim
 
 RUN echo '[supervisord]\n\
@@ -85,11 +86,6 @@ loglevel=trace\n'\
 >> /etc/supervisord.conf
 
 USER indy
-
-RUN init_indy_keys --name Node1 --seed 111111111111111111111111111Node1 --force
-RUN init_indy_keys --name Node2 --seed 111111111111111111111111111Node2 --force
-RUN init_indy_keys --name Node3 --seed 111111111111111111111111111Node3 --force
-RUN init_indy_keys --name Node4 --seed 111111111111111111111111111Node4 --force
 
 ARG pool_ip=127.0.0.1
 

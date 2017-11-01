@@ -14,19 +14,19 @@ use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::json::{JsonDecodable, JsonEncodable};
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct NodeData {
+pub struct NodeData<T> {
     pub alias: String,
     pub client_ip: String,
-    pub client_port: u32,
+    pub client_port: T,
     pub node_ip: String,
-    pub node_port: u32,
+    pub node_port: T,
     pub services: Vec<String>,
     pub blskey: String
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct GenTransaction {
-    pub data: NodeData,
+pub struct GenTransaction<T> {
+    pub data: NodeData<T>,
     pub dest: String,
     pub identifier: String,
     #[serde(rename = "txnId")]
@@ -35,11 +35,11 @@ pub struct GenTransaction {
     pub txn_type: String
 }
 
-impl JsonEncodable for GenTransaction {}
+impl JsonEncodable for GenTransaction<u32> {}
 
-impl<'a> JsonDecodable<'a> for GenTransaction {}
+impl<'a> JsonDecodable<'a> for GenTransaction<u32> {}
 
-impl GenTransaction {
+impl GenTransaction<u32> {
     pub fn to_msg_pack(&self) -> Result<Vec<u8>, rmp_serde::encode::Error> {
         rmp_serde::to_vec_named(self)
     }
