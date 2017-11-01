@@ -9,16 +9,16 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_key_for_did_works_for_my_did(pool_handle, wallet_handle, identity_trustee1):
+async def test_key_for_did_works_for_my_did(wallet_handle, identity_trustee1):
     (did, verkey) = identity_trustee1
-    received_key = await signus.key_for_did(pool_handle, wallet_handle, did)
+    received_key = await signus.key_for_did(-1, wallet_handle, did)
     assert verkey == received_key
 
 
 @pytest.mark.asyncio
-async def test_key_for_did_works_for_their_did(pool_handle, wallet_handle, did_my1, verkey_my1):
+async def test_key_for_did_works_for_their_did(wallet_handle, did_my1, verkey_my1):
     await signus.store_their_did(wallet_handle, json.dumps({'did': did_my1, 'verkey': verkey_my1}))
-    received_key = await signus.key_for_did(pool_handle, wallet_handle, did_my1)
+    received_key = await signus.key_for_did(-1, wallet_handle, did_my1)
     assert verkey_my1 == received_key
 
 
@@ -45,18 +45,16 @@ async def test_key_for_did_works_for_incompatible_wallet_and_pool(pool_name, wal
 
 
 @pytest.mark.asyncio
-async def test_key_for_did_works_for_invalid_pool_handle(pool_handle, wallet_handle, identity_trustee1):
-    (did, _) = identity_trustee1
+async def test_key_for_did_works_for_invalid_pool_handle(pool_handle, wallet_handle, did_my1):
     with pytest.raises(IndyError) as e:
-        invalid_pool_handle = pool_handle + 1
-        await signus.key_for_did(invalid_pool_handle, wallet_handle, did)
+        await signus.key_for_did(pool_handle + 1, wallet_handle, did_my1)
     assert ErrorCode.PoolLedgerInvalidPoolHandle == e.value.error_code
 
 
 @pytest.mark.asyncio
-async def test_key_for_did_works_for_invalid_wallet_handle(pool_handle, wallet_handle, identity_trustee1):
+async def test_key_for_did_works_for_invalid_wallet_handle(wallet_handle, identity_trustee1):
     (did, _) = identity_trustee1
     with pytest.raises(IndyError) as e:
         invalid_wallet_handle = wallet_handle + 1
-        await signus.key_for_did(pool_handle, invalid_wallet_handle, did)
+        await signus.key_for_did(-1, invalid_wallet_handle, did)
     assert ErrorCode.WalletInvalidHandle == e.value.error_code

@@ -11,7 +11,7 @@
         "Daniel Hardman": "daniel.hardman@evernym.com"
     },
     "source": {
-        "http": "https://repo.evernym.com/libindy/ios/stable/indy-objc/0.1.1/indy-objc.zip"
+        "http": "https://repo.sovrin.org/ios/libindy/stable/indy-objc/0.1.1/indy-objc.zip"
     },
     "platforms": {
         "ios": "10.0"

@@ -23,7 +23,7 @@ use serde_json::Value as SJsonValue;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::{fmt, fs, io, thread};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::io::{BufRead, Write};
 use std::error::Error;
 
@@ -189,12 +189,11 @@ impl TransactionHandler {
                 debug!("TransactionHandler::process_reply: proof_valid: {:?}", proof_valid);
 
                 proof_valid && {
-                    let (signature, participants, pool_state_root) = data_to_check_proof_signature.unwrap();
+                    let (signature, participants, value) = data_to_check_proof_signature.unwrap();
                     let signature_valid = self::state_proof::verify_proof_signature(
                         signature,
                         participants.as_slice(),
-                        root_hash,
-                        pool_state_root,
+                        &value,
                         self.nodes.as_slice(), self.f, &self.gen);
                     debug!("TransactionHandler::process_reply: signature_valid: {:?}", signature_valid);
                     signature_valid
@@ -488,18 +487,19 @@ impl TransactionHandler {
         }
     }
 
-    fn parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option<(&str, Vec<&str>, &str)> {
+    fn parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option<(&str, Vec<&str>, Vec<u8>)> {
         match (json_msg["state_proof"]["multi_signature"]["signature"].as_str(),
                json_msg["state_proof"]["multi_signature"]["participants"].as_array(),
-               json_msg["state_proof"]["multi_signature"]["pool_state_root"].as_str()) {
-            (Some(signature), Some(participants), Some(pool_state_root)) => {
+               rmp_serde::to_vec_named(&json_msg["state_proof"]["multi_signature"]["value"])
+                   .map_err(map_err_trace!())) {
+            (Some(signature), Some(participants), Ok(value)) => {
                 let participants_unwrap: Vec<&str> = participants
                     .iter()
                     .flat_map(SJsonValue::as_str)
                     .collect();
 
                 if participants.len() == participants_unwrap.len() {
-                    Some((signature, participants_unwrap, pool_state_root))
+                    Some((signature, participants_unwrap, value))
                 } else {
                     None
                 }
@@ -534,11 +534,19 @@ impl PoolWorker {
         let ctx: zmq::Context = zmq::Context::new();
         let key_pair = zmq::CurveKeyPair::new()?;
         for gen_txn in &merkle_tree {
-            let gen_txn: GenTransaction = rmp_serde::decode::from_slice(gen_txn.as_slice())
-                .map_err(|e|
-                    CommonError::InvalidState(format!("MerkleTree contains invalid data {}", e)))?;
+            let gen_txn_num = rmp_serde::decode::from_slice::<GenTransaction<u32>>(gen_txn.as_slice());
+            let gen_txn_str = rmp_serde::decode::from_slice::<GenTransaction<String>>(gen_txn.as_slice());
 
-            let mut rn: RemoteNode = RemoteNode::new(&gen_txn)?;
+            let rn = if let Ok(gen_txn) = gen_txn_num {
+                RemoteNode::new(&gen_txn)
+            } else if let Ok(gen_txn) = gen_txn_str {
+                RemoteNode::new(&gen_txn)
+            } else {
+                warn!("MerkleTree contains invalid data:\n{:?}\n{:?}",
+                            gen_txn_str.unwrap_err(), gen_txn_num.unwrap_err());
+                continue;
+            };
+            let mut rn = rn.map_err(map_err_trace!())?;
             rn.connect(&ctx, &key_pair)?;
             rn.send_str("pi")?;
             self.handler.nodes_mut().push(rn);
@@ -804,7 +812,7 @@ impl Debug for RemoteNode {
 }
 
 impl RemoteNode {
-    fn new(txn: &GenTransaction) -> Result<RemoteNode, PoolError> {
+    fn new<T>(txn: &GenTransaction<T>) -> Result<RemoteNode, PoolError> where T: Display {
         let node_verkey = txn.dest.as_str().from_base58()
             .map_err(|e| { CommonError::InvalidStructure("Invalid field dest in genesis transaction".to_string()) })?;
 
@@ -1389,7 +1397,7 @@ mod tests {
 
         pub static POLL_TIMEOUT: i64 = 1000; /* in ms */
 
-        pub fn start() -> (GenTransaction, thread::JoinHandle<Vec<String>>) {
+        pub fn start() -> (GenTransaction<u32>, thread::JoinHandle<Vec<String>>) {
             let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
             let pkc = CryptoBox::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
             let skc = CryptoBox::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
@@ -1398,8 +1406,7 @@ mod tests {
 
             let blskey = VerKey::new(&Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),
                                      &SignKey::new(None).unwrap()).unwrap().as_bytes().to_base58();
-
-            let gt = GenTransaction {
+            let gt = GenTransaction::<u32> {
                 identifier: "".to_string(),
                 data: NodeData {
                     alias: "n1".to_string(),

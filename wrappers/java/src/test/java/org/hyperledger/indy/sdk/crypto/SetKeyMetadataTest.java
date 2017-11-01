@@ -1,4 +1,4 @@
-package org.hyperledger.indy.sdk.signus;
+package org.hyperledger.indy.sdk.crypto;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
 import org.junit.Test;
@@ -10,23 +10,23 @@ public class SetKeyMetadataTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testSetKeyMetadataWorks() throws Exception {
-		Signus.setKeyMetadata(wallet, VERKEY, METADATA).get();
+		Crypto.setKeyMetadata(wallet, VERKEY, METADATA).get();
 	}
 
 	@Test
 	public void testSetKeyMetadataWorksForReplace() throws Exception {
-		Signus.setKeyMetadata(wallet, VERKEY, METADATA).get();
-		String receivedMetadata = Signus.getKeyMetadata(wallet, VERKEY).get();
+		Crypto.setKeyMetadata(wallet, VERKEY, METADATA).get();
+		String receivedMetadata = Crypto.getKeyMetadata(wallet, VERKEY).get();
 		assertEquals(METADATA, receivedMetadata);
 
 		String newMetadata = "updated metadata";
-		Signus.setKeyMetadata(wallet, VERKEY, newMetadata).get();
-		String updatedMetadata = Signus.getKeyMetadata(wallet, VERKEY).get();
+		Crypto.setKeyMetadata(wallet, VERKEY, newMetadata).get();
+		String updatedMetadata = Crypto.getKeyMetadata(wallet, VERKEY).get();
 		assertEquals(newMetadata, updatedMetadata);
 	}
 
 	@Test
 	public void testSetKeyMetadataWorksForEmptyString() throws Exception {
-		Signus.setKeyMetadata(wallet, VERKEY, "").get();
+		Crypto.setKeyMetadata(wallet, VERKEY, "").get();
 	}
 }

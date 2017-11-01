@@ -404,10 +404,10 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_create_and_store_my_did_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
-                                                                                                                    Option<extern fn(command_handle: i32,
-                                                                                                                                     err: ErrorCode,
-                                                                                                                                     did: *const c_char,
-                                                                                                                                     verkey: *const c_char)>) {
+                                                                                                            Option<extern fn(command_handle: i32,
+                                                                                                                             err: ErrorCode,
+                                                                                                                             did: *const c_char,
+                                                                                                                             verkey: *const c_char)>) {
         lazy_static! {
             static ref CREATE_AND_STORE_MY_DID_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
         }
@@ -469,6 +469,28 @@ impl CallbackUtils {
         (command_handle, Some(sign_callback))
     }
 
+    pub fn closure_to_crypto_sign_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>)
+                                     -> (i32,
+                                         Option<extern fn(command_handle: i32, err: ErrorCode,
+                                                          signature_raw: *const u8, signature_len: u32)>) {
+        lazy_static! {
+            static ref CRYPTO_SIGN_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, Vec<u8>) + Send>>> = Default::default();
+        }
+
+        extern "C" fn crypto_sign_callback(command_handle: i32, err: ErrorCode, signature_raw: *const u8, signature_len: u32) {
+            let mut callbacks = CRYPTO_SIGN_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let signature = unsafe { slice::from_raw_parts(signature_raw, signature_len as usize) };
+            cb(err, signature.to_vec());
+        }
+
+        let mut callbacks = CRYPTO_SIGN_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(crypto_sign_callback))
+    }
+
     pub fn closure_to_verify_signature_cb(closure: Box<FnMut(ErrorCode, bool) + Send>) -> (i32,
                                                                                            Option<extern fn(command_handle: i32,
                                                                                                             err: ErrorCode,
@@ -488,6 +510,27 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(closure_to_verify_signature_callback))
+    }
+
+    pub fn closure_to_crypto_verify_cb(closure: Box<FnMut(ErrorCode, bool) + Send>) -> (i32,
+                                                                                           Option<extern fn(command_handle: i32,
+                                                                                                            err: ErrorCode,
+                                                                                                            valid: bool)>) {
+        lazy_static! {
+            static ref CRYPTO_VERIFY_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, bool) + Send > >> = Default::default();
+        }
+
+        extern "C" fn closure_to_crypto_verify(command_handle: i32, err: ErrorCode, valid: bool) {
+            let mut callbacks = CRYPTO_VERIFY_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err, valid)
+        }
+
+        let mut callbacks = CRYPTO_VERIFY_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(closure_to_crypto_verify))
     }
 
     pub fn closure_to_claim_offer_json_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
@@ -797,9 +840,9 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_replace_keys_start_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
-                                                                                                       Option<extern fn(command_handle: i32,
-                                                                                                                        err: ErrorCode,
-                                                                                                                        verkey: *const c_char)>) {
+                                                                                               Option<extern fn(command_handle: i32,
+                                                                                                                err: ErrorCode,
+                                                                                                                verkey: *const c_char)>) {
         lazy_static! {
             static ref REPLACE_KEYS_START_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
         }
@@ -1280,10 +1323,10 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_get_endpoint_for_did_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
-                                                                                                             Option<extern fn(command_handle: i32,
-                                                                                                                              err: ErrorCode,
-                                                                                                                              endpoint: *const c_char,
-                                                                                                                              transport_vk: *const c_char)>) {
+                                                                                                         Option<extern fn(command_handle: i32,
+                                                                                                                          err: ErrorCode,
+                                                                                                                          endpoint: *const c_char,
+                                                                                                                          transport_vk: *const c_char)>) {
         lazy_static! {
             static ref ENDPOINT_FOR_DID_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
         }
