@@ -9,12 +9,10 @@ from indy.error import ErrorCode
 
 
 @pytest.mark.asyncio
-async def test_encrypt_works_for_pk_cached_in_wallet(pool_handle, wallet_handle, identity_trustee1,
-                                                     identity_my2, message):
+async def test_encrypt_works_for_pk_cached_in_wallet(wallet_handle, identity_trustee1, identity_my2, message):
     (trustee_did, _) = identity_trustee1
     (my_did, _) = identity_my2
-
-    await signus.encrypt(wallet_handle, pool_handle, my_did, trustee_did, message)
+    await signus.encrypt(wallet_handle, -1, my_did, trustee_did, message)
 
 
 @pytest.mark.asyncio
@@ -53,10 +51,10 @@ async def test_encrypt_works_for_invalid_wallet_handle(wallet_handle, pool_handl
 
 
 @pytest.mark.asyncio
-async def test_encrypt_works_for_invalid_pool_handle(wallet_handle, pool_handle, identity_my2,
+async def test_encrypt_works_for_invalid_pool_handle(wallet_handle, pool_handle, identity_steward1,
                                                      identity_trustee1, message):
     (trustee_did, _) = identity_trustee1
-    (my_did, _) = identity_my2
+    (my_did, _) = identity_steward1
 
     with pytest.raises(IndyError) as e:
         await signus.encrypt(wallet_handle, pool_handle + 1, my_did, trustee_did, message)
