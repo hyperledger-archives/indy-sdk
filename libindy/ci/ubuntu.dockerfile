@@ -62,6 +62,8 @@ USER root
 RUN pip3 install \
     twine
 
+RUN apt-get install -y devscripts
+
 USER indy
 RUN git clone https://github.com/hyperledger/indy-anoncreds.git
 RUN virtualenv -p python3.5 /home/indy/test
@@ -74,3 +76,5 @@ USER indy
 RUN pip3 install \
 	/home/indy/indy-anoncreds \
 	pytest
+
+RUN pip3 install -U pip plumbum deb-pkg-tools
