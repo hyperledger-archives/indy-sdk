@@ -21,6 +21,7 @@ export class Connection implements IConnections {
     this._initRustApi(path)
   }
 
+  //command_handle: u32, source_id: *char, cb: (xhandle: u32, err:32, connection_handle: u32
   async create ( recipientInfo: IRecipientInfo ): Promise<number> {
     const myDid = recipientInfo.DIDself !== undefined ? recipientInfo.DIDself : null
     const theirDid = recipientInfo.DIDremote !== undefined ? recipientInfo.DIDremote : null
@@ -103,6 +104,7 @@ export class Connection implements IConnections {
     })
   }
 
+  // command_handle: u32, connection_handle: u32, connection_options: *char, cb: (xcommand_handle: u32, err: u32)
   private _connect = (options: IConnectOptions): number => {
     const phone = options.phone
     const connectionType: string = phone ? 'SMS' : 'QR'
