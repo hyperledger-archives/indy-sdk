@@ -15,7 +15,7 @@ public class CryptoSignTest extends IndyIntegrationTestWithSingleWallet {
 	@Test
 	public void testCryptoSignWorks() throws Exception {
 
-		String paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();
+		String paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(TRUSTEE_SEED, null).toJson();
 		String key = Crypto.createKey(wallet, paramJson).get();
 
 		byte[] signature = Crypto.cryptoSign(this.wallet, key, MESSAGE).get();
@@ -28,6 +28,6 @@ public class CryptoSignTest extends IndyIntegrationTestWithSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Crypto.cryptoSign(this.wallet, VERKEY_MY1, MESSAGE).get();
+		Crypto.cryptoSign(this.wallet, VERKEY_TRUSTEE, MESSAGE).get();
 	}
 }
