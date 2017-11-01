@@ -13,7 +13,7 @@ import {
 import { ConnectionTimeoutError, CXSInternalError } from './errors'
 
 export class Connection implements IConnections {
-  public connectionHandle: Type
+  public connectionHandle: string
   public state: StateType
   private RUST_API: { [ index: string ]: ffi.ForeignFunction }
 
@@ -21,13 +21,29 @@ export class Connection implements IConnections {
     this._initRustApi(path)
   }
 
-  create ( recipientInfo: IRecipientInfo ): number {
+  async create ( recipientInfo: IRecipientInfo ): Promise<number> {
     const myDid = recipientInfo.DIDself !== undefined ? recipientInfo.DIDself : null
     const theirDid = recipientInfo.DIDremote !== undefined ? recipientInfo.DIDremote : null
     const id = recipientInfo.id // TODO verifiy that id is a string
-    const connectionHandlePtr = alloc(refTypes.uint32)
-    const result = this.RUST_API.cxs_connection_create(id, myDid, theirDid, connectionHandlePtr)
-    this.connectionHandle = deref(connectionHandlePtr)
+    const connection_handle = await new Promise<string>((resolve, reject) =>
+        this.RUST_API.cxs_connection_create(
+            id,
+            myDid,
+            theirDid,
+            ffi.Callback('void', ['uint32', 'uint32', 'uint32'],
+                (xhandle, err, _connection_handle) => {
+                    if (err) {
+                        reject(err)
+                        return
+                    }
+                    if (_data === '') {
+                        resolve(null)
+                    } else {
+                        resolve(_data)
+                    }
+                }))
+    )
+    this.connectionHandle = connection_handle
     this._clearOnExit()
 
     return result
