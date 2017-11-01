@@ -1,7 +1,9 @@
 extern crate cxs;
 extern crate tempfile;
+extern crate libc;
 extern crate mockito;
 
+use self::libc::c_char;
 use tempfile::NamedTempFileOptions;
 use std::io::Write;
 use std::thread;
@@ -11,6 +13,12 @@ use cxs::api;
 
 static mut CONNECTION_HANDLE: u32 = 0;
 static mut CLAIM_SENT: bool = false;
+
+#[allow(unused_variables)]
+extern "C" fn serialize_cb(connection_handle: u32, err: u32, data: *const c_char) {
+    if err != 0 {panic!("failed to serialize connection")}
+    println!("serialized connection: {:?}", data);
+}
 
 #[allow(unused_variables)]
 extern "C" fn send_offer_cb(command_handle: u32, err: u32) {
@@ -79,15 +87,8 @@ extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_hand
 
     thread::sleep(Duration::from_secs(1));
     _m.assert();
-    let data = api::connection::cxs_connection_get_data(connection_handle);
-    let mut final_string = String::new();
 
-    unsafe {
-        let c_string = CString::from_raw(data);
-        final_string = c_string.into_string().unwrap();
-    }
-
-    println!("final connection: {}", final_string);
+    api::connection::cxs_connection_serialize(connection_handle,Some(serialize_cb));
 
     let _m = mockito::mock("POST", "/agency/route")
         .with_status(202)

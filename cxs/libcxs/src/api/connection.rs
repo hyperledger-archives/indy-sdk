@@ -71,17 +71,27 @@ pub extern fn cxs_connection_connect(command_handle:u32,
 }
 
 #[no_mangle]
-pub extern fn cxs_connection_get_data(connection_handle: u32) -> *mut c_char {
-    let json_string = to_string(connection_handle);
+#[allow(unused_variables, unused_mut)]
+pub extern fn cxs_connection_serialize(connection_handle: u32, cb: Option<extern fn(xconnection_handle: u32, err: u32, claim_state: *const c_char)>) -> u32 {
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    if json_string.is_empty() {
-        return ptr::null_mut()
-    }
-    else {
-        let msg = CStringUtils::string_to_cstring(json_string);
+    thread::spawn(move|| {
 
-        msg.into_raw()
-    }
+        let json_string = to_string(connection_handle);
+
+        if json_string.is_empty() {
+            warn!("could not serialize handle {}",connection_handle);
+            cb(connection_handle, 0, ptr::null_mut());
+        }
+        else {
+            info!("serializing handle: {} with data: {}",connection_handle, json_string);
+            let msg = CStringUtils::string_to_cstring(json_string);
+            cb(connection_handle, 0, msg.as_ptr());
+        }
+
+    });
+
+    error::SUCCESS.code_num
 }
 
 #[no_mangle]
@@ -196,31 +206,27 @@ mod tests {
         assert_eq!(rc, error::UNKNOWN_ERROR.code_num);
     }
 
+    extern "C" fn serialize_cb(handle: u32, err: u32, claim_string: *const c_char) {
+        assert_eq!(err, 0);
+        if claim_string.is_null() {
+            panic!("claim_string is empty");
+        }
+        check_useful_c_str!(claim_string, ());
+        println!("successfully called serialize_cb: {}", claim_string);
+    }
+
     #[test]
     #[allow(unused_assignments)]
-    fn test_cxs_connection_get_data() {
+    fn test_cxs_connection_serialize() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle = build_connection("test_cxs_connection_get_data".to_owned());
         assert!(handle > 0);
 
-        let data = cxs_connection_get_data(handle);
-        let mut final_string = String::new();
-
-        unsafe {
-            let c_string = CString::from_raw(data);
-            final_string = c_string.into_string().unwrap();
-        }
-
-        assert!(final_string.len() > 0);
+        let data = cxs_connection_serialize(handle, Some(serialize_cb));
+        assert_eq!(data, 0);
     }
 
-    #[test]
-    fn test_cxs_connection_get_data_fails() {
-        let data = cxs_connection_get_data(0);
-
-        assert_eq!(data, ptr::null_mut());
-    }
 
     #[test]
     fn test_cxs_connection_release() {

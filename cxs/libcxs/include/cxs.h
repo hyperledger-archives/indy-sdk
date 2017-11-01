@@ -100,7 +100,7 @@ cxs_error_t cxs_connection_create(cxs_command_handle_t command_handle, const cha
 cxs_error_t cxs_connection_connect(cxs_command_handle_t command_handle, cxs_connection_handle_t connection_handle, const char *connection_type, void (*cb)(cxs_command_handle_t, cxs_error_t err));
 
 /** Returns the contents of the connection handle or null if the connection does not exist. */
-char *cxs_connection_get_data(cxs_connection_handle_t connection_handle);
+cxs_error_t cxs_connection_serialize(cxs_connection_handle_t connection_handle, void (*cb)(cxs_connection_handle_t connection_handle, cxs_error_t err, const char *state));
 
 /** Populates status with the current state of the asynchronous connection request. */
 cxs_error_t cxs_connection_get_state(cxs_connection_handle_t connection_handle, cxs_claim_state_t *status);
