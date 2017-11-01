@@ -287,6 +287,7 @@ pub fn update_state(handle: u32) -> u32{
         Ok(x) => x,
         Err(x) => return x,
     };
+
     match httpclient::post(&json_msg, &url) {
         Err(_) => {error::POST_MSG_FAILURE.code_num}
         Ok(response) => {
@@ -296,7 +297,6 @@ pub fn update_state(handle: u32) -> u32{
         }
     }
 }
-
 
 pub fn get_state(handle: u32) -> u32 {
     // Try to update state from agent first
@@ -334,6 +334,25 @@ pub fn to_string(handle: u32) -> String {
     };
 
     connection_json.to_owned()
+}
+
+pub fn from_string(connection_data: &str) -> Result<u32,u32> {
+    let derived_connection: Connection = match serde_json::from_str(connection_data) {
+        Ok(x) => x,
+        Err(_) => return Err(error::UNKNOWN_ERROR.code_num),
+    };
+
+    let new_handle = derived_connection.handle;
+
+    let connection = Box::from(derived_connection);
+
+    {
+        let mut m = CONNECTION_MAP.lock().unwrap();
+        info!("inserting handle {} into claim_issuer table", new_handle);
+        m.insert(new_handle, connection);
+    }
+
+    Ok(new_handle)
 }
 
 pub fn release(handle: u32) -> u32 {
@@ -701,5 +720,37 @@ mod tests {
         let invite_detail = get_invite_detail(response);
         info!("Invite Detail Test: {}", invite_detail);
         assert!(invite_detail.contains("sdfsdf"));
+    }
+
+    #[test]
+    fn test_serialize_deserialize() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let handle = build_connection("test_serialize_deserialize".to_owned());
+        assert!(handle > 0);
+        thread::sleep(Duration::from_millis(300));
+        let first_string = to_string(handle);
+        release(handle);
+        let handle = from_string(&first_string).unwrap();
+        let second_string = to_string(handle);
+        release(handle);
+        println!("{}",first_string);
+        println!("{}",second_string);
+        assert_eq!(first_string,second_string);
+    }
+
+    #[test]
+    fn test_deserialize_existing() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let handle = build_connection("test_serialize_deserialize".to_owned());
+        assert!(handle > 0);
+        thread::sleep(Duration::from_millis(300));
+        let first_string = to_string(handle);
+        let handle = from_string(&first_string).unwrap();
+        let second_string = to_string(handle);
+        println!("{}",first_string);
+        println!("{}",second_string);
+        assert_eq!(first_string,second_string);
     }
 }

@@ -65,6 +65,8 @@ impl IssuerClaim {
             }
         }
     }
+
+    fn get_state(&self) -> u32 { let state = self.state as u32; state }
 }
 
 pub fn issuer_claim_create(claim_def_handle: u32,
@@ -99,6 +101,17 @@ pub fn issuer_claim_create(claim_def_handle: u32,
     Ok(new_handle)
 }
 
+fn get_state(handle: u32) -> u32 {
+    let m = ISSUER_CLAIM_MAP.lock().unwrap();
+    let result = m.get(&handle);
+
+    let rc = match result {
+        Some(t) => t.get_state(),
+        None => CxsStateType::CxsStateNone as u32,
+    };
+
+    rc
+}
 
 pub fn release(handle: u32) -> u32 {
     let mut m = ISSUER_CLAIM_MAP.lock().unwrap();
@@ -187,8 +200,10 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let connection_handle = build_connection("test_send_claim_offer".to_owned());
         let handle = issuer_claim_create(0, None,"{\"attr\":\"value\"}".to_owned()).unwrap();
-        thread::sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_millis(500));
         assert_eq!(send_claim_offer(handle,connection_handle).unwrap(),error::SUCCESS.code_num);
+        thread::sleep(Duration::from_millis(500));
+        assert_eq!(get_state(handle),CxsStateType::CxsStateOfferSent as u32);
     }
 
     #[test]
