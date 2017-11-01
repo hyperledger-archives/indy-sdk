@@ -116,7 +116,7 @@ impl SignusService {
         let verkey = build_full_verkey(their_did_info.did.as_str(),
                                        their_did_info.verkey.as_ref().map(String::as_str))?;
 
-        //TODO FIXME self.validate_key(&verkey)?;
+        self.validate_key(&verkey)?;
 
         let did = Did::new(their_did_info.did.clone(),
                            verkey);

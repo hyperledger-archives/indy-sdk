@@ -31,6 +31,7 @@ public class IndyIntegrationTest {
 	protected static final String DID = "8wZcEriaNLNKtteJvx7f8i";
 	protected static final String DID_MY1 = "VsKV7grR1BUE29mG2Fm2kX";
 	protected static final String DID_MY2 = "2PRyVHmkXQnQzJQKxHxnXC";
+	protected static final String DID_TRUSTEE = "V4SGRU86Z58d6TV7PBUe6f";
 	protected static final String INVALID_DID = "invalid_base58string";
 	protected static final String IDENTITY_JSON_TEMPLATE = "{\"did\":\"%s\",\"verkey\":\"%s\"}";
 	protected static final byte[] MESSAGE = "{\"reqId\":1496822211362017764}".getBytes();
@@ -41,8 +42,7 @@ public class IndyIntegrationTest {
 	protected static final String METADATA = "some metadata";
 	protected static final String ENDPOINT = "127.0.0.1:9700";
 	protected static final String CRYPTO_TYPE = "ed25519";
-	protected byte[] SIGNATURE = {- 87, - 41, 8, - 31, 7, 107, 110, 9, - 63, - 94, - 54, - 42, - 94, 66, - 18, - 45, 63, - 47, 12, - 60, 8, - 45, 55, 27, 120, 94, - 52, - 109, 53, 104,
-			103, 61, 60, - 7, - 19, 127, 103, 46, - 36, - 33, 10, 95, 75, 53, - 11, - 46, - 15, - 105, - 65, 41, 48, 30, 9, 16, 78, - 4, - 99, - 50, - 46, - 111, 125, - 123, 109, 11};
+	protected byte[] SIGNATURE = {20, -65, 100, -43, 101, 12, -59, -58, -53, 49, 89, -36, -51, -64, -32, -35, 97, 77, -36, -66, 90, 60, -114, 23, 16, -16, -67, -127, 45, -108, -11, 8, 102, 95, 95, -7, 100, 89, 41, -29, -43, 25, 100, 1, -24, -68, -11, -21, -70, 21, 52, -80, -20, 11, 99, 70, -101, -97, 89, -41, -59, -17, -118, 5};
 	protected byte[] ENCRYPTED_MESSAGE = {- 105, 30, 89, 75, 76, 28, - 59, - 45, 105, - 46, 20, 124, - 85, - 13, 109, 29, - 88, - 82, - 8, - 6, - 50, - 84, - 53, - 48, - 49, 56, 124, 114, 82, 126, 74, 99, - 72, - 78, - 117, 96, 60, 119, 50, - 40, 121, 21, 57, - 68, 89};
 	protected byte[] NONCE = {- 14, 102, - 41, - 57, 1, 4, 75, - 46, - 91, 87, 14, 41, - 39, 48, 42, - 126, - 121, 84, - 58, 59, - 27, 51, - 32, - 23};
 

@@ -13,13 +13,13 @@ public class CryptoVerifyTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCryptoVerifyWorks() throws Exception {
-		Boolean valid = Crypto.cryptoVerify(VERKEY_MY1, MESSAGE, SIGNATURE).get();
+		Boolean valid = Crypto.cryptoVerify(VERKEY_TRUSTEE, MESSAGE, SIGNATURE).get();
 		assertTrue(valid);
 	}
 
 	@Test
 	public void testCryptoVerifyWorksForVerkeyWithCorrectCryptoType() throws Exception {
-		String verkey = VERKEY_MY1 + ":ed25519";
+		String verkey = VERKEY_TRUSTEE + ":ed25519";
 		Boolean valid = Crypto.cryptoVerify(verkey, MESSAGE, SIGNATURE).get();
 		assertTrue(valid);
 	}
@@ -29,7 +29,7 @@ public class CryptoVerifyTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(UnknownCryptoException.class));
 
-		String verkey = VERKEY_MY1 + ":unknown_crypto";
+		String verkey = VERKEY_TRUSTEE + ":unknown_crypto";
 		Crypto.cryptoVerify(verkey, MESSAGE, SIGNATURE).get();
 	}
 
