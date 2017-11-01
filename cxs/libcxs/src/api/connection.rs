@@ -4,41 +4,55 @@ use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
 use std::ptr;
-use connection::{build_connection, connect, to_string, get_state, release};
+use api::CxsStateType;
 use std::thread;
+use std::time::Duration;
+use connection::{build_connection, connect, to_string, get_state, release, is_valid_connection_handle};
 
 /**
  * connection object
  */
 
 #[no_mangle]
-pub extern fn cxs_connection_create(source_id: *const c_char,
-                                    did: *const c_char,
-                                    their_did: *const c_char,
-                                    connection_handle: *mut u32) -> u32 {
-    if connection_handle.is_null() {return error::UNKNOWN_ERROR.code_num}
+#[allow(unused_assignments)]
+pub extern fn cxs_connection_create(command_handle: u32,
+                                    source_id: *const c_char,
+                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, claim_handle: u32)>) -> u32 {
 
-    let source_id_opt = if !source_id.is_null() {
-        check_useful_c_str!(source_id, error::UNKNOWN_ERROR.code_num);
-        let val = source_id.to_owned();
-        Some(val)
-    } else { None };
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
 
-    let did_opt = if !did.is_null() {
-        check_useful_c_str!(did, error::UNKNOWN_ERROR.code_num);
-        let val = did.to_owned();
-        Some(val)
-    } else { None };
+    thread::spawn(move|| {
+        let handle = build_connection(source_id);
+        let mut rc = error::UNKNOWN_ERROR.code_num;
 
+        loop {
+            if get_state(handle) == CxsStateType::CxsStateInitialized as u32 {
+                rc = error::SUCCESS.code_num;
+                break;
+            }
 
-    let handle = build_connection(source_id_opt, did_opt, None);
-    unsafe { *connection_handle = handle }
+            thread::sleep(Duration::from_millis(100));
+        }
+
+        cb(command_handle, rc, handle);
+    });
 
     error::SUCCESS.code_num
 }
 
 #[no_mangle]
-pub extern fn cxs_connection_connect(connection_handle: u32, connection_options: *const c_char) -> u32 {
+pub extern fn cxs_connection_connect(command_handle:u32,
+                                     connection_handle: u32,
+                                     connection_options: *const c_char,
+                                     cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    if !is_valid_connection_handle(connection_handle) {
+        return error::INVALID_CONNECTION_HANDLE.code_num;
+    }
+
     let options = if !connection_options.is_null() {
         check_useful_c_str!(connection_options, error::UNKNOWN_ERROR.code_num);
         connection_options.to_owned()
@@ -47,7 +61,13 @@ pub extern fn cxs_connection_connect(connection_handle: u32, connection_options:
         "".to_string()
     };
 
-    connect(connection_handle, options)
+    thread::spawn(move|| {
+        let rc = connect(connection_handle, options);
+
+        cb(command_handle,rc);
+    });
+
+    error::SUCCESS.code_num
 }
 
 #[no_mangle]
@@ -100,72 +120,62 @@ mod tests {
     use std::ffi::CString;
     use std::ptr;
     use utils::error;
-    use utils::wallet;
     use std::thread;
     use std::time::Duration;
     use api::CxsStateType;
+
+    extern "C" fn create_cb(command_handle: u32, err: u32, connection_handle: u32) {
+        if err != 0 {panic!("create_cb failed")}
+        if connection_handle == 0 {panic!("invalid handle")}
+        println!("successfully called create_cb")
+    }
 
     #[test]
     fn test_cxs_connection_create() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let mut handle: u32 = 0;
-        let rc = cxs_connection_create(CString::new("test_create").unwrap().into_raw(),
-                                       ptr::null_mut(),
-                                       ptr::null(),
-                                       &mut handle);
+        let rc = cxs_connection_create(0,
+                                       CString::new("test_create").unwrap().into_raw(),
+                                       Some(create_cb));
         assert_eq!(rc, error::SUCCESS.code_num);
-        assert!(handle > 0);
+        thread::sleep(Duration::from_secs(1));
     }
 
     #[test]
     fn test_cxs_connection_create_fails() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let rc = cxs_connection_create(CString::new("test_create_fails").unwrap().into_raw(),
-                                       ptr::null_mut(),
-                                       ptr::null(),
-                                       ptr::null_mut());
-        assert_eq!(rc, error::UNKNOWN_ERROR.code_num);
+        let rc = cxs_connection_create(0,
+                                       CString::new("test_create_fails").unwrap().into_raw(),
+                                       None);
+        assert_eq!(rc, error::INVALID_OPTION.code_num);
 
-        let rc = cxs_connection_create(ptr::null(),
-                                       ptr::null_mut(),
+        let rc = cxs_connection_create(0,
                                        ptr::null(),
-                                       ptr::null_mut());
-        assert_eq!(rc, error::UNKNOWN_ERROR.code_num);
+                                       Some(create_cb));
+        assert_eq!(rc, error::INVALID_OPTION.code_num);
+    }
+
+    extern "C" fn connect_cb(command_handle: u32, err: u32) {
+        assert_eq!(err, 0);
+        println!("successfully called connect_cb");
     }
 
     #[test]
     fn test_cxs_connection_connect() {
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT,mockito::SERVER_URL);
-        let _m = mockito::mock("POST", "/agency/route")
-            .with_status(202)
-            .with_header("content-type", "text/plain")
-            .with_body("nice!")
-            .expect(3)
-            .create();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
 
-        wallet::tests::make_wallet("test_cxs_connection_connect");
-        let mut handle: u32 = 0;
-        let rc = cxs_connection_create(CString::new("test_cxs_connection_connect").unwrap().into_raw(),
-                                       ptr::null_mut(),
-                                       ptr::null(),
-                                       &mut handle);
-        assert_eq!(rc, error::SUCCESS.code_num);
-        thread::sleep(Duration::from_secs(1));
+        let handle = build_connection("test_cxs_connection_connect".to_owned());
         assert!(handle > 0);
-
-        let rc = cxs_connection_connect(handle, CString::new("{}").unwrap().into_raw());
+        thread::sleep(Duration::from_millis(500));
+        let rc = cxs_connection_connect(0,handle, CString::new("{}").unwrap().into_raw(),Some(connect_cb));
         assert_eq!(rc, error::SUCCESS.code_num);
-        wallet::tests::delete_wallet("test_cxs_connection_connect");
-        _m.assert();
     }
 
     #[test]
     fn test_cxs_connection_connect_fails() {
-        let rc = cxs_connection_connect(0, CString::new("{}").unwrap().into_raw());
+        let rc = cxs_connection_connect(0,0, CString::new("{}").unwrap().into_raw(),Some(connect_cb));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
     }
 
@@ -173,12 +183,7 @@ mod tests {
     fn test_cxs_connection_get_state() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let mut handle: u32 = 0;
-        let rc = cxs_connection_create(CString::new("test_get_state").unwrap().into_raw(),
-                                       ptr::null_mut(),
-                                       ptr::null(),
-                                       &mut handle);
-        assert_eq!(rc, error::SUCCESS.code_num);
+        let handle = build_connection("test_cxs_connection_get_state".to_owned());
         assert!(handle > 0);
 
         let mut state: u32 = 0;
@@ -191,12 +196,7 @@ mod tests {
     fn test_cxs_connection_get_state_fails() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let mut handle: u32 = 0;
-        let rc = cxs_connection_create(CString::new("test_get_state_fails").unwrap().into_raw(),
-                                       ptr::null_mut(),
-                                       ptr::null(),
-                                       &mut handle);
-        assert_eq!(rc, error::SUCCESS.code_num);
+        let handle = build_connection("test_cxs_connection_get_state_fails".to_owned());
         assert!(handle > 0);
 
         let rc = cxs_connection_get_state(handle, ptr::null_mut());
@@ -220,12 +220,7 @@ mod tests {
     fn test_cxs_connection_serialize() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let mut handle: u32 = 0;
-        let rc = cxs_connection_create(CString::new("test_get_data").unwrap().into_raw(),
-                                       ptr::null_mut(),
-                                       ptr::null(),
-                                       &mut handle);
-        assert_eq!(rc, error::SUCCESS.code_num);
+        let handle = build_connection("test_cxs_connection_get_data".to_owned());
         assert!(handle > 0);
 
         let data = cxs_connection_serialize(handle, Some(serialize_cb));
@@ -237,52 +232,12 @@ mod tests {
     fn test_cxs_connection_release() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let mut handle: u32 = 0;
-        let rc = cxs_connection_create(CString::new("test_release").unwrap().into_raw(),
-                                       ptr::null_mut(),
-                                       ptr::null(),
-                                       &mut handle);
-        assert_eq!(rc, error::SUCCESS.code_num);
+        let handle = build_connection("test_cxs_connection_release".to_owned());
         assert!(handle > 0);
 
         let rc = cxs_connection_release(handle);
         assert_eq!(rc, error::SUCCESS.code_num);
-        let rc = cxs_connection_connect(handle, CString::new("{}").unwrap().into_raw());
+        let rc = cxs_connection_connect(0,handle, CString::new("{}").unwrap().into_raw(),Some(connect_cb));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
-    }
-
-    #[test]
-    fn test_init_create_and_connect(){
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-
-        let mut handle: u32 = 0;
-        let rc = cxs_connection_create(CString::new("test_init_create_and_connect").unwrap().into_raw(),
-                                       ptr::null_mut(),
-                                       ptr::null(),
-                                       &mut handle);
-        assert_eq!(rc, 0);
-        thread::sleep(Duration::from_millis(1500));
-
-        let rc = cxs_connection_connect(handle, CString::new("{}").unwrap().into_raw());
-        assert_eq!(rc, 0);
-
-    }
-
-    #[test]
-    fn test_init_create_and_connect_with_did() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
-
-        let mut handle: u32 = 0;
-        let rc = cxs_connection_create(CString::new("test_init_create_and_connect_with_did").unwrap().into_raw(),
-                                       CString::new("548NLfYrPxtB299RVafcjR").unwrap().into_raw(),
-                                       CString::new("338NLfYrPxtB299RVafcjR").unwrap().into_raw(),
-                                       &mut handle);
-        thread::sleep(Duration::from_secs(1));
-
-        let rc = cxs_connection_connect(handle, CString::new("{}").unwrap().into_raw());
-        assert_eq!(rc, 0);
     }
 }

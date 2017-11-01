@@ -217,13 +217,17 @@ pub mod tests {
         delete_wallet("wallet2");
     }
 
+    extern "C" fn create_cb(command_handle: u32, err: u32, connection_handle: u32) {
+        assert_eq!(err, 0);
+        assert!(connection_handle > 0);
+        println!("successfully called create_cb")
+    }
+
     #[test]
     fn test_cb_adds_verkey() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = connection::build_connection(Some("test_cb_adds_verkey".to_owned()),
-                                      None,
-                                      None);
+        let handle = connection::build_connection("test_cb_adds_verkey".to_owned());
         thread::sleep(Duration::from_secs(1));
         assert!(!connection::get_pw_verkey(handle).unwrap().is_empty());
     }
