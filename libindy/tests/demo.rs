@@ -379,7 +379,7 @@ fn ledger_demo_works() {
                                     null(),
                                     open_callback);
     assert_eq!(err, ErrorCode::Success);
-    let (err, pool_handle) = open_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    let (err, pool_handle) = open_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
     thread::sleep(TimeoutUtils::short_timeout());
 
