@@ -493,12 +493,12 @@ impl SignusCommandExecutor {
                             cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         try_cb!(self.signus_service.validate_did(&did), cb);
 
-        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                           wallet_handle, pool_handle, cb);
-
         match self._wallet_get_did_endpoint(wallet_handle, &did) {
             Ok(endpoint) => cb(Ok((endpoint.ha, endpoint.verkey))),
-            Err(IndyError::WalletError(WalletError::NotFound(_))) =>
+            Err(IndyError::WalletError(WalletError::NotFound(_))) => {
+                check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                           wallet_handle, pool_handle, cb);
+
                 return self._fetch_attrib_from_ledger(wallet_handle,
                                                       pool_handle,
                                                       &did,
@@ -506,7 +506,8 @@ impl SignusCommandExecutor {
                                                           wallet_handle,
                                                           pool_handle,
                                                           did.clone(),
-                                                          cb)),
+                                                          cb));
+            }
             Err(err) => cb(Err(err))
         };
     }

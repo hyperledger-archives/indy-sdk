@@ -26,7 +26,7 @@ def windowsTesting() {
 
                 dir('libindy') {
                     echo "Windows Test: Download prebuilt dependencies"
-                    bat 'wget -O prebuilt.zip "https://repo.evernym.com/libindy/windows/deps/indy-sdk-deps.zip"'
+                    bat 'wget -O prebuilt.zip "https://repo.sovrin.org/windows/libindy/deps/indy-sdk-deps.zip"'
                     bat 'unzip prebuilt.zip -d prebuilt'
 
                     echo "Windows Test: Build"

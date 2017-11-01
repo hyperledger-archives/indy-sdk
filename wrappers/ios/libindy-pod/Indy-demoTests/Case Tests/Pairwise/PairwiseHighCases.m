@@ -608,7 +608,7 @@
     ret = [[PairwiseUtils sharedInstance] pairwiseExistsForDid:theirDid
                                                   walletHandle:invalidWalletHandle
                                                      outExists:&exists];
-    XCTAssertEqual( ret.code, Success, @"PairwiseUtils::pairwiseExistsForDid() failed!");
+    XCTAssertEqual( ret.code, WalletInvalidHandle, @"PairwiseUtils::pairwiseExistsForDid() failed!");
     XCTAssertFalse(exists, @"pairwise does exist!");
     
     [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
