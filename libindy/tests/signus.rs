@@ -310,8 +310,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let invalid_pool_handle = pool_handle + 1;
-            let res = SignusUtils::get_endpoint_for_did(wallet_handle, invalid_pool_handle, DID);
+            let res = SignusUtils::get_endpoint_for_did(wallet_handle, pool_handle + 1, DID);
             assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
