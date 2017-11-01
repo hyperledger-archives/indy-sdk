@@ -8,10 +8,10 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_get_endpoint_for_did_works(pool_handle, wallet_handle, identity_trustee1, endpoint):
+async def test_get_endpoint_for_did_works(wallet_handle, identity_trustee1, endpoint):
     (did, key) = identity_trustee1
     await signus.set_endpoint_for_did(wallet_handle, did, endpoint, key)
-    received_endpoint, received_key = await signus.get_endpoint_for_did(wallet_handle, pool_handle, did)
+    received_endpoint, received_key = await signus.get_endpoint_for_did(wallet_handle, -1, did)
     assert endpoint == received_endpoint
     assert key == received_key
 
@@ -50,7 +50,6 @@ async def test_get_endpoint_for_did_works_invalid_wallet_handle(pool_handle, wal
 @pytest.mark.asyncio
 async def test_get_endpoint_for_did_works_invalid_pool_handle(pool_handle, wallet_handle, identity_trustee1, endpoint):
     (did, key) = identity_trustee1
-    await signus.set_endpoint_for_did(wallet_handle, did, endpoint, key)
     with pytest.raises(IndyError) as e:
         invalid_pool_handle = pool_handle + 1
         await signus.get_endpoint_for_did(wallet_handle, invalid_pool_handle, did)
