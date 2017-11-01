@@ -11,6 +11,7 @@ use messages::GeneralMessage;
 struct CreateKeyPayload{
     #[serde(rename = "type")]
     msg_type: String,
+    #[serde(rename = "forDID")]
     for_did: String,
     #[serde(rename = "forDIDVerKey")]
     for_verkey: String,
@@ -461,8 +462,8 @@ mod tests {
             .nonce(nonce)
             .serialize_message().unwrap();
         assert_eq!(msg, "{\"agentPayload\":\
-        \"{\\\"forDIDVerKey\\\":\\\"EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A\\\",\
-            \\\"forDid\\\":\\\"11235yBzrpJQmNyZzgoTqB\\\",\
+        \"{\\\"forDID\\\":\\\"11235yBzrpJQmNyZzgoTqB\\\",\
+            \\\"forDIDVerKey\\\":\\\"EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A\\\",\
             \\\"nonce\\\":\\\"nonce\\\",\
             \\\"type\\\":\\\"CREATE_KEY\\\"}\",\
         \"to\":\"8XFh8yBzrpJQmNyZzgoTqB\"}"
