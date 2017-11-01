@@ -21,30 +21,28 @@ export class Connection implements IConnections {
     this._initRustApi(path)
   }
 
-  //command_handle: u32, source_id: *char, cb: (xhandle: u32, err:32, connection_handle: u32
   async create ( recipientInfo: IRecipientInfo ): Promise<number> {
-    const myDid = recipientInfo.DIDself !== undefined ? recipientInfo.DIDself : null
-    const theirDid = recipientInfo.DIDremote !== undefined ? recipientInfo.DIDremote : null
+    // const myDid = recipientInfo.DIDself !== undefined ? recipientInfo.DIDself : null
+    // const theirDid = recipientInfo.DIDremote !== undefined ? recipientInfo.DIDremote : null
     const id = recipientInfo.id // TODO verifiy that id is a string
-    const connection_handle = await new Promise<string>((resolve, reject) =>
-        this.RUST_API.cxs_connection_create(
-            id,
-            myDid,
-            theirDid,
-            ffi.Callback('void', ['uint32', 'uint32', 'uint32'],
-                (xhandle, err, _connection_handle) => {
-                    if (err) {
-                        reject(err)
-                        return
-                    }
-                    if (_data === '') {
-                        resolve(null)
-                    } else {
-                        resolve(_data)
-                    }
-                }))
-    )
-    this.connectionHandle = connection_handle
+    let result = null
+    try{
+      this.connectionHandle = await new Promise<string>((resolve, reject) =>
+          result = this.RUST_API.cxs_connection_create(
+              0,
+              id,
+              ffi.Callback('void', ['uint32', 'uint32', 'uint32'],
+                  (command_handle, err, _connection_handle) => {
+                      if (err) {
+                          reject(err)
+                          return
+                      }
+                      resolve(_connection_handle)
+                  }))
+      )
+    } catch (error) {
+        result = error
+    }
     this._clearOnExit()
 
     return result
@@ -52,7 +50,7 @@ export class Connection implements IConnections {
 
   async connect ( options: IConnectOptions = {} ): Promise<void> {
     const timeout = options.timeout || 10000
-    await this._waitFor(() => this._connect(options) === 0, timeout)
+    await this._waitFor(async () => await this._connect(options) === 0, timeout)
   }
 
   async getData (): Promise<IConnectionData> {
@@ -104,12 +102,24 @@ export class Connection implements IConnections {
     })
   }
 
-  // command_handle: u32, connection_handle: u32, connection_options: *char, cb: (xcommand_handle: u32, err: u32)
-  private _connect = (options: IConnectOptions): number => {
+  private async _connect (options: IConnectOptions): Promise<number> {
     const phone = options.phone
     const connectionType: string = phone ? 'SMS' : 'QR'
-    return this.RUST_API.cxs_connection_connect(this.connectionHandle,
-      JSON.stringify({ connection_type: connectionType, phone }))
+    let connectResult = null
+    return await new Promise<number>((resolve, reject) => {
+          connectResult = this.RUST_API.cxs_connection_connect(
+              0,
+              this.connectionHandle,
+              JSON.stringify({connection_type: connectionType, phone}),
+              ffi.Callback('void', ['uint32', 'uint32'],
+                  (command_handle, err) => {
+                      resolve(err)
+                  }))
+          if (connectResult != 0) {
+              resolve(connectResult)
+          }
+        }
+    )
   }
 
   private _sleep = (sleepTime: number): Promise<void> => new Promise((res) => setTimeout(res, sleepTime))
