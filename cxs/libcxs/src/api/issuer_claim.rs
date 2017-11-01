@@ -5,6 +5,7 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use issuer_claim::{issuer_claim_create, to_string, from_string, send_claim_offer, release};
 use std::thread;
+use std::ptr;
 
 /**
  * claim object
@@ -74,20 +75,17 @@ pub extern fn cxs_issuer_claim_serialize(claim_handle: u32, cb: Option<extern fn
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
     thread::spawn(move|| {
-        let (claim_string, err) = match to_string(claim_handle) {
+        match to_string(claim_handle) {
             Ok(x) => {
                 info!("serializing handle: {} with data: {}",claim_handle, x);
-                (x, error::SUCCESS.code_num)
+                let msg = CStringUtils::string_to_cstring(x);
+                cb(claim_handle,error::SUCCESS.code_num,msg.as_ptr());
             },
-            Err(_) => {
+            Err(x) => {
                 warn!("could not serialize handle {}",claim_handle);
-                (String::new(), error::UNKNOWN_ERROR.code_num)
+                cb(claim_handle,x,ptr::null_mut());
             },
         };
-
-        let request_result_string = CStringUtils::string_to_cstring(claim_string);
-
-        cb(claim_handle, err, request_result_string.as_ptr());
     });
 
     error::SUCCESS.code_num

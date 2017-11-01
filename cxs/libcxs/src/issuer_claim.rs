@@ -102,41 +102,28 @@ pub fn issuer_claim_create(claim_def_handle: u32,
 }
 
 fn get_state(handle: u32) -> u32 {
-    let m = ISSUER_CLAIM_MAP.lock().unwrap();
-    let result = m.get(&handle);
-
-    let rc = match result {
+    match ISSUER_CLAIM_MAP.lock().unwrap().get(&handle) {
         Some(t) => t.get_state(),
         None => CxsStateType::CxsStateNone as u32,
-    };
-
-    rc
+    }
 }
 
 pub fn release(handle: u32) -> u32 {
-    let mut m = ISSUER_CLAIM_MAP.lock().unwrap();
-    let result = m.remove(&handle);
-
-    let rc = match result {
+    match ISSUER_CLAIM_MAP.lock().unwrap().remove(&handle) {
         Some(t) => error::SUCCESS.code_num,
         None => error::INVALID_CONNECTION_HANDLE.code_num,
-    };
-
-    rc
+    }
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
-    let table = ISSUER_CLAIM_MAP.lock().unwrap();
-
-    if let Some(cxn) = table.get(&handle) { true }
-    else { false }
+    match ISSUER_CLAIM_MAP.lock().unwrap().get(&handle) {
+        Some(_) => true,
+        None => false,
+    }
 }
 
 pub fn to_string(handle: u32) -> Result<String,u32> {
-    let t = ISSUER_CLAIM_MAP.lock().unwrap();
-    let result = t.get(&handle);
-
-    match result {
+    match ISSUER_CLAIM_MAP.lock().unwrap().get(&handle) {
         Some(c) => Ok(serde_json::to_string(&c).unwrap().to_owned()),
         None => Err(error::INVALID_ISSUER_CLAIM_HANDLE.code_num),
     }

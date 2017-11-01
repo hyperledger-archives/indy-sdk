@@ -55,7 +55,7 @@ extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_hand
         .with_status(202)
         .with_header("content-type", "text/plain")
         .with_body("nice!")
-        .expect(3)
+        .expect(2)
         .create();
 
     let mut connection_handle = 0;

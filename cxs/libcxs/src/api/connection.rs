@@ -79,19 +79,17 @@ pub extern fn cxs_connection_serialize(connection_handle: u32, cb: Option<extern
     }
 
     thread::spawn(move|| {
-
-        let json_string = to_string(connection_handle);
-
-        if json_string.is_empty() {
-            warn!("could not serialize handle {}",connection_handle);
-            cb(connection_handle, 0, ptr::null_mut());
-        }
-        else {
-            info!("serializing handle: {} with data: {}",connection_handle, json_string);
-            let msg = CStringUtils::string_to_cstring(json_string);
-            cb(connection_handle, 0, msg.as_ptr());
-        }
-
+        match to_string(connection_handle) {
+            Ok(json) => {
+                info!("serializing handle: {} with data: {}",connection_handle, json);
+                let msg = CStringUtils::string_to_cstring(json);
+                cb(connection_handle, error::SUCCESS.code_num, msg.as_ptr());
+            },
+            Err(x) => {
+                warn!("could not serialize handle {}",connection_handle);
+                cb(connection_handle, x, ptr::null_mut());
+            },
+        };
     });
 
     error::SUCCESS.code_num
@@ -286,7 +284,7 @@ mod tests {
             \\\"senderLogoUrl\\\":\\\"https://postimg.org/image/do2r09ain/\\\",\
             \\\"senderName\\\":\\\"Evernym\\\",\
             \\\"targetName\\\":\\\"there\\\"}\"}";
-        let new = to_string(connection_handle);
+        let new = to_string(connection_handle).unwrap();
         println!("original: {}",original);
         println!("     new: {}",new);
         assert_eq!(original,new);
