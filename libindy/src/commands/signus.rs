@@ -128,6 +128,10 @@ macro_rules! ensure_their_did {
     ($self_:ident, $wallet_handle:ident, $pool_handle:ident, $their_did:ident, $deferred_cmd:expr, $cb:ident) => (match $self_._wallet_get_their_did($wallet_handle, &$their_did) {
           Ok(val) => val,
           Err(IndyError::WalletError(WalletError::NotFound(_))) => {
+
+              check_wallet_and_pool_handles_consistency!($self_.wallet_service, $self_.pool_service,
+                                                         $wallet_handle, $pool_handle, $cb);
+
               // No their their_did present in the wallet. Deffer this command until it is fetched from ledger.
               return $self_._fetch_their_did_from_ledger($wallet_handle, $pool_handle, &$their_did, $deferred_cmd);
             }
@@ -310,9 +314,6 @@ impl SignusCommandExecutor {
                         cb: Box<Fn(Result<bool, IndyError>) + Send>) {
         try_cb!(self.signus_service.validate_did(&their_did), cb);
 
-        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                   wallet_handle, pool_handle, cb);
-
         let their_did = ensure_their_did!(self,
                                           wallet_handle,
                                           pool_handle,
@@ -339,9 +340,6 @@ impl SignusCommandExecutor {
                cb: Box<Fn(Result<(Vec<u8>, Vec<u8>), IndyError>) + Send>) {
         try_cb!(self.signus_service.validate_did(&my_did), cb);
         try_cb!(self.signus_service.validate_did(&their_did), cb);
-
-        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                   wallet_handle, pool_handle, cb);
 
         let my_did = try_cb!(self._wallet_get_my_did(wallet_handle, &my_did), cb);
         let my_key = try_cb!(self._wallet_get_key(wallet_handle, &my_did.verkey), cb);
@@ -374,9 +372,6 @@ impl SignusCommandExecutor {
         try_cb!(self.signus_service.validate_did(&my_did), cb);
         try_cb!(self.signus_service.validate_did(&their_did), cb);
 
-        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                   wallet_handle, pool_handle, cb);
-
         let my_did = try_cb!(self._wallet_get_my_did(wallet_handle, &my_did), cb);
         let my_key = try_cb!(self._wallet_get_key(wallet_handle, &my_did.verkey), cb);
 
@@ -405,9 +400,6 @@ impl SignusCommandExecutor {
                       msg: Vec<u8>,
                       cb: Box<Fn(Result<Vec<u8>, IndyError>) + Send>) {
         try_cb!(self.signus_service.validate_did(&their_did), cb);
-
-        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                   wallet_handle, pool_handle, cb);
 
         let their_did = ensure_their_did!(self,
                                           wallet_handle,
@@ -444,10 +436,6 @@ impl SignusCommandExecutor {
                    did: String,
                    cb: Box<Fn(Result<String, IndyError>) + Send>) {
         try_cb!(self.signus_service.validate_did(&did), cb);
-
-
-        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                   wallet_handle, pool_handle, cb);
 
         // Look to my did
         match self._wallet_get_my_did(wallet_handle, &did) {

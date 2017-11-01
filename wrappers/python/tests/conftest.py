@@ -48,6 +48,12 @@ def did_my1():
 def did_my2():
     return "2PRyVHmkXQnQzJQKxHxnXC"
 
+
+@pytest.fixture
+def did_trustee():
+    return "V4SGRU86Z58d6TV7PBUe6f"
+
+
 @pytest.fixture
 def verkey_my1():
     return "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
