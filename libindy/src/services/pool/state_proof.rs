@@ -273,34 +273,37 @@ pub fn verify_proof_signature(signature: &str,
                               pool_state_root: &str,
                               nodes: &[RemoteNode],
                               f: usize,
-                              gen: &Generator) -> bool {
+                              gen: &Generator) -> Result<bool, CommonError> {
     trace!("verify_proof_signature: >>> signature: {:?}, participants: {:?}, pool_state_root: {:?}", signature, participants, pool_state_root);
 
     let mut ver_keys: Vec<&VerKey> = Vec::new();
     for node in nodes {
         if participants.contains(&node.name.as_str()) {
-            ver_keys.push(&node.blskey)
+            match &node.blskey {
+                &Some(ref blskey) => ver_keys.push(blskey),
+                _ => return Err(CommonError::InvalidState(format!("Blskey not found for node: {:?}", node.name)))
+            };
         }
     }
 
     debug!("verify_proof_signature: ver_keys.len(): {:?}", ver_keys.len());
 
     if ver_keys.len() < (nodes.len() - f) {
-        return false;
+        return Ok(false);
     }
 
     let signature =
         if let Ok(signature) = signature.from_base58() {
             signature
         } else {
-            return false;
+            return Ok(false);
         };
 
     let signature =
         if let Ok(signature) = MultiSignature::from_bytes(signature.as_slice()) {
             signature
         } else {
-            return false;
+            return Ok(false);
         };
 
     debug!("verify_proof_signature: signature: {:?}", signature);
@@ -312,7 +315,7 @@ pub fn verify_proof_signature(signature: &str,
     let res = Bls::verify_multi_sig(&signature, state_root.as_bytes(), ver_keys.as_slice(), gen).unwrap_or(false);
 
     debug!("verify_proof_signature: <<< res: {:?}", res);
-    res
+    Ok(res)
 }
 
 #[cfg(test)]

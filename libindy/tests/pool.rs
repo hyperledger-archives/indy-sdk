@@ -348,6 +348,22 @@ mod medium_cases {
             TestUtils::cleanup_storage();
         }
 
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn open_pool_ledger_works_for_build_nodes_state() {
+            TestUtils::cleanup_storage();
+
+            let pool_name = "open_pool_ledger_works_for_build_nodes_state";
+            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool_build_state(pool_name, None);
+            let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
+            PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
+
+            PoolUtils::open_pool_ledger(pool_name, Some(pool_config.as_str())).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_wrong_alias() {

@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use super::zmq;
 use errors::common::CommonError;
+use utils::crypto::verkey_builder::build_full_verkey;
 
 use self::indy_crypto::bls;
 
@@ -16,32 +17,60 @@ use utils::json::{JsonDecodable, JsonEncodable};
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct NodeData {
     pub alias: String,
-    pub client_ip: String,
-    pub client_port: u32,
-    pub node_ip: String,
-    pub node_port: u32,
-    pub services: Vec<String>,
-    pub blskey: String
+    pub client_ip: Option<String>,
+    pub client_port: Option<u32>,
+    pub node_ip: Option<String>,
+    pub node_port: Option<u32>,
+    pub services: Option<Vec<String>>,
+    pub blskey: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct GenTransaction {
+pub struct NodeTransaction {
     pub data: NodeData,
     pub dest: String,
     pub identifier: String,
     #[serde(rename = "txnId")]
     pub txn_id: Option<String>,
+    pub verkey: Option<String>,
     #[serde(rename = "type")]
     pub txn_type: String
 }
 
-impl JsonEncodable for GenTransaction {}
+impl JsonEncodable for NodeTransaction {}
 
-impl<'a> JsonDecodable<'a> for GenTransaction {}
+impl<'a> JsonDecodable<'a> for NodeTransaction {}
 
-impl GenTransaction {
+impl NodeTransaction {
     pub fn to_msg_pack(&self) -> Result<Vec<u8>, rmp_serde::encode::Error> {
         rmp_serde::to_vec_named(self)
+    }
+
+    pub fn update(&mut self, other: &mut NodeTransaction) -> Result<(), CommonError> {
+        assert_eq!(self.data.alias, other.data.alias);
+
+        if let Some(ref mut client_ip) = other.data.client_ip {
+            self.data.client_ip = Some(client_ip.to_owned());
+        }
+        if let Some(ref mut client_port) = other.data.client_port {
+            self.data.client_port = Some(client_port.to_owned());
+        }
+        if let Some(ref mut node_ip) = other.data.node_ip {
+            self.data.node_ip = Some(node_ip.to_owned());
+        }
+        if let Some(ref mut node_port) = other.data.node_port {
+            self.data.node_port = Some(node_port.to_owned());
+        }
+        if let Some(ref mut blskey) = other.data.blskey {
+            self.data.blskey = Some(blskey.to_owned());
+        }
+        if let Some(ref mut services) = other.data.services {
+            self.data.services = Some(services.to_owned());
+        }
+        if other.verkey.is_some() {
+            self.verkey = Some(build_full_verkey(&self.dest, other.verkey.as_ref().map(String::as_str))?);
+        }
+        Ok(())
     }
 }
 
@@ -186,10 +215,10 @@ impl PoolConfig {
 pub struct RemoteNode {
     pub name: String,
     pub public_key: Vec<u8>,
-    pub zaddr: String,
+    pub zaddr: Option<String>,
     pub zsock: Option<zmq::Socket>,
     pub is_blacklisted: bool,
-    pub blskey: bls::VerKey
+    pub blskey: Option<bls::VerKey>
 }
 
 pub struct CatchUpProcess {

@@ -195,7 +195,7 @@ impl TransactionHandler {
                         participants.as_slice(),
                         root_hash,
                         pool_state_root,
-                        self.nodes.as_slice(), self.f, &self.gen);
+                        self.nodes.as_slice(), self.f, &self.gen)?;
                     debug!("TransactionHandler::process_reply: signature_valid: {:?}", signature_valid);
                     signature_valid
                 }
@@ -533,21 +533,41 @@ impl PoolWorker {
 
         let ctx: zmq::Context = zmq::Context::new();
         let key_pair = zmq::CurveKeyPair::new()?;
-        for gen_txn in &merkle_tree {
-            let gen_txn: GenTransaction = rmp_serde::decode::from_slice(gen_txn.as_slice())
-                .map_err(|e|
-                    CommonError::InvalidState(format!("MerkleTree contains invalid data {}", e)))?;
 
+        let gen_tnxs = self._build_gen_tnxs_state(&merkle_tree)?;
+
+        for (_, gen_txn) in &gen_tnxs {
             let mut rn: RemoteNode = RemoteNode::new(&gen_txn)?;
-            rn.connect(&ctx, &key_pair)?;
-            rn.send_str("pi")?;
-            self.handler.nodes_mut().push(rn);
+            if rn.zaddr.is_some() {
+                rn.connect(&ctx, &key_pair)?;
+                rn.send_str("pi")?;
+                self.handler.nodes_mut().push(rn);
+            }
         }
-        self.handler.set_f(PoolWorker::get_f(merkle_tree.count())); //TODO set cnt to connect
+
+        let cnt = self.handler.nodes().len();
+        self.handler.set_f(PoolWorker::get_f(cnt)); //TODO set cnt to connect
         if let PoolWorkerHandler::CatchupHandler(ref mut handler) = self.handler {
             handler.reset_nodes_votes();
         }
         Ok(())
+    }
+
+    fn _build_gen_tnxs_state(&self, merkle_tree: &MerkleTree) -> Result<HashMap<String, NodeTransaction>, CommonError> {
+        let mut gen_tnxs: HashMap<String, NodeTransaction> = HashMap::new();
+
+        for gen_txn in merkle_tree {
+            let mut gen_txn: NodeTransaction = rmp_serde::decode::from_slice(gen_txn.as_slice())
+                .map_err(|e|
+                    CommonError::InvalidState(format!("MerkleTree contains invalid data {}", e)))?;
+
+            if gen_tnxs.contains_key(&gen_txn.dest) {
+                gen_tnxs.get_mut(&gen_txn.dest).unwrap().update(&mut gen_txn)?;
+            } else {
+                gen_tnxs.insert(gen_txn.dest.clone(), gen_txn);
+            }
+        }
+        Ok(gen_tnxs)
     }
 
     fn init_catchup(&mut self, refresh_cmd_id: Option<i32>) -> Result<(), PoolError> {
@@ -804,18 +824,28 @@ impl Debug for RemoteNode {
 }
 
 impl RemoteNode {
-    fn new(txn: &GenTransaction) -> Result<RemoteNode, PoolError> {
+    fn new(txn: &NodeTransaction) -> Result<RemoteNode, PoolError> {
         let node_verkey = txn.dest.as_str().from_base58()
             .map_err(|e| { CommonError::InvalidStructure("Invalid field dest in genesis transaction".to_string()) })?;
 
-        let blskey = txn.data.blskey.as_str().from_base58()
-            .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?;
-        let blskey = VerKey::from_bytes(blskey.as_slice())
-            .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?;
+        let address = match (&txn.data.client_ip, &txn.data.client_port) {
+            (&Some(ref client_ip), &Some(ref client_port)) => Some(format!("tcp://{}:{}", client_ip, client_port)),
+            _ => None
+        };
+
+        let blskey = match txn.data.blskey {
+            Some(ref blskey) => {
+                let key = blskey.as_str().from_base58()
+                    .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?;
+                Some(VerKey::from_bytes(key.as_slice())
+                    .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?)
+            }
+            None => None
+        };
 
         Ok(RemoteNode {
             public_key: CryptoBox::vk_to_curve25519(&node_verkey)?,
-            zaddr: format!("tcp://{}:{}", txn.data.client_ip, txn.data.client_port),
+            zaddr: address,
             zsock: None,
             name: txn.data.alias.clone(),
             is_blacklisted: false,
@@ -830,7 +860,9 @@ impl RemoteNode {
         s.set_curve_publickey(&key_pair.public_key)?;
         s.set_curve_serverkey(self.public_key.as_slice())?;
         s.set_linger(0)?; //TODO set correct timeout
-        s.connect(self.zaddr.as_str())?;
+        if let Some(ref zaddr) = self.zaddr {
+            s.connect(zaddr)?;
+        }
         self.zsock = Some(s);
         Ok(())
     }
@@ -1389,7 +1421,7 @@ mod tests {
 
         pub static POLL_TIMEOUT: i64 = 1000; /* in ms */
 
-        pub fn start() -> (GenTransaction, thread::JoinHandle<Vec<String>>) {
+        pub fn start() -> (NodeTransaction, thread::JoinHandle<Vec<String>>) {
             let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
             let pkc = CryptoBox::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
             let skc = CryptoBox::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
@@ -1399,22 +1431,23 @@ mod tests {
             let blskey = VerKey::new(&Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),
                                      &SignKey::new(None).unwrap()).unwrap().as_bytes().to_base58();
 
-            let gt = GenTransaction {
+            let gt = NodeTransaction {
                 identifier: "".to_string(),
                 data: NodeData {
                     alias: "n1".to_string(),
-                    blskey,
-                    services: Vec::new(),
-                    client_port: 9700,
-                    client_ip: "127.0.0.1".to_string(),
-                    node_ip: "".to_string(),
-                    node_port: 0,
+                    blskey: Some(blskey),
+                    services: Some(Vec::new()),
+                    client_port: Some(9700),
+                    client_ip: Some("127.0.0.1".to_string()),
+                    node_ip: Some("".to_string()),
+                    node_port: Some(0)
                 },
                 txn_id: None,
+                verkey: None,
                 txn_type: "0".to_string(),
                 dest: (&vk.0 as &[u8]).to_base58(),
             };
-            let addr = format!("tcp://{}:{}", gt.data.client_ip, gt.data.client_port);
+            let addr = format!("tcp://{}:{}", gt.data.client_ip.clone().unwrap(), gt.data.client_port.clone().unwrap());
             s.set_curve_publickey(pkc.as_slice()).expect("set public key");
             s.set_curve_secretkey(skc.as_slice()).expect("set secret key");
             s.set_curve_server(true).expect("set curve server");
