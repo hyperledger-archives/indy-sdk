@@ -1,620 +1,1762 @@
-// !$*UTF8*$!
-{
-	archiveVersion = 1;
-	classes = {
-	};
-	objectVersion = 46;
-	objects = {
-
-/* Begin PBXBuildFile section */
-		3E8809E51EB88AED00E0AA5F /* libsqlite3.0.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */; };
-		5D57DECE1F853A9700CD63FE /* DictionaryExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D57DEC21F853A9600CD63FE /* DictionaryExtension.swift */; };
-		5D57DECF1F853A9700CD63FE /* NSDictionary+JSON.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D57DEC31F853A9600CD63FE /* NSDictionary+JSON.h */; };
-		5D57DED01F853A9700CD63FE /* NSDictionary+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D57DEC41F853A9600CD63FE /* NSDictionary+JSON.m */; };
-		5D57DED11F853A9700CD63FE /* NSError+IndyError.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D57DEC51F853A9600CD63FE /* NSError+IndyError.h */; };
-		5D57DED21F853A9700CD63FE /* NSError+IndyError.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D57DEC61F853A9700CD63FE /* NSError+IndyError.m */; };
-		5D57DED31F853A9700CD63FE /* NSString+JSON.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D57DEC71F853A9700CD63FE /* NSString+JSON.h */; };
-		5D57DED41F853A9700CD63FE /* NSString+JSON.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D57DEC81F853A9700CD63FE /* NSString+JSON.m */; };
-		5D57DED51F853A9700CD63FE /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D57DEC91F853A9700CD63FE /* StringExtensions.swift */; };
-		5D57DED61F853A9700CD63FE /* IndyCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D57DECA1F853A9700CD63FE /* IndyCallbacks.h */; };
-		5D57DED71F853A9700CD63FE /* IndyCallbacks.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5D57DECB1F853A9700CD63FE /* IndyCallbacks.mm */; };
-		5D57DED81F853A9700CD63FE /* IndySequenceUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D57DECC1F853A9700CD63FE /* IndySequenceUtils.h */; };
-		5D57DED91F853A9700CD63FE /* IndySequenceUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 5D57DECD1F853A9700CD63FE /* IndySequenceUtils.m */; };
-		5D57DEE21F861FBD00CD63FE /* IndyPairwise.h in Headers */ = {isa = PBXBuildFile; fileRef = 5D57DEE01F861FBD00CD63FE /* IndyPairwise.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5D57DEE31F861FBD00CD63FE /* IndyPairwise.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5D57DEE11F861FBD00CD63FE /* IndyPairwise.mm */; };
-		5DB57A3D1F711EE600EB4C90 /* KeychainAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A111F711EE600EB4C90 /* KeychainAccessibility.swift */; };
-		5DB57A3E1F711EE600EB4C90 /* KeychainError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A121F711EE600EB4C90 /* KeychainError.swift */; };
-		5DB57A3F1F711EE600EB4C90 /* KeychainWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A131F711EE600EB4C90 /* KeychainWrapper.swift */; };
-		5DB57A401F711EE600EB4C90 /* Indy.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A141F711EE600EB4C90 /* Indy.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DB57A4D1F711EE600EB4C90 /* IndyKeychainWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A241F711EE600EB4C90 /* IndyKeychainWallet.h */; };
-		5DB57A4E1F711EE600EB4C90 /* IndyKeychainWallet.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A251F711EE600EB4C90 /* IndyKeychainWallet.m */; };
-		5DB57A4F1F711EE600EB4C90 /* IndyKeychainWalletConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A261F711EE600EB4C90 /* IndyKeychainWalletConfig.h */; };
-		5DB57A501F711EE600EB4C90 /* IndyKeychainWalletConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A271F711EE600EB4C90 /* IndyKeychainWalletConfig.m */; };
-		5DB57A511F711EE600EB4C90 /* IndyKeychainWalletItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A281F711EE600EB4C90 /* IndyKeychainWalletItem.swift */; };
-		5DB57A521F711EE600EB4C90 /* IndyWalletCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A291F711EE600EB4C90 /* IndyWalletCallbacks.h */; };
-		5DB57A531F711EE600EB4C90 /* IndyWalletCallbacks.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A2A1F711EE600EB4C90 /* IndyWalletCallbacks.m */; };
-		5DB57A541F711EE600EB4C90 /* IndyAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A2C1F711EE600EB4C90 /* IndyAgent.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DB57A551F711EE600EB4C90 /* IndyAgent.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A2D1F711EE600EB4C90 /* IndyAgent.mm */; };
-		5DB57A561F711EE600EB4C90 /* IndyAnoncreds.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A2E1F711EE600EB4C90 /* IndyAnoncreds.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DB57A571F711EE600EB4C90 /* IndyAnoncreds.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A2F1F711EE600EB4C90 /* IndyAnoncreds.mm */; };
-		5DB57A581F711EE600EB4C90 /* IndyErrors.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A301F711EE600EB4C90 /* IndyErrors.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DB57A591F711EE600EB4C90 /* IndyLedger.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A311F711EE600EB4C90 /* IndyLedger.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DB57A5A1F711EE600EB4C90 /* IndyLedger.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A321F711EE600EB4C90 /* IndyLedger.mm */; };
-		5DB57A5B1F711EE600EB4C90 /* IndyPool.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A331F711EE600EB4C90 /* IndyPool.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DB57A5C1F711EE600EB4C90 /* IndyPool.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A341F711EE600EB4C90 /* IndyPool.mm */; };
-		5DB57A5D1F711EE600EB4C90 /* IndySignus.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A351F711EE600EB4C90 /* IndySignus.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DB57A5E1F711EE600EB4C90 /* IndySignus.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A361F711EE600EB4C90 /* IndySignus.mm */; };
-		5DB57A5F1F711EE600EB4C90 /* IndyTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A371F711EE600EB4C90 /* IndyTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DB57A601F711EE600EB4C90 /* IndyWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A381F711EE600EB4C90 /* IndyWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DB57A611F711EE600EB4C90 /* IndyWallet.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A391F711EE600EB4C90 /* IndyWallet.mm */; };
-		5DB57A621F711EE600EB4C90 /* IndyWalletProtocols.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A3A1F711EE600EB4C90 /* IndyWalletProtocols.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		E32B103AE817115C80F0142F /* libPods-Indy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 788BE98286C5622244B9A7F5 /* libPods-Indy.a */; };
-/* End PBXBuildFile section */
-
-/* Begin PBXFileReference section */
-		3E08C01B1EB3336A000A73BA /* Indy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Indy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		3E7A1C4BE17271AC1BB4E256 /* Pods-Indy.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Indy/Pods-Indy.debug.xcconfig"; sourceTree = "<group>"; };
-		3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.0.tbd; path = usr/lib/libsqlite3.0.tbd; sourceTree = SDKROOT; };
-		5D57DEC21F853A9600CD63FE /* DictionaryExtension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DictionaryExtension.swift; sourceTree = "<group>"; };
-		5D57DEC31F853A9600CD63FE /* NSDictionary+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSDictionary+JSON.h"; sourceTree = "<group>"; };
-		5D57DEC41F853A9600CD63FE /* NSDictionary+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSDictionary+JSON.m"; sourceTree = "<group>"; };
-		5D57DEC51F853A9600CD63FE /* NSError+IndyError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSError+IndyError.h"; sourceTree = "<group>"; };
-		5D57DEC61F853A9700CD63FE /* NSError+IndyError.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSError+IndyError.m"; sourceTree = "<group>"; };
-		5D57DEC71F853A9700CD63FE /* NSString+JSON.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+JSON.h"; sourceTree = "<group>"; };
-		5D57DEC81F853A9700CD63FE /* NSString+JSON.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+JSON.m"; sourceTree = "<group>"; };
-		5D57DEC91F853A9700CD63FE /* StringExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
-		5D57DECA1F853A9700CD63FE /* IndyCallbacks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyCallbacks.h; sourceTree = "<group>"; };
-		5D57DECB1F853A9700CD63FE /* IndyCallbacks.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyCallbacks.mm; sourceTree = "<group>"; };
-		5D57DECC1F853A9700CD63FE /* IndySequenceUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndySequenceUtils.h; sourceTree = "<group>"; };
-		5D57DECD1F853A9700CD63FE /* IndySequenceUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IndySequenceUtils.m; sourceTree = "<group>"; };
-		5D57DEE01F861FBD00CD63FE /* IndyPairwise.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyPairwise.h; sourceTree = "<group>"; };
-		5D57DEE11F861FBD00CD63FE /* IndyPairwise.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyPairwise.mm; sourceTree = "<group>"; };
-		5DB57A0F1F711EE600EB4C90 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		5DB57A111F711EE600EB4C90 /* KeychainAccessibility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeychainAccessibility.swift; sourceTree = "<group>"; };
-		5DB57A121F711EE600EB4C90 /* KeychainError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeychainError.swift; sourceTree = "<group>"; };
-		5DB57A131F711EE600EB4C90 /* KeychainWrapper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = KeychainWrapper.swift; sourceTree = "<group>"; };
-		5DB57A141F711EE600EB4C90 /* Indy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Indy.h; sourceTree = "<group>"; };
-		5DB57A241F711EE600EB4C90 /* IndyKeychainWallet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyKeychainWallet.h; sourceTree = "<group>"; };
-		5DB57A251F711EE600EB4C90 /* IndyKeychainWallet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IndyKeychainWallet.m; sourceTree = "<group>"; };
-		5DB57A261F711EE600EB4C90 /* IndyKeychainWalletConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyKeychainWalletConfig.h; sourceTree = "<group>"; };
-		5DB57A271F711EE600EB4C90 /* IndyKeychainWalletConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IndyKeychainWalletConfig.m; sourceTree = "<group>"; };
-		5DB57A281F711EE600EB4C90 /* IndyKeychainWalletItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IndyKeychainWalletItem.swift; sourceTree = "<group>"; };
-		5DB57A291F711EE600EB4C90 /* IndyWalletCallbacks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWalletCallbacks.h; sourceTree = "<group>"; };
-		5DB57A2A1F711EE600EB4C90 /* IndyWalletCallbacks.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IndyWalletCallbacks.m; sourceTree = "<group>"; };
-		5DB57A2C1F711EE600EB4C90 /* IndyAgent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyAgent.h; sourceTree = "<group>"; };
-		5DB57A2D1F711EE600EB4C90 /* IndyAgent.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyAgent.mm; sourceTree = "<group>"; };
-		5DB57A2E1F711EE600EB4C90 /* IndyAnoncreds.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyAnoncreds.h; sourceTree = "<group>"; };
-		5DB57A2F1F711EE600EB4C90 /* IndyAnoncreds.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyAnoncreds.mm; sourceTree = "<group>"; };
-		5DB57A301F711EE600EB4C90 /* IndyErrors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyErrors.h; sourceTree = "<group>"; };
-		5DB57A311F711EE600EB4C90 /* IndyLedger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyLedger.h; sourceTree = "<group>"; };
-		5DB57A321F711EE600EB4C90 /* IndyLedger.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyLedger.mm; sourceTree = "<group>"; };
-		5DB57A331F711EE600EB4C90 /* IndyPool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyPool.h; sourceTree = "<group>"; };
-		5DB57A341F711EE600EB4C90 /* IndyPool.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyPool.mm; sourceTree = "<group>"; };
-		5DB57A351F711EE600EB4C90 /* IndySignus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndySignus.h; sourceTree = "<group>"; };
-		5DB57A361F711EE600EB4C90 /* IndySignus.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndySignus.mm; sourceTree = "<group>"; };
-		5DB57A371F711EE600EB4C90 /* IndyTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyTypes.h; sourceTree = "<group>"; };
-		5DB57A381F711EE600EB4C90 /* IndyWallet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWallet.h; sourceTree = "<group>"; };
-		5DB57A391F711EE600EB4C90 /* IndyWallet.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyWallet.mm; sourceTree = "<group>"; };
-		5DB57A3A1F711EE600EB4C90 /* IndyWalletProtocols.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWalletProtocols.h; sourceTree = "<group>"; };
-		788BE98286C5622244B9A7F5 /* libPods-Indy.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Indy.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		CB6A56DBDD1F10585C90ECA8 /* Pods-Indy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy.release.xcconfig"; path = "Pods/Target Support Files/Pods-Indy/Pods-Indy.release.xcconfig"; sourceTree = "<group>"; };
-/* End PBXFileReference section */
-
-/* Begin PBXFrameworksBuildPhase section */
-		3E08C0171EB3336A000A73BA /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				3E8809E51EB88AED00E0AA5F /* libsqlite3.0.tbd in Frameworks */,
-				E32B103AE817115C80F0142F /* libPods-Indy.a in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXFrameworksBuildPhase section */
-
-/* Begin PBXGroup section */
-		2C11A2035B94F34DF5CCDB2A /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				3E8809E41EB88AED00E0AA5F /* libsqlite3.0.tbd */,
-				788BE98286C5622244B9A7F5 /* libPods-Indy.a */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		3E08C0111EB3336A000A73BA = {
-			isa = PBXGroup;
-			children = (
-				5DB57A0E1F711EE600EB4C90 /* Indy */,
-				3E08C01C1EB3336A000A73BA /* Products */,
-				7AA078817B8C2B22C808AE50 /* Pods */,
-				2C11A2035B94F34DF5CCDB2A /* Frameworks */,
-			);
-			sourceTree = "<group>";
-		};
-		3E08C01C1EB3336A000A73BA /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				3E08C01B1EB3336A000A73BA /* Indy.framework */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		5D57DEC01F853A9600CD63FE /* Utils */ = {
-			isa = PBXGroup;
-			children = (
-				5D57DEC11F853A9600CD63FE /* Exstensions */,
-				5D57DECA1F853A9700CD63FE /* IndyCallbacks.h */,
-				5D57DECB1F853A9700CD63FE /* IndyCallbacks.mm */,
-				5D57DECC1F853A9700CD63FE /* IndySequenceUtils.h */,
-				5D57DECD1F853A9700CD63FE /* IndySequenceUtils.m */,
-			);
-			path = Utils;
-			sourceTree = "<group>";
-		};
-		5D57DEC11F853A9600CD63FE /* Exstensions */ = {
-			isa = PBXGroup;
-			children = (
-				5D57DEC21F853A9600CD63FE /* DictionaryExtension.swift */,
-				5D57DEC31F853A9600CD63FE /* NSDictionary+JSON.h */,
-				5D57DEC41F853A9600CD63FE /* NSDictionary+JSON.m */,
-				5D57DEC51F853A9600CD63FE /* NSError+IndyError.h */,
-				5D57DEC61F853A9700CD63FE /* NSError+IndyError.m */,
-				5D57DEC71F853A9700CD63FE /* NSString+JSON.h */,
-				5D57DEC81F853A9700CD63FE /* NSString+JSON.m */,
-				5D57DEC91F853A9700CD63FE /* StringExtensions.swift */,
-			);
-			path = Exstensions;
-			sourceTree = "<group>";
-		};
-		5DB57A0E1F711EE600EB4C90 /* Indy */ = {
-			isa = PBXGroup;
-			children = (
-				5D57DEC01F853A9600CD63FE /* Utils */,
-				5DB57A0F1F711EE600EB4C90 /* Info.plist */,
-				5DB57A101F711EE600EB4C90 /* Keychain Wrapper */,
-				5DB57A141F711EE600EB4C90 /* Indy.h */,
-				5DB57A231F711EE600EB4C90 /* Wallet */,
-				5DB57A2B1F711EE600EB4C90 /* Wrapper */,
-			);
-			path = Indy;
-			sourceTree = "<group>";
-		};
-		5DB57A101F711EE600EB4C90 /* Keychain Wrapper */ = {
-			isa = PBXGroup;
-			children = (
-				5DB57A111F711EE600EB4C90 /* KeychainAccessibility.swift */,
-				5DB57A121F711EE600EB4C90 /* KeychainError.swift */,
-				5DB57A131F711EE600EB4C90 /* KeychainWrapper.swift */,
-			);
-			path = "Keychain Wrapper";
-			sourceTree = "<group>";
-		};
-		5DB57A231F711EE600EB4C90 /* Wallet */ = {
-			isa = PBXGroup;
-			children = (
-				5DB57A241F711EE600EB4C90 /* IndyKeychainWallet.h */,
-				5DB57A251F711EE600EB4C90 /* IndyKeychainWallet.m */,
-				5DB57A261F711EE600EB4C90 /* IndyKeychainWalletConfig.h */,
-				5DB57A271F711EE600EB4C90 /* IndyKeychainWalletConfig.m */,
-				5DB57A281F711EE600EB4C90 /* IndyKeychainWalletItem.swift */,
-				5DB57A291F711EE600EB4C90 /* IndyWalletCallbacks.h */,
-				5DB57A2A1F711EE600EB4C90 /* IndyWalletCallbacks.m */,
-			);
-			path = Wallet;
-			sourceTree = "<group>";
-		};
-		5DB57A2B1F711EE600EB4C90 /* Wrapper */ = {
-			isa = PBXGroup;
-			children = (
-				5D57DEE01F861FBD00CD63FE /* IndyPairwise.h */,
-				5D57DEE11F861FBD00CD63FE /* IndyPairwise.mm */,
-				5DB57A2C1F711EE600EB4C90 /* IndyAgent.h */,
-				5DB57A2D1F711EE600EB4C90 /* IndyAgent.mm */,
-				5DB57A2E1F711EE600EB4C90 /* IndyAnoncreds.h */,
-				5DB57A2F1F711EE600EB4C90 /* IndyAnoncreds.mm */,
-				5DB57A301F711EE600EB4C90 /* IndyErrors.h */,
-				5DB57A311F711EE600EB4C90 /* IndyLedger.h */,
-				5DB57A321F711EE600EB4C90 /* IndyLedger.mm */,
-				5DB57A331F711EE600EB4C90 /* IndyPool.h */,
-				5DB57A341F711EE600EB4C90 /* IndyPool.mm */,
-				5DB57A351F711EE600EB4C90 /* IndySignus.h */,
-				5DB57A361F711EE600EB4C90 /* IndySignus.mm */,
-				5DB57A371F711EE600EB4C90 /* IndyTypes.h */,
-				5DB57A381F711EE600EB4C90 /* IndyWallet.h */,
-				5DB57A391F711EE600EB4C90 /* IndyWallet.mm */,
-				5DB57A3A1F711EE600EB4C90 /* IndyWalletProtocols.h */,
-			);
-			path = Wrapper;
-			sourceTree = "<group>";
-		};
-		7AA078817B8C2B22C808AE50 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				3E7A1C4BE17271AC1BB4E256 /* Pods-Indy.debug.xcconfig */,
-				CB6A56DBDD1F10585C90ECA8 /* Pods-Indy.release.xcconfig */,
-			);
-			name = Pods;
-			sourceTree = "<group>";
-		};
-/* End PBXGroup section */
-
-/* Begin PBXHeadersBuildPhase section */
-		3E08C0181EB3336A000A73BA /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				5DB57A541F711EE600EB4C90 /* IndyAgent.h in Headers */,
-				5D57DED61F853A9700CD63FE /* IndyCallbacks.h in Headers */,
-				5DB57A621F711EE600EB4C90 /* IndyWalletProtocols.h in Headers */,
-				5D57DEE21F861FBD00CD63FE /* IndyPairwise.h in Headers */,
-				5DB57A4D1F711EE600EB4C90 /* IndyKeychainWallet.h in Headers */,
-				5DB57A581F711EE600EB4C90 /* IndyErrors.h in Headers */,
-				5DB57A5B1F711EE600EB4C90 /* IndyPool.h in Headers */,
-				5DB57A561F711EE600EB4C90 /* IndyAnoncreds.h in Headers */,
-				5DB57A601F711EE600EB4C90 /* IndyWallet.h in Headers */,
-				5D57DED81F853A9700CD63FE /* IndySequenceUtils.h in Headers */,
-				5DB57A401F711EE600EB4C90 /* Indy.h in Headers */,
-				5DB57A5F1F711EE600EB4C90 /* IndyTypes.h in Headers */,
-				5DB57A591F711EE600EB4C90 /* IndyLedger.h in Headers */,
-				5D57DECF1F853A9700CD63FE /* NSDictionary+JSON.h in Headers */,
-				5D57DED31F853A9700CD63FE /* NSString+JSON.h in Headers */,
-				5DB57A521F711EE600EB4C90 /* IndyWalletCallbacks.h in Headers */,
-				5D57DED11F853A9700CD63FE /* NSError+IndyError.h in Headers */,
-				5DB57A4F1F711EE600EB4C90 /* IndyKeychainWalletConfig.h in Headers */,
-				5DB57A5D1F711EE600EB4C90 /* IndySignus.h in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXHeadersBuildPhase section */
-
-/* Begin PBXNativeTarget section */
-		3E08C01A1EB3336A000A73BA /* Indy */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 3E08C0231EB3336A000A73BA /* Build configuration list for PBXNativeTarget "Indy" */;
-			buildPhases = (
-				D6BFF417833531D0F48BA45D /* [CP] Check Pods Manifest.lock */,
-				3E08C0161EB3336A000A73BA /* Sources */,
-				3E08C0171EB3336A000A73BA /* Frameworks */,
-				3E08C0181EB3336A000A73BA /* Headers */,
-				3E08C0191EB3336A000A73BA /* Resources */,
-				20433C185692631015495540 /* [CP] Copy Pods Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = Indy;
-			productName = libindy;
-			productReference = 3E08C01B1EB3336A000A73BA /* Indy.framework */;
-			productType = "com.apple.product-type.framework";
-		};
-/* End PBXNativeTarget section */
-
-/* Begin PBXProject section */
-		3E08C0121EB3336A000A73BA /* Project object */ = {
-			isa = PBXProject;
-			attributes = {
-				LastUpgradeCheck = 0830;
-				ORGANIZATIONNAME = Hyperledger;
-				TargetAttributes = {
-					3E08C01A1EB3336A000A73BA = {
-						CreatedOnToolsVersion = 8.3.2;
-						DevelopmentTeam = ES8QU3D2A4;
-						LastSwiftMigration = 0830;
-						ProvisioningStyle = Automatic;
-					};
-				};
-			};
-			buildConfigurationList = 3E08C0151EB3336A000A73BA /* Build configuration list for PBXProject "Indy" */;
-			compatibilityVersion = "Xcode 3.2";
-			developmentRegion = English;
-			hasScannedForEncodings = 0;
-			knownRegions = (
-				en,
-			);
-			mainGroup = 3E08C0111EB3336A000A73BA;
-			productRefGroup = 3E08C01C1EB3336A000A73BA /* Products */;
-			projectDirPath = "";
-			projectRoot = "";
-			targets = (
-				3E08C01A1EB3336A000A73BA /* Indy */,
-			);
-		};
-/* End PBXProject section */
-
-/* Begin PBXResourcesBuildPhase section */
-		3E08C0191EB3336A000A73BA /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		20433C185692631015495540 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Indy/Pods-Indy-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		D6BFF417833531D0F48BA45D /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-Indy-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
-
-/* Begin PBXSourcesBuildPhase section */
-		3E08C0161EB3336A000A73BA /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				5DB57A611F711EE600EB4C90 /* IndyWallet.mm in Sources */,
-				5DB57A3F1F711EE600EB4C90 /* KeychainWrapper.swift in Sources */,
-				5DB57A4E1F711EE600EB4C90 /* IndyKeychainWallet.m in Sources */,
-				5DB57A501F711EE600EB4C90 /* IndyKeychainWalletConfig.m in Sources */,
-				5DB57A3E1F711EE600EB4C90 /* KeychainError.swift in Sources */,
-				5DB57A5C1F711EE600EB4C90 /* IndyPool.mm in Sources */,
-				5DB57A571F711EE600EB4C90 /* IndyAnoncreds.mm in Sources */,
-				5DB57A5A1F711EE600EB4C90 /* IndyLedger.mm in Sources */,
-				5D57DED21F853A9700CD63FE /* NSError+IndyError.m in Sources */,
-				5D57DED91F853A9700CD63FE /* IndySequenceUtils.m in Sources */,
-				5DB57A3D1F711EE600EB4C90 /* KeychainAccessibility.swift in Sources */,
-				5D57DED01F853A9700CD63FE /* NSDictionary+JSON.m in Sources */,
-				5DB57A531F711EE600EB4C90 /* IndyWalletCallbacks.m in Sources */,
-				5D57DED41F853A9700CD63FE /* NSString+JSON.m in Sources */,
-				5DB57A5E1F711EE600EB4C90 /* IndySignus.mm in Sources */,
-				5D57DECE1F853A9700CD63FE /* DictionaryExtension.swift in Sources */,
-				5D57DED71F853A9700CD63FE /* IndyCallbacks.mm in Sources */,
-				5DB57A551F711EE600EB4C90 /* IndyAgent.mm in Sources */,
-				5DB57A511F711EE600EB4C90 /* IndyKeychainWalletItem.swift in Sources */,
-				5D57DEE31F861FBD00CD63FE /* IndyPairwise.mm in Sources */,
-				5D57DED51F853A9700CD63FE /* StringExtensions.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXSourcesBuildPhase section */
-
-/* Begin XCBuildConfiguration section */
-		3E08C0211EB3336A000A73BA /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
-				MTL_ENABLE_DEBUG_INFO = YES;
-				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VERSIONING_SYSTEM = "apple-generic";
-				VERSION_INFO_PREFIX = "";
-			};
-			name = Debug;
-		};
-		3E08C0221EB3336A000A73BA /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				SDKROOT = iphoneos;
-				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VALIDATE_PRODUCT = YES;
-				VERSIONING_SYSTEM = "apple-generic";
-				VERSION_INFO_PREFIX = "";
-			};
-			name = Release;
-		};
-		3E08C0241EB3336A000A73BA /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3E7A1C4BE17271AC1BB4E256 /* Pods-Indy.debug.xcconfig */;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
-				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_IDENTITY = "";
-				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = ES8QU3D2A4;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_BITCODE = NO;
-				FRAMEWORK_SEARCH_PATHS = "";
-				INFOPLIST_FILE = Indy/Info.plist;
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/build/Debug-iphoneos",
-				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-ObjC",
-					"-l\"crypto\"",
-					"-l\"indy\"",
-					"-l\"libsodium\"",
-					"-l\"libzmq-pw\"",
-					"-l\"milagro\"",
-					"-l\"ssl\"",
-					"-l\"stdc++\"",
-					"-\"lpthread\"",
-					"-\"lresolv\"",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = org.hyperledger.indy;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "";
-				SWIFT_OBJC_INTERFACE_HEADER_NAME = "$(PROJECT_NAME)-Swift.h";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 3.0;
-				USER_HEADER_SEARCH_PATHS = "$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).framework/Headers $(CONTENTS_FOLDER_PATH)/Headers";
-			};
-			name = Debug;
-		};
-		3E08C0251EB3336A000A73BA /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = CB6A56DBDD1F10585C90ECA8 /* Pods-Indy.release.xcconfig */;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
-				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_IDENTITY = "";
-				DEFINES_MODULE = YES;
-				DEVELOPMENT_TEAM = ES8QU3D2A4;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_BITCODE = NO;
-				FRAMEWORK_SEARCH_PATHS = "";
-				INFOPLIST_FILE = Indy/Info.plist;
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/build/Debug-iphoneos",
-				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-ObjC",
-					"-l\"crypto\"",
-					"-l\"indy\"",
-					"-l\"libsodium\"",
-					"-l\"libzmq-pw\"",
-					"-l\"milagro\"",
-					"-l\"ssl\"",
-					"-l\"stdc++\"",
-					"-\"lpthread\"",
-					"-\"lresolv\"",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = org.hyperledger.indy;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "";
-				SWIFT_OBJC_INTERFACE_HEADER_NAME = "$(PROJECT_NAME)-Swift.h";
-				SWIFT_VERSION = 3.0;
-				USER_HEADER_SEARCH_PATHS = "$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).framework/Headers";
-			};
-			name = Release;
-		};
-/* End XCBuildConfiguration section */
-
-/* Begin XCConfigurationList section */
-		3E08C0151EB3336A000A73BA /* Build configuration list for PBXProject "Indy" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				3E08C0211EB3336A000A73BA /* Debug */,
-				3E08C0221EB3336A000A73BA /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		3E08C0231EB3336A000A73BA /* Build configuration list for PBXNativeTarget "Indy" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				3E08C0241EB3336A000A73BA /* Debug */,
-				3E08C0251EB3336A000A73BA /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-/* End XCConfigurationList section */
-	};
-	rootObject = 3E08C0121EB3336A000A73BA /* Project object */;
-}
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>archiveVersion</key>
+	<string>1</string>
+	<key>classes</key>
+	<dict/>
+	<key>objectVersion</key>
+	<string>46</string>
+	<key>objects</key>
+	<dict>
+		<key>20433C185692631015495540</key>
+		<dict>
+			<key>buildActionMask</key>
+			<string>2147483647</string>
+			<key>files</key>
+			<array/>
+			<key>inputPaths</key>
+			<array/>
+			<key>isa</key>
+			<string>PBXShellScriptBuildPhase</string>
+			<key>name</key>
+			<string>[CP] Copy Pods Resources</string>
+			<key>outputPaths</key>
+			<array/>
+			<key>runOnlyForDeploymentPostprocessing</key>
+			<string>0</string>
+			<key>shellPath</key>
+			<string>/bin/sh</string>
+			<key>shellScript</key>
+			<string>"${SRCROOT}/Pods/Target Support Files/Pods-Indy/Pods-Indy-resources.sh"
+</string>
+			<key>showEnvVarsInLog</key>
+			<string>0</string>
+		</dict>
+		<key>2C11A2035B94F34DF5CCDB2A</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>3E8809E41EB88AED00E0AA5F</string>
+				<string>788BE98286C5622244B9A7F5</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>name</key>
+			<string>Frameworks</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>3E08C0111EB3336A000A73BA</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>5DB57A0E1F711EE600EB4C90</string>
+				<string>3E08C01C1EB3336A000A73BA</string>
+				<string>7AA078817B8C2B22C808AE50</string>
+				<string>2C11A2035B94F34DF5CCDB2A</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>3E08C0121EB3336A000A73BA</key>
+		<dict>
+			<key>attributes</key>
+			<dict>
+				<key>LastUpgradeCheck</key>
+				<string>0830</string>
+				<key>ORGANIZATIONNAME</key>
+				<string>Hyperledger</string>
+				<key>TargetAttributes</key>
+				<dict>
+					<key>3E08C01A1EB3336A000A73BA</key>
+					<dict>
+						<key>CreatedOnToolsVersion</key>
+						<string>8.3.2</string>
+						<key>DevelopmentTeam</key>
+						<string>ES8QU3D2A4</string>
+						<key>LastSwiftMigration</key>
+						<string>0830</string>
+						<key>ProvisioningStyle</key>
+						<string>Automatic</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>buildConfigurationList</key>
+			<string>3E08C0151EB3336A000A73BA</string>
+			<key>compatibilityVersion</key>
+			<string>Xcode 3.2</string>
+			<key>developmentRegion</key>
+			<string>English</string>
+			<key>hasScannedForEncodings</key>
+			<string>0</string>
+			<key>isa</key>
+			<string>PBXProject</string>
+			<key>knownRegions</key>
+			<array>
+				<string>en</string>
+			</array>
+			<key>mainGroup</key>
+			<string>3E08C0111EB3336A000A73BA</string>
+			<key>productRefGroup</key>
+			<string>3E08C01C1EB3336A000A73BA</string>
+			<key>projectDirPath</key>
+			<string></string>
+			<key>projectReferences</key>
+			<array/>
+			<key>projectRoot</key>
+			<string></string>
+			<key>targets</key>
+			<array>
+				<string>3E08C01A1EB3336A000A73BA</string>
+			</array>
+		</dict>
+		<key>3E08C0151EB3336A000A73BA</key>
+		<dict>
+			<key>buildConfigurations</key>
+			<array>
+				<string>3E08C0211EB3336A000A73BA</string>
+				<string>3E08C0221EB3336A000A73BA</string>
+			</array>
+			<key>defaultConfigurationIsVisible</key>
+			<string>0</string>
+			<key>defaultConfigurationName</key>
+			<string>Release</string>
+			<key>isa</key>
+			<string>XCConfigurationList</string>
+		</dict>
+		<key>3E08C0161EB3336A000A73BA</key>
+		<dict>
+			<key>buildActionMask</key>
+			<string>2147483647</string>
+			<key>files</key>
+			<array>
+				<string>5DB57A611F711EE600EB4C90</string>
+				<string>5DB57A3F1F711EE600EB4C90</string>
+				<string>5DB57A4E1F711EE600EB4C90</string>
+				<string>5DB57A501F711EE600EB4C90</string>
+				<string>5DB57A3E1F711EE600EB4C90</string>
+				<string>5DB57A5C1F711EE600EB4C90</string>
+				<string>5DB57A571F711EE600EB4C90</string>
+				<string>5DB57A5A1F711EE600EB4C90</string>
+				<string>5D57DED21F853A9700CD63FE</string>
+				<string>5D57DED91F853A9700CD63FE</string>
+				<string>5DB57A3D1F711EE600EB4C90</string>
+				<string>5D57DED01F853A9700CD63FE</string>
+				<string>5DB57A531F711EE600EB4C90</string>
+				<string>5D57DED41F853A9700CD63FE</string>
+				<string>5DB57A5E1F711EE600EB4C90</string>
+				<string>5D57DECE1F853A9700CD63FE</string>
+				<string>5D57DED71F853A9700CD63FE</string>
+				<string>5DB57A551F711EE600EB4C90</string>
+				<string>5DB57A511F711EE600EB4C90</string>
+				<string>5D57DEE31F861FBD00CD63FE</string>
+				<string>5D57DED51F853A9700CD63FE</string>
+			</array>
+			<key>isa</key>
+			<string>PBXSourcesBuildPhase</string>
+			<key>runOnlyForDeploymentPostprocessing</key>
+			<string>0</string>
+		</dict>
+		<key>3E08C0171EB3336A000A73BA</key>
+		<dict>
+			<key>buildActionMask</key>
+			<string>2147483647</string>
+			<key>files</key>
+			<array>
+				<string>3E8809E51EB88AED00E0AA5F</string>
+				<string>E32B103AE817115C80F0142F</string>
+			</array>
+			<key>isa</key>
+			<string>PBXFrameworksBuildPhase</string>
+			<key>runOnlyForDeploymentPostprocessing</key>
+			<string>0</string>
+		</dict>
+		<key>3E08C0181EB3336A000A73BA</key>
+		<dict>
+			<key>buildActionMask</key>
+			<string>2147483647</string>
+			<key>files</key>
+			<array>
+				<string>5DB57A541F711EE600EB4C90</string>
+				<string>5D57DED61F853A9700CD63FE</string>
+				<string>5DB57A621F711EE600EB4C90</string>
+				<string>5D57DEE21F861FBD00CD63FE</string>
+				<string>5DB57A4D1F711EE600EB4C90</string>
+				<string>5DB57A581F711EE600EB4C90</string>
+				<string>5DB57A5B1F711EE600EB4C90</string>
+				<string>5DB57A561F711EE600EB4C90</string>
+				<string>5DB57A601F711EE600EB4C90</string>
+				<string>5D57DED81F853A9700CD63FE</string>
+				<string>5DB57A401F711EE600EB4C90</string>
+				<string>5DB57A5F1F711EE600EB4C90</string>
+				<string>5DB57A591F711EE600EB4C90</string>
+				<string>5D57DECF1F853A9700CD63FE</string>
+				<string>5D57DED31F853A9700CD63FE</string>
+				<string>5DB57A521F711EE600EB4C90</string>
+				<string>5D57DED11F853A9700CD63FE</string>
+				<string>5DB57A4F1F711EE600EB4C90</string>
+				<string>5DB57A5D1F711EE600EB4C90</string>
+			</array>
+			<key>isa</key>
+			<string>PBXHeadersBuildPhase</string>
+			<key>runOnlyForDeploymentPostprocessing</key>
+			<string>0</string>
+		</dict>
+		<key>3E08C0191EB3336A000A73BA</key>
+		<dict>
+			<key>buildActionMask</key>
+			<string>2147483647</string>
+			<key>files</key>
+			<array/>
+			<key>isa</key>
+			<string>PBXResourcesBuildPhase</string>
+			<key>runOnlyForDeploymentPostprocessing</key>
+			<string>0</string>
+		</dict>
+		<key>3E08C01A1EB3336A000A73BA</key>
+		<dict>
+			<key>buildConfigurationList</key>
+			<string>3E08C0231EB3336A000A73BA</string>
+			<key>buildPhases</key>
+			<array>
+				<string>D6BFF417833531D0F48BA45D</string>
+				<string>3E08C0161EB3336A000A73BA</string>
+				<string>3E08C0171EB3336A000A73BA</string>
+				<string>3E08C0181EB3336A000A73BA</string>
+				<string>3E08C0191EB3336A000A73BA</string>
+				<string>20433C185692631015495540</string>
+			</array>
+			<key>buildRules</key>
+			<array/>
+			<key>dependencies</key>
+			<array/>
+			<key>isa</key>
+			<string>PBXNativeTarget</string>
+			<key>name</key>
+			<string>Indy</string>
+			<key>productName</key>
+			<string>libindy</string>
+			<key>productReference</key>
+			<string>3E08C01B1EB3336A000A73BA</string>
+			<key>productType</key>
+			<string>com.apple.product-type.framework</string>
+		</dict>
+		<key>3E08C01B1EB3336A000A73BA</key>
+		<dict>
+			<key>explicitFileType</key>
+			<string>wrapper.framework</string>
+			<key>includeInIndex</key>
+			<string>0</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>path</key>
+			<string>Indy.framework</string>
+			<key>sourceTree</key>
+			<string>BUILT_PRODUCTS_DIR</string>
+		</dict>
+		<key>3E08C01C1EB3336A000A73BA</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>3E08C01B1EB3336A000A73BA</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>name</key>
+			<string>Products</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>3E08C0211EB3336A000A73BA</key>
+		<dict>
+			<key>buildSettings</key>
+			<dict>
+				<key>ALWAYS_SEARCH_USER_PATHS</key>
+				<string>NO</string>
+				<key>CLANG_ANALYZER_NONNULL</key>
+				<string>YES</string>
+				<key>CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION</key>
+				<string>YES_AGGRESSIVE</string>
+				<key>CLANG_CXX_LANGUAGE_STANDARD</key>
+				<string>gnu++0x</string>
+				<key>CLANG_CXX_LIBRARY</key>
+				<string>libc++</string>
+				<key>CLANG_ENABLE_MODULES</key>
+				<string>YES</string>
+				<key>CLANG_ENABLE_OBJC_ARC</key>
+				<string>YES</string>
+				<key>CLANG_WARN_BOOL_CONVERSION</key>
+				<string>YES</string>
+				<key>CLANG_WARN_CONSTANT_CONVERSION</key>
+				<string>YES</string>
+				<key>CLANG_WARN_DIRECT_OBJC_ISA_USAGE</key>
+				<string>YES_ERROR</string>
+				<key>CLANG_WARN_DOCUMENTATION_COMMENTS</key>
+				<string>YES</string>
+				<key>CLANG_WARN_EMPTY_BODY</key>
+				<string>YES</string>
+				<key>CLANG_WARN_ENUM_CONVERSION</key>
+				<string>YES</string>
+				<key>CLANG_WARN_INFINITE_RECURSION</key>
+				<string>YES</string>
+				<key>CLANG_WARN_INT_CONVERSION</key>
+				<string>YES</string>
+				<key>CLANG_WARN_OBJC_ROOT_CLASS</key>
+				<string>YES_ERROR</string>
+				<key>CLANG_WARN_SUSPICIOUS_MOVE</key>
+				<string>YES</string>
+				<key>CLANG_WARN_UNREACHABLE_CODE</key>
+				<string>YES</string>
+				<key>CLANG_WARN__DUPLICATE_METHOD_MATCH</key>
+				<string>YES</string>
+				<key>CODE_SIGN_IDENTITY[sdk=iphoneos*]</key>
+				<string>iPhone Developer</string>
+				<key>COPY_PHASE_STRIP</key>
+				<string>NO</string>
+				<key>CURRENT_PROJECT_VERSION</key>
+				<string>1</string>
+				<key>DEBUG_INFORMATION_FORMAT</key>
+				<string>dwarf</string>
+				<key>ENABLE_STRICT_OBJC_MSGSEND</key>
+				<string>YES</string>
+				<key>ENABLE_TESTABILITY</key>
+				<string>YES</string>
+				<key>GCC_C_LANGUAGE_STANDARD</key>
+				<string>gnu99</string>
+				<key>GCC_DYNAMIC_NO_PIC</key>
+				<string>NO</string>
+				<key>GCC_NO_COMMON_BLOCKS</key>
+				<string>YES</string>
+				<key>GCC_OPTIMIZATION_LEVEL</key>
+				<string>0</string>
+				<key>GCC_PREPROCESSOR_DEFINITIONS</key>
+				<array>
+					<string>DEBUG=1</string>
+					<string>$(inherited)</string>
+				</array>
+				<key>GCC_WARN_64_TO_32_BIT_CONVERSION</key>
+				<string>YES</string>
+				<key>GCC_WARN_ABOUT_RETURN_TYPE</key>
+				<string>YES_ERROR</string>
+				<key>GCC_WARN_UNDECLARED_SELECTOR</key>
+				<string>YES</string>
+				<key>GCC_WARN_UNINITIALIZED_AUTOS</key>
+				<string>YES_AGGRESSIVE</string>
+				<key>GCC_WARN_UNUSED_FUNCTION</key>
+				<string>YES</string>
+				<key>GCC_WARN_UNUSED_VARIABLE</key>
+				<string>YES</string>
+				<key>IPHONEOS_DEPLOYMENT_TARGET</key>
+				<string>10.2</string>
+				<key>MTL_ENABLE_DEBUG_INFO</key>
+				<string>YES</string>
+				<key>ONLY_ACTIVE_ARCH</key>
+				<string>YES</string>
+				<key>SDKROOT</key>
+				<string>iphoneos</string>
+				<key>TARGETED_DEVICE_FAMILY</key>
+				<string>1,2</string>
+				<key>VERSIONING_SYSTEM</key>
+				<string>apple-generic</string>
+				<key>VERSION_INFO_PREFIX</key>
+				<string></string>
+			</dict>
+			<key>isa</key>
+			<string>XCBuildConfiguration</string>
+			<key>name</key>
+			<string>Debug</string>
+		</dict>
+		<key>3E08C0221EB3336A000A73BA</key>
+		<dict>
+			<key>buildSettings</key>
+			<dict>
+				<key>ALWAYS_SEARCH_USER_PATHS</key>
+				<string>NO</string>
+				<key>CLANG_ANALYZER_NONNULL</key>
+				<string>YES</string>
+				<key>CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION</key>
+				<string>YES_AGGRESSIVE</string>
+				<key>CLANG_CXX_LANGUAGE_STANDARD</key>
+				<string>gnu++0x</string>
+				<key>CLANG_CXX_LIBRARY</key>
+				<string>libc++</string>
+				<key>CLANG_ENABLE_MODULES</key>
+				<string>YES</string>
+				<key>CLANG_ENABLE_OBJC_ARC</key>
+				<string>YES</string>
+				<key>CLANG_WARN_BOOL_CONVERSION</key>
+				<string>YES</string>
+				<key>CLANG_WARN_CONSTANT_CONVERSION</key>
+				<string>YES</string>
+				<key>CLANG_WARN_DIRECT_OBJC_ISA_USAGE</key>
+				<string>YES_ERROR</string>
+				<key>CLANG_WARN_DOCUMENTATION_COMMENTS</key>
+				<string>YES</string>
+				<key>CLANG_WARN_EMPTY_BODY</key>
+				<string>YES</string>
+				<key>CLANG_WARN_ENUM_CONVERSION</key>
+				<string>YES</string>
+				<key>CLANG_WARN_INFINITE_RECURSION</key>
+				<string>YES</string>
+				<key>CLANG_WARN_INT_CONVERSION</key>
+				<string>YES</string>
+				<key>CLANG_WARN_OBJC_ROOT_CLASS</key>
+				<string>YES_ERROR</string>
+				<key>CLANG_WARN_SUSPICIOUS_MOVE</key>
+				<string>YES</string>
+				<key>CLANG_WARN_UNREACHABLE_CODE</key>
+				<string>YES</string>
+				<key>CLANG_WARN__DUPLICATE_METHOD_MATCH</key>
+				<string>YES</string>
+				<key>CODE_SIGN_IDENTITY[sdk=iphoneos*]</key>
+				<string>iPhone Developer</string>
+				<key>COPY_PHASE_STRIP</key>
+				<string>NO</string>
+				<key>CURRENT_PROJECT_VERSION</key>
+				<string>1</string>
+				<key>DEBUG_INFORMATION_FORMAT</key>
+				<string>dwarf-with-dsym</string>
+				<key>ENABLE_NS_ASSERTIONS</key>
+				<string>NO</string>
+				<key>ENABLE_STRICT_OBJC_MSGSEND</key>
+				<string>YES</string>
+				<key>GCC_C_LANGUAGE_STANDARD</key>
+				<string>gnu99</string>
+				<key>GCC_NO_COMMON_BLOCKS</key>
+				<string>YES</string>
+				<key>GCC_WARN_64_TO_32_BIT_CONVERSION</key>
+				<string>YES</string>
+				<key>GCC_WARN_ABOUT_RETURN_TYPE</key>
+				<string>YES_ERROR</string>
+				<key>GCC_WARN_UNDECLARED_SELECTOR</key>
+				<string>YES</string>
+				<key>GCC_WARN_UNINITIALIZED_AUTOS</key>
+				<string>YES_AGGRESSIVE</string>
+				<key>GCC_WARN_UNUSED_FUNCTION</key>
+				<string>YES</string>
+				<key>GCC_WARN_UNUSED_VARIABLE</key>
+				<string>YES</string>
+				<key>IPHONEOS_DEPLOYMENT_TARGET</key>
+				<string>10.2</string>
+				<key>MTL_ENABLE_DEBUG_INFO</key>
+				<string>NO</string>
+				<key>SDKROOT</key>
+				<string>iphoneos</string>
+				<key>SWIFT_OPTIMIZATION_LEVEL</key>
+				<string>-Owholemodule</string>
+				<key>TARGETED_DEVICE_FAMILY</key>
+				<string>1,2</string>
+				<key>VALIDATE_PRODUCT</key>
+				<string>YES</string>
+				<key>VERSIONING_SYSTEM</key>
+				<string>apple-generic</string>
+				<key>VERSION_INFO_PREFIX</key>
+				<string></string>
+			</dict>
+			<key>isa</key>
+			<string>XCBuildConfiguration</string>
+			<key>name</key>
+			<string>Release</string>
+		</dict>
+		<key>3E08C0231EB3336A000A73BA</key>
+		<dict>
+			<key>buildConfigurations</key>
+			<array>
+				<string>3E08C0241EB3336A000A73BA</string>
+				<string>3E08C0251EB3336A000A73BA</string>
+			</array>
+			<key>defaultConfigurationIsVisible</key>
+			<string>0</string>
+			<key>defaultConfigurationName</key>
+			<string>Release</string>
+			<key>isa</key>
+			<string>XCConfigurationList</string>
+		</dict>
+		<key>3E08C0241EB3336A000A73BA</key>
+		<dict>
+			<key>baseConfigurationReference</key>
+			<string>3E7A1C4BE17271AC1BB4E256</string>
+			<key>buildSettings</key>
+			<dict>
+				<key>ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES</key>
+				<string>NO</string>
+				<key>CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES</key>
+				<string>NO</string>
+				<key>CLANG_ENABLE_MODULES</key>
+				<string>YES</string>
+				<key>CODE_SIGN_IDENTITY</key>
+				<string></string>
+				<key>DEFINES_MODULE</key>
+				<string>YES</string>
+				<key>DEVELOPMENT_TEAM</key>
+				<string>ES8QU3D2A4</string>
+				<key>DYLIB_COMPATIBILITY_VERSION</key>
+				<string>1</string>
+				<key>DYLIB_CURRENT_VERSION</key>
+				<string>1</string>
+				<key>DYLIB_INSTALL_NAME_BASE</key>
+				<string>@rpath</string>
+				<key>ENABLE_BITCODE</key>
+				<string>NO</string>
+				<key>FRAMEWORK_SEARCH_PATHS</key>
+				<string></string>
+				<key>INFOPLIST_FILE</key>
+				<string>Indy/Info.plist</string>
+				<key>INSTALL_PATH</key>
+				<string>$(LOCAL_LIBRARY_DIR)/Frameworks</string>
+				<key>IPHONEOS_DEPLOYMENT_TARGET</key>
+				<string>10.0</string>
+				<key>LD_RUNPATH_SEARCH_PATHS</key>
+				<string>$(inherited) @executable_path/Frameworks @loader_path/Frameworks</string>
+				<key>LIBRARY_SEARCH_PATHS</key>
+				<array>
+					<string>$(inherited)</string>
+					<string>$(PROJECT_DIR)/build/Debug-iphoneos</string>
+				</array>
+				<key>OTHER_LDFLAGS</key>
+				<array>
+					<string>$(inherited)</string>
+					<string>-ObjC</string>
+					<string>-l"crypto"</string>
+					<string>-l"indy"</string>
+					<string>-l"libsodium"</string>
+					<string>-l"libzmq-pw"</string>
+					<string>-l"milagro"</string>
+					<string>-l"ssl"</string>
+					<string>-l"stdc++"</string>
+					<string>-"lpthread"</string>
+					<string>-"lresolv"</string>
+				</array>
+				<key>PRODUCT_BUNDLE_IDENTIFIER</key>
+				<string>org.hyperledger.indy</string>
+				<key>PRODUCT_NAME</key>
+				<string>$(TARGET_NAME)</string>
+				<key>SKIP_INSTALL</key>
+				<string>YES</string>
+				<key>SWIFT_OBJC_BRIDGING_HEADER</key>
+				<string></string>
+				<key>SWIFT_OBJC_INTERFACE_HEADER_NAME</key>
+				<string>$(PROJECT_NAME)-Swift.h</string>
+				<key>SWIFT_OPTIMIZATION_LEVEL</key>
+				<string>-Onone</string>
+				<key>SWIFT_VERSION</key>
+				<string>3.0</string>
+				<key>USER_HEADER_SEARCH_PATHS</key>
+				<string>$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).framework/Headers $(CONTENTS_FOLDER_PATH)/Headers</string>
+			</dict>
+			<key>isa</key>
+			<string>XCBuildConfiguration</string>
+			<key>name</key>
+			<string>Debug</string>
+		</dict>
+		<key>3E08C0251EB3336A000A73BA</key>
+		<dict>
+			<key>baseConfigurationReference</key>
+			<string>CB6A56DBDD1F10585C90ECA8</string>
+			<key>buildSettings</key>
+			<dict>
+				<key>ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES</key>
+				<string>NO</string>
+				<key>CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES</key>
+				<string>NO</string>
+				<key>CLANG_ENABLE_MODULES</key>
+				<string>YES</string>
+				<key>CODE_SIGN_IDENTITY</key>
+				<string></string>
+				<key>DEFINES_MODULE</key>
+				<string>YES</string>
+				<key>DEVELOPMENT_TEAM</key>
+				<string>ES8QU3D2A4</string>
+				<key>DYLIB_COMPATIBILITY_VERSION</key>
+				<string>1</string>
+				<key>DYLIB_CURRENT_VERSION</key>
+				<string>1</string>
+				<key>DYLIB_INSTALL_NAME_BASE</key>
+				<string>@rpath</string>
+				<key>ENABLE_BITCODE</key>
+				<string>NO</string>
+				<key>FRAMEWORK_SEARCH_PATHS</key>
+				<string></string>
+				<key>INFOPLIST_FILE</key>
+				<string>Indy/Info.plist</string>
+				<key>INSTALL_PATH</key>
+				<string>$(LOCAL_LIBRARY_DIR)/Frameworks</string>
+				<key>IPHONEOS_DEPLOYMENT_TARGET</key>
+				<string>10.0</string>
+				<key>LD_RUNPATH_SEARCH_PATHS</key>
+				<string>$(inherited) @executable_path/Frameworks @loader_path/Frameworks</string>
+				<key>LIBRARY_SEARCH_PATHS</key>
+				<array>
+					<string>$(inherited)</string>
+					<string>$(PROJECT_DIR)/build/Debug-iphoneos</string>
+				</array>
+				<key>OTHER_LDFLAGS</key>
+				<array>
+					<string>$(inherited)</string>
+					<string>-ObjC</string>
+					<string>-l"crypto"</string>
+					<string>-l"indy"</string>
+					<string>-l"libsodium"</string>
+					<string>-l"libzmq-pw"</string>
+					<string>-l"milagro"</string>
+					<string>-l"ssl"</string>
+					<string>-l"stdc++"</string>
+					<string>-"lpthread"</string>
+					<string>-"lresolv"</string>
+				</array>
+				<key>PRODUCT_BUNDLE_IDENTIFIER</key>
+				<string>org.hyperledger.indy</string>
+				<key>PRODUCT_NAME</key>
+				<string>$(TARGET_NAME)</string>
+				<key>SKIP_INSTALL</key>
+				<string>YES</string>
+				<key>SWIFT_OBJC_BRIDGING_HEADER</key>
+				<string></string>
+				<key>SWIFT_OBJC_INTERFACE_HEADER_NAME</key>
+				<string>$(PROJECT_NAME)-Swift.h</string>
+				<key>SWIFT_VERSION</key>
+				<string>3.0</string>
+				<key>USER_HEADER_SEARCH_PATHS</key>
+				<string>$(BUILT_PRODUCTS_DIR)/$(PRODUCT_NAME).framework/Headers</string>
+			</dict>
+			<key>isa</key>
+			<string>XCBuildConfiguration</string>
+			<key>name</key>
+			<string>Release</string>
+		</dict>
+		<key>3E7A1C4BE17271AC1BB4E256</key>
+		<dict>
+			<key>includeInIndex</key>
+			<string>1</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>text.xcconfig</string>
+			<key>name</key>
+			<string>Pods-Indy.debug.xcconfig</string>
+			<key>path</key>
+			<string>Pods/Target Support Files/Pods-Indy/Pods-Indy.debug.xcconfig</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>3E8809E41EB88AED00E0AA5F</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.text-based-dylib-definition</string>
+			<key>name</key>
+			<string>libsqlite3.0.tbd</string>
+			<key>path</key>
+			<string>usr/lib/libsqlite3.0.tbd</string>
+			<key>sourceTree</key>
+			<string>SDKROOT</string>
+		</dict>
+		<key>3E8809E51EB88AED00E0AA5F</key>
+		<dict>
+			<key>fileRef</key>
+			<string>3E8809E41EB88AED00E0AA5F</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5D57DEC01F853A9600CD63FE</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>5D57DEC11F853A9600CD63FE</string>
+				<string>5D57DECA1F853A9700CD63FE</string>
+				<string>5D57DECB1F853A9700CD63FE</string>
+				<string>5D57DECC1F853A9700CD63FE</string>
+				<string>5D57DECD1F853A9700CD63FE</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>path</key>
+			<string>Utils</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DEC11F853A9600CD63FE</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>5D57DEC21F853A9600CD63FE</string>
+				<string>5D57DEC31F853A9600CD63FE</string>
+				<string>5D57DEC41F853A9600CD63FE</string>
+				<string>5D57DEC51F853A9600CD63FE</string>
+				<string>5D57DEC61F853A9700CD63FE</string>
+				<string>5D57DEC71F853A9700CD63FE</string>
+				<string>5D57DEC81F853A9700CD63FE</string>
+				<string>5D57DEC91F853A9700CD63FE</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>path</key>
+			<string>Exstensions</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DEC21F853A9600CD63FE</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>DictionaryExtension.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DEC31F853A9600CD63FE</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>NSDictionary+JSON.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DEC41F853A9600CD63FE</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.objc</string>
+			<key>path</key>
+			<string>NSDictionary+JSON.m</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DEC51F853A9600CD63FE</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>NSError+IndyError.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DEC61F853A9700CD63FE</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.objc</string>
+			<key>path</key>
+			<string>NSError+IndyError.m</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DEC71F853A9700CD63FE</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>NSString+JSON.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DEC81F853A9700CD63FE</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.objc</string>
+			<key>path</key>
+			<string>NSString+JSON.m</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DEC91F853A9700CD63FE</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>StringExtensions.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DECA1F853A9700CD63FE</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>IndyCallbacks.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DECB1F853A9700CD63FE</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.cpp.objcpp</string>
+			<key>path</key>
+			<string>IndyCallbacks.mm</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DECC1F853A9700CD63FE</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>IndySequenceUtils.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DECD1F853A9700CD63FE</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.objc</string>
+			<key>path</key>
+			<string>IndySequenceUtils.m</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DECE1F853A9700CD63FE</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5D57DEC21F853A9600CD63FE</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5D57DECF1F853A9700CD63FE</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5D57DEC31F853A9600CD63FE</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5D57DED01F853A9700CD63FE</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5D57DEC41F853A9600CD63FE</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5D57DED11F853A9700CD63FE</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5D57DEC51F853A9600CD63FE</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5D57DED21F853A9700CD63FE</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5D57DEC61F853A9700CD63FE</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5D57DED31F853A9700CD63FE</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5D57DEC71F853A9700CD63FE</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5D57DED41F853A9700CD63FE</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5D57DEC81F853A9700CD63FE</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5D57DED51F853A9700CD63FE</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5D57DEC91F853A9700CD63FE</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5D57DED61F853A9700CD63FE</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5D57DECA1F853A9700CD63FE</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5D57DED71F853A9700CD63FE</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5D57DECB1F853A9700CD63FE</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5D57DED81F853A9700CD63FE</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5D57DECC1F853A9700CD63FE</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5D57DED91F853A9700CD63FE</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5D57DECD1F853A9700CD63FE</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5D57DEE01F861FBD00CD63FE</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>IndyPairwise.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DEE11F861FBD00CD63FE</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.cpp.objcpp</string>
+			<key>path</key>
+			<string>IndyPairwise.mm</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5D57DEE21F861FBD00CD63FE</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5D57DEE01F861FBD00CD63FE</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>settings</key>
+			<dict>
+				<key>ATTRIBUTES</key>
+				<array>
+					<string>Public</string>
+				</array>
+			</dict>
+		</dict>
+		<key>5D57DEE31F861FBD00CD63FE</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5D57DEE11F861FBD00CD63FE</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A0E1F711EE600EB4C90</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>5D57DEC01F853A9600CD63FE</string>
+				<string>5DB57A0F1F711EE600EB4C90</string>
+				<string>5DB57A101F711EE600EB4C90</string>
+				<string>5DB57A141F711EE600EB4C90</string>
+				<string>5DB57A231F711EE600EB4C90</string>
+				<string>5DB57A2B1F711EE600EB4C90</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>path</key>
+			<string>Indy</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A0F1F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>text.plist.xml</string>
+			<key>path</key>
+			<string>Info.plist</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A101F711EE600EB4C90</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>5DB57A111F711EE600EB4C90</string>
+				<string>5DB57A121F711EE600EB4C90</string>
+				<string>5DB57A131F711EE600EB4C90</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>path</key>
+			<string>Keychain Wrapper</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A111F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>KeychainAccessibility.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A121F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>KeychainError.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A131F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>KeychainWrapper.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A141F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>Indy.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A231F711EE600EB4C90</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>5DB57A241F711EE600EB4C90</string>
+				<string>5DB57A251F711EE600EB4C90</string>
+				<string>5DB57A261F711EE600EB4C90</string>
+				<string>5DB57A271F711EE600EB4C90</string>
+				<string>5DB57A281F711EE600EB4C90</string>
+				<string>5DB57A291F711EE600EB4C90</string>
+				<string>5DB57A2A1F711EE600EB4C90</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>path</key>
+			<string>Wallet</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A241F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>IndyKeychainWallet.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A251F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.objc</string>
+			<key>path</key>
+			<string>IndyKeychainWallet.m</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A261F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>IndyKeychainWalletConfig.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A271F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.objc</string>
+			<key>path</key>
+			<string>IndyKeychainWalletConfig.m</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A281F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>IndyKeychainWalletItem.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A291F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>IndyWalletCallbacks.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A2A1F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.objc</string>
+			<key>path</key>
+			<string>IndyWalletCallbacks.m</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A2B1F711EE600EB4C90</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>5D57DEE01F861FBD00CD63FE</string>
+				<string>5D57DEE11F861FBD00CD63FE</string>
+				<string>5DB57A2C1F711EE600EB4C90</string>
+				<string>5DB57A2D1F711EE600EB4C90</string>
+				<string>5DB57A2E1F711EE600EB4C90</string>
+				<string>5DB57A2F1F711EE600EB4C90</string>
+				<string>5DB57A301F711EE600EB4C90</string>
+				<string>5DB57A311F711EE600EB4C90</string>
+				<string>5DB57A321F711EE600EB4C90</string>
+				<string>5DB57A331F711EE600EB4C90</string>
+				<string>5DB57A341F711EE600EB4C90</string>
+				<string>5DB57A351F711EE600EB4C90</string>
+				<string>5DB57A361F711EE600EB4C90</string>
+				<string>5DB57A371F711EE600EB4C90</string>
+				<string>5DB57A381F711EE600EB4C90</string>
+				<string>5DB57A391F711EE600EB4C90</string>
+				<string>5DB57A3A1F711EE600EB4C90</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>path</key>
+			<string>Wrapper</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A2C1F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>IndyAgent.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A2D1F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.cpp.objcpp</string>
+			<key>path</key>
+			<string>IndyAgent.mm</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A2E1F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>IndyAnoncreds.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A2F1F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.cpp.objcpp</string>
+			<key>path</key>
+			<string>IndyAnoncreds.mm</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A301F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>IndyErrors.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A311F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>IndyLedger.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A321F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.cpp.objcpp</string>
+			<key>path</key>
+			<string>IndyLedger.mm</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A331F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>IndyPool.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A341F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.cpp.objcpp</string>
+			<key>path</key>
+			<string>IndyPool.mm</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A351F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>IndySignus.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A361F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.cpp.objcpp</string>
+			<key>path</key>
+			<string>IndySignus.mm</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A371F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>IndyTypes.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A381F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>IndyWallet.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A391F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.cpp.objcpp</string>
+			<key>path</key>
+			<string>IndyWallet.mm</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A3A1F711EE600EB4C90</key>
+		<dict>
+			<key>fileEncoding</key>
+			<string>4</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.c.h</string>
+			<key>path</key>
+			<string>IndyWalletProtocols.h</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>5DB57A3D1F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A111F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A3E1F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A121F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A3F1F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A131F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A401F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A141F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>settings</key>
+			<dict>
+				<key>ATTRIBUTES</key>
+				<array>
+					<string>Public</string>
+				</array>
+			</dict>
+		</dict>
+		<key>5DB57A4D1F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A241F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A4E1F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A251F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A4F1F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A261F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A501F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A271F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A511F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A281F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A521F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A291F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A531F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A2A1F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A541F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A2C1F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>settings</key>
+			<dict>
+				<key>ATTRIBUTES</key>
+				<array>
+					<string>Public</string>
+				</array>
+			</dict>
+		</dict>
+		<key>5DB57A551F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A2D1F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A561F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A2E1F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>settings</key>
+			<dict>
+				<key>ATTRIBUTES</key>
+				<array>
+					<string>Public</string>
+				</array>
+			</dict>
+		</dict>
+		<key>5DB57A571F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A2F1F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A581F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A301F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>settings</key>
+			<dict>
+				<key>ATTRIBUTES</key>
+				<array>
+					<string>Public</string>
+				</array>
+			</dict>
+		</dict>
+		<key>5DB57A591F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A311F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>settings</key>
+			<dict>
+				<key>ATTRIBUTES</key>
+				<array>
+					<string>Public</string>
+				</array>
+			</dict>
+		</dict>
+		<key>5DB57A5A1F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A321F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A5B1F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A331F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>settings</key>
+			<dict>
+				<key>ATTRIBUTES</key>
+				<array>
+					<string>Public</string>
+				</array>
+			</dict>
+		</dict>
+		<key>5DB57A5C1F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A341F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A5D1F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A351F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>settings</key>
+			<dict>
+				<key>ATTRIBUTES</key>
+				<array>
+					<string>Public</string>
+				</array>
+			</dict>
+		</dict>
+		<key>5DB57A5E1F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A361F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A5F1F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A371F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>settings</key>
+			<dict>
+				<key>ATTRIBUTES</key>
+				<array>
+					<string>Public</string>
+				</array>
+			</dict>
+		</dict>
+		<key>5DB57A601F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A381F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>settings</key>
+			<dict>
+				<key>ATTRIBUTES</key>
+				<array>
+					<string>Public</string>
+				</array>
+			</dict>
+		</dict>
+		<key>5DB57A611F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A391F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>5DB57A621F711EE600EB4C90</key>
+		<dict>
+			<key>fileRef</key>
+			<string>5DB57A3A1F711EE600EB4C90</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>settings</key>
+			<dict>
+				<key>ATTRIBUTES</key>
+				<array>
+					<string>Public</string>
+				</array>
+			</dict>
+		</dict>
+		<key>788BE98286C5622244B9A7F5</key>
+		<dict>
+			<key>explicitFileType</key>
+			<string>archive.ar</string>
+			<key>includeInIndex</key>
+			<string>0</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>path</key>
+			<string>libPods-Indy.a</string>
+			<key>sourceTree</key>
+			<string>BUILT_PRODUCTS_DIR</string>
+		</dict>
+		<key>7AA078817B8C2B22C808AE50</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>3E7A1C4BE17271AC1BB4E256</string>
+				<string>CB6A56DBDD1F10585C90ECA8</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>name</key>
+			<string>Pods</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>CB6A56DBDD1F10585C90ECA8</key>
+		<dict>
+			<key>includeInIndex</key>
+			<string>1</string>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>text.xcconfig</string>
+			<key>name</key>
+			<string>Pods-Indy.release.xcconfig</string>
+			<key>path</key>
+			<string>Pods/Target Support Files/Pods-Indy/Pods-Indy.release.xcconfig</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>D6BFF417833531D0F48BA45D</key>
+		<dict>
+			<key>buildActionMask</key>
+			<string>2147483647</string>
+			<key>files</key>
+			<array/>
+			<key>inputPaths</key>
+			<array>
+				<string>${PODS_PODFILE_DIR_PATH}/Podfile.lock</string>
+				<string>${PODS_ROOT}/Manifest.lock</string>
+			</array>
+			<key>isa</key>
+			<string>PBXShellScriptBuildPhase</string>
+			<key>name</key>
+			<string>[CP] Check Pods Manifest.lock</string>
+			<key>outputPaths</key>
+			<array>
+				<string>$(DERIVED_FILE_DIR)/Pods-Indy-checkManifestLockResult.txt</string>
+			</array>
+			<key>runOnlyForDeploymentPostprocessing</key>
+			<string>0</string>
+			<key>shellPath</key>
+			<string>/bin/sh</string>
+			<key>shellScript</key>
+			<string>diff "${PODS_ROOT}/../Podfile.lock" "${PODS_ROOT}/Manifest.lock" &gt; /dev/null
+if [[ $? != 0 ]] ; then
+    cat &lt;&lt; EOM
+error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.
+EOM
+    exit 1
+fi
+</string>
+			<key>showEnvVarsInLog</key>
+			<string>0</string>
+		</dict>
+		<key>E32B103AE817115C80F0142F</key>
+		<dict>
+			<key>fileRef</key>
+			<string>788BE98286C5622244B9A7F5</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+	</dict>
+	<key>rootObject</key>
+	<string>3E08C0121EB3336A000A73BA</string>
+</dict>
+</plist>

@@ -30,6 +30,7 @@ extern indy_error_t indy_prep_anonymous_msg(indy_handle_t          command_handl
                                  );
 
 extern indy_error_t indy_parse_msg(indy_handle_t          command_handle,
+                                   indy_handle_t          wallet_handle,
                                    const char *const      recipient_vk,
                                    const indy_u8_t *const encrypted_msg,
                                    indy_u32_t             encrypted_len,

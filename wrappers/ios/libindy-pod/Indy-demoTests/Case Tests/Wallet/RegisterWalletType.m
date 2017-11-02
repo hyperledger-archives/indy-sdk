@@ -150,31 +150,31 @@
     
     // 9. listen
     
-    IndyHandle listenerHandle = 0;
-    ret = [[AgentUtils sharedInstance] listenForEndpoint:[TestUtils endpoint]
-                                      connectionCallback:nil
-                                         messageCallback:nil
-                                       outListenerHandle:&listenerHandle];
-    XCTAssertEqual(ret.code, Success, @"AgentUtils::listenForEndpoint() failed");
+//    IndyHandle listenerHandle = 0;
+//    ret = [[AgentUtils sharedInstance] listenForEndpoint:[TestUtils endpoint]
+//                                      connectionCallback:nil
+//                                         messageCallback:nil
+//                                       outListenerHandle:&listenerHandle];
+//    XCTAssertEqual(ret.code, Success, @"AgentUtils::listenForEndpoint() failed");
     
     // 9. add identity
-    ret = [[AgentUtils sharedInstance] addIdentityForListenerHandle:listenerHandle
-                                                         poolHandle:poolHandle
-                                                       walletHandle:listenerWallet
-                                                                did:listenerDid];
-    XCTAssertEqual(ret.code, Success, @"AgentUtils::addIdentityForListenerHandle() failed");
+//    ret = [[AgentUtils sharedInstance] addIdentityForListenerHandle:listenerHandle
+//                                                         poolHandle:poolHandle
+//                                                       walletHandle:listenerWallet
+//                                                                did:listenerDid];
+//    XCTAssertEqual(ret.code, Success, @"AgentUtils::addIdentityForListenerHandle() failed");
     
     // 10. connect hang up expected
     
-    BOOL isTimeout = NO;
-    ret = [[AgentUtils sharedInstance] connectHangUpExpectedForPoolHandle:poolHandle
-                                                             walletHandle:senderWallet
-                                                                senderDid:senderDid
-                                                              receiverDid:listenerDid
-                                                                isTimeout:&isTimeout];
-    XCTAssertEqual(isTimeout, YES, @"AgentUtils::connectHandUpExpectedForPoolHandle() succeeded for some reason");
-    
-    [[AgentUtils sharedInstance] closeListener:listenerHandle];
+//    BOOL isTimeout = NO;
+//    ret = [[AgentUtils sharedInstance] connectHangUpExpectedForPoolHandle:poolHandle
+//                                                             walletHandle:senderWallet
+//                                                                senderDid:senderDid
+//                                                              receiverDid:listenerDid
+//                                                                isTimeout:&isTimeout];
+//    XCTAssertEqual(isTimeout, YES, @"AgentUtils::connectHandUpExpectedForPoolHandle() succeeded for some reason");
+//
+//    [[AgentUtils sharedInstance] closeListener:listenerHandle];
     [[WalletUtils sharedInstance] closeWalletWithHandle:listenerWallet];
     [[WalletUtils sharedInstance] closeWalletWithHandle:senderWallet];
     [[PoolUtils sharedInstance] closeHandle:poolHandle];

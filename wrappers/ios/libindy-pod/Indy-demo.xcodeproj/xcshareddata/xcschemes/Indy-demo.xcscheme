@@ -54,18 +54,6 @@
             </BuildableReference>
             <SkippedTests>
                <Test
-                  Identifier = "AgentHignCases/testAllAgentHighCasesTests">
-               </Test>
-               <Test
-                  Identifier = "AgentHignCases/testSequence">
-               </Test>
-               <Test
-                  Identifier = "AgentMediumConnect/testSequence">
-               </Test>
-               <Test
-                  Identifier = "AgentMediumSend/testAgentSendWorksForRemovedIdentity">
-               </Test>
-               <Test
                   Identifier = "AnoncredsHignCases/testAnoncreds">
                </Test>
                <Test
