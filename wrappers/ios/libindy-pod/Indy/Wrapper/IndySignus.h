@@ -39,8 +39,7 @@
                walletHandle:(IndyHandle)walletHandle
                  completion:(void (^)(NSError *error,
                                       NSString *did,
-                                      NSString *verkey,
-                                      NSString *pk)) completion;
+                                      NSString *verkey)) completion;
 
 /**
  Generates temporary keys (signing and encryption keys) for an existing DID (owned by the caller of the library).
@@ -64,8 +63,7 @@
                   identityJson:(NSString *)identityJson
                   walletHandle:(IndyHandle)walletHandle
                     completion:(void (^)(NSError *error,
-                                         NSString *verkey,
-                                         NSString *pk)) completion;
+                                         NSString *verkey)) completion;
 
 /**
  Apply temporary keys as main for an existing DID (owned by the caller of the library).
@@ -182,6 +180,7 @@
                    did:(NSString *)did
                  nonce:(NSData *)nonce
           walletHandle:(IndyHandle)walletHandle
+            poolHandle:(IndyHandle)poolHandle
             completion:(void (^)(NSError *error,
                                  NSData *decryptedMessage)) completion;
 

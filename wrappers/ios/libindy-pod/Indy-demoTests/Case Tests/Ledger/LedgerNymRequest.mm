@@ -9,12 +9,6 @@
 #import <XCTest/XCTest.h>
 #import "PoolUtils.h"
 #import "TestUtils.h"
-#import "WalletUtils.h"
-#import "SignusUtils.h"
-#import "LedgerUtils.h"
-#import "AnoncredsUtils.h"
-#import <Indy/Indy.h>
-#import "NSDictionary+JSON.h"
 
 @interface LedgerNymRequest : XCTestCase
 
@@ -57,8 +51,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:@"000000000000000000000000Trustee1"
                                                                    outMyDid:&trusteeDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
     XCTAssertNotNil(trusteeDid, @"trusteeDid is nil!");
     
@@ -67,8 +60,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:nil
                                                                    outMyDid:&myDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
@@ -122,8 +114,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:@"000000000000000000000000Trustee1"
                                                                    outMyDid:&trusteeDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
     XCTAssertNotNil(trusteeDid, @"trusteeDid is nil!");
     
@@ -133,8 +124,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:nil
                                                                    outMyDid:&myDid
-                                                                outMyVerkey:&myVerKey
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:&myVerKey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     XCTAssertNotNil(myVerKey, @"myVerKey is nil!");
@@ -213,8 +203,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:@"000000000000000000000000Trustee1"
                                                                    outMyDid:&trusteeDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
     XCTAssertNotNil(trusteeDid, @"trusteeDid is nil!");
     
@@ -224,8 +213,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:@"{\"cid\":true}"
                                                            outMyDid:&myDid
-                                                        outMyVerkey:&myVerKey
-                                                            outMyPk:nil];
+                                                        outMyVerkey:&myVerKey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     XCTAssertNotNil(myVerKey, @"myVerKey is nil!");
@@ -257,8 +245,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:@"{}"
                                                            outMyDid:&myDid2
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
+                                                        outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     XCTAssertNotNil(myDid2, @"myDid is nil!");
 
@@ -315,8 +302,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:trusteeDidJson
                                                            outMyDid:&trusteeDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
+                                                        outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     XCTAssertNotNil(trusteeDid, @"trusteeDid is nil!");
     
@@ -325,8 +311,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:nil
                                                                    outMyDid:&myDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
@@ -387,8 +372,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
+                                                        outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     

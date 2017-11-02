@@ -55,8 +55,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:@"{}"
                                                            outMyDid:&myDid
-                                                        outMyVerkey:&myVerKey
-                                                            outMyPk:nil];
+                                                        outMyVerkey:&myVerKey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     XCTAssertEqual([[myDid dataFromBase58] length] , 16, @"length of myDid != 16");
     XCTAssertEqual([[myVerKey dataFromBase58] length], 32, @"length of myVerKey != 32");
@@ -84,8 +83,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
-                                                        outMyVerkey:&myVerKey
-                                                            outMyPk:nil];
+                                                        outMyVerkey:&myVerKey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     XCTAssertTrue([myDid isEqualToString:@"NcYxiDXkpYi6ov5FcYDi1e"], @"wrong myDid!");
     XCTAssertTrue([myVerKey isEqualToString:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"], @"wrong myVerKey!");
@@ -114,8 +112,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
-                                                        outMyVerkey:&myVerKey
-                                                            outMyPk:nil];
+                                                        outMyVerkey:&myVerKey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     XCTAssertTrue([myDid isEqualToString:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"], @"wrong myDid!");
     XCTAssertTrue([myVerKey isEqualToString:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"], @"wrong myVerKey!");
@@ -147,8 +144,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
-                                                        outMyVerkey:&myVerKey
-                                                            outMyPk:nil];
+                                                        outMyVerkey:&myVerKey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     XCTAssertTrue([myDid isEqualToString:did], @"wrong myDid!");
     XCTAssertTrue([myVerKey isEqualToString:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"], @"wrong myVerKey!");
@@ -173,8 +169,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:@"{\"crypto_type\":\"ed25519\"}"
                                                            outMyDid:nil
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
+                                                        outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() returned wrong error code");
     
     // 3. close wallet
@@ -200,8 +195,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:invalidWalletHandle
                                                           myDidJson:@"{}"
                                                            outMyDid:nil
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
+                                                        outMyVerkey:nil];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"SignusUtils::createMyDidWithWalletHandle() returned wrong error code");
     
     [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
@@ -228,8 +222,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:@"{}"
                                                            outMyDid:&myDid
-                                                        outMyVerkey:&myVerkey
-                                                            outMyPk:nil];
+                                                        outMyVerkey:&myVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
     // 3. Replace keys
@@ -237,9 +230,8 @@
     ret = [[SignusUtils sharedInstance] replaceKeysStartForDid:myDid
                                                   identityJson:@"{}"
                                                   walletHandle:walletHandle
-                                                   outMyVerKey:&newVerkey
-                                                       outMyPk:nil];
-    
+                                                   outMyVerKey:&newVerkey];
+
     XCTAssertFalse([myVerkey isEqualToString:newVerkey], @"verkey is the same!");
     
     [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
@@ -264,8 +256,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:@"{}"
                                                            outMyDid:&myDid
-                                                        outMyVerkey:&myVerkey
-                                                            outMyPk:nil];
+                                                        outMyVerkey:&myVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() returned wrong error code");
     
     // 3. Replace keys with invalid wallet handle
@@ -273,8 +264,7 @@
     ret = [[SignusUtils sharedInstance] replaceKeysStartForDid:myDid
                                                   identityJson:@"{}"
                                                   walletHandle:invalidWalletHandle
-                                                   outMyVerKey:nil
-                                                       outMyPk:nil];
+                                                   outMyVerKey:nil];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"SignusUtils:replaceKeysStartForDid failed");
     
     [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
@@ -299,8 +289,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:@"{}"
                                                            outMyDid:&myDid
-                                                        outMyVerkey:&myVerkey
-                                                            outMyPk:nil];
+                                                        outMyVerkey:&myVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() returned wrong error code");
     
     // 3. replace keys
@@ -309,9 +298,8 @@
     ret = [[SignusUtils sharedInstance] replaceKeysStartForDid:myDid
                                                   identityJson:@"{\"seed\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}"
                                                   walletHandle:walletHandle
-                                                   outMyVerKey:&newVerkey
-                                                       outMyPk:nil];
-    
+                                                   outMyVerKey:&newVerkey];
+
     XCTAssertEqual(ret.code, Success, @"SignusUtils:replaceKeysStartForDid failed");
     XCTAssertTrue([newVerkey isEqualToString:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"], @"wrong newVerkey");
     XCTAssertFalse([myVerkey isEqualToString:newVerkey], @"verkey is the same!");
@@ -341,8 +329,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:@"{}"
                                                            outMyDid:&myDid
-                                                        outMyVerkey:&myVerkey
-                                                            outMyPk:nil];
+                                                        outMyVerkey:&myVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
     // 3. Replace keys start
@@ -350,8 +337,7 @@
     ret = [[SignusUtils sharedInstance] replaceKeysStartForDid:myDid
                                                   identityJson:@"{}"
                                                   walletHandle:walletHandle
-                                                   outMyVerKey:&newVerkey
-                                                       outMyPk:nil];
+                                                   outMyVerKey:&newVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::replaceKeysStartForDid() failed");
     
     XCTAssertFalse([myVerkey isEqualToString:newVerkey], @"verkey is the same!");
@@ -383,8 +369,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:@"{}"
                                                            outMyDid:&myDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
+                                                        outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
     // 3. Replace keys apply
@@ -414,8 +399,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:@"{}"
                                                            outMyDid:&myDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
+                                                        outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
     // 3. Replace keys start
@@ -424,8 +408,7 @@
     ret = [[SignusUtils sharedInstance] replaceKeysStartForDid:myDid
                                                   identityJson:@"{}"
                                                   walletHandle:walletHandle
-                                                   outMyVerKey:&newVerkey
-                                                       outMyPk:nil];
+                                                   outMyVerKey:&newVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::replaceKeysStartForDid() failed");
     
     // 4. replace keys apply
@@ -455,8 +438,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:@"{}"
                                                            outMyDid:&myDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
+                                                        outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
     // 3. Replace keys start
@@ -464,8 +446,7 @@
     ret = [[SignusUtils sharedInstance] replaceKeysStartForDid:myDid
                                                   identityJson:@"{}"
                                                   walletHandle:walletHandle
-                                                   outMyVerKey:&newVerkey
-                                                       outMyPk:nil];
+                                                   outMyVerKey:&newVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::replaceKeysStartForDid() failed");
     
     // 4. replace keys apply
@@ -658,8 +639,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
+                                                        outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
     // 3. Sign
@@ -715,8 +695,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:@"{}"
                                                            outMyDid:&myDid
-                                                        outMyVerkey:nil
-                                                            outMyPk:nil];
+                                                        outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
     
     // 3. Sign
@@ -762,8 +741,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed]
                                                                    outMyDid:&did
-                                                                outMyVerkey:&verKey
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:&verKey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
     XCTAssertTrue(did, @"invalid did");
     XCTAssertTrue(verKey, @"invalid verKey");
@@ -817,8 +795,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&trusteeDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
     XCTAssertTrue(trusteeDid, @"invalid did");
     
@@ -828,8 +805,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
-                                                                outMyVerkey:&myVerKey
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:&myVerKey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed for myDid");
     XCTAssertTrue(myDid, @"invalid did");
     XCTAssertTrue(myVerKey, @"invalid verkey");
@@ -909,8 +885,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&trusteeDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
     XCTAssertTrue(trusteeDid, @"invalid did");
     
@@ -920,8 +895,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
-                                                                outMyVerkey:&myVerKey
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:&myVerKey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertTrue(myDid, @"invalid did");
     XCTAssertTrue(myVerKey, @"invalid verkey");
@@ -1073,8 +1047,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:didJson
                                                            outMyDid:&did
-                                                        outMyVerkey:&verKey
-                                                            outMyPk:nil];
+                                                        outMyVerkey:&verKey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed for myDid");
 
     // 4. other did
@@ -1084,8 +1057,7 @@
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:otherDidJson
                                                            outMyDid:&otherDid
-                                                        outMyVerkey:&otherVerKey
-                                                            outMyPk:nil];
+                                                        outMyVerkey:&otherVerKey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed for otherDid");
     
     // 5. Store my did
@@ -1153,8 +1125,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertTrue(myDid, @"invalid did");
 
@@ -1165,8 +1136,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:&theirVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
     
     // 5. store their did
@@ -1219,8 +1189,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&trusteeDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertTrue(trusteeDid, @"invalid did");
     
@@ -1231,8 +1200,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:nil
                                                                    outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:&theirVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for their did");
     
     
@@ -1302,8 +1270,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&trusteeDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertTrue(trusteeDid, @"invalid did");
     
@@ -1314,8 +1281,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:nil
                                                                    outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:&theirVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for their did");
     
     // 4. Build & Submit nym request
@@ -1393,8 +1359,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&trusteeDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertTrue(trusteeDid, @"invalid did");
     
@@ -1405,8 +1370,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:nil
                                                                    outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:&theirVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for their did");
 
     // 6. Build & Submit nym request
@@ -1477,8 +1441,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertTrue(myDid, @"invalid did");
     
@@ -1489,8 +1452,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:&theirVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
 
     // 5. store their did
@@ -1545,8 +1507,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertTrue(myDid, @"invalid did");
     
@@ -1557,8 +1518,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:&theirVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
     
     // 5. store their did
@@ -1608,8 +1568,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertTrue(myDid, @"invalid did");
     
@@ -1620,8 +1579,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:&theirVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
 
     // 4. store their did
@@ -1674,8 +1632,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:nil
                                                                    outMyDid:&myDid
-                                                                outMyVerkey:&myVerkey
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:&myVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertTrue(myDid, @"invalid did");
     
@@ -1686,8 +1643,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:nil
                                                                    outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:&theirVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
     
     // 5. store myDid
@@ -1750,8 +1706,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertTrue(myDid, @"invalid did");
     
@@ -1762,8 +1717,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:&theirVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
     
     // 5. store their did
@@ -1807,8 +1761,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed]
                                                                    outMyDid:&myDid
-                                                                outMyVerkey:nil
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for myDid");
     XCTAssertTrue(myDid, @"invalid did");
     
@@ -1819,8 +1772,7 @@
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey
-                                                                    outMyPk:nil];
+                                                                outMyVerkey:&theirVerkey];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
 
     // 5. store their did

@@ -39,8 +39,7 @@ extern "C" {
                                                      void          (*cb)(indy_handle_t  xcommand_handle,
                                                                           indy_error_t  err,
                                                                           const char*   did,
-                                                                          const char*   verkey,
-                                                                          const char*   pk)
+                                                                          const char*   verkey)
                                                     );
 
     /// Generated temporary keys (signing and encryption keys) for an existing
@@ -72,8 +71,7 @@ extern "C" {
 
                                                 void           (*cb)(indy_handle_t xcommand_handle,
                                                                      indy_error_t  err,
-                                                                     const char*   verkey,
-                                                                     const char*   pk)
+                                                                     const char*   verkey)
                                                );
 
     /// Apply temporary keys as main for an existing DID (owned by the caller of the library).

@@ -14,23 +14,22 @@
                walletHandle:(IndyHandle)walletHandle
                  completion:(void (^)(NSError *error,
                                       NSString *did,
-                                      NSString *verkey,
-                                      NSString *pk)) completion
+                                      NSString *verkey)) completion
 {
     indy_error_t ret;
     
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
     
-    ret = indy_create_and_store_my_did( handle,
+    ret = indy_create_and_store_my_did(handle,
                                        walletHandle,
                                        [didJson UTF8String],
-                                       IndyWrapperCommon5PCallback );
+                                       IndyWrapperCommon4PCallback);
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
         
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError: ret], nil, nil, nil);
+            completion([NSError errorFromIndyError: ret], nil, nil);
         });
     }
 }
@@ -39,8 +38,7 @@
                   identityJson:(NSString *)identityJson
                   walletHandle:(IndyHandle)walletHandle
                     completion:(void (^)(NSError *error,
-                                         NSString *verkey,
-                                         NSString *pk)) completion
+                                         NSString *verkey)) completion
 {
     indy_error_t ret;
     
@@ -50,14 +48,14 @@
                                   walletHandle,
                                   [did UTF8String],
                                   [identityJson UTF8String],
-                                  IndyWrapperCommon4PCallback);
+                                  IndyWrapperCommon3PSCallback);
     
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
         
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError: ret], nil, nil);
+            completion([NSError errorFromIndyError: ret], nil);
         });
     }
 }
@@ -213,6 +211,7 @@
                    did:(NSString *)did
                  nonce:(NSData *)nonce
           walletHandle:(IndyHandle)walletHandle
+            poolHandle:(IndyHandle)poolHandle
             completion:(void (^)(NSError *error,
                                  NSData *decryptedMessage)) completion
 {
@@ -227,6 +226,7 @@
     
     ret = indy_decrypt(handle,
                        walletHandle,
+                       poolHandle,
                        [myDid UTF8String],
                        [did UTF8String],
                         messageRaw,
