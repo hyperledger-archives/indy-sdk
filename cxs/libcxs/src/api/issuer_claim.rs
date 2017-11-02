@@ -72,9 +72,7 @@ pub extern fn cxs_issuer_terminate_claim(claim_handle: u32, termination_type: u3
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
 pub extern fn cxs_issuer_claim_serialize(claim_handle: u32, cb: Option<extern fn(xclaim_handle: u32, err: u32, claim_state: *const c_char)>) -> u32 {
-
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-
     thread::spawn(move|| {
         let (claim_string, err) = match to_string(claim_handle) {
             Ok(x) => {
