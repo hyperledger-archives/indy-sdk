@@ -56,6 +56,7 @@ impl IssuerClaim {
 
         match httpclient::post(&json_msg,&url) {
             Err(_) => {
+                // TODO: this needs to be an info! as well.
                 println!("better message");
                 return Err(error::POST_MSG_FAILURE.code_num);
             },
@@ -75,7 +76,7 @@ pub fn issuer_claim_create(claim_def_handle: u32,
 
     let source_id_unwrap = source_id.unwrap_or("".to_string());
 
-    let new_issuer_claim = Box::new(IssuerClaim {
+    let mut new_issuer_claim = Box::new(IssuerClaim {
         handle: new_handle,
         source_id: source_id_unwrap,
         claim_def: claim_def_handle,
@@ -88,6 +89,8 @@ pub fn issuer_claim_create(claim_def_handle: u32,
         Ok(_) => info!("successfully validated issuer_claim {}", new_handle),
         Err(x) => return Err(x),
     };
+
+    new_issuer_claim.state = CxsStateType::CxsStateInitialized;
 
     {
         let mut m = ISSUER_CLAIM_MAP.lock().unwrap();
@@ -161,6 +164,11 @@ mod tests {
     use std::time::Duration;
     use super::*;
 
+    fn set_default_and_enable_test_mode(){
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+    }
+
     #[test]
     fn test_issuer_claim_create_succeeds() {
         settings::set_defaults();
@@ -192,8 +200,7 @@ mod tests {
 
     #[test]
     fn test_from_string_succeeds() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        set_default_and_enable_test_mode();
         let handle = issuer_claim_create(0, None,"{\"attr\":\"value\"}".to_owned()).unwrap();
         let string = to_string(handle).unwrap();
         assert!(!string.is_empty());
@@ -202,5 +209,22 @@ mod tests {
         let new_string = to_string(new_handle).unwrap();
         assert_eq!(new_handle,handle);
         assert_eq!(new_string,string);
+    }
+
+
+    #[test]
+    fn test_issuer_claim_changes_state_after_being_validated(){
+        ::utils::logger::LoggerUtils::init();
+        set_default_and_enable_test_mode();
+        let handle = issuer_claim_create(0, None, "{\"att\":\"value\"}".to_owned()).unwrap();
+        let string = to_string(handle).unwrap();
+        fn get_state_from_string(s:String)-> u32 {
+            let json: serde_json::Value = serde_json::from_str(&s).unwrap();
+            if json["state"].is_number() {
+                return json["state"].as_u64().unwrap() as u32
+            }
+            0
+        }
+        assert_eq!(get_state_from_string(string), 1);
     }
 }

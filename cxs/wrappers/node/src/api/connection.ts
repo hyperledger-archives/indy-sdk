@@ -58,7 +58,7 @@ export class Connection implements IConnections {
     return JSON.parse(data)
   }
 
-  getState (): StateType {
+  async getState (): Promise<StateType> {
     const statusPtr = alloc(refTypes.uint32)
     const result = this.RUST_API.cxs_connection_get_state(this.connectionHandle, statusPtr)
     if (result) {
@@ -68,10 +68,12 @@ export class Connection implements IConnections {
     return this.state
   }
 
-  release (): number {
+  async release (): Promise<number> {
     return this.RUST_API.cxs_connection_release(this.connectionHandle)
   }
-
+  async getHandle () {
+    return this.connectionHandle
+  }
   private _initRustApi (path?) {
     this.RUST_API = new CXSRuntime(new CXSRuntimeConfig(path))._ffi
   }

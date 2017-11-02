@@ -16,7 +16,7 @@ extern "C" fn send_offer_cb(command_handle: u32, err: u32) {
     if err != 0 {panic!("failed to send claim offer")}
     println!("Claim offer sent!");
 }
-
+#[allow(unused_assignments)]
 #[allow(unused_variables)]
 extern "C" fn serialize_cb(handle: u32, err: u32, claim_string: *const c_char) {
     assert_eq!(err, 0);

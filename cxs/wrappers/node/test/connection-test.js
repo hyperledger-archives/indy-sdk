@@ -11,11 +11,12 @@ const ffi = require('ffi')
 const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
 
 const waitFor = async (predicate) => {
-  if (!predicate()) {
+  const ret = await predicate()
+  if (!ret) {
     await sleep(1000)
     return waitFor(predicate)
   }
-  return predicate()
+  return ret
 }
 
 // console.log(release(handle)) // tslint:disable-line
@@ -29,18 +30,20 @@ describe('A Connection object with ', function () {
 
     // connection_create tests
 
-  it('valid parameters in create should return success', function () {
+  it('valid parameters in create should return success', async function () {
     const connection = new Connection(path)
-    assert.equal(connection.create({
+    const res = await connection.create({
       id: '234',
       DIDself: '456',
       DIDremote: '0'
-    }), 0)
+    })
+    assert.equal(res, 0)
   })
 
-  it('object with id as param in create should return success', function () {
+  it('object with id as param in create should return success', async function () {
     const connection = new Connection(path)
-    assert.equal(connection.create({ id: '999' }), 0)
+    const res = await connection.create({ id: '999' })
+    assert.equal(res, 0)
   })
 
     // connection_connect tests
@@ -56,15 +59,17 @@ describe('A Connection object with ', function () {
     return connection.connect({ sms: true })
   })
 
-  it(' a call to create with no connection created should return unknown error', function () {
+  it(' a call to create with no connection created should return unknown error', async function () {
     const connection = new Connection(path)
-    assert.equal(connection._connect({ sms: true }), 1003)
+    assert.equal(await connection._connect({ sms: true }), 1003)
   })
 
     // connection_get_data tests
 
   it('a call to get_data where connection exists should return back the connections data', async function () {
     const connection = new Connection(path)
+    // TODO we are not awaiting on this create, which
+    // is an async function that has a promise behind it.
     connection.create({ id: '234' })
     const data = await connection.getData()
     assert.notEqual(data, null)
@@ -79,15 +84,15 @@ describe('A Connection object with ', function () {
 
   it('a call to get_data where connection was released should return null', async function () {
     const connection = new Connection(path)
-    assert.equal(connection.create({ id: '234' }), 0)
+    assert.equal(await connection.create({ id: '234' }), 0)
 
     await connection.connect({ sms: true })
 
-    assert.equal(connection.getState(), StateType.OfferSent)
+    assert.equal(await connection.getState(), StateType.OfferSent)
     let data = await connection.getData()
     assert.notEqual(data, null)
     assert.equal(data.handle, connection.connectionHandle)
-    assert.equal(connection.release(), 0)
+    assert.equal(await connection.release(), 0)
     data = await connection.getData()
     assert.equal(data, null)
   })
@@ -96,20 +101,20 @@ describe('A Connection object with ', function () {
 
   it('call to getState where connection exists should return success', async function () {
     const connection = new Connection(path)
-    connection.create({ id: '234' })
+    await connection.create({ id: '234' })
     await connection.connect({ sms: true })
-    assert.equal(connection.getState(), StateType.OfferSent)
+    assert.equal(await connection.getState(), StateType.OfferSent)
   })
 
-  it('call to getState where no connection exists should have a state value of 0', function () {
+  it('call to getState where no connection exists should have a state value of 0', async function () {
     const connection = new Connection(path)
-    assert.equal(connection.getState(), StateType.None)
+    assert.equal(await connection.getState(), StateType.None)
   })
 
-  it('call to get_state where connection exists but not connected should have a state value of 1', function () {
+  it('call to get_state where connection exists but not connected should have a state value of 1', async function () {
     const connection = new Connection(path)
-    connection.create({ id: '234' })
-    return waitFor(() => connection.getState() === StateType.Initialized)
+    await connection.create({ id: '234' })
+    return waitFor(async () => (await connection.getState()) === StateType.Initialized)
   })
 
     // connection_release tests
@@ -118,20 +123,25 @@ describe('A Connection object with ', function () {
     const connection = new Connection(path)
     connection.create({ id: '234' })
     await connection.connect({ sms: true })
-    assert.equal(connection.release(), 0)
+    assert.equal(await connection.release(), 0)
+    // TODO This should be the connect call, not
+    // private call.
     assert.equal(connection._connect({ sms: true }), 1003)
     const result = await connection.getData()
     assert.equal(result, null)
   })
 
-  it('call to connection_release with no connection should return unknown error', function () {
+  it('call to connection_release with no connection should return unknown error', async function () {
     const connection = new Connection(path)
-    assert.equal(connection.release(), 1003)
+    assert.equal(await connection.release(), 1003)
   })
 
   it('getData() should return CxsStateType as an integer', async function () {
     const connection = new Connection(path)
-    connection.create({ id: '234' })
+    await connection.create({ id: 'returnCxsTypeInteger' })
+    await sleep(3000)
+    const data2 = await connection.getData()
+    assert.equal(data2['state'], 1)
     await connection.connect({ sms: true })
     const result = await connection.getData()
     assert.equal(result['state'], 2)
@@ -140,7 +150,7 @@ describe('A Connection object with ', function () {
   it('connection and GC deletes object should return null when get_data is called ', async function () {
     this.timeout(30000)
     let connection = new Connection(path)
-    connection.create({ id: '234' })
+    await connection.create({ id: 'GarbageCollector' })
     connection._connect({ sms: true })
     const getData = connection.RUST_API.cxs_connection_serialize
     const handle = connection.connectionHandle

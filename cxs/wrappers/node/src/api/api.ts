@@ -2,8 +2,8 @@ export interface IConnections {
   create ( IRecipientInfo ): number
   getData (): Promise<IConnectionData>
   connect ( IConnectOptions ): Promise<void>
-  getState (): number
-  release (): number
+  getState (): Promise<number>
+  release (): Promise<number>
 }
 
 export enum StateType {
@@ -39,4 +39,13 @@ export interface IConnectionData {
   uuid: string,
   wallet: string,
   state: string
+}
+
+export interface IClaimData {
+  source_id: string
+  handle: string
+  claim_def: string
+  claim_attributes: string
+  issued_did: string
+  state: number
 }
