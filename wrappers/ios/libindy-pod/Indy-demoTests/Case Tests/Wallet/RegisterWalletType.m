@@ -87,8 +87,8 @@
                                                                 outMyVerkey:nil];
     XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed trustee did");
     
-    NSString *senderDid = [NSString stringWithString:trusteeDid];
-    IndyHandle senderWallet = trusteeWallet;
+//    NSString *senderDid = [NSString stringWithString:trusteeDid];
+//    IndyHandle senderWallet = trusteeWallet;
     
     // 6. Build & submit nym request
     
@@ -173,7 +173,7 @@
 //
 //    [[AgentUtils sharedInstance] closeListener:listenerHandle];
     [[WalletUtils sharedInstance] closeWalletWithHandle:listenerWallet];
-    [[WalletUtils sharedInstance] closeWalletWithHandle:senderWallet];
+    [[WalletUtils sharedInstance] closeWalletWithHandle:trusteeWallet];
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     
     [TestUtils cleanupStorage];
