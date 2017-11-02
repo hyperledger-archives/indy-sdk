@@ -26,7 +26,7 @@ export class Connection implements IConnections {
     // const theirDid = recipientInfo.DIDremote !== undefined ? recipientInfo.DIDremote : null
     const id = recipientInfo.id // TODO verifiy that id is a string
     let result = null
-    try{
+      try{
       this.connectionHandle = await new Promise<string>((resolve, reject) =>
           result = this.RUST_API.cxs_connection_create(
               0,
@@ -38,8 +38,7 @@ export class Connection implements IConnections {
                           return
                       }
                       resolve(_connection_handle)
-                  }))
-      )
+                  })))
     } catch (error) {
         result = error
     }
@@ -59,6 +58,7 @@ export class Connection implements IConnections {
           this.connectionHandle,
             ffi.Callback('void', ['uint32', 'uint32', 'string'],
               (handle, err, _data) => {
+                console.log("\n\ngetData()\n\n")
                 if (err) {
                   reject(err)
                   return
@@ -115,7 +115,7 @@ export class Connection implements IConnections {
                   (command_handle, err) => {
                       resolve(err)
                   }))
-          if (connectResult != 0) {
+          if (connectResult !== 0) {
               resolve(connectResult)
           }
         }
