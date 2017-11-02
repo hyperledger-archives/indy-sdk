@@ -69,6 +69,9 @@
                   Identifier = "PoolMediumCases/testOpenPoolLedgerWorksForInvalidConfig">
                </Test>
                <Test
+                  Identifier = "PoolMediumCases/testOpenPoolLedgerWorksForInvalidNodesFile">
+               </Test>
+               <Test
                   Identifier = "WalletHignCases/testWalletSetSeqNoWorksForPlugged">
                </Test>
             </SkippedTests>
