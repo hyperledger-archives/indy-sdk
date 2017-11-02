@@ -34,7 +34,7 @@ impl IssuerClaim {
     }
 
     fn send_claim_offer(&mut self, connection_handle: u32) -> Result<u32, u32> {
-        if connection::is_valid_connection_handle(connection_handle) == false {
+        if connection::is_valid_handle(connection_handle) == false {
             warn!("invalid connection handle ({}) in send_claim_offer", connection_handle);
             return Err(error::INVALID_CONNECTION_HANDLE.code_num);
         }
@@ -65,6 +65,8 @@ impl IssuerClaim {
             }
         }
     }
+
+    fn get_state(&self) -> u32 { let state = self.state as u32; state }
 }
 
 pub fn issuer_claim_create(claim_def_handle: u32,
@@ -99,24 +101,29 @@ pub fn issuer_claim_create(claim_def_handle: u32,
     Ok(new_handle)
 }
 
+fn get_state(handle: u32) -> u32 {
+    match ISSUER_CLAIM_MAP.lock().unwrap().get(&handle) {
+        Some(t) => t.get_state(),
+        None => CxsStateType::CxsStateNone as u32,
+    }
+}
 
 pub fn release(handle: u32) -> u32 {
-    let mut m = ISSUER_CLAIM_MAP.lock().unwrap();
-    let result = m.remove(&handle);
-
-    let rc = match result {
+    match ISSUER_CLAIM_MAP.lock().unwrap().remove(&handle) {
         Some(t) => error::SUCCESS.code_num,
         None => error::INVALID_CONNECTION_HANDLE.code_num,
-    };
+    }
+}
 
-    rc
+pub fn is_valid_handle(handle: u32) -> bool {
+    match ISSUER_CLAIM_MAP.lock().unwrap().get(&handle) {
+        Some(_) => true,
+        None => false,
+    }
 }
 
 pub fn to_string(handle: u32) -> Result<String,u32> {
-    let t = ISSUER_CLAIM_MAP.lock().unwrap();
-    let result = t.get(&handle);
-
-    match result {
+    match ISSUER_CLAIM_MAP.lock().unwrap().get(&handle) {
         Some(c) => Ok(serde_json::to_string(&c).unwrap().to_owned()),
         None => Err(error::INVALID_ISSUER_CLAIM_HANDLE.code_num),
     }
@@ -130,6 +137,7 @@ pub fn from_string(claim_data: &str) -> Result<u32,u32> {
 
     let new_handle = derived_claim.handle;
 
+    if is_valid_handle(new_handle) {return Ok(new_handle);}
     let claim = Box::from(derived_claim);
 
     {
@@ -187,8 +195,10 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let connection_handle = build_connection("test_send_claim_offer".to_owned());
         let handle = issuer_claim_create(0, None,"{\"attr\":\"value\"}".to_owned()).unwrap();
-        thread::sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_millis(500));
         assert_eq!(send_claim_offer(handle,connection_handle).unwrap(),error::SUCCESS.code_num);
+        thread::sleep(Duration::from_millis(500));
+        assert_eq!(get_state(handle),CxsStateType::CxsStateOfferSent as u32);
     }
 
     #[test]

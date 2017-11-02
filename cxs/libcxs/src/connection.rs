@@ -76,108 +76,102 @@ impl Connection {
         }
     }
 
-    fn get_state(&self) -> u32 {
-        let state = self.state as u32;
-        state
-    }
+    fn get_state(&self) -> u32 { self.state as u32 }
     fn set_pw_did(&mut self, did: &str) { self.pw_did = did.to_string(); }
     fn set_state(&mut self, state: CxsStateType) { self.state = state; }
     fn get_pw_did(&self) -> String { self.pw_did.clone() }
     fn get_pw_verkey(&self) -> String { self.pw_verkey.clone() }
     fn set_pw_verkey(&mut self, verkey: &str) { self.pw_verkey = verkey.to_string(); }
-
     fn get_uuid(&self) -> String { self.uuid.clone() }
     fn get_endpoint(&self) -> String { self.endpoint.clone() }
-
     fn set_uuid(&mut self, uuid: &str) { self.uuid = uuid.to_string(); }
     fn set_endpoint(&mut self, endpoint: &str) { self.endpoint = endpoint.to_string(); }
 }
 
-fn find_connection(source_id: &str) -> u32 {
-    let connection_table = CONNECTION_MAP.lock().unwrap();
-
-    for (handle, connection) in connection_table.iter() { //TODO this could be very slow with lots of objects
+fn find_connection(source_id: &str) -> Result<u32,u32> {
+    for (handle, connection) in CONNECTION_MAP.lock().unwrap().iter() { //TODO this could be very slow with lots of objects
         if connection.source_id == source_id {
-            return *handle;
+            return Ok(*handle);
         }
     };
 
-    return 0;
+    Err(0)
 }
 
-pub fn is_valid_connection_handle(handle: u32) -> bool {
-    let connection_table = CONNECTION_MAP.lock().unwrap();
-
-    if let Some(cxn) = connection_table.get(&handle) { true }
-    else { false }
+pub fn is_valid_handle(handle: u32) -> bool {
+    match CONNECTION_MAP.lock().unwrap().get(&handle) {
+        Some(_) => true,
+        None => false,
+    }
 }
 
 pub fn set_pw_did(handle: u32, did: &str) {
-    let mut connection_table = CONNECTION_MAP.lock().unwrap();
-
-    if let Some(cxn) = connection_table.get_mut(&handle) { cxn.set_pw_did(did); }
+    match CONNECTION_MAP.lock().unwrap().get_mut(&handle) {
+        Some(cxn) => cxn.set_pw_did(did),
+        None => {}
+    };
 }
 
 pub fn set_state(handle: u32, state: CxsStateType) {
-    let mut connection_table = CONNECTION_MAP.lock().unwrap();
-
-    if let Some(cxn) = connection_table.get_mut(&handle) { cxn.set_state(state); }
+    match CONNECTION_MAP.lock().unwrap().get_mut(&handle) {
+        Some(cxn) => cxn.set_state(state),
+        None => {}
+    };
 }
 
 pub fn get_pw_did(handle: u32) -> Result<String, u32> {
-    let connection_table = CONNECTION_MAP.lock().unwrap();
-
-    match connection_table.get(&handle) {
+    match CONNECTION_MAP.lock().unwrap().get(&handle) {
         Some(cxn) => Ok(cxn.get_pw_did()),
-        None => Err(error::UNKNOWN_ERROR.code_num),
+        None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
     }
 }
 
 pub fn get_uuid(handle: u32) -> Result<String, u32> {
-    let connection_table = CONNECTION_MAP.lock().unwrap();
-    match connection_table.get(&handle) {
+    match CONNECTION_MAP.lock().unwrap().get(&handle) {
         Some(cxn) => Ok(cxn.get_uuid()),
         None => Err(error::UNKNOWN_ERROR.code_num),
     }
 }
 
 pub fn set_uuid(handle: u32, uuid: &str) {
-    let mut connection_table = CONNECTION_MAP.lock().unwrap();
-    if let Some(cxn) = connection_table.get_mut(&handle) {
-        cxn.set_uuid(uuid);
-    }
+    match CONNECTION_MAP.lock().unwrap().get_mut(&handle) {
+        Some(cxn) => cxn.set_uuid(uuid),
+        None => {}
+    };
 }
 
 pub fn set_endpoint(handle: u32, endpoint: &str) {
-    let mut connection_table = CONNECTION_MAP.lock().unwrap();
-    if let Some(cxn) = connection_table.get_mut(&handle) {
-        cxn.set_endpoint(endpoint)
-    }
+    match CONNECTION_MAP.lock().unwrap().get_mut(&handle) {
+        Some(cxn) => cxn.set_endpoint(endpoint),
+        None => {}
+    };
 }
 
-
 pub fn set_pw_verkey(handle: u32, verkey: &str) {
-    let mut connection_table = CONNECTION_MAP.lock().unwrap();
-
-    if let Some(cxn) = connection_table.get_mut(&handle) {
-        cxn.set_pw_verkey(verkey)
-    }
+    match CONNECTION_MAP.lock().unwrap().get_mut(&handle) {
+        Some(cxn) => cxn.set_pw_verkey(verkey),
+        None => {}
+    };
 }
 
 pub fn get_endpoint(handle: u32) -> Result<String, u32> {
-    let connection_table = CONNECTION_MAP.lock().unwrap();
-    match connection_table.get(&handle) {
+    match CONNECTION_MAP.lock().unwrap().get(&handle) {
         Some(cxn) => Ok(cxn.get_endpoint()),
         None => Err(error::NO_ENDPOINT.code_num),
     }
 }
 
 pub fn get_pw_verkey(handle: u32) -> Result<String, u32> {
-    let connection_table = CONNECTION_MAP.lock().unwrap();
-
-    match connection_table.get(&handle) {
+    match CONNECTION_MAP.lock().unwrap().get(&handle) {
         Some(cxn) => Ok(cxn.get_pw_verkey()),
         None => Err(error::UNKNOWN_ERROR.code_num),
+    }
+}
+
+pub fn get_state(handle: u32) -> u32 {
+    match CONNECTION_MAP.lock().unwrap().get(&handle) {
+        Some(t) => t.get_state(),
+        None=> CxsStateType::CxsStateNone as u32,
     }
 }
 
@@ -231,15 +225,14 @@ pub fn update_agent_profile(handle: u32) -> Result<u32, u32> {
 
 //TODO may want to split between the code path where did is pass and is not passed
 pub fn build_connection(source_id: String) -> u32 {
-    info!("building connection with {}", source_id);
-
     // Check to make sure source_id is unique
 
-    let new_handle = find_connection(&source_id);
-    if new_handle > 0 {return new_handle}
+    let new_handle = match find_connection(&source_id) {
+        Ok(x) => return x,
+        Err(_) => rand::thread_rng().gen::<u32>(),
+    };
 
-    let new_handle = rand::thread_rng().gen::<u32>();
-    info!("creating connection with handle {}", new_handle);
+    info!("creating connection with handle {} and id {}", new_handle, source_id);
     // This is a new connection
 
     let c = Box::new(Connection {
@@ -256,22 +249,16 @@ pub fn build_connection(source_id: String) -> u32 {
 
     {
         let mut m = CONNECTION_MAP.lock().unwrap();
-        info!("inserting handle {} into connection table", new_handle);
         m.insert(new_handle, c);
     }
 
-
-    let did_json = "{}";
-
-    info!("creating new connection from empty data");
-    match wallet::create_and_store_my_did(new_handle, did_json) {
+    match wallet::create_and_store_my_did(new_handle, "{}") {
         Ok(_) => info!("successfully created new did"),
         Err(x) => error!("could not create DID: {}", x),
     };
 
     new_handle
 }
-
 
 pub fn update_state(handle: u32) -> u32{
     let pw_did = match get_pw_did(handle) {
@@ -287,6 +274,7 @@ pub fn update_state(handle: u32) -> u32{
         Ok(x) => x,
         Err(x) => return x,
     };
+
     match httpclient::post(&json_msg, &url) {
         Err(_) => {error::POST_MSG_FAILURE.code_num}
         Ok(response) => {
@@ -297,55 +285,46 @@ pub fn update_state(handle: u32) -> u32{
     }
 }
 
-
-pub fn get_state(handle: u32) -> u32 {
-    // Try to update state from agent first
-    update_state(handle);
-    let m = CONNECTION_MAP.lock().unwrap();
-    let result = m.get(&handle);
-
-    let rc = match result {
-        Some(t) => t.get_state(),
-        None => CxsStateType::CxsStateNone as u32,
-    };
-
-    rc
-}
-
 pub fn connect(handle: u32, options: String) -> u32 {
-    let mut m = CONNECTION_MAP.lock().unwrap();
-    let result = m.get_mut(&handle);
-
-    let rc = match result {
+    match CONNECTION_MAP.lock().unwrap().get_mut(&handle) {
         Some(t) => t.connect(options),
         None => error::INVALID_CONNECTION_HANDLE.code_num,
-    };
-
-    rc
+    }
 }
 
-pub fn to_string(handle: u32) -> String {
-    let m = CONNECTION_MAP.lock().unwrap();
-    let result = m.get(&handle);
+pub fn to_string(handle: u32) -> Result<String,u32> {
+    match CONNECTION_MAP.lock().unwrap().get(&handle) {
+        Some(t) => Ok(serde_json::to_string(&t).unwrap()),
+        None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
+    }
+}
 
-    let connection_json = match result {
-        Some(t) => serde_json::to_string(&t).unwrap(),
-        None => String::new(),
+pub fn from_string(connection_data: &str) -> Result<u32,u32> {
+    let derived_connection: Connection = match serde_json::from_str(connection_data) {
+        Ok(x) => x,
+        Err(_) => return Err(error::UNKNOWN_ERROR.code_num),
     };
 
-    connection_json.to_owned()
+    let new_handle = derived_connection.handle;
+
+    if is_valid_handle(new_handle) {return Ok(new_handle);}
+
+    let connection = Box::from(derived_connection);
+
+    {
+        let mut m = CONNECTION_MAP.lock().unwrap();
+        info!("inserting handle {} into claim_issuer table", new_handle);
+        m.insert(new_handle, connection);
+    }
+
+    Ok(new_handle)
 }
 
 pub fn release(handle: u32) -> u32 {
-    let mut m = CONNECTION_MAP.lock().unwrap();
-    let result = m.remove(&handle);
-
-    let rc = match result {
+    match CONNECTION_MAP.lock().unwrap().remove(&handle) {
         Some(t) => error::SUCCESS.code_num,
         None => error::INVALID_CONNECTION_HANDLE.code_num,
-    };
-
-    rc
+    }
 }
 
 fn get_invite_detail(response: &str) -> String {
@@ -384,7 +363,7 @@ mod tests {
             .with_status(202)
             .with_header("content-type", "text/plain")
             .with_body("nice!")
-            .expect(4)
+            .expect(3)
             .create();
 
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
@@ -405,6 +384,7 @@ mod tests {
             .expect(1)
             .create();
 
+        assert_eq!(update_state(handle),error::SUCCESS.code_num);
         assert_eq!(get_state(handle), CxsStateType::CxsStateAccepted as u32);
         wallet::tests::delete_wallet("test_create_connection");
         _m.assert();
@@ -459,12 +439,6 @@ mod tests {
     }
 
     #[test]
-    fn test_connect_fails() {
-        // Need to add content here once we've implemented connected
-        assert_eq!(0, 0);
-    }
-
-    #[test]
     fn test_connection_release_fails() {
         let rc = release(1);
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
@@ -478,58 +452,10 @@ mod tests {
 
     #[test]
     fn test_get_string_fails() {
-        let string = to_string(1);
-        assert_eq!(string.len(), 0);
-    }
-
-    #[test]
-    fn test_get_string() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("".to_owned());
-        let string = to_string(handle);
-        println!("string: {}", string);
-        assert!(string.len() > 10);
-        release(handle);
-    }
-
-    #[test]
-    fn test_many_handles() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle1 = build_connection("handle1".to_owned());
-        let handle2 = build_connection("handle2".to_owned());
-        let handle3 = build_connection("handle3".to_owned());
-        let handle4 = build_connection("handle4".to_owned());
-        let handle5 = build_connection("handle5".to_owned());
-
-        connect(handle1, "{}".to_string());
-        connect(handle2, "{}".to_string());
-        connect(handle3, "{}".to_string());
-        connect(handle4, "{}".to_string());
-        connect(handle5, "{}".to_string());
-
-        let data1 = to_string(handle1);
-        let data2 = to_string(handle2);
-        let data3 = to_string(handle3);
-        let data4 = to_string(handle4);
-        let data5 = to_string(handle5);
-
-        println!("handle1: {}", data1);
-        println!("handle2: {}", data2);
-        println!("handle3: {}", data3);
-        println!("handle4: {}", data4);
-        println!("handle5: {}", data5);
-
-        release(handle1);
-        release(handle2);
-        release(handle3);
-        release(handle4);
-        release(handle5);
-
-        /* This only works when you run "cargo test -- --test-threads=1 */
-        //let m = CONNECTION_MAP.lock().unwrap();
-        //assert_eq!(0,m.len());
+        match to_string(0) {
+            Ok(_) => assert_eq!(1,0), //fail if we get here
+            Err(_) => assert_eq!(0,0),
+        };
     }
 
     #[test]
@@ -544,7 +470,6 @@ mod tests {
         assert!(!get_pw_did(handle).unwrap().is_empty());
         release(handle);
     }
-
 
     #[test]
     fn test_create_agent_pairwise() {
@@ -632,7 +557,7 @@ mod tests {
             .with_status(202)
             .with_header("content-type", "text/plain")
             .with_body("nice!")
-            .expect(3)
+            .expect(2)
             .create();
 
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
@@ -663,9 +588,8 @@ mod tests {
             .expect(1)
             .create();
 
-
         connect(handle, "{}".to_string());
-        let data = to_string(handle);
+        let data = to_string(handle).unwrap();
         info!("Data from to_string(i.e. 'get_data()'{}", data);
         assert!(data.contains("there"));
 
@@ -678,6 +602,7 @@ mod tests {
             .expect(1)
             .create();
 
+        assert_eq!(update_state(handle),error::SUCCESS.code_num);
         assert_eq!(get_state(handle), CxsStateType::CxsStateAccepted as u32);
         wallet::tests::delete_wallet(test_name);
         _m.assert();
@@ -697,9 +622,40 @@ mod tests {
                 \"targetName\": \"there\"
             }}";
 
-
         let invite_detail = get_invite_detail(response);
         info!("Invite Detail Test: {}", invite_detail);
         assert!(invite_detail.contains("sdfsdf"));
+    }
+
+    #[test]
+    fn test_serialize_deserialize() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let handle = build_connection("test_serialize_deserialize".to_owned());
+        assert!(handle > 0);
+        thread::sleep(Duration::from_millis(300));
+        let first_string = to_string(handle).unwrap();
+        release(handle);
+        let handle = from_string(&first_string).unwrap();
+        let second_string = to_string(handle).unwrap();
+        release(handle);
+        println!("{}",first_string);
+        println!("{}",second_string);
+        assert_eq!(first_string,second_string);
+    }
+
+    #[test]
+    fn test_deserialize_existing() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let handle = build_connection("test_serialize_deserialize".to_owned());
+        assert!(handle > 0);
+        thread::sleep(Duration::from_millis(300));
+        let first_string = to_string(handle).unwrap();
+        let handle = from_string(&first_string).unwrap();
+        let second_string = to_string(handle).unwrap();
+        println!("{}",first_string);
+        println!("{}",second_string);
+        assert_eq!(first_string,second_string);
     }
 }

@@ -10,6 +10,7 @@ use std::thread;
 use std::time::Duration;
 use std::ffi::CString;
 use cxs::api;
+use std::ffi::CStr;
 
 static mut CONNECTION_HANDLE: u32 = 0;
 static mut CLAIM_SENT: bool = false;
@@ -17,7 +18,12 @@ static mut CLAIM_SENT: bool = false;
 #[allow(unused_variables)]
 extern "C" fn serialize_cb(connection_handle: u32, err: u32, data: *const c_char) {
     if err != 0 {panic!("failed to serialize connection")}
-    println!("serialized connection: {:?}", data);
+    unsafe {
+        match CStr::from_ptr(data).to_str() {
+            Ok(str) => println!("serialized: {}", str.to_string()),
+            Err(err) => println!("invalid serialization"),
+        };
+    }
 }
 
 #[allow(unused_variables)]
@@ -49,7 +55,7 @@ extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_hand
         .with_status(202)
         .with_header("content-type", "text/plain")
         .with_body("nice!")
-        .expect(3)
+        .expect(2)
         .create();
 
     let mut connection_handle = 0;
