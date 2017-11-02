@@ -105,7 +105,6 @@ describe('A Connection object with ', function () {
     let data = await connection1.serialize()
 
     const connection2 = new Connection(path)
-    console.log(JSON.toString(data))
     await connection2.deserialize(JSON.stringify(data))
     assert.equal(connection2.connectionHandle, connection1.connectionHandle)
   })
