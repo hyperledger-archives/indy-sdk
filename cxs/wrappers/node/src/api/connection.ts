@@ -1,5 +1,4 @@
 import * as ffi from 'ffi'
-import { alloc, deref, Type, types as refTypes } from 'ref'
 import * as weak from 'weak'
 import { CXSRuntime } from '../index'
 import { CXSRuntimeConfig } from '../rustlib'
@@ -21,26 +20,29 @@ export class Connection implements IConnections {
     this._initRustApi(path)
   }
 
-  async create ( recipientInfo: IRecipientInfo ): Promise<number> {
-    // const myDid = recipientInfo.DIDself !== undefined ? recipientInfo.DIDself : null
-    // const theirDid = recipientInfo.DIDremote !== undefined ? recipientInfo.DIDremote : null
+  async create ( recipientInfo: IRecipientInfo ): Promise<void> {
     const id = recipientInfo.id // TODO verifiy that id is a string
     let result = null
-      try{
-      this.connectionHandle = await new Promise<string>((resolve, reject) =>
-          result = this.RUST_API.cxs_connection_create(
+    try {
+      this.connectionHandle = await new Promise<string>((resolve, reject) => {
+        result = this.RUST_API.cxs_connection_create(
               0,
               id,
               ffi.Callback('void', ['uint32', 'uint32', 'uint32'],
-                  (command_handle, err, _connection_handle) => {
-                      if (err) {
-                          reject(err)
-                          return
-                      }
-                      resolve(_connection_handle)
-                  })))
+                  (xHandle, err, _connectionHandle) => {
+                    if (err) {
+                      reject(err)
+                      return
+                    }
+                    resolve(_connectionHandle)
+                  }))
+        if (result) {
+          reject(result)
+        }
+      })
+
     } catch (error) {
-        result = error
+      throw new CXSInternalError(`cxs_connection_connect -> ${error}`)
     }
     this._clearOnExit()
 
@@ -52,35 +54,76 @@ export class Connection implements IConnections {
     await this._waitFor(async () => await this._connect(options) === 0, timeout)
   }
 
-  async getData (): Promise<IConnectionData> {
-    const data = await new Promise<string>((resolve, reject) =>
-      this.RUST_API.cxs_connection_serialize(
-          this.connectionHandle,
-            ffi.Callback('void', ['uint32', 'uint32', 'string'],
-              (handle, err, _data) => {
-                console.log("\n\ngetData()\n\n")
+  async serialize (): Promise<IConnectionData> {
+    try {
+      const data = await new Promise<string>((resolve, reject) => {
+        const rc = this.RUST_API.cxs_connection_serialize(
+              this.connectionHandle,
+              ffi.Callback('void', ['uint32', 'uint32', 'string'], (handle, err, _data) => {
+                if (err) {
+                  reject(err)
+                  return
+                } else if (_data === '') {
+                  _data = null
+                }
+                resolve(_data)
+              }))
+
+        if (rc) {
+          resolve(null)
+        }
+      })
+      return JSON.parse(data)
+    } catch (error) {
+      throw new CXSInternalError(`cxs_connection_serialize -> ${error}`)
+    }
+  }
+
+  async deserialize (connectionData): Promise<void> {
+    const commandHandle = 0
+    let callback = null
+    let result = 0
+    try {
+      this.connectionHandle = await new Promise<string>((resolve, reject) => {
+        result = this.RUST_API.cxs_connection_deserialize(
+                commandHandle,
+                connectionData,
+                callback = ffi.Callback('void', ['uint32', 'uint32', 'uint32'], (xHandle, _rc, handle) => {
+                  if (_rc) {
+                    reject(_rc)
+                  }
+                  resolve(JSON.stringify(handle))
+                }))
+        if (result) {
+          reject(result)
+        }
+      })
+    } catch (error) {
+      throw new CXSInternalError(`cxs_connection_deserialize -> ${error}`)
+    }
+  }
+
+  async updateState (): Promise<void> {
+    try {
+      this.state = await new Promise<number>((resolve, reject) => {
+        const rc = this.RUST_API.cxs_connection_update_state(
+              0,
+              this.connectionHandle,
+              ffi.Callback('void', ['uint32', 'uint32', 'uint32'], (handle, err, state) => {
                 if (err) {
                   reject(err)
                   return
                 }
-                if (_data === '') {
-                  resolve(null)
-                } else {
-                  resolve(_data)
-                }
+                resolve(state)
               }))
-    )
-    return JSON.parse(data)
-  }
+        if (rc) {
+          resolve(StateType.None)
+        }
+      })
 
-  getState (): StateType {
-    const statusPtr = alloc(refTypes.uint32)
-    const result = this.RUST_API.cxs_connection_get_state(this.connectionHandle, statusPtr)
-    if (result) {
-      throw new CXSInternalError(`cxs_connection_get_state -> ${result}`)
+    } catch (error) {
+      throw new CXSInternalError(`cxs_connection_get_state -> ${error}`)
     }
-    this.state = deref(statusPtr)
-    return this.state
   }
 
   release (): number {
@@ -107,19 +150,17 @@ export class Connection implements IConnections {
     const connectionType: string = phone ? 'SMS' : 'QR'
     let connectResult = null
     return await new Promise<number>((resolve, reject) => {
-          connectResult = this.RUST_API.cxs_connection_connect(
+      connectResult = this.RUST_API.cxs_connection_connect(
               0,
               this.connectionHandle,
               JSON.stringify({connection_type: connectionType, phone}),
-              ffi.Callback('void', ['uint32', 'uint32'],
-                  (command_handle, err) => {
-                      resolve(err)
-                  }))
-          if (connectResult !== 0) {
-              resolve(connectResult)
-          }
-        }
-    )
+              ffi.Callback('void', ['uint32', 'uint32'], (xhandle, err) => {
+                resolve(err)
+              }))
+      if (connectResult) {
+        resolve(connectResult)
+      }
+    })
   }
 
   private _sleep = (sleepTime: number): Promise<void> => new Promise((res) => setTimeout(res, sleepTime))
