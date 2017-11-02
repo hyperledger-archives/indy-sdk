@@ -65,7 +65,6 @@ impl Connection {
 
         match httpclient::post(&json_msg,&url) {
             Err(_) => {
-                println!("better message");
                 return error::POST_MSG_FAILURE.code_num
             },
             Ok(response) => {
@@ -223,11 +222,13 @@ pub fn update_agent_profile(handle: u32) -> Result<u32, u32> {
     }
 }
 
-//TODO may want to split between the code path where did is pass and is not passed
-pub fn build_connection(source_id: String) -> u32 {
-    // Check to make sure source_id is unique
-
-    let new_handle = match find_connection(&source_id) {
+//
+// NOTE: build_connection and create_connection are broken up to make it easier to create connections in tests
+//       you can call create_connection without test_mode and you don't have to build a wallet or
+//       mock the agency during the connection phase
+//
+pub fn create_connection(source_id: String) -> u32 {
+     let new_handle = match find_connection(&source_id) {
         Ok(x) => return x,
         Err(_) => rand::thread_rng().gen::<u32>(),
     };
@@ -251,6 +252,14 @@ pub fn build_connection(source_id: String) -> u32 {
         let mut m = CONNECTION_MAP.lock().unwrap();
         m.insert(new_handle, c);
     }
+
+    new_handle
+}
+
+pub fn build_connection(source_id: String) -> u32 {
+    // Check to make sure source_id is unique
+
+    let new_handle = create_connection(source_id);
 
     match wallet::create_and_store_my_did(new_handle, "{}") {
         Ok(_) => info!("successfully created new did"),

@@ -126,6 +126,9 @@ cxs_error_t cxs_issuer_send_claim_offer(cxs_command_handle_t command_handle, cxs
 /** Populates claim_request with the latest claim request received. */
 cxs_error_t cxs_issuer_get_claim_request(cxs_claim_handle_t claim_handle, char *claim_request);
 
+/** Updates the state of the claim from the agency. */
+cxs_error_t cxs_issuer_claim_update_state(cxs_claim_handle_t claim_handle, void (*cb)(cxs_claim_handle_t xclaim_handle, cxs_error_t err, cxs_claim_state_t state))
+
 /** Sets the claim request in an accepted state. */
 cxs_error_t cxs_issuer_accept_claim(cxs_claim_handle_t claim_handle);
 

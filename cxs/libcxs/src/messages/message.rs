@@ -1,6 +1,8 @@
 extern crate rust_base58;
 extern crate serde_json;
 
+use settings;
+use utils::httpclient;
 use utils::error;
 use messages::GeneralMessage;
 
@@ -68,6 +70,20 @@ impl GetMessages{
         //todo: is this a json value, String??
         self.payload.include_edge_payload = payload.to_string();
         self
+    }
+
+    pub fn send(&mut self) -> Result<String, u32> {
+        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+
+        let json_msg = match self.serialize_message() {
+            Ok(x) => x,
+            Err(x) => return Err(x),
+        };
+
+        match httpclient::post(&json_msg, &url) {
+            Err(_) => Err(error::POST_MSG_FAILURE.code_num),
+            Ok(response) => Ok(response),
+        }
     }
 }
 
@@ -155,6 +171,20 @@ impl SendMessage{
         //todo: is this a json value, String??
         self.payload.edge_agent_payload = payload.to_string();
         self
+    }
+
+    pub fn send(&mut self) -> Result<String, u32> {
+        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+
+        let json_msg = match self.serialize_message() {
+            Ok(x) => x,
+            Err(x) => return Err(x),
+        };
+
+        match httpclient::post(&json_msg, &url) {
+            Err(_) => Err(error::POST_MSG_FAILURE.code_num),
+            Ok(response) => Ok(response),
+        }
     }
 }
 
