@@ -29,7 +29,7 @@ describe('A Connection object with ', function () {
     await sleep(3000)
   })
 
-    // connection_create tests
+  // connection_create tests
 
   it('valid parameters in create should return success', async () => {
     const connection = new Connection(path)
@@ -47,7 +47,7 @@ describe('A Connection object with ', function () {
     assert.notEqual(connection.connectionHandle, undefined)
   })
 
-    // connection_connect tests
+  // connection_connect tests
 
   it(' a call to connect with connection already created should return success', async () => {
     const connection = new Connection(path)
@@ -64,7 +64,7 @@ describe('A Connection object with ', function () {
     assert.equal(await connection._connect({ sms: true }), Error.INVALID_CONNECTION_HANDLE)
   })
 
-    // connection_get_data tests
+  // connection_get_data tests
 
   it('a call to serialize where connection exists should return back the connections data', async () => {
     const connection = new Connection(path)
@@ -119,7 +119,7 @@ describe('A Connection object with ', function () {
     assert.equal(connection.connectionHandle, undefined)
   })
 
-    // connection_getState tests
+  // connection_getState tests
   it('call to updateState where connection exists should return success', async () => {
     const connection = new Connection(path)
     await connection.create({ id: '234' })
@@ -143,7 +143,7 @@ describe('A Connection object with ', function () {
     assert.equal(connection.state, StateType.Initialized)
   })
 
-    // connection_release tests
+  // connection_release tests
 
   it('call to connection_release where connection exists should return success', async () => {
     const connection = new Connection(path)
@@ -190,17 +190,17 @@ describe('A Connection object with ', function () {
     while (!isComplete) {
       const data = await new Promise(function (resolve, reject) {
         const callback = ffi.Callback('void', ['uint32', 'uint32', 'string'],
-          function (handle, err, data) {
-            if (err) {
-              reject(err)
-              return
-            }
-            resolve(data)
-          })
+            function (handle, err, data) {
+              if (err) {
+                reject(err)
+                return
+              }
+              resolve(data)
+            })
         callbacks.push(callback)
         const rc = serialize(
-          handle,
-          callback
+            handle,
+            callback
         )
 
         if (rc === Error.INVALID_CONNECTION_HANDLE) {
@@ -212,8 +212,8 @@ describe('A Connection object with ', function () {
       }
     }
 
-      // this will timeout if condition is never met
-      // get_data will return "" because the connection object was released
+    // this will timeout if condition is never met
+    // get_data will return "" because the connection object was released
     return isComplete
   })
 })
