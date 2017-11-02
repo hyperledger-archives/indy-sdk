@@ -2,6 +2,8 @@
 #define __indy__core__included__
 
 #include "indy_mod.h"
+#include "indy_types.h"
+
 #include "indy_agent.h"
 #include "indy_anoncreds.h"
 #include "indy_crypto.h"
