@@ -1,7 +1,6 @@
 ﻿using Hyperledger.Indy.LedgerApi;
 using Hyperledger.Indy.SignusApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.SignusTests
@@ -30,16 +29,6 @@ namespace Hyperledger.Indy.Test.SignusTests
         public async Task TestEncryptSealedWorksForPkCachedInWallet()
         {
             var identityJson = string.Format(IDENTITY_JSON_TEMPLATE, _did, _verkey);
-            await Signus.StoreTheirDidAsync(wallet, identityJson);
-
-            var encryptResult = await Signus.EncryptSealedAsync(wallet, pool, _did, MESSAGE);
-            Assert.IsNotNull(encryptResult);
-        }
-
-        [TestMethod]
-        public async Task TestEncryptSealedWorksForGetPkFromLedger()
-        {
-            var identityJson = string.Format("{{\"did\":\"{0}\"}}", _did);
             await Signus.StoreTheirDidAsync(wallet, identityJson);
 
             var encryptResult = await Signus.EncryptSealedAsync(wallet, pool, _did, MESSAGE);

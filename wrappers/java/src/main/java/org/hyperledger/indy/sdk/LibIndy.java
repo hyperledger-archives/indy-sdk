@@ -65,14 +65,23 @@ public abstract class LibIndy {
 		public int indy_decrypt(int command_handle, int wallet_handle, int pool_handle, String myDid, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, Callback cb);
 		public int indy_encrypt_sealed(int command_handle, int wallet_handle, int pool_handle, String did, byte[] message_raw, int message_len, Callback cb);
 		public int indy_decrypt_sealed(int command_handle, int wallet_handle, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
+		public int indy_key_for_did(int command_handle, int pool_handle, int wallet_handle, String did, Callback cb);
+		public int indy_set_endpoint_for_did(int command_handle, int wallet_handle, String did, String address, String transportKey, Callback cb);
+		public int indy_get_endpoint_for_did(int command_handle, int wallet_handle, int pool_handle, String did, Callback cb);
+		public int indy_set_did_metadata(int command_handle, int wallet_handle, String did, String metadata, Callback cb);
+		public int indy_get_did_metadata(int command_handle, int wallet_handle, String did, Callback cb);
+
+		// signus.rs
+
 		public int indy_create_key(int command_handle, int wallet_handle, String key_json, Callback cb);
 		public int indy_set_key_metadata(int command_handle, int wallet_handle, String verkey, String metadata, Callback cb);
 		public int indy_get_key_metadata(int command_handle, int wallet_handle, String verkey, Callback cb);
-		public int indy_key_for_did(int command_handle, int pool_handle, int wallet_handle, String did, Callback cb);
-		public int indy_set_endpoint_for_did(int command_handle, int wallet_handle, String did, String address, String transportKey, Callback cb);
-		public int indy_get_endpoint_for_did(int command_handle, int wallet_handle, String did, Callback cb);
-		public int indy_set_did_metadata(int command_handle, int wallet_handle, String did, String metadata, Callback cb);
-		public int indy_get_did_metadata(int command_handle, int wallet_handle, String did, Callback cb);
+		public int indy_crypto_sign(int command_handle, int wallet_handle, String my_vk, byte[] message_raw, int message_len, Callback cb);
+		public int indy_crypto_verify(int command_handle, String their_vk, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
+		public int indy_crypto_box(int command_handle, int wallet_handle, String my_vk, String their_vk, byte[] message_raw, int message_len, Callback cb);
+		public int indy_crypto_box_open(int command_handle, int wallet_handle, String my_vk, String their_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, Callback cb);
+		public int indy_crypto_box_seal(int command_handle, String their_vk, byte[] message_raw, int message_len, Callback cb);
+		public int indy_crypto_box_seal_open(int command_handle, int wallet_handle, String my_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
 
 		// anoncreds.rs
 

@@ -9,50 +9,38 @@ namespace Hyperledger.Indy.Test.PairwiseTests
     [TestClass]
     public class SetPairwiseMetadataTests : PairwiseIntegrationTestBase
     {
+        private const string PAIRWISE_TEMPLATE_WITH_META = "{{\"my_did\":\"{0}\",\"metadata\":\"{1}\"}}";
+        private const string PAIRWISE_TEMPLATE_WITHOUT_META = "{{\"my_did\":\"{0}\"}}";
+
         [TestMethod]
         public async Task TestSetPairwiseMetadataWorks()
         {
             await Pairwise.CreateAsync(wallet, theirDid, myDid, null);
 
             var pairwiseWithoutMetadata = await Pairwise.GetAsync(wallet, theirDid);
+            Assert.AreEqual(string.Format(PAIRWISE_TEMPLATE_WITHOUT_META, myDid), pairwiseWithoutMetadata);
 
             await Pairwise.SetMetadataAsync(wallet, theirDid, METADATA);
             var pairwiseWithMetadata = await Pairwise.GetAsync(wallet, theirDid);
 
             Assert.AreNotEqual(pairwiseWithoutMetadata, pairwiseWithMetadata);
-            Assert.AreEqual(string.Format(PAIRWISE_TEMPLATE, myDid, METADATA), pairwiseWithMetadata);
+            Assert.AreEqual(string.Format(PAIRWISE_TEMPLATE_WITH_META, myDid, METADATA), pairwiseWithMetadata);
         }
 
         [TestMethod]
-        [Ignore] //Bug in SDK?
-        public async Task TestSetPairwiseMetadataWorksWithNull()
+        public async Task TestSetPairwiseMetadataWorksForReset()
         {
             await Pairwise.CreateAsync(wallet, theirDid, myDid, METADATA);
 
             var pairwiseWithMetadata = await Pairwise.GetAsync(wallet, theirDid);
+
+            Assert.AreEqual(string.Format(PAIRWISE_TEMPLATE_WITH_META, myDid, METADATA), pairwiseWithMetadata);
 
             await Pairwise.SetMetadataAsync(wallet, theirDid, null);
             var pairwiseWithoutMetadata = await Pairwise.GetAsync(wallet, theirDid);
-            var pairwiseInfo = JObject.Parse(pairwiseWithoutMetadata);
 
-            Assert.AreNotEqual(pairwiseWithoutMetadata, pairwiseWithMetadata);
-            Assert.IsNull(pairwiseInfo["metadata"]);
-        }
-
-        [TestMethod]
-        [Ignore] //Bug in SDK?
-        public async Task TestSetPairwiseMetadataWorksWithEmptyString()
-        {
-            await Pairwise.CreateAsync(wallet, theirDid, myDid, METADATA);
-
-            var pairwiseWithMetadata = await Pairwise.GetAsync(wallet, theirDid);
-
-            await Pairwise.SetMetadataAsync(wallet, theirDid, string.Empty);
-            var pairwiseWithoutMetadata = await Pairwise.GetAsync(wallet, theirDid);
-            var pairwiseInfo = JObject.Parse(pairwiseWithoutMetadata);
-
-            Assert.AreNotEqual(pairwiseWithoutMetadata, pairwiseWithMetadata);
-            Assert.AreEqual(string.Empty, pairwiseInfo.Value<string>("metadata"));
+            Assert.AreNotEqual(pairwiseWithMetadata, pairwiseWithoutMetadata);
+            Assert.AreEqual(string.Format(PAIRWISE_TEMPLATE_WITHOUT_META, myDid), pairwiseWithoutMetadata);
         }
 
         [TestMethod]

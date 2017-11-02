@@ -39,7 +39,7 @@ public class AgentPrepAnonymousMsgTest extends IndyIntegrationTestWithSingleWall
 
 	@Test
 	public void testPrepAnonymousMsgWorks() throws Exception {
-		byte[] encryptedMsg = Agent.prepAnonymousMsg(VERKEY_FOR_MY1_SEED, MESSAGE).get();
+		byte[] encryptedMsg = Agent.prepAnonymousMsg(VERKEY_MY1, MESSAGE).get();
 		checkMessage(encryptedMsg);
 	}
 

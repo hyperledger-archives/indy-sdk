@@ -55,9 +55,9 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 				"\"data\":%s," +
 				"\"type\":\"102\"," +
 				"\"signature_type\":\"%s\"" +
-				"}", DID1, seqNo, expectedData, signatureType);
+				"}", DID, seqNo, expectedData, signatureType);
 
-		String claimDefRequest = Ledger.buildClaimDefTxn(DID1, seqNo, signatureType, data).get();
+		String claimDefRequest = Ledger.buildClaimDefTxn(DID, seqNo, signatureType, data).get();
 
 		assertTrue(claimDefRequest.replace("\\", "").contains(expectedResult));
 	}
@@ -70,9 +70,9 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 				"\"ref\":%d," +
 				"\"signature_type\":\"%s\"," +
 				"\"origin\":\"%s\"" +
-				"}", DID1, seqNo, signatureType, DID1);
+				"}", DID, seqNo, signatureType, DID);
 
-		String getClaimDefRequest = Ledger.buildGetClaimDefTxn(DID1, seqNo, signatureType, DID1).get();
+		String getClaimDefRequest = Ledger.buildGetClaimDefTxn(DID, seqNo, signatureType, DID).get();
 
 		assertTrue(getClaimDefRequest.replace("\\", "").contains(expectedResult));
 	}
@@ -84,7 +84,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 
 		String data = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"}}}";
 
-		Ledger.buildClaimDefTxn(DID1, seqNo, signatureType, data).get();
+		Ledger.buildClaimDefTxn(DID, seqNo, signatureType, data).get();
 	}
 
 	@Test
