@@ -45,7 +45,7 @@ typedef struct {
  * Initialize the SDK
  */
 
-cxs_error_t cxs_init(const char *config_path,void (*cb)(cxs_command_handle_t command_handle, cxs_error_t err));
+cxs_error_t cxs_init(cxs_command_handle_t handle, const char *config_path,void (*cb)(cxs_command_handle_t command_handle, cxs_error_t err));
 
 
 /**
@@ -106,7 +106,7 @@ cxs_error_t cxs_connection_serialize(cxs_connection_handle_t connection_handle, 
 cxs_error_t cxs_connection_deserialize(cxs_command_handle_t command_handle, const char *serialized_claim, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_connection_handle_t *connection_handle));
 
 /** Request a state update from the agent for the given connection. */
-cxs_error_t cxs_connection_update_state(cxs_command_handle_t command_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, enum cxs_claim_state_t state));
+cxs_error_t cxs_connection_update_state(cxs_command_handle_t command_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_claim_state_t state));
 
 /** Releases the connection from memory. */
 cxs_error_t cxs_connection_release(cxs_connection_handle_t connection_handle);

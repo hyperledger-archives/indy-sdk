@@ -27,7 +27,7 @@ pub extern fn cxs_connection_create(command_handle: u32,
         let mut rc = error::UNKNOWN_ERROR.code_num;
 
         loop {
-            if get_state(handle) == CxsStateType::CxsStateInitialized as u32 {
+            if get_state(handle) != CxsStateType::CxsStateNone as u32 {
                 rc = error::SUCCESS.code_num;
                 break;
             }
