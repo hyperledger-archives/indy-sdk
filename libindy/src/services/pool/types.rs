@@ -48,35 +48,6 @@ fn string_or_number<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
         _ => Err(serde::de::Error::custom(format!("Invalid Node transaction"))),
     }
 }
-//
-//
-//fn string_or_number<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error> where D: Deserializer<'de> {
-//    struct StringOrNumberVisitor;
-//
-//    impl<'de> de::Visitor<'de> for StringOrNumberVisitor {
-//        type Value = Option<u64>;
-//
-//        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-//            formatter.write_str("an integer or a string")
-//        }
-//
-//        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where E: de::Error,
-//        {
-//            match v.parse::<u64>() {
-//                Ok(num) => return Ok(Some(num)),
-//                Err(err) => return Err(serde::de::Error::custom(format!("Invalid Node transaction: {:?}", err)))
-//            }
-//        }
-//
-//        fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E> where E: de::Error, {
-//            return Ok(Some(v));
-//        }
-//
-//        fn visit_none<E>(self) -> Result<Self::Value, E> where E: de::Error, { Ok(None) }
-//    }
-//
-//    deserializer.deserialize_u64(StringOrNumberVisitor)
-//}
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct NodeTransaction {
