@@ -1475,7 +1475,7 @@ mod tests {
                 data: NodeData {
                     alias: "n1".to_string(),
                     blskey: Some(blskey),
-                    services: Some(Vec::new()),
+                    services: Some(vec!["VALIDATOR".to_string()]),
                     client_port: Some(9700),
                     client_ip: Some("127.0.0.1".to_string()),
                     node_ip: Some("".to_string()),
