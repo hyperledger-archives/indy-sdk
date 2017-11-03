@@ -1,4 +1,4 @@
-package org.hyperledger.indy.sdk.signus;
+package org.hyperledger.indy.sdk.crypto;
 
 import org.hyperledger.indy.sdk.ErrorCode;
 import org.hyperledger.indy.sdk.IndyException;

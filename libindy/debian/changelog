@@ -1,8 +1,4 @@
-libindy (1.0.0) unstable; urgency=medium
+libindy (1.0.1) unstable; urgency=medium
 
   [ Hyperledger ]
-  * Append doc control message to control not rules Closes: #837111
-  * Removed init.d example, that era has passed. Closes: #832764
-  * Change Vcs-Git URL to use https Closes: #830157
-
- -- Huperledger <info@hyperledger.org>  Fri, 07 Jul 2017 19:19:00 +0300
+  * Hotfix for IS-388

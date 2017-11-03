@@ -22,9 +22,9 @@ cp ./target/release/*.dll ./libindy-zip/lib/
 powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('libindy-zip', 'libindy_$version.zip'); }"
 rm -rf ./libindy-zip
 
-cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.111
-mkdir /var/repository/repos/libindy/windows/$type/$version-$number
-cd /var/repository/repos/libindy/windows/$type/$version-$number
+cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
+mkdir /var/repository/repos/windows/libindy/$type/$version-$number
+cd /var/repository/repos/windows/libindy/$type/$version-$number
 put -r libindy_"$version".zip
-ls -l /var/repository/repos/libindy/windows/$type/$version-$number
+ls -l /var/repository/repos/windows/libindy/$type/$version-$number
 EOF

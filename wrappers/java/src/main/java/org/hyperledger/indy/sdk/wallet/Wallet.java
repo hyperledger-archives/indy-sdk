@@ -248,7 +248,7 @@ public class Wallet extends IndyJava.API {
 	private static CompletableFuture<Void> closeWallet(
 			Wallet wallet) throws IndyException {
 
-		ParamGuard.notNull(wallet, "wallet");	
+		ParamGuard.notNull(wallet, "wallet");
 		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);

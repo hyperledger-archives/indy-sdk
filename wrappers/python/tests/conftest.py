@@ -48,6 +48,12 @@ def did_my1():
 def did_my2():
     return "2PRyVHmkXQnQzJQKxHxnXC"
 
+
+@pytest.fixture
+def did_trustee():
+    return "V4SGRU86Z58d6TV7PBUe6f"
+
+
 @pytest.fixture
 def verkey_my1():
     return "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
@@ -430,3 +436,9 @@ async def identity_my2(wallet_handle, identity_trustee1, seed_my2, ):
 
     await signus.store_their_did(wallet_handle, json.dumps({'did': trustee_did, 'verkey': trustee_verkey}))
     return my_did, my_verkey
+
+
+@pytest.fixture
+async def key_my1(wallet_handle, seed_my1, ):
+    key = await signus.create_key(wallet_handle, json.dumps({"seed": seed_my1}))
+    return key

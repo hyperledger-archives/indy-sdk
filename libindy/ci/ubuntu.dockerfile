@@ -62,8 +62,12 @@ USER root
 RUN pip3 install \
     twine
 
+RUN apt-get install -y devscripts
+
+ARG anoncreds_revision=1.0.32-master
 USER indy
 RUN git clone https://github.com/hyperledger/indy-anoncreds.git
+RUN cd indy-anoncreds && git checkout $anoncreds_revision
 RUN virtualenv -p python3.5 /home/indy/test
 RUN cp -r /usr/local/lib/python3.5/dist-packages/Charm_Crypto-0.0.0.egg-info /home/indy/test/lib/python3.5/site-packages/Charm_Crypto-0.0.0.egg-info
 RUN cp -r /usr/local/lib/python3.5/dist-packages/charm /home/indy/test/lib/python3.5/site-packages/charm
@@ -74,3 +78,5 @@ USER indy
 RUN pip3 install \
 	/home/indy/indy-anoncreds \
 	pytest
+
+RUN pip3 install -U pip plumbum deb-pkg-tools

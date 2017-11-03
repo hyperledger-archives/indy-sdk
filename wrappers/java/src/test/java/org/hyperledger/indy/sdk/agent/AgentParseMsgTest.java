@@ -2,8 +2,9 @@ package org.hyperledger.indy.sdk.agent;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
+import org.hyperledger.indy.sdk.crypto.Crypto;
+import org.hyperledger.indy.sdk.crypto.CryptoJSONParameters;
 import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
 import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
 import org.junit.Test;
@@ -18,11 +19,11 @@ import static org.junit.Assert.*;
 public class AgentParseMsgTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 	@Test
 	public void testParseMsgWorksForAuthenticatedMessage() throws Exception {
-		String paramJson = new SignusJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();
-		String senderVk = Signus.createKey(wallet, paramJson).get();
+		String paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();
+		String senderVk = Crypto.createKey(wallet, paramJson).get();
 
-		paramJson = new SignusJSONParameters.CreateKeyJSONParameter(MY2_SEED, null).toJson();
-		String recipientVk = Signus.createKey(wallet, paramJson).get();
+		paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(MY2_SEED, null).toJson();
+		String recipientVk = Crypto.createKey(wallet, paramJson).get();
 
 		byte[] encryptedMsg = Agent.prepMsg(wallet, senderVk, recipientVk, MESSAGE).get();
 		AgentResults.ParseMsgResult parseResult = Agent.parseMsg(wallet, recipientVk, encryptedMsg).get();
@@ -32,8 +33,8 @@ public class AgentParseMsgTest extends IndyIntegrationTestWithPoolAndSingleWalle
 
 	@Test
 	public void testParseMsgWorksForAnonymousMessage() throws Exception {
-		String paramJson = new SignusJSONParameters.CreateKeyJSONParameter(MY2_SEED, null).toJson();
-		String recipientVk = Signus.createKey(wallet, paramJson).get();
+		String paramJson = new CryptoJSONParameters.CreateKeyJSONParameter(MY2_SEED, null).toJson();
+		String recipientVk = Crypto.createKey(wallet, paramJson).get();
 
 		byte[] encryptedMsg = Agent.prepAnonymousMsg(recipientVk, MESSAGE).get();
 		AgentResults.ParseMsgResult parseResult = Agent.parseMsg(wallet, recipientVk, encryptedMsg).get();
@@ -61,7 +62,7 @@ public class AgentParseMsgTest extends IndyIntegrationTestWithPoolAndSingleWalle
 
 	@Test
 	public void testParseMsgWorksForInvalidAnonymousMessage() throws Exception {
-		String recipientVk = Signus.createKey(wallet, "{}").get();
+		String recipientVk = Crypto.createKey(wallet, "{}").get();
 
 		String msg = "unencrypted message";
 
