@@ -1,14 +1,21 @@
 ﻿using System.Threading.Tasks;
-using static Hyperledger.Indy.IndyNativeMethods;
+using static Hyperledger.Indy.Consts;
 
 namespace Hyperledger.Indy.Utils
 {
     internal static class CallbackHelper
     {
         /// <summary>
+        /// Delegate for callbacks that only include the success or failure of command execution.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        internal delegate void IndyMethodCompletedDelegate(int xcommand_handle, int err);
+
+        /// <summary>
         /// Gets the callback to use for completing tasks that don't return a value.
         /// </summary>
-        public static NoValueDelegate TaskCompletingNoValueCallback = (xcommand_handle, err) =>
+        public static IndyMethodCompletedDelegate TaskCompletingNoValueCallback = (xcommand_handle, err) =>
         {
             var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
 
@@ -21,7 +28,7 @@ namespace Hyperledger.Indy.Utils
         /// <summary>
         /// Gets the callback to use for functions that don't return a value and are not associated with a task.
         /// </summary>
-        public static NoValueDelegate NoValueCallback = (xcommand_handle, err) =>
+        public static IndyMethodCompletedDelegate NoValueCallback = (xcommand_handle, err) =>
         {
             CheckCallback(err);
         };

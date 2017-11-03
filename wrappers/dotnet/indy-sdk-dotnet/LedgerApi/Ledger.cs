@@ -4,7 +4,7 @@ using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
 using System;
 using System.Threading.Tasks;
-using static Hyperledger.Indy.IndyNativeMethods;
+using static Hyperledger.Indy.LedgerApi.NativeMethods;
 
 namespace Hyperledger.Indy.LedgerApi
 {
@@ -42,7 +42,7 @@ namespace Hyperledger.Indy.LedgerApi
         /// <summary>
         /// Gets the callback to use when a command that submits a message to the ledger completes.
         /// </summary>
-        private static SubmitRequestResultDelegate _submitRequestCallback = (xcommand_handle, err, response_json) =>
+        private static SubmitRequestCompletedDelegate _submitRequestCallback = (xcommand_handle, err, response_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -55,7 +55,7 @@ namespace Hyperledger.Indy.LedgerApi
         /// <summary>
         /// Gets the callback to use when a command that builds a request completes.
         /// </summary>
-        private static BuildRequestResultDelegate _buildRequestCallback = (xcommand_handle, err, request_json) =>
+        private static BuildRequestCompletedDelegate _buildRequestCallback = (xcommand_handle, err, request_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -68,7 +68,7 @@ namespace Hyperledger.Indy.LedgerApi
         /// <summary>
         /// Gets the callback to use when the command for SignRequestAsync has completed.
         /// </summary>
-        private static SignRequestResultDelegate _signRequestCallback = (xcommand_handle, err, signed_request_json) =>
+        private static SignRequestCompletedDelegate _signRequestCallback = (xcommand_handle, err, signed_request_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -100,7 +100,7 @@ namespace Hyperledger.Indy.LedgerApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            int result = IndyNativeMethods.indy_sign_request(
+            int result = NativeMethods.indy_sign_request(
                 commandHandle,
                 wallet.Handle,
                 submitterDid,
@@ -137,7 +137,7 @@ namespace Hyperledger.Indy.LedgerApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_sign_and_submit_request(
+            var result = NativeMethods.indy_sign_and_submit_request(
                 commandHandle,
                 pool.Handle,
                 wallet.Handle,
@@ -173,7 +173,7 @@ namespace Hyperledger.Indy.LedgerApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_submit_request(
+            var result = NativeMethods.indy_submit_request(
                 commandHandle,
                 pool.Handle,
                 requestJson,
@@ -209,7 +209,7 @@ namespace Hyperledger.Indy.LedgerApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_build_get_ddo_request(
+            var result = NativeMethods.indy_build_get_ddo_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
@@ -254,7 +254,7 @@ namespace Hyperledger.Indy.LedgerApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_build_nym_request(
+            var result = NativeMethods.indy_build_nym_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
@@ -300,7 +300,7 @@ namespace Hyperledger.Indy.LedgerApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_build_attrib_request(
+            var result = NativeMethods.indy_build_attrib_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
@@ -338,7 +338,7 @@ namespace Hyperledger.Indy.LedgerApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_build_get_attrib_request(
+            var result = NativeMethods.indy_build_get_attrib_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
@@ -372,7 +372,7 @@ namespace Hyperledger.Indy.LedgerApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_build_get_nym_request(
+            var result = NativeMethods.indy_build_get_nym_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
@@ -418,7 +418,7 @@ namespace Hyperledger.Indy.LedgerApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_build_schema_request(
+            var result = NativeMethods.indy_build_schema_request(
                 commandHandle,
                 submitterDid,
                 data,
@@ -463,7 +463,7 @@ namespace Hyperledger.Indy.LedgerApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_build_get_schema_request(
+            var result = NativeMethods.indy_build_get_schema_request(
                 commandHandle,
                 submitterDid,
                 dest,
@@ -524,7 +524,7 @@ namespace Hyperledger.Indy.LedgerApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_build_claim_def_txn(
+            var result = NativeMethods.indy_build_claim_def_txn(
                 commandHandle,
                 submitterDid,
                 xref,
@@ -561,7 +561,7 @@ namespace Hyperledger.Indy.LedgerApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_build_get_claim_def_txn(
+            var result = NativeMethods.indy_build_get_claim_def_txn(
                 commandHandle,
                 submitterDid,
                 xref,
@@ -592,7 +592,7 @@ namespace Hyperledger.Indy.LedgerApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_build_node_request(
+            var result = NativeMethods.indy_build_node_request(
                 commandHandle,
                 submitterDid,
                 targetDid,
@@ -619,7 +619,7 @@ namespace Hyperledger.Indy.LedgerApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_build_get_txn_request(
+            var result = NativeMethods.indy_build_get_txn_request(
                 commandHandle,
                 submitterDid,
                 data,

@@ -1,3 +1,4 @@
+extern crate serde;
 extern crate serde_json;
 extern crate rmp_serde;
 extern crate indy_crypto;
@@ -7,41 +8,94 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use super::zmq;
 use errors::common::CommonError;
+use utils::crypto::verkey_builder::build_full_verkey;
 
 use self::indy_crypto::bls;
 
 use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::json::{JsonDecodable, JsonEncodable};
 
+
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct NodeData<T> {
+pub struct NodeData {
     pub alias: String,
-    pub client_ip: String,
-    pub client_port: T,
-    pub node_ip: String,
-    pub node_port: T,
-    pub services: Vec<String>,
-    pub blskey: String
+    pub client_ip: Option<String>,
+    #[serde(deserialize_with = "string_or_number")]
+    #[serde(default)]
+    pub client_port: Option<u64>,
+    pub node_ip: Option<String>,
+    #[serde(deserialize_with = "string_or_number")]
+    #[serde(default)]
+    pub node_port: Option<u64>,
+    pub services: Option<Vec<String>>,
+    pub blskey: Option<String>
+}
+
+fn string_or_number<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
+    where D: serde::Deserializer<'de>
+{
+    let deser_res: Result<serde_json::Value, _> = serde::Deserialize::deserialize(deserializer);
+    match deser_res {
+        Ok(serde_json::Value::String(s)) => match s.parse::<u64>() {
+            Ok(num) => Ok(Some(num)),
+            Err(err) => Err(serde::de::Error::custom(format!("Invalid Node transaction: {:?}", err)))
+        },
+        Ok(serde_json::Value::Number(n)) => match n.as_u64() {
+            Some(num) => Ok(Some(num)),
+            None => Err(serde::de::Error::custom(format!("Invalid Node transaction")))
+        },
+        Ok(serde_json::Value::Null) => Ok(None),
+        _ => Err(serde::de::Error::custom(format!("Invalid Node transaction"))),
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct GenTransaction<T> {
-    pub data: NodeData<T>,
+pub struct NodeTransaction {
+    pub data: NodeData,
     pub dest: String,
     pub identifier: String,
     #[serde(rename = "txnId")]
     pub txn_id: Option<String>,
+    pub verkey: Option<String>,
     #[serde(rename = "type")]
     pub txn_type: String
 }
 
-impl JsonEncodable for GenTransaction<u32> {}
+impl JsonEncodable for NodeTransaction {}
 
-impl<'a> JsonDecodable<'a> for GenTransaction<u32> {}
+impl<'a> JsonDecodable<'a> for NodeTransaction {}
 
-impl GenTransaction<u32> {
+impl NodeTransaction {
     pub fn to_msg_pack(&self) -> Result<Vec<u8>, rmp_serde::encode::Error> {
         rmp_serde::to_vec_named(self)
+    }
+
+    pub fn update(&mut self, other: &mut NodeTransaction) -> Result<(), CommonError> {
+        assert_eq!(self.dest, other.dest);
+        assert_eq!(self.data.alias, other.data.alias);
+
+        if let Some(ref mut client_ip) = other.data.client_ip {
+            self.data.client_ip = Some(client_ip.to_owned());
+        }
+        if let Some(ref mut client_port) = other.data.client_port {
+            self.data.client_port = Some(client_port.to_owned());
+        }
+        if let Some(ref mut node_ip) = other.data.node_ip {
+            self.data.node_ip = Some(node_ip.to_owned());
+        }
+        if let Some(ref mut node_port) = other.data.node_port {
+            self.data.node_port = Some(node_port.to_owned());
+        }
+        if let Some(ref mut blskey) = other.data.blskey {
+            self.data.blskey = Some(blskey.to_owned());
+        }
+        if let Some(ref mut services) = other.data.services {
+            self.data.services = Some(services.to_owned());
+        }
+        if other.verkey.is_some() {
+            self.verkey = Some(build_full_verkey(&self.dest, other.verkey.as_ref().map(String::as_str))?);
+        }
+        Ok(())
     }
 }
 
@@ -189,7 +243,7 @@ pub struct RemoteNode {
     pub zaddr: String,
     pub zsock: Option<zmq::Socket>,
     pub is_blacklisted: bool,
-    pub blskey: bls::VerKey
+    pub blskey: Option<bls::VerKey>
 }
 
 pub struct CatchUpProcess {

@@ -38,29 +38,5 @@ namespace Hyperledger.Indy.Test.SignusTests
                 Signus.StoreTheirDidAsync(wallet, string.Format("{{\"verkey\":\"{0}\"}}", _verkey))
             );
         }
-
-        [TestMethod]
-        public async Task TestStoreTheirDidWorksForCorrectCryptoType()
-        {
-            var json = string.Format("{{\"did\":\"{0}\", " +
-                "\"verkey\":\"{1}\", " +
-                "\"crypto_type\": \"ed25519\"}}", DID1, _verkey);
-
-            await Signus.StoreTheirDidAsync(wallet, json);
-        }
-
-        [TestMethod]
-        public async Task TestStoreTheirDidWorksForInvalidCryptoType()
-        {
-            var json = string.Format("{{\"did\":\"{0}\", " +
-                "\"verkey\":\"{1}\", " +
-                "\"crypto_type\": \"some_type\"}}", DID1, _verkey);
-
-            var ex = await Assert.ThrowsExceptionAsync<UnknownCryptoException>(() =>
-                Signus.StoreTheirDidAsync(wallet, json)
-            );
-        }
-
-
     }
 }

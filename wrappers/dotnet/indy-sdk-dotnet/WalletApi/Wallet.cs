@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
-using static Hyperledger.Indy.IndyNativeMethods;
+using static Hyperledger.Indy.WalletApi.NativeMethods;
 
 namespace Hyperledger.Indy.WalletApi
 {
@@ -20,7 +20,7 @@ namespace Hyperledger.Indy.WalletApi
         /// <summary>
         /// Gets the callback to use when a wallet open command has completed.
         /// </summary>
-        private static OpenWalletResultDelegate _openWalletCallback = (xcommand_handle, err, wallet_handle) =>
+        private static OpenWalletCompletedDelegate _openWalletCallback = (xcommand_handle, err, wallet_handle) =>
         {
             var taskCompletionSource = PendingCommands.Remove<Wallet>(xcommand_handle);
 
@@ -58,7 +58,7 @@ namespace Hyperledger.Indy.WalletApi
 
             _registeredWalletTypes.Add(walletType);          
 
-            var result = IndyNativeMethods.indy_register_wallet_type(
+            var result = NativeMethods.indy_register_wallet_type(
                 commandHandle,
                 typeName,
                 walletType.CreateCallback,
@@ -125,7 +125,7 @@ namespace Hyperledger.Indy.WalletApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_create_wallet(
+            var result = NativeMethods.indy_create_wallet(
                 commandHandle,
                 poolName,
                 name,
@@ -171,7 +171,7 @@ namespace Hyperledger.Indy.WalletApi
             var taskCompletionSource = new TaskCompletionSource<Wallet>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_open_wallet(
+            var result = NativeMethods.indy_open_wallet(
                 commandHandle,
                 name,
                 runtimeConfig,
@@ -206,7 +206,7 @@ namespace Hyperledger.Indy.WalletApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_delete_wallet(
+            var result = NativeMethods.indy_delete_wallet(
                 commandHandle,
                 name,
                 credentials,
@@ -249,7 +249,7 @@ namespace Hyperledger.Indy.WalletApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_close_wallet(
+            var result = NativeMethods.indy_close_wallet(
                 commandHandle,
                 Handle,
                 CallbackHelper.TaskCompletingNoValueCallback);
@@ -277,7 +277,7 @@ namespace Hyperledger.Indy.WalletApi
         {
             if (_requiresClose)
             {
-                IndyNativeMethods.indy_close_wallet(
+                NativeMethods.indy_close_wallet(
                    -1,
                    Handle,
                    CallbackHelper.NoValueCallback

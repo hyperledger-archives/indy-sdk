@@ -5,7 +5,7 @@
     <AssemblyName>Hyperledger.Indy.Sdk</AssemblyName>
     <RootNamespace>Hyperledger.Indy</RootNamespace>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
-    <Version>0.0.2-alpha</Version>
+    <Version>0.0.4-alpha</Version>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Authors>Symon Rottem</Authors>
     <Company>Hyperledger Indy</Company>

@@ -23,7 +23,7 @@ use serde_json::Value as SJsonValue;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::{fmt, fs, io, thread};
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 use std::io::{BufRead, Write};
 use std::error::Error;
 
@@ -134,10 +134,10 @@ impl TransactionHandler {
     fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         match msg {
             Message::Reply(reply) => {
-                self.process_reply(reply.result.req_id, raw_msg)?;
+                self.process_reply(reply.result.req_id, raw_msg);
             }
             Message::PoolLedgerTxns(response) => {
-                self.process_reply(response.txn.req_id, raw_msg)?;
+                self.process_reply(response.txn.req_id, raw_msg);
             }
             Message::Reject(response) | Message::ReqNACK(response) => {
                 self.process_reject(&response, raw_msg);
@@ -149,19 +149,17 @@ impl TransactionHandler {
         Ok(None)
     }
 
-    fn process_reply(&mut self, req_id: u64, raw_msg: &str) -> Result<(), PoolError> {
+    fn process_reply(&mut self, req_id: u64, raw_msg: &str) {
         trace!("TransactionHandler::process_reply: >>> req_id: {:?}, raw_msg: {:?}", req_id, raw_msg);
 
         if !self.pending_commands.contains_key(&req_id) {
-            warn!("TransactionHandler::process_reply: <<< No pending command for request");
-            return Ok(());
+            return warn!("TransactionHandler::process_reply: <<< No pending command for request");
         }
 
-        let json_msg: HashableValue =
-            HashableValue {
-                inner: serde_json::from_str(raw_msg)
-                    .map_err(|err| CommonError::InvalidStructure("Invalid message structure".to_string()))?
-            };
+        let json_msg: HashableValue = match serde_json::from_str(raw_msg) {
+            Ok(raw_msg) => HashableValue { inner: raw_msg },
+            Err(err) => return warn!("{:?}", err)
+        };
 
         let reply_cnt = *self.pending_commands
             .get(&req_id).unwrap()
@@ -194,7 +192,8 @@ impl TransactionHandler {
                         signature,
                         participants.as_slice(),
                         &value,
-                        self.nodes.as_slice(), self.f, &self.gen);
+                        self.nodes.as_slice(), self.f, &self.gen).map_err(|err| warn!("{:?}", err)).unwrap_or(false);
+
                     debug!("TransactionHandler::process_reply: signature_valid: {:?}", signature_valid);
                     signature_valid
                 }
@@ -218,7 +217,6 @@ impl TransactionHandler {
         }
 
         trace!("TransactionHandler::process_reply: <<<");
-        Ok(())
     }
 
     //TODO correct handling of Reject
@@ -533,29 +531,45 @@ impl PoolWorker {
 
         let ctx: zmq::Context = zmq::Context::new();
         let key_pair = zmq::CurveKeyPair::new()?;
-        for gen_txn in &merkle_tree {
-            let gen_txn_num = rmp_serde::decode::from_slice::<GenTransaction<u32>>(gen_txn.as_slice());
-            let gen_txn_str = rmp_serde::decode::from_slice::<GenTransaction<String>>(gen_txn.as_slice());
 
-            let rn = if let Ok(gen_txn) = gen_txn_num {
-                RemoteNode::new(&gen_txn)
-            } else if let Ok(gen_txn) = gen_txn_str {
-                RemoteNode::new(&gen_txn)
-            } else {
-                warn!("MerkleTree contains invalid data:\n{:?}\n{:?}",
-                            gen_txn_str.unwrap_err(), gen_txn_num.unwrap_err());
-                continue;
+        let gen_tnxs = PoolWorker::_build_node_state(&merkle_tree)?;
+
+        for (_, gen_txn) in &gen_tnxs {
+            let mut rn: RemoteNode = match RemoteNode::new(&gen_txn) {
+                Ok(rn) => rn,
+                Err(err) => {
+                    warn!("{:?}", err);
+                    continue
+                }
             };
-            let mut rn = rn.map_err(map_err_trace!())?;
             rn.connect(&ctx, &key_pair)?;
             rn.send_str("pi")?;
             self.handler.nodes_mut().push(rn);
         }
-        self.handler.set_f(PoolWorker::get_f(merkle_tree.count())); //TODO set cnt to connect
+
+        let cnt = self.handler.nodes().len();
+        self.handler.set_f(PoolWorker::get_f(cnt)); //TODO set cnt to connect
         if let PoolWorkerHandler::CatchupHandler(ref mut handler) = self.handler {
             handler.reset_nodes_votes();
         }
         Ok(())
+    }
+
+    fn _build_node_state(merkle_tree: &MerkleTree) -> Result<HashMap<String, NodeTransaction>, CommonError> {
+        let mut gen_tnxs: HashMap<String, NodeTransaction> = HashMap::new();
+
+        for gen_txn in merkle_tree {
+            let mut gen_txn: NodeTransaction = rmp_serde::decode::from_slice(gen_txn.as_slice())
+                .map_err(|e|
+                    CommonError::InvalidState(format!("MerkleTree contains invalid data {:?}", e)))?;
+
+            if gen_tnxs.contains_key(&gen_txn.dest) {
+                gen_tnxs.get_mut(&gen_txn.dest).unwrap().update(&mut gen_txn)?;
+            } else {
+                gen_tnxs.insert(gen_txn.dest.clone(), gen_txn);
+            }
+        }
+        Ok(gen_tnxs)
     }
 
     fn init_catchup(&mut self, refresh_cmd_id: Option<i32>) -> Result<(), PoolError> {
@@ -812,18 +826,32 @@ impl Debug for RemoteNode {
 }
 
 impl RemoteNode {
-    fn new<T>(txn: &GenTransaction<T>) -> Result<RemoteNode, PoolError> where T: Display {
+    fn new(txn: &NodeTransaction) -> Result<RemoteNode, PoolError> {
         let node_verkey = txn.dest.as_str().from_base58()
             .map_err(|e| { CommonError::InvalidStructure("Invalid field dest in genesis transaction".to_string()) })?;
 
-        let blskey = txn.data.blskey.as_str().from_base58()
-            .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?;
-        let blskey = VerKey::from_bytes(blskey.as_slice())
-            .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?;
+        if txn.data.services.is_none() || !txn.data.services.as_ref().unwrap().contains(&"VALIDATOR".to_string()) {
+            return Err(PoolError::CommonError(CommonError::InvalidState("Node is not a Validator".to_string())));
+        }
+
+        let address = match (&txn.data.client_ip, &txn.data.client_port) {
+            (&Some(ref client_ip), &Some(ref client_port)) => format!("tcp://{}:{}", client_ip, client_port),
+            _ => return Err(PoolError::CommonError(CommonError::InvalidState("Client address not found".to_string())))
+        };
+
+        let blskey = match txn.data.blskey {
+            Some(ref blskey) => {
+                let key = blskey.as_str().from_base58()
+                    .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?;
+                Some(VerKey::from_bytes(key.as_slice())
+                    .map_err(|e| { CommonError::InvalidStructure("Invalid field blskey in genesis transaction".to_string()) })?)
+            }
+            None => None
+        };
 
         Ok(RemoteNode {
             public_key: CryptoBox::vk_to_curve25519(&node_verkey)?,
-            zaddr: format!("tcp://{}:{}", txn.data.client_ip, txn.data.client_port),
+            zaddr: address,
             zsock: None,
             name: txn.data.alias.clone(),
             is_blacklisted: false,
@@ -838,7 +866,7 @@ impl RemoteNode {
         s.set_curve_publickey(&key_pair.public_key)?;
         s.set_curve_serverkey(self.public_key.as_slice())?;
         s.set_linger(0)?; //TODO set correct timeout
-        s.connect(self.zaddr.as_str())?;
+        s.connect(&self.zaddr)?;
         self.zsock = Some(s);
         Ok(())
     }
@@ -1211,13 +1239,12 @@ mod tests {
         }
     }
 
+    pub const NODE1: &'static str = "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"192.168.1.35\",\"client_port\":9702,\"node_ip\":\"192.168.1.35\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}";
+    pub const NODE2: &'static str = "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"192.168.1.35\",\"client_port\":9704,\"node_ip\":\"192.168.1.35\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}";
+
     #[test]
     fn pool_worker_restore_merkle_tree_works_from_genesis_txns() {
-        let txns_src = format!("{}\n{}\n{}\n{}\n",
-                               "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"192.168.1.35\",\"client_port\":9702,\"node_ip\":\"192.168.1.35\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}",
-                               "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"192.168.1.35\",\"client_port\":9704,\"node_ip\":\"192.168.1.35\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}",
-                               "{\"data\":{\"alias\":\"Node3\",\"client_ip\":\"192.168.1.35\",\"client_port\":9706,\"node_ip\":\"192.168.1.35\",\"node_port\":9705,\"services\":[\"VALIDATOR\"]},\"dest\":\"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\",\"identifier\":\"2yAeV5ftuasWNgQwVYzeHeTuM7LwwNtPR3Zg9N4JiDgF\",\"txnId\":\"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4\",\"type\":\"0\"}",
-                               "{\"data\":{\"alias\":\"Node4\",\"client_ip\":\"192.168.1.35\",\"client_port\":9708,\"node_ip\":\"192.168.1.35\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"FTE95CVthRtrBnK2PYCBbC9LghTcGwi9Zfi1Gz2dnyNx\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}");
+        let txns_src = format!("{}\n{}", NODE1, NODE2);
         let pool_name = "test";
         let mut path = EnvironmentUtils::pool_path(pool_name);
         fs::create_dir_all(path.as_path()).unwrap();
@@ -1230,8 +1257,8 @@ mod tests {
 
         let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
 
-        assert_eq!(merkle_tree.count(), 4, "test restored MT size");
-        assert_eq!(merkle_tree.root_hash_hex(), "7c7e209a5bee34e467f7a2b6e233b8c61b74ddfd099bd9ad8a9a764cdf671981", "test restored MT root hash");
+        assert_eq!(merkle_tree.count(), 2, "test restored MT size");
+        assert_eq!(merkle_tree.root_hash_hex(), "ae7fb19d399b0b03ed298285d0da19ee6c6ba9ed7c063c95228c435d7ff97b4d", "test restored MT root hash");
     }
 
     #[test]
@@ -1246,6 +1273,41 @@ mod tests {
         let emulator_msgs: Vec<String> = handle.join().unwrap();
         assert_eq!(1, emulator_msgs.len());
         assert_eq!("pi", emulator_msgs[0]);
+    }
+
+    #[test]
+    fn pool_worker_build_node_state_works() {
+        let node1: NodeTransaction = NodeTransaction::from_json(NODE1).unwrap();
+        let node2: NodeTransaction = NodeTransaction::from_json(NODE2).unwrap();
+
+        let txns_src = format!("{}\n{}\n{}\n{}\n",
+                               format!("{{\"data\":{{\"alias\":\"{}\",\"node_ip\":\"{}\",\"node_port\":{},\"services\":{:?}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node1.data.alias, node1.data.node_ip.clone().unwrap(), node1.data.node_port.clone().unwrap(), node1.data.services.clone().unwrap(), node1.dest, node1.identifier, node1.txn_id.clone().unwrap()),
+                               format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{},\"node_ip\":\"{}\",\"node_port\":{}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node1.data.alias, node1.data.client_ip.clone().unwrap(), node1.data.client_port.clone().unwrap(), node1.data.node_ip.clone().unwrap(), node1.data.node_port.unwrap(), node1.dest, node1.identifier, node1.txn_id.clone().unwrap()),
+                               format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node2.data.alias, node2.data.client_ip.clone().unwrap(), node2.data.client_port.clone().unwrap(), node2.dest, node2.identifier, node2.txn_id.clone().unwrap()),
+                               format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{},\"node_ip\":\"{}\",\"node_port\":{},\"services\":{:?}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node2.data.alias, node2.data.client_ip.clone().unwrap(), node2.data.client_port.clone().unwrap(), node2.data.node_ip.clone().unwrap(), node2.data.node_port.clone().unwrap(), node2.data.services.clone().unwrap(), node2.dest, node2.identifier, node2.txn_id.clone().unwrap()));
+        let pool_name = "test";
+        let mut path = EnvironmentUtils::pool_path(pool_name);
+        fs::create_dir_all(path.as_path()).unwrap();
+        path.push(pool_name);
+        path.set_extension("txn");
+        let mut f = fs::File::create(path.as_path()).unwrap();
+        f.write(txns_src.as_bytes()).unwrap();
+        f.flush().unwrap();
+        f.sync_all().unwrap();
+
+        let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
+        let node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
+
+        assert_eq!(2, node_state.len());
+        assert!(node_state.contains_key("Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"));
+        assert!(node_state.contains_key("8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"));
+
+        assert_eq!(node_state["Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"], node1);
+        assert_eq!(node_state["8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"], node2);
     }
 
     #[test]
@@ -1305,7 +1367,7 @@ mod tests {
         let req_id = 1;
         th.pending_commands.insert(req_id, pc);
 
-        th.process_reply(req_id, &json.to_string()).unwrap();
+        th.process_reply(req_id, &json.to_string());
 
         assert_eq!(th.pending_commands.len(), 0);
     }
@@ -1325,7 +1387,7 @@ mod tests {
         let req_id = 1;
         th.pending_commands.insert(req_id, pc);
 
-        th.process_reply(req_id, &json2.to_string()).unwrap();
+        th.process_reply(req_id, &json2.to_string());
 
         assert_eq!(th.pending_commands.len(), 1);
         assert_eq!(th.pending_commands.get(&req_id).unwrap().replies.len(), 2);
@@ -1397,7 +1459,7 @@ mod tests {
 
         pub static POLL_TIMEOUT: i64 = 1000; /* in ms */
 
-        pub fn start() -> (GenTransaction<u32>, thread::JoinHandle<Vec<String>>) {
+        pub fn start() -> (NodeTransaction, thread::JoinHandle<Vec<String>>) {
             let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
             let pkc = CryptoBox::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
             let skc = CryptoBox::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
@@ -1406,22 +1468,24 @@ mod tests {
 
             let blskey = VerKey::new(&Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),
                                      &SignKey::new(None).unwrap()).unwrap().as_bytes().to_base58();
-            let gt = GenTransaction::<u32> {
+
+            let gt = NodeTransaction {
                 identifier: "".to_string(),
                 data: NodeData {
                     alias: "n1".to_string(),
-                    blskey,
-                    services: Vec::new(),
-                    client_port: 9700,
-                    client_ip: "127.0.0.1".to_string(),
-                    node_ip: "".to_string(),
-                    node_port: 0,
+                    blskey: Some(blskey),
+                    services: Some(vec!["VALIDATOR".to_string()]),
+                    client_port: Some(9700),
+                    client_ip: Some("127.0.0.1".to_string()),
+                    node_ip: Some("".to_string()),
+                    node_port: Some(0)
                 },
                 txn_id: None,
+                verkey: None,
                 txn_type: "0".to_string(),
                 dest: (&vk.0 as &[u8]).to_base58(),
             };
-            let addr = format!("tcp://{}:{}", gt.data.client_ip, gt.data.client_port);
+            let addr = format!("tcp://{}:{}", gt.data.client_ip.clone().unwrap(), gt.data.client_port.clone().unwrap());
             s.set_curve_publickey(pkc.as_slice()).expect("set public key");
             s.set_curve_secretkey(skc.as_slice()).expect("set secret key");
             s.set_curve_server(true).expect("set curve server");

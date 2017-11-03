@@ -453,7 +453,7 @@ impl AnoncredsUtils {
                     "data": {{
                         "name":"gvt",
                         "version":"1.0",
-                        "keys":["age","sex","height","name"]
+                        "attr_names":["age","sex","height","name"]
                     }}
                  }}"#, schema_seq_no)
     }
@@ -464,7 +464,7 @@ impl AnoncredsUtils {
                     "data":{{
                         "name":"xyz",
                         "version":"1.0",
-                        "keys":["status","period"]
+                        "attr_names":["status","period"]
                     }}
                  }}"#, schema_seq_no)
     }
