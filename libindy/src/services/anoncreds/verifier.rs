@@ -89,7 +89,7 @@ impl Verifier {
         use std::iter::FromIterator;
 
         let unrevealed_attrs: Vec<String> =
-            schema.data.keys
+            schema.data.attr_names
                 .difference(&HashSet::from_iter(proof.revealed_attrs.keys().cloned()))
                 .map(|attr| attr.clone())
                 .collect::<Vec<String>>();

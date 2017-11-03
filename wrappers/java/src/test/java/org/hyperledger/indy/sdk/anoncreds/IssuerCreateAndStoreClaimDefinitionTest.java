@@ -39,7 +39,7 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 			"                    \"data\": {\n" +
 			"                        \"name\":\"gvt\",\n" +
 			"                        \"version\":\"1.0\",\n" +
-			"                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+			"                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
 			"                    }\n" +
 			"                 }";
 
@@ -66,7 +66,7 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String schema = "{\"seqNo\":1, \"name\":\"name\",\"version\":\"1.0\", \"keys\":[\"name\"]}";
+		String schema = "{\"seqNo\":1, \"name\":\"name\",\"version\":\"1.0\", \"attr_names\":[\"name\"]}";
 
 		Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, schema, null, false).get();
 	}
@@ -82,7 +82,7 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 				"                    \"data\": {\n" +
 				"                        \"name\":\"gvt\",\n" +
 				"                        \"version\":\"1.0\",\n" +
-				"                        \"keys\":[]\n" +
+				"                        \"attr_names\":[]\n" +
 				"                    }\n" +
 				"                 }";
 

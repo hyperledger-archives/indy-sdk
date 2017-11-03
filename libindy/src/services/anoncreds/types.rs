@@ -1169,15 +1169,15 @@ impl Schema {
 pub struct SchemaData {
     pub name: String,
     pub version: String,
-    pub keys: HashSet<String>
+    pub attr_names: HashSet<String>
 }
 
 impl SchemaData {
-    pub fn new(name: String, version: String, keys: HashSet<String>) -> SchemaData {
+    pub fn new(name: String, version: String, attr_names: HashSet<String>) -> SchemaData {
         SchemaData {
             name: name,
             version: version,
-            keys: keys
+            attr_names: attr_names
         }
     }
 }
