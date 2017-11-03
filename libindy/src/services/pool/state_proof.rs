@@ -269,12 +269,11 @@ pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_va
 
 pub fn verify_proof_signature(signature: &str,
                               participants: &[&str],
-                              root_hash: &str,
-                              pool_state_root: &str,
+                              value: &[u8],
                               nodes: &[RemoteNode],
                               f: usize,
                               gen: &Generator) -> Result<bool, CommonError> {
-    trace!("verify_proof_signature: >>> signature: {:?}, participants: {:?}, pool_state_root: {:?}", signature, participants, pool_state_root);
+    trace!("verify_proof_signature: >>> signature: {:?}, participants: {:?}, pool_state_root: {:?}", signature, participants, value);
 
     let mut ver_keys: Vec<&VerKey> = Vec::new();
     for node in nodes {
@@ -308,11 +307,7 @@ pub fn verify_proof_signature(signature: &str,
 
     debug!("verify_proof_signature: signature: {:?}", signature);
 
-    let state_root = root_hash.to_owned() + pool_state_root;
-
-    debug!("verify_proof_signature: state_root: {:?}", state_root);
-
-    let res = Bls::verify_multi_sig(&signature, state_root.as_bytes(), ver_keys.as_slice(), gen).unwrap_or(false);
+    let res = Bls::verify_multi_sig(&signature, value, ver_keys.as_slice(), gen).unwrap_or(false);
 
     debug!("verify_proof_signature: <<< res: {:?}", res);
     Ok(res)

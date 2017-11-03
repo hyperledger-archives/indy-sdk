@@ -29,10 +29,10 @@
 - (void) testLedgerDemo
 {
     [TestUtils cleanupStorage];
-    NSString *myWalletName = @"my_wallet2";
-    NSString *theirWalletName = @"their_wallet3";
+    NSString *myWalletName = @"my_wallet";
+    NSString *theirWalletName = @"their_wallet";
     NSString *walletType = @"default";
-    NSString *poolName = @"ledger_demo_works";
+    NSString *poolName = @"pool_1";
     NSError *ret;
     
     // 1. Create ledger config from genesis txn file
@@ -75,7 +75,7 @@
                                                           config:nil];
     XCTAssertEqual(ret.code, Success, @"createWalletWithPoolName() failed!");
     
-    // 6. Open Their Wallet. Gets Their wallet handle
+    // 6. Open Their Wallet. Get Their wallet handle
     __block IndyHandle theirWalletHandle = 0;
     
     ret = [[WalletUtils sharedInstance] openWalletWithName:theirWalletName
@@ -134,11 +134,8 @@
     // 11. Send NYM request with signing
     NSString *nymTxnResponse;
     
-//    ret = [[LedgerUtils sharedInstance] submitRequest:nymTxnRequest
-//                                       withPoolHandle:poolHandle
-//                                           resultJson:&nymTxnResponse];
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
-                                                              walletHandle:myWalletHandle
+                                                              walletHandle:theirWalletHandle
                                                               submitterDid:theirDid
                                                                requestJson:nymTxnRequest
                                                            outResponseJson:&nymTxnResponse];
@@ -151,13 +148,14 @@
                                   "\"reqId\":%d,"
                                   "\"signature\": null,"
                                   "\"identifier\":\"%@\","
+                                  "\"protocolVersion\":1,"
                                   "\"operation\":{"
                                         "\"type\":\"105\","
                                         "\"dest\":\"%@\"}"
                                   "}", [getNymRequestId intValue] , myVerkey, myDid];
     
     __block NSString *getNymTxnResponseJson;
-   
+    
     ret = [[LedgerUtils sharedInstance] submitRequest:getNymTxnRequest
                                        withPoolHandle:poolHandle
                                            resultJson:&getNymTxnResponseJson];

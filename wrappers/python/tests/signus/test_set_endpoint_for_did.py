@@ -12,17 +12,17 @@ async def test_set_endpoint_for_did_works(wallet_handle, identity_trustee1, endp
 
 
 @pytest.mark.asyncio
-async def test_set_key_metadata_works_for_replace(wallet_handle, identity_trustee1, endpoint):
+async def test_set_endpoint_for_did_works_for_replace(pool_handle,wallet_handle, identity_trustee1, endpoint):
     (did, key) = identity_trustee1
     await signus.set_endpoint_for_did(wallet_handle, did, endpoint, key)
-    received_endpoint, received_key = await signus.get_endpoint_for_did(wallet_handle, did)
+    received_endpoint, received_key = await signus.get_endpoint_for_did(wallet_handle, pool_handle, did)
     assert endpoint == received_endpoint
     assert key == received_key
 
     new_endpoint = '100.0.0.1:9710'
     new_key = 'CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW'
     await signus.set_endpoint_for_did(wallet_handle, did, new_endpoint, new_key)
-    updated_endpoint, updated_key = await signus.get_endpoint_for_did(wallet_handle, did)
+    updated_endpoint, updated_key = await signus.get_endpoint_for_did(wallet_handle, pool_handle, did)
     assert new_endpoint == updated_endpoint
     assert new_key == updated_key
 

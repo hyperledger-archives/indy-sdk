@@ -1,3 +1,4 @@
+extern crate serde;
 extern crate serde_json;
 extern crate rmp_serde;
 extern crate indy_crypto;
@@ -14,16 +15,68 @@ use self::indy_crypto::bls;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::json::{JsonDecodable, JsonEncodable};
 
+
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct NodeData {
     pub alias: String,
     pub client_ip: Option<String>,
-    pub client_port: Option<u32>,
+    #[serde(deserialize_with = "string_or_number")]
+    #[serde(default)]
+    pub client_port: Option<u64>,
     pub node_ip: Option<String>,
-    pub node_port: Option<u32>,
+    #[serde(deserialize_with = "string_or_number")]
+    #[serde(default)]
+    pub node_port: Option<u64>,
     pub services: Option<Vec<String>>,
     pub blskey: Option<String>
 }
+
+fn string_or_number<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
+    where D: serde::Deserializer<'de>
+{
+    let deser_res: Result<serde_json::Value, _> = serde::Deserialize::deserialize(deserializer);
+    match deser_res {
+        Ok(serde_json::Value::String(s)) => match s.parse::<u64>() {
+            Ok(num) => Ok(Some(num)),
+            Err(err) => Err(serde::de::Error::custom(format!("Invalid Node transaction: {:?}", err)))
+        },
+        Ok(serde_json::Value::Number(n)) => match n.as_u64() {
+            Some(num) => Ok(Some(num)),
+            None => Err(serde::de::Error::custom(format!("Invalid Node transaction")))
+        },
+        Ok(serde_json::Value::Null) => Ok(None),
+        _ => Err(serde::de::Error::custom(format!("Invalid Node transaction"))),
+    }
+}
+//
+//
+//fn string_or_number<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error> where D: Deserializer<'de> {
+//    struct StringOrNumberVisitor;
+//
+//    impl<'de> de::Visitor<'de> for StringOrNumberVisitor {
+//        type Value = Option<u64>;
+//
+//        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+//            formatter.write_str("an integer or a string")
+//        }
+//
+//        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where E: de::Error,
+//        {
+//            match v.parse::<u64>() {
+//                Ok(num) => return Ok(Some(num)),
+//                Err(err) => return Err(serde::de::Error::custom(format!("Invalid Node transaction: {:?}", err)))
+//            }
+//        }
+//
+//        fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E> where E: de::Error, {
+//            return Ok(Some(v));
+//        }
+//
+//        fn visit_none<E>(self) -> Result<Self::Value, E> where E: de::Error, { Ok(None) }
+//    }
+//
+//    deserializer.deserialize_u64(StringOrNumberVisitor)
+//}
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct NodeTransaction {

@@ -40,16 +40,6 @@ namespace Hyperledger.Indy.Test.SignusTests
         }
 
         [TestMethod]
-        public async Task TestEncryptWorksForGetPkFromLedger()
-        {
-            var identityJson = string.Format("{{\"did\":\"{0}\"}}", _did);
-            await Signus.StoreTheirDidAsync(wallet, identityJson);
-
-            var encryptResult = await Signus.EncryptAsync(wallet, pool, _trusteeDid, _did, MESSAGE);
-            Assert.IsNotNull(encryptResult);
-        }
-
-        [TestMethod]
         public async Task TestEncryptWorksForGetNymFromLedger()
         {
             var encryptResult = await Signus.EncryptAsync(wallet, pool, _trusteeDid, _did, MESSAGE);

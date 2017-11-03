@@ -34,8 +34,11 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         [ClassCleanup]
         public static async Task CloseCommonWallet()
         {
-            if (commonWallet != null)
+            if (_walletOpened)
+            {
                 await commonWallet.CloseAsync();
+                _walletOpened = false;
+            }
 
         }
 

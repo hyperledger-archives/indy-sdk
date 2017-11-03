@@ -42,15 +42,6 @@ namespace Hyperledger.Indy.Test.SignusTests
         }
 
         [TestMethod]
-        public async Task TestVerifyWorksForGetVerkeyFromLedger()
-        {
-            await Signus.StoreTheirDidAsync(wallet, string.Format("{{\"did\":\"{0}\"}}", _myDid));
-
-            var valid = await Signus.VerifySignatureAsync(wallet, pool, _myDid, MESSAGE, _signature);
-            Assert.IsTrue(valid);
-        }
-
-        [TestMethod]
         public async Task TestVerifyWorksForGetNymFromLedger()
         {
             var valid = await Signus.VerifySignatureAsync(wallet, pool, _myDid, MESSAGE, _signature);

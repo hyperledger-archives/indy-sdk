@@ -133,17 +133,15 @@ impl SignusUtils {
         Ok(())
     }
 
-    pub fn store_their_did_from_parts(wallet_handle: i32, their_did: &str, their_pk: &str, their_verkey: &str, endpoint: &str) -> Result<(), ErrorCode> {
+    pub fn store_their_did_from_parts(wallet_handle: i32, their_did: &str, their_verkey: &str) -> Result<(), ErrorCode> {
         let (store_their_did_sender, store_their_did_receiver) = channel();
         let store_their_did_cb = Box::new(move |err| { store_their_did_sender.send((err)).unwrap(); });
         let (store_their_did_command_handle, store_their_did_callback) = CallbackUtils::closure_to_store_their_did_cb(store_their_did_cb);
 
         let their_identity_json = format!("{{\"did\":\"{}\",\
-                                            \"pk\":\"{}\",\
-                                            \"verkey\":\"{}\",\
-                                            \"endpoint\":\"{}\"\
+                                            \"verkey\":\"{}\"\
                                            }}",
-                                          their_did, their_pk, their_verkey, endpoint);
+                                          their_did, their_verkey);
 
         let their_identity_json = CString::new(their_identity_json).unwrap();
 
@@ -461,7 +459,7 @@ impl SignusUtils {
         Ok(())
     }
 
-    pub fn get_endpoint_for_did(wallet_handle: i32, did: &str) -> Result<(String, String), ErrorCode> {
+    pub fn get_endpoint_for_did(wallet_handle: i32, pool_handle: i32, did: &str) -> Result<(String, String), ErrorCode> {
         let (sender, receiver) = channel();
         let cb = Box::new(move |err, endpoint, transport_vk| {
             sender.send((err, endpoint, transport_vk)).unwrap();
@@ -472,6 +470,7 @@ impl SignusUtils {
 
         let err = indy_get_endpoint_for_did(command_handle,
                                             wallet_handle,
+                                            pool_handle,
                                             did.as_ptr(),
                                             callback);
 

@@ -236,6 +236,7 @@ extern "C" {
 
     extern indy_error_t indy_get_endpoint_for_did(indy_handle_t     command_handle
                                                   indy_handle_t     wallet_handle,
+                                                  indy_handle_t     pool_handle,
                                                   const char *const did,
 
                                                   void              (*cb)(indy_handle_t     command_handle,

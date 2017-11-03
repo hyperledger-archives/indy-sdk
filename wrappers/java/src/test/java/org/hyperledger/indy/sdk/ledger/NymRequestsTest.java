@@ -23,17 +23,17 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 	@Test
 	public void testBuildNymRequestWorksForOnlyRequiredFields() throws Exception {
-		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"dest\":\"%s\",\"type\":\"1\"}", DID1, dest);
+		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"dest\":\"%s\",\"type\":\"1\"}", DID, dest);
 
-		String nymRequest = Ledger.buildNymRequest(DID1, dest, null, null, null).get();
+		String nymRequest = Ledger.buildNymRequest(DID, dest, null, null, null).get();
 		assertTrue(nymRequest.contains(expectedResult));
 	}
 
 	@Test
 	public void testBuildNymRequestWorksForEmptyRole() throws Exception {
-		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"dest\":\"%s\",\"role\":null,\"type\":\"1\"}", DID1, dest);
+		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"dest\":\"%s\",\"role\":null,\"type\":\"1\"}", DID, dest);
 
-		String nymRequest = Ledger.buildNymRequest(DID1, dest, null, null, "").get();
+		String nymRequest = Ledger.buildNymRequest(DID, dest, null, null, "").get();
 		assertTrue(nymRequest.contains(expectedResult));
 	}
 
@@ -48,17 +48,17 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 				"\"role\":\"2\"," +
 				"\"type\":\"1\"," +
 				"\"verkey\":\"%s\"" +
-				"}", DID1, alias, dest, verkey);
+				"}", DID, alias, dest, verkey);
 
-		String nymRequest = Ledger.buildNymRequest(DID1, dest, verkey, alias, role).get();
+		String nymRequest = Ledger.buildNymRequest(DID, dest, verkey, alias, role).get();
 		assertTrue(nymRequest.contains(expectedResult));
 	}
 
 	@Test
 	public void testBuildGetNymRequestWorks() throws Exception {
-		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"type\":\"105\",\"dest\":\"%s\"}", DID1, dest);
+		String expectedResult = String.format("\"identifier\":\"%s\",\"operation\":{\"type\":\"105\",\"dest\":\"%s\"}", DID, dest);
 
-		String nymRequest = Ledger.buildGetNymRequest(DID1, dest).get();
+		String nymRequest = Ledger.buildGetNymRequest(DID, dest).get();
 		assertTrue(nymRequest.contains(expectedResult));
 	}
 
@@ -179,6 +179,6 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Ledger.buildNymRequest(DID1, dest, null, null, "WRONG_ROLE").get();
+		Ledger.buildNymRequest(DID, dest, null, null, "WRONG_ROLE").get();
 	}
 }

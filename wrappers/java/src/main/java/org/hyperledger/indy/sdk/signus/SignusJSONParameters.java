@@ -21,14 +21,4 @@ public final class SignusJSONParameters {
 			if (cid != null) this.map.put("cid", cid);
 		}
 	}
-
-
-	public static class CreateKeyJSONParameter extends IndyJava.JsonParameter {
-
-		public CreateKeyJSONParameter(String seed, String cryptoType) {
-
-			if (seed != null) this.map.put("seed", seed);
-			if (cryptoType != null) this.map.put("crypto_type", cryptoType);
-		}
-	}
 }

@@ -189,12 +189,11 @@ impl TransactionHandler {
                 debug!("TransactionHandler::process_reply: proof_valid: {:?}", proof_valid);
 
                 proof_valid && {
-                    let (signature, participants, pool_state_root) = data_to_check_proof_signature.unwrap();
+                    let (signature, participants, value) = data_to_check_proof_signature.unwrap();
                     let signature_valid = self::state_proof::verify_proof_signature(
                         signature,
                         participants.as_slice(),
-                        root_hash,
-                        pool_state_root,
+                        &value,
                         self.nodes.as_slice(), self.f, &self.gen)?;
                     debug!("TransactionHandler::process_reply: signature_valid: {:?}", signature_valid);
                     signature_valid
@@ -488,18 +487,19 @@ impl TransactionHandler {
         }
     }
 
-    fn parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option<(&str, Vec<&str>, &str)> {
+    fn parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option<(&str, Vec<&str>, Vec<u8>)> {
         match (json_msg["state_proof"]["multi_signature"]["signature"].as_str(),
                json_msg["state_proof"]["multi_signature"]["participants"].as_array(),
-               json_msg["state_proof"]["multi_signature"]["pool_state_root"].as_str()) {
-            (Some(signature), Some(participants), Some(pool_state_root)) => {
+               rmp_serde::to_vec_named(&json_msg["state_proof"]["multi_signature"]["value"])
+                   .map_err(map_err_trace!())) {
+            (Some(signature), Some(participants), Ok(value)) => {
                 let participants_unwrap: Vec<&str> = participants
                     .iter()
                     .flat_map(SJsonValue::as_str)
                     .collect();
 
                 if participants.len() == participants_unwrap.len() {
-                    Some((signature, participants_unwrap, pool_state_root))
+                    Some((signature, participants_unwrap, value))
                 } else {
                     None
                 }
@@ -534,11 +534,12 @@ impl PoolWorker {
         let ctx: zmq::Context = zmq::Context::new();
         let key_pair = zmq::CurveKeyPair::new()?;
 
-        let gen_tnxs = self._build_gen_tnxs_state(&merkle_tree)?;
+        let gen_tnxs = PoolWorker::_build_node_state(&merkle_tree)?;
 
         for (_, gen_txn) in &gen_tnxs {
             let mut rn: RemoteNode = RemoteNode::new(&gen_txn)?;
             if rn.zaddr.is_some() {
+                println!("gen_txn {:?}", gen_txn);
                 rn.connect(&ctx, &key_pair)?;
                 rn.send_str("pi")?;
                 self.handler.nodes_mut().push(rn);
@@ -553,13 +554,13 @@ impl PoolWorker {
         Ok(())
     }
 
-    fn _build_gen_tnxs_state(&self, merkle_tree: &MerkleTree) -> Result<HashMap<String, NodeTransaction>, CommonError> {
+    fn _build_node_state(merkle_tree: &MerkleTree) -> Result<HashMap<String, NodeTransaction>, CommonError> {
         let mut gen_tnxs: HashMap<String, NodeTransaction> = HashMap::new();
 
         for gen_txn in merkle_tree {
             let mut gen_txn: NodeTransaction = rmp_serde::decode::from_slice(gen_txn.as_slice())
                 .map_err(|e|
-                    CommonError::InvalidState(format!("MerkleTree contains invalid data {}", e)))?;
+                    CommonError::InvalidState(format!("MerkleTree contains invalid data {:?}", e)))?;
 
             if gen_tnxs.contains_key(&gen_txn.dest) {
                 gen_tnxs.get_mut(&gen_txn.dest).unwrap().update(&mut gen_txn)?;
@@ -1235,13 +1236,12 @@ mod tests {
         }
     }
 
+    pub const NODE1: &'static str = "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"192.168.1.35\",\"client_port\":9702,\"node_ip\":\"192.168.1.35\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}";
+    pub const NODE2: &'static str = "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"192.168.1.35\",\"client_port\":9704,\"node_ip\":\"192.168.1.35\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}";
+
     #[test]
     fn pool_worker_restore_merkle_tree_works_from_genesis_txns() {
-        let txns_src = format!("{}\n{}\n{}\n{}\n",
-                               "{\"data\":{\"alias\":\"Node1\",\"client_ip\":\"192.168.1.35\",\"client_port\":9702,\"node_ip\":\"192.168.1.35\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}",
-                               "{\"data\":{\"alias\":\"Node2\",\"client_ip\":\"192.168.1.35\",\"client_port\":9704,\"node_ip\":\"192.168.1.35\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}",
-                               "{\"data\":{\"alias\":\"Node3\",\"client_ip\":\"192.168.1.35\",\"client_port\":9706,\"node_ip\":\"192.168.1.35\",\"node_port\":9705,\"services\":[\"VALIDATOR\"]},\"dest\":\"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\",\"identifier\":\"2yAeV5ftuasWNgQwVYzeHeTuM7LwwNtPR3Zg9N4JiDgF\",\"txnId\":\"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4\",\"type\":\"0\"}",
-                               "{\"data\":{\"alias\":\"Node4\",\"client_ip\":\"192.168.1.35\",\"client_port\":9708,\"node_ip\":\"192.168.1.35\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"FTE95CVthRtrBnK2PYCBbC9LghTcGwi9Zfi1Gz2dnyNx\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}");
+        let txns_src = format!("{}\n{}", NODE1, NODE2);
         let pool_name = "test";
         let mut path = EnvironmentUtils::pool_path(pool_name);
         fs::create_dir_all(path.as_path()).unwrap();
@@ -1270,6 +1270,41 @@ mod tests {
         let emulator_msgs: Vec<String> = handle.join().unwrap();
         assert_eq!(1, emulator_msgs.len());
         assert_eq!("pi", emulator_msgs[0]);
+    }
+
+    #[test]
+    fn pool_worker_build_node_state_works() {
+        let node1:NodeTransaction = NodeTransaction::from_json(NODE1).unwrap();
+        let node2:NodeTransaction = NodeTransaction::from_json(NODE2).unwrap();
+
+        let txns_src = format!("{}\n{}\n{}\n{}\n",
+                               format!("{{\"data\":{{\"alias\":\"{}\",\"node_ip\":\"{}\",\"node_port\":{},\"services\":{:?}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node1.data.alias, node1.data.node_ip.clone().unwrap(), node1.data.node_port.clone().unwrap(), node1.data.services.clone().unwrap(), node1.dest, node1.identifier, node1.txn_id.clone().unwrap()),
+                               format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{},\"node_ip\":\"{}\",\"node_port\":{}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node1.data.alias, node1.data.client_ip.clone().unwrap(), node1.data.client_port.clone().unwrap(), node1.data.node_ip.clone().unwrap(), node1.data.node_port.unwrap(), node1.dest, node1.identifier, node1.txn_id.clone().unwrap()),
+                               format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node2.data.alias, node2.data.client_ip.clone().unwrap(), node2.data.client_port.clone().unwrap(), node2.dest, node2.identifier, node2.txn_id.clone().unwrap()),
+                               format!("{{\"data\":{{\"alias\":\"{}\",\"client_ip\":\"{}\",\"client_port\":{},\"node_ip\":\"{}\",\"node_port\":{},\"services\":{:?}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
+                                       node2.data.alias, node2.data.client_ip.clone().unwrap(), node2.data.client_port.clone().unwrap(), node2.data.node_ip.clone().unwrap(), node2.data.node_port.clone().unwrap(), node2.data.services.clone().unwrap(), node2.dest, node2.identifier, node2.txn_id.clone().unwrap()));
+        let pool_name = "test";
+        let mut path = EnvironmentUtils::pool_path(pool_name);
+        fs::create_dir_all(path.as_path()).unwrap();
+        path.push(pool_name);
+        path.set_extension("txn");
+        let mut f = fs::File::create(path.as_path()).unwrap();
+        f.write(txns_src.as_bytes()).unwrap();
+        f.flush().unwrap();
+        f.sync_all().unwrap();
+
+        let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
+        let node_state = PoolWorker::_build_node_state(&merkle_tree).unwrap();
+
+        assert_eq!(2, node_state.len());
+        assert!(node_state.contains_key("Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"));
+        assert!(node_state.contains_key("8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"));
+
+        assert_eq!(node_state["Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"], node1);
+        assert_eq!(node_state["8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"], node2);
     }
 
     #[test]

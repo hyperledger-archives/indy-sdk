@@ -285,6 +285,7 @@ pub extern fn indy_set_endpoint_for_did(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_get_endpoint_for_did(command_handle: i32,
                                         wallet_handle: i32,
+                                        pool_handle: i32,
                                         did: *const c_char,
                                         cb: Option<extern fn(command_handle_: i32,
                                                              err: ErrorCode,
@@ -296,6 +297,7 @@ pub extern fn indy_get_endpoint_for_did(command_handle: i32,
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::GetEndpointForDid(
             wallet_handle,
+            pool_handle,
             did,
             Box::new(move |result| {
                 let (err, address, transport_vk) = result_to_err_code_2!(result, String::new(), String::new());

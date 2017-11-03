@@ -12,12 +12,10 @@ namespace Hyperledger.Indy.SignusApi
         /// </summary>
         /// <param name="did">The DID created.</param>
         /// <param name="verKey">The verification key to use for verifying signatures.</param>
-        /// <param name="pk">The primary key to use for encryption</param>
-        internal CreateAndStoreMyDidResult(string did, string verKey, string pk)
+        internal CreateAndStoreMyDidResult(string did, string verKey)
         {
             Did = did ?? throw new ArgumentNullException("did"); 
-            VerKey = verKey ?? throw new ArgumentNullException("verKey"); 
-            Pk = pk ?? throw new ArgumentNullException("pk");
+            VerKey = verKey ?? throw new ArgumentNullException("verKey");
         }
 
         /// <summary>
@@ -29,11 +27,5 @@ namespace Hyperledger.Indy.SignusApi
         /// Gets the verification key.
         /// </summary>
         public string VerKey { get; }
-
-        /// <summary>
-        /// Gets the primary key.
-        /// </summary>
-        public string Pk { get; }
-
     }
 }

@@ -14,7 +14,7 @@ import org.hyperledger.indy.sdk.pool.InvalidPoolException;
 import org.hyperledger.indy.sdk.pool.PoolConfigNotCreatedException;
 import org.hyperledger.indy.sdk.pool.PoolLedgerConfigExistsException;
 import org.hyperledger.indy.sdk.pool.PoolLedgerTerminatedException;
-import org.hyperledger.indy.sdk.signus.UnknownCryptoException;
+import org.hyperledger.indy.sdk.crypto.UnknownCryptoException;
 import org.hyperledger.indy.sdk.wallet.DuplicateWalletTypeException;
 import org.hyperledger.indy.sdk.wallet.UnknownWalletTypeException;
 import org.hyperledger.indy.sdk.wallet.WalletAlreadyOpenedException;

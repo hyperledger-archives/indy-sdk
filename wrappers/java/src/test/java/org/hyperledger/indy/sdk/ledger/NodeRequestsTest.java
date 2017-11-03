@@ -33,9 +33,9 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 				"\"type\":\"0\"," +
 				"\"dest\":\"%s\"," +
 				"\"data\":%s" +
-				"}", DID1, dest, data);
+				"}", DID, dest, data);
 
-		String nodeRequest = Ledger.buildNodeRequest(DID1, dest, data).get();
+		String nodeRequest = Ledger.buildNodeRequest(DID, dest, data).get();
 
 		assertTrue(nodeRequest.replace("\\", "").contains(expectedResult));
 	}
@@ -65,7 +65,7 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 				"\"services\":[\"SERVICE\"]" +
 				"\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
 
-		Ledger.buildNodeRequest(DID1, dest, data).get();
+		Ledger.buildNodeRequest(DID, dest, data).get();
 	}
 
 	@Test
@@ -79,7 +79,7 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 				"\"client_port\":910," +
 				"\"services\":[\"VALIDATOR\"]}";
 
-		Ledger.buildNodeRequest(DID1, dest, data).get();
+		Ledger.buildNodeRequest(DID, dest, data).get();
 	}
 
 	@Test
