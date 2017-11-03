@@ -470,7 +470,7 @@ impl Prover {
         let vtilde = BigNumber::rand(LARGE_VTILDE)?;
 
         let unrevealed_attrs: Vec<String> =
-            schema.data.keys
+            schema.data.attr_names
                 .difference(&HashSet::from_iter(revealed_attrs.iter().cloned()))
                 .map(|attr| attr.clone())
                 .collect::<Vec<String>>();
