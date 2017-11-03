@@ -71,6 +71,7 @@ impl NodeTransaction {
     }
 
     pub fn update(&mut self, other: &mut NodeTransaction) -> Result<(), CommonError> {
+        assert_eq!(self.dest, other.dest);
         assert_eq!(self.data.alias, other.data.alias);
 
         if let Some(ref mut client_ip) = other.data.client_ip {
@@ -239,7 +240,7 @@ impl PoolConfig {
 pub struct RemoteNode {
     pub name: String,
     pub public_key: Vec<u8>,
-    pub zaddr: Option<String>,
+    pub zaddr: String,
     pub zsock: Option<zmq::Socket>,
     pub is_blacklisted: bool,
     pub blskey: Option<bls::VerKey>

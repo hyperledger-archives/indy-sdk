@@ -134,10 +134,10 @@ impl TransactionHandler {
     fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
         match msg {
             Message::Reply(reply) => {
-                self.process_reply(reply.result.req_id, raw_msg)?;
+                self.process_reply(reply.result.req_id, raw_msg);
             }
             Message::PoolLedgerTxns(response) => {
-                self.process_reply(response.txn.req_id, raw_msg)?;
+                self.process_reply(response.txn.req_id, raw_msg);
             }
             Message::Reject(response) | Message::ReqNACK(response) => {
                 self.process_reject(&response, raw_msg);
@@ -149,18 +149,17 @@ impl TransactionHandler {
         Ok(None)
     }
 
-    fn process_reply(&mut self, req_id: u64, raw_msg: &str) -> Result<(), PoolError> {
+    fn process_reply(&mut self, req_id: u64, raw_msg: &str) {
         trace!("TransactionHandler::process_reply: >>> req_id: {:?}, raw_msg: {:?}", req_id, raw_msg);
 
         if !self.pending_commands.contains_key(&req_id) {
             warn!("TransactionHandler::process_reply: <<< No pending command for request");
-            return Ok(());
         }
 
         let json_msg: HashableValue =
             HashableValue {
                 inner: serde_json::from_str(raw_msg)
-                    .map_err(|err| CommonError::InvalidStructure("Invalid message structure".to_string()))?
+                    .map_err(|err| warn!("{:?}", err)).unwrap()
             };
 
         let reply_cnt = *self.pending_commands
@@ -194,7 +193,8 @@ impl TransactionHandler {
                         signature,
                         participants.as_slice(),
                         &value,
-                        self.nodes.as_slice(), self.f, &self.gen)?;
+                        self.nodes.as_slice(), self.f, &self.gen)
+                        .map_err(|err| warn!("{:?}", err)).unwrap();
                     debug!("TransactionHandler::process_reply: signature_valid: {:?}", signature_valid);
                     signature_valid
                 }
@@ -218,7 +218,6 @@ impl TransactionHandler {
         }
 
         trace!("TransactionHandler::process_reply: <<<");
-        Ok(())
     }
 
     //TODO correct handling of Reject
@@ -537,13 +536,16 @@ impl PoolWorker {
         let gen_tnxs = PoolWorker::_build_node_state(&merkle_tree)?;
 
         for (_, gen_txn) in &gen_tnxs {
-            let mut rn: RemoteNode = RemoteNode::new(&gen_txn)?;
-            if rn.zaddr.is_some() {
-                println!("gen_txn {:?}", gen_txn);
-                rn.connect(&ctx, &key_pair)?;
-                rn.send_str("pi")?;
-                self.handler.nodes_mut().push(rn);
-            }
+            let mut rn: RemoteNode = match RemoteNode::new(&gen_txn) {
+                Ok(rn) => rn,
+                Err(err) => {
+                    warn!("{:?}", err);
+                    continue
+                }
+            };
+            rn.connect(&ctx, &key_pair)?;
+            rn.send_str("pi")?;
+            self.handler.nodes_mut().push(rn);
         }
 
         let cnt = self.handler.nodes().len();
@@ -829,9 +831,13 @@ impl RemoteNode {
         let node_verkey = txn.dest.as_str().from_base58()
             .map_err(|e| { CommonError::InvalidStructure("Invalid field dest in genesis transaction".to_string()) })?;
 
+        if txn.data.services.is_none() || !txn.data.services.as_ref().unwrap().contains(&"VALIDATOR".to_string()) {
+            return Err(PoolError::CommonError(CommonError::InvalidState("Node is not a Validator".to_string())));
+        }
+
         let address = match (&txn.data.client_ip, &txn.data.client_port) {
-            (&Some(ref client_ip), &Some(ref client_port)) => Some(format!("tcp://{}:{}", client_ip, client_port)),
-            _ => None
+            (&Some(ref client_ip), &Some(ref client_port)) => format!("tcp://{}:{}", client_ip, client_port),
+            _ => return Err(PoolError::CommonError(CommonError::InvalidState("Client address not found".to_string())))
         };
 
         let blskey = match txn.data.blskey {
@@ -861,9 +867,7 @@ impl RemoteNode {
         s.set_curve_publickey(&key_pair.public_key)?;
         s.set_curve_serverkey(self.public_key.as_slice())?;
         s.set_linger(0)?; //TODO set correct timeout
-        if let Some(ref zaddr) = self.zaddr {
-            s.connect(zaddr)?;
-        }
+        s.connect(&self.zaddr)?;
         self.zsock = Some(s);
         Ok(())
     }
@@ -1274,8 +1278,8 @@ mod tests {
 
     #[test]
     fn pool_worker_build_node_state_works() {
-        let node1:NodeTransaction = NodeTransaction::from_json(NODE1).unwrap();
-        let node2:NodeTransaction = NodeTransaction::from_json(NODE2).unwrap();
+        let node1: NodeTransaction = NodeTransaction::from_json(NODE1).unwrap();
+        let node2: NodeTransaction = NodeTransaction::from_json(NODE2).unwrap();
 
         let txns_src = format!("{}\n{}\n{}\n{}\n",
                                format!("{{\"data\":{{\"alias\":\"{}\",\"node_ip\":\"{}\",\"node_port\":{},\"services\":{:?}}},\"dest\":\"{}\",\"identifier\":\"{}\",\"txnId\":\"{}\",\"type\":\"0\"}}",
@@ -1364,7 +1368,7 @@ mod tests {
         let req_id = 1;
         th.pending_commands.insert(req_id, pc);
 
-        th.process_reply(req_id, &json.to_string()).unwrap();
+        th.process_reply(req_id, &json.to_string());
 
         assert_eq!(th.pending_commands.len(), 0);
     }
@@ -1384,7 +1388,7 @@ mod tests {
         let req_id = 1;
         th.pending_commands.insert(req_id, pc);
 
-        th.process_reply(req_id, &json2.to_string()).unwrap();
+        th.process_reply(req_id, &json2.to_string());
 
         assert_eq!(th.pending_commands.len(), 1);
         assert_eq!(th.pending_commands.get(&req_id).unwrap().replies.len(), 2);
