@@ -16,7 +16,7 @@ extern void IndyWrapperCommon3PHCallback(indy_handle_t xcommand_handle,
 
 extern void IndyWrapperCommon3PSCallback(indy_handle_t xcommand_handle,
                                            indy_error_t err,
-                                           const char *arg1);
+                                           const char *const arg1);
 
 extern void IndyWrapperCommon3PBCallback(indy_handle_t xcommand_handle,
                                            indy_error_t err,
@@ -100,6 +100,26 @@ extern void IndyWrapperCommonAgentListenerMessageCallback(indy_handle_t xconnect
 
 - (void)            deleteCommandHandleFor:(indy_handle_t) handle;
 - (void)            forgetListenHandle:(indy_handle_t) listenHandle;
+
+- (void)complete:(void (^)(NSError *))completion
+       forHandle:(indy_handle_t)handle
+         ifError:(indy_error_t)ret;
+
+- (void)completeBool:(void (^)(NSError *, BOOL))completion
+           forHandle:(indy_handle_t)handle
+             ifError:(indy_error_t)ret;
+
+- (void)completeStr:(void (^)(NSError *, NSString *))completion
+          forHandle:(indy_handle_t)handle
+            ifError:(indy_error_t)ret;
+
+- (void)completeData:(void (^)(NSError *, NSData *))completion
+           forHandle:(indy_handle_t)handle
+             ifError:(indy_error_t)ret;
+
+- (void)complete2Data:(void (^)(NSError *, NSData *, NSData *))completion
+            forHandle:(indy_handle_t)handle
+              ifError:(indy_error_t)ret;
 
 + (IndyCallbacks*) sharedInstance;
 
