@@ -154,6 +154,7 @@ impl TransactionHandler {
 
         if !self.pending_commands.contains_key(&req_id) {
             warn!("TransactionHandler::process_reply: <<< No pending command for request");
+            return;
         }
 
         let json_msg: HashableValue =
