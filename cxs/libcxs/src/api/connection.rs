@@ -71,7 +71,10 @@ pub extern fn cxs_connection_connect(command_handle:u32,
 }
 
 #[no_mangle]
-pub extern fn cxs_connection_serialize(connection_handle: u32, cb: Option<extern fn(xconnection_handle: u32, err: u32, claim_state: *const c_char)>) -> u32 {
+pub extern fn cxs_connection_serialize(command_handle: u32,
+                                       connection_handle: u32,
+                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, claim_state: *const c_char)>) -> u32 {
+
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
     if !is_valid_handle(connection_handle) {
@@ -83,11 +86,11 @@ pub extern fn cxs_connection_serialize(connection_handle: u32, cb: Option<extern
             Ok(json) => {
                 info!("serializing handle: {} with data: {}",connection_handle, json);
                 let msg = CStringUtils::string_to_cstring(json);
-                cb(connection_handle, error::SUCCESS.code_num, msg.as_ptr());
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
                 warn!("could not serialize handle {}",connection_handle);
-                cb(connection_handle, x, ptr::null_mut());
+                cb(command_handle, x, ptr::null_mut());
             },
         };
     });
@@ -250,7 +253,7 @@ mod tests {
         let handle = build_connection("test_cxs_connection_get_data".to_owned());
         assert!(handle > 0);
 
-        let data = cxs_connection_serialize(handle, Some(serialize_cb));
+        let data = cxs_connection_serialize(0,handle, Some(serialize_cb));
         thread::sleep(Duration::from_millis(200));
         assert_eq!(data, 0);
     }

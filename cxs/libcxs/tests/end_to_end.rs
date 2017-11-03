@@ -94,12 +94,12 @@ extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_hand
     thread::sleep(Duration::from_secs(1));
     _m.assert();
 
-    api::connection::cxs_connection_serialize(connection_handle,Some(serialize_cb));
+    api::connection::cxs_connection_serialize(0,connection_handle,Some(serialize_cb));
 
     let _m = mockito::mock("POST", "/agency/route")
         .with_status(202)
         .with_header("content-type", "text/plain")
-        .with_body("nice!")
+        .with_body("{\"uid\":\"6a9u7Jt\",\"typ\":\"claimOffer\",\"statusCode\":\"MS-101\"}")
         .expect(1)
         .create();
 
