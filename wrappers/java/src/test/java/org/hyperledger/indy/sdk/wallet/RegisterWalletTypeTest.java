@@ -47,7 +47,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		Wallet.createWallet(POOL, walletName, type, null, null).get();
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 
-		String schema = "{\"seqNo\":1,\"data\": {\"name\":\"gvt\",\"version\":\"1.0\",\"keys\":[\"age\",\"sex\",\"height\",\"name\"]}}";
+		String schema = "{\"seqNo\":1,\"data\": {\"name\":\"gvt\",\"version\":\"1.0\",\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}}";
 		String claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, DID, schema, null, false).get();
 
 		String claimOfferTemplate = "{\"issuer_did\":\"%s\",\"schema_seq_no\":%d}";
