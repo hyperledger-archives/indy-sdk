@@ -3,7 +3,8 @@ extern crate libc;
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
-use issuer_claim::{issuer_claim_create, to_string, from_string, send_claim_offer, release, is_valid_handle, get_state, update_state};
+use connection;
+use issuer_claim;
 use std::thread;
 use std::ptr;
 
@@ -29,7 +30,7 @@ pub extern fn cxs_issuer_create_claim(command_handle: u32,
     } else { None };
 
     thread::spawn(move|| {
-        let (rc, handle) = match issuer_claim_create(claimdef_handle, source_id_opt, claim_data) {
+        let (rc, handle) = match issuer_claim::issuer_claim_create(claimdef_handle, source_id_opt, claim_data) {
             Ok(x) => (error::SUCCESS.code_num, x),
             Err(_) => (error::UNKNOWN_ERROR.code_num, 0),
         };
@@ -48,8 +49,17 @@ pub extern fn cxs_issuer_send_claim_offer(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
+    if !issuer_claim::is_valid_handle(claim_handle) {
+        return error::INVALID_ISSUER_CLAIM_HANDLE.code_num;
+    }
+
+    if !connection::is_valid_handle(connection_handle) {
+        return error::INVALID_CONNECTION_HANDLE.code_num;
+    }
+
+
     thread::spawn(move|| {
-        let err = match send_claim_offer(claim_handle, connection_handle) {
+        let err = match issuer_claim::send_claim_offer(claim_handle, connection_handle) {
             Ok(x) => x,
             Err(x) => x,
         };
@@ -61,18 +71,20 @@ pub extern fn cxs_issuer_send_claim_offer(command_handle: u32,
 }
 
 #[no_mangle]
-pub extern fn cxs_issuer_claim_update_state(claim_handle: u32, cb: Option<extern fn(xclaim_handle: u32, err: u32, state: u32)>) -> u32 {
+pub extern fn cxs_issuer_claim_update_state(command_handle: u32,
+                                            claim_handle: u32,
+                                            cb: Option<extern fn(xcommand_handle: u32, xclaim_handle: u32, err: u32, state: u32)>) -> u32 {
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    if !is_valid_handle(claim_handle) {
+    if !issuer_claim::is_valid_handle(claim_handle) {
         return error::INVALID_ISSUER_CLAIM_HANDLE.code_num;
     }
 
     thread::spawn(move|| {
-        update_state(claim_handle);
+        issuer_claim::update_state(claim_handle);
 
-        cb(claim_handle, error::SUCCESS.code_num, get_state(claim_handle));
+        cb(command_handle, claim_handle, error::SUCCESS.code_num, issuer_claim::get_state(claim_handle));
     });
 
     error::SUCCESS.code_num
@@ -82,26 +94,59 @@ pub extern fn cxs_issuer_claim_update_state(claim_handle: u32, cb: Option<extern
 pub extern fn cxs_issuer_get_claim_request(claim_handle: u32, claim_request: *mut c_char) -> u32 { error::SUCCESS.code_num }
 #[allow(unused_variables, unused_mut)]
 pub extern fn cxs_issuer_accept_claim(claim_handle: u32) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_issuer_send_claim(claim_handle: u32, connection_handle: u32) -> u32 { error::SUCCESS.code_num }
+
+#[no_mangle]
+pub extern fn cxs_issuer_send_claim(command_handle: u32,
+                                    claim_handle: u32,
+                                    connection_handle: u32,
+                                    cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
+
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    if !issuer_claim::is_valid_handle(claim_handle) {
+        return error::INVALID_ISSUER_CLAIM_HANDLE.code_num;
+    }
+
+    if !connection::is_valid_handle(connection_handle) {
+        return error::INVALID_CONNECTION_HANDLE.code_num;
+    }
+
+    thread::spawn(move|| {
+        let err = match issuer_claim::send_claim(claim_handle, connection_handle) {
+            Ok(x) => x,
+            Err(x) => x,
+        };
+
+        cb(command_handle,err);
+    });
+
+    error::SUCCESS.code_num
+}
+
 #[allow(unused_variables)]
 pub extern fn cxs_issuer_terminate_claim(claim_handle: u32, termination_type: u32, msg: *const c_char) -> u32 { error::SUCCESS.code_num }
 
 #[no_mangle]
-pub extern fn cxs_issuer_claim_serialize(claim_handle: u32, cb: Option<extern fn(xclaim_handle: u32, err: u32, claim_state: *const c_char)>) -> u32 {
+pub extern fn cxs_issuer_claim_serialize(command_handle: u32,
+                                         claim_handle: u32,
+                                         cb: Option<extern fn(xcommand_handle: u32, err: u32, claim_state: *const c_char)>) -> u32 {
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
+    if !issuer_claim::is_valid_handle(claim_handle) {
+        return error::INVALID_ISSUER_CLAIM_HANDLE.code_num;
+    }
+
     thread::spawn(move|| {
-        match to_string(claim_handle) {
+        match issuer_claim::to_string(claim_handle) {
             Ok(x) => {
                 info!("serializing handle: {} with data: {}",claim_handle, x);
                 let msg = CStringUtils::string_to_cstring(x);
-                cb(claim_handle,error::SUCCESS.code_num,msg.as_ptr());
+                cb(command_handle, error::SUCCESS.code_num,msg.as_ptr());
             },
             Err(x) => {
                 warn!("could not serialize handle {}",claim_handle);
-                cb(claim_handle,x,ptr::null_mut());
+                cb(command_handle,x,ptr::null_mut());
             },
         };
     });
@@ -118,7 +163,7 @@ pub extern fn cxs_issuer_claim_deserialize(command_handle: u32,
     check_useful_c_str!(claim_data, error::INVALID_OPTION.code_num);
 
     thread::spawn(move|| {
-        let (rc, handle) = match from_string(&claim_data) {
+        let (rc, handle) = match issuer_claim::from_string(&claim_data) {
             Ok(x) => (error::SUCCESS.code_num, x),
             Err(_) => (error::UNKNOWN_ERROR.code_num, 0),
         };
@@ -130,7 +175,7 @@ pub extern fn cxs_issuer_claim_deserialize(command_handle: u32,
 }
 
 #[no_mangle]
-pub extern fn cxs_claim_issuer_release(claim_handle: u32) -> u32 { release(claim_handle) }
+pub extern fn cxs_claim_issuer_release(claim_handle: u32) -> u32 { issuer_claim::release(claim_handle) }
 
 
 #[cfg(test)]
@@ -142,6 +187,7 @@ mod tests {
     use std::time::Duration;
     use settings;
     use connection;
+    use api::CxsStateType;
 
     extern "C" fn create_cb(command_handle: u32, err: u32, claim_handle: u32) {
         assert_eq!(err, 0);
@@ -178,7 +224,7 @@ mod tests {
         assert_eq!(err, 0);
         assert!(claim_handle > 0);
         println!("successfully called create_and_serialize_cb");
-        assert_eq!(cxs_issuer_claim_serialize(claim_handle,Some(serialize_cb)), error::SUCCESS.code_num);
+        assert_eq!(cxs_issuer_claim_serialize(0,claim_handle,Some(serialize_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 
@@ -191,18 +237,7 @@ mod tests {
     }
 
     extern "C" fn send_offer_cb(command_handle: u32, err: u32) {
-        if err != 0 {panic!("failed to send claim offer")}
-    }
-
-    extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_handle: u32) {
-        if err != 0 {panic!("failed to create claim handle in create_and_send_offer_cb!")}
-
-        let connection_handle = connection::create_connection("test_send_claim_offer".to_owned());
-        connection::set_pw_did(connection_handle, "8XFh8yBzrpJQmNyZzgoTqB");
-        thread::sleep(Duration::from_millis(500));
-        if cxs_issuer_send_claim_offer(command_handle, claim_handle, connection_handle, Some(send_offer_cb)) != error::SUCCESS.code_num {
-            panic!("failed to send claim offer");
-        }
+        if err != 0 {panic!("failed to send claim(offer) {}",err)}
     }
 
     #[test]
@@ -215,7 +250,39 @@ mod tests {
             .with_body("{\"uid\":\"6a9u7Jt\",\"typ\":\"claimOffer\",\"statusCode\":\"MS-101\"}")
             .expect(1)
             .create();
-        assert_eq!(cxs_issuer_create_claim(0, ptr::null(),32, CString::new("{\"attr\":\"value\"}").unwrap().into_raw(),Some(create_and_send_offer_cb)), error::SUCCESS.code_num);
+
+        let original = "{\"source_id\":\"test_cxs_issuer_send_claim_offer\",\"handle\":456,\"claim_def\":32,\"claim_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"claim_offer_uid\":\"\",\"issued_did\":\"\",\"state\":1}";
+        let handle = issuer_claim::from_string(original).unwrap();
+        assert_eq!(issuer_claim::get_state(handle),CxsStateType::CxsStateInitialized as u32);
+
+        let connection_handle = connection::create_connection("test_send_claim_offer".to_owned());
+        connection::set_pw_did(connection_handle, "8XFh8yBzrpJQmNyZzgoTqB");
+
+        assert_eq!(cxs_issuer_send_claim_offer(0,handle,connection_handle,Some(send_offer_cb)), error::SUCCESS.code_num);
+        thread::sleep(Duration::from_millis(1000));
+        _m.assert();
+    }
+
+    #[test]
+    fn test_cxs_issuer_send_claim() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
+
+        let original = "{\"source_id\":\"test_cxs_issuer_send_claim\",\"handle\":123,\"claim_def\":32,\"claim_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"claim_offer_uid\":\"\",\"issued_did\":\"\",\"state\":3}";
+        let handle = issuer_claim::from_string(original).unwrap();
+        assert_eq!(issuer_claim::get_state(handle),CxsStateType::CxsStateRequestReceived as u32);
+
+        let _m = mockito::mock("POST", "/agency/route")
+            .with_status(200)
+            .with_body("{\"uid\":\"6a9u7Jt\",\"typ\":\"claimOffer\",\"statusCode\":\"MS-101\"}")
+            .expect(1)
+            .create();
+
+        let connection_handle = connection::create_connection("test_send_claim".to_owned());
+        connection::set_pw_did(connection_handle, "8XFh8yBzrpJQmNyZzgoTqB");
+
+        assert_eq!(cxs_issuer_send_claim(0,handle,connection_handle,Some(send_offer_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(1000));
         _m.assert();
     }
@@ -225,7 +292,7 @@ mod tests {
         assert!(claim_handle > 0);
         println!("successfully called deserialize_cb");
         let original = "{\"source_id\":\"test_cxs_issuer_claim_deserialize_succeeds\",\"handle\":181797316,\"claim_def\":32,\"claim_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"claim_offer_uid\":\"\",\"issued_did\":\"\",\"state\":1}";
-        let new = to_string(claim_handle).unwrap();
+        let new = issuer_claim::to_string(claim_handle).unwrap();
         assert_eq!(original,new);
     }
 

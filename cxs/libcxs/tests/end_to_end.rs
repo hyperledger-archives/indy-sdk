@@ -94,7 +94,7 @@ extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_hand
     thread::sleep(Duration::from_secs(1));
     _m.assert();
 
-    api::connection::cxs_connection_serialize(connection_handle,Some(serialize_cb));
+    api::connection::cxs_connection_serialize(0,connection_handle,Some(serialize_cb));
 
     let _m = mockito::mock("POST", "/agency/route")
         .with_status(202)
