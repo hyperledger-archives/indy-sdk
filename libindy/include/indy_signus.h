@@ -38,8 +38,8 @@ extern "C" {
 
                                                      void          (*cb)(indy_handle_t  xcommand_handle,
                                                                           indy_error_t  err,
-                                                                          const char*   did,
-                                                                          const char*   verkey)
+                                                                          const char *const   did,
+                                                                          const char *const   verkey)
                                                     );
 
     /// Generated temporary keys (signing and encryption keys) for an existing
@@ -71,7 +71,7 @@ extern "C" {
 
                                                 void           (*cb)(indy_handle_t xcommand_handle,
                                                                      indy_error_t  err,
-                                                                     const char*   verkey)
+                                                                     const char *const   verkey)
                                                );
 
     /// Apply temporary keys as main for an existing DID (owned by the caller of the library).
@@ -238,7 +238,7 @@ extern "C" {
 
                                   void           (*cb)(indy_handle_t    xcommand_handle,
                                                        indy_error_t     err,
-                                                       const indy_u8_t* signature_raw,
+                                                       const indy_u8_t *const signature_raw,
                                                        indy_u32_t       signature_len)
                                  );
     
@@ -321,9 +321,9 @@ extern "C" {
 
                                      void           (*cb)(indy_handle_t     xcommand_handle,
                                                           indy_error_t      err,
-                                                          const indy_u8_t* encrypted_msg_raw,
+                                                          const indy_u8_t *const encrypted_msg_raw,
                                                           indy_u32_t        encrypted_msg_len,
-                                                          const indy_u8_t*  nonce_raw,
+                                                          const indy_u8_t *const  nonce_raw,
                                                           indy_u32_t        nonce_len)
                                      );
 
@@ -363,7 +363,7 @@ extern "C" {
 
                                      void           (*cb)(indy_handle_t     xcommand_handle,
                                                           indy_error_t      err,
-                                                          const indy_u8_t*  decrypted_msg_raw,
+                                                          const indy_u8_t *const  decrypted_msg_raw,
                                                           indy_u32_t        decrypted_msg_len)
                                     );
 
@@ -401,7 +401,7 @@ extern "C" {
 
                                             void           (*cb)(indy_handle_t     xcommand_handle,
                                                                  indy_error_t      err,
-                                                                 const indy_u8_t*  encrypted_msg_raw,
+                                                                 const indy_u8_t *const  encrypted_msg_raw,
                                                                  indy_u32_t        encrypted_msg_len)
                                            );
 
@@ -433,7 +433,7 @@ extern "C" {
 
                                             void           (*cb)(indy_handle_t     xcommand_handle,
                                                                  indy_error_t      err,
-                                                                 const indy_u8_t*  decrypted_msg_raw,
+                                                                 const indy_u8_t *const  decrypted_msg_raw,
                                                                  indy_u32_t        decrypted_msg_len)
                                            );
 

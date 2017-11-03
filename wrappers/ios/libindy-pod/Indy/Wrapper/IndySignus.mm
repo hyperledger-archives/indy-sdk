@@ -5,8 +5,6 @@
 
 #import "IndySignus.h"
 #import "IndyCallbacks.h"
-#import "indy_core.h"
-#import "NSError+IndyError.h"
 
 @implementation IndySignus
 
@@ -24,14 +22,7 @@
                                        walletHandle,
                                        [didJson UTF8String],
                                        IndyWrapperCommon4PCallback);
-    if( ret != Success )
-    {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError: ret], nil, nil);
-        });
-    }
+    [[IndyCallbacks sharedInstance] complete2Str:completion forHandle:handle ifError:ret];
 }
 
 + (void)replaceKeysStartForDid:(NSString *)did
@@ -49,15 +40,7 @@
                                   [did UTF8String],
                                   [identityJson UTF8String],
                                   IndyWrapperCommon3PSCallback);
-    
-    if( ret != Success )
-    {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError: ret], nil);
-        });
-    }
+    [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
 }
 
 + (void)replaceKeysApplyForDid:(NSString *)did
@@ -72,15 +55,7 @@
                                   walletHandle,
                                   [did UTF8String],
                                   IndyWrapperCommon2PCallback);
-    
-    if( ret != Success )
-    {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError: ret]);
-        });
-    }
+    [[IndyCallbacks sharedInstance] complete:completion forHandle:handle ifError:ret];
 }
 
 + (void)storeTheirDid:(NSString *)identityJSON
@@ -96,14 +71,7 @@
                                [identityJSON UTF8String],
                                IndyWrapperCommon2PCallback
                                );
-    if( ret != Success )
-    {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError: ret]);
-        });
-    }
+    [[IndyCallbacks sharedInstance] complete:completion forHandle:handle ifError:ret];
 }
 
 + (void)signMessage:(NSData*)message
@@ -124,15 +92,7 @@
                     messageRaw,
                     messageLen,
                     IndyWrapperCommon4PDataCallback);
-    
-    if( ret != Success )
-    {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError: ret], nil);
-        });
-    }
+    [[IndyCallbacks sharedInstance] completeData:completion forHandle:handle ifError:ret];
 }
 
 + (void)verifySignature:(NSData *)signature
@@ -161,14 +121,7 @@
                                 signatureRaw,
                                 signatureLen,
                                 IndyWrapperCommon3PBCallback);
-    if( ret != Success )
-    {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError: ret], false);
-        });
-    }
+    [[IndyCallbacks sharedInstance] completeBool:completion forHandle:handle ifError:ret];
 }
 
 + (void)encryptMessage:(NSData *)message
@@ -195,15 +148,7 @@
                        messageRaw,
                        messageLen,
                        IndyWrapperCommon6PDataCallback);
-    
-    if( ret != Success )
-    {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError: ret], nil, nil);
-        });
-    }
+    [[IndyCallbacks sharedInstance] complete2Data:completion forHandle:handle ifError:ret];
 }
 
 + (void)decryptMessage:(NSData *)encryptedMessage
@@ -234,15 +179,7 @@
                         nonceRaw,
                         nonceLen,
                         IndyWrapperCommon4PDataCallback);
-    
-    if( ret != Success )
-    {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError: ret], nil);
-        });
-    }
+    [[IndyCallbacks sharedInstance] completeData:completion forHandle:handle ifError:ret];
 }
 
 @end

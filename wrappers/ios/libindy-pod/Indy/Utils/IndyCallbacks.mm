@@ -9,19 +9,12 @@
 #import "IndyTypes.h"
 
 static NSString* commandCallbackKey    =  @"commandCallback";
-static NSString* connectionCallbackKey =  @"connectionCallback";
-static NSString* messageCallbackKey    =  @"messageCallback";
-static NSString* connectionHandleKey   =  @"connectionHandle";
-static NSString* connectionsKey        =  @"connections";
 
 
 @interface IndyCallbacks ()
 
 @property (strong, readwrite) NSMutableDictionary *commandCompletions;
 @property                     indy_i32_t         commandHandleCounter;
-@property (strong, readwrite) NSMutableDictionary *agentConnectCompletions;
-@property (strong, readwrite) NSMutableDictionary *agentListenCompletions;
-@property (strong, readwrite) NSMutableDictionary *listenerForConnection;      // used to determine listener handle for corresponded connection handle
 @property (strong, readwrite) NSRecursiveLock     *globalLock;
 
 @end
@@ -47,153 +40,9 @@ static NSString* connectionsKey        =  @"connections";
     {
         self.commandHandleCounter = 0;
         self.commandCompletions = [[NSMutableDictionary alloc] init];
-        self.agentConnectCompletions = [[NSMutableDictionary alloc] init];
-        self.agentListenCompletions = [[NSMutableDictionary alloc] init];
-        self.listenerForConnection = [[NSMutableDictionary alloc] init];
         self.globalLock = [NSRecursiveLock new];
     }
     return self;
-}
-
-// MARK: - Agent callbacks
-
-
-/**
- Map connection and listener callbacks in
- */
-- (void) addConnection:(indy_handle_t) connection  forListener:(indy_handle_t) listener
-{
-    NSNumber *listenerHandle = [NSNumber numberWithInt: listener];
-    NSNumber *connectionHandle = [NSNumber numberWithInt: connection];
-
-    @synchronized(self.globalLock)
-    {
-        NSMutableDictionary *dict = [self.agentConnectCompletions objectForKey: listenerHandle ];
-        if(dict)
-        {
-            NSMutableDictionary *listenerParams = [dict objectForKey: connectionsKey];
-            if(listenerParams)
-            {
-                // TODO: is it correct?
-                [listenerParams setObject:connectionHandle forKey:connectionHandle];
-            }
-        }
-    }
-}
-
-// MARK: Listener
-
-/**
- Map connection and listener callbacks in listenerForConnection
- */
-- (void) addListener:(indy_handle_t) listener forConnection:(indy_handle_t) connection
-{
-    NSNumber *nl = [NSNumber numberWithInt: listener];
-    NSNumber *nc = [NSNumber numberWithInt: connection];
-
-    @synchronized(self.globalLock)
-    {
-        [self.listenerForConnection setObject:nl forKey: nc];
-    }
-}
-
-- (NSNumber*) listenerForConnection:(indy_handle_t) connection
-{
-    NSNumber *ret = nil;
-    @synchronized(self.globalLock)
-    {
-        ret = [self.listenerForConnection objectForKey: [NSNumber numberWithInt:connection]];
-    }
-    return ret;
-}
-
-- (void) removeListenerForConnection:(indy_handle_t) connection
-{
-    NSNumber *nc = [NSNumber numberWithInt: connection];
-    @synchronized(self.globalLock)
-    {
-        if( [self.listenerForConnection objectForKey: nc])
-        {
-            [self.listenerForConnection removeObjectForKey: nc];
-        }
-    }
-}
-
-- (void) rememberListenHandle:(indy_handle_t) listenHandle withDictionary:(NSMutableDictionary*) callbacks
-{
-    NSNumber *key = [NSNumber numberWithInt:listenHandle];
-
-    @synchronized(self.globalLock)
-    {
-        self.agentListenCompletions[key] = callbacks;
-    }
-}
-
--(void) forgetListenHandle:(indy_handle_t) listenHandle
-{
-    NSNumber *key = [NSNumber numberWithInt:listenHandle];
-    @synchronized(self.globalLock)
-    {
-        if ([self.agentListenCompletions objectForKey:key])
-        {
-            NSMutableDictionary *dict = self.agentListenCompletions[key];
-            if(dict && dict[connectionsKey])
-            {
-                NSArray *connections = [[dict objectForKey:connectionsKey] allKeys];
-                for(NSNumber *n in connections)
-                {
-                    [self removeListenerForConnection:[n intValue]];
-                }
-            }
-            [self.agentListenCompletions removeObjectForKey:key];
-        }
-    }
-}
-
-- (NSMutableDictionary*)listenCompletionsFor:(indy_handle_t)handle
-{
-    NSNumber *key = [NSNumber numberWithInt:handle];
-    NSMutableDictionary *val = nil;
-    @synchronized(self.globalLock)
-    {
-        val = self.agentListenCompletions[key];
-    }
-    return val;
-}
-
-// MARK: Connect
-
-- (void) rememberConnectHandle:(indy_handle_t) connectionHandle withCallback:(id) callback
-{
-    NSNumber *key = [NSNumber numberWithInt:connectionHandle];
-
-    @synchronized(self.globalLock)
-    {
-        self.agentConnectCompletions[key] = [callback copy];
-    }
-}
-
--(void) forgetConnectHandle:(indy_handle_t) connectionHandle
-{
-    NSNumber *key = [NSNumber numberWithInt:connectionHandle];
-    @synchronized(self.globalLock)
-    {
-        if (self.agentConnectCompletions[key])
-        {
-            [self.agentConnectCompletions removeObjectForKey:key];
-        }
-    }
-}
-
-- (id)connectCompletionFor:(indy_handle_t)handle
-{
-    NSNumber *key = [NSNumber numberWithInt:handle];
-    id val = nil;
-    @synchronized(self.globalLock)
-    {
-        val = self.agentConnectCompletions[key];
-    }
-    return val;
 }
 
 // MARK: - Create command handle and store callback
@@ -215,77 +64,6 @@ static NSString* connectionsKey        =  @"connections";
     return (indy_handle_t)[handle integerValue];
 }
 
-- (indy_handle_t)createCommandHandleFor:(id)callback
-                   withConnectionHandle:(indy_handle_t)connectionHandle
-{
-    NSNumber *conVal = [NSNumber numberWithInt:connectionHandle];
-
-    NSNumber *handle = nil;
-
-    @synchronized(self.globalLock)
-    {
-        handle = [NSNumber numberWithInt:self.commandHandleCounter];
-        self.commandHandleCounter++;
-
-        NSMutableDictionary *dict = [NSMutableDictionary new];
-        dict[commandCallbackKey] = [callback copy];
-        dict[connectionHandleKey] = conVal;
-
-        self.commandCompletions[handle] = dict;
-    }
-    return (indy_handle_t)[handle integerValue];
-}
-
-
-/**
- Map passed callbacks to commandHandle.
- @param listenerCallback Callback that will be called after listening started or on error.
- Will be called exactly once with result of start listen operation.
- @param connectionCallback  Callback that will be called after establishing of incoming connection.
- Can be called multiply times: once for each incoming connection.
- @param messageCallback Callback that will be called on receiving of an incoming message. Can be called multiply times: once for each incoming message.
- @return commandHandle
- */
-- (indy_handle_t)createCommandHandleForListenerCallback:(id)listenerCallback
-                                 withConnectionCallback:(id)connectionCallback
-                                     andMessageCallback:(id)messageCallback
-{
-    NSNumber *handle = nil;
-
-    @synchronized(self.globalLock)
-    {
-        handle = [NSNumber numberWithInt:self.commandHandleCounter];
-        self.commandHandleCounter++;
-
-        NSMutableDictionary *dict = [NSMutableDictionary new];
-        dict[commandCallbackKey] = [listenerCallback copy];
-        dict[connectionCallbackKey] = [connectionCallback copy];
-        dict[messageCallbackKey] = [messageCallback copy];
-
-        self.commandCompletions[handle] = dict;
-    }
-    return (indy_handle_t)[handle integerValue];
-}
-
-- (indy_handle_t)createCommandHandleFor:(id)callback
-                    withMessageCallback:(id)messageCallback
-{
-    NSNumber *handle = nil;
-
-    @synchronized(self.globalLock)
-    {
-        handle = [NSNumber numberWithInt:self.commandHandleCounter];
-        self.commandHandleCounter++;
-        NSMutableDictionary *dict = [NSMutableDictionary new];
-        dict[commandCallbackKey] = [callback copy];
-        dict[messageCallbackKey] = [messageCallback copy];
-
-        self.commandCompletions[handle] = dict;
-    }
-    return (indy_handle_t)[handle integerValue];
-}
-
-
 - (void)deleteCommandHandleFor:(indy_handle_t)handle
 {
     NSNumber *key = [NSNumber numberWithInt:handle];
@@ -298,19 +76,6 @@ static NSString* connectionsKey        =  @"connections";
     }
 }
 
-- (id)commandCompletionForAgent:(indy_handle_t)handle
-{
-    NSNumber *key = [NSNumber numberWithInt:handle];
-    id val = nil;
-    @synchronized(self.globalLock)
-    {
-        NSMutableDictionary *dict = (NSMutableDictionary*)[self.commandCompletions objectForKey:key];
-        val = [dict objectForKey:@"commandCallback"];
-    }
-    return val;
-}
-
-
 - (id)commandCompletionFor:(indy_handle_t)handle
 {
     NSNumber *key = [NSNumber numberWithInt:handle];
@@ -321,17 +86,6 @@ static NSString* connectionsKey        =  @"connections";
         val = [dict objectForKey:@"commandCallback"];
     }
     return val;
-}
-
-- (NSMutableDictionary*) dictionaryFor:(indy_handle_t)handle
-{
-    NSNumber *key = [NSNumber numberWithInt:handle];
-    NSMutableDictionary *dict = nil;
-    @synchronized(self.globalLock)
-    {
-        dict = (NSMutableDictionary*)[self.commandCompletions objectForKey:key];
-    }
-    return dict;
 }
 
 - (void)complete:(void (^)(NSError *))completion
@@ -369,6 +123,19 @@ static NSString* connectionsKey        =  @"connections";
         [self deleteCommandHandleFor:handle];
         dispatch_async(dispatch_get_main_queue(), ^{
             completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
+- (void)complete2Str:(void (^)(NSError *, NSString *, NSString *))completion
+           forHandle:(indy_handle_t)handle
+             ifError:(indy_error_t)ret
+{
+    if (ret != Success)
+    {
+        [self deleteCommandHandleFor:handle];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil, nil);
         });
     }
 }
@@ -481,8 +248,8 @@ void IndyWrapperCommon3PBCallback(indy_handle_t xcommand_handle,
 
 void IndyWrapperCommon4PCallback(indy_handle_t xcommand_handle,
                                  indy_error_t err,
-                                 const char* arg1,
-                                 const char *arg2)
+                                 const char *const arg1,
+                                 const char *const arg2)
 {
     id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
     [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
