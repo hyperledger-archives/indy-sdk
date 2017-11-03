@@ -192,12 +192,8 @@ impl TransactionHandler {
                         signature,
                         participants.as_slice(),
                         &value,
-                        self.nodes.as_slice(), self.f, &self.gen);
+                        self.nodes.as_slice(), self.f, &self.gen).map_err(|err| warn!("{:?}", err)).unwrap_or(false);
 
-                    let signature_valid = match signature_valid {
-                        Ok(valid) => valid,
-                        Err(err) => return warn!("{:?}", err)
-                    };
                     debug!("TransactionHandler::process_reply: signature_valid: {:?}", signature_valid);
                     signature_valid
                 }
