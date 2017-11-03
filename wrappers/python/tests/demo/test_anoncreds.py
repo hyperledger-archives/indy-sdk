@@ -17,7 +17,7 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home):
         'data': {
             'name': 'gvt',
             'version': '1.0',
-            'keys': ['age', 'sex', 'height', 'name']
+            'attr_names': ['age', 'sex', 'height', 'name']
         }
     }
     schema_json = json.dumps(schema)

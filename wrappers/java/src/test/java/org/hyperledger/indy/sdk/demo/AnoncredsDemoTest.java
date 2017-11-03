@@ -71,7 +71,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"data\": {\n" +
 				"                        \"name\":\"gvt\",\n" +
 				"                        \"version\":\"1.0\",\n" +
-				"                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+				"                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
 				"                    }\n" +
 				"                }";
 		String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
@@ -191,7 +191,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"data\": {\n" +
 				"                        \"name\":\"gvt\",\n" +
 				"                        \"version\":\"1.0\",\n" +
-				"                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+				"                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
 				"                    }\n" +
 				"                }";
 
@@ -203,7 +203,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"data\": {\n" +
 				"                        \"name\":\"xyz\",\n" +
 				"                        \"version\":\"1.0\",\n" +
-				"                        \"keys\":[\"status\",\"period\"]\n" +
+				"                        \"attr_names\":[\"status\",\"period\"]\n" +
 				"                    }\n" +
 				"                }";
 
@@ -344,7 +344,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"data\": {\n" +
 				"                        \"name\":\"gvt\",\n" +
 				"                        \"version\":\"1.0\",\n" +
-				"                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+				"                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
 				"                    }\n" +
 				"                }";
 
@@ -356,7 +356,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"data\": {\n" +
 				"                        \"name\":\"xyz\",\n" +
 				"                        \"version\":\"1.0\",\n" +
-				"                        \"keys\":[\"status\",\"period\"]\n" +
+				"                        \"attr_names\":[\"status\",\"period\"]\n" +
 				"                    }\n" +
 				"                }";
 
@@ -486,7 +486,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"data\": {\n" +
 				"                        \"name\":\"gvt\",\n" +
 				"                        \"version\":\"1.0\",\n" +
-				"                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+				"                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
 				"                    }\n" +
 				"                }";
 		String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
