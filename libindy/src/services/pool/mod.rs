@@ -153,15 +153,13 @@ impl TransactionHandler {
         trace!("TransactionHandler::process_reply: >>> req_id: {:?}, raw_msg: {:?}", req_id, raw_msg);
 
         if !self.pending_commands.contains_key(&req_id) {
-            warn!("TransactionHandler::process_reply: <<< No pending command for request");
-            return;
+            return warn!("TransactionHandler::process_reply: <<< No pending command for request");
         }
 
-        let json_msg: HashableValue =
-            HashableValue {
-                inner: serde_json::from_str(raw_msg)
-                    .map_err(|err| warn!("{:?}", err)).unwrap()
-            };
+        let json_msg: HashableValue = match serde_json::from_str(raw_msg) {
+            Ok(raw_msg) => HashableValue { inner: raw_msg },
+            Err(err) => return warn!("{:?}", err)
+        };
 
         let reply_cnt = *self.pending_commands
             .get(&req_id).unwrap()
@@ -194,8 +192,12 @@ impl TransactionHandler {
                         signature,
                         participants.as_slice(),
                         &value,
-                        self.nodes.as_slice(), self.f, &self.gen)
-                        .map_err(|err| warn!("{:?}", err)).unwrap();
+                        self.nodes.as_slice(), self.f, &self.gen);
+
+                    let signature_valid = match signature_valid {
+                        Ok(valid) => valid,
+                        Err(err) => return warn!("{:?}", err)
+                    };
                     debug!("TransactionHandler::process_reply: signature_valid: {:?}", signature_valid);
                     signature_valid
                 }
