@@ -21,7 +21,6 @@ export class Connection implements IConnections {
   }
 
   async create ( recipientInfo: IRecipientInfo ): Promise<void> {
-    let callback = null
     const id = recipientInfo.id // TODO verifiy that id is a string
     let result = null
     try {
@@ -29,7 +28,7 @@ export class Connection implements IConnections {
         result = this.RUST_API.cxs_connection_create(
               0,
               id,
-            callback = ffi.Callback('void', ['uint32', 'uint32', 'uint32'],
+            ffi.Callback('void', ['uint32', 'uint32', 'uint32'],
                   (xHandle, err, _connectionHandle) => {
                     if (err) {
                       reject(err)
@@ -56,12 +55,13 @@ export class Connection implements IConnections {
   }
 
   async serialize (): Promise<IConnectionData> {
-    let callback = null
+    const commandHandle = 0
     try {
       const data = await new Promise<string>((resolve, reject) => {
         const rc = this.RUST_API.cxs_connection_serialize(
+              commandHandle,
               this.connectionHandle,
-              callback = ffi.Callback('void', ['uint32', 'uint32', 'string'], (handle, err, _data) => {
+              ffi.Callback('void', ['uint32', 'uint32', 'string'], (handle, err, _data) => {
                 if (err) {
                   reject(err)
                   return
@@ -83,14 +83,13 @@ export class Connection implements IConnections {
 
   async deserialize (connectionData): Promise<void> {
     const commandHandle = 0
-    let callback = null
     let result = 0
     try {
       this.connectionHandle = await new Promise<string>((resolve, reject) => {
         result = this.RUST_API.cxs_connection_deserialize(
                 commandHandle,
                 connectionData,
-                callback = ffi.Callback('void', ['uint32', 'uint32', 'uint32'], (xHandle, _rc, handle) => {
+                ffi.Callback('void', ['uint32', 'uint32', 'uint32'], (xHandle, _rc, handle) => {
                   if (_rc) {
                     reject(_rc)
                   }
@@ -106,13 +105,12 @@ export class Connection implements IConnections {
   }
 
   async updateState (): Promise<void> {
-    let callback = null
     try {
       this.state = await new Promise<number>((resolve, reject) => {
         const rc = this.RUST_API.cxs_connection_update_state(
               0,
               this.connectionHandle,
-              callback = ffi.Callback('void', ['uint32', 'uint32', 'uint32'], (handle, err, state) => {
+              ffi.Callback('void', ['uint32', 'uint32', 'uint32'], (handle, err, state) => {
                 if (err) {
                   reject(err)
                   return
@@ -129,10 +127,12 @@ export class Connection implements IConnections {
     }
   }
 
-  release (): number {
+  async release (): Promise<number> {
     return this.RUST_API.cxs_connection_release(this.connectionHandle)
   }
-
+  async getHandle () {
+    return this.connectionHandle
+  }
   private _initRustApi (path?) {
     this.RUST_API = new CXSRuntime(new CXSRuntimeConfig(path))._ffi
   }
@@ -152,13 +152,12 @@ export class Connection implements IConnections {
     const phone = options.phone
     const connectionType: string = phone ? 'SMS' : 'QR'
     let connectResult = null
-    let callback = null
     return await new Promise<number>((resolve, reject) => {
       connectResult = this.RUST_API.cxs_connection_connect(
               0,
               this.connectionHandle,
               JSON.stringify({connection_type: connectionType, phone}),
-              callback = ffi.Callback('void', ['uint32', 'uint32'], (xhandle, err) => {
+              ffi.Callback('void', ['uint32', 'uint32'], (xhandle, err) => {
                 resolve(err)
               }))
       if (connectResult) {

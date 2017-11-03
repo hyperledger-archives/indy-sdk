@@ -90,6 +90,7 @@ describe('Using the cxs ffi directly ', async () => {
   it('a call to cxs_connection_serialize should return 0', async function () {
     const result = await new Promise(function (resolve, reject) {
       const rc = run._ffi.cxs_connection_serialize(
+        0,
         1,
         ffi.Callback('void', ['uint32', 'uint32', 'string'], (handle, err, data) => {
           if (err) {

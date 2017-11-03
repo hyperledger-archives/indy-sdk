@@ -32,7 +32,7 @@ extern "C" fn send_offer_cb(command_handle: u32, err: u32) {
     unsafe {CLAIM_SENT = true;};
     println!("Claim offer sent!");
 }
-
+#[allow(unused_assignments)]
 #[allow(unused_variables)]
 extern "C" fn generic_cb(command_handle:u32, err:u32) {
     if err != 0 {panic!("failed connect")}

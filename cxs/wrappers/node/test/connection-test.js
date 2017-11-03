@@ -13,11 +13,12 @@ const ffi = require('ffi')
 const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
 
 const waitFor = async (predicate) => {
-  if (!predicate()) {
+  const ret = await predicate()
+  if (!ret) {
     await sleep(1000)
     return waitFor(predicate)
   }
-  return predicate()
+  return ret
 }
 
 // console.log(release(handle)) // tslint:disable-line
@@ -92,7 +93,7 @@ describe('A Connection object with ', function () {
     let data = await connection.serialize()
     assert.notEqual(data, null)
     assert.equal(data.handle, connection.connectionHandle)
-    assert.equal(connection.release(), Error.SUCCESS)
+    assert.equal(await connection.release(), Error.SUCCESS)
     data = await connection.serialize()
     assert.equal(data, null)
   })
@@ -150,20 +151,20 @@ describe('A Connection object with ', function () {
     await connection.create({ id: '234' })
     assert.notEqual(connection.connectionHandle, undefined)
     await connection.connect({ sms: true })
-    assert.equal(connection.release(), Error.SUCCESS)
+    assert.equal(await connection.release(), Error.SUCCESS)
     assert.equal(await connection._connect({ sms: true }), Error.INVALID_CONNECTION_HANDLE)
     const result = await connection.serialize()
     assert.equal(result, null)
   })
 
-  it('call to connection_release with no connection should return unknown error', () => {
+  it('call to connection_release with no connection should return unknown error', async () => {
     const connection = new Connection(path)
-    assert.equal(connection.release(), Error.INVALID_CONNECTION_HANDLE)
+    assert.equal(await connection.release(), Error.INVALID_CONNECTION_HANDLE)
   })
 
   it('serialize() should return CxsStateType as an integer', async () => {
     const connection = new Connection(path)
-    await connection.create({ id: '234' })
+    await connection.create({ id: 'returnCxsTypeInteger' })
     await connection.connect({ sms: true })
     const result = await connection.serialize()
     assert.equal(result['state'], StateType.OfferSent)
@@ -199,6 +200,7 @@ describe('A Connection object with ', function () {
             })
         callbacks.push(callback)
         const rc = serialize(
+            0,
             handle,
             callback
         )

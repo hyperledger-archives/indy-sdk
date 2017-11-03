@@ -181,6 +181,7 @@ pub fn issuer_claim_create(claim_def_handle: u32,
     };
 
     new_issuer_claim.state = CxsStateType::CxsStateInitialized;
+
     {
         let mut m = ISSUER_CLAIM_MAP.lock().unwrap();
         info!("inserting handle {} into claim_issuer table", new_handle);
@@ -288,6 +289,11 @@ mod tests {
     use std::time::Duration;
     use super::*;
 
+    fn set_default_and_enable_test_mode(){
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+    }
+
     #[test]
     fn test_issuer_claim_create_succeeds() {
         settings::set_defaults();
@@ -366,8 +372,7 @@ mod tests {
 
     #[test]
     fn test_from_string_succeeds() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        set_default_and_enable_test_mode();
         let handle = issuer_claim_create(0, None,"{\"attr\":\"value\"}".to_owned()).unwrap();
         let string = to_string(handle).unwrap();
         assert!(!string.is_empty());
@@ -381,32 +386,49 @@ mod tests {
     #[test]
     fn test_update_state_with_pending_claim_request() {
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
 
         let response = "{\"msgs\":[{\"uid\":\"6gmsuWZ\",\"typ\":\"conReq\",\"statusCode\":\"MS-102\",\"statusMsg\":\"message sent\"},\
-        {\"uid\":\"6a8S8EE\",\"typ\":\"conReq\",\"statusCode\":\"MS-104\",\"statusMsg\":\"message accepted\"},\
-        {\"statusCode\":\"MS-104\",\"edgeAgentPayload\":\"{\\\"attr\\\":\\\"value\\\"}\",\"sendStatusCode\":\"MSS-101\",\"typ\":\"claimOffer\",\"statusMsg\":\"message accepted\",\"uid\":\"6a9u7Jt\"},\
-        {\"statusCode\":\"MS-103\",\"edgeAgentPayload\":\"{\\\"attr\\\":\\\"value\\\"}\",\"typ\":\"claimReq\",\"statusMsg\":\"message pending\",\"uid\":\"CCBXoDR\"}]}";
+            {\"uid\":\"6a8S8EE\",\"typ\":\"conReq\",\"statusCode\":\"MS-104\",\"statusMsg\":\"message accepted\"},\
+            {\"statusCode\":\"MS-104\",\"edgeAgentPayload\":\"{\\\"attr\\\":\\\"value\\\"}\",\"sendStatusCode\":\"MSS-101\",\"typ\":\"claimOffer\",\"statusMsg\":\"message accepted\",\"uid\":\"6a9u7Jt\"},\
+            {\"statusCode\":\"MS-103\",\"edgeAgentPayload\":\"{\\\"attr\\\":\\\"value\\\"}\",\"typ\":\"claimReq\",\"statusMsg\":\"message pending\",\"uid\":\"CCBXoDR\"}]}";
 
         let _m = mockito::mock("POST", "/agency/route")
-            .with_status(200)
-            .with_body(response)
-            .expect(1)
-            .create();
+        .with_status(200)
+        .with_body(response)
+        .expect(1)
+        .create();
 
         let mut claim = IssuerClaim {
-            handle: 123,
-            source_id: "test_has_pending_claim_request".to_owned(),
-            claim_def: 32,
-            claim_offer_uid: "1234".to_owned(),
-            claim_attributes: "nothing".to_owned(),
-            issued_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
-            state: CxsStateType::CxsStateOfferSent,
-            };
+        handle: 123,
+        source_id: "test_has_pending_claim_request".to_owned(),
+        claim_def: 32,
+        claim_offer_uid: "1234".to_owned(),
+        claim_attributes: "nothing".to_owned(),
+        issued_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+        state: CxsStateType::CxsStateOfferSent,
+        };
 
         claim.update_state();
         _m.assert();
-        assert_eq!(claim.get_state(),CxsStateType::CxsStateRequestReceived as u32);
+        assert_eq ! (claim.get_state(), CxsStateType::CxsStateRequestReceived as u32);
+    }
+
+    #[test]
+    fn test_issuer_claim_changes_state_after_being_validated(){
+        ::utils::logger::LoggerUtils::init();
+        set_default_and_enable_test_mode();
+        let handle = issuer_claim_create(0, None, "{\"att\":\"value\"}".to_owned()).unwrap();
+        let string = to_string(handle).unwrap();
+        fn get_state_from_string(s:String)-> u32 {
+            let json: serde_json::Value = serde_json::from_str(&s).unwrap();
+            if json["state"].is_number() {
+                return json["state"].as_u64().unwrap() as u32
+            }
+            0
+        }
+        assert_eq!(get_state_from_string(string), 1);
     }
 }
+

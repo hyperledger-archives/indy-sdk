@@ -3,7 +3,7 @@ export interface IConnections {
   serialize (): Promise<IConnectionData>
   connect ( IConnectOptions ): Promise<void>
   updateState (): Promise<void>
-  release (): number
+  release (): Promise<number>
 }
 
 export enum Error {
@@ -58,4 +58,13 @@ export interface IConnectionData {
   uuid: string,
   wallet: string,
   state: string
+}
+
+export interface IClaimData {
+  source_id: string
+  handle: string
+  claim_def: string
+  claim_attributes: string
+  issued_did: string
+  state: number
 }

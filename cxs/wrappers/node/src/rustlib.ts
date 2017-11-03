@@ -13,7 +13,6 @@ export let CxsStatus = StructType({
 // FFI Type Strings
 export const FFI_ERROR_CODE = 'int'
 export const FFI_CONNECTION_HANDLE = 'uint32'
-export const FFI_COMMAND_HANDLE = 'uint32'
 export const FFI_UNSIGNED_INT = 'uint32'
 export const FFI_UNSIGNED_INT_PTR = ref.refType('uint32')
 export const FFI_STRING = 'string'
@@ -23,6 +22,8 @@ export const FFI_CONNECTION_TYPE = 'string'
 export const FFI_VOID = ref.types.void
 export const FFI_CONNECTION_HANDLE_PTR = ref.refType(FFI_CONNECTION_HANDLE)
 export const FFI_CALLBACK_PTR = 'pointer'
+export const FFI_COMMAND_HANDLE = 'uint32'
+export const FFI_CLAIM_HANDLE = 'uint32'
 
 // Rust Lib Native Types
 export type rust_did = string
@@ -54,7 +55,7 @@ export const FFIConfiguration = {
   cxs_connection_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   cxs_connection_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   cxs_connection_release: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE]],
-  cxs_connection_serialize: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
+  cxs_connection_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   cxs_connection_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   cxs_init: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONFIG_PATH, FFI_CALLBACK_PTR]],
 
