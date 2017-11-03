@@ -772,7 +772,7 @@ mod medium_cases {
         fn issuer_create_and_store_claim_def_works_for_invalid_schema() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let schema = r#"{"seqNo":1, "name":"name","version":"1.0", "keys":["name"]}"#;
+            let schema = r#"{"seqNo":1, "name":"name","version":"1.0", "attr_names":["name"]}"#;
 
             let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, ISSUER_DID, &schema, None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -782,17 +782,17 @@ mod medium_cases {
         fn issuer_create_and_store_claim_def_works_for_invalid_did() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let schema = r#"{"seqNo":1, "data":{"name":"name","version":"1.0","keys":[]}}"#;
+            let schema = r#"{"seqNo":1, "data":{"name":"name","version":"1.0","attr_names":[]}}"#;
 
             let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, INVALID_IDENTIFIER, &schema, None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
-        fn issuer_create_and_store_claim_def_works_for_empty_schema_keys() {
+        fn issuer_create_and_store_claim_def_works_for_empty_schema_attr_names() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let schema = r#"{"seqNo":1, "data":{"name":"name","version":"1.0","keys":[]}}"#;
+            let schema = r#"{"seqNo":1, "data":{"name":"name","version":"1.0","attr_names":[]}}"#;
 
             let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, ISSUER_DID, None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
