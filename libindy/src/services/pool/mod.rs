@@ -1254,8 +1254,8 @@ mod tests {
 
         let merkle_tree = PoolWorker::_restore_merkle_tree_from_pool_name("test").unwrap();
 
-        assert_eq!(merkle_tree.count(), 4, "test restored MT size");
-        assert_eq!(merkle_tree.root_hash_hex(), "7c7e209a5bee34e467f7a2b6e233b8c61b74ddfd099bd9ad8a9a764cdf671981", "test restored MT root hash");
+        assert_eq!(merkle_tree.count(), 2, "test restored MT size");
+        assert_eq!(merkle_tree.root_hash_hex(), "ae7fb19d399b0b03ed298285d0da19ee6c6ba9ed7c063c95228c435d7ff97b4d", "test restored MT root hash");
     }
 
     #[test]
