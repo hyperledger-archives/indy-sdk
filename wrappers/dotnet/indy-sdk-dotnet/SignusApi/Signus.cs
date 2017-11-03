@@ -4,7 +4,7 @@ using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using static Hyperledger.Indy.IndyNativeMethods;
+using static Hyperledger.Indy.SignusApi.NativeMethods;
 
 namespace Hyperledger.Indy.SignusApi
 {
@@ -16,7 +16,7 @@ namespace Hyperledger.Indy.SignusApi
         /// <summary>
         /// Gets the callback to use when the command for CreateAndStoreMyDidResultAsync has completed.
         /// </summary>
-        private static CreateAndStoreMyDidResultDelegate _createAndStoreMyDidCallback = (xcommand_handle, err, did, verkey) =>
+        private static CreateAndStoreMyDidCompletedDelegate _createAndStoreMyDidCallback = (xcommand_handle, err, did, verkey) =>
         {
             var taskCompletionSource = PendingCommands.Remove<CreateAndStoreMyDidResult>(xcommand_handle);
 
@@ -31,7 +31,7 @@ namespace Hyperledger.Indy.SignusApi
         /// <summary>
         /// Gets the callback to use when the command for ReplaceKeysAsync has completed.
         /// </summary>
-        private static ReplaceKeysStartResultDelegate _replaceKeysCallback = (xcommand_handle, err, verkey) =>
+        private static ReplaceKeysStartCompletedDelegate _replaceKeysCallback = (xcommand_handle, err, verkey) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -44,7 +44,7 @@ namespace Hyperledger.Indy.SignusApi
         /// <summary>
         /// Gets the callback to use when the command for SignAsync has completed.
         /// </summary>
-        private static SignResultDelegate _signCallback = (xcommand_handle, err, signature_raw, signature_len) =>
+        private static SignCompletedDelegate _signCallback = (xcommand_handle, err, signature_raw, signature_len) =>
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
@@ -61,7 +61,7 @@ namespace Hyperledger.Indy.SignusApi
         /// <summary>
         /// Gets the callback to use when the command for VerifySignatureAsync has completed.
         /// </summary>
-        private static VerifySignatureResultDelegate _verifySignatureCallback = (xcommand_handle, err, valid) =>
+        private static VerifySignatureCopmpletedDelegate _verifySignatureCallback = (xcommand_handle, err, valid) =>
         {
             var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
 
@@ -74,7 +74,7 @@ namespace Hyperledger.Indy.SignusApi
         /// <summary>
         /// Gets the callback to use when the command for EncryptAsync has completed.
         /// </summary>
-        private static EncryptResultDelegate _encryptCallback = (xcommand_handle, err, encrypted_msg_raw, encrypted_msg_len, nonce_raw, nonce_len) =>
+        private static EncryptCompletedDelegate _encryptCallback = (xcommand_handle, err, encrypted_msg_raw, encrypted_msg_len, nonce_raw, nonce_len) =>
         {
             var taskCompletionSource = PendingCommands.Remove<EncryptResult>(xcommand_handle);
 
@@ -95,7 +95,7 @@ namespace Hyperledger.Indy.SignusApi
         /// <summary>
         /// Gets the callback to use when the command for DecryptAsync has completed.
         /// </summary>
-        private static DecryptResultDelegate _decryptCallback = (xcommand_handle, err, decrypted_msg_raw, decrypted_msg_len) =>
+        private static DecryptCompletedDelegate _decryptCallback = (xcommand_handle, err, decrypted_msg_raw, decrypted_msg_len) =>
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
@@ -111,7 +111,7 @@ namespace Hyperledger.Indy.SignusApi
         /// <summary>
         /// Gets the callback to use when the command for EncryptAsync has completed.
         /// </summary>
-        private static EncryptSealedResultDelegate _encryptSealedCallback = (xcommand_handle, err, encrypted_msg_raw, encrypted_msg_len) =>
+        private static EncryptSealedCompletedDelegate _encryptSealedCallback = (xcommand_handle, err, encrypted_msg_raw, encrypted_msg_len) =>
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
@@ -127,7 +127,7 @@ namespace Hyperledger.Indy.SignusApi
         /// <summary>
         /// Gets the callback to use when the command for DecryptAsync has completed.
         /// </summary>
-        private static DecryptResultDelegate _decryptSealedCallback = (xcommand_handle, err, decrypted_msg_raw, decrypted_msg_len) =>
+        private static DecryptCompletedDelegate _decryptSealedCallback = (xcommand_handle, err, decrypted_msg_raw, decrypted_msg_len) =>
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
@@ -223,7 +223,7 @@ namespace Hyperledger.Indy.SignusApi
             var taskCompletionSource = new TaskCompletionSource<CreateAndStoreMyDidResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_create_and_store_my_did(
+            var commandResult = NativeMethods.indy_create_and_store_my_did(
                 commandHandle,
                 wallet.Handle,
                 didJson,
@@ -267,7 +267,7 @@ namespace Hyperledger.Indy.SignusApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_replace_keys_start(
+            var commandResult = NativeMethods.indy_replace_keys_start(
                 commandHandle,
                 wallet.Handle,
                 did,
@@ -293,7 +293,7 @@ namespace Hyperledger.Indy.SignusApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_replace_keys_apply(
+            var commandResult = NativeMethods.indy_replace_keys_apply(
                 commandHandle,
                 wallet.Handle,
                 did,
@@ -337,7 +337,7 @@ namespace Hyperledger.Indy.SignusApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_store_their_did(
+            var commandResult = NativeMethods.indy_store_their_did(
                 commandHandle,
                 wallet.Handle,
                 identityJson,
@@ -370,7 +370,7 @@ namespace Hyperledger.Indy.SignusApi
             var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_sign(
+            var commandResult = NativeMethods.indy_sign(
                 commandHandle,
                 wallet.Handle,
                 did,
@@ -419,7 +419,7 @@ namespace Hyperledger.Indy.SignusApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_verify_signature(
+            var commandResult = NativeMethods.indy_verify_signature(
                 commandHandle,
                 wallet.Handle,
                 pool.Handle,
@@ -471,7 +471,7 @@ namespace Hyperledger.Indy.SignusApi
             var taskCompletionSource = new TaskCompletionSource<EncryptResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_encrypt(
+            var commandResult = NativeMethods.indy_encrypt(
                 commandHandle,
                 wallet.Handle,
                 pool.Handle,
@@ -519,7 +519,7 @@ namespace Hyperledger.Indy.SignusApi
             var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_decrypt(
+            var commandResult = NativeMethods.indy_decrypt(
                 commandHandle,
                 wallet.Handle,
                 pool.Handle,
@@ -570,7 +570,7 @@ namespace Hyperledger.Indy.SignusApi
             var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_encrypt_sealed(
+            var commandResult = NativeMethods.indy_encrypt_sealed(
                 commandHandle,
                 wallet.Handle,
                 pool.Handle,
@@ -600,7 +600,7 @@ namespace Hyperledger.Indy.SignusApi
             var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_decrypt_sealed(
+            var commandResult = NativeMethods.indy_decrypt_sealed(
                 commandHandle,
                 wallet.Handle,
                 did,
@@ -640,7 +640,7 @@ namespace Hyperledger.Indy.SignusApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_key_for_did(
+            var commandResult = NativeMethods.indy_key_for_did(
                 commandHandle,
                 pool.Handle,
                 wallet.Handle,
@@ -672,7 +672,7 @@ namespace Hyperledger.Indy.SignusApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_set_endpoint_for_did(
+            var commandResult = NativeMethods.indy_set_endpoint_for_did(
                 commandHandle,
                 wallet.Handle,
                 did,
@@ -702,7 +702,7 @@ namespace Hyperledger.Indy.SignusApi
             var taskCompletionSource = new TaskCompletionSource<EndpointForDidResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_get_endpoint_for_did(
+            var commandResult = NativeMethods.indy_get_endpoint_for_did(
                 commandHandle,
                 wallet.Handle,
                 did,
@@ -734,7 +734,7 @@ namespace Hyperledger.Indy.SignusApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_set_did_metadata(
+            var commandResult = NativeMethods.indy_set_did_metadata(
                 commandHandle,
                 wallet.Handle,
                 did,
@@ -763,7 +763,7 @@ namespace Hyperledger.Indy.SignusApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_get_did_metadata(
+            var commandResult = NativeMethods.indy_get_did_metadata(
                 commandHandle,
                 wallet.Handle,
                 did,
