@@ -14,4 +14,10 @@
 
 + (AgentUtils *)sharedInstance;
 
+- (NSError *)prepareMsg:(NSData *)msg
+       withWalletHandle:(IndyHandle)walletHandle
+               senderVk:(NSString *)senderVk
+            recipientVk:(NSString *)recipientVk
+                 outMsg:(NSData **)outMsg;
+
 @end

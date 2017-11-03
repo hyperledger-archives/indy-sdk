@@ -25,4 +25,29 @@
     return instance;
 }
 
+- (NSError *)prepareMsg:(NSData *)msg
+       withWalletHandle:(IndyHandle)walletHandle
+               senderVk:(NSString *)senderVk
+            recipientVk:(NSString *)recipientVk
+                 outMsg:(NSData **)outMsg
+{
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+    [IndyAgent prepareMsg:msg
+         withWalletHandle:walletHandle
+                 senderVk:senderVk
+              recipientVk:recipientVk
+               completion:^(NSError *error, NSData *encryptedMsg)
+    {
+        err = error;
+        if (encryptedMsg) *outMsg= encryptedMsg;
+        [completionExpectation fulfill];
+    }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils shortTimeout]];
+
+    return err;
+}
+
 @end
