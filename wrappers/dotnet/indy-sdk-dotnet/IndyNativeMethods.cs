@@ -631,45 +631,89 @@ namespace Hyperledger.Indy
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_decrypt_sealed(int command_handle, IntPtr wallet_handle, string did, byte[] encrypted_msg_raw, int encrypted_msg_len, DecryptResultDelegate cb);
 
-        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_create_key(int command_handle, IntPtr wallet_handle, string key_json, SignusCreateKeyCompletedDelegate cb);
-
-        internal delegate void SignusCreateKeyCompletedDelegate(int xcommand_handle, int err, string verkey);
-
-        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_set_key_metadata(int command_handle, IntPtr wallet_handle, string verkey, string metadata, NoValueDelegate cb);
-
-        
-
-        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_get_key_metadata(int command_handle, IntPtr wallet_handle, string verkey, SignusGetKeyMetadataCompletedDelegate cb);
-
-        internal delegate void SignusGetKeyMetadataCompletedDelegate(int xcommand_handle, int err, string metadata);
-
+        /// <summary>
+        /// Returns ver key (key id) for the given DID.
+        /// </summary>
+        /// <param name="command_handle">Command handle to map callback to caller context.</param>
+        /// <param name="pool_handle">Pool handle (created by open_pool).</param>
+        /// <param name="wallet_handle">Wallet handle (created by open_wallet).</param>
+        /// <param name="did">The DID to resolve key.</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_key_for_did(int command_handle, IntPtr pool_handle, IntPtr wallet_handle, string did, SignusKeyForDidCompletedDelegate cb);
 
+        /// <summary>
+        /// Delegate to be used on completion of calls to indy_key_for_did.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="key">The verification key associated with the DID.</param>
         internal delegate void SignusKeyForDidCompletedDelegate(int xcommand_handle, int err, string key);
 
-
+        /// <summary>
+        /// Sets the endpoint information for the given DID.
+        /// </summary>
+        /// <param name="command_handle">Command handle to map callback to caller context.</param>
+        /// <param name="wallet_handle">Wallet handle (created by open_wallet).</param>
+        /// <param name="did">The DID to resolve endpoint.</param>
+        /// <param name="address">The address of the endpoint.</param>
+        /// <param name="transportKey">The key for the transport.</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_set_endpoint_for_did(int command_handle, IntPtr wallet_handle, string did, string address, string transportKey, NoValueDelegate cb);
 
-        
-
+        /// <summary>
+        /// Gets the endpoint information for the given DID.
+        /// </summary>
+        /// <param name="command_handle">Command handle to map callback to caller context.</param>
+        /// <param name="wallet_handle">Wallet handle (created by open_wallet).</param>
+        /// <param name="did">The DID to set the endpoint on.</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_get_endpoint_for_did(int command_handle, IntPtr wallet_handle, string did, SignusGetEndpointForDidCompletedDelegate cb);
 
+        /// <summary>
+        /// Delegate to be used on completion of calls to indy_get_endpoint_for_did.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="endpoint">The endpoint address associated with the DID.</param>
+        /// <param name="transport_vk">The transport verification key associated with the DID.</param>
         internal delegate void SignusGetEndpointForDidCompletedDelegate(int xcommand_handle, int err, string endpoint, string transport_vk);
 
+        /// <summary>
+        /// Saves/replaces the meta information for the giving DID in the wallet.
+        /// </summary>
+        /// <param name="command_handle">Command handle to map callback to caller context.</param>
+        /// <param name="wallet_handle">Wallet handle (created by open_wallet).</param>
+        /// <param name="did">the DID to store metadata.</param>
+        /// <param name="metadata">the meta information that will be store with the DID.</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_set_did_metadata(int command_handle, IntPtr wallet_handle, string did, string metadata, NoValueDelegate cb);
 
+        /// <summary>
+        /// Retrieves the meta information for the giving DID in the wallet.
+        /// </summary>
+        /// <param name="command_handle">Command handle to map callback to caller context.</param>
+        /// <param name="wallet_handle">Wallet handle (created by open_wallet).</param>
+        /// <param name="did">The DID to retrieve metadata.</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_get_did_metadata(int command_handle, IntPtr wallet_handle, string did, SignusGetDidMetadataCompletedDelegate cb);
 
+        /// <summary>
+        /// Delegate to be used on completion of calls to indy_get_did_metadata.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="metadata">The metadata associated with the DID.</param>
         internal delegate void SignusGetDidMetadataCompletedDelegate(int xcommand_handle, int err, string metadata);
-
 
 
         // anoncreds.rs
@@ -1178,5 +1222,195 @@ namespace Hyperledger.Indy
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_set_pairwise_metadata(int command_handle, IntPtr wallet_handle, string their_did, string metadata, NoValueDelegate cb);
+
+
+        //crypto.rs
+
+        /// <summary>
+        /// Creates keys pair and stores in the wallet.
+        /// </summary>
+        /// <param name="command_handle">Command handle to map callback to caller context.</param>
+        /// <param name="wallet_handle">Wallet handle (created by open_wallet).</param>
+        /// <param name="key_json">Key information as json.</param>
+        /// <param name="cb">Callback that takes command result as parameter.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_create_key(int command_handle, IntPtr wallet_handle, string key_json, CryptoCreateKeyCompletedDelegate cb);
+
+        /// <summary>
+        /// Delegate to be used on completion of calls to indy_create_key.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="verkey">The verification key of the generated key pair.</param>
+        internal delegate void CryptoCreateKeyCompletedDelegate(int xcommand_handle, int err, string verkey);
+
+        /// <summary>
+        /// Saves/replaces the meta information for the giving key in the wallet.
+        /// </summary>
+        /// <param name="command_handle">Command handle to map callback to caller context.</param>
+        /// <param name="wallet_handle">Wallet handle (created by open_wallet).</param>
+        /// <param name="verkey">the key (verkey, key id) to store metadata.</param>
+        /// <param name="metadata">the meta information that will be store with the key.</param>
+        /// <param name="cb">Callback that takes command result as parameter.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_set_key_metadata(int command_handle, IntPtr wallet_handle, string verkey, string metadata, NoValueDelegate cb);
+
+        /// <summary>
+        /// Retrieves the meta information for the giving key in the wallet.
+        /// </summary>
+        /// <param name="command_handle">Command handle to map callback to caller context.</param>
+        /// <param name="wallet_handle">Wallet handle (created by open_wallet).</param>
+        /// <param name="verkey">The key (verkey, key id) to retrieve metadata.</param>
+        /// <param name="cb">Callback that takes command result as parameter.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_get_key_metadata(int command_handle, IntPtr wallet_handle, string verkey, CryptoGetKeyMetadataCompletedDelegate cb);
+
+        /// <summary>
+        /// Delegate to be used on completion of calls to indy_get_key_metadata.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="metadata">The metadata associated with the key-pair.</param>
+        internal delegate void CryptoGetKeyMetadataCompletedDelegate(int xcommand_handle, int err, string metadata);
+
+        /// <summary>
+        /// Signs a message with a key.
+        /// </summary>
+        /// <param name="command_handle">command handle to map callback to user context.</param>
+        /// <param name="wallet_handle">wallet handler (created by open_wallet).</param>
+        /// <param name="my_vk">id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did</param>
+        /// <param name="msg_raw">a pointer to first byte of message to be signed</param>
+        /// <param name="msg_len">a message length</param>
+        /// <param name="cb">Callback that takes command result as parameter.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_crypto_sign(int command_handle, IntPtr wallet_handle, string my_vk, byte[] msg_raw, int msg_len, CryptoSignCompletedDelegate cb);
+
+        /// <summary>
+        /// Delegate to be used on completion of calls to indy_crypto_sign.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="signature_raw">A pointer to the signature data.</param>
+        /// <param name="signature_len">The length of the signature data in bytes.</param>
+        internal delegate void CryptoSignCompletedDelegate(int xcommand_handle, int err, IntPtr signature_raw, int signature_len);
+
+        /// <summary>
+        /// Verify a signature with a verkey.
+        /// </summary>
+        /// <param name="command_handle">command handle to map callback to user context.</param>
+        /// <param name="their_vk">verkey to use</param>
+        /// <param name="msg_raw">a pointer to first byte of message to be signed</param>
+        /// <param name="msg_len">message length</param>
+        /// <param name="signature_raw">a pointer to first byte of signature to be verified</param>
+        /// <param name="signature_len">signature length</param>
+        /// <param name="cb">Callback that takes command result as parameter.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_crypto_verify(int command_handle, string their_vk, byte[] msg_raw, int msg_len, byte[] signature_raw, int signature_len, CryptoVerifyCompletedDelegate cb);
+
+        /// <summary>
+        /// Delegate to be used on completion of calls to indy_crypto_verify.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="valid">True if the signature is valid for the message, otherwise false.</param>
+        internal delegate void CryptoVerifyCompletedDelegate(int xcommand_handle, int err, bool valid);
+
+        /// <summary>
+        /// Encrypt a message by authenticated-encryption scheme.
+        /// </summary>
+        /// <param name="command_handle">command handle to map callback to user context.</param>
+        /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
+        /// <param name="my_vk">id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did</param>
+        /// <param name="their_vk">id (verkey) of their key</param>
+        /// <param name="msg_raw">a pointer to first byte of message that to be encrypted</param>
+        /// <param name="msg_len">message length</param>
+        /// <param name="cb">Callback that takes command result as parameter.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_crypto_box(int command_handle, IntPtr wallet_handle, string my_vk, string their_vk, byte[] msg_raw, int msg_len, CryptoBoxCompletedDelegate cb);
+
+        /// <summary>
+        /// Delegate to be used on completion of calls to indy_crypto_box.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="encrypted_msg_raw">A pointer to the encrypted message data.</param>
+        /// <param name="encrypted_msg_len">The length of the encrypted message data in bytes.</param>
+        /// <param name="nonce_raw">A pointer to the nonce data.</param>
+        /// <param name="nonce_len">The length of the nonce data in bytes.</param>
+        internal delegate void CryptoBoxCompletedDelegate(int xcommand_handle, int err, IntPtr encrypted_msg_raw, int encrypted_msg_len, IntPtr nonce_raw, int nonce_len);
+
+        /// <summary>
+        /// Decrypt a message by authenticated-encryption scheme.
+        /// </summary>
+        /// <param name="command_handle">command handle to map callback to user context.</param>
+        /// <param name="wallet_handle">wallet handler (created by open_wallet).</param>
+        /// <param name="my_vk">id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did</param>
+        /// <param name="their_vk">id (verkey) of their key</param>
+        /// <param name="encrypted_msg_raw">a pointer to first byte of message that to be decrypted</param>
+        /// <param name="encrypted_msg_len">message length</param>
+        /// <param name="nonce_raw">a pointer to first byte of nonce that encrypted message</param>
+        /// <param name="nonce_len">nonce length</param>
+        /// <param name="cb">Callback that takes command result as parameter.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_crypto_box_open(int command_handle, IntPtr wallet_handle, string my_vk, string their_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, CryptoBoxOpenCompletedDelegate cb);
+
+        /// <summary>
+        /// Delegate to be used on completion of calls to indy_crypto_box_open.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="decrypted_msg_raw">A pointer to the decrypted message data.</param>
+        /// <param name="decrypted_msg_len">The length of the decrypted message data in bytes.</param>
+        internal delegate void CryptoBoxOpenCompletedDelegate(int xcommand_handle, int err, IntPtr decrypted_msg_raw, int decrypted_msg_len);
+
+        /// <summary>
+        /// Encrypts a message by anonymous-encryption scheme.
+        /// </summary>
+        /// <param name="command_handle">command handle to map callback to user context.</param>
+        /// <param name="their_vk">id (verkey) of their key</param>
+        /// <param name="msg_raw">a pointer to first byte of message that to be encrypted</param>
+        /// <param name="msg_len">message length</param>
+        /// <param name="cb">Callback that takes command result as parameter.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_crypto_box_seal(int command_handle, string their_vk, byte[] msg_raw, int msg_len, CryptoBoxSealCompletedDelegate cb);
+
+        /// <summary>
+        /// Delegate to be used on completion of calls to indy_crypto_box_seal.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="encrypted_msg_raw">A pointer to the encrypted message data.</param>
+        /// <param name="encrypted_msg_len">The encrypted message data length in bytes.</param>
+        internal delegate void CryptoBoxSealCompletedDelegate(int xcommand_handle, int err, IntPtr encrypted_msg_raw, int encrypted_msg_len);
+
+        /// <summary>
+        /// Decrypts a message by anonymous-encryption scheme.
+        /// </summary>
+        /// <param name="command_handle">command handle to map callback to user context.</param>
+        /// <param name="wallet_handle">wallet handler (created by open_wallet).</param>
+        /// <param name="my_vk">id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did</param>
+        /// <param name="encrypted_msg_raw">a pointer to first byte of message that to be decrypted</param>
+        /// <param name="encrypted_msg_len">message length</param>
+        /// <param name="cb">Callback that takes command result as parameter.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_crypto_box_seal_open(int command_handle, IntPtr wallet_handle, string my_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, CryptoBoxSealOpenCompletedDelegate cb);
+
+        /// <summary>
+        /// Delegate to be used on completion of calls to indy_crypto_box_seal_open.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="decrypted_msg_raw">A pointer to the decrypted message data.</param>
+        /// <param name="decrypted_msg_len">The length of the decrypted message data in bytes.</param>
+        internal delegate void CryptoBoxSealOpenCompletedDelegate(int xcommand_handle, int err, IntPtr decrypted_msg_raw, int decrypted_msg_len);
     }
 }
