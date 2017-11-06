@@ -1,64 +1,130 @@
 require('chai')
 require('fs-extra')
-var parentDir = require('path')
-var currentDir = parentDir.dirname(module.filename)
-var index = require(parentDir.dirname(currentDir) + '/dist/index')
-var rustlib = require(parentDir.dirname(currentDir) + '/dist/rustlib')
-var assert = require('assert')
-var CXSRuntime = index.CXSRuntime
-var CXSRuntimeConfig = rustlib.CXSRuntimeConfig
-var ref = require('ref')
-var Callback = require('ffi').Callback
+let ffi = require('ffi')
+let parentDir = require('path')
+let currentDir = parentDir.dirname(module.filename)
+let index = require(parentDir.dirname(currentDir) + '/dist/index')
+let rustlib = require(parentDir.dirname(currentDir) + '/dist/rustlib')
+let assert = require('assert')
+let CXSRuntime = index.CXSRuntime
+let CXSRuntimeConfig = rustlib.CXSRuntimeConfig
 
 describe('call to cxs_init with provided path', function () {
-  var path = parentDir.dirname(currentDir)
+  let path = parentDir.dirname(currentDir)
   path += '/lib/libcxs.so'
-  var run = new CXSRuntime(new CXSRuntimeConfig(path))
-  it('should return 0', function () {
-    assert.equal(run._ffi.cxs_init(null), 0)
+  const run = new CXSRuntime(new CXSRuntimeConfig(path))
+
+  it('should return 0', async () => {
+    let result = await new Promise((resolve, reject) =>
+            run._ffi.cxs_init(
+                0,
+                null,
+                ffi.Callback('void', ['uint32', 'uint32'],
+                    (xhandle, err) => {
+                      resolve(err)
+                    }))
+    )
+    assert.equal(result, 0)
   })
 
-  it('should return 1004', function () {
-    assert.equal(run._ffi.cxs_init('garbage'), 1004)
+  it('should return 1004', async () => {
+    let result = null
+    result = await new Promise((resolve, reject) => {
+      result = run._ffi.cxs_init(
+              0,
+              'garbage',
+              ffi.Callback('void', ['uint32', 'uint32'],
+                  (xhandle, err) => {
+                    resolve(err)
+                  }))
+      if (result !== 0) {
+        resolve(result)
+      }
+    })
+    assert.equal(result, 1004)
   })
 })
 
 // these tests were created to only test that the ffi could be called with each function
 
-describe('Using the cxs ffi directly ', function () {
-  var path = parentDir.dirname(currentDir)
+describe('Using the cxs ffi directly ', async () => {
+  let path = parentDir.dirname(currentDir)
   path += '/lib/libcxs.so'
-  var run = new CXSRuntime(new CXSRuntimeConfig(path))
+  const run = new CXSRuntime(new CXSRuntimeConfig(path))
 
-  it('a call to cxs_connection_create should return 0', function () {
-    var intPtr = ref.alloc('int')
-    assert.equal(run._ffi.cxs_connection_create('dog, cat, man', null, null, intPtr), 0)
+  it('a call to cxs_connection_create should return 0', async () => {
+    let result = null
+    result = await new Promise((resolve, reject) => {
+      result = run._ffi.cxs_connection_create(
+          0,
+          '1',
+          ffi.Callback('void', ['uint32', 'uint32', 'uint32'],
+              (xhandle, err, connectionHandle) => {
+                if (err) {
+                  reject(err)
+                }
+              }))
+      resolve(result)
+    })
+    assert.equal(result, 0)
   })
 
-  it('a to cxs_connection_connect without the ability to connect should return 1', function () {
-    assert.equal(run._ffi.cxs_connection_connect(2, 'SMS'), 1003)
+  it('a to cxs_connection_connect without the ability to connect should return 1', async () => {
+    let connectResult = null
+    connectResult = await new Promise((resolve, reject) => {
+      connectResult = run._ffi.cxs_connection_connect(
+              0,
+              1,
+              JSON.stringify({connection_type: 'sms', phone: 123}),
+              ffi.Callback('void', ['uint32', 'uint32'],
+                  (xhandle, err) => {
+                    resolve(err)
+                  }))
+      if (connectResult !== 0) {
+        resolve(connectResult)
+      }
+    })
+    assert.equal(connectResult, 1003)
   })
 
-  it('a call to cxs_connection_get_data should return 0', async function () {
+  it('a call to cxs_connection_serialize should return 0', async function () {
     const result = await new Promise(function (resolve, reject) {
-      run._ffi.cxs_connection_serialize(
+      const rc = run._ffi.cxs_connection_serialize(
+        0,
         1,
-        Callback('void', ['uint32', 'uint32', 'string'],
-          function (handle, err, data) {
-            if (err) {
-              reject(err)
-              return
-            }
-            resolve(data)
-          })
-      )
+        ffi.Callback('void', ['uint32', 'uint32', 'string'], (handle, err, data) => {
+          if (err) {
+            reject(err)
+            return
+          } else if (!data) {
+            data = null
+          }
+          resolve(data)
+        }))
+      if (rc) {
+        resolve(null)
+      }
     })
     assert.equal(result, null)
   })
 
-  it('a call to cxs_connection_get_state should return 0', function () {
-    var intPtr = ref.alloc('int')
-    assert.equal(run._ffi.cxs_connection_get_state(2, intPtr), 0)
+  it('a call to cxs_connection_get_state should return 0', async () => {
+    const state = await new Promise((resolve, reject) => {
+      const rc = run._ffi.cxs_connection_update_state(
+          0,
+          1,
+          ffi.Callback('void', ['uint32', 'uint32', 'uint32'], (handle, err, state) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve(state)
+          }))
+      if (rc) {
+        resolve(0)
+      }
+    })
+    assert.equal(state, 0)
   })
 
   it('a call to cxs_connection_release without ability to release should return 1', function () {

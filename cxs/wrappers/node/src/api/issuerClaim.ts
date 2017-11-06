@@ -2,6 +2,7 @@ import { Callback, ForeignFunction } from 'ffi'
 import { weak } from 'weak'
 import { CXSRuntime, CXSRuntimeConfig } from '../index'
 import { IClaimData, StateType } from './api'
+import { CXSInternalError } from './errors'
 
 export class IssuerClaim {
   private _sourceId: string
@@ -30,7 +31,7 @@ export class IssuerClaim {
   async _callCxsAndGetCurrentState () {
     const buff = await this.serialize()
     const json = buff
-    const state = json.state
+    const state = json ? json.state : null
     return state
   }
 
@@ -62,7 +63,11 @@ export class IssuerClaim {
         const data: IClaimData = JSON.parse(serializedClaim)
         resolve(data)
       })
-      this._RUST_API.cxs_issuer_claim_serialize(claimHandle, callback)
+      const rc = this._RUST_API.cxs_issuer_claim_serialize(0, claimHandle, callback)
+      if (rc) {
+        // TODO: handle correct exception
+        resolve(null)
+      }
     })
     return ptr
   }
@@ -70,19 +75,23 @@ export class IssuerClaim {
   async send (connectionHandle): Promise<void> {
     let callback = null
     const claimHandle = this._claimHandle
+    try {
+      await new Promise<void> ((resolve, reject) => {
+        callback = Callback('void', ['uint32', 'uint32'], (xcommandHandle, err) => {
+          if (err > 0 ) {
+            reject(err)
+            return
+          }
+          resolve(xcommandHandle)
 
-    await new Promise<void> ((resolve, reject) => {
-      callback = Callback('void', ['uint32', 'uint32'], (xcommandHandle, err) => {
-        if (err > 0 ) {
-          reject(err)
-          return
-        }
-        resolve(xcommandHandle)
-
+        })
+        this._RUST_API.cxs_issuer_send_claim_offer(0, claimHandle, connectionHandle, callback)
+        this._setState(StateType.OfferSent)
       })
-      this._RUST_API.cxs_issuer_send_claim_offer(0, claimHandle, connectionHandle, callback)
-    })
-    this._setState(StateType.OfferSent)
+    } catch (err) {
+      // TODO handle error
+      throw new CXSInternalError(`cxs_issuer_send_claim_offer -> ${err}`)
+    }
   }
 
   private _setState (state) {

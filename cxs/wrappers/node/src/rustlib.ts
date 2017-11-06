@@ -48,22 +48,23 @@ export class CXSRuntimeConfig {
 }
 
 export const FFIConfiguration = {
-  // connection
-  cxs_connection_connect: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE, FFI_CONNECTION_TYPE]],
-  cxs_connection_create: [FFI_ERROR_CODE, [FFI_STRING_DATA, FFI_STRING_DATA, FFI_STRING_DATA,
-    FFI_CONNECTION_HANDLE_PTR]],
-  cxs_connection_get_state: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE, FFI_UNSIGNED_INT_PTR]],
-  cxs_connection_release: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE]],
-  cxs_connection_serialize: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
 
+// connection.rs
+  cxs_connection_connect: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CONNECTION_TYPE,
+    FFI_CALLBACK_PTR]],
+  cxs_connection_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  cxs_connection_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  cxs_connection_release: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE]],
+  cxs_connection_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
+  cxs_connection_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   // issuer
   cxs_issuer_claim_deserialize: [FFI_ERROR_CODE, ['int', 'string','pointer']],
-  cxs_issuer_claim_serialize: [FFI_ERROR_CODE, [FFI_CLAIM_HANDLE, 'pointer']],
+  cxs_issuer_claim_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, 'pointer']],
   cxs_issuer_create_claim: [FFI_ERROR_CODE, ['int', 'string', 'int', 'string', 'pointer']],
-  cxs_issuer_send_claim_offer: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE,
-    FFI_CONNECTION_HANDLE, 'pointer']],
+  cxs_issuer_send_claim_offer: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CONNECTION_HANDLE,
+    FFI_CALLBACK_PTR]],
 
-  cxs_init: [FFI_ERROR_CODE, [FFI_CONFIG_PATH]],
+  cxs_init: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONFIG_PATH, FFI_CALLBACK_PTR]],
 
   free: [FFI_VOID, ['void*']]
 

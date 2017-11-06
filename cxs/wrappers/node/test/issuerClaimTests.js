@@ -37,12 +37,13 @@ describe('An issuerClaim', async function () {
 
   it('can be sent with a valid connection', async function () {
     const sourceId = 'Bank Claim'
-    cxs.init_cxs('ENABLE_TEST_MODE')
+    await cxs.init_cxs('ENABLE_TEST_MODE')
     var connection = new Connection()
     await connection.create({ id: '234' })
     const connectionHandle = await connection.getHandle()
     await connection.connect()
-    assert.equal(await connection.getState(), 2)
+    await connection.updateState()
+    assert.equal(2, connection.state)
     const claim = await IssuerClaim.create(sourceId)
     await claim.send(connectionHandle)
     assert.equal(await claim.getState(), 2)

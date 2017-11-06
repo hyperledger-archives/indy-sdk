@@ -1,9 +1,28 @@
 export interface IConnections {
-  create ( IRecipientInfo ): number
-  getData (): Promise<IConnectionData>
+  create ( IRecipientInfo ): Promise<void>
+  serialize (): Promise<IConnectionData>
   connect ( IConnectOptions ): Promise<void>
-  getState (): Promise<number>
+  updateState (): Promise<void>
   release (): Promise<number>
+}
+
+export enum Error {
+    SUCCESS = 0,
+    UNKNOWN_ERROR = 1001,
+    CONNECTION_ERROR = 1002,
+    INVALID_CONNECTION_HANDLE = 1003,
+    INVALID_CONFIGURATION = 1004,
+    NOT_READY = 1005,
+    NO_ENDPOINT = 1006,
+    INVALID_OPTION = 1007,
+    INVALID_DID = 1008,
+    INVALID_VERKEY = 1009,
+    POST_MSG_FAILURE = 1010,
+    INVALID_NONCE = 1011,
+    INVALID_KEY_DELEGATE = 1012,
+    INVALID_URL = 1013,
+    NOT_BASE58 = 1014,
+    INVALID_ISSUER_CLAIM_HANDLE = 1015
 }
 
 export enum StateType {
@@ -43,9 +62,9 @@ export interface IConnectionData {
 
 export interface IClaimData {
   source_id: string
-  handle: string
+  handle: number
   claim_def: string
   claim_attributes: string
   issued_did: string
-  state: number
+  state: StateType
 }

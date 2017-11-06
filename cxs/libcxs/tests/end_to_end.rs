@@ -10,22 +10,44 @@ use std::thread;
 use std::time::Duration;
 use std::ffi::CString;
 use cxs::api;
+use std::ffi::CStr;
+
+static mut CONNECTION_HANDLE: u32 = 0;
+static mut CLAIM_SENT: bool = false;
 
 #[allow(unused_variables)]
-extern "C" fn send_offer_cb(command_handle: u32, err: u32) {
-    if err != 0 {panic!("failed to send claim offer")}
-    println!("Claim offer sent!");
-}
-#[allow(unused_assignments)]
-#[allow(unused_variables)]
-extern "C" fn serialize_cb(handle: u32, err: u32, claim_string: *const c_char) {
-    assert_eq!(err, 0);
-    if claim_string.is_null() {
-        panic!("claim_string is empty");
+extern "C" fn serialize_cb(connection_handle: u32, err: u32, data: *const c_char) {
+    if err != 0 {panic!("failed to serialize connection")}
+    unsafe {
+        match CStr::from_ptr(data).to_str() {
+            Ok(str) => println!("serialized: {}", str.to_string()),
+            Err(err) => println!("invalid serialization"),
+        };
     }
 }
 
 #[allow(unused_variables)]
+extern "C" fn send_offer_cb(command_handle: u32, err: u32) {
+    if err != 0 {panic!("failed to send claim offer")}
+    unsafe {CLAIM_SENT = true;};
+    println!("Claim offer sent!");
+}
+#[allow(unused_assignments)]
+#[allow(unused_variables)]
+extern "C" fn generic_cb(command_handle:u32, err:u32) {
+    if err != 0 {panic!("failed connect")}
+    println!("connection established!");
+}
+
+#[allow(unused_variables)]
+extern "C" fn create_connection_cb(command_handle: u32, err: u32, connection_handle: u32) {
+    if err != 0 {panic!("failed to send claim offer")}
+    if connection_handle == 0 {panic!("received invalid connection handle")}
+    unsafe {CONNECTION_HANDLE = connection_handle;}
+}
+
+#[allow(unused_variables)]
+#[allow(unused_assignments)]
 extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_handle: u32) {
     if err != 0 {panic!("failed to create claim handle in create_and_send_offer_cb!")}
 
@@ -36,13 +58,16 @@ extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_hand
         .expect(2)
         .create();
 
-    let mut connection_handle: u32 = 0;
-    let rc = api::connection::cxs_connection_create(CString::new("test_cxs_connection_connect").unwrap().into_raw(),
-                                   std::ptr::null_mut(),
-                                   std::ptr::null(),
-                                   &mut connection_handle);
+    let mut connection_handle = 0;
+    let rc = api::connection::cxs_connection_create(0,CString::new("test_cxs_connection_connect").unwrap().into_raw(),Some(create_connection_cb));
     assert_eq!(rc, 0);
     thread::sleep(Duration::from_secs(1));
+    loop {
+        unsafe {
+            if CONNECTION_HANDLE > 0 {connection_handle = CONNECTION_HANDLE; break;}
+            else {thread::sleep(Duration::from_millis(50));}
+        }
+    }
     assert!(connection_handle > 0);
     _m.assert();
 
@@ -63,17 +88,18 @@ extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_hand
         .expect(1)
         .create();
 
-    let rc = api::connection::cxs_connection_connect(connection_handle, CString::new("{}").unwrap().into_raw());
+    let rc = api::connection::cxs_connection_connect(0,connection_handle, CString::new("{}").unwrap().into_raw(),Some(generic_cb));
     assert_eq!(rc, 0);
-    _m.assert();
 
     thread::sleep(Duration::from_secs(1));
-    assert!(0 == api::connection::cxs_connection_serialize(connection_handle, Some(serialize_cb)));
+    _m.assert();
+
+    api::connection::cxs_connection_serialize(0,connection_handle,Some(serialize_cb));
 
     let _m = mockito::mock("POST", "/agency/route")
         .with_status(202)
         .with_header("content-type", "text/plain")
-        .with_body("nice!")
+        .with_body("{\"uid\":\"6a9u7Jt\",\"typ\":\"claimOffer\",\"statusCode\":\"MS-101\"}")
         .expect(1)
         .create();
 
@@ -106,7 +132,7 @@ fn claim_offer_ete() {
     file.write_all(config_string.as_bytes()).unwrap();
 
     let path = CString::new(file.path().to_str().unwrap()).unwrap();
-    let r = api::cxs::cxs_init(path.as_ptr());
+    let r = api::cxs::cxs_init(0,path.as_ptr(),Some(generic_cb));
     assert_eq!(r,0);
     thread::sleep(Duration::from_secs(1));
     let id = CString::new("{\"id\":\"ckmMPiEDcH4R5URY\"}").unwrap();
@@ -119,4 +145,5 @@ fn claim_offer_ete() {
 
     assert_eq!(rc,0);
     thread::sleep(Duration::from_secs(4));
+    unsafe {assert_eq!(CLAIM_SENT,true);}
 }
