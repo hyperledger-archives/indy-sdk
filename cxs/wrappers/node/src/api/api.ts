@@ -62,9 +62,9 @@ export interface IConnectionData {
 
 export interface IClaimData {
   source_id: string
-  handle: string
+  handle: number
   claim_def: string
   claim_attributes: string
   issued_did: string
-  state: number
+  state: StateType
 }

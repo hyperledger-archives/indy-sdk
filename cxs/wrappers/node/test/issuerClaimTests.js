@@ -7,6 +7,7 @@ const Connection = require('../dist/api/connection').Connection
 const StateType = require('../dist/api/api').StateType
 
 describe('An issuerClaim', async function () {
+
   it('can be created.', async function () {
     const claim = new IssuerClaim('Bank Claim')
     assert(claim)
@@ -23,7 +24,7 @@ describe('An issuerClaim', async function () {
     assert.equal(state, 0)
   })
 
-  it.only('has a claimHandle and a sourceId after it is created', async function () {
+  it('has a claimHandle and a sourceId after it is created', async function () {
     const sourceId = 'Claim'
     const claim = await IssuerClaim.create(sourceId)
     assert(claim.getClaimHandle() > 0)

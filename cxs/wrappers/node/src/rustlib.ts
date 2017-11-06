@@ -59,7 +59,7 @@ export const FFIConfiguration = {
   cxs_connection_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   // issuer
   cxs_issuer_claim_deserialize: [FFI_ERROR_CODE, ['int', 'string','pointer']],
-  cxs_issuer_claim_serialize: [FFI_ERROR_CODE, [FFI_CLAIM_HANDLE, 'pointer']],
+  cxs_issuer_claim_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, 'pointer']],
   cxs_issuer_create_claim: [FFI_ERROR_CODE, ['int', 'string', 'int', 'string', 'pointer']],
   cxs_issuer_send_claim_offer: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CONNECTION_HANDLE,
     FFI_CALLBACK_PTR]],
