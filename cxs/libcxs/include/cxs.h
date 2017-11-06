@@ -100,7 +100,7 @@ cxs_error_t cxs_connection_create(cxs_command_handle_t command_handle, const cha
 cxs_error_t cxs_connection_connect(cxs_command_handle_t command_handle, cxs_connection_handle_t connection_handle, const char *connection_type, void (*cb)(cxs_command_handle_t, cxs_error_t err));
 
 /** Returns the contents of the connection handle or null if the connection does not exist. */
-cxs_error_t cxs_connection_serialize(cxs_connection_handle_t connection_handle, void (*cb)(cxs_connection_handle_t connection_handle, cxs_error_t err, const char *state));
+cxs_error_t cxs_connection_serialize(cxs_command_handle_t command_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, const char *state));
 
 /** Re-creates a connection object from the specified serialization. */
 cxs_error_t cxs_connection_deserialize(cxs_command_handle_t command_handle, const char *serialized_claim, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_connection_handle_t *connection_handle));
@@ -124,7 +124,7 @@ cxs_error_t cxs_issuer_create_claim(cxs_command_handle_t, const char *source_id,
 cxs_error_t cxs_issuer_send_claim_offer(cxs_command_handle_t command_handle, cxs_claim_handle_t claim_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err));
 
 /** Updates the state of the claim from the agency. */
-cxs_error_t cxs_issuer_claim_update_state(cxs_command_handle_t command_handle, cxs_claim_handle_t claim_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_claim_state_t state))
+cxs_error_t cxs_issuer_claim_update_state(cxs_command_handle_t command_handle, cxs_claim_handle_t claim_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_claim_state_t state));
 
 /** Asynchronously send the claim to the connection. Populates a handle to the new transaction. */
 cxs_error_t cxs_issuer_send_claim(cxs_command_handle_t command_handle, cxs_claim_handle_t claim_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t command_handle, cxs_error_t err));
