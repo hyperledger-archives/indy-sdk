@@ -2,7 +2,7 @@ import { Callback, ForeignFunction } from 'ffi'
 import { weak } from 'weak'
 import { CXSRuntime, CXSRuntimeConfig } from '../index'
 import { IClaimData, StateType } from './api'
-import { ConnectionTimeoutError, CXSInternalError } from './errors'
+import { CXSInternalError } from './errors'
 
 export class IssuerClaim {
   private _sourceId: string
@@ -75,7 +75,7 @@ export class IssuerClaim {
   async send (connectionHandle): Promise<void> {
     let callback = null
     const claimHandle = this._claimHandle
-    try{
+    try {
       await new Promise<void> ((resolve, reject) => {
         callback = Callback('void', ['uint32', 'uint32'], (xcommandHandle, err) => {
           if (err > 0 ) {

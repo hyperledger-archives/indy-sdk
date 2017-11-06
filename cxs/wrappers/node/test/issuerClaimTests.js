@@ -7,7 +7,6 @@ const Connection = require('../dist/api/connection').Connection
 const StateType = require('../dist/api/api').StateType
 
 describe('An issuerClaim', async function () {
-
   it('can be created.', async function () {
     const claim = new IssuerClaim('Bank Claim')
     assert(claim)
