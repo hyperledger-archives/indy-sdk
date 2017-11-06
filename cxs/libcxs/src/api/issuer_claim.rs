@@ -16,12 +16,14 @@ use std::ptr;
 #[allow(unused_variables, unused_mut)]
 pub extern fn cxs_issuer_create_claim(command_handle: u32,
                                       source_id: *const c_char,
-                                      claimdef_handle: u32,
+                                      schema_seq_no: u32,
+                                      issuer_did: *const c_char,
                                       claim_data: *const c_char,
                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, claim_handle: u32)>) -> u32 {
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(claim_data, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(issuer_did, error::INVALID_OPTION.code_num);
 
     let source_id_opt = if !source_id.is_null() {
         check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
@@ -30,7 +32,7 @@ pub extern fn cxs_issuer_create_claim(command_handle: u32,
     } else { None };
 
     thread::spawn(move|| {
-        let (rc, handle) = match issuer_claim::issuer_claim_create(claimdef_handle, source_id_opt, claim_data) {
+        let (rc, handle) = match issuer_claim::issuer_claim_create(schema_seq_no, source_id_opt, issuer_did, claim_data) {
             Ok(x) => (error::SUCCESS.code_num, x),
             Err(_) => (error::UNKNOWN_ERROR.code_num, 0),
         };
@@ -208,7 +210,12 @@ mod tests {
     fn test_cxs_issuer_create_claim_success() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        assert_eq!(cxs_issuer_create_claim(0, ptr::null(), 32, CString::new("{\"attr\":\"value\"}").unwrap().into_raw(),Some(create_cb)), error::SUCCESS.code_num);
+        assert_eq!(cxs_issuer_create_claim(0,
+                                           ptr::null(),
+                                           32,
+                                           CString::new("8XFh8yBzrpJQmNyZzgoTqB").unwrap().into_raw(),
+                                           CString::new("{\"attr\":\"value\"}").unwrap().into_raw(),
+                                           Some(create_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 
@@ -216,7 +223,13 @@ mod tests {
     fn test_cxs_issuer_create_claim_fails() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        assert_eq!(cxs_issuer_create_claim(0, ptr::null(),32,ptr::null(),Some(create_cb)), error::INVALID_OPTION.code_num);
+        assert_eq!(cxs_issuer_create_claim(
+            0,
+            ptr::null(),
+            32,
+            ptr::null(),
+            ptr::null(),
+            Some(create_cb)),error::INVALID_OPTION.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 
@@ -232,7 +245,12 @@ mod tests {
     fn test_cxs_issuer_claim_serialize() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        assert_eq!(cxs_issuer_create_claim(0, ptr::null(),32, CString::new("{\"attr\":\"value\"}").unwrap().into_raw(),Some(create_and_serialize_cb)), error::SUCCESS.code_num);
+        assert_eq!(cxs_issuer_create_claim(0,
+                                           ptr::null(),
+                                           32,
+                                           CString::new("8XFh8yBzrpJQmNyZzgoTqB").unwrap().into_raw(),
+                                           CString::new("{\"attr\":\"value\"}").unwrap().into_raw(),
+                                           Some(create_and_serialize_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 
@@ -251,7 +269,7 @@ mod tests {
             .expect(1)
             .create();
 
-        let original = "{\"source_id\":\"test_cxs_issuer_send_claim_offer\",\"handle\":456,\"claim_def\":32,\"claim_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"claim_offer_uid\":\"\",\"issued_did\":\"\",\"state\":1}";
+        let original = "{\"source_id\":\"test_cxs_issuer_send_claim_offer\",\"handle\":456,\"claim_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"msg_uid\":\"\",\"schema_seq_no\":32,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"issued_did\":\"\",\"state\":1}";
         let handle = issuer_claim::from_string(original).unwrap();
         assert_eq!(issuer_claim::get_state(handle),CxsStateType::CxsStateInitialized as u32);
 
@@ -269,7 +287,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
 
-        let original = "{\"source_id\":\"test_cxs_issuer_send_claim\",\"handle\":123,\"claim_def\":32,\"claim_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"claim_offer_uid\":\"\",\"issued_did\":\"\",\"state\":3}";
+        let original = "{\"source_id\":\"test_cxs_issuer_send_claim\",\"handle\":123,\"claim_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"msg_uid\":\"\",\"schema_seq_no\":32,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"issued_did\":\"\",\"state\":3}";
         let handle = issuer_claim::from_string(original).unwrap();
         assert_eq!(issuer_claim::get_state(handle),CxsStateType::CxsStateRequestReceived as u32);
 
@@ -291,7 +309,7 @@ mod tests {
         assert_eq!(err, 0);
         assert!(claim_handle > 0);
         println!("successfully called deserialize_cb");
-        let original = "{\"source_id\":\"test_cxs_issuer_claim_deserialize_succeeds\",\"handle\":181797316,\"claim_def\":32,\"claim_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"claim_offer_uid\":\"\",\"issued_did\":\"\",\"state\":1}";
+        let original = "{\"source_id\":\"test_claim_serialize\",\"handle\":261385873,\"claim_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"msg_uid\":\"\",\"schema_seq_no\":32,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"issued_did\":\"\",\"state\":1}";
         let new = issuer_claim::to_string(claim_handle).unwrap();
         assert_eq!(original,new);
     }
@@ -300,7 +318,7 @@ mod tests {
     fn test_cxs_issuer_claim_deserialize_succeeds() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let string = "{\"source_id\":\"test_cxs_issuer_claim_deserialize_succeeds\",\"handle\":181797316,\"claim_def\":32,\"claim_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"claim_offer_uid\":\"\",\"issued_did\":\"\",\"state\":1}";
+        let string = "{\"source_id\":\"test_claim_serialize\",\"handle\":261385873,\"claim_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"msg_uid\":\"\",\"schema_seq_no\":32,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"issued_did\":\"\",\"state\":1}";
         cxs_issuer_claim_deserialize(0,CString::new(string).unwrap().into_raw(), Some(deserialize_cb));
         thread::sleep(Duration::from_millis(200));
     }
