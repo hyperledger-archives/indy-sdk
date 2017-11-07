@@ -18,8 +18,8 @@
     
     for (NSString *key in [dict allKeys])
     {
-        int arrIndex = [self indexOfObject:[dict objectForKey:key]];
-        if (arrIndex)
+        NSUInteger arrIndex = [self indexOfObject:[dict objectForKey:key]];
+        if (arrIndex) //TODO FIXME: logical error
         {
             return true;
         }

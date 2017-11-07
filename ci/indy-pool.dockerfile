@@ -24,9 +24,9 @@ RUN echo "deb https://repo.sovrin.org/deb xenial $indy_stream" >> /etc/apt/sourc
 
 RUN useradd -ms /bin/bash -u $uid indy
 
-ARG indy_plenum_ver=1.2.161
+ARG indy_plenum_ver=1.2.165
 ARG indy_anoncreds_ver=1.0.32
-ARG indy_node_ver=1.2.192
+ARG indy_node_ver=1.2.198
 ARG python3_indy_crypto_ver=0.1.6
 ARG indy_crypto_ver=0.1.6
 
@@ -36,7 +36,6 @@ RUN apt-get update -y && apt-get install -y \
         indy-node=${indy_node_ver} \
         python3-indy-crypto=${python3_indy_crypto_ver} \
         libindy-crypto=${indy_crypto_ver} \
-        sovrin \
         vim
 
 RUN echo '[supervisord]\n\
@@ -89,10 +88,7 @@ USER indy
 
 ARG pool_ip=127.0.0.1
 
-RUN generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 1 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"
-RUN generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 2 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"
-RUN generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 3 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"
-RUN generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 4 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"
+RUN generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 1 2 3 4 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"
 
 EXPOSE 9701 9702 9703 9704 9705 9706 9707 9708
 

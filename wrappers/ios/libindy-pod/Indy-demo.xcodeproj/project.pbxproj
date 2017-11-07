@@ -19,13 +19,6 @@
 		5DB57B0C1F7120DE00EB4C90 /* Indy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DB57B0B1F7120DE00EB4C90 /* Indy.framework */; };
 		5DB57B0D1F7120DE00EB4C90 /* Indy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5DB57B0B1F7120DE00EB4C90 /* Indy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5DB57B501F712A5200EB4C90 /* Base58Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B0F1F712A5100EB4C90 /* Base58Test.m */; };
-		5DB57B521F712A5200EB4C90 /* AgentMediumAddIdentity.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B141F712A5100EB4C90 /* AgentMediumAddIdentity.m */; };
-		5DB57B531F712A5200EB4C90 /* AgentMediumCloseConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B151F712A5100EB4C90 /* AgentMediumCloseConnection.m */; };
-		5DB57B541F712A5200EB4C90 /* AgentMediumCloseListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B161F712A5100EB4C90 /* AgentMediumCloseListener.m */; };
-		5DB57B551F712A5200EB4C90 /* AgentMediumConnect.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B171F712A5100EB4C90 /* AgentMediumConnect.m */; };
-		5DB57B561F712A5200EB4C90 /* AgentMediumListen.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B181F712A5100EB4C90 /* AgentMediumListen.m */; };
-		5DB57B571F712A5200EB4C90 /* AgentMediumRemoveIdentity.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B191F712A5100EB4C90 /* AgentMediumRemoveIdentity.m */; };
-		5DB57B581F712A5200EB4C90 /* AgentMediumSend.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B1A1F712A5100EB4C90 /* AgentMediumSend.m */; };
 		5DB57B591F712A5200EB4C90 /* AnoncredsHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B1C1F712A5100EB4C90 /* AnoncredsHighCases.m */; };
 		5DB57B5A1F712A5200EB4C90 /* AnoncredsMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B1D1F712A5100EB4C90 /* AnoncredsMediumCases.m */; };
 		5DB57B5B1F712A5200EB4C90 /* AnoncredsMediumCasesDemos.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B1E1F712A5100EB4C90 /* AnoncredsMediumCasesDemos.m */; };
@@ -117,13 +110,6 @@
 		5DB57A6F1F71201200EB4C90 /* ViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		5DB57B0B1F7120DE00EB4C90 /* Indy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Indy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5DB57B0F1F712A5100EB4C90 /* Base58Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base58Test.m; sourceTree = "<group>"; };
-		5DB57B141F712A5100EB4C90 /* AgentMediumAddIdentity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumAddIdentity.m; sourceTree = "<group>"; };
-		5DB57B151F712A5100EB4C90 /* AgentMediumCloseConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCloseConnection.m; sourceTree = "<group>"; };
-		5DB57B161F712A5100EB4C90 /* AgentMediumCloseListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumCloseListener.m; sourceTree = "<group>"; };
-		5DB57B171F712A5100EB4C90 /* AgentMediumConnect.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumConnect.m; sourceTree = "<group>"; };
-		5DB57B181F712A5100EB4C90 /* AgentMediumListen.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumListen.m; sourceTree = "<group>"; };
-		5DB57B191F712A5100EB4C90 /* AgentMediumRemoveIdentity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumRemoveIdentity.m; sourceTree = "<group>"; };
-		5DB57B1A1F712A5100EB4C90 /* AgentMediumSend.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentMediumSend.m; sourceTree = "<group>"; };
 		5DB57B1C1F712A5100EB4C90 /* AnoncredsHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsHighCases.m; sourceTree = "<group>"; };
 		5DB57B1D1F712A5100EB4C90 /* AnoncredsMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCases.m; sourceTree = "<group>"; };
 		5DB57B1E1F712A5100EB4C90 /* AnoncredsMediumCasesDemos.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCasesDemos.m; sourceTree = "<group>"; };
@@ -277,23 +263,8 @@
 			isa = PBXGroup;
 			children = (
 				5DFBC3FC1F715AD1003DFC5D /* AgentHighCases.m */,
-				5DB57B131F712A5100EB4C90 /* Medium Cases */,
 			);
 			path = Agent;
-			sourceTree = "<group>";
-		};
-		5DB57B131F712A5100EB4C90 /* Medium Cases */ = {
-			isa = PBXGroup;
-			children = (
-				5DB57B141F712A5100EB4C90 /* AgentMediumAddIdentity.m */,
-				5DB57B151F712A5100EB4C90 /* AgentMediumCloseConnection.m */,
-				5DB57B161F712A5100EB4C90 /* AgentMediumCloseListener.m */,
-				5DB57B171F712A5100EB4C90 /* AgentMediumConnect.m */,
-				5DB57B181F712A5100EB4C90 /* AgentMediumListen.m */,
-				5DB57B191F712A5100EB4C90 /* AgentMediumRemoveIdentity.m */,
-				5DB57B1A1F712A5100EB4C90 /* AgentMediumSend.m */,
-			);
-			path = "Medium Cases";
 			sourceTree = "<group>";
 		};
 		5DB57B1B1F712A5100EB4C90 /* Anoncreds */ = {
@@ -549,7 +520,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [[ $? != 0 ]] ; then\n    cat << EOM\nerror: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\nEOM\n    exit 1\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 		4ECEDA57C66CAE3DB4FAEFE3 /* [CP] Copy Pods Resources */ = {
@@ -597,7 +568,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [[ $? != 0 ]] ; then\n    cat << EOM\nerror: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\nEOM\n    exit 1\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 		B01B1FF1729B4A65C01EC15D /* [CP] Embed Pods Frameworks */ = {
@@ -649,9 +620,7 @@
 			files = (
 				5DB57B641F712A5200EB4C90 /* SignusMediumCases.m in Sources */,
 				5DB57B651F712A5200EB4C90 /* RegisterWalletType.m in Sources */,
-				5DB57B521F712A5200EB4C90 /* AgentMediumAddIdentity.m in Sources */,
 				5DB57B6C1F712A5200EB4C90 /* AgentUtils.m in Sources */,
-				5DB57B551F712A5200EB4C90 /* AgentMediumConnect.m in Sources */,
 				5DB57B771F712A5200EB4C90 /* NSDictionary+JSON.m in Sources */,
 				5D413F201F850DFF00E04D7D /* PairwiseHighCases.m in Sources */,
 				5DB57B6D1F712A5200EB4C90 /* AnoncredsUtils.m in Sources */,
@@ -661,16 +630,13 @@
 				5DB57B5E1F712A5200EB4C90 /* LedgerNodeRequest.mm in Sources */,
 				5DB57B711F712A5200EB4C90 /* PoolUtils.m in Sources */,
 				5DB57B661F712A5200EB4C90 /* WalletHighCases.m in Sources */,
-				5DB57B531F712A5200EB4C90 /* AgentMediumCloseConnection.m in Sources */,
 				5DB57B741F712A5200EB4C90 /* TestUtils.m in Sources */,
 				5DB57B671F712A5200EB4C90 /* WalletMediumCases.m in Sources */,
 				5DB57B5B1F712A5200EB4C90 /* AnoncredsMediumCasesDemos.m in Sources */,
 				5DB57B601F712A5200EB4C90 /* LedgerSchemaRequest.mm in Sources */,
 				5DB57B721F712A5200EB4C90 /* SequenceUtils.m in Sources */,
 				5DB57B5A1F712A5200EB4C90 /* AnoncredsMediumCases.m in Sources */,
-				5DB57B561F712A5200EB4C90 /* AgentMediumListen.m in Sources */,
 				5DB57B501F712A5200EB4C90 /* Base58Test.m in Sources */,
-				5DB57B581F712A5200EB4C90 /* AgentMediumSend.m in Sources */,
 				5DB57B6A1F712A5200EB4C90 /* SignusDemo.mm in Sources */,
 				5DB57B761F712A5200EB4C90 /* NSArray+JSON.m in Sources */,
 				5DB57B5D1F712A5200EB4C90 /* LedgerHignCases.mm in Sources */,
@@ -681,10 +647,8 @@
 				5DB57B781F712A5200EB4C90 /* NSString+Validation.m in Sources */,
 				5DB57B611F712A5200EB4C90 /* PoolHighCases.m in Sources */,
 				5DB57B731F712A5200EB4C90 /* SignusUtils.mm in Sources */,
-				5DB57B571F712A5200EB4C90 /* AgentMediumRemoveIdentity.m in Sources */,
 				5D413F231F850F2E00E04D7D /* PairwiseUtils.m in Sources */,
 				5DB57B701F712A5200EB4C90 /* LedgerUtils.mm in Sources */,
-				5DB57B541F712A5200EB4C90 /* AgentMediumCloseListener.m in Sources */,
 				5DB57B621F712A5200EB4C90 /* PoolMediumCases.m in Sources */,
 				5DB57B6E1F712A5200EB4C90 /* ClosureUtils.m in Sources */,
 				5DB57B5C1F712A5200EB4C90 /* LedgerAttribRequest.mm in Sources */,

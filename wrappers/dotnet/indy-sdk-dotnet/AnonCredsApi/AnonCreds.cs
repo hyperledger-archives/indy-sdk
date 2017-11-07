@@ -1,9 +1,8 @@
 ﻿using Hyperledger.Indy.LedgerApi;
 using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
-using System;
 using System.Threading.Tasks;
-using static Hyperledger.Indy.IndyNativeMethods;
+using static Hyperledger.Indy.AnonCredsApi.NativeMethods;
 
 namespace Hyperledger.Indy.AnonCredsApi
 {
@@ -15,7 +14,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <summary>
         /// Gets the callback to use when the IssuerCreateAndStoreClaimDefAsync command completes.
         /// </summary>
-        private static IssuerCreateAndStoreClaimDefResultDelegate _issuerCreateAndStoreClaimDefCallback = (xcommand_handle, err, claim_def_json) =>
+        private static IssuerCreateAndStoreClaimDefCompletedDelegate _issuerCreateAndStoreClaimDefCallback = (xcommand_handle, err, claim_def_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -28,7 +27,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <summary>
         /// Gets the callback to use when the IssuerCreateAndStoreClaimRevocRegAsync command completes.
         /// </summary>
-        private static IssuerCreateAndStoreClaimRevocRegResultDelegate _issuerCreateAndStoreClaimRevocRegCallback = (xcommand_handle, err, revoc_reg_json) =>
+        private static IssuerCreateAndStoreClaimRevocRegCompletedDelegate _issuerCreateAndStoreClaimRevocRegCallback = (xcommand_handle, err, revoc_reg_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -41,7 +40,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <summary>
         /// Gets the callback to use when the IssuerCreateClaimAsync command completes.
         /// </summary>
-        private static IssuerCreateClaimResultDelegate _issuerCreateClaimCallback = (xcommand_handle, err, revoc_reg_update_json, xclaim_json) =>
+        private static IssuerCreateClaimCompletedDelegate _issuerCreateClaimCallback = (xcommand_handle, err, revoc_reg_update_json, xclaim_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<IssuerCreateClaimResult>(xcommand_handle);
 
@@ -57,7 +56,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <summary>
         /// Gets the callback to use when the IssuerRevokeClaimAsync command completes.
         /// </summary>
-        private static IssuerRevokeClaimResultDelegate IssuerRevokeClaimCallback = (xcommand_handle, err, revoc_reg_update_json) =>
+        private static IssuerRevokeClaimCompletedDelegate IssuerRevokeClaimCallback = (xcommand_handle, err, revoc_reg_update_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -70,7 +69,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <summary>
         /// Gets the callback to use when the ProverGetClaimOffersAsync command completes.
         /// </summary>
-        private static ProverGetClaimOffersResultDelegate _proverGetClaimOffersCallback = (xcommand_handle, err, claim_offer_json) =>
+        private static ProverGetClaimOffersCompletedDelegate _proverGetClaimOffersCallback = (xcommand_handle, err, claim_offer_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -83,7 +82,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <summary>
         /// Gets the callback to use when the roverCreateAndStoreClaimReqAsync command completes.
         /// </summary>
-        private static ProverCreateAndStoreClaimReqResultDelegate _proverCreateAndStoreClaimReqCallback = (xcommand_handle, err, claim_req_json) =>
+        private static ProverCreateAndStoreClaimReqCompletedDelegate _proverCreateAndStoreClaimReqCallback = (xcommand_handle, err, claim_req_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -96,7 +95,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <summary>
         /// Gets the callback to use when the ProverGetClaimsAsync command completes.
         /// </summary>
-        private static ProverGetClaimsResultDelegate _proverGetClaimsCallback = (xcommand_handle, err, claims_json) =>
+        private static ProverGetClaimsCompletedDelegate _proverGetClaimsCallback = (xcommand_handle, err, claims_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -109,7 +108,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <summary>
         /// Gets the callback to use when the ProverGetClaimsForProofAsync command completes.
         /// </summary>
-        private static ProverGetClaimsForProofResultDelegate _proverGetClaimsForProofCallback = (xcommand_handle, err, claims_json) =>
+        private static ProverGetClaimsForProofCompletedDelegate _proverGetClaimsForProofCallback = (xcommand_handle, err, claims_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -122,7 +121,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <summary>
         /// Gets the callback to use when the ProverCreateProofAsync command completes.
         /// </summary>
-        private static ProverCreateProofResultDelegate _proverCreateProofCallback = (xcommand_handle, err, proof_json) =>
+        private static ProverCreateProofCompletedDelegate _proverCreateProofCallback = (xcommand_handle, err, proof_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -135,7 +134,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <summary>
         /// Gets the callback to use when the VerifierVerifyProofAsync command completes.
         /// </summary>
-        private static VerifierVerifyProofResultDelegate _verifierVerifyProofCallback = (xcommand_handle, err, valid) =>
+        private static VerifierVerifyProofCompletedDelegate _verifierVerifyProofCallback = (xcommand_handle, err, valid) =>
         {
             var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
 
@@ -174,7 +173,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_issuer_create_and_store_claim_def(
+            var commandResult = NativeMethods.indy_issuer_create_and_store_claim_def(
                 commandHandle,
                 wallet.Handle,
                 issuerDid,
@@ -210,7 +209,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_issuer_create_and_store_revoc_reg(
+            var commandResult = NativeMethods.indy_issuer_create_and_store_revoc_reg(
                 commandHandle,
                 wallet.Handle,
                 issuerDid,
@@ -284,7 +283,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             var taskCompletionSource = new TaskCompletionSource<IssuerCreateClaimResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_issuer_create_claim(
+            var commandResult = NativeMethods.indy_issuer_create_claim(
                 commandHandle,
                 wallet.Handle,
                 claimReqJson,
@@ -321,7 +320,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_issuer_revoke_claim(
+            var commandResult = NativeMethods.indy_issuer_revoke_claim(
                 commandHandle,
                 wallet.Handle,
                 issuerDid,
@@ -360,7 +359,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_prover_store_claim_offer(
+            var commandResult = NativeMethods.indy_prover_store_claim_offer(
                 commandHandle,
                 wallet.Handle,
                 claimOfferJson,
@@ -416,7 +415,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_prover_get_claim_offers(
+            var commandResult = NativeMethods.indy_prover_get_claim_offers(
                 commandHandle,
                 wallet.Handle,
                 filterJson,
@@ -445,7 +444,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_prover_create_master_secret(
+            var commandResult = NativeMethods.indy_prover_create_master_secret(
                 commandHandle,
                 wallet.Handle,
                 masterSecretName,
@@ -504,7 +503,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_prover_create_and_store_claim_req(
+            var commandResult = NativeMethods.indy_prover_create_and_store_claim_req(
                 commandHandle,
                 wallet.Handle,
                 proverDid,
@@ -556,7 +555,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_prover_store_claim(
+            var commandResult = NativeMethods.indy_prover_store_claim(
                 commandHandle,
                 wallet.Handle,
                 claimsJson,
@@ -612,7 +611,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_prover_get_claims(
+            var commandResult = NativeMethods.indy_prover_get_claims(
                 commandHandle,
                 wallet.Handle,
                 filterJson,
@@ -677,7 +676,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_prover_get_claims_for_proof_req(
+            var commandResult = NativeMethods.indy_prover_get_claims_for_proof_req(
                 commandHandle,
                 wallet.Handle,
                 proofRequestJson,
@@ -813,7 +812,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_prover_create_proof(
+            var commandResult = NativeMethods.indy_prover_create_proof(
                 commandHandle,
                 wallet.Handle,
                 proofReqJson,
@@ -928,7 +927,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var commandResult = IndyNativeMethods.indy_verifier_verify_proof(
+            var commandResult = NativeMethods.indy_verifier_verify_proof(
                 commandHandle,
                 proofRequestJson,
                 proofJson,

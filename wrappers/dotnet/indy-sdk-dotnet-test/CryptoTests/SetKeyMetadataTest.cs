@@ -1,8 +1,8 @@
-﻿using Hyperledger.Indy.SignusApi;
+﻿using Hyperledger.Indy.CryptoApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Test.SignusTests
+namespace Hyperledger.Indy.Test.CryptoTests
 {
     [TestClass]
     public class SetKeyMetadataTest : IndyIntegrationTestWithSingleWallet
@@ -10,19 +10,19 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestSetKeyMetadataWorks()
         {
-            await Signus.SetKeyMetadataAsync(wallet, VERKEY, METADATA);
+            await Crypto.SetKeyMetadataAsync(wallet, VERKEY, METADATA);
         }
 
         [TestMethod]
         public async Task TestSetKeyMetadataWorksForReplace()
         {
-            await Signus.SetKeyMetadataAsync(wallet, VERKEY, METADATA);
-            var receivedMetadata = await Signus.GetKeyMetadataAsync(wallet, VERKEY);
+            await Crypto.SetKeyMetadataAsync(wallet, VERKEY, METADATA);
+            var receivedMetadata = await Crypto.GetKeyMetadataAsync(wallet, VERKEY);
             Assert.AreEqual(METADATA, receivedMetadata);
 
             var newMetadata = "updated metadata";
-            await Signus.SetKeyMetadataAsync(wallet, VERKEY, newMetadata);
-            var updatedMetadata = await Signus.GetKeyMetadataAsync(wallet, VERKEY);
+            await Crypto.SetKeyMetadataAsync(wallet, VERKEY, newMetadata);
+            var updatedMetadata = await Crypto.GetKeyMetadataAsync(wallet, VERKEY);
 
             Assert.AreEqual(newMetadata, updatedMetadata);
         }
@@ -30,7 +30,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestSetKeyMetadataWorksForEmptyString()
         {
-            await Signus.SetKeyMetadataAsync(wallet, VERKEY, string.Empty);
+            await Crypto.SetKeyMetadataAsync(wallet, VERKEY, string.Empty);
         }
 
     }

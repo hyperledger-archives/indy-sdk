@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using static Hyperledger.Indy.IndyNativeMethods;
+using static Hyperledger.Indy.PairwiseApi.NativeMethods;
 
 namespace Hyperledger.Indy.PairwiseApi
 {
@@ -21,7 +21,7 @@ namespace Hyperledger.Indy.PairwiseApi
         /// <summary>
         /// Gets the callback to use when the IsExistsAsync command completes.
         /// </summary>
-        private static IsPairwiseExistsDelegate _isPairwiseExistsCallback = (xcommand_handle, err, exists) =>
+        private static IsPairwiseExistsCompletedDelegate _isPairwiseExistsCallback = (xcommand_handle, err, exists) =>
         {
             var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
 
@@ -34,7 +34,7 @@ namespace Hyperledger.Indy.PairwiseApi
         /// <summary>
         /// Gets the callback to use when the ListAsync command completes.
         /// </summary>
-        private static ListPairwiseDelegate _listPairwiseCallback = (xcommand_handle, err, list_pairwise) =>
+        private static ListPairwiseCompletedDelegate _listPairwiseCallback = (xcommand_handle, err, list_pairwise) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -47,7 +47,7 @@ namespace Hyperledger.Indy.PairwiseApi
         /// <summary>
         /// Gets the callback to use when the GetAsync command completes.
         /// </summary>
-        private static GetPairwiseDelegate _getPairwiseCallback = (xcommand_handle, err, get_pairwise_json) =>
+        private static GetPairwiseCompletedDelegate _getPairwiseCallback = (xcommand_handle, err, get_pairwise_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -72,7 +72,7 @@ namespace Hyperledger.Indy.PairwiseApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            int result = IndyNativeMethods.indy_is_pairwise_exists(
+            int result = NativeMethods.indy_is_pairwise_exists(
                 commandHandle,
                 wallet.Handle,
                 theirDid,
@@ -100,7 +100,7 @@ namespace Hyperledger.Indy.PairwiseApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            int result = IndyNativeMethods.indy_create_pairwise(
+            int result = NativeMethods.indy_create_pairwise(
                 commandHandle,
                 wallet.Handle,
                 theirDid,
@@ -142,7 +142,7 @@ namespace Hyperledger.Indy.PairwiseApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            int result = IndyNativeMethods.indy_list_pairwise(
+            int result = NativeMethods.indy_list_pairwise(
                 commandHandle,
                 wallet.Handle,
                 _listPairwiseCallback);
@@ -182,7 +182,7 @@ namespace Hyperledger.Indy.PairwiseApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            int result = IndyNativeMethods.indy_get_pairwise(
+            int result = NativeMethods.indy_get_pairwise(
                 commandHandle,
                 wallet.Handle,
                 theirDid,
@@ -213,7 +213,7 @@ namespace Hyperledger.Indy.PairwiseApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            int result = IndyNativeMethods.indy_set_pairwise_metadata(
+            int result = NativeMethods.indy_set_pairwise_metadata(
                 commandHandle,
                 wallet.Handle,
                 theirDid,

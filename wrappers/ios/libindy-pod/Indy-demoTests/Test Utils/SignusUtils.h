@@ -24,29 +24,25 @@
 - (NSError *)createMyDidWithWalletHandle:(IndyHandle)walletHandle
                                myDidJson:(NSString *)myDidJson
                                 outMyDid:(NSString **)myDid
-                             outMyVerkey:(NSString **)myVerkey
-                                 outMyPk:(NSString **)myPk;
+                             outMyVerkey:(NSString **)myVerkey;
 
 - (NSError *)createAndStoreMyDidWithWalletHandle:(IndyHandle)walletHandle
                                             seed:(NSString *)seed
                                         outMyDid:(NSString **)myDid
-                                     outMyVerkey:(NSString **)myVerkey
-                                         outMyPk:(NSString **)myPk;
+                                     outMyVerkey:(NSString **)myVerkey;
 
 - (NSError *)storeTheirDidWithWalletHandle:(IndyHandle)walletHandle
                               identityJson:(NSString *)identityJson;
 
 - (NSError *)storeTheirDidFromPartsWithWalletHandle:(IndyHandle)walletHandle
                                            theirDid:(NSString *)theirDid
-                                            theirPk:(NSString *)theirPk
                                         theirVerkey:(NSString *)theirVerkey
                                            endpoint:(NSString *)endpoint;
 
 - (NSError *)replaceKeysStartForDid:(NSString *)did
                        identityJson:(NSString *)identityJson
                        walletHandle:(IndyHandle)walletHandle
-                        outMyVerKey:(NSString **)myVerKey
-                            outMyPk:(NSString **)myPk;
+                        outMyVerKey:(NSString **)myVerKey;
 
 - (NSError *)replaceKeysApplyForDid:(NSString *)did
                        walletHandle:(IndyHandle)walletHandle;
@@ -55,8 +51,7 @@
                   identityJson:(NSString *)identityJson
                   walletHandle:(IndyHandle)walletHandle
                     poolHandle:(IndyHandle)poolHandle
-                   outMyVerKey:(NSString **)myVerKey
-                       outMyPk:(NSString **)myPk;
+                   outMyVerKey:(NSString **)myVerKey;
 
 - (NSError *)verifyWithWalletHandle:(IndyHandle)walletHandle
                          poolHandle:(IndyHandle)poolHandle
