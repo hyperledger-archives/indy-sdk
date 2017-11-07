@@ -84,7 +84,7 @@ export class Connection implements IConnections {
     }
   }
 
-  async deserialize (connectionData): Promise<void> {
+  async deserialize (connectionData: IConnectionData): Promise<void> {
     let callback = null
     const commandHandle = 0
     let result = 0
@@ -92,7 +92,7 @@ export class Connection implements IConnections {
       this.connectionHandle = await new Promise<string>((resolve, reject) => {
         result = this.RUST_API.cxs_connection_deserialize(
                 commandHandle,
-                connectionData,
+                JSON.stringify(connectionData),
                 callback = ffi.Callback('void', ['uint32', 'uint32', 'uint32'], (xHandle, _rc, handle) => {
                   if (_rc) {
                     reject(_rc)

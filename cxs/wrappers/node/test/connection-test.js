@@ -106,18 +106,34 @@ describe('A Connection object with ', function () {
     let data = await connection1.serialize()
 
     const connection2 = new Connection(path)
-    await connection2.deserialize(JSON.stringify(data))
+    await connection2.deserialize(data)
     assert.equal(connection2.connectionHandle, connection1.connectionHandle)
   })
 
   it('a call to deserialize with incorrect data should throw error', async () => {
     const connection = new Connection(path)
     try {
-      await connection.deserialize(JSON.stringify('fail'))
+      await connection.deserialize(null)
     } catch (error) {
       assert.equal(error.toString(), 'Error: cxs_connection_deserialize -> 1001')
     }
     assert.equal(connection.connectionHandle, undefined)
+  })
+
+  it('a call to deserialize with incorrect data should throw error', async () => {
+    const connection = new Connection(path)
+    await connection.create({ id: '234' })
+    assert.notEqual(connection.connectionHandle, undefined)
+
+    await connection.connect({ sms: true })
+    await connection.updateState()
+    assert.equal(connection.state, StateType.OfferSent)
+    let data = await connection.serialize()
+    const connection2 = new Connection(path)
+    await connection2.deserialize(data)
+    assert.equal(connection2.connectionHandle, connection.connectionHandle)
+    let data2 = await connection2.serialize()
+    assert.equal(JSON.stringify(data2), JSON.stringify(data))
   })
 
   // connection_getState tests
