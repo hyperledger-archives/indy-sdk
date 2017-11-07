@@ -3,11 +3,11 @@ extern crate libc;
 pub mod agent;
 pub mod anoncreds;
 pub mod crypto;
-pub mod signus;
 pub mod ledger;
-pub mod pool;
-pub mod wallet;
 pub mod pairwise;
+pub mod pool;
+pub mod signus;
+pub mod wallet;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
