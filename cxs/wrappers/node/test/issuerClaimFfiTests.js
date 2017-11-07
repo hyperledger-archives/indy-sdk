@@ -13,7 +13,7 @@ describe('The wrapper', async function () {
                         console.log('commandHandle: ' + handle)
                         /* tslint:enable */
                       })
-    const res = await ffi.cxs_issuer_create_claim(0, 'sourceId', 32, 'regularstring', callback)
+    const res = await ffi.cxs_issuer_create_claim(0, 'sourceId', 32, 'regularstring', 'regularstring', callback)
     assert.equal(res, 0)
   })
 })

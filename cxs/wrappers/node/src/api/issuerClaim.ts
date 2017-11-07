@@ -130,7 +130,8 @@ export class IssuerClaim {
         const value = JSON.stringify(claimHandle)
         resolve(Number(value))
       })
-      this._RUST_API.cxs_issuer_create_claim(0, this._sourceId, this._schemaNum, this._attr, callback)
+      this._RUST_API.cxs_issuer_create_claim(0, this._sourceId,
+        this._schemaNum, '8XFh8yBzrpJQmNyZzgoTqB',this._attr, callback)
     })
     this.setClaimHandle(data)
     this._setState(await this._callCxsAndGetCurrentState())

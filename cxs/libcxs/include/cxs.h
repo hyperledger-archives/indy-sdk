@@ -118,7 +118,7 @@ cxs_error_t cxs_connection_release(cxs_connection_handle_t connection_handle);
  */
 
 /** Creates a claim object from the specified claimdef handle. Populates a handle the new claim. */
-cxs_error_t cxs_issuer_create_claim(cxs_command_handle_t, const char *source_id, cxs_claimdef_handle_t claimdef_handle, const char * claim_data, void (*cb)(cxs_command_handle_t command_handle, cxs_error_t err, cxs_claim_handle_t claim_handle));
+cxs_error_t cxs_issuer_create_claim(cxs_command_handle_t, const char *source_id, cxs_schema_handle_t schema_seq_no, const char *issuer_did, const char * claim_data, void (*cb)(cxs_command_handle_t command_handle, cxs_error_t err, cxs_claim_handle_t claim_handle));
 
 /** Asynchronously sends the claim offer to the connection. */
 cxs_error_t cxs_issuer_send_claim_offer(cxs_command_handle_t command_handle, cxs_claim_handle_t claim_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err));

@@ -8,9 +8,9 @@ use rand::Rng;
 use api::CxsStateType;
 use utils::error;
 use messages;
+use settings;
 use messages::GeneralMessage;
 use connection;
-use settings;
 
 lazy_static! {
     static ref ISSUER_CLAIM_MAP: Mutex<HashMap<u32, Box<IssuerClaim>>> = Default::default();
@@ -20,9 +20,10 @@ lazy_static! {
 struct IssuerClaim {
     source_id: String,
     handle: u32,
-    claim_def: u32,
     claim_attributes: String,
-    claim_offer_uid: String,
+    msg_uid: String,
+    schema_seq_no: u32,
+    issuer_did: String,
     issued_did: String,
     state: CxsStateType,
 }
@@ -45,20 +46,21 @@ impl IssuerClaim {
         }
 
         //TODO: call to libindy to encrypt payload
-        let data = format!("{{ \"claimDefNo\":\"{}\",\"claimAttributes\":\"{}\"}}",self.claim_def,self.claim_attributes);
-        let to = connection::get_pw_did(connection_handle).unwrap();
+        let to_did = connection::get_pw_did(connection_handle).unwrap();
+        let from_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT).unwrap();
+        let payload = format!("{{\"msg_type\":\"CLAIM_OFFER\",\"version\":\"0.1\",\"to_did\":\"{}\",\"from_did\":\"{}\",\"claim\":{},\"schema_seq_no\":{},\"issuer_did\":\"{}\"}}",to_did,from_did,self.claim_attributes,self.schema_seq_no,self.issuer_did);
 
-        match messages::send_message().to(&to).msg_type("claimOffer").edge_agent_payload(&data).send() {
+        match messages::send_message().to(&to_did).msg_type("claimOffer").edge_agent_payload(&payload).send() {
             Err(x) => {
                 warn!("could not send claimOffer: {}", x);
                 return Err(x);
             },
             Ok(response) => {
-                self.claim_offer_uid = match get_offer_details(&response) {
+                self.msg_uid = match get_offer_details(&response) {
                     Ok(x) => x,
                     Err(x) => return Err(x),
                 };
-                self.issued_did = to;
+                self.issued_did = to_did;
                 self.state = CxsStateType::CxsStateOfferSent;
                 return Ok(error::SUCCESS.code_num);
             }
@@ -77,7 +79,7 @@ impl IssuerClaim {
         }
 
         //TODO: call to libindy to encrypt payload
-        let data = format!("{{ \"claimDefNo\":\"{}\",\"claimAttributes\":\"{}\"}}",self.claim_def,self.claim_attributes);
+        let data = format!("{{ \"claimDefNo\":\"{}\",\"claimAttributes\":\"{}\"}}",self.schema_seq_no,self.claim_attributes);
         let to = connection::get_pw_did(connection_handle).unwrap();
 
         match messages::send_message().to(&to).msg_type("claim").edge_agent_payload(&data).send() {
@@ -86,7 +88,7 @@ impl IssuerClaim {
                 return Err(x);
             },
             Ok(response) => {
-                self.claim_offer_uid = match get_offer_details(&response) {
+                self.msg_uid = match get_offer_details(&response) {
                     Ok(x) => x,
                     Err(x) => return Err(x),
                 };
@@ -97,16 +99,9 @@ impl IssuerClaim {
         }
     }
 
-    fn get_pending_claim_req(&mut self) {
-        if self.state == CxsStateType::CxsStateRequestReceived {
-            return;
-        }
-        else if self.state != CxsStateType::CxsStateOfferSent || self.claim_offer_uid.is_empty() || self.issued_did.is_empty() {
-            return;
-        }
-
-        // state is "OfferSent" so check to see if there is a new claimReq
-        let response = match messages::get_messages().to(&self.issued_did).uid(&self.claim_offer_uid).send() {
+    fn get_claim_req(&mut self, msg_uid: &str) {
+        info!("Checking for outstanding claimReq for {} with uid: {}", self.handle, msg_uid);
+         let response = match messages::get_messages().to(&self.issued_did).uid(msg_uid).send() {
             Ok(x) => x,
             Err(x) => {
                 warn!("invalid response to get_messages for claim {}", self.handle);
@@ -132,6 +127,7 @@ impl IssuerClaim {
 
         for msg in msgs {
             if msg["typ"].to_string() == "\"claimReq\"" {
+                //get the followup-claim-req using refMsgId
                 self.state = CxsStateType::CxsStateRequestReceived;
                 //TODO: store the claim request, blinded-master-secret, etc
                 return
@@ -141,14 +137,55 @@ impl IssuerClaim {
         info!("no claimReqs found for claim {}", self.handle);
     }
 
+    fn get_claim_offer_status(&mut self) {
+        if self.state == CxsStateType::CxsStateRequestReceived {
+            return;
+        }
+        else if self.state != CxsStateType::CxsStateOfferSent || self.msg_uid.is_empty() || self.issued_did.is_empty() {
+            return;
+        }
+
+        // state is "OfferSent" so check to see if there is a new claimReq
+        let response = match messages::get_messages().to(&self.issued_did).uid(&self.msg_uid).send() {
+            Ok(x) => x,
+            Err(x) => {
+                warn!("invalid response to get_messages for claim {}", self.handle);
+                return
+            },
+        };
+
+        let json: serde_json::Value = match serde_json::from_str(&response) {
+            Ok(json) => json,
+            Err(_) => {
+                warn!("invalid json in get_messages for claim {}", self.handle);
+                return
+            },
+        };
+
+        let msgs = match json["msgs"].as_array() {
+            Some(array) => array,
+            None => {
+                warn!("invalid msgs array returned for claim {}", self.handle);
+                return
+            },
+        };
+
+        for msg in msgs {
+            if msg["statusCode"].to_string() == "\"MS-104\"" {
+                //get the followup-claim-req using refMsgId
+                self.get_claim_req(&msg["refMsgId"].to_string().as_ref());
+            }
+        }
+    }
+
     fn update_state(&mut self) {
-        self.get_pending_claim_req();
+        self.get_claim_offer_status();
         //There will probably be more things here once we do other things with the claim
     }
 
     fn get_state(&self) -> u32 { let state = self.state as u32; state }
-    fn get_offer_uid(&self) -> String { self.claim_offer_uid.clone() }
-    fn set_offer_uid(&mut self, uid: &str) {self.claim_offer_uid = uid.to_owned();}
+    fn get_offer_uid(&self) -> String { self.msg_uid.clone() }
+    fn set_offer_uid(&mut self, uid: &str) {self.msg_uid = uid.to_owned();}
 }
 
 pub fn get_offer_uid(handle: u32) -> Result<String,u32> {
@@ -158,8 +195,9 @@ pub fn get_offer_uid(handle: u32) -> Result<String,u32> {
     }
 }
 
-pub fn issuer_claim_create(claim_def_handle: u32,
+pub fn issuer_claim_create(schema_seq_no: u32,
                            source_id: Option<String>,
+                           issuer_did: String,
                            claim_data: String) -> Result<u32, String> {
 
     let new_handle = rand::thread_rng().gen::<u32>();
@@ -169,11 +207,12 @@ pub fn issuer_claim_create(claim_def_handle: u32,
     let mut new_issuer_claim = Box::new(IssuerClaim {
         handle: new_handle,
         source_id: source_id_unwrap,
-        claim_def: claim_def_handle,
-        claim_offer_uid: String::new(),
+        msg_uid: String::new(),
         claim_attributes: claim_data,
         issued_did: String::new(),
+        issuer_did,
         state: CxsStateType::CxsStateNone,
+        schema_seq_no,
     });
 
     match new_issuer_claim.validate_claim_offer() {
@@ -300,7 +339,10 @@ mod tests {
     fn test_issuer_claim_create_succeeds() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        match issuer_claim_create(0, None, "{\"attr\":\"value\"}".to_owned()) {
+        match issuer_claim_create(0,
+                                  None,
+                                  "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+                                  "{\"attr\":\"value\"}".to_owned()) {
             Ok(x) => assert!(x > 0),
             Err(_) => assert_eq!(0,1), //fail if we get here
         }
@@ -310,7 +352,10 @@ mod tests {
     fn test_to_string_succeeds() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = issuer_claim_create(0, None,"{\"attr\":\"value\"}".to_owned()).unwrap();
+        let handle = issuer_claim_create(0,
+                                         None,
+                                         "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+                                         "{\"attr\":\"value\"}".to_owned()).unwrap();
         let string = to_string(handle).unwrap();
         assert!(!string.is_empty());
     }
@@ -330,7 +375,10 @@ mod tests {
             .expect(1)
             .create();
 
-        let handle = issuer_claim_create(0, None,"{\"attr\":\"value\"}".to_owned()).unwrap();
+        let handle = issuer_claim_create(0,
+                                         None,
+                                         "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+                                         "{\"attr\":\"value\"}".to_owned()).unwrap();
         thread::sleep(Duration::from_millis(500));
         assert_eq!(send_claim_offer(handle,connection_handle).unwrap(),error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(500));
@@ -354,10 +402,11 @@ mod tests {
         let mut claim = IssuerClaim {
             handle: 123,
             source_id: "test_has_pending_claim_request".to_owned(),
-            claim_def: 32,
-            claim_offer_uid: "1234".to_owned(),
+            schema_seq_no: 32,
+            msg_uid: "1234".to_owned(),
             claim_attributes: "nothing".to_owned(),
             issued_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+            issuer_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
             state: CxsStateType::CxsStateRequestReceived,
             };
 
@@ -375,7 +424,10 @@ mod tests {
     #[test]
     fn test_from_string_succeeds() {
         set_default_and_enable_test_mode();
-        let handle = issuer_claim_create(0, None,"{\"attr\":\"value\"}".to_owned()).unwrap();
+        let handle = issuer_claim_create(0,
+                                         None,
+                                         "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+                                         "{\"attr\":\"value\"}".to_owned()).unwrap();
         let string = to_string(handle).unwrap();
         assert!(!string.is_empty());
         release(handle);
@@ -392,22 +444,22 @@ mod tests {
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
 
         let response = "{\"msgs\":[{\"uid\":\"6gmsuWZ\",\"typ\":\"conReq\",\"statusCode\":\"MS-102\",\"statusMsg\":\"message sent\"},\
-            {\"uid\":\"6a8S8EE\",\"typ\":\"conReq\",\"statusCode\":\"MS-104\",\"statusMsg\":\"message accepted\"},\
-            {\"statusCode\":\"MS-104\",\"edgeAgentPayload\":\"{\\\"attr\\\":\\\"value\\\"}\",\"sendStatusCode\":\"MSS-101\",\"typ\":\"claimOffer\",\"statusMsg\":\"message accepted\",\"uid\":\"6a9u7Jt\"},\
-            {\"statusCode\":\"MS-103\",\"edgeAgentPayload\":\"{\\\"attr\\\":\\\"value\\\"}\",\"typ\":\"claimReq\",\"statusMsg\":\"message pending\",\"uid\":\"CCBXoDR\"}]}";
+            {\"statusCode\":\"MS-104\",\"edgeAgentPayload\":\"{\\\"attr\\\":\\\"value\\\"}\",\"sendStatusCode\":\"MSS-101\",\"typ\":\"claimOffer\",\"statusMsg\":\"message accepted\",\"uid\":\"6a9u7Jt\",\"refMsgId\":\"CKrG14Z\"},\
+            {\"statusCode\":\"MS-103\",\"edgeAgentPayload\":\"{\\\"attr\\\":\\\"value\\\"}\",\"typ\":\"claimReq\",\"statusMsg\":\"message pending\",\"uid\":\"CKrG14Z\"}]}";
 
         let _m = mockito::mock("POST", "/agency/route")
         .with_status(200)
         .with_body(response)
-        .expect(1)
+        .expect(2)
         .create();
 
         let mut claim = IssuerClaim {
         handle: 123,
         source_id: "test_has_pending_claim_request".to_owned(),
-        claim_def: 32,
-        claim_offer_uid: "1234".to_owned(),
+        schema_seq_no: 32,
+        msg_uid: "1234".to_owned(),
         claim_attributes: "nothing".to_owned(),
+        issuer_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
         issued_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
         state: CxsStateType::CxsStateOfferSent,
         };
@@ -419,9 +471,11 @@ mod tests {
 
     #[test]
     fn test_issuer_claim_changes_state_after_being_validated(){
-        ::utils::logger::LoggerUtils::init();
         set_default_and_enable_test_mode();
-        let handle = issuer_claim_create(0, None, "{\"att\":\"value\"}".to_owned()).unwrap();
+        let handle = issuer_claim_create(0,
+                                         None,
+                                         "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+                                         "{\"att\":\"value\"}".to_owned()).unwrap();
         let string = to_string(handle).unwrap();
         fn get_state_from_string(s:String)-> u32 {
             let json: serde_json::Value = serde_json::from_str(&s).unwrap();
