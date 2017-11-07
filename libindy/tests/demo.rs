@@ -563,6 +563,7 @@ fn ledger_demo_works() {
         req_id: u64,
         identifier: String,
         operation: Operation,
+        #[serde(skip_serializing)]
         protocol_version: u64,
         #[serde(skip_serializing_if = "Option::is_none")]
         signature: Option<String>,
