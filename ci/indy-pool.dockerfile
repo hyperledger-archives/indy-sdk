@@ -19,23 +19,19 @@ RUN pip3 install -U \
 	setuptools
 
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
-ARG indy_stream=master
+ARG indy_stream=stable
 RUN echo "deb https://repo.sovrin.org/deb xenial $indy_stream" >> /etc/apt/sources.list
 
 RUN useradd -ms /bin/bash -u $uid indy
 
-ARG indy_plenum_ver=1.2.165
-ARG indy_anoncreds_ver=1.0.32
-ARG indy_node_ver=1.2.198
-ARG python3_indy_crypto_ver=0.1.6
-ARG indy_crypto_ver=0.1.6
+ARG indy_plenum_ver=1.1.27
+ARG indy_anoncreds_ver=1.0.10
+ARG indy_node_ver=1.1.43
 
 RUN apt-get update -y && apt-get install -y \
         indy-plenum=${indy_plenum_ver} \
         indy-anoncreds=${indy_anoncreds_ver} \
         indy-node=${indy_node_ver} \
-        python3-indy-crypto=${python3_indy_crypto_ver} \
-        libindy-crypto=${indy_crypto_ver} \
         vim
 
 RUN echo '[supervisord]\n\
@@ -56,28 +52,28 @@ childlogdir = /tmp\n\
 strip_ansi = false\n\
 \n\
 [program:node1]\n\
-command=start_indy_node Node1 9701 9702\n\
+command=start_sovrin_node Node1 9701 9702\n\
 directory=/home/indy\n\
 stdout_logfile=/tmp/node1.log\n\
 stderr_logfile=/tmp/node1.log\n\
 loglevel=trace\n\
 \n\
 [program:node2]\n\
-command=start_indy_node Node2 9703 9704\n\
+command=start_sovrin_node Node2 9703 9704\n\
 directory=/home/indy\n\
 stdout_logfile=/tmp/node2.log\n\
 stderr_logfile=/tmp/node2.log\n\
 loglevel=trace\n\
 \n\
 [program:node3]\n\
-command=start_indy_node Node3 9705 9706\n\
+command=start_sovrin_node Node3 9705 9706\n\
 directory=/home/indy\n\
 stdout_logfile=/tmp/node3.log\n\
 stderr_logfile=/tmp/node3.log\n\
 loglevel=trace\n\
 \n\
 [program:node4]\n\
-command=start_indy_node Node4 9707 9708\n\
+command=start_sovrin_node Node4 9707 9708\n\
 directory=/home/indy\n\
 stdout_logfile=/tmp/node4.log\n\
 stderr_logfile=/tmp/node4.log\n\
@@ -88,7 +84,10 @@ USER indy
 
 ARG pool_ip=127.0.0.1
 
-RUN generate_indy_pool_transactions --nodes 4 --clients 5 --nodeNum 1 2 3 4 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"
+RUN generate_sovrin_pool_transactions --nodes 4 --clients 5 --nodeNum 1 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"
+RUN generate_sovrin_pool_transactions --nodes 4 --clients 5 --nodeNum 2 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"
+RUN generate_sovrin_pool_transactions --nodes 4 --clients 5 --nodeNum 3 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"
+RUN generate_sovrin_pool_transactions --nodes 4 --clients 5 --nodeNum 4 --ips="$pool_ip,$pool_ip,$pool_ip,$pool_ip"
 
 EXPOSE 9701 9702 9703 9704 9705 9706 9707 9708
 

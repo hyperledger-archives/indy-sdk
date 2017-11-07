@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
@@ -91,9 +92,7 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 
 		JSONObject getSchemaResponseObject = new JSONObject(getSchemaResponse);
 
-		// TODO FIXME restore after INDY-699 will be fixed
-		// assertNull(getSchemaResponseObject.getJSONObject("result").optJSONObject("data"));
-		assertEquals(getSchemaResponseObject.getJSONObject("result").optJSONObject("data").toString(), getSchemaData);
+		assertNull(getSchemaResponseObject.getJSONObject("result").optJSONObject("data"));
 	}
 
 	@Test
