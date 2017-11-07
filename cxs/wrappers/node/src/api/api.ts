@@ -1,5 +1,5 @@
+
 export interface IConnections {
-  create ( IRecipientInfo ): Promise<void>
   serialize (): Promise<IConnectionData>
   connect ( IConnectOptions ): Promise<void>
   updateState (): Promise<void>

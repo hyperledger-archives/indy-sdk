@@ -4,7 +4,9 @@ const IssuerClaim = require('../dist/index').IssuerClaim
 const cxs = require('../dist/index')
 const Connection = require('../dist/api/connection').Connection
 
-const StateType = require('../dist/api/api').StateType
+const api = require('../dist/api/api.js')
+const StateType = api.StateType
+const Error = api.Error
 const SCHEMANUM = 32
 const ATTR = '{"attr":"value"}'
 const DID = '8XFh8yBzrpJQmNyZzgoTqB'
@@ -42,14 +44,12 @@ describe('An issuerClaim', async function () {
   it('can be sent with a valid connection', async function () {
     const sourceId = 'Bank Claim'
     await cxs.init_cxs('ENABLE_TEST_MODE')
-    var connection = new Connection()
-    await connection.create({ id: '234' })
-    const connectionHandle = await connection.getHandle()
+    let connection = await Connection.create({ id: '234' })
     await connection.connect()
     await connection.updateState()
-    assert.equal(2, connection.state)
+    assert.equal(2, connection.getState())
     const claim = await IssuerClaim.create(sourceId, SCHEMANUM, DID, ATTR)
-    await claim.send(connectionHandle)
+    await claim.send(connection)
     await claim.updateState()
     assert.equal(await claim.getState(), 2)
   })
@@ -67,16 +67,14 @@ describe('An issuerClaim', async function () {
   it('can be sent, then serialized, then deserialized', async function () {
     // create a connection, send the claim, serialize and then deserialize
     // and compare
-    cxs.init_cxs('ENABLE_TEST_MODE')
-    var connection = new Connection()
-    await connection.create({ id: '234' })
-    const connectionHandle = await connection.getHandle()
+    await cxs.init_cxs('ENABLE_TEST_MODE')
+    let connection = await Connection.create({ id: '234' })
     await connection.connect()
 
     const sourceId = 'SendSerializeDeserialize'
     const claim = await IssuerClaim.create(sourceId, SCHEMANUM, DID, ATTR)
 
-    await claim.send(connectionHandle)
+    await claim.send(connection)
     const claimData = await claim.serialize()
 
     const claim2 = await IssuerClaim.deserialize(claimData)
@@ -85,6 +83,16 @@ describe('An issuerClaim', async function () {
     assert.equal(claim.getState(), StateType.OfferSent)
     assert.equal(claim.getState(), claim2.getState())
     assert.equal(claim.getClaimHandle(), claim2.getClaimHandle())
+  })
+
+  it('serialize without correct handle throws error', async function () {
+    await cxs.init_cxs('ENABLE_TEST_MODE')
+    const claim = new IssuerClaim(null)
+    try {
+      await claim.serialize()
+    } catch (error) {
+      assert.equal(error.toString(), 'Error: cxs_issuer_claim_serialize -> ' + Error.INVALID_ISSUER_CLAIM_HANDLE)
+    }
   })
 
   it('is created from a static method', async function () {
