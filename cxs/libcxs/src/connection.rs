@@ -322,7 +322,7 @@ pub fn from_string(connection_data: &str) -> Result<u32,u32> {
 
     {
         let mut m = CONNECTION_MAP.lock().unwrap();
-        info!("inserting handle {} into claim_issuer table", new_handle);
+        info!("inserting handle {} into connection table", new_handle);
         m.insert(new_handle, connection);
     }
 

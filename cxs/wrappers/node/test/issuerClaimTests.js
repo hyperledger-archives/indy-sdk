@@ -35,6 +35,7 @@ describe('An issuerClaim', async function () {
 
   it('has state that can be found', async function () {
     const claim = await IssuerClaim.create('TestState', SCHEMANUM, DID, ATTR)
+    await claim.updateState()
     assert.equal(claim.getState(), 1)
   })
 
@@ -49,6 +50,7 @@ describe('An issuerClaim', async function () {
     assert.equal(2, connection.state)
     const claim = await IssuerClaim.create(sourceId, SCHEMANUM, DID, ATTR)
     await claim.send(connectionHandle)
+    await claim.updateState()
     assert.equal(await claim.getState(), 2)
   })
 
@@ -56,7 +58,7 @@ describe('An issuerClaim', async function () {
     const sourceId = 'SerializeDeserialize'
     const claim = await IssuerClaim.create(sourceId, SCHEMANUM, DID, ATTR)
     const jsonClaim = await claim.serialize()
-    assert.equal(jsonClaim.state, 1)
+    assert.equal(jsonClaim.state, StateType.Initialized)
     const claim2 = await IssuerClaim.deserialize(jsonClaim)
     assert.equal(claim.getClaimHandle(), claim2.getClaimHandle())
     assert.equal(claim.getState(), claim2.getState())
@@ -78,6 +80,8 @@ describe('An issuerClaim', async function () {
     const claimData = await claim.serialize()
 
     const claim2 = await IssuerClaim.deserialize(claimData)
+    await claim.updateState()
+    await claim2.updateState()
     assert.equal(claim.getState(), StateType.OfferSent)
     assert.equal(claim.getState(), claim2.getState())
     assert.equal(claim.getClaimHandle(), claim2.getClaimHandle())

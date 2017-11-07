@@ -75,7 +75,7 @@ pub extern fn cxs_issuer_send_claim_offer(command_handle: u32,
 #[no_mangle]
 pub extern fn cxs_issuer_claim_update_state(command_handle: u32,
                                             claim_handle: u32,
-                                            cb: Option<extern fn(xcommand_handle: u32, xclaim_handle: u32, err: u32, state: u32)>) -> u32 {
+                                            cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
@@ -86,7 +86,7 @@ pub extern fn cxs_issuer_claim_update_state(command_handle: u32,
     thread::spawn(move|| {
         issuer_claim::update_state(claim_handle);
 
-        cb(command_handle, claim_handle, error::SUCCESS.code_num, issuer_claim::get_state(claim_handle));
+        cb(command_handle, error::SUCCESS.code_num, issuer_claim::get_state(claim_handle));
     });
 
     error::SUCCESS.code_num

@@ -149,3 +149,17 @@ fn claim_offer_ete() {
     thread::sleep(Duration::from_secs(4));
     unsafe {assert_eq!(CLAIM_SENT,true);}
 }
+
+#[test]
+fn test_better_http_response_messages(){
+
+    let config_string = format!("{{\"agent_endpoint\":\"{}\",\
+    \"agency_pairwise_did\":\"72x8p4HubxzUK1dwxcc5FU\",\
+    \"agent_pairwise_did\":\"UJGjM6Cea2YVixjWwHN9wq\",\
+    \"enterprise_did_agency\":\"RF3JM851T4EQmhh8CdagSP\",\
+    \"enterprise_did_agent\":\"JmvnKLYj7b7e5ywLxkRMjM\",\
+    \"enterprise_name\":\"enterprise\",\
+    \"logo_url\":\"https://s19.postimg.org/ykyz4x8jn/evernym.png\",\
+    \"agency_pairwise_verkey\":\"7118p4HubxzUK1dwxcc5FU\",\
+    \"agent_pairwise_verkey\":\"U22jM6Cea2YVixjWwHN9wq\"}}", mockito::SERVER_URL);
+}
