@@ -104,7 +104,6 @@ describe('A Connection object with ', function () {
     await connection1.create({ id: '234' })
     assert.notEqual(connection1.connectionHandle, undefined)
     let data = await connection1.serialize()
-
     const connection2 = new Connection(path)
     await connection2.deserialize(data)
     assert.equal(connection2.connectionHandle, connection1.connectionHandle)
