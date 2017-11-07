@@ -1,4 +1,3 @@
-import { format } from 'path'
 import { Callback, ForeignFunction } from 'ffi'
 import { weak } from 'weak'
 import { CXSRuntime, CXSRuntimeConfig } from '../index'
@@ -12,6 +11,7 @@ export class IssuerClaim {
   private _claimHandle: number
   private _state: number
   private _RUST_API: { [ index: string ]: ForeignFunction }
+  private _issuerDID: string
   constructor (sourceId) {
     this._sourceId = sourceId
     this._initRustApi(null)
@@ -19,18 +19,20 @@ export class IssuerClaim {
     this._state = StateType.None
     this._schemaNum = null
     this._attr = null
+    this._issuerDID = null
   }
-  static async create (sourceId: string, schemaNumber: number, attributes: string): Promise<IssuerClaim> {
+  static async create (sourceId: string, schemaNumber: number, did: string, attributes: string): Promise<IssuerClaim> {
     const claim = new IssuerClaim(sourceId)
-    await claim.init(sourceId, schemaNumber, attributes)
+    await claim.init(sourceId, schemaNumber, did, attributes)
     return claim
   }
 
   static async deserialize (claimData: IClaimData): Promise<IssuerClaim> {
     const sourceId = claimData.source_id
     const attr = claimData.claim_attributes
-    const schemaNumber = claimData.claim_def
-    const claim = await IssuerClaim.create(sourceId, schemaNumber , attr)
+    const schemaNumber = claimData.schema_seq_no
+    const did = claimData.issuer_did
+    const claim = await IssuerClaim.create(sourceId, schemaNumber, did, attr)
     await claim._initFromClaimData(claimData)
     return claim
   }
@@ -42,6 +44,9 @@ export class IssuerClaim {
     return state
   }
 
+  getIssuedDid () {
+    return this._issuerDID
+  }
   getSourceId () {
     return this._sourceId
   }
@@ -116,11 +121,12 @@ export class IssuerClaim {
   private _setState (state) {
     this._state = state
   }
-  private async init (sourceId: string, schemaNumber: number, attr: string): Promise<void> {
+  private async init (sourceId: string, schemaNumber: number, did: string, attr: string): Promise<void> {
     let callback = null
     this._schemaNum = schemaNumber
     this._attr = attr
     this._sourceId = sourceId
+    this._issuerDID = did
     const data = await new Promise<number>((resolve,reject) => {
       callback = Callback('void', ['uint32', 'uint32', 'uint32'], (commandHandle, err, claimHandle) => {
         if (err > 0) {
@@ -131,7 +137,7 @@ export class IssuerClaim {
         resolve(Number(value))
       })
       this._RUST_API.cxs_issuer_create_claim(0, this._sourceId,
-        this._schemaNum, '8XFh8yBzrpJQmNyZzgoTqB',this._attr, callback)
+        this._schemaNum, this._issuerDID, this._attr, callback)
     })
     this.setClaimHandle(data)
     this._setState(await this._callCxsAndGetCurrentState())

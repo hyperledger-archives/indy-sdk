@@ -63,8 +63,8 @@ export interface IConnectionData {
 export interface IClaimData {
   source_id: string
   handle: number
-  claim_def: number
+  schema_seq_no: number
   claim_attributes: string
-  issued_did: string
+  issuer_did: string
   state: StateType
 }

@@ -7,6 +7,8 @@ const Connection = require('../dist/api/connection').Connection
 const StateType = require('../dist/api/api').StateType
 const SCHEMANUM = 32
 const ATTR = '{"attr":"value"}'
+const DID = '8XFh8yBzrpJQmNyZzgoTqB'
+
 describe('An issuerClaim', async function () {
   it('can be created.', async function () {
     const claim = new IssuerClaim('Bank Claim')
@@ -26,13 +28,13 @@ describe('An issuerClaim', async function () {
 
   it('has a claimHandle and a sourceId after it is created', async function () {
     const sourceId = 'Claim'
-    const claim = await IssuerClaim.create(sourceId, SCHEMANUM, ATTR)
+    const claim = await IssuerClaim.create(sourceId, SCHEMANUM, DID, ATTR)
     assert(claim.getClaimHandle() > 0)
     assert.equal(claim.getSourceId(), sourceId)
   })
 
   it('has state that can be found', async function () {
-    const claim = await IssuerClaim.create('TestState', SCHEMANUM, ATTR)
+    const claim = await IssuerClaim.create('TestState', SCHEMANUM, DID, ATTR)
     assert.equal(claim.getState(), 1)
   })
 
@@ -45,14 +47,14 @@ describe('An issuerClaim', async function () {
     await connection.connect()
     await connection.updateState()
     assert.equal(2, connection.state)
-    const claim = await IssuerClaim.create(sourceId, SCHEMANUM, ATTR)
+    const claim = await IssuerClaim.create(sourceId, SCHEMANUM, DID, ATTR)
     await claim.send(connectionHandle)
     assert.equal(await claim.getState(), 2)
   })
 
   it('can be created, then serialized, then deserialized and have the same sourceId, state, and claimHandle', async function () {
     const sourceId = 'SerializeDeserialize'
-    const claim = await IssuerClaim.create(sourceId, SCHEMANUM, ATTR)
+    const claim = await IssuerClaim.create(sourceId, SCHEMANUM, DID, ATTR)
     const jsonClaim = await claim.serialize()
     assert.equal(jsonClaim.state, 1)
     const claim2 = await IssuerClaim.deserialize(jsonClaim)
@@ -70,7 +72,7 @@ describe('An issuerClaim', async function () {
     await connection.connect()
 
     const sourceId = 'SendSerializeDeserialize'
-    const claim = await IssuerClaim.create(sourceId, SCHEMANUM, ATTR)
+    const claim = await IssuerClaim.create(sourceId, SCHEMANUM, DID, ATTR)
 
     await claim.send(connectionHandle)
     const claimData = await claim.serialize()
@@ -83,20 +85,20 @@ describe('An issuerClaim', async function () {
 
   it('is created from a static method', async function () {
     const sourceId = 'staticMethodCreation'
-    const claim = await IssuerClaim.create(sourceId, SCHEMANUM, ATTR)
+    const claim = await IssuerClaim.create(sourceId, SCHEMANUM, DID, ATTR)
     assert(claim.getSourceId(), sourceId)
   })
 
   it('will have different claim handles even with the same sourceIds', async function () {
     const sourceId = 'sameSourceIds'
-    const claim = await IssuerClaim.create(sourceId, SCHEMANUM, ATTR)
-    const claim2 = await IssuerClaim.create(sourceId, SCHEMANUM, ATTR)
+    const claim = await IssuerClaim.create(sourceId, SCHEMANUM, DID, ATTR)
+    const claim2 = await IssuerClaim.create(sourceId, SCHEMANUM, DID, ATTR)
     assert.notEqual(claim.getClaimHandle(), claim2.getClaimHandle)
   })
 
   it('deserialize is a static method', async function () {
     const sourceId = 'deserializeStatic'
-    const claim = await IssuerClaim.create(sourceId, SCHEMANUM, ATTR)
+    const claim = await IssuerClaim.create(sourceId, SCHEMANUM, DID, ATTR)
     const serializedJson = await claim.serialize()
 
     const claimDeserialized = await IssuerClaim.deserialize(serializedJson)
@@ -107,9 +109,16 @@ describe('An issuerClaim', async function () {
     const sourceId = 'attributesAndSequenceNumber'
     const schemaNum = 32
     const attributes = '{"attr":"value"}'
-    const claim = await IssuerClaim.create(sourceId, schemaNum, attributes)
+    const claim = await IssuerClaim.create(sourceId, schemaNum, DID, attributes)
     assert.equal(claim.getSourceId(), sourceId)
     assert.equal(claim.getSchemaNum(), schemaNum)
     assert.equal(claim.getAttr(), attributes)
+  })
+
+  it('accepts a claim offer DID as part of create', async function () {
+    const sourceId = 'claimOfferDidTest'
+    const claim = await IssuerClaim.create(sourceId, SCHEMANUM, DID, ATTR)
+    assert.equal(claim.getSourceId(), sourceId)
+    assert.equal(claim.getIssuedDid(), DID)
   })
 })
