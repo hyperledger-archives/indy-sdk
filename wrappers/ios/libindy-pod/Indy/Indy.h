@@ -22,6 +22,7 @@ FOUNDATION_EXPORT const unsigned char indyVersionString[];
 #import <Indy/IndySignus.h>
 #import <Indy/IndyAgent.h>
 #import <Indy/IndyPairwise.h>
+#import <Indy/IndyCrypto.h>
 
 
 
