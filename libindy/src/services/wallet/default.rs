@@ -29,16 +29,17 @@ impl Default for DefaultWalletRuntimeConfig {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct DefaultWalletCredentials {
-    key: String
+    key: String,
+    rekey: Option<String>
 }
 
 impl<'a> JsonDecodable<'a> for DefaultWalletCredentials {}
 
 impl Default for DefaultWalletCredentials {
     fn default() -> Self {
-        DefaultWalletCredentials { key: String::new() }
+        DefaultWalletCredentials { key: String::new(), rekey: None }
     }
 }
 
@@ -71,7 +72,7 @@ impl DefaultWallet {
 
 impl Wallet for DefaultWallet {
     fn set(&self, key: &str, value: &str) -> Result<(), WalletError> {
-        _open_connection(self.name.as_str(), self.credentials.key.as_str())?
+        _open_connection(self.name.as_str(), &self.credentials)?
             .execute(
                 "INSERT OR REPLACE INTO wallet (key, value, time_created) VALUES (?1, ?2, ?3)",
                 &[&key.to_string(), &value.to_string(), &time::get_time()])?;
@@ -79,7 +80,7 @@ impl Wallet for DefaultWallet {
     }
 
     fn get(&self, key: &str) -> Result<String, WalletError> {
-        let record = _open_connection(self.name.as_str(), self.credentials.key.as_str())?
+        let record = _open_connection(self.name.as_str(), &self.credentials)?
             .query_row(
                 "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
                 &[&key.to_string()], |row| {
@@ -93,7 +94,7 @@ impl Wallet for DefaultWallet {
     }
 
     fn list(&self, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError> {
-        let connection = _open_connection(self.name.as_str(), self.credentials.key.as_str())?;
+        let connection = _open_connection(self.name.as_str(), &self.credentials)?;
         let mut stmt = connection.prepare("SELECT key, value, time_created FROM wallet WHERE key like ?1 order by key")?;
         let records = stmt.query_map(&[&format!("{}%", key_prefix)], |row| {
             DefaultWalletRecord {
@@ -114,7 +115,7 @@ impl Wallet for DefaultWallet {
     }
 
     fn get_not_expired(&self, key: &str) -> Result<String, WalletError> {
-        let record = _open_connection(self.name.as_str(), self.credentials.key.as_str())?
+        let record = _open_connection(self.name.as_str(), &self.credentials)?
             .query_row(
                 "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
                 &[&key.to_string()], |row| {
@@ -166,7 +167,7 @@ impl WalletType for DefaultWalletType {
             None => DefaultWalletCredentials::default()
         };
 
-        _open_connection(name, runtime_auth.key.as_str()).map_err(map_err_trace!())?
+        _open_connection(name, &runtime_auth).map_err(map_err_trace!())?
             .execute("CREATE TABLE wallet (key TEXT CONSTRAINT constraint_name PRIMARY KEY, value TEXT NOT NULL, time_created TEXT NOT_NULL)", &[])
             .map_err(map_err_trace!())?;
         trace!("DefaultWalletType.create <<");
@@ -205,7 +206,7 @@ fn _db_path(name: &str) -> PathBuf {
     path
 }
 
-fn _open_connection(name: &str, credentials: &str) -> Result<Connection, WalletError> {
+fn _open_connection(name: &str, credentials: &DefaultWalletCredentials) -> Result<Connection, WalletError> {
     let path = _db_path(name);
     if !path.parent().unwrap().exists() {
         fs::DirBuilder::new()
@@ -213,14 +214,62 @@ fn _open_connection(name: &str, credentials: &str) -> Result<Connection, WalletE
             .create(path.parent().unwrap())?;
     }
 
-    let conn = Connection::open(path);
-    if let Ok(c) = conn {
-        let sql = format!("PRAGMA key='{}'", credentials);
-        c.execute(&sql, &[])?;
-        Ok(c)
+    let conn = Connection::open(path)?;
+    conn.execute(&format!("PRAGMA key='{}'", credentials.key), &[])?;
+
+    match credentials.rekey {
+        None => Ok(conn),
+        Some(ref rk) => {
+            if credentials.key.len() == 0 && rk.len() > 0 {
+                _export_unencrypted_to_encrypted(conn, name, &rk)
+            } else if rk.len() > 0 {
+                conn.execute(&format!("PRAGMA rekey='{}'", rk), &[])?;
+                Ok(conn)
+            } else {
+                _export_encrypted_to_unencrypted(conn, name)
+            }
+        }
     }
-    else {
-        Ok(conn?)
+}
+
+fn _export_encrypted_to_unencrypted(conn: Connection, name: &str) -> Result<Connection, WalletError> {
+    let mut path = EnvironmentUtils::wallet_path(name);
+    path.push("plaintext.db");
+
+    conn.execute(&format!("ATTACH DATABASE {:?} AS plaintext KEY ''", path), &[])?;
+    conn.query_row(&"SELECT sqlcipher_export('plaintext')", &[], |row|{})?;
+    conn.execute(&"DETACH DATABASE plaintext", &[])?;
+    let r = conn.close();
+    if let Err((c, w)) = r {
+        Err(WalletError::from(w))
+    } else {
+        let wallet = _db_path(name);
+        fs::remove_file(&wallet)?;
+        fs::rename(&path, &wallet)?;
+
+        Ok(Connection::open(wallet)?)
+    }
+}
+
+fn _export_unencrypted_to_encrypted(conn: Connection, name: &str, key: &str) -> Result<Connection, WalletError> {
+    let mut path = EnvironmentUtils::wallet_path(name);
+    path.push("encrypted.db");
+
+    let sql = format!("ATTACH DATABASE {:?} AS encrypted KEY '{}'", path, key);
+    conn.execute(&sql, &[])?;
+    conn.query_row(&"SELECT sqlcipher_export('encrypted')", &[], |row| {})?;
+    conn.execute(&"DETACH DATABASE encrypted", &[])?;
+    let r = conn.close();
+    if let Err((c, w)) = r {
+        Err(WalletError::from(w))
+    } else {
+        let wallet = _db_path(name);
+        fs::remove_file(&wallet)?;
+        fs::rename(&path, &wallet)?;
+
+        let new = Connection::open(wallet)?;
+        new.execute(&format!("PRAGMA key='{}'", key), &[])?;
+        Ok(new)
     }
 }
 
@@ -239,6 +288,9 @@ mod tests {
     use super::*;
     use errors::wallet::WalletError;
     use utils::test::TestUtils;
+
+    use serde_json;
+    use self::serde_json::Error as JsonError;
 
     use std::time::{Duration};
     use std::thread;
@@ -432,6 +484,128 @@ mod tests {
     }
 
     #[test]
+    fn default_wallet_credentials_deserialize() {
+        let empty: Result<DefaultWalletCredentials, JsonError> = serde_json::from_str(r#"{}"#);
+        assert!(empty.is_err());
+
+        let one: Result<DefaultWalletCredentials, JsonError> = serde_json::from_str(r#"{"key":""}"#);
+        assert!(one.is_ok());
+        let rone = one.unwrap();
+        assert_eq!(rone.key, "");
+        assert_eq!(rone.rekey, None);
+
+        let two: Result<DefaultWalletCredentials, JsonError> = serde_json::from_str(r#"{"key":"thisisatest","rekey":null}"#);
+        assert!(two.is_ok());
+        let rtwo = two.unwrap();
+        assert_eq!(rtwo.key, "thisisatest");
+        assert_eq!(rtwo.rekey, None);
+
+        let three: Result<DefaultWalletCredentials, JsonError> = serde_json::from_str(r#"{"key":"","rekey":"thisismynewpassword"}"#);
+        assert!(three.is_ok());
+        let rthree = three.unwrap();
+        assert_eq!(rthree.key, "");
+        assert_eq!(rthree.rekey, Some("thisismynewpassword".to_string()));
+
+        let four: Result<DefaultWalletCredentials, JsonError> = serde_json::from_str(r#"{"key": "", "rekey": ""}"#);
+        assert!(four.is_ok());
+        let rfour = four.unwrap();
+        assert_eq!(rfour.key, "");
+        assert_eq!(rfour.rekey, Some("".to_string()));
+    }
+
+    #[test]
+    fn default_wallet_convert_nonencrypted_to_encrypted() {
+        TestUtils::cleanup_indy_home();
+        {
+            let default_wallet_type = DefaultWalletType::new();
+            default_wallet_type.create("mywallet", None, Some(r#"{"key":""}"#)).unwrap();
+            let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":""}"#)).unwrap();
+
+            wallet.set("key1::subkey1", "value1").unwrap();
+            wallet.set("key1::subkey2", "value2").unwrap();
+        }
+        {
+            let default_wallet_type = DefaultWalletType::new();
+            let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":"", "rekey":"thisisatest"}"#)).unwrap();
+            let mut key_values = wallet.list("key1::").unwrap();
+            key_values.sort();
+            assert_eq!(2, key_values.len());
+
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey2", key);
+            assert_eq!("value2", value);
+
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey1", key);
+            assert_eq!("value1", value);
+        }
+        {
+            let default_wallet_type = DefaultWalletType::new();
+            let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":"thisisatest"}"#)).unwrap();
+
+            let mut key_values = wallet.list("key1::").unwrap();
+            key_values.sort();
+            assert_eq!(2, key_values.len());
+
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey2", key);
+            assert_eq!("value2", value);
+
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey1", key);
+            assert_eq!("value1", value);
+        }
+
+        TestUtils::cleanup_indy_home();
+    }
+
+    #[test]
+    fn default_wallet_convert_encrypted_to_nonencrypted() {
+        TestUtils::cleanup_indy_home();
+        {
+            let default_wallet_type = DefaultWalletType::new();
+            default_wallet_type.create("mywallet", None, Some(r#"{"key":"thisisatest"}"#)).unwrap();
+            let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":"thisisatest"}"#)).unwrap();
+
+            wallet.set("key1::subkey1", "value1").unwrap();
+            wallet.set("key1::subkey2", "value2").unwrap();
+        }
+        {
+            let default_wallet_type = DefaultWalletType::new();
+            let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":"thisisatest", "rekey":""}"#)).unwrap();
+            let mut key_values = wallet.list("key1::").unwrap();
+            key_values.sort();
+            assert_eq!(2, key_values.len());
+
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey2", key);
+            assert_eq!("value2", value);
+
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey1", key);
+            assert_eq!("value1", value);
+        }
+        {
+            let default_wallet_type = DefaultWalletType::new();
+            let wallet = default_wallet_type.open("mywallet", "pool1", None, None, Some(r#"{"key":""}"#)).unwrap();
+
+            let mut key_values = wallet.list("key1::").unwrap();
+            key_values.sort();
+            assert_eq!(2, key_values.len());
+
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey2", key);
+            assert_eq!("value2", value);
+
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey1", key);
+            assert_eq!("value1", value);
+        }
+
+        TestUtils::cleanup_indy_home();
+    }
+
+    #[test]
     fn default_wallet_create_encrypted() {
         TestUtils::cleanup_indy_home();
 
@@ -453,6 +627,68 @@ mod tests {
         let (key, value) = key_values.pop().unwrap();
         assert_eq!("key1::subkey1", key);
         assert_eq!("value1", value);
+
+        TestUtils::cleanup_indy_home();
+    }
+
+    #[test]
+    fn default_wallet_change_key() {
+        TestUtils::cleanup_indy_home();
+
+        {
+            let default_wallet_type = DefaultWalletType::new();
+            default_wallet_type.create("encrypted_wallet", None, Some("{\"key\":\"test\"}")).unwrap();
+            let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some("{\"key\":\"test\"}")).unwrap();
+
+            wallet.set("key1::subkey1", "value1").unwrap();
+            wallet.set("key1::subkey2", "value2").unwrap();
+
+            let mut key_values = wallet.list("key1::").unwrap();
+            key_values.sort();
+            assert_eq!(2, key_values.len());
+
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey2", key);
+            assert_eq!("value2", value);
+
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey1", key);
+            assert_eq!("value1", value);
+        }
+
+        {
+            let default_wallet_type = DefaultWalletType::new();
+            let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some(r#"{"key":"test","rekey":"newtest"}"#)).unwrap();
+
+            let mut key_values = wallet.list("key1::").unwrap();
+            key_values.sort();
+            assert_eq!(2, key_values.len());
+
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey2", key);
+            assert_eq!("value2", value);
+
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey1", key);
+            assert_eq!("value1", value);
+        }
+
+        {
+            let default_wallet_type = DefaultWalletType::new();
+            let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some(r#"{"key":"newtest"}"#)).unwrap();
+
+            let mut key_values = wallet.list("key1::").unwrap();
+            key_values.sort();
+            assert_eq!(2, key_values.len());
+
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey2", key);
+            assert_eq!("value2", value);
+
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey1", key);
+            assert_eq!("value1", value);
+        }
 
         TestUtils::cleanup_indy_home();
     }
