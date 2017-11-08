@@ -37,10 +37,9 @@
 + (NSData *)nonce;
 + (NSData *)signature;
 + (NSString *)trusteeSeed;
++ (NSString *)trusteeVerkey;
 + (NSString *)mySeed;
 + (NSString *)endpoint;
-+ (NSString *)clientMessage;
-+ (NSString *)serverMessage;
 
 + (NSString *)commonMasterSecretName;
 + (NSString *)issuerDid;
@@ -48,6 +47,8 @@
 
 + (NSString *)mySeed1;
 + (NSString *)mySeed2;
++ (NSString *)myVerkey1;
++ (NSString *)invalidBase58Verkey;
 + (NSString *)someMetadata;
 + (NSString *)unknownDid;
 
