@@ -39,8 +39,7 @@
                walletHandle:(IndyHandle)walletHandle
                  completion:(void (^)(NSError *error,
                                       NSString *did,
-                                      NSString *verkey,
-                                      NSString *pk)) completion;
+                                      NSString *verkey)) completion;
 
 /**
  Generates temporary keys (signing and encryption keys) for an existing DID (owned by the caller of the library).
@@ -64,8 +63,7 @@
                   identityJson:(NSString *)identityJson
                   walletHandle:(IndyHandle)walletHandle
                     completion:(void (^)(NSError *error,
-                                         NSString *verkey,
-                                         NSString *pk)) completion;
+                                         NSString *verkey)) completion;
 
 /**
  Apply temporary keys as main for an existing DID (owned by the caller of the library).
@@ -97,6 +95,26 @@
 + (void)storeTheirDid:(NSString *)identityJSON
          walletHandle:(IndyHandle)walletHandle
            completion:(void (^)(NSError *error)) completion;
+
++ (void)keyForDid:(NSString *)did
+       poolHandle:(IndyHandle)poolHandle
+     walletHandle:(IndyHandle)walletHandle
+       completion:(void (^)(NSError *error, NSString *key))completion;
+
++ (void)setEndpointAddress:(NSString *)address transportKey:(NSString *)transportKey forDid:(NSString *)did walletHandle:(IndyHandle)walletHandle completion:(void (^)(NSError *error))completion;
+
++ (void)getEndpointForDid:(NSString *)did
+             walletHandle:(IndyHandle)walletHandle
+               completion:(void (^)(NSError *error, NSString *address, NSString *transportKey))completion;
+
++ (void)setMetadata:(NSString *)metadata
+             forDid:(NSString *)did
+       walletHandle:(IndyHandle)walletHandle
+         completion:(void (^)(NSError *error))completion;
+
++ (void)getMetadataForDid:(NSString *)did
+             walletHandle:(IndyHandle)walletHandle
+               completion:(void (^)(NSError *error, NSString *metadata))completion;
 
 /**
  Signs a message by a signing key associated with my DID.  
@@ -182,7 +200,19 @@
                    did:(NSString *)did
                  nonce:(NSData *)nonce
           walletHandle:(IndyHandle)walletHandle
+            poolHandle:(IndyHandle)poolHandle
             completion:(void (^)(NSError *error,
                                  NSData *decryptedMessage)) completion;
+
++ (void)encryptMessageSealed:(NSData *)message
+                         did:(NSString *)did
+                walletHandle:(IndyHandle)walletHandle
+                        pool:(IndyHandle)poolHandle
+                  completion:(void (^)(NSError *error, NSData *encryptedMsg))completion;
+
++ (void)decryptMessageSealed:(NSData *)encryptedMessage
+                         did:(NSString *)did
+                walletHandle:(IndyHandle)walletHandle
+                  completion:(void (^)(NSError *error, NSData *decryptedMessage))completion;
 
 @end

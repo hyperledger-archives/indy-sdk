@@ -2,7 +2,7 @@
 using Hyperledger.Indy.WalletApi;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using static Hyperledger.Indy.IndyNativeMethods;
+using static Hyperledger.Indy.AgentApi.NativeMethods;
 
 namespace Hyperledger.Indy.AgentApi
 {
@@ -14,7 +14,7 @@ namespace Hyperledger.Indy.AgentApi
         /// <summary>
         /// Gets the callback to use when commands that prepare messages have completed.
         /// </summary>
-        private static AgentMessagePreparedDelegate _agentMessagePreparedCallback = (xcommand_handle, err, encrypted_data, encrypted_len) =>
+        private static PrepareMsgCompletedDelegate _agentMessagePreparedCallback = (xcommand_handle, err, encrypted_data, encrypted_len) =>
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
@@ -30,7 +30,7 @@ namespace Hyperledger.Indy.AgentApi
         /// <summary>
         /// Gets the callback to use when the ParsMsgAsync command has completed.
         /// </summary>
-        private static AgentMessageParsedDelegate _agentMessageParsedCallback = (xcommand_handle, err, sender_key, msg_data, msg_len) =>
+        private static ParseMsgCompletedDelegate _agentMessageParsedCallback = (xcommand_handle, err, sender_key, msg_data, msg_len) =>
         {
             var taskCompletionSource = PendingCommands.Remove<ParseMsgResult>(xcommand_handle);
 
@@ -65,7 +65,7 @@ namespace Hyperledger.Indy.AgentApi
             var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_prep_msg(
+            var result = NativeMethods.indy_prep_msg(
                 commandHandle,
                 wallet.Handle,
                 senderKey,
@@ -94,7 +94,7 @@ namespace Hyperledger.Indy.AgentApi
             var taskCompletionSource = new TaskCompletionSource<byte[]>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_prep_anonymous_msg(
+            var result = NativeMethods.indy_prep_anonymous_msg(
                 commandHandle,
                 recipientKey,
                 message,
@@ -125,7 +125,7 @@ namespace Hyperledger.Indy.AgentApi
             var taskCompletionSource = new TaskCompletionSource<ParseMsgResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_parse_msg(
+            var result = NativeMethods.indy_parse_msg(
                 commandHandle,
                 wallet.Handle,
                 recipientKey,

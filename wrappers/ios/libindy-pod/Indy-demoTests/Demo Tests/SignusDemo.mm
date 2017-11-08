@@ -6,9 +6,6 @@
 #import <XCTest/XCTest.h>
 #import "PoolUtils.h"
 #import "TestUtils.h"
-#import <Indy/Indy.h>
-#import "WalletUtils.h"
-#import "SignusUtils.h"
 
 @interface SignusDemo : XCTestCase
 
@@ -77,13 +74,11 @@
     
     NSString *myDid = nil;
     NSString *myVerkey = nil;
-    NSString *myPk = nil;
-    
+
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:myWalletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
-                                                        outMyVerkey:&myVerkey
-                                                            outMyPk:&myPk];
+                                                        outMyVerkey:&myVerkey];
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 6. Create Their DID
@@ -92,21 +87,18 @@
 
     NSString *theirDid = nil;
     NSString *theirVerkey = nil;
-    NSString *theirPk = nil;
 
     ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:theirWalletHandle
                                                           myDidJson:theirDidJson
                                                            outMyDid:&theirDid
-                                                        outMyVerkey:&theirVerkey
-                                                            outMyPk:&theirPk];
+                                                        outMyVerkey:&theirVerkey];
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
 
     // 7. Store Their DID
     
     NSString* theirIdentityJson = [NSString stringWithFormat: @"{\"did\":\"%@\",\
-                                                                 \"pk\":\"%@\",\
                                                                  \"verkey\":\"%@\"\
-                                                                }", theirDid, theirPk, theirVerkey];
+                                                                }", theirDid, theirVerkey];
 
 
     ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:myWalletHandle
@@ -200,34 +192,29 @@
     
     NSString *myDid = nil;
     NSString *myVerkey = nil;
-    NSString *myPk = nil;
-    
+
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:myWalletHandle
                                                                        seed:nil
                                                                    outMyDid:&myDid
-                                                                outMyVerkey:&myVerkey
-                                                                    outMyPk:&myPk];
+                                                                outMyVerkey:&myVerkey];
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 6. Create Their DID
     
     NSString *theirDid = nil;
     NSString *theirVerkey = nil;
-    NSString *theirPk = nil;
-    
+
     ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:theirWalletHandle
                                                                        seed:nil
                                                                    outMyDid:&theirDid
-                                                                outMyVerkey:&theirVerkey
-                                                                    outMyPk:&theirPk];
+                                                                outMyVerkey:&theirVerkey];
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
     // 7. Store Their DID
     
     NSString* theirIdentityJson = [NSString stringWithFormat: @"{\"did\":\"%@\",\
-                                   \"pk\":\"%@\",\
                                    \"verkey\":\"%@\"\
-                                   }", theirDid, theirPk, theirVerkey];
+                                   }", theirDid, theirVerkey];
     
     ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:myWalletHandle
                                                          identityJson:theirIdentityJson];

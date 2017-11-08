@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Indy.AgentApi;
+using Hyperledger.Indy.CryptoApi;
 using Hyperledger.Indy.SignusApi;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -17,10 +18,10 @@ namespace Hyperledger.Indy.Test.AgentTests
         public async Task TestParseMsgWorksForAuthenticatedMessage()
         {
             var paramJson = string.Format(_keyJsonTemplate, MY1_SEED);
-            var senderVk = await Signus.CreateKeyAsync(wallet, paramJson);
+            var senderVk = await Crypto.CreateKeyAsync(wallet, paramJson);
 
             paramJson = string.Format(_keyJsonTemplate, MY2_SEED);
-            var recipientVk = await Signus.CreateKeyAsync(wallet, paramJson);
+            var recipientVk = await Crypto.CreateKeyAsync(wallet, paramJson);
 
             var encryptedMsg = await Agent.PrepMsgAsync(wallet, senderVk, recipientVk, MESSAGE);
             var parseResult = await Agent.ParseMsgAsync(wallet, recipientVk, encryptedMsg);
@@ -33,7 +34,7 @@ namespace Hyperledger.Indy.Test.AgentTests
         public async Task TestParseMsgWorksForAnonymousMessage()
         {
             var paramJson = string.Format(_keyJsonTemplate, MY2_SEED);
-            var recipientVk = await Signus.CreateKeyAsync(wallet, paramJson);
+            var recipientVk = await Crypto.CreateKeyAsync(wallet, paramJson);
 
             var encryptedMsg = await Agent.PrepAnonymousMsgAsync(recipientVk, MESSAGE);
             var parseResult = await Agent.ParseMsgAsync(wallet, recipientVk, encryptedMsg);
@@ -63,7 +64,7 @@ namespace Hyperledger.Indy.Test.AgentTests
         [TestMethod]
         public async Task TestParseMsgWorksForInvalidAnonymousMessage()
         {
-            var recipientVk = await Signus.CreateKeyAsync(wallet, "{}");
+            var recipientVk = await Crypto.CreateKeyAsync(wallet, "{}");
 
             var msg = "unencrypted message";
             var encryptedMsg = Encoding.UTF8.GetBytes(msg);

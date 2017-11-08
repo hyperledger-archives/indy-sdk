@@ -178,7 +178,7 @@
     // 3. check obtained offers
     NSDictionary *offers = [NSDictionary fromString:claimOffersJson];
     NSArray *array = (NSArray *)offers;
-    XCTAssertEqual([array count], 1, @"wrong length of claim offers");
+    XCTAssertEqual([array count], 3, @"wrong length of claim offers");
 }
 
 - (void)testProverGetClaimOffersWorksForFilterByIssuer
@@ -203,18 +203,18 @@
     // 3. Check offers
     NSDictionary *offers = [NSDictionary fromString:claimOffersJson];
     NSArray *array = (NSArray *)offers;
-    XCTAssertEqual([array count], 1, @"wrong length of claim offers");
+    XCTAssertEqual([array count], 2, @"wrong length of claim offers");
     
     NSMutableDictionary *offer1 = [NSMutableDictionary new];
     offer1[@"issuer_did"] = [TestUtils issuerDid];
     offer1[@"schema_seq_no"] = @(1);
     
-    //NSMutableDictionary *offer2 = [NSMutableDictionary new];
-    //offer2[@"issuer_did"] = [TestUtils issuerDid];
-    //offer2[@"schema_seq_no"] = @(2);
+    NSMutableDictionary *offer2 = [NSMutableDictionary new];
+    offer2[@"issuer_did"] = [TestUtils issuerDid];
+    offer2[@"schema_seq_no"] = @(2);
     
     XCTAssertTrue([array contains:offer1], @"offers doesn't contain offer1");
-   // XCTAssertTrue([array contains:offer2], @"offers doesn't contain offer2");
+    XCTAssertTrue([array contains:offer2], @"offers doesn't contain offer2");
 }
 
 - (void)testProverGetClaimOffersWorksForFilterBySchema

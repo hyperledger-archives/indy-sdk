@@ -81,6 +81,7 @@
     [TestUtils cleanupStorage];
 }
 
+//TODO ignored in Rust
 - (void)testOpenPoolLedgerWorksForInvalidNodesFile
 {
     [TestUtils cleanupStorage];

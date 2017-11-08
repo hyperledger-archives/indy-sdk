@@ -1,7 +1,7 @@
 ﻿using Hyperledger.Indy.Utils;
 using System;
 using System.Threading.Tasks;
-using static Hyperledger.Indy.IndyNativeMethods;
+using static Hyperledger.Indy.PoolApi.NativeMethods;
 
 namespace Hyperledger.Indy.PoolApi
 {
@@ -14,7 +14,7 @@ namespace Hyperledger.Indy.PoolApi
         /// <summary>
         /// Callback to use when a pool open command has completed.
         /// </summary>
-        private static OpenPoolLedgerResultDelegate _openPoolLedgerCallback = (command_handle, err, pool_handle) =>
+        private static OpenPoolLedgerCompletedDelegate _openPoolLedgerCallback = (command_handle, err, pool_handle) =>
         {
             var taskCompletionSource = PendingCommands.Remove<Pool>(command_handle);
 
@@ -55,7 +55,7 @@ namespace Hyperledger.Indy.PoolApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_create_pool_ledger_config(
+            var result = NativeMethods.indy_create_pool_ledger_config(
                 commandHandle,
                 configName,
                 config,
@@ -81,7 +81,7 @@ namespace Hyperledger.Indy.PoolApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_delete_pool_ledger_config(
+            var result = NativeMethods.indy_delete_pool_ledger_config(
                 commandHandle,
                 configName,
                 CallbackHelper.TaskCompletingNoValueCallback
@@ -127,7 +127,7 @@ namespace Hyperledger.Indy.PoolApi
             var taskCompletionSource = new TaskCompletionSource<Pool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_open_pool_ledger(
+            var result = NativeMethods.indy_open_pool_ledger(
                 commandHandle,
                 configName,
                 config,
@@ -168,7 +168,7 @@ namespace Hyperledger.Indy.PoolApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_refresh_pool_ledger(
+            var result = NativeMethods.indy_refresh_pool_ledger(
                 commandHandle,
                 Handle,
                 CallbackHelper.TaskCompletingNoValueCallback
@@ -194,7 +194,7 @@ namespace Hyperledger.Indy.PoolApi
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = IndyNativeMethods.indy_close_pool_ledger(
+            var result = NativeMethods.indy_close_pool_ledger(
                 commandHandle,
                 Handle,
                 CallbackHelper.TaskCompletingNoValueCallback
@@ -223,7 +223,7 @@ namespace Hyperledger.Indy.PoolApi
         {
             if (_requiresClose)
             {
-                IndyNativeMethods.indy_close_pool_ledger(
+                NativeMethods.indy_close_pool_ledger(
                    -1,
                    Handle,
                    CallbackHelper.NoValueCallback
