@@ -1424,6 +1424,7 @@
     
     NSData *decryptedMessage;
     ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:walletHandle
+                                                     poolHandle:-1
                                                           myDid:myDid
                                                             did:theirDid
                                                encryptedMessage:[TestUtils encryptedMessage]
@@ -1506,6 +1507,7 @@
     
     NSData *decryptedMessage;
     ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:walletHandle
+                                                     poolHandle:-1
                                                           myDid:myDid
                                                             did:theirDid
                                                encryptedMessage:[TestUtils encryptedMessage]
@@ -1562,6 +1564,7 @@
     
     NSString *nonce = @"acS2SQgDdfE3Goxa1AhcWCa4kEMqSelv7";
     ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:walletHandle
+                                                     poolHandle:-1
                                                           myDid:myDid
                                                             did:theirDid
                                                encryptedMessage:[TestUtils encryptedMessage]
@@ -1618,6 +1621,7 @@
     IndyHandle invalidWalletHandle = walletHandle + 1;
     NSData *decryptedMessage;
     ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:invalidWalletHandle
+                                                     poolHandle:-1
                                                           myDid:myDid
                                                             did:theirDid
                                                encryptedMessage:[TestUtils encryptedMessage]
