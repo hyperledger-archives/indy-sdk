@@ -29,10 +29,7 @@ export class Connection implements IConnections {
   }
 
   static async deserialize (connectionData: IConnectionData, path?: string): Promise<Connection> {
-    const sourceId = connectionData.source_id
-    const didSelf = connectionData.pw_did ? connectionData.pw_did : ''
-    const didRemote = connectionData.did_endpoint ? connectionData.did_endpoint : ''
-    const connection = await Connection.create({id: sourceId, DIDself: didSelf, DIDremote: didRemote }, path)
+    const connection = new Connection(path)
     await connection._initFromConnectionData(connectionData)
     return connection
   }

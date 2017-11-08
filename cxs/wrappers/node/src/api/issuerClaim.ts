@@ -29,11 +29,7 @@ export class IssuerClaim {
   }
 
   static async deserialize (claimData: IClaimData): Promise<IssuerClaim> {
-    const sourceId = claimData.source_id
-    const attr = claimData.claim_attributes
-    const schemaNumber = claimData.schema_seq_no
-    const did = claimData.issuer_did
-    const claim = await IssuerClaim.create(sourceId, schemaNumber, did, attr)
+    const claim = new IssuerClaim(claimData.source_id)
     await claim._initFromClaimData(claimData)
     return claim
   }
