@@ -1,14 +1,14 @@
-Source: indy-sdk
+Source: libindy
 Section: devel
 Priority: optional
 Maintainer: Hyperledger <info@hyperledger.org>
 Build-Depends: libssl-dev, libsodium-dev, libsqlite3-dev
-Standards-Version: 0.1.1
+Standards-Version: 1.0.0
 Vcs-Git: https://github.com/hyperledger/indy-sdk/
 Vcs-Browser: https://github.com/hyperledger/indy-sdk/
 
 
-Package: indy-sdk
+Package: libindy
 Architecture: amd64
 Depends: libssl1.0.0, libsodium18, libsqlite0
 Suggests: build-essential
@@ -22,9 +22,9 @@ Description: This is the official SDK for Hyperledger Indy, which provides a
   at #indy-sdk to discuss.
 
 
-Package: indy-sdk-dev
+Package: libindy-dev
 Architecture: amd64
-Depends: indy-sdk
+Depends: libindy
 Suggests: build-essential
 Description: This is the official SDK for Hyperledger Indy, which provides a
   distributed-ledger-based foundation for self-sovereign identity.

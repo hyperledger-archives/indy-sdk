@@ -1,5 +1,3 @@
-<a href="https://sovrin.org/" target="_blank"><img src="https://avatars2.githubusercontent.com/u/22057628?v=3&s=50" align="right"></a>
-
 ## Indy SDK for Python
 
 This is a Python wrapper for [Indy](https://www.hyperledger.org/projects/indy). It is implemented using a foreign function interface (FFI) to a native library written in Rust. Indy is the
@@ -12,8 +10,8 @@ Pull requests welcome!
 ### How to build
 
 - Install native "indy" library:
-	* Ubuntu:  https://repo.evernym.com/libindy/ubuntu/
-	* Windows: https://repo.evernym.com/libindy/windows/
+	* Ubuntu:  https://repo.sovrin.org/lib/apt/xenial/
+	* Windows: https://repo.sovrin.org/windows/libindy/
 
 - Clone indy-sdk repo from https://github.com/hyperledger/indy-sdk
 

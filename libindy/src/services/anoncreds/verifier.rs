@@ -1,11 +1,13 @@
+extern crate indy_crypto;
+
 use services::anoncreds::types::*;
 use services::anoncreds::constants::{LARGE_E_START, ITERATION, LARGE_NONCE};
 use services::anoncreds::helpers::{AppendByteArray, get_hash_as_int, bignum_to_group_element};
 use utils::crypto::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
 use errors::common::CommonError;
-use utils::crypto::pair::{Pair, PointG1, PointG2};
 use services::anoncreds::issuer::Issuer;
+use self::indy_crypto::pair::{PointG1, PointG2, Pair};
 
 pub struct Verifier {}
 
@@ -87,7 +89,7 @@ impl Verifier {
         use std::iter::FromIterator;
 
         let unrevealed_attrs: Vec<String> =
-            schema.data.keys
+            schema.data.attr_names
                 .difference(&HashSet::from_iter(proof.revealed_attrs.keys().cloned()))
                 .map(|attr| attr.clone())
                 .collect::<Vec<String>>();
@@ -98,15 +100,14 @@ impl Verifier {
         let mut ctx = BigNumber::new_context()?;
         let mut rar = BigNumber::from_dec("1")?;
 
-        for (attr, value) in &proof.revealed_attrs {
+        for (attr, encoded_value) in &proof.revealed_attrs {
             let cur_r = pk.r.get(attr)
                 .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in pk.r", attr)))?;
 
             rar = cur_r
-                .mod_exp(&BigNumber::from_dec(&value)?, &pk.n, Some(&mut ctx))?
+                .mod_exp(&BigNumber::from_dec(&encoded_value)?, &pk.n, Some(&mut ctx))?
                 .mul(&rar, Some(&mut ctx))?;
         }
-
 
         let tmp: BigNumber =
             BigNumber::from_dec("2")?

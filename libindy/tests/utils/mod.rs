@@ -6,11 +6,14 @@ pub mod callback;
 pub mod environment;
 
 pub mod pool;
+pub mod crypto;
 pub mod signus;
 pub mod wallet;
 pub mod ledger;
 pub mod anoncreds;
 pub mod types;
+pub mod pairwise;
+pub mod constants;
 
 #[macro_use]
 #[allow(unused_macros)]

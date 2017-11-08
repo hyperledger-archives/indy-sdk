@@ -9,7 +9,7 @@ public class EnvironmentUtils {
     }
 
     public static String getIndyHomePath() {
-        return FileUtils.getUserDirectoryPath() + "/.indy/";
+        return FileUtils.getUserDirectoryPath() + "/.indy_client/";
     }
 
     public static String getIndyHomePath(String filename) {
@@ -17,7 +17,7 @@ public class EnvironmentUtils {
     }
 
     public static String getTmpPath() {
-        return FileUtils.getTempDirectoryPath() + "/indy/";
+        return FileUtils.getTempDirectoryPath() + "/indy_client/";
     }
 
     public static String getTmpPath(String filename) {

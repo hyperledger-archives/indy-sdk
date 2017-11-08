@@ -1,3 +1,8 @@
+
+## Before you Continue
+
+If you haven't done so already, please visit the main resource for all things "Indy" to get acquainted with the code base, helpful resources, and up-to-date information: [Hyperledger Wiki-Indy](https://wiki.hyperledger.org/projects/indy).
+
 # Indy SDK
 
 This is the official SDK for [Hyperledger Indy](https://www.hyperledger.org/projects),
@@ -7,7 +12,7 @@ library; there are also convenience wrappers for various programming languages.
 
 All bugs, stories, and backlog for this project are managed through [Hyperledger's Jira](https://jira.hyperledger.org)
 in project IS (note that regular Indy tickets are in the INDY project instead...). Also, join
-us on [Jira's Rocket.Chat](chat.hyperledger.org) at #indy-sdk to discuss.
+us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to discuss.
 
 ## Building Indy SDK
 
@@ -23,9 +28,16 @@ us on [Jira's Rocket.Chat](chat.hyperledger.org) at #indy-sdk to discuss.
 * [iOS](wrappers/ios/ios-build.md)
 
 ## Binaries
-Builded binaries can be downloaded from https://repo.evernym.com/libindy:
-* ubuntu/{master,stable,rc} - Ubuntu deb packages
-* windows/{master,stable,rc} - Windows zip-archive with all required DLLs (include libindy itself) and headers
-* windows/deps/ - Windows zip archive with dependencies (DLLs and headers) to build libindy from sources
-* ios/stable/ - Pods for iOS
-* rhel/{master,stable,rc} - RHEL rpms
+Builded binaries can be downloaded from https://repo.sovrin.org/:
+* lib/apt/xenial/{master,stable,rc} - Ubuntu deb packages
+* windows/libindy/{master,stable,rc} - Windows zip-archive with all required DLLs (include libindy itself) and headers
+* windows/libindy/deps/ - Windows zip archive with dependencies (DLLs and headers) to build libindy from sources
+* ios/libindy/stable/ - Pods for iOS
+* rhel/libindy/{master,stable,rc} - RHEL rpms
+
+Also Ubundu deb packages can be installed from APT repository (change stable to `master` or `rc` if needed):
+```
+apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
+sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable"
+sudo apt-get install -y libindy
+```

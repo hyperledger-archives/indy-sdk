@@ -1,9 +1,11 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
+import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.wallet.Wallet;
+import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
 import org.junit.*;
+
+import static org.hamcrest.CoreMatchers.isA;
 
 import java.util.concurrent.ExecutionException;
 
@@ -44,7 +46,7 @@ public class ProverStoreClaimTest extends AnoncredsIntegrationTest {
 		initCommonWallet();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletNotFoundError));
+		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
 		String claimJson = String.format("{\"claim\":{\"sex\":[\"male\",\"1\"],\"age\":[\"28\",\"28\"],\"name\":[\"Alex\",\"1\"],\"height\":[\"175\",\"175\"]},\n" +
 				"                          \"issuer_did\":\"%s\",\n" +
@@ -62,7 +64,7 @@ public class ProverStoreClaimTest extends AnoncredsIntegrationTest {
 		initCommonWallet();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String claimOffer = String.format(claimOfferTemplate, issuerDid, 1);
 

@@ -1,15 +1,14 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
-import org.hyperledger.indy.sdk.utils.StorageUtils;
+import org.hyperledger.indy.sdk.InvalidStructureException;
+import org.hyperledger.indy.sdk.wallet.InMemWalletType;
 import org.hyperledger.indy.sdk.wallet.Wallet;
-import org.hyperledger.indy.sdk.wallet.WalletTypeInmem;
 import org.json.JSONArray;
 import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -92,7 +91,7 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		initCommonWallet();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String filter = String.format("{\"schema_seq_no\":\"%d\"}", 1);
 
@@ -100,14 +99,13 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 	}
 
 	@Test
-	public void testOpenWalletWorksForPlugged() throws Exception {
-		WalletTypeInmem.getInstance().clear();
-
+	public void testGetClaimOffersForPlugged() throws Exception {
 		String type = "proverInmem";
 		String poolName = "default";
 		String walletName = "proverCustomWallet";
 
-		Wallet.registerWalletType(type, WalletTypeInmem.getInstance()).get();
+		Wallet.registerWalletType(type, new InMemWalletType()).get();
+
 		Wallet.createWallet(poolName, walletName, type, null, null).get();
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 
@@ -123,12 +121,10 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 
 		String claimOffers = Anoncreds.proverGetClaimOffers(wallet, filter).get();
 		JSONArray claimOffersArray = new JSONArray(claimOffers);
-
+		System.out.println(claimOffersArray);
 		assertEquals(2, claimOffersArray.length());
 
 		assertTrue(claimOffersArray.toString().contains(claimOffer));
 		assertTrue(claimOffersArray.toString().contains(claimOffer2));
-
-		WalletTypeInmem.getInstance().clear();
 	}
 }

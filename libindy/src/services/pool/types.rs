@@ -1,43 +1,101 @@
+extern crate serde;
 extern crate serde_json;
 extern crate rmp_serde;
+extern crate indy_crypto;
 
-use std::cmp;
 use std::cmp::Eq;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use super::zmq;
+use errors::common::CommonError;
+use utils::crypto::verkey_builder::build_full_verkey;
+
+use self::indy_crypto::bls;
 
 use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::json::{JsonDecodable, JsonEncodable};
 
+
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct NodeData {
     pub alias: String,
-    pub client_ip: String,
-    pub client_port: u32,
-    pub node_ip: String,
-    pub node_port: u32,
-    pub services: Vec<String>,
+    pub client_ip: Option<String>,
+    #[serde(deserialize_with = "string_or_number")]
+    #[serde(default)]
+    pub client_port: Option<u64>,
+    pub node_ip: Option<String>,
+    #[serde(deserialize_with = "string_or_number")]
+    #[serde(default)]
+    pub node_port: Option<u64>,
+    pub services: Option<Vec<String>>,
+    pub blskey: Option<String>
+}
+
+fn string_or_number<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
+    where D: serde::Deserializer<'de>
+{
+    let deser_res: Result<serde_json::Value, _> = serde::Deserialize::deserialize(deserializer);
+    match deser_res {
+        Ok(serde_json::Value::String(s)) => match s.parse::<u64>() {
+            Ok(num) => Ok(Some(num)),
+            Err(err) => Err(serde::de::Error::custom(format!("Invalid Node transaction: {:?}", err)))
+        },
+        Ok(serde_json::Value::Number(n)) => match n.as_u64() {
+            Some(num) => Ok(Some(num)),
+            None => Err(serde::de::Error::custom(format!("Invalid Node transaction")))
+        },
+        Ok(serde_json::Value::Null) => Ok(None),
+        _ => Err(serde::de::Error::custom(format!("Invalid Node transaction"))),
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct GenTransaction {
+pub struct NodeTransaction {
     pub data: NodeData,
     pub dest: String,
     pub identifier: String,
     #[serde(rename = "txnId")]
     pub txn_id: Option<String>,
+    pub verkey: Option<String>,
     #[serde(rename = "type")]
-    pub txn_type: String,
+    pub txn_type: String
 }
 
-impl JsonEncodable for GenTransaction {}
+impl JsonEncodable for NodeTransaction {}
 
-impl<'a> JsonDecodable<'a> for GenTransaction {}
+impl<'a> JsonDecodable<'a> for NodeTransaction {}
 
-impl GenTransaction {
+impl NodeTransaction {
     pub fn to_msg_pack(&self) -> Result<Vec<u8>, rmp_serde::encode::Error> {
         rmp_serde::to_vec_named(self)
+    }
+
+    pub fn update(&mut self, other: &mut NodeTransaction) -> Result<(), CommonError> {
+        assert_eq!(self.dest, other.dest);
+        assert_eq!(self.data.alias, other.data.alias);
+
+        if let Some(ref mut client_ip) = other.data.client_ip {
+            self.data.client_ip = Some(client_ip.to_owned());
+        }
+        if let Some(ref mut client_port) = other.data.client_port {
+            self.data.client_port = Some(client_port.to_owned());
+        }
+        if let Some(ref mut node_ip) = other.data.node_ip {
+            self.data.node_ip = Some(node_ip.to_owned());
+        }
+        if let Some(ref mut node_port) = other.data.node_port {
+            self.data.node_port = Some(node_port.to_owned());
+        }
+        if let Some(ref mut blskey) = other.data.blskey {
+            self.data.blskey = Some(blskey.to_owned());
+        }
+        if let Some(ref mut services) = other.data.services {
+            self.data.services = Some(services.to_owned());
+        }
+        if other.verkey.is_some() {
+            self.verkey = Some(build_full_verkey(&self.dest, other.verkey.as_ref().map(String::as_str))?);
+        }
+        Ok(())
     }
 }
 
@@ -75,29 +133,25 @@ pub struct CatchupReq {
 impl<'a> JsonDecodable<'a> for CatchupReq {}
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct CatchupRep {
     pub ledgerId: usize,
     pub consProof: Vec<String>,
-    pub txns: HashMap<String, GenTransaction>,
+    pub txns: HashMap<String, serde_json::Value>,
 }
 
 impl CatchupRep {
-    pub fn min_tx(&self) -> usize {
-        assert!(!self.txns.is_empty());
-        (self.txns.keys().min().unwrap().parse::<usize>()).unwrap()
-    }
-}
-
-impl cmp::Ord for CatchupRep {
-    fn cmp(&self, other: &Self) -> cmp::Ordering {
-        other.min_tx().cmp(&self.min_tx())
-    }
-}
-
-impl cmp::PartialOrd for CatchupRep {
-    fn partial_cmp(&self, other: &CatchupRep) -> Option<cmp::Ordering> {
-        Some(self.cmp(other))
+    pub fn min_tx(&self) -> Result<usize, CommonError> {
+        let mut min = None;
+        for (k, _) in self.txns.iter() {
+            let val = k.parse::<usize>()
+                .map_err(|err| CommonError::InvalidStructure(format!("{:?}", err)))?;
+            match min {
+                None => min = Some(val),
+                Some(m) => if val < m { min = Some(val) }
+            }
+        }
+        min.ok_or(CommonError::InvalidStructure(format!("Empty Map")))
     }
 }
 
@@ -189,11 +243,31 @@ pub struct RemoteNode {
     pub zaddr: String,
     pub zsock: Option<zmq::Socket>,
     pub is_blacklisted: bool,
+    pub blskey: Option<bls::VerKey>
 }
 
 pub struct CatchUpProcess {
     pub merkle_tree: MerkleTree,
-    pub pending_reps: BinaryHeap<(CatchupRep, usize)>,
+    pub pending_reps: Vec<(CatchupRep, usize)>,
+}
+
+pub trait MinValue {
+    fn get_min_index(&self) -> Result<usize, CommonError>;
+}
+
+impl MinValue for Vec<(CatchupRep, usize)> {
+    fn get_min_index(&self) -> Result<usize, CommonError> {
+        let mut res = None;
+        for (index, &(ref catchup_rep, _)) in self.iter().enumerate() {
+            match res {
+                None => { res = Some((catchup_rep, index)); }
+                Some((min_rep, i)) => if catchup_rep.min_tx()? < min_rep.min_tx()? {
+                    res = Some((catchup_rep, index));
+                }
+            }
+        }
+        Ok(res.ok_or(CommonError::InvalidStructure("Element not Found".to_string()))?.1)
+    }
 }
 
 #[derive(Debug)]

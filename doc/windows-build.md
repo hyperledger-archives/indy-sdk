@@ -3,7 +3,7 @@
 ## Get/build dependencies
 
 All prebuilt can be downloaded from
-https://repo.evernym.com/libindy/windows/deps/
+https://repo.sovrin.org/windows/libindy/deps/
 
 ### Binary deps
 

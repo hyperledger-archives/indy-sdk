@@ -2,30 +2,28 @@ source 'https://github.com/CocoaPods/Specs.git'
 source 'https://github.com/hyperledger/indy-sdk.git'
 platform :ios, '10.2'
 
-workspace 'libindy.xcworkspace'
-
-#use_frameworks!
+workspace 'Indy.xcworkspace'
 
 def appPods
     pod 'libsodium'
     pod 'libzmq-pw',"4.2.2"
     pod 'OpenSSL'
     pod 'milagro', "3.0.0"
-    pod 'libindy-core', "0.1.1"
+    pod 'libindy', "0.1.4"
 end
 
-target 'libindy-demo' do
-    project 'libindy-demo'
+target 'Indy-demo' do
+    project 'Indy-demo'
     pod 'CoreBitcoin', :podspec => 'https://raw.github.com/oleganza/CoreBitcoin/master/CoreBitcoin.podspec'
 
-    target 'libindy-demoTests' do
+    target 'Indy-demoTests' do
 	inherit! :search_paths
     end
 end
 
 
-target 'libindy' do
-    project 'libindy'
+target 'Indy' do
+    project 'Indy'
     appPods
 end
 

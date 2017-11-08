@@ -3,7 +3,7 @@ extern crate sodiumoxide;
 use errors::common::CommonError;
 
 use self::sodiumoxide::crypto::secretbox;
-use std::convert::AsMut;
+use utils::byte_array::_clone_into_array;
 
 pub struct XSalsa20 {}
 
@@ -23,26 +23,18 @@ impl XSalsa20 {
     pub fn encrypt(&self, key: &[u8], nonce: &[u8], doc: &[u8]) -> Vec<u8> {
         secretbox::seal(
             doc,
-            &secretbox::Nonce(XSalsa20::_clone_into_array(nonce)),
-            &secretbox::Key(XSalsa20::_clone_into_array(key))
+            &secretbox::Nonce(_clone_into_array(nonce)),
+            &secretbox::Key(_clone_into_array(key))
         )
     }
 
     pub fn decrypt(&self, key: &[u8], nonce: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError> {
         secretbox::open(
             doc,
-            &secretbox::Nonce(XSalsa20::_clone_into_array(nonce)),
-            &secretbox::Key(XSalsa20::_clone_into_array(key))
+            &secretbox::Nonce(_clone_into_array(nonce)),
+            &secretbox::Key(_clone_into_array(key))
         )
-            .map_err(|_| CommonError::InvalidStructure("Unable to decrypt data".to_string()))
-    }
-
-    fn _clone_into_array<A, T>(slice: &[T]) -> A
-        where A: Sized + Default + AsMut<[T]>, T: Clone
-    {
-        let mut a = Default::default();
-        <A as AsMut<[T]>>::as_mut(&mut a).clone_from_slice(slice);
-        a
+            .map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))
     }
 }
 

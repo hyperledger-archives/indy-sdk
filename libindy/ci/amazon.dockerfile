@@ -29,7 +29,14 @@ RUN cd /tmp && \
 ENV PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
-ENV RUST_ARCHIVE=rust-1.19.0-x86_64-unknown-linux-gnu.tar.gz
+RUN yum install -y java-1.8.0-openjdk-devel
+ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk
+
+RUN wget https://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo -O /etc/yum.repos.d/epel-apache-maven.repo
+RUN sed -i s/\$releasever/6/g /etc/yum.repos.d/epel-apache-maven.repo
+RUN yum install -y apache-maven
+
+ENV RUST_ARCHIVE=rust-1.20.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
 
 RUN mkdir -p /rust
@@ -43,9 +50,16 @@ RUN curl -fsOSL $RUST_DOWNLOAD_URL \
 
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.cargo/bin"
 
+RUN cd /usr/src && \
+    wget https://www.python.org/ftp/python/3.5.2/Python-3.5.2.tgz && \
+    tar xzf Python-3.5.2.tgz && \
+    cd Python-3.5.2 && \
+    ./configure && \
+    make altinstall
+
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy
 
 RUN cargo install --git https://github.com/DSRCorporation/cargo-test-xunit
 
-WORKDIR /home/sorvin
+WORKDIR /home/indy

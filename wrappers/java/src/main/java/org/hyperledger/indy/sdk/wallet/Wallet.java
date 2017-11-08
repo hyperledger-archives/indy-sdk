@@ -1,13 +1,14 @@
 package org.hyperledger.indy.sdk.wallet;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
+import org.hyperledger.indy.sdk.ParamGuard;
 
 import com.sun.jna.Callback;
 
@@ -126,7 +127,7 @@ public class Wallet extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	private static final Map<String, WalletType> REGISTERED_WALLET_TYPES = Collections.synchronizedMap(new HashMap<String, WalletType>());
+	private static final List<WalletType> REGISTERED_WALLET_TYPES = Collections.synchronizedList(new ArrayList<WalletType>());
 
 	/**
 	 * Registers custom wallet implementation.
@@ -138,13 +139,16 @@ public class Wallet extends IndyJava.API {
 	 * @throws InterruptedException Thrown...???
 	 */
 	public static CompletableFuture<Void> registerWalletType(
-			String xtype,
-			WalletType walletType) throws IndyException, InterruptedException {
+		String xtype,
+		WalletType walletType) throws IndyException, InterruptedException {
 
-		REGISTERED_WALLET_TYPES.put(xtype, walletType);
-
+		ParamGuard.notNullOrWhiteSpace(xtype, "xtype");	
+		ParamGuard.notNull(walletType, "walletType");
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
+		
+		REGISTERED_WALLET_TYPES.add(walletType);
 
 		int result = LibIndy.api.indy_register_wallet_type(
 				commandHandle,
@@ -183,6 +187,9 @@ public class Wallet extends IndyJava.API {
 			String config,
 			String credentials) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(poolName, "poolName");	
+		ParamGuard.notNullOrWhiteSpace(name, "name");	
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -214,6 +221,8 @@ public class Wallet extends IndyJava.API {
 			String runtimeConfig,
 			String credentials) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(name, "name");	
+		
 		CompletableFuture<Wallet> future = new CompletableFuture<Wallet>();
 		int commandHandle = addFuture(future);
 
@@ -239,6 +248,8 @@ public class Wallet extends IndyJava.API {
 	private static CompletableFuture<Void> closeWallet(
 			Wallet wallet) throws IndyException {
 
+		ParamGuard.notNull(wallet, "wallet");
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -266,6 +277,8 @@ public class Wallet extends IndyJava.API {
 			String name,
 			String credentials) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(name, "name");	
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 

@@ -143,8 +143,8 @@ impl Wallet for PluggedWallet {
         if err != ErrorCode::Success {
             return Err(WalletError::PluggedWallerError(err));
         }
-
-        let result = PluggedWalletJSONValues::from_json(values_json.as_str())?
+        
+        let result = PluggedWalletJSONValues::from_json(values_json.as_str()).map_err(map_err_trace!())?
             .values
             .iter()
             .map(|value| (value.key.clone(), value.value.clone()))
@@ -176,6 +176,16 @@ impl Wallet for PluggedWallet {
         }
 
         Ok(result)
+    }
+
+    fn close(&self) -> Result<(), WalletError> {
+        let err = (self.close_handler)(self.handle);
+
+        if err != ErrorCode::Success {
+            return Err(WalletError::PluggedWallerError(err));
+        }
+
+        Ok(())
     }
 
     fn get_pool_name(&self) -> String {

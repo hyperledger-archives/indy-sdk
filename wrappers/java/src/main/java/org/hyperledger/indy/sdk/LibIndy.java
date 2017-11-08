@@ -56,12 +56,32 @@ public abstract class LibIndy {
 		// signus.rs
 
 		public int indy_create_and_store_my_did(int command_handle, int wallet_handle, String did_json, Callback cb);
-		public int indy_replace_keys(int command_handle, int wallet_handle, String did, String identity_json, Callback cb);
+		public int indy_replace_keys_start(int command_handle, int wallet_handle, String did, String identity_json, Callback cb);
+		public int indy_replace_keys_apply(int command_handle, int wallet_handle, String did, Callback cb);
 		public int indy_store_their_did(int command_handle, int wallet_handle, String identity_json, Callback cb);
 		public int indy_sign(int command_handle, int wallet_handle, String did, byte[] message_raw, int message_len, Callback cb);
 		public int indy_verify_signature(int command_handle, int wallet_handle, int pool_handle, String did, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
 		public int indy_encrypt(int command_handle, int wallet_handle, int pool_handle, String my_did, String did, byte[] message_raw, int message_len, Callback cb);
-		public int indy_decrypt(int command_handle, int wallet_handle, String myDid, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, Callback cb);
+		public int indy_decrypt(int command_handle, int wallet_handle, int pool_handle, String myDid, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, Callback cb);
+		public int indy_encrypt_sealed(int command_handle, int wallet_handle, int pool_handle, String did, byte[] message_raw, int message_len, Callback cb);
+		public int indy_decrypt_sealed(int command_handle, int wallet_handle, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
+		public int indy_key_for_did(int command_handle, int pool_handle, int wallet_handle, String did, Callback cb);
+		public int indy_set_endpoint_for_did(int command_handle, int wallet_handle, String did, String address, String transportKey, Callback cb);
+		public int indy_get_endpoint_for_did(int command_handle, int wallet_handle, int pool_handle, String did, Callback cb);
+		public int indy_set_did_metadata(int command_handle, int wallet_handle, String did, String metadata, Callback cb);
+		public int indy_get_did_metadata(int command_handle, int wallet_handle, String did, Callback cb);
+
+		// signus.rs
+
+		public int indy_create_key(int command_handle, int wallet_handle, String key_json, Callback cb);
+		public int indy_set_key_metadata(int command_handle, int wallet_handle, String verkey, String metadata, Callback cb);
+		public int indy_get_key_metadata(int command_handle, int wallet_handle, String verkey, Callback cb);
+		public int indy_crypto_sign(int command_handle, int wallet_handle, String my_vk, byte[] message_raw, int message_len, Callback cb);
+		public int indy_crypto_verify(int command_handle, String their_vk, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
+		public int indy_crypto_box(int command_handle, int wallet_handle, String my_vk, String their_vk, byte[] message_raw, int message_len, Callback cb);
+		public int indy_crypto_box_open(int command_handle, int wallet_handle, String my_vk, String their_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, Callback cb);
+		public int indy_crypto_box_seal(int command_handle, String their_vk, byte[] message_raw, int message_len, Callback cb);
+		public int indy_crypto_box_seal_open(int command_handle, int wallet_handle, String my_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
 
 		// anoncreds.rs
 
@@ -80,14 +100,18 @@ public abstract class LibIndy {
 		public int indy_verifier_verify_proof(int command_handle, String proof_request_json, String proof_json, String schemas_json, String claim_defs_jsons, String revoc_regs_json, Callback cb);
 
 		// agent.rs
+		public int indy_prep_msg(int command_handle, int wallet_handle, String sender_vk, String recipient_vk, byte[] msg_data, int msg_len, Callback cb);
+		public int indy_prep_anonymous_msg(int command_handle, String recipient_vk, byte[] msg_data, int msg_len, Callback cb);
+		public int indy_parse_msg(int command_handle, int wallet_handle, String recipient_vk, byte[] encrypted_msg, int encrypted_len, Callback cb);
 
-		public int indy_agent_connect(int command_handle, int pool_handle, int wallet_handle, String sender_did, String receiver_did, Callback connection_cb, Callback message_cb);
-		public int indy_agent_listen(int command_handle, String endpoint, Callback listener_cb, Callback connection_cb, Callback message_cb);
-		public int indy_agent_add_identity(int command_handle, int listener_handle, int pool_handle, int wallet_handle, String did, Callback add_identity_cb);
-		public int indy_agent_remove_identity(int command_handle, int listener_handle, int wallet_handle, String did, Callback rm_identity_cb);
-		public int indy_agent_send(int command_handle, int connection_handle, String message, Callback cb);
-		public int indy_agent_close_connection(int command_handle, int connection_handle, Callback cb);
-		public int indy_agent_close_listener(int command_handle, int listener_handle, Callback cb);
+		// pairwise.rs
+
+		public int indy_is_pairwise_exists(int command_handle, int wallet_handle, String their_did, Callback cb);
+		public int indy_create_pairwise(int command_handle, int wallet_handle, String their_did, String my_did, String metadata, Callback cb);
+		public int indy_list_pairwise(int command_handle, int wallet_handle, Callback cb);
+		public int indy_get_pairwise(int command_handle, int wallet_handle, String their_did, Callback cb);
+		public int indy_set_pairwise_metadata(int command_handle, int wallet_handle, String their_did, String metadata, Callback cb);
+
 	}
 
 	/*
@@ -110,8 +134,8 @@ public abstract class LibIndy {
 
 	/**
 	 * Initializes the API with the path to the C-Callable library.
-	 * 
-	 * @param path The path to the directory containing the C-Callable library file.
+	 *
+	 * @param searchPath The path to the directory containing the C-Callable library file.
 	 */
 	public static void init(String searchPath) {
 
@@ -140,7 +164,7 @@ public abstract class LibIndy {
 
 	/**
 	 * Indicates whether or not the API has been initialized.
-	 * 
+	 *
 	 * @return true if the API is initialize, otherwise false.
 	 */
 	public static boolean isInitialized() {
