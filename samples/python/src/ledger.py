@@ -33,16 +33,15 @@ async def demo():
     their_wallet_handle = await wallet.open_wallet(their_wallet_name, None, None)
 
     # 5. Create My DID
-    (my_did, my_verkey, my_pk) = await signus.create_and_store_my_did(my_wallet_handle, "{}")
+    (my_did, my_verkey) = await signus.create_and_store_my_did(my_wallet_handle, "{}")
 
     # 6. Create Their DID from Trustee1 seed
-    (their_did, their_verkey, their_pk) = \
+    (their_did, their_verkey) = \
         await signus.create_and_store_my_did(their_wallet_handle, json.dumps({"seed": seed_trustee1}))
 
     # 7. Store Their DID
     their_identity_json = json.dumps({
         'did': their_did,
-        'pk': their_pk,
         'verkey': their_verkey
     })
 
