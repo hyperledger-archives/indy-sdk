@@ -37,9 +37,7 @@ export enum StateType {
 }
 
 export interface IRecipientInfo {
-  id: string,
-  DIDself?: string,
-  DIDremote?: string
+  id: string
 }
 
 export interface IConnectOptions {
