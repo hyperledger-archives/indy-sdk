@@ -52,7 +52,7 @@
     [TestUtils cleanupStorage];
     NSString *identifier = @"some_identifier";
     NSString *data = @"{\"name\":\"name\", "\
-                       "\"keys\":\"name\"}";
+                       "\"attr_names\":\"name\"}";
     
     NSString *schemaRequest;
     NSError *ret = [[LedgerUtils sharedInstance] buildSchemaRequestWithSubmitterDid:identifier

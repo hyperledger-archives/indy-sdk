@@ -62,7 +62,7 @@
                         "\"data\":{"
                             "\"name\":\"gvt\","
                             "\"version\":\"1.0\","
-                            "\"keys\":[\"age\",\"sex\",\"height\",\"name\"]}"
+                            "\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}"
                         "}", schemaSeqNo ];
     
     __block NSString *claimDefJSON = nil;
@@ -252,7 +252,7 @@
                         "\"data\":{"
                         "\"name\":\"gvt\","
                         "\"version\":\"1.0\","
-                        "\"keys\":[\"age\",\"sex\",\"height\",\"name\"]}"
+                        "\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}"
                         "}", schemaSeqNo ];
     
     __block NSString *claimDefJSON = nil;

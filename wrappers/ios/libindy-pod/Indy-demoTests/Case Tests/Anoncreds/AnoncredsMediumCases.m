@@ -49,7 +49,7 @@
                         "\"seqNo\":1,"
                         "\"name\":\"name\","
                         "\"version\":\"1.0\","
-                        "\"keys\":[]}";
+                        "\"attr_names\":[]}";
     
     // 2. create claim definition
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
@@ -76,7 +76,7 @@
                         "\"data\":{"\
                             "\"name\":\"name\","\
                             "\"version\":\"1.0\","\
-                            "\"keys\":[]"\
+                            "\"attr_names\":[]"\
                         "}}";
     
     // 2. create claim definition
