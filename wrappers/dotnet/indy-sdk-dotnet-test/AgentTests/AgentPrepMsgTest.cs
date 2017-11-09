@@ -41,7 +41,7 @@ namespace Hyperledger.Indy.Test.AgentTests
             var paramJson = string.Format("{{\"seed\":\"{0}\"}}", MY1_SEED);
 
             var senderVk = await Crypto.CreateKeyAsync(wallet, paramJson);
-            var encryptedMsg = await Agent.PrepMsgAsync(wallet, senderVk, VERKEY_FOR_MY2_SEED, MESSAGE);
+            var encryptedMsg = await Agent.PrepMsgAsync(wallet, senderVk, VERKEY_MY2, MESSAGE);
 
             await CheckMessage(senderVk, encryptedMsg);
         }
@@ -54,7 +54,7 @@ namespace Hyperledger.Indy.Test.AgentTests
             var result = await Signus.CreateAndStoreMyDidAsync(wallet, didJson);
             var senderVk = result.VerKey;
 
-            var encryptedMsg = await Agent.PrepMsgAsync(wallet, senderVk, VERKEY_FOR_MY2_SEED, MESSAGE);
+            var encryptedMsg = await Agent.PrepMsgAsync(wallet, senderVk, VERKEY_MY2, MESSAGE);
 
             await CheckMessage(senderVk, encryptedMsg);
         }
@@ -68,7 +68,7 @@ namespace Hyperledger.Indy.Test.AgentTests
             var result = await Signus.CreateAndStoreMyDidAsync(wallet, didJson);
             var senderVk = result.VerKey;
 
-            var encryptedMsg = await Agent.PrepMsgAsync(wallet, senderVk, VERKEY_FOR_MY2_SEED, MESSAGE);
+            var encryptedMsg = await Agent.PrepMsgAsync(wallet, senderVk, VERKEY_MY2, MESSAGE);
 
             await CheckMessage(senderVk, encryptedMsg);
         }
@@ -77,7 +77,7 @@ namespace Hyperledger.Indy.Test.AgentTests
         public async Task TestPrepMsgWorksForUnknownSenderVerkey()
         {
             var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-                Agent.PrepMsgAsync(wallet, VERKEY, VERKEY_FOR_MY2_SEED, MESSAGE)
+                Agent.PrepMsgAsync(wallet, VERKEY, VERKEY_MY2, MESSAGE)
             );
         }
 

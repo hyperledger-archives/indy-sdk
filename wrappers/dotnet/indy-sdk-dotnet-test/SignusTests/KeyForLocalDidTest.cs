@@ -23,19 +23,19 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestKeyForLocalDidWorksForTheirDid()
         {
-            var identityJson = string.Format(IDENTITY_JSON_TEMPLATE, DID_FOR_MY1_SEED, VERKEY_FOR_MY1_SEED);
+            var identityJson = string.Format(IDENTITY_JSON_TEMPLATE, DID_MY1, VERKEY_MY1);
             await Signus.StoreTheirDidAsync(wallet, identityJson);
 
-            var receivedKey = await Signus.KeyForLocalDidAsync(wallet, DID_FOR_MY1_SEED);
+            var receivedKey = await Signus.KeyForLocalDidAsync(wallet, DID_MY1);
 
-            Assert.AreEqual(VERKEY_FOR_MY1_SEED, receivedKey);
+            Assert.AreEqual(VERKEY_MY1, receivedKey);
         }
 
         [TestMethod]
         public async Task TestKeyForDidWorksForNoKey()
         {
             var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-               Signus.KeyForLocalDidAsync(wallet, DID_FOR_MY2_SEED)
+               Signus.KeyForLocalDidAsync(wallet, DID_MY2)
            );
         }
     }

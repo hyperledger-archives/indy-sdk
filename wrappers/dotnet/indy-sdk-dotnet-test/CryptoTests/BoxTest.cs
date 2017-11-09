@@ -1,28 +1,25 @@
 ﻿using Hyperledger.Indy.CryptoApi;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.CryptoTests
 {
     [TestClass]
-    public class BoxTest : CryptoIntegrationTestBase
+    public class BoxTest : IndyIntegrationTestWithSingleWallet
     {
-        [TestMethod] //Not sure if this is a good test, but since the encrypted content is not static...
+        [TestMethod]
         public async Task TestBoxWorks()
         {
-            var boxResult = await Crypto.BoxAsync(wallet, senderVerKey, recipientVerKey, MESSAGE);
-
-            var decryptedMessage = await Crypto.BoxOpenAsync(wallet, recipientVerKey, senderVerKey, boxResult.EncryptedMessage, boxResult.Nonce);
-            Assert.IsTrue(MESSAGE.SequenceEqual(decryptedMessage));
+            var myVk = await Crypto.CreateKeyAsync(wallet, MY1_IDENTITY_KEY_JSON);
+            await Crypto.BoxAsync(wallet, myVk, VERKEY_MY2, MESSAGE);
         }
 
         [TestMethod]
-        public async Task TestBoxFailsIfSenderKeyNotInWallet()
+        public async Task TestBoxWorksForUnknownCoder()
         {
             var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-               Crypto.BoxAsync(wallet, KEY_NOT_IN_WALLET, recipientVerKey, MESSAGE)
+               Crypto.BoxAsync(wallet, VERKEY_MY1, VERKEY_MY2, MESSAGE)
            );
         }
     }
