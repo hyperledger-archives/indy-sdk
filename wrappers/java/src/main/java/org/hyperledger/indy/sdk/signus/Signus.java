@@ -678,17 +678,16 @@ public class Signus extends IndyJava.API {
 	/**
 	 * Returns ver key (key id) for the given DID.
 	 *
-	 * This call follow the idea that we resolve information about their DID from
-	 * the ledger with cache in the local wallet. The openWallet call has freshness parameter
+	 * "keyForDid" call follow the idea that we resolve information about their DID from
+	 * the ledger with cache in the local wallet. The "openWallet" call has freshness parameter
 	 * that is used for checking the freshness of cached pool value.
 	 *
 	 * Note if you don't want to resolve their DID info from the ledger you can use
-	 * keyForLocalDid call instead that will look only to local wallet and skip
+	 * "keyForLocalDid" call instead that will look only to local wallet and skip
 	 * freshness checking.
 	 *
-	 * Note that createAndStoreMyDid makes similar wallet record as createKey.
+	 * Note that "createAndStoreMyDid" makes similar wallet record as "createKey".
 	 * As result we can use returned ver key in all generic crypto and messaging functions.
-	 * Note that this function looks to wallet and if no wallet record can lookup ledger.
 	 *
 	 * @param pool   The pool.
 	 * @param wallet The wallet.
@@ -726,14 +725,13 @@ public class Signus extends IndyJava.API {
 	/**
 	 * Returns ver key (key id) for the given DID.
 	 *
-	 * This call looks data stored in the local wallet only and skips freshness checking.
+	 * "keyForLocalDid" call looks data stored in the local wallet only and skips freshness checking.
 	 *
-	 * Note if you want to get fresh data from the ledger you can use indy_key_for_did call
+	 * Note if you want to get fresh data from the ledger you can use "keyForDid" call
 	 * instead.
 	 *
-	 * Note that indy_create_and_store_my_did makes similar wallet record as indy_create_key.
+	 * Note that "createAndStoreMyDid" makes similar wallet record as "createKey".
 	 * As result we can use returned ver key in all generic crypto and messaging functions.
-	 * Note that this function looks to wallet and if no wallet record can lookup ledger.
 	 *
 	 * @param wallet The wallet.
 	 * @param did
