@@ -154,6 +154,19 @@ namespace Hyperledger.Indy.SignusApi
         };
 
         /// <summary>
+        /// Gets the callback to use when the command for KeyForLocalDidAsync has completed.
+        /// </summary>
+        private static SignusKeyForLocalDidCompletedDelegate _keyForLocalDidCompletedCallback = (xcommand_handle, err, key) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(key);
+        };
+
+        /// <summary>
         /// Gets the callback to use when the command for GetEndpointForDidAsync has completed.
         /// </summary>
         private static SignusGetEndpointForDidCompletedDelegate _getEndpointForDidCompletedCallback = (xcommand_handle, err, endpoint, transport_vk) =>
@@ -180,6 +193,8 @@ namespace Hyperledger.Indy.SignusApi
 
             taskCompletionSource.SetResult(metadata);
         };
+
+        
 
         /// <summary>
         /// Creates signing and encryption keys in specified wallet for a new DID owned by the caller.
@@ -646,6 +661,42 @@ namespace Hyperledger.Indy.SignusApi
                 wallet.Handle,
                 did,
                 _keyForDidCompletedCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Gets the verification key for the specified DID.
+        /// </summary>
+        /// <remarks>
+        /// This method will obtain the verification key associated with the specified <paramref name="did"/>from the provided <paramref name="wallet"/> but will
+        /// not attempt to retrieve the key from the ledger if not present in the wallet, nor will it perform any freshness check against the ledger to determine 
+        /// if the key is up-to-date.  To ensure that the key is fresh use the <see cref="KeyForDidAsync(Pool, Wallet, string)"/> method instead.
+        /// <note type="note">
+        /// The <see cref="CreateAndStoreMyDidAsync(Wallet, string)"/> and <see cref="Crypto.CreateKeyAsync(Wallet, string)"/> methods both create
+        /// similar wallet records so the returned verification key in all generic crypto and messaging functions.
+        /// </note>
+        /// </remarks>
+        /// <param name="wallet">The wallet to resolve the DID from.</param>
+        /// <param name="did">The DID to get the verification key for.</param>
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the verification key associated with the DID.</returns>
+        /// <exception cref="WalletValueNotFoundException">Thrown if the DID could not be resolved from the <paramref name="wallet"/>.</exception>
+        public static Task<string> KeyForLocalDidAsync(Wallet wallet, string did)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(did, "did");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_key_for_local_did(
+                commandHandle,
+                wallet.Handle,
+                did,
+                _keyForLocalDidCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
