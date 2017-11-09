@@ -423,6 +423,7 @@
                                                           keyJson:[NSString stringWithFormat:@"{\"seed\":\"%@\"}", [TestUtils mySeed1]]
                                                         outVerkey:&verkey];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:createKeyWithWalletHandle failed");
+    XCTAssertNotNil(verkey);
 
     NSData *encrypted = nil;
     ret = [[CryptoUtils sharedInstance] cryptoBoxSeal:[TestUtils message]
