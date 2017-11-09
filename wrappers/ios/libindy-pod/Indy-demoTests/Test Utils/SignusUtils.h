@@ -69,6 +69,7 @@
                             outNonce:(NSData **)nonce;
 
 - (NSError *)decryptWithWalletHandle:(IndyHandle)walletHandle
+                          poolHandle:(IndyHandle)poolHandle
                                myDid:(NSString *)myDid
                                  did:(NSString *)did
                     encryptedMessage:(NSData *)encryptedMessage

@@ -20,7 +20,8 @@ async def create_and_store_my_did(wallet_handle: int,
     :param did_json: Identity information as json. Example:
         {
             "did": string, (optional;
-                    if not provided and cid param is false then the first 16 bit of the verkey will be used as a new DID;
+                    if not provided and cid param is false then the first 16 bit of the verkey will be
+                    used as a new DID;
                     if not provided and cid is true then the full verkey will be used as a new DID;
                     if provided, then keys will be replaced - key rotation use case)
             "seed": string, (optional; if not provide then a random one will be created)
@@ -577,9 +578,20 @@ async def key_for_did(pool_handle: int,
                       wallet_handle: int,
                       did: str) -> str:
     """
-    Retrieves the meta information for the giving key in the wallet.
+    Returns ver key (key id) for the given DID.
 
-    :param pool_handle: Pool handle (created by open)pool).
+    "key_for_did" call follow the idea that we resolve information about their DID from
+    the ledger with cache in the local wallet. The "open_wallet" call has freshness parameter
+    that is used for checking the freshness of cached pool value.
+
+    Note if you don't want to resolve their DID info from the ledger you can use
+    "indy_key_for_local_did" call instead that will look only to local wallet and skip
+    freshness checking.
+
+    Note that "create_and_store_my_did" makes similar wallet record as "create_key".
+    As result we can use returned ver key in all generic crypto and messaging functions.
+
+    :param pool_handle: Pool handle (created by open_pool).
     :param wallet_handle: Wallet handle (created by open_wallet).
     :param did:
     :return: key:
@@ -608,6 +620,47 @@ async def key_for_did(pool_handle: int,
     res = key.decode()
 
     logger.debug("key_for_did: <<< res: %r", res)
+    return res
+
+
+async def key_for_local_did(wallet_handle: int,
+                            did: str) -> str:
+    """
+    Returns ver key (key id) for the given DID.
+
+    "key_for_local_did" call looks data stored in the local wallet only and skips freshness checking.
+
+    Note if you want to get fresh data from the ledger you can use "key_for_did" call
+    instead.
+
+    Note that "create_and_store_my_did" makes similar wallet record as "create_key".
+    As result we can use returned ver key in all generic crypto and messaging functions.
+
+    :param wallet_handle: Wallet handle (created by open_wallet).
+    :param did:
+    :return: key:
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("key_for_local_did: >>> wallet_handle: %r, did: %r",
+                 wallet_handle,
+                 did)
+
+    if not hasattr(key_for_local_did, "cb"):
+        logger.debug("key_for_local_did: Creating callback")
+        key_for_local_did.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_did = c_char_p(did.encode('utf-8'))
+
+    key = await do_call('indy_key_for_local_did',
+                        c_wallet_handle,
+                        c_did,
+                        key_for_local_did.cb)
+
+    res = key.decode()
+
+    logger.debug("key_for_local_did: <<< res: %r", res)
     return res
 
 

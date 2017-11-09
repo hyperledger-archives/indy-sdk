@@ -2194,7 +2194,7 @@
     NSMutableDictionary *schemaData = [NSMutableDictionary new];
     schemaData[@"name"] = @"gvt3";
     schemaData[@"version"] = @"3.0";
-    schemaData[@"keys"] = keys;
+    schemaData[@"attr_names"] = keys;
     
     NSString *schemaDataJson = [NSDictionary toString:schemaData];
     

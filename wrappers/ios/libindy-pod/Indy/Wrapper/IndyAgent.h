@@ -12,19 +12,20 @@
 + (void)prepareMsg:(NSData *)msg
   withWalletHandle:(IndyHandle)walletHandle
           senderVk:(NSString*)senderVk
-       recipientVk:(NSString*)recipientVK
+       recipientVk:(NSString*)recipientVk
         completion:(void (^)(NSError *error,
                              NSData *encryptedMsg)) completion;
 
 + (void)prepareAnonymousMsg:(NSData *)msg
-            withrecipientVk:(NSString*)recipientVK
+            withRecipientVk:(NSString *)recipientVk
                  completion:(void (^)(NSError *error,
                                       NSData *encryptedMsg)) completion;
 
 + (void)parseMsg:(NSData *)msg
 withWalletHandle:(IndyHandle)walletHandle
-     recipientVk:(NSString*)recipientVK
+     recipientVk:(NSString*)recipientVk
       completion:(void (^)(NSError *error,
+                           NSString *senderVk,
                            NSData *dencryptedMsg)) completion;
 
 @end

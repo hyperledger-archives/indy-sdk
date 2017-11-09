@@ -20,4 +20,13 @@
             recipientVk:(NSString *)recipientVk
                  outMsg:(NSData **)outMsg;
 
+- (NSError *)prepareAnonymousMsg:(NSData *)msg
+                     recipientVk:(NSString *)recipientVk
+                          outMsg:(NSData **)outMsg;
+
+- (NSError *)parseMsg:(NSData *)msg
+     withWalletHandle:(IndyHandle)walletHandle
+          recipientVk:(NSString *)recipientVk
+          outSenderVk:(NSString **)outSenderVk
+               outMsg:(NSData **)outMsg;
 @end
