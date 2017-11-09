@@ -48,4 +48,13 @@
                      nonce:(NSData *)nonce
        outDecryptedMessage:(NSData **)decryptedMessage;
 
+- (NSError *)cryptoBoxSeal:(NSData *)message
+                  theirKey:(NSString *)theirKey
+              outEncrypted:(NSData **)outEncrypted;
+
+- (NSError *)cryptoBoxSealOpen:(NSData *)encryptedMessage
+                         myKey:(NSString *)myKey
+                  walletHandle:(IndyHandle)walletHandle
+           outDecryptedMessage:(NSData **)decryptedMessage;
+
 @end

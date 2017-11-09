@@ -156,4 +156,41 @@
     return err;
 }
 
+- (NSError *)cryptoBoxSeal:(NSData *)message
+                  theirKey:(NSString *)theirKey
+              outEncrypted:(NSData **)outEncrypted
+{
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+    [IndyCrypto cryptoBoxSeal:message theirKey:theirKey completion:^(NSError *error, NSData *encrypted) {
+        err = error;
+        if (outEncrypted) *outEncrypted = encrypted;
+        [completionExpectation fulfill];
+    }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
+    return err;
+}
+
+- (NSError *)cryptoBoxSealOpen:(NSData *)encryptedMessage
+                         myKey:(NSString *)myKey
+                  walletHandle:(IndyHandle)walletHandle
+           outDecryptedMessage:(NSData **)decryptedMessage
+{
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+    [IndyCrypto cryptoBoxSealOpen:encryptedMessage myKey:myKey walletHandle:walletHandle completion:^(NSError *error, NSData *decryptedMsg) {
+        err = error;
+        if (decryptedMessage) {*decryptedMessage = decryptedMsg;}
+        [completionExpectation fulfill];
+    }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    return err;
+}
+
 @end

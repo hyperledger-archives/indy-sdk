@@ -381,7 +381,8 @@
                                           myKey:verkey
                                        theirKey:[TestUtils trusteeVerkey]
                                encryptedMessage:[TestUtils encryptedMessage]
-                                          nonce:[TestUtils nonce] outDecryptedMessage:&decryptedMessage];
+                                          nonce:[TestUtils nonce]
+                            outDecryptedMessage:&decryptedMessage];
     XCTAssertEqual(ret.code, Success, @"CryptoUtils:cryptoBoxOpen failed");
     XCTAssertEqualObjects(decryptedMessage, [TestUtils message]);
 
@@ -391,6 +392,52 @@
 
 // MARK: - Crypto box seal
 
+- (void)testCryptoBoxSealWorks
+{
+    [TestUtils cleanupStorage];
+
+    NSData *encrypted = nil;
+    NSError *ret = [[CryptoUtils sharedInstance] cryptoBoxSeal:[TestUtils message]
+                                                      theirKey:[TestUtils myVerkey1]
+                                                  outEncrypted:&encrypted];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:cryptoBoxSeal failed");
+    XCTAssertNotNil(encrypted);
+
+    [TestUtils cleanupStorage];
+}
+
 // MARK: - Crypto box seal open
+
+- (void)testCryptoBoxSealOpenWorks
+{
+    [TestUtils cleanupStorage];
+
+    IndyHandle walletHandle = 0;
+    NSError *ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
+                                                                           xtype:nil
+                                                                          handle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
+
+    NSString *verkey = nil;
+    ret = [[CryptoUtils sharedInstance] createKeyWithWalletHandle:walletHandle
+                                                          keyJson:[NSString stringWithFormat:@"{\"seed\":\"%@\"}", [TestUtils mySeed1]]
+                                                        outVerkey:&verkey];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:createKeyWithWalletHandle failed");
+
+    NSData *encrypted = nil;
+    ret = [[CryptoUtils sharedInstance] cryptoBoxSeal:[TestUtils message]
+                                             theirKey:[TestUtils myVerkey1]
+                                         outEncrypted:&encrypted];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:cryptoBoxSeal failed");
+    XCTAssertNotNil(encrypted);
+
+    NSData *decryptedMessage = nil;
+    [[CryptoUtils sharedInstance] cryptoBoxSealOpen:encrypted myKey:[TestUtils myVerkey1] walletHandle:walletHandle outDecryptedMessage:&decryptedMessage];
+    XCTAssertEqual(ret.code, Success, @"CryptoUtils:cryptoBoxSealOpen failed");
+    XCTAssertEqualObjects(decryptedMessage, [TestUtils message]);
+
+    [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
+    [TestUtils cleanupStorage];
+}
 
 @end
