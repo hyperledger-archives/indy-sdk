@@ -16,7 +16,32 @@ use messages;
 lazy_static! {
     static ref CONNECTION_MAP: Mutex<HashMap<u32, Box<Connection>>> = Default::default();
 }
-
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize)]
+pub struct InviteDetail {
+    e: String,
+    rid: String,
+    sakdp: String,
+    sn: String,
+    sD: String,
+    lu: String,
+    sVk: String,
+    tn: String,
+}
+impl InviteDetail {
+    fn new() -> InviteDetail {
+        InviteDetail {
+            e: String::new(),
+            rid: String::new(),
+            sakdp: String::new(),
+            sn: String::new(),
+            sD: String::new(),
+            lu: String::new(),
+            sVk: String::new(),
+            tn: String::new(),
+        }
+    }
+}
 #[derive(Serialize, Deserialize)]
 struct ConnectionOptions {
     #[serde(default)]
@@ -36,7 +61,7 @@ struct Connection {
     uuid: String,
     endpoint: String,
     // For QR code invitation
-    invite_detail: String,
+    invite_detail: InviteDetail,
 }
 
 impl Connection {
@@ -245,7 +270,7 @@ pub fn create_connection(source_id: String) -> u32 {
         state: CxsStateType::CxsStateNone,
         uuid: String::new(),
         endpoint: String::new(),
-        invite_detail: String::new(),
+        invite_detail: InviteDetail::new()
     });
 
     {
@@ -336,17 +361,16 @@ pub fn release(handle: u32) -> u32 {
     }
 }
 
-fn get_invite_detail(response: &str) -> String {
+fn get_invite_detail(response: &str) -> InviteDetail {
+
     match serde_json::from_str(response) {
         Ok(json) => {
             let json: serde_json::Value = json;
-            let detail = convert_invite_details(&json["inviteDetail"]);
-
-            detail.to_string()
+            convert_invite_details(&json["inviteDetail"])
         }
         Err(_) => {
             info!("Connect called without a valid response from server");
-            String::from("")
+            InviteDetail::new()
         }
     }
 }
@@ -360,17 +384,19 @@ fn get_invite_detail(response: &str) -> String {
 `senderDIDVerKey` -> `sVk`
 `targetName` -> `tn`
 */
-pub fn convert_invite_details(json: &serde_json::Value) -> serde_json::Value {
-    let json_converted:serde_json::Value = json!({
-        "e": json["senderEndpoint"],
-        "rid": json["connReqId"],
-        "sakdp": json["senderAgentKeyDlgProof"],
-        "sn": json["senderName"],
-        "sD": json["senderDID"],
-        "lu": json["senderLogoUrl"],
-        "sVk": json["senderDIDVerKey"],
-        "tn":json["targetName"]
-    });
+pub fn convert_invite_details(json: &serde_json::Value) -> InviteDetail {
+    println!("{}",json["senderEndpoint"]);
+    let json_converted = InviteDetail {
+        e: String::from(json["senderEndpoint"].as_str().unwrap()),
+        rid: String::from(json["connReqId"].as_str().unwrap()),
+        sakdp: String::from(json["senderAgentKeyDlgProof"].as_str().unwrap()),
+        sn: String::from(json["senderName"].as_str().unwrap()),
+        sD: String::from(json["senderDID"].as_str().unwrap()),
+        lu: String::from(json["senderLogoUrl"].as_str().unwrap()),
+        sVk: String::from(json["senderDIDVerKey"].as_str().unwrap()),
+        tn: String::from(json["targetName"].as_str().unwrap()),
+    };
+    println!("{}", serde_json::to_string(&json_converted).unwrap());
     json_converted
 }
 
@@ -520,7 +546,7 @@ mod tests {
             state: CxsStateType::CxsStateNone,
             uuid: String::new(),
             endpoint: String::new(),
-            invite_detail: String::new(),
+            invite_detail: InviteDetail::new()
         });
 
         {
@@ -549,7 +575,7 @@ mod tests {
             state: CxsStateType::CxsStateNone,
             uuid: String::new(),
             endpoint: String::new(),
-            invite_detail: String::new(),
+            invite_detail: InviteDetail::new()
         });
 
         {
@@ -644,6 +670,16 @@ mod tests {
 
     #[test]
     fn test_jsonfying_invite_details() {
+        /*
+        `senderEndpoint` -> `e`
+        `connReqId` -> `rid`
+        `senderAgentKeyDlgProof` -> `sakdp`
+        `senderName` -> `sn`
+        `senderDID` -> `sD`
+        `senderLogoUrl` -> `lu`
+        `senderDIDVerKey` -> `sVk`
+        `targetName` -> `tn`
+        */
         let response = "{ \"inviteDetail\": {
                 \"senderEndpoint\": \"34.210.228.152:80\",
                 \"connReqId\": \"CXqcDCE\",
@@ -656,14 +692,15 @@ mod tests {
             }}";
 
         let invite_detail = get_invite_detail(response);
-        info!("Invite Detail Test: {}", invite_detail);
-        assert!(invite_detail.contains("sdfsdf"));
+        let stringifyied = serde_json::to_string(&invite_detail).unwrap();
+        info!("Invite Detail Test: {}", stringifyied);
+        assert!(stringifyied.contains("sdfsdf"));
+        assert_eq!(invite_detail.sakdp, "sdfsdf");
     }
 
     #[test]
-    fn test_condense_invite_details(){
-        let response = r#"{ "inviteDetail": {
-                "senderEndpoint": "34.210.228.152:80",
+    fn test_convert_invite_details(){
+        let response = r#"{ "inviteDetail": {"senderEndpoint": "34.210.228.152:80",
                 "connReqId": "CXqcDCE",
                 "senderAgentKeyDlgProof": "sdfsdf",
                 "senderName": "Evernym",
@@ -672,10 +709,11 @@ mod tests {
                 "senderDIDVerKey": "AevwvcQBLv5CERRJShzUncV7ubapSgbDZxus42zS8fk1",
                 "targetName": "there"
             }}"#;
-        let original_json = json!(response);
-
-        let converted_json = convert_invite_details(&original_json);
-        assert_eq!(converted_json["e"], original_json["inviteDetail"]["senderEndpoint"])
+        use serde_json::Value;
+        let original_json:Value = serde_json::from_str(&response).unwrap();
+        let invite_detail:&Value = &original_json["inviteDetail"];
+        let converted_json = convert_invite_details(invite_detail);
+        assert_eq!(converted_json.e, original_json["inviteDetail"]["senderEndpoint"])
     }
 
     #[test]
