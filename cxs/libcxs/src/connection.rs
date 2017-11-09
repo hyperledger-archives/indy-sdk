@@ -340,7 +340,8 @@ fn get_invite_detail(response: &str) -> String {
     match serde_json::from_str(response) {
         Ok(json) => {
             let json: serde_json::Value = json;
-            let detail = &json["inviteDetail"];
+            let detail = convert_invite_details(&json["inviteDetail"]);
+
             detail.to_string()
         }
         Err(_) => {
@@ -348,6 +349,29 @@ fn get_invite_detail(response: &str) -> String {
             String::from("")
         }
     }
+}
+/* mappings
+`senderEndpoint` -> `e`
+`connReqId` -> `rid`
+`senderAgentKeyDlgProof` -> `sakdp`
+`senderName` -> `sn`
+`senderDID` -> `sD`
+`senderLogoUrl` -> `lu`
+`senderDIDVerKey` -> `sVk`
+`targetName` -> `tn`
+*/
+pub fn convert_invite_details(json: &serde_json::Value) -> serde_json::Value {
+    let json_converted:serde_json::Value = json!({
+        "e": json["senderEndpoint"],
+        "rid": json["connReqId"],
+        "sakdp": json["senderAgentKeyDlgProof"],
+        "sn": json["senderName"],
+        "sD": json["senderDID"],
+        "lu": json["senderLogoUrl"],
+        "sVk": json["senderDIDVerKey"],
+        "tn":json["targetName"]
+    });
+    json_converted
 }
 
 #[cfg(test)]
@@ -634,6 +658,24 @@ mod tests {
         let invite_detail = get_invite_detail(response);
         info!("Invite Detail Test: {}", invite_detail);
         assert!(invite_detail.contains("sdfsdf"));
+    }
+
+    #[test]
+    fn test_condense_invite_details(){
+        let response = r#"{ "inviteDetail": {
+                "senderEndpoint": "34.210.228.152:80",
+                "connReqId": "CXqcDCE",
+                "senderAgentKeyDlgProof": "sdfsdf",
+                "senderName": "Evernym",
+                "senderDID": "JiLBHundRhwYaMbPWno8Vg",
+                "senderLogoUrl": "https://postimg.org/image/do2r09ain/",
+                "senderDIDVerKey": "AevwvcQBLv5CERRJShzUncV7ubapSgbDZxus42zS8fk1",
+                "targetName": "there"
+            }}"#;
+        let original_json = json!(response);
+
+        let converted_json = convert_invite_details(&original_json);
+        assert_eq!(converted_json["e"], original_json["inviteDetail"]["senderEndpoint"])
     }
 
     #[test]
