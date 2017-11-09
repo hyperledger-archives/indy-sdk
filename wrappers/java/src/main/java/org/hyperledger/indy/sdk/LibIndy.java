@@ -66,6 +66,7 @@ public abstract class LibIndy {
 		public int indy_encrypt_sealed(int command_handle, int wallet_handle, int pool_handle, String did, byte[] message_raw, int message_len, Callback cb);
 		public int indy_decrypt_sealed(int command_handle, int wallet_handle, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
 		public int indy_key_for_did(int command_handle, int pool_handle, int wallet_handle, String did, Callback cb);
+        public int indy_key_for_local_did(int command_handle, int wallet_handle, String did, Callback cb);
 		public int indy_set_endpoint_for_did(int command_handle, int wallet_handle, String did, String address, String transportKey, Callback cb);
 		public int indy_get_endpoint_for_did(int command_handle, int wallet_handle, int pool_handle, String did, Callback cb);
 		public int indy_set_did_metadata(int command_handle, int wallet_handle, String did, String metadata, Callback cb);

@@ -82,6 +82,10 @@ pub enum SignusCommand {
         i32, // wallet handle
         String, // did (my or their)
         Box<Fn(Result<String/*key*/, IndyError>) + Send>),
+    KeyForLocalDid(
+        i32, // wallet handle
+        String, // did (my or their)
+        Box<Fn(Result<String/*key*/, IndyError>) + Send>),
     SetEndpointForDid(
         i32, // wallet handle
         String, // did
@@ -198,6 +202,10 @@ impl SignusCommandExecutor {
             SignusCommand::KeyForDid(pool_handle, wallet_handle, did, cb) => {
                 info!("KeyForDid command received");
                 self.key_for_did(pool_handle, wallet_handle, did, cb);
+            }
+            SignusCommand::KeyForLocalDid(wallet_handle, did, cb) => {
+                info!("KeyForLocalDid command received");
+                cb(self.key_for_local_did(wallet_handle, did));
             }
             SignusCommand::SetEndpointForDid(wallet_handle, did, address, transport_key, cb) => {
                 info!("SetEndpointForDid command received");
@@ -458,6 +466,25 @@ impl SignusCommandExecutor {
 
         let res = their_did.verkey;
         cb(Ok(res))
+    }
+
+    fn key_for_local_did(&self,
+                         wallet_handle: i32,
+                         did: String) -> Result<String, IndyError> {
+        self.signus_service.validate_did(&did)?;
+
+        // Look to my did
+        match self._wallet_get_my_did(wallet_handle, &did) {
+            Ok(my_did) => return Ok(my_did.verkey),
+            Err(IndyError::WalletError(WalletError::NotFound(_))) => {}
+            Err(err) => return Err(err)
+        };
+
+        // look to their did
+        let their_did = self._wallet_get_local_their_did(wallet_handle, &did)?;
+
+        let res = their_did.verkey;
+        Ok(res)
     }
 
     fn set_endpoint_for_did(&self,
@@ -726,6 +753,17 @@ impl SignusCommandExecutor {
 
     fn _wallet_get_their_did(&self, wallet_handle: i32, their_did: &str) -> Result<Did, IndyError> {
         let their_did_json = self.wallet_service.get_not_expired(wallet_handle, &format!("their_did::{}", their_did))?;
+
+        let res = Did::from_json(&their_did_json)
+            .map_err(map_err_trace!())
+            .map_err(|err|
+                CommonError::InvalidState(
+                    format!("Can't deserialize their Did: {}", err.description())))?;
+        Ok(res)
+    }
+
+    fn _wallet_get_local_their_did(&self, wallet_handle: i32, their_did: &str) -> Result<Did, IndyError> {
+        let their_did_json = self.wallet_service.get(wallet_handle, &format!("their_did::{}", their_did))?;
 
         let res = Did::from_json(&their_did_json)
             .map_err(map_err_trace!())

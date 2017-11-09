@@ -220,6 +220,22 @@ public class Signus extends IndyJava.API {
 	};
 
 	/**
+	 * Callback used when keyForLocalDid completes.
+	 */
+	private static Callback keyForLocalDidCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String key) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = key;
+			future.complete(result);
+		}
+	};
+
+	/**
 	 * Callback used when setEndpointForDid completes.
 	 */
 	private static Callback setEndpointForDidCb = new Callback() {
@@ -660,7 +676,19 @@ public class Signus extends IndyJava.API {
 	}
 	
 	/**
-	 * Retrieves the key for the giving did in the wallet or pool.
+	 * Returns ver key (key id) for the given DID.
+	 *
+	 * This call follow the idea that we resolve information about their DID from
+	 * the ledger with cache in the local wallet. The openWallet call has freshness parameter
+	 * that is used for checking the freshness of cached pool value.
+	 *
+	 * Note if you don't want to resolve their DID info from the ledger you can use
+	 * keyForLocalDid call instead that will look only to local wallet and skip
+	 * freshness checking.
+	 *
+	 * Note that createAndStoreMyDid makes similar wallet record as createKey.
+	 * As result we can use returned ver key in all generic crypto and messaging functions.
+	 * Note that this function looks to wallet and if no wallet record can lookup ledger.
 	 *
 	 * @param pool   The pool.
 	 * @param wallet The wallet.
@@ -689,6 +717,46 @@ public class Signus extends IndyJava.API {
 				walletHandle,
 				did,
 				keyForDidCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Returns ver key (key id) for the given DID.
+	 *
+	 * This call looks data stored in the local wallet only and skips freshness checking.
+	 *
+	 * Note if you want to get fresh data from the ledger you can use indy_key_for_did call
+	 * instead.
+	 *
+	 * Note that indy_create_and_store_my_did makes similar wallet record as indy_create_key.
+	 * As result we can use returned ver key in all generic crypto and messaging functions.
+	 * Note that this function looks to wallet and if no wallet record can lookup ledger.
+	 *
+	 * @param wallet The wallet.
+	 * @param did
+	 * @return A future resolving to a verkey
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> keyForLocalDid(
+			Wallet wallet,
+			String did) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(did, "did");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_key_for_local_did(
+				commandHandle,
+				walletHandle,
+				did,
+				keyForLocalDidCb);
 
 		checkResult(result);
 

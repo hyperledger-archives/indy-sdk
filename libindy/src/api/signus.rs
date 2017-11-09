@@ -187,6 +187,15 @@ pub  extern fn indy_store_their_did(command_handle: i32,
 }
 
 /// Returns ver key (key id) for the given DID.
+///
+/// This call follow the idea that we resolve information about their DID from
+/// the ledger with cache in the local wallet. The "indy_open_wallet" call has freshness parameter
+/// that is used for checking the freshness of cached pool value.
+///
+/// Note if you don't want to resolve their DID info from the ledger you can use
+/// indy_key_for_local_did call instead that will look only to local wallet and skip
+/// freshness checking.
+///
 /// Note that indy_create_and_store_my_did makes similar wallet record as indy_create_key.
 /// As result we can use returned ver key in all generic crypto and messaging functions.
 /// Note that this function looks to wallet and if no wallet record can lookup ledger.
@@ -222,6 +231,58 @@ pub extern fn indy_key_for_did(command_handle: i32,
     let result = CommandExecutor::instance()
         .send(Command::Signus(SignusCommand::KeyForDid(
             pool_handle,
+            wallet_handle,
+            did,
+            Box::new(move |result| {
+                let (err, key) = result_to_err_code_1!(result, String::new());
+                let key = CStringUtils::string_to_cstring(key);
+                cb(command_handle, err, key.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+/// Returns ver key (key id) for the given DID.
+///
+/// This call looks data stored in the local wallet only and skips freshness checking.
+///
+/// Note if you want to get fresh data from the ledger you can use indy_key_for_did call
+/// instead.
+///
+/// Note that indy_create_and_store_my_did makes similar wallet record as indy_create_key.
+/// As result we can use returned ver key in all generic crypto and messaging functions.
+/// Note that this function looks to wallet and if no wallet record can lookup ledger.
+///
+/// #Params
+/// command_handle: Command handle to map callback to caller context.
+/// wallet_handle: Wallet handle (created by open_wallet).
+/// did - The DID to resolve key.
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Error Code
+/// cb:
+/// - xcommand_handle: Command handle to map callback to caller context.
+/// - err: Error code.
+/// - key - The DIDs ver key (key id).
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Crypto*
+#[no_mangle]
+pub extern fn indy_key_for_local_did(command_handle: i32,
+                                     wallet_handle: i32,
+                                     did: *const c_char,
+                                     cb: Option<extern fn(xcommand_handle: i32,
+                                                          err: ErrorCode,
+                                                          key: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::KeyForLocalDid(
             wallet_handle,
             did,
             Box::new(move |result| {
