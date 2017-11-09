@@ -1,5 +1,6 @@
 extern crate serde_json;
 extern crate uuid;
+extern crate indy_crypto;
 
 use self::uuid::Uuid;
 use errors::common::CommonError;
@@ -7,7 +8,6 @@ use errors::indy::IndyError;
 use errors::anoncreds::AnoncredsError;
 use services::anoncreds::AnoncredsService;
 use utils::crypto::bn::BigNumber;
-use services::pool::PoolService;
 use utils::json::{JsonDecodable, JsonEncodable};
 use services::wallet::WalletService;
 use std::rc::Rc;
@@ -30,9 +30,9 @@ use services::anoncreds::types::{
     ClaimRequestJson
 };
 use std::collections::HashMap;
-use utils::crypto::pair::PointG2;
 use std::cell::RefCell;
 use utils::crypto::base58::Base58;
+use self::indy_crypto::pair::PointG2;
 
 pub enum ProverCommand {
     StoreClaimOffer(
@@ -79,18 +79,15 @@ pub enum ProverCommand {
 
 pub struct ProverCommandExecutor {
     anoncreds_service: Rc<AnoncredsService>,
-    pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>
 }
 
 impl ProverCommandExecutor {
     pub fn new(anoncreds_service: Rc<AnoncredsService>,
-               pool_service: Rc<PoolService>,
                wallet_service: Rc<WalletService>) -> ProverCommandExecutor {
         ProverCommandExecutor {
-            anoncreds_service: anoncreds_service,
-            pool_service: pool_service,
-            wallet_service: wallet_service,
+            anoncreds_service,
+            wallet_service,
         }
     }
 
@@ -210,7 +207,7 @@ impl ProverCommandExecutor {
     fn _create_master_secret(&self, wallet_handle: i32, master_secret_name: &str) -> Result<(), IndyError> {
         if self.wallet_service.get(wallet_handle, &format!("master_secret::{}", master_secret_name)).is_ok() {
             return Err(IndyError::AnoncredsError(AnoncredsError::MasterSecretDuplicateNameError(
-                format!("Master Secret already exists {}", master_secret_name))))
+                format!("Master Secret already exists {}", master_secret_name))));
         };
 
         let master_secret = self.anoncreds_service.prover.generate_master_secret()?;
@@ -258,12 +255,12 @@ impl ProverCommandExecutor {
 
         if claim_def.issuer_did != claim_offer.issuer_did {
             return Err(IndyError::CommonError(CommonError::InvalidStructure(
-                format!("ClaimOffer issuer_did {} does not correspond to ClaimDef issuer_did {:?}", claim_offer.issuer_did, claim_def.issuer_did))))
+                format!("ClaimOffer issuer_did {} does not correspond to ClaimDef issuer_did {:?}", claim_offer.issuer_did, claim_def.issuer_did))));
         }
 
         if claim_def.schema_seq_no != claim_offer.schema_seq_no {
             return Err(IndyError::CommonError(CommonError::InvalidStructure(
-                format!("ClaimOffer schema_seq_no {} does not correspond to ClaimDef schema_seq_no{}", claim_offer.schema_seq_no, claim_def.schema_seq_no))))
+                format!("ClaimOffer schema_seq_no {} does not correspond to ClaimDef schema_seq_no{}", claim_offer.schema_seq_no, claim_def.schema_seq_no))));
         }
 
         let (claim_request, primary_claim_init_data, revocation_claim_init_data) =
@@ -415,7 +412,7 @@ impl ProverCommandExecutor {
             let mut attrs: HashMap<String, String> = HashMap::new();
 
             for (attr, values) in claim_json.claim {
-                attrs.insert(attr.clone(), values[1].clone());
+                attrs.insert(attr.clone(), values[0].clone());
             }
 
             claims_info.push(ClaimInfo::new(uuid.clone(), attrs, claim_json.schema_seq_no.clone(),

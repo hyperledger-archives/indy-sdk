@@ -13,41 +13,51 @@ use services::ledger::constants::{
     GET_SCHEMA,
     CLAIM_DEF,
     GET_CLAIM_DEF,
-    STEWARD,
-    TRUSTEE,
-    TRUST_ANCHOR,
     GET_TXN
 };
 
+#[cfg(not(test))]
 #[derive(Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct Request<T: JsonEncodable> {
+pub struct Request<T: serde::Serialize> {
     pub req_id: u64,
     pub identifier: String,
     pub operation: T,
+    #[serde(skip_serializing)]
+    pub protocol_version: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub signature: Option<String>
 }
 
-impl<T: JsonEncodable> Request<T> {
-    pub fn new(req_id: u64, identifier: String, operation: T) -> Request<T> {
+#[cfg(test)]
+#[derive(Serialize, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Request<T: serde::Serialize> {
+    pub req_id: u64,
+    pub identifier: String,
+    pub operation: T,
+    pub protocol_version: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub signature: Option<String>
+}
+
+impl<T: serde::Serialize> Request<T> {
+    fn new(req_id: u64, identifier: String, operation: T, protocol_version: u64) -> Request<T> {
         Request {
             req_id: req_id,
             identifier: identifier,
             operation: operation,
+            protocol_version: protocol_version,
             signature: None
         }
+    }
+
+    pub fn build_request(identifier: String, operation: T) -> Result<String, serde_json::Error> {
+        serde_json::to_string(&Request::new(super::LedgerService::get_req_id(), identifier, operation, 1))
     }
 }
 
 impl<T: JsonEncodable> JsonEncodable for Request<T> {}
-
-#[derive(Deserialize, Serialize, PartialEq, Debug)]
-pub enum Role {
-    Steward = STEWARD,
-    Trustee = TRUSTEE,
-    TrustAnchor = TRUST_ANCHOR
-}
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct NymOperation {
@@ -58,7 +68,6 @@ pub struct NymOperation {
     pub verkey: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alias: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub role: Option<String>
 }
 
@@ -275,8 +284,10 @@ impl ClaimDefOperationData {
 
 //FIXME workaround for ledger: serialize required dictionary as empty instead of using null
 extern crate serde;
+
 use self::serde::Serializer;
 use self::serde::ser::SerializeMap;
+
 fn empty_map_instead_of_null<S>(x: &Option<RevocationPublicKey>, s: S) -> Result<S::Ok, S::Error>
     where S: Serializer {
     if let &Some(ref x) = x {
@@ -347,18 +358,20 @@ pub struct NodeOperationData {
     pub client_ip: String,
     pub client_port: i32,
     pub alias: String,
-    pub services: Vec<Services>
+    pub services: Vec<Services>,
+    pub blskey: String
 }
 
 impl NodeOperationData {
-    pub fn new(node_ip: String, node_port: i32, client_ip: String, client_port: i32, alias: String, services: Vec<Services>) -> NodeOperationData {
+    pub fn new(node_ip: String, node_port: i32, client_ip: String, client_port: i32, alias: String, services: Vec<Services>, blskey: String) -> NodeOperationData {
         NodeOperationData {
             node_ip: node_ip,
             node_port: node_port,
             client_ip: client_ip,
             client_port: client_port,
             alias: alias,
-            services: services
+            services: services,
+            blskey: blskey
         }
     }
 }
@@ -434,3 +447,46 @@ pub struct GetNymResultData {
 }
 
 impl<'a> JsonDecodable<'a> for GetNymResultData {}
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetAttribReplyResult {
+    pub  identifier: String,
+    pub  req_id: u64,
+    #[serde(rename = "type")]
+    pub  _type: String,
+    pub  data: String,
+    pub  dest: String,
+    pub  raw: String,
+    pub  seq_no: Option<i32>
+}
+
+impl<'a> JsonDecodable<'a> for GetAttribReplyResult {}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct AttribData {
+    pub endpoint: Endpoint
+}
+
+impl<'a> JsonDecodable<'a> for AttribData {}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Endpoint {
+    pub ha: String,
+    pub verkey: String
+}
+
+impl Endpoint {
+    pub fn new(ha: String, verkey: String) -> Endpoint {
+        Endpoint {
+            ha: ha,
+            verkey: verkey
+        }
+    }
+}
+
+impl JsonEncodable for Endpoint {}
+
+impl<'a> JsonDecodable<'a> for Endpoint {}
+

@@ -1,6 +1,6 @@
 [package]
 name = "indy"
-version = "1.0.1"
+version = "1.1.0"
 authors = [
   "Sergej Pupykin <sergej.pupykin@dsr-company.com>",
   "Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>",
@@ -20,21 +20,25 @@ path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "dylib"]
 
 [features]
-default = ["bn_openssl", "ed25519_sodium", "base58_rust_base58", "xsalsa20_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool"]
+default = ["bn_openssl", "box_sodium", "sealedbox_sodium", "base58_rust_base58", "xsalsa20_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool", "revocation_tests"]
 bn_openssl = ["openssl", "int_traits"]
-ed25519_sodium = ["sodiumoxide"]
+box_sodium = ["sodiumoxide"]
+sealedbox_sodium = ["sodiumoxide"]
 base58_rust_base58 = ["rust-base58"]
 xsalsa20_sodium = ["sodiumoxide"]
-pair_amcl = ["amcl"]
+pair_amcl = ["indy-crypto"]
 hash_openssl = ["openssl"]
 local_nodes_pool = []
 interoperability_tests = []
 revocation_tests = []
 
 [dependencies]
-amcl = { version = "0.1.1", optional = true }
+indy-crypto = { version = "0.1.6", optional = true }
 int_traits = { version = "0.1.1", optional = true }
+digest = "0.6.2"
 env_logger = "0.4.2"
+etcommon-rlp = "0.2.3"
+generic-array = "0.8.3"
 hex = "0.2.0"
 libc = "0.2.21"
 log = "0.3.7"
@@ -42,9 +46,12 @@ openssl = { version = "0.9.11", optional = true }
 rand = "0.3"
 rusqlite = "0.10.1"
 rust-base58 = {version = "0.0.4", optional = true}
+base64 = "0.6.0"
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
+sha2 = "0.6.0"
+sha3 = "0.6.0"
 rmp-serde = "0.13.6"
 sodiumoxide = {version = "0.0.14", optional = true}
 time = "0.1.36"

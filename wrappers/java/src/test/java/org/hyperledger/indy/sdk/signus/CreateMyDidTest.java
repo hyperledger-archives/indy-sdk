@@ -1,54 +1,23 @@
 package org.hyperledger.indy.sdk.signus;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
-import org.hyperledger.indy.sdk.IndyIntegrationTest;
+import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
+import org.hyperledger.indy.sdk.InvalidStructureException;
+import org.hyperledger.indy.sdk.crypto.UnknownCryptoException;
 import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
-import org.hyperledger.indy.sdk.wallet.Wallet;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 import org.bitcoinj.core.Base58;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
-public class CreateMyDidTest extends IndyIntegrationTest {
-
-	private Wallet wallet;
-	private String walletName = "signusWallet";
-
-	@Before
-	public void createWallet() throws Exception {
-
-		Wallet.createWallet("default", walletName, "default", null, null).get();
-		this.wallet = Wallet.openWallet(walletName, null, null).get();
-	}
-
-	@After
-	public void deleteWallet() throws Exception {
-		this.wallet.closeWallet().get();
-		Wallet.deleteWallet(walletName, null).get();
-	}
-
-	private String seed = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-	private String did = "8wZcEriaNLNKtteJvx7f8i";
-	private String expectedVerkey = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-	private String existsCryptoType = "ed25519";
-	private String expectedDid = "NcYxiDXkpYi6ov5FcYDi1e";
-
+public class CreateMyDidTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testCreateMyDidWorksForEmptyJson() throws Exception {
-
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, null, null, null);
-
-		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
-		assertNotNull(result);
+		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(wallet, "{}").get();
 
 		assertEquals(16, Base58.decode(result.getDid()).length);
 		assertEquals(32, Base58.decode(result.getVerkey()).length);
@@ -56,89 +25,69 @@ public class CreateMyDidTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCreateMyDidWorksForSeed() throws Exception {
+		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, MY1_IDENTITY_JSON).get();
 
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, seed, null, null);
-
-		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
-		assertNotNull(result);
-
-		assertEquals(expectedDid, result.getDid());
-		assertEquals(expectedVerkey, result.getVerkey());
+		assertEquals(DID_MY1, result.getDid());
+		assertEquals(VERKEY_MY1, result.getVerkey());
 	}
 
 	@Test
 	public void testCreateMyDidWorksAsCid() throws Exception {
+		String  didJson = new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, null, true).toJson();
 
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, seed, null, true);
+		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson).get();
 
-		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
-		assertNotNull(result);
-
-		assertEquals(expectedVerkey, result.getDid());
-		assertEquals(expectedVerkey, result.getVerkey());
+		assertEquals(VERKEY_MY1, result.getDid());
+		assertEquals(VERKEY_MY1, result.getVerkey());
 	}
 
 	@Test
 	public void testCreateMyDidWorksForPassedDid() throws Exception {
 
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(did, null, null, false);
+		String didJson = new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(DID, null, null, false).toJson();
 
-		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
-		assertNotNull(result);
+		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson).get();
 
-		assertEquals(did, result.getDid());
+		assertEquals(DID, result.getDid());
 	}
 
 	@Test
 	public void testCreateMyDidWorksForCorrectCryptoType() throws Exception {
+		String didJson = new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, CRYPTO_TYPE, null).toJson();
 
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, seed, existsCryptoType, null);
+		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson).get();
 
-		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
-		assertNotNull(result);
-
-		assertEquals(expectedDid, result.getDid());
-		assertEquals(expectedVerkey, result.getVerkey());
+		assertEquals(DID_MY1, result.getDid());
+		assertEquals(VERKEY_MY1, result.getVerkey());
 	}
 
 	@Test
 	public void testCreateMyDidWorksForInvalidSeed() throws Exception {
-
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "aaaaaaaaaaa", null, null);
+		String didJson = new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "aaaaaaaaaaa", null, null).toJson();
 
-		Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
+		Signus.createAndStoreMyDid(this.wallet, didJson).get();
 	}
 
 	@Test
 	public void testCreateMyDidWorksForInvalidCryptoType() throws Exception {
-
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.SignusUnknownCryptoError));
+		thrown.expectCause(isA(UnknownCryptoException.class));
 
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, null, "crypto_type", null);
+		String didJson = new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, "crypto_type", null).toJson();
 
-		Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
+		Signus.createAndStoreMyDid(this.wallet, didJson).get();
 	}
 
 	@Test
 	public void testCreateMyDidWorksForAllParams() throws Exception {
+		String didJson = new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(DID, MY1_SEED, CRYPTO_TYPE, true).toJson();
 
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(did, seed, existsCryptoType, true);
+		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson).get();
 
-		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(this.wallet, didJson.toJson()).get();
-		assertNotNull(result);
-
-		assertEquals(did, result.getDid());
-		assertEquals(expectedVerkey, result.getVerkey());
+		assertEquals(DID, result.getDid());
+		assertEquals(VERKEY_MY1, result.getVerkey());
 	}
 }

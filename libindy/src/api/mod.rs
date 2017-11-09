@@ -1,12 +1,12 @@
-#![warn(unused_variables)] /* FIXME move up */
-
 extern crate libc;
 
 pub mod agent;
 pub mod anoncreds;
-pub mod signus;
+pub mod crypto;
 pub mod ledger;
+pub mod pairwise;
 pub mod pool;
+pub mod signus;
 pub mod wallet;
 
 #[derive(Debug, PartialEq, Copy, Clone)]

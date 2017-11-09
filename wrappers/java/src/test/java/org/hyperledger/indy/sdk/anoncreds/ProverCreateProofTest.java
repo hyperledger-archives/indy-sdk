@@ -1,13 +1,14 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
+import org.hyperledger.indy.sdk.InvalidStructureException;
+import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 
 public class ProverCreateProofTest extends AnoncredsIntegrationTest {
@@ -51,7 +52,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 	public void testProverCreateProofWorksForUsingNotSatisfyClaim() throws Exception {
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		initCommonWallet();
 
@@ -85,7 +86,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 	public void testProverCreateProofWorksForInvalidMasterSecret() throws Exception {
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletNotFoundError));
+		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
 		initCommonWallet();
 
@@ -121,7 +122,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 	public void testProverCreateProofWorksForInvalidSchemas() throws Exception {
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		initCommonWallet();
 
@@ -157,7 +158,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 	public void testProverCreateProofWorksForInvalidRequestedClaimsJson() throws Exception {
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		initCommonWallet();
 

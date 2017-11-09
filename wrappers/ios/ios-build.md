@@ -53,3 +53,39 @@
    pod repo update
    pod install
    ```
+   
+   
+## Wrapper Cocoapod
+
+# Creation 
+Run Archive process for `Indy` target. Custom post-action shell script `universal_framework.h` will be triggered and you get universal framework. Then put it to folder: `libindy-objc/Indy.framework` and upload to repo.
+
+# Installation
+
+Wrapper is a private pod, so private podspec must be set. Put at the top of the Podfile:
+
+```
+source 'https://github.com/hyperledger/indy-sdk.git'
+```
+Cocoapos will search for spec files in the root Specs folder.
+
+Add pod to target:
+
+```
+pod 'libindy-objc'
+```
+
+# Usage
+
+Import header starting from 0.1.3:
+
+```
+#import <Indy/Indy.h> 
+```
+For 0.1.1 and 0.1.2 versions:
+
+```
+#import <libindy/libindy.h>
+```
+
+All wrapper types and classes have prefix `Indy`.

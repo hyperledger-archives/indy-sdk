@@ -1,8 +1,7 @@
 package org.hyperledger.indy.sdk.demo;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
+import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.anoncreds.Anoncreds;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults;
 import org.hyperledger.indy.sdk.pool.Pool;
@@ -20,6 +19,7 @@ import org.junit.rules.Timeout;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
@@ -43,11 +43,11 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
 		//2. Issuer Create and Open Wallet
-		Wallet.createWallet(poolName, "issuerWallet", "default", null, null).get();
+		Wallet.createWallet(poolName, "issuerWallet", TYPE, null, null).get();
 		issuerWallet = Wallet.openWallet("issuerWallet", null, null).get();
 
 		//3. Prover Create and Open Wallet
-		Wallet.createWallet(poolName, "proverWallet", "default", null, null).get();
+		Wallet.createWallet(poolName, "proverWallet", TYPE, null, null).get();
 		proverWallet = Wallet.openWallet("proverWallet", null, null).get();
 	}
 
@@ -71,7 +71,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"data\": {\n" +
 				"                        \"name\":\"gvt\",\n" +
 				"                        \"version\":\"1.0\",\n" +
-				"                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+				"                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
 				"                    }\n" +
 				"                }";
 		String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
@@ -191,7 +191,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"data\": {\n" +
 				"                        \"name\":\"gvt\",\n" +
 				"                        \"version\":\"1.0\",\n" +
-				"                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+				"                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
 				"                    }\n" +
 				"                }";
 
@@ -203,7 +203,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"data\": {\n" +
 				"                        \"name\":\"xyz\",\n" +
 				"                        \"version\":\"1.0\",\n" +
-				"                        \"keys\":[\"status\",\"period\"]\n" +
+				"                        \"attr_names\":[\"status\",\"period\"]\n" +
 				"                    }\n" +
 				"                }";
 
@@ -344,7 +344,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"data\": {\n" +
 				"                        \"name\":\"gvt\",\n" +
 				"                        \"version\":\"1.0\",\n" +
-				"                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+				"                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
 				"                    }\n" +
 				"                }";
 
@@ -356,7 +356,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"data\": {\n" +
 				"                        \"name\":\"xyz\",\n" +
 				"                        \"version\":\"1.0\",\n" +
-				"                        \"keys\":[\"status\",\"period\"]\n" +
+				"                        \"attr_names\":[\"status\",\"period\"]\n" +
 				"                    }\n" +
 				"                }";
 
@@ -478,7 +478,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 	public void testVerifyProofWorksForProofDoesNotCorrespondToProofRequest() throws Exception {
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		//1. Issuer create ClaimDef
 		String schemaJson = "{\n" +
@@ -486,7 +486,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"data\": {\n" +
 				"                        \"name\":\"gvt\",\n" +
 				"                        \"version\":\"1.0\",\n" +
-				"                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+				"                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
 				"                    }\n" +
 				"                }";
 		String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
@@ -557,7 +557,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                                          \"self_attested_attributes\":{\"self1\":\"%s\"},\n" +
 				"                                          \"requested_attrs\":{\"attr1_uuid\":[\"%s\", true]},\n" +
 				"                                          \"requested_predicates\":{}\n" +
-				"                                        }", selfAttestedValue, claimUuid, claimUuid);
+				"                                        }", selfAttestedValue, claimUuid);
 
 		String schemasJson = String.format("{\"%s\":%s}", claimUuid, schemaJson);
 		String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDef);
