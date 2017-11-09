@@ -264,11 +264,12 @@ namespace Hyperledger.Indy.SignusApi
         /// </summary>
         /// <param name="command_handle">Command handle to map callback to caller context.</param>
         /// <param name="wallet_handle">Wallet handle (created by open_wallet).</param>
+        /// <param name="pool_handle">Pool handle (created by open_pool).</param>
         /// <param name="did">The DID to set the endpoint on.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_get_endpoint_for_did(int command_handle, IntPtr wallet_handle, string did, SignusGetEndpointForDidCompletedDelegate cb);
+        internal static extern int indy_get_endpoint_for_did(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string did, SignusGetEndpointForDidCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_get_endpoint_for_did.
