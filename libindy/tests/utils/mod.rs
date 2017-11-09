@@ -31,6 +31,7 @@ pub mod sequence;
 pub mod json;
 
 #[macro_use]
+#[allow(unused_macros)]
 #[path = "../../src/utils/cstring.rs"]
 pub mod cstring;
 
