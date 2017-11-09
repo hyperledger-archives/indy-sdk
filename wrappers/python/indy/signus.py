@@ -655,7 +655,7 @@ async def key_for_local_did(wallet_handle: int,
     c_wallet_handle = c_int32(wallet_handle)
     c_did = c_char_p(did.encode('utf-8'))
 
-    key = await do_call('key_for_local_did',
+    key = await do_call('indy_key_for_local_did',
                         c_wallet_handle,
                         c_did,
                         key_for_local_did.cb)
