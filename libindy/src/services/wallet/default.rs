@@ -609,24 +609,38 @@ mod tests {
     fn default_wallet_create_encrypted() {
         TestUtils::cleanup_indy_home();
 
-        let default_wallet_type = DefaultWalletType::new();
-        default_wallet_type.create("encrypted_wallet", None, Some("{\"key\":\"test\"}")).unwrap();
-        let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some("{\"key\":\"test\"}")).unwrap();
+        {
+            let default_wallet_type = DefaultWalletType::new();
+            default_wallet_type.create("encrypted_wallet", None, Some(r#"{"key":"test"}"#)).unwrap();
+            let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some(r#"{"key":"test"}"#)).unwrap();
 
-        wallet.set("key1::subkey1", "value1").unwrap();
-        wallet.set("key1::subkey2", "value2").unwrap();
+            wallet.set("key1::subkey1", "value1").unwrap();
+            wallet.set("key1::subkey2", "value2").unwrap();
 
-        let mut key_values = wallet.list("key1::").unwrap();
-        key_values.sort();
-        assert_eq!(2, key_values.len());
+            let mut key_values = wallet.list("key1::").unwrap();
+            key_values.sort();
+            assert_eq!(2, key_values.len());
 
-        let (key, value) = key_values.pop().unwrap();
-        assert_eq!("key1::subkey2", key);
-        assert_eq!("value2", value);
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey2", key);
+            assert_eq!("value2", value);
 
-        let (key, value) = key_values.pop().unwrap();
-        assert_eq!("key1::subkey1", key);
-        assert_eq!("value1", value);
+            let (key, value) = key_values.pop().unwrap();
+            assert_eq!("key1::subkey1", key);
+            assert_eq!("value1", value);
+        }
+        {
+            let default_wallet_type = DefaultWalletType::new();
+            let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, None).unwrap();
+
+            let wallet_error = wallet.list("key1::").err();
+            match wallet_error {
+                Some(error) => {
+                    assert_eq!(error.description(), String::from("Unexpected SQLite error: file is encrypted or is not a database"));
+                }
+                None => assert!(false)
+            };
+        }
 
         TestUtils::cleanup_indy_home();
     }
@@ -637,8 +651,8 @@ mod tests {
 
         {
             let default_wallet_type = DefaultWalletType::new();
-            default_wallet_type.create("encrypted_wallet", None, Some("{\"key\":\"test\"}")).unwrap();
-            let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some("{\"key\":\"test\"}")).unwrap();
+            default_wallet_type.create("encrypted_wallet", None, Some(r#"{"key":"test"}"#)).unwrap();
+            let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, Some(r#"{"key":"test"}"#)).unwrap();
 
             wallet.set("key1::subkey1", "value1").unwrap();
             wallet.set("key1::subkey2", "value2").unwrap();
