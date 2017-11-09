@@ -355,7 +355,7 @@ void IndyWrapperCommon5PSDataCallback(indy_handle_t xcommand_handle,
     NSString *sarg1 = nil;
     if (arg1)
     {
-        [NSString stringWithUTF8String:arg1];
+        sarg1 = [NSString stringWithUTF8String:arg1];
     }
     NSData* sarg2 = [NSData dataWithBytes:arg2 length:arg3];
 
