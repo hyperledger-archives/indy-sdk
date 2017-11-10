@@ -22,11 +22,11 @@ namespace Hyperledger.Indy.Test.SignusTests
             Assert.AreEqual(VERKEY, receivedEndpoint.TransportKey);
 
             var newEndpoint = "10.10.10.1:9710";
-            await Signus.SetEndpointForDidAsync(wallet, DID1, newEndpoint, VERKEY_FOR_MY2_SEED);
+            await Signus.SetEndpointForDidAsync(wallet, DID1, newEndpoint, VERKEY_MY2);
             var updatedEndpoint = await Signus.GetEndpointForDidAsync(wallet, pool, DID1);
 
             Assert.AreEqual(newEndpoint, updatedEndpoint.Address);
-            Assert.AreEqual(VERKEY_FOR_MY2_SEED, updatedEndpoint.TransportKey);
+            Assert.AreEqual(VERKEY_MY2, updatedEndpoint.TransportKey);
         }
 
         [TestMethod]

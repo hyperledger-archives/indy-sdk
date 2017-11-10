@@ -7,12 +7,15 @@ using System.Threading.Tasks;
 namespace Hyperledger.Indy.Test.CryptoTests
 {
     [TestClass]
-    public class SignTest : CryptoIntegrationTestBase
+    public class SignTest : IndyIntegrationTestWithSingleWallet
     {
         [TestMethod]
         public async Task TestSignWorks()
         {
-            var signature = await Crypto.SignAsync(wallet, senderVerKey, MESSAGE);            
+            var keyJson = string.Format("{{\"seed\":\"{0}\"}}", TRUSTEE_SEED);
+            var key = await Crypto.CreateKeyAsync(wallet, keyJson);
+
+            var signature = await Crypto.SignAsync(wallet, key, MESSAGE);            
             Assert.IsTrue(SIGNATURE.SequenceEqual(signature));
         }
 
@@ -20,7 +23,7 @@ namespace Hyperledger.Indy.Test.CryptoTests
         public async Task TestSignFailsIfKeyNotInWallet()
         {
             var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-               Crypto.SignAsync(wallet, KEY_NOT_IN_WALLET, MESSAGE)
+               Crypto.SignAsync(wallet, VERKEY_TRUSTEE, MESSAGE)
            );
         }
     }
