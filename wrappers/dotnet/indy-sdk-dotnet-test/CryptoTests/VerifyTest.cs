@@ -1,34 +1,43 @@
 ﻿using Hyperledger.Indy.CryptoApi;
+using Hyperledger.Indy.SignusApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.CryptoTests
 {
     [TestClass]
-    public class VerifyTest : CryptoIntegrationTestBase
+    public class VerifyTest : IndyIntegrationTestWithSingleWallet
     {
         [TestMethod]
         public async Task TestVerifyWorksWhenAllMatch()
         {
-            var result = await Crypto.VerifyAsync(senderVerKey, MESSAGE, SIGNATURE);
+            var result = await Crypto.VerifyAsync(VERKEY_TRUSTEE, MESSAGE, SIGNATURE);
             Assert.IsTrue(result);
         }
 
         [TestMethod]
-        public async Task TestVerifyWorksKeyDoesNotMatchSignature()
+        public async Task TestVerifyWorksForVerkeyWithCorrectCryptoType()
         {
-            var result = await Crypto.VerifyAsync(recipientVerKey, MESSAGE, SIGNATURE);
-            Assert.IsFalse(result);            
+            var verkey = VERKEY_TRUSTEE + ":ed25519";
+            var valid = await Crypto.VerifyAsync(verkey, MESSAGE, SIGNATURE);
+            Assert.IsTrue(valid);            
         }
 
         [TestMethod]
-        public async Task TestVerifyWorksWhenSignatureDoesNotMatchMessage()
+        public async Task TestVerifyWorksForVerkeyWithInvalidCryptoType()
         {
-            var otherMessage = new byte[] { 1, 2 };
+            var verkey = VERKEY_TRUSTEE + ":unknown_crypto";
 
-            var result = await Crypto.VerifyAsync(senderVerKey, otherMessage, SIGNATURE);
-            Assert.IsFalse(result);
+            var ex = await Assert.ThrowsExceptionAsync<UnknownCryptoException>(() =>
+               Crypto.VerifyAsync(verkey, MESSAGE, SIGNATURE)
+           );
         }
 
+        [TestMethod]
+        public async Task TestVerifyWorksForOtherSigner()
+        {
+            var valid = await Crypto.VerifyAsync(VERKEY_MY2, MESSAGE, SIGNATURE);
+            Assert.IsFalse(valid);
+        }
     }
 }

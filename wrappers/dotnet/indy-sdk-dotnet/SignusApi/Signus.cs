@@ -154,6 +154,19 @@ namespace Hyperledger.Indy.SignusApi
         };
 
         /// <summary>
+        /// Gets the callback to use when the command for KeyForLocalDidAsync has completed.
+        /// </summary>
+        private static SignusKeyForLocalDidCompletedDelegate _keyForLocalDidCompletedCallback = (xcommand_handle, err, key) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(key);
+        };
+
+        /// <summary>
         /// Gets the callback to use when the command for GetEndpointForDidAsync has completed.
         /// </summary>
         private static SignusGetEndpointForDidCompletedDelegate _getEndpointForDidCompletedCallback = (xcommand_handle, err, endpoint, transport_vk) =>
@@ -180,6 +193,8 @@ namespace Hyperledger.Indy.SignusApi
 
             taskCompletionSource.SetResult(metadata);
         };
+
+        
 
         /// <summary>
         /// Creates signing and encryption keys in specified wallet for a new DID owned by the caller.
@@ -654,6 +669,42 @@ namespace Hyperledger.Indy.SignusApi
         }
 
         /// <summary>
+        /// Gets the verification key for the specified DID.
+        /// </summary>
+        /// <remarks>
+        /// This method will obtain the verification key associated with the specified <paramref name="did"/>from the provided <paramref name="wallet"/> but will
+        /// not attempt to retrieve the key from the ledger if not present in the wallet, nor will it perform any freshness check against the ledger to determine 
+        /// if the key is up-to-date.  To ensure that the key is fresh use the <see cref="KeyForDidAsync(Pool, Wallet, string)"/> method instead.
+        /// <note type="note">
+        /// The <see cref="CreateAndStoreMyDidAsync(Wallet, string)"/> and <see cref="Crypto.CreateKeyAsync(Wallet, string)"/> methods both create
+        /// similar wallet records so the returned verification key in all generic crypto and messaging functions.
+        /// </note>
+        /// </remarks>
+        /// <param name="wallet">The wallet to resolve the DID from.</param>
+        /// <param name="did">The DID to get the verification key for.</param>
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the verification key associated with the DID.</returns>
+        /// <exception cref="WalletValueNotFoundException">Thrown if the DID could not be resolved from the <paramref name="wallet"/>.</exception>
+        public static Task<string> KeyForLocalDidAsync(Wallet wallet, string did)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(did, "did");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_key_for_local_did(
+                commandHandle,
+                wallet.Handle,
+                did,
+                _keyForLocalDidCompletedCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
         /// Sets the endpoint details for the specified DID.
         /// </summary>
         /// <param name="wallet">The wallet containing the DID.</param>
@@ -689,14 +740,20 @@ namespace Hyperledger.Indy.SignusApi
         /// <summary>
         /// Gets the endpoint details for the specified DID.
         /// </summary>
+        /// <remarks>
+        /// If the <paramref name="did"/> is present in the <paramref name="wallet"/> and is considered "fresh" then
+        /// the endpoint will be resolved from the wallet.  If, on the other hand, the DID is not present in the wallet or
+        /// is not fresh then the details will be resolved from the <paramref name="pool"/> and will be cached in the wallet.
+        /// </remarks>
         /// <param name="wallet">The wallet containing the DID.</param>
+        /// <param name="pool">The pool to resolve the endpoint data from if not present in the wallet.</param>
         /// <param name="did">The DID to get the endpoint data for.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to an <see cref="EndpointForDidResult"/> containing the endpoint information 
         /// associated with the DID.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if the <paramref name="did"/> does not exist in the <paramref name="wallet"/>.</exception>
-        public static Task<EndpointForDidResult> GetEndpointForDidAsync(Wallet wallet, string did)
+        public static Task<EndpointForDidResult> GetEndpointForDidAsync(Wallet wallet, Pool pool, string did)
         {
             ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNull(pool, "pool");
             ParamGuard.NotNullOrWhiteSpace(did, "did");
 
             var taskCompletionSource = new TaskCompletionSource<EndpointForDidResult>();
@@ -705,6 +762,7 @@ namespace Hyperledger.Indy.SignusApi
             var commandResult = NativeMethods.indy_get_endpoint_for_did(
                 commandHandle,
                 wallet.Handle,
+                pool.Handle,
                 did,
                 _getEndpointForDidCompletedCallback
                 );

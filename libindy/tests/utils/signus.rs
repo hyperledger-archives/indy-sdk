@@ -431,6 +431,30 @@ impl SignusUtils {
         Ok(verkey)
     }
 
+    pub fn key_for_local_did(wallet_handle: i32, did: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err, verkey| {
+            sender.send((err, verkey)).unwrap();
+        });
+        let (command_handle, callback) = CallbackUtils::closure_to_key_for_local_did_cb(cb);
+
+        let did = CString::new(did).unwrap();
+
+        let err = indy_key_for_local_did(command_handle,
+                                         wallet_handle,
+                                         did.as_ptr(),
+                                         callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let (err, verkey) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok(verkey)
+    }
+
     pub fn set_endpoint_for_did(wallet_handle: i32, did: &str, address: &str, transport_key: &str) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
         let cb = Box::new(move |err| {

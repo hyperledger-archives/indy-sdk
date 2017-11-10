@@ -156,6 +156,72 @@ mod high_cases {
         }
     }
 
+    mod key_for_local_did {
+        use super::*;
+
+        #[test]
+        fn indy_key_for_local_did_works_for_my_did() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (did, verkey) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let received_verkey = SignusUtils::key_for_local_did(wallet_handle, &did).unwrap();
+            assert_eq!(verkey, received_verkey);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_key_for_local_did_works_for_their_did() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            SignusUtils::store_their_did_from_parts(wallet_handle, DID, VERKEY).unwrap();
+
+            let received_verkey = SignusUtils::key_for_local_did(wallet_handle, DID).unwrap();
+            assert_eq!(VERKEY, received_verkey);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_key_for_local_did_works_for_unknown_did() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let res = SignusUtils::key_for_local_did(wallet_handle, DID);
+            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_key_for_local_did_works_for_invalid_wallet_handle() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+
+            let res = SignusUtils::key_for_local_did(wallet_handle + 1, &did);
+            assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
     mod set_endpoint_for_did {
         use super::*;
 
