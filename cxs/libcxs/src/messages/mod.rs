@@ -38,6 +38,7 @@ pub trait GeneralMessage{
     fn serialize_message(&mut self) -> Result<String, u32>;
     fn set_to_did(&mut self, to_did: String);
     fn set_validate_rc(&mut self, rc: u32);
+    fn send(&mut self) -> Result<String, u32>;
 
 }
 

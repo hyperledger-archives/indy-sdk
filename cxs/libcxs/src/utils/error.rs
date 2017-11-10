@@ -23,6 +23,7 @@ pub static INVALID_KEY_DELEGATE: Error = Error{code_num:1012, message:"Invalid D
 pub static INVALID_URL: Error = Error{code_num:1013, message:"Invalid URL"};
 pub static NOT_BASE58: Error = Error{code_num:1014, message:"Value needs to be base58"};
 pub static INVALID_ISSUER_CLAIM_HANDLE: Error = Error{code_num:1015, message:"Invalid Claim Issuer Handle"};
+pub static INVALID_JSON: Error = Error{code_num:1016, message:"Invalid JSON string"};
 
 lazy_static! {
     static ref ERROR_MESSAGES: HashMap<u32, &'static str> = {
@@ -32,13 +33,20 @@ lazy_static! {
         insert_message(&mut m, &CONNECTION_ERROR);
         insert_message(&mut m, &INVALID_CONNECTION_HANDLE);
         insert_message(&mut m, &INVALID_CONFIGURATION);
-        insert_message(&mut m, &INVALID_OPTION);
         insert_message(&mut m, &NOT_READY);
         insert_message(&mut m, &NO_ENDPOINT);
+        insert_message(&mut m, &INVALID_OPTION);
+        insert_message(&mut m, &INVALID_DID);
+        insert_message(&mut m, &INVALID_VERKEY);
+        insert_message(&mut m, &POST_MSG_FAILURE);
+        insert_message(&mut m, &INVALID_NONCE);
+        insert_message(&mut m, &INVALID_KEY_DELEGATE);
+        insert_message(&mut m, &INVALID_URL);
+        insert_message(&mut m, &NOT_BASE58);
+        insert_message(&mut m, &INVALID_ISSUER_CLAIM_HANDLE);
+        insert_message(&mut m, &INVALID_JSON);
         m
     };
-
-
 }
 
 // ******* END *******

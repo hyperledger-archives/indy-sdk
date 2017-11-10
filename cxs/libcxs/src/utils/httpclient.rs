@@ -11,7 +11,7 @@ pub fn post(body_content: &str, url: &str) -> Result<String,String> {
         Err(err) => return Err("could not connect".to_string()),
     };
 
-    info!("Response: {:?}", response);
+    info!("Response Header: {:?}", response);
     if !response.status().is_success() {return Err("POST failed".to_string());}
 
     let mut content = String::new();

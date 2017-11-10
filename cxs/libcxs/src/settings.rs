@@ -146,18 +146,14 @@ pub fn process_config_file(path: &str) -> Result<u32, String> {
 
 pub fn get_config_value(key: &str) -> Result<String, u32> {
     // if this fails the program should exit
-    let config = SETTINGS.read().unwrap();
-
-    match config.get_str(key) {
+    match SETTINGS.read().unwrap().get_str(key) {
         Err(_) => Err(error::INVALID_CONFIGURATION.code_num),
         Ok(value) => Ok(value),
     }
 }
 
 pub fn set_config_value(key: &str, value: &str) {
-    let mut settings = SETTINGS.write().unwrap();
-
-    settings.set(key, value).unwrap();
+    SETTINGS.write().unwrap().set(key, value).unwrap();
 }
 
 

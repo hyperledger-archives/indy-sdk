@@ -151,6 +151,7 @@ fn claim_offer_ete() {
 }
 
 #[test]
+#[allow(unused_variables)]
 fn test_better_http_response_messages(){
 
     let config_string = format!("{{\"agent_endpoint\":\"{}\",\

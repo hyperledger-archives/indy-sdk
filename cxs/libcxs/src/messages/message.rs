@@ -72,19 +72,6 @@ impl GetMessages{
         self
     }
 
-    pub fn send(&mut self) -> Result<String, u32> {
-        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
-
-        let json_msg = match self.serialize_message() {
-            Ok(x) => x,
-            Err(x) => return Err(x),
-        };
-
-        match httpclient::post(&json_msg, &url) {
-            Err(_) => Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => Ok(response),
-        }
-    }
 }
 
 //Todo: Every GeneralMessage extension, duplicates code
@@ -104,6 +91,20 @@ impl GeneralMessage for GetMessages{
         }
         self.agent_payload = json!(self.payload).to_string();
         Ok(json!(self).to_string())
+    }
+
+    fn send(&mut self) -> Result<String, u32> {
+        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+
+        let json_msg = match self.serialize_message() {
+            Ok(x) => x,
+            Err(x) => return Err(x),
+        };
+
+        match httpclient::post(&json_msg, &url) {
+            Err(_) => Err(error::POST_MSG_FAILURE.code_num),
+            Ok(response) => Ok(response),
+        }
     }
 }
 
@@ -173,19 +174,6 @@ impl SendMessage{
         self
     }
 
-    pub fn send(&mut self) -> Result<String, u32> {
-        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
-
-        let json_msg = match self.serialize_message() {
-            Ok(x) => x,
-            Err(x) => return Err(x),
-        };
-
-        match httpclient::post(&json_msg, &url) {
-            Err(_) => Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => Ok(response),
-        }
-    }
 }
 
 //Todo: Every GeneralMessage extension, duplicates code
@@ -205,6 +193,20 @@ impl GeneralMessage for SendMessage{
         }
         self.agent_payload = json!(self.payload).to_string();
         Ok(json!(self).to_string())
+    }
+
+    fn send(&mut self) -> Result<String, u32> {
+        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+
+        let json_msg = match self.serialize_message() {
+            Ok(x) => x,
+            Err(x) => return Err(x),
+        };
+
+        match httpclient::post(&json_msg, &url) {
+            Err(_) => Err(error::POST_MSG_FAILURE.code_num),
+            Ok(response) => Ok(response),
+        }
     }
 }
 

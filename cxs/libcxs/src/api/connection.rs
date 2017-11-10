@@ -276,17 +276,10 @@ mod tests {
         assert!(connection_handle > 0);
         println!("successfully called deserialize_cb");
         let original = "{\"source_id\":\"test_cxs_connection_deserialize\",\
-            \"handle\":3166777436,\"pw_did\":\"MYX5tk3VUeX9XbwMxgGQaQ\",\
-            \"pw_verkey\":\"CCRFnXZjvLm6zmeZ8kfKHgVHYHCyxAaQqwbhFEsXd5vz\",\
-            \"did_endpoint\":\"\",\"state\":2,\"uuid\":\"\",\"endpoint\":\"\",\
-            \"invite_detail\":\"{\\\"connReqId\\\":\\\"CXqcDCE\\\",\
-            \\\"senderAgentKeyDlgProof\\\":\\\"sdfsdf\\\",\
-            \\\"senderDID\\\":\\\"JiLBHundRhwYaMbPWno8Vg\\\",\
-            \\\"senderDIDVerKey\\\":\\\"AevwvcQBLv5CERRJShzUncV7ubapSgbDZxus42zS8fk1\\\",\
-            \\\"senderEndpoint\\\":\\\"34.210.228.152:80\\\",\
-            \\\"senderLogoUrl\\\":\\\"https://postimg.org/image/do2r09ain/\\\",\
-            \\\"senderName\\\":\\\"Evernym\\\",\
-            \\\"targetName\\\":\\\"there\\\"}\"}";
+        \"handle\":2473657597,\"pw_did\":\"\",\"pw_verkey\":\"\",\
+        \"did_endpoint\":\"\",\"state\":0,\"uuid\":\"\",\"endpoint\":\"\",\
+        \"invite_detail\":{\"e\":\"\",\"rid\":\"\",\"sakdp\":\"\",\
+        \"sn\":\"\",\"sD\":\"\",\"lu\":\"\",\"sVk\":\"\",\"tn\":\"\"}}";
         let new = to_string(connection_handle).unwrap();
         println!("original: {}",original);
         println!("     new: {}",new);
@@ -298,17 +291,11 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let string = "{\"source_id\":\"test_cxs_connection_deserialize\",\
-            \"handle\":3166777436,\"pw_did\":\"MYX5tk3VUeX9XbwMxgGQaQ\",\
-            \"pw_verkey\":\"CCRFnXZjvLm6zmeZ8kfKHgVHYHCyxAaQqwbhFEsXd5vz\",\
-            \"did_endpoint\":\"\",\"state\":2,\"uuid\":\"\",\"endpoint\":\"\",\
-            \"invite_detail\":\"{\\\"connReqId\\\":\\\"CXqcDCE\\\",\
-            \\\"senderAgentKeyDlgProof\\\":\\\"sdfsdf\\\",\
-            \\\"senderDID\\\":\\\"JiLBHundRhwYaMbPWno8Vg\\\",\
-            \\\"senderDIDVerKey\\\":\\\"AevwvcQBLv5CERRJShzUncV7ubapSgbDZxus42zS8fk1\\\",\
-            \\\"senderEndpoint\\\":\\\"34.210.228.152:80\\\",\
-            \\\"senderLogoUrl\\\":\\\"https://postimg.org/image/do2r09ain/\\\",\
-            \\\"senderName\\\":\\\"Evernym\\\",\
-            \\\"targetName\\\":\\\"there\\\"}\"}";
+        \"handle\":2473657597,\"pw_did\":\"\",\"pw_verkey\":\"\",\
+        \"did_endpoint\":\"\",\"state\":0,\"uuid\":\"\",\"endpoint\":\"\",\
+        \"invite_detail\":{\"e\":\"\",\"rid\":\"\",\"sakdp\":\"\",\
+        \"sn\":\"\",\"sD\":\"\",\"lu\":\"\",\"sVk\":\"\",\"tn\":\"\"}}";
+
         cxs_connection_deserialize(0,CString::new(string).unwrap().into_raw(), Some(deserialize_cb));
         thread::sleep(Duration::from_millis(200));
     }

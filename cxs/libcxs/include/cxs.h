@@ -103,7 +103,7 @@ cxs_error_t cxs_connection_connect(cxs_command_handle_t command_handle, cxs_conn
 cxs_error_t cxs_connection_serialize(cxs_command_handle_t command_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, const char *state));
 
 /** Re-creates a connection object from the specified serialization. */
-cxs_error_t cxs_connection_deserialize(cxs_command_handle_t command_handle, const char *serialized_claim, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_connection_handle_t *connection_handle));
+cxs_error_t cxs_connection_deserialize(cxs_command_handle_t command_handle, const char *serialized_claim, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_connection_handle_t connection_handle));
 
 /** Request a state update from the agent for the given connection. */
 cxs_error_t cxs_connection_update_state(cxs_command_handle_t command_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_claim_state_t state));

@@ -1,6 +1,8 @@
 extern crate rust_base58;
 extern crate serde_json;
 
+use settings;
+use utils::httpclient;
 use utils::error;
 use messages::validation;
 use messages::GeneralMessage;
@@ -175,6 +177,20 @@ impl GeneralMessage for CreateKeyMsg  {
         self.agent_payload = json!(self.payload).to_string();
         Ok(json!(self).to_string())
     }
+
+    fn send(&mut self) -> Result<String, u32> {
+        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+
+        let json_msg = match self.serialize_message() {
+            Ok(x) => x,
+            Err(x) => return Err(x),
+        };
+
+        match httpclient::post(&json_msg, &url) {
+            Err(_) => Err(error::POST_MSG_FAILURE.code_num),
+            Ok(response) => Ok(response),
+        }
+    }
 }
 
 impl SendInvite{
@@ -238,7 +254,20 @@ impl GeneralMessage for SendInvite{
         Ok(json!(self).to_string())
     }
 
+    fn send(&mut self) -> Result<String, u32> {
+        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+
+        let json_msg = match self.serialize_message() {
+            Ok(x) => x,
+            Err(x) => return Err(x),
+        };
+
+        match httpclient::post(&json_msg, &url) {
+            Err(_) => Err(error::POST_MSG_FAILURE.code_num),
+            Ok(response) => Ok(response),
+        }
     }
+}
 
 impl UpdateProfileData{
 
@@ -293,6 +322,19 @@ impl GeneralMessage for UpdateProfileData{
         Ok(json!(self).to_string())
     }
 
+    fn send(&mut self) -> Result<String, u32> {
+        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+
+        let json_msg = match self.serialize_message() {
+            Ok(x) => x,
+            Err(x) => return Err(x),
+        };
+
+        match httpclient::post(&json_msg, &url) {
+            Err(_) => Err(error::POST_MSG_FAILURE.code_num),
+            Ok(response) => Ok(response),
+        }
+    }
 }
 
 impl AcceptInvitation{
@@ -409,6 +451,20 @@ impl GeneralMessage for AcceptInvitation{
         }
         self.agent_payload = json!(self.payload).to_string();
         Ok(json!(self).to_string())
+    }
+
+    fn send(&mut self) -> Result<String, u32> {
+        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+
+        let json_msg = match self.serialize_message() {
+            Ok(x) => x,
+            Err(x) => return Err(x),
+        };
+
+        match httpclient::post(&json_msg, &url) {
+            Err(_) => Err(error::POST_MSG_FAILURE.code_num),
+            Ok(response) => Ok(response),
+        }
     }
 }
 
