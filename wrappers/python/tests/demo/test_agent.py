@@ -1,14 +1,10 @@
 from indy import agent, crypto, wallet
 
-import logging
+import pytest
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
-message = '{"reqId":1496822211362017764}'.encode('utf-8')
-
-async def demo():
-    logger.info("Agent sample -> started")
+@pytest.mark.asyncio
+async def test_agent_demo_works(message):
     # 1. Create and open wallets for Alice and Bob
     await wallet.create_wallet("no pool", "alice_wallet", None, None, None)
     alice_wallet_handle = await wallet.open_wallet("alice_wallet", None, None)
@@ -34,10 +30,3 @@ async def demo():
     sender_anon, decrypted_anon_msg = await agent.parse_msg(alice_wallet_handle, alice_key, encrypted_anon_msg)
     assert not sender_anon
     assert decrypted_anon_msg == message
-
-    await wallet.close_wallet(alice_wallet_handle)
-    await wallet.close_wallet(bob_wallet_handle)
-    await wallet.delete_wallet("alice_wallet", None)
-    await wallet.delete_wallet("bob_wallet", None)
-
-    logger.info("Agent sample -> completed")
