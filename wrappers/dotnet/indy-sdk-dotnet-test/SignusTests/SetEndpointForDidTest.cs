@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Hyperledger.Indy.Test.SignusTests
 {
     [TestClass]
-    public class SetEndpointForDidTest : IndyIntegrationTestWithSingleWallet
+    public class SetEndpointForDidTest : IndyIntegrationTestWithPoolAndSingleWallet
     {
         [TestMethod]
         public async Task TestSetEndpointForDidWorks()
@@ -17,13 +17,13 @@ namespace Hyperledger.Indy.Test.SignusTests
         public async Task TestSetEndpointForDidWorksForReplace()
         {
             await Signus.SetEndpointForDidAsync(wallet, DID1, ENDPOINT, VERKEY);
-            var receivedEndpoint = await Signus.GetEndpointForDidAsync(wallet, DID1);
+            var receivedEndpoint = await Signus.GetEndpointForDidAsync(wallet, pool, DID1);
             Assert.AreEqual(ENDPOINT, receivedEndpoint.Address);
             Assert.AreEqual(VERKEY, receivedEndpoint.TransportKey);
 
             var newEndpoint = "10.10.10.1:9710";
             await Signus.SetEndpointForDidAsync(wallet, DID1, newEndpoint, VERKEY_FOR_MY2_SEED);
-            var updatedEndpoint = await Signus.GetEndpointForDidAsync(wallet, DID1);
+            var updatedEndpoint = await Signus.GetEndpointForDidAsync(wallet, pool, DID1);
 
             Assert.AreEqual(newEndpoint, updatedEndpoint.Address);
             Assert.AreEqual(VERKEY_FOR_MY2_SEED, updatedEndpoint.TransportKey);
