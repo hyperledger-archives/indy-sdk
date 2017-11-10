@@ -18,7 +18,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "                    \"data\": {\n" +
                 "                        \"name\":\"gvt\",\n" +
                 "                        \"version\":\"1.0\",\n" +
-                "                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+                "                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
                 "                    }\n" +
                 "                 }";
 
@@ -58,7 +58,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         [TestMethod]
         public async Task TestIssuerCreateAndStoreClaimDefWorksForInvalidSchemaJson()
         {
-            var schema = "{\"seqNo\":1, \"name\":\"name\",\"version\":\"1.0\", \"keys\":[\"name\"]}";
+            var schema = "{\"seqNo\":1, \"name\":\"name\",\"version\":\"1.0\", \"attr_names\":[\"name\"]}";
            
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
                 AnonCreds.IssuerCreateAndStoreClaimDefAsync(_wallet, _issuerDid, schema, null, false)
@@ -73,7 +73,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "                    \"data\": {\n" +
                 "                        \"name\":\"gvt\",\n" +
                 "                        \"version\":\"1.0\",\n" +
-                "                        \"keys\":[]\n" +
+                "                        \"attr_names\":[]\n" +
                 "                    }\n" +
                 "                 }";
 

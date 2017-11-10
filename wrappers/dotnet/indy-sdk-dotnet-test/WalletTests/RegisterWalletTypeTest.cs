@@ -33,12 +33,12 @@ namespace Hyperledger.Indy.Test.WalletTests
 
             var walletName = "exerciseWalletTypeWorks";
 
-            await Wallet.CreateWalletAsync("default", walletName, "inmem", null, null);
+            await Wallet.CreateWalletAsync(POOL, walletName, _type, null, null);
 
             var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
             Assert.IsNotNull(wallet);
 
-            var schema = "{\"seqNo\":1,\"data\": {\"name\":\"gvt\",\"version\":\"1.0\",\"keys\":[\"age\",\"sex\",\"height\",\"name\"]}}";
+            var schema = "{\"seqNo\":1,\"data\": {\"name\":\"gvt\",\"version\":\"1.0\",\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}}";
             var claimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(wallet, DID1, schema, null, false);
 
             var claimOfferTemplate = "{{\"issuer_did\":\"{0}\",\"schema_seq_no\":{1}}}";

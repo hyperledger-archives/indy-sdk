@@ -24,7 +24,7 @@ async def test_submit_request_works(pool_handle):
             "identifier": "Th7MpTaRZVRYnPiabds81Y",
             "dest": "Th7MpTaRZVRYnPiabds81Y",
             "data": "{\"dest\":\"Th7MpTaRZVRYnPiabds81Y\",\"identifier\":\"V4SGRU86Z58d6TV7PBUe6f\",\"role\":\"2\""
-                    ",\"verkey\":\"~7TYfekw4GUagBnBVCqPjiC\"}",
+                    ",\"seqNo\":2,\"txnTime\":null,\"verkey\":\"~7TYfekw4GUagBnBVCqPjiC\"}",
             "type": "105",
         },
         "op": "REPLY"
