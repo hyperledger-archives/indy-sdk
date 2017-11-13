@@ -155,28 +155,6 @@ pub extern fn cxs_claimdef_get_sequence_no(claimdef_handle: u32, sequence_no: *m
 pub extern fn cxs_claimdef_get(claimdef_handle: u32, data: *mut c_char) -> u32 { error::SUCCESS.code_num }
 
 
-/**
- * proof object
- */
-
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_proof_create(proof_request_data: *mut c_char, proof_handle: *mut u32) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables)]
-pub extern fn cxs_proof_set_connection(proof_handle: u32, connection_handle: u32) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_proof_send_request(proof_handle: u32) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_proof_get_proof_offer(proof_handle: u32, response_data: *mut c_char) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables)]
-pub extern fn cxs_proof_validate_response(proof_handle: u32, response_data: *const c_char) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_proof_list_state(status_array: *mut CxsStatus) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_proof_get_state(proof_handle: u32, status: *mut c_char) -> u32 { error::SUCCESS.code_num }
-
-
-
-
 #[cfg(test)]
 mod tests {
 

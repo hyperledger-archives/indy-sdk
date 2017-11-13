@@ -67,6 +67,15 @@ export interface IClaimData {
   state: StateType
 }
 
+export interface IProofData {
+  source_id: string
+  handle: number
+  proof_attributes: string
+  proof_requester_did: string
+  proover_did: string
+  state: StateType
+}
+
 export const createFFICallbackPromise = <T>(fn, cb) => {
   let cbRef = null
   return (new Promise<T>( (resolve, reject) => fn(resolve, reject, cbRef = cb(resolve, reject))))

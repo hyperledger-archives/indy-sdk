@@ -248,7 +248,7 @@ pub fn get_state(handle: u32) -> u32 {
 pub fn release(handle: u32) -> u32 {
     match ISSUER_CLAIM_MAP.lock().unwrap().remove(&handle) {
         Some(t) => error::SUCCESS.code_num,
-        None => error::INVALID_CONNECTION_HANDLE.code_num,
+        None => error::INVALID_ISSUER_CLAIM_HANDLE.code_num,
     }
 }
 

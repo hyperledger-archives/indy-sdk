@@ -104,16 +104,6 @@ impl Connection {
     fn set_endpoint(&mut self, endpoint: &str) { self.endpoint = endpoint.to_string(); }
 }
 
-fn find_connection(source_id: &str) -> Result<u32,u32> {
-    for (handle, connection) in CONNECTION_MAP.lock().unwrap().iter() { //TODO this could be very slow with lots of objects
-        if connection.source_id == source_id {
-            return Ok(*handle);
-        }
-    };
-
-    Err(0)
-}
-
 pub fn is_valid_handle(handle: u32) -> bool {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
         Some(_) => true,
@@ -232,10 +222,7 @@ pub fn update_agent_profile(handle: u32) -> Result<u32, u32> {
 //       mock the agency during the connection phase
 //
 pub fn create_connection(source_id: String) -> u32 {
-     let new_handle = match find_connection(&source_id) {
-        Ok(x) => return x,
-        Err(_) => rand::thread_rng().gen::<u32>(),
-    };
+    let new_handle = rand::thread_rng().gen::<u32>();
 
     info!("creating connection with handle {} and id {}", new_handle, source_id);
     // This is a new connection
@@ -417,18 +404,6 @@ mod tests {
         wallet::tests::delete_wallet("test_create_connection");
         _m.assert();
         release(handle);
-    }
-
-    #[test]
-    fn test_create_idempotency() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_create_idempotency".to_owned());
-        let handle2 = build_connection("test_create_idempotency".to_owned());
-        assert_eq!(handle,handle2);
-        release(handle);
-        release(handle2);
     }
 
     #[test]

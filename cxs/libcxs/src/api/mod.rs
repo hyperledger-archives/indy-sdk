@@ -3,6 +3,7 @@ extern crate libc;
 pub mod cxs;
 pub mod connection;
 pub mod issuer_claim;
+pub mod proof;
 
 use std::fmt;
 
