@@ -44,7 +44,7 @@ libc = "0.2.21"
 log = "0.3.7"
 openssl = { version = "0.9.11", optional = true }
 rand = "0.3"
-rusqlcipher = { version = "0.14.2", features=["bundled"] }
+rusqlcipher = { version = "0.14.3", features=["bundled"] }
 rust-base58 = {version = "0.0.4", optional = true}
 base64 = "0.6.0"
 serde = "1.0"
