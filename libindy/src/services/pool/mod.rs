@@ -7,6 +7,7 @@ mod state_proof;
 extern crate byteorder;
 extern crate digest;
 extern crate hex;
+extern crate rand;
 extern crate rust_base58;
 extern crate sha2;
 extern crate zmq_pw as zmq;
@@ -75,6 +76,8 @@ struct TransactionHandler {
     nodes: Vec<RemoteNode>,
     pending_commands: HashMap<u64 /* requestId */, CommandProcess>,
 }
+
+const REQUESTS_FOR_STATE_PROOFS: [&'static str; 4] = [constants::GET_NYM, constants::GET_SCHEMA, constants::GET_CLAIM_DEF, constants::GET_ATTR];
 
 impl PoolWorkerHandler {
     fn process_msg(&mut self, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
@@ -203,7 +206,7 @@ impl TransactionHandler {
         debug!("TransactionHandler::process_reply: consensus_reached {}", consensus_reached);
 
         if consensus_reached {
-            let cmd_ids = self.pending_commands.get(&req_id).unwrap().cmd_ids.clone();
+            let cmd_ids = self.pending_commands.get(&req_id).unwrap().parent_cmd_ids.clone();
 
             for cmd_id in cmd_ids {
                 CommandExecutor::instance().send(
@@ -214,6 +217,7 @@ impl TransactionHandler {
         } else {
             let pend_cmd: &mut CommandProcess = self.pending_commands.get_mut(&req_id).unwrap();
             pend_cmd.replies.insert(json_msg, reply_cnt + 1);
+            pend_cmd.try_send_to_next_node_if_exists(&self.nodes);
         }
 
         trace!("TransactionHandler::process_reply: <<<");
@@ -226,7 +230,7 @@ impl TransactionHandler {
         if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
             pend_cmd.nack_cnt += 1;
             if pend_cmd.nack_cnt == self.f + 1 {
-                for &cmd_id in &pend_cmd.cmd_ids {
+                for &cmd_id in &pend_cmd.parent_cmd_ids {
                     CommandExecutor::instance().send(
                         Command::Ledger(
                             LedgerCommand::SubmitAck(cmd_id,
@@ -234,6 +238,8 @@ impl TransactionHandler {
                     ).unwrap();
                 }
                 remove = true;
+            } else {
+                pend_cmd.try_send_to_next_node_if_exists(&self.nodes);
             }
         }
         if remove {
@@ -241,31 +247,45 @@ impl TransactionHandler {
         }
     }
 
-    fn try_send_request(&mut self, cmd: &str, cmd_id: i32) -> Result<(), PoolError> {
-        info!("cmd {:?}", cmd);
-        let request: SJsonValue = serde_json::from_str(cmd)
+    fn try_send_request(&mut self, req_str: &str, cmd_id: i32) -> Result<(), PoolError> {
+        info!("cmd {:?}", req_str);
+        let req_json: SJsonValue = serde_json::from_str(req_str)
             .map_err(|err|
                 CommonError::InvalidStructure(
                     format!("Invalid request json: {}", err.description())))?;
 
-        let request_id: u64 = request["reqId"]
+        let req_id: u64 = req_json["reqId"]
             .as_u64()
             .ok_or(CommonError::InvalidStructure("No reqId in request".to_string()))?;
 
-        if self.pending_commands.contains_key(&request_id) {
-            self.pending_commands.get_mut(&request_id).unwrap().cmd_ids.push(cmd_id);
-        } else {
-            let pc = CommandProcess {
-                cmd_ids: vec!(cmd_id),
-                nack_cnt: 0,
-                replies: HashMap::new(),
+        if let Some(in_progress_req) = self.pending_commands.get_mut(&req_id) {
+            in_progress_req.parent_cmd_ids.push(cmd_id);
+            return Ok(());
+        }
+
+        let mut new_request = CommandProcess {
+            parent_cmd_ids: vec!(cmd_id),
+            nack_cnt: 0,
+            replies: HashMap::new(),
+            resendable_request: None,
+        };
+
+        if REQUESTS_FOR_STATE_PROOFS.contains(&req_json["operation"]["type"].as_str().unwrap_or("")) {
+            use self::rand::Rng;
+            let start_node = rand::StdRng::new().unwrap().gen_range(0, self.nodes.len());
+            let resendable_request = ResendableRequest {
+                request: req_str.to_string(),
+                start_node,
+                next_node: (start_node + 1) % self.nodes.len(),
             };
-            self.pending_commands.insert(request_id, pc);
+            new_request.resendable_request = Some(resendable_request);
+            self.nodes[start_node].send_str(req_str)?;
+        } else {
             for node in &self.nodes {
-                let node: &RemoteNode = node;
-                node.send_str(cmd)?;
+                node.send_str(req_str)?;
             }
         }
+        self.pending_commands.insert(req_id, new_request);
         Ok(())
     }
 
@@ -279,7 +299,7 @@ impl TransactionHandler {
             Err(err) => {
                 for (_, pending_cmd) in &self.pending_commands {
                     let pending_cmd: &CommandProcess = pending_cmd;
-                    for cmd_id in &pending_cmd.cmd_ids {
+                    for cmd_id in &pending_cmd.parent_cmd_ids {
                         CommandExecutor::instance()
                             .send(Command::Ledger(LedgerCommand::SubmitAck(
                                 cmd_id.clone(), Err(PoolError::Terminate))))
@@ -304,7 +324,7 @@ impl TransactionHandler {
             return None;
         };
 
-        if ![constants::GET_NYM, constants::GET_SCHEMA, constants::GET_CLAIM_DEF, constants::GET_ATTR].contains(&xtype) {
+        if !REQUESTS_FOR_STATE_PROOFS.contains(&xtype) {
             //TODO GET_DDO, GET_TXN
             trace!("TransactionHandler::parse_reply_for_proof_checking: <<< type not supported");
             return None;
@@ -503,6 +523,22 @@ impl TransactionHandler {
                 }
             }
             _ => None
+        }
+    }
+}
+
+impl CommandProcess {
+    //TODO return err or bool for more complex handling
+    fn try_send_to_next_node_if_exists(&mut self, nodes: &Vec<RemoteNode>) {
+        if let Some(ref mut resend) = self.resendable_request {
+            while resend.next_node != resend.start_node {
+                let cur_node = resend.next_node;
+                resend.next_node = (cur_node + 1) % nodes.len();
+                match nodes[cur_node].send_str(&resend.request) {
+                    Ok(()) => break,
+                    Err(err) => warn!("Can't send request to the next node, skip it ({})", err),
+                }
+            }
         }
     }
 }
@@ -1356,9 +1392,10 @@ mod tests {
         let mut th: TransactionHandler = Default::default();
         th.f = 1;
         let mut pc = super::types::CommandProcess {
-            cmd_ids: Vec::new(),
+            parent_cmd_ids: Vec::new(),
             replies: HashMap::new(),
             nack_cnt: 0,
+            resendable_request: None,
         };
         let json = "{\"value\":1}";
         pc.replies.insert(HashableValue { inner: serde_json::from_str(json).unwrap() }, 1);
@@ -1375,9 +1412,10 @@ mod tests {
         let mut th: TransactionHandler = Default::default();
         th.f = 1;
         let mut pc = super::types::CommandProcess {
-            cmd_ids: Vec::new(),
+            parent_cmd_ids: Vec::new(),
             replies: HashMap::new(),
             nack_cnt: 0,
+            resendable_request: None,
         };
         let json1 = "{\"value\":1}";
         let json2 = "{\"value\":2}";
@@ -1406,7 +1444,8 @@ mod tests {
         let exp_command_process = CommandProcess {
             nack_cnt: 0,
             replies: HashMap::new(),
-            cmd_ids: vec!(cmd_id),
+            parent_cmd_ids: vec!(cmd_id),
+            resendable_request: None,
         };
         assert_eq!(pending_cmd, &exp_command_process);
     }

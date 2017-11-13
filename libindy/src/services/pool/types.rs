@@ -289,11 +289,20 @@ impl PartialEq for HashableValue {
     }
 }
 
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct ResendableRequest {
+    pub request: String,
+    pub start_node: usize,
+    pub next_node: usize,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct CommandProcess {
     pub nack_cnt: usize,
     pub replies: HashMap<HashableValue, usize>,
-    pub cmd_ids: Vec<i32>,
+    pub parent_cmd_ids: Vec<i32>,
+    pub resendable_request: Option<ResendableRequest>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
