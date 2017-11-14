@@ -7,6 +7,7 @@ def testing() {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
                 'macos-test'  : { macosTesting() },
+                'ios-test'    : { iosTesting() },
                 'redhat-test' : { rhelTesting() },
                 'windows-test': { windowsTesting() }
         ])
@@ -86,6 +87,34 @@ def macosTesting() {
                 //TODO wrappers testing
             } finally {
                 step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
+
+def iosTesting() {
+    node('macos') {
+        stage('iOS Test') {
+            def poolInst
+            try {
+                echo "iOS Test: Checkout scm"
+                checkout scm
+
+                echo "iOS Test: Running pool"
+                def poolEnv = dockerBuild('indy_pool', 'ci/indy-pool.dockerfile ci')
+                poolInst = poolEnv.run('-p 9701-9708:9701-9708')
+
+                dir('wrappers/ios/libindy-pod') {
+                    echo "iOS Test: Build"
+
+                    echo "iOS Test: Installing dependencies (pods)"
+                    sh "pod install"
+
+                    echo "iOS Test: Testing"
+                    sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone 7 Plus,OS=11.1'"
+                }
+            } finally {
+                closePool("iOS Test", null, poolInst)
             }
         }
     }
@@ -195,10 +224,12 @@ def openPool(env_name, network_name, pool_type = null, pool_ver = null, plenum_v
 
 def closePool(env_name, network_name, poolInst) {
     echo "${env_name} Test: Cleanup"
-    try {
-        sh "docker network inspect ${network_name}"
-    } catch (error) {
-        echo "${env_name} Tests: error while inspect network ${network_name} - ${error}"
+    if (network_name != null) {
+        try {
+            sh "docker network inspect ${network_name}"
+        } catch (error) {
+            echo "${env_name} Tests: error while inspect network ${network_name} - ${error}"
+        }
     }
     try {
         echo "${env_name} Test: stop pool"
@@ -206,16 +237,18 @@ def closePool(env_name, network_name, poolInst) {
     } catch (error) {
         echo "${env_name} Tests: error while stop pool ${error}"
     }
-    try {
-        sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f"
-    } catch (error) {
-        echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
-    }
-    try {
-        echo "${env_name} Test: remove pool network ${network_name}"
-        sh "docker network rm ${network_name}"
-    } catch (error) {
-        echo "${env_name} Test: error while delete ${network_name} - ${error}"
+    if (network_name != null) {
+        try {
+            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f"
+        } catch (error) {
+            echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
+        }
+        try {
+            echo "${env_name} Test: remove pool network ${network_name}"
+            sh "docker network rm ${network_name}"
+        } catch (error) {
+            echo "${env_name} Test: error while delete ${network_name} - ${error}"
+        }
     }
     step([$class: 'WsCleanup'])
 }
