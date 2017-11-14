@@ -12,6 +12,12 @@ const ATTR = '{"attr":"value"}'
 const DID = '8XFh8yBzrpJQmNyZzgoTqB'
 
 describe('An issuerClaim', async function () {
+  this.timeout(10000)
+
+  before(async () => {
+    await cxs.init_cxs('ENABLE_TEST_MODE')
+  })
+
   it('can be created.', async function () {
     const claim = new IssuerClaim('Bank Claim')
     assert(claim)
@@ -43,7 +49,6 @@ describe('An issuerClaim', async function () {
 
   it('can be sent with a valid connection', async function () {
     const sourceId = 'Bank Claim'
-    await cxs.init_cxs('ENABLE_TEST_MODE')
     let connection = await Connection.create({ id: '234' })
     await connection.connect()
     await connection.updateState()
@@ -67,7 +72,6 @@ describe('An issuerClaim', async function () {
   it('can be sent, then serialized, then deserialized', async function () {
     // create a connection, send the claim, serialize and then deserialize
     // and compare
-    await cxs.init_cxs('ENABLE_TEST_MODE')
     let connection = await Connection.create({ id: '234' })
     await connection.connect()
 
@@ -86,7 +90,6 @@ describe('An issuerClaim', async function () {
   })
 
   it('serialize without correct handle throws error', async function () {
-    await cxs.init_cxs('ENABLE_TEST_MODE')
     const claim = new IssuerClaim(null)
     try {
       await claim.serialize()
@@ -135,7 +138,6 @@ describe('An issuerClaim', async function () {
   })
 
   it('throws exception for sending claim with invalid claim handle', async function () {
-    await cxs.init_cxs('ENABLE_TEST_MODE')
     let connection = await Connection.create({id: '123'})
     const claim = new IssuerClaim(null)
     try {
@@ -146,7 +148,6 @@ describe('An issuerClaim', async function () {
   })
 
   it('throws exception for sending claim with invalid connection handle', async function () {
-    await cxs.init_cxs('ENABLE_TEST_MODE')
     let releasedConnection = await Connection.create({id: '123'})
     await releasedConnection.release()
     const sourceId = 'Claim'
@@ -159,7 +160,6 @@ describe('An issuerClaim', async function () {
   })
 
   it('sending claim with no claim offer should throw exception', async function () {
-    await cxs.init_cxs('ENABLE_TEST_MODE')
     let connection = await Connection.create({id: '123'})
     const sourceId = 'Claim'
     const claim = await IssuerClaim.create(sourceId, SCHEMANUM, DID, ATTR)
@@ -171,7 +171,6 @@ describe('An issuerClaim', async function () {
   })
 
   it('sending claim with valid claim offer should have state CxsStateAccepted', async function () {
-    await cxs.init_cxs('ENABLE_TEST_MODE')
     let connection = await Connection.create({id: '123'})
     await connection.connect({ sms: true })
     const sourceId = 'Claim'
