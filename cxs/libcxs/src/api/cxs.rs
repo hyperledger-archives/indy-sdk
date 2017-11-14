@@ -1,7 +1,6 @@
 extern crate libc;
 
 use self::libc::c_char;
-use api::CxsStatus;
 use utils::cstring::CStringUtils;
 use utils::{pool, wallet};
 use utils::error;

@@ -3,11 +3,9 @@ extern crate libc;
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
-use connection;
 use proof;
 use std::thread;
 use std::ptr;
-use api::CxsStateType;
 use api::CxsStatus;
 
 #[no_mangle]
@@ -132,8 +130,6 @@ mod tests {
     use std::ptr;
     use std::time::Duration;
     use settings;
-    use connection;
-    use api::CxsStateType;
 
     extern "C" fn create_cb(command_handle: u32, err: u32, proof_handle: u32) {
         assert_eq!(err, 0);

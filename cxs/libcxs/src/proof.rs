@@ -7,10 +7,7 @@ use std::collections::HashMap;
 use rand::Rng;
 use api::CxsStateType;
 use utils::error;
-use messages;
 use settings;
-use messages::GeneralMessage;
-use connection;
 
 lazy_static! {
     static ref PROOF_MAP: Mutex<HashMap<u32, Box<Proof>>> = Default::default();
@@ -151,7 +148,6 @@ fn get_offer_details(response: &str) -> Result<String, u32> {
 mod tests {
 
     use super::*;
-    use std::thread;
     extern crate mockito;
 
     extern "C" fn create_cb(command_handle: u32, err: u32, connection_handle: u32) {

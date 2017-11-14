@@ -22,18 +22,26 @@ export class IssuerClaim {
     this._attr = null
     this._issuerDID = null
   }
-  static async create (sourceId: string, schemaNumber: number, did: string, attributes: string): Promise<IssuerClaim> {
+  // SourceId: String for SDK User's reference
+  // schemaNumber: number representing the schema sequence number of the claim def
+  // issuerDid: String, DID associated with the claim def
+  // attributes: String(JSON formatted) representing the attributes of the claim def
+  static async create (sourceId: string, schemaNumber: number,
+                       issuerDid: string, attributes: string): Promise<IssuerClaim> {
     const claim = new IssuerClaim(sourceId)
-    await claim.init(sourceId, schemaNumber, did, attributes)
+    await claim.init(sourceId, schemaNumber, issuerDid, attributes)
     return claim
   }
 
+  // Deserializes a JSON representing a issuer claim object
   static async deserialize (claimData: IClaimData): Promise<IssuerClaim> {
     const claim = new IssuerClaim(claimData.source_id)
     await claim._initFromClaimData(claimData)
     return claim
   }
 
+  // Calls the cxs update state.  Used for polling the state of the issuer claim.
+  // For example, when waiting for a request to send a claim offer.
   async updateState (): Promise<void> {
     const claimHandle = this._claimHandle
     const state = await createFFICallbackPromise<string>(
@@ -110,7 +118,7 @@ export class IssuerClaim {
       throw new CXSInternalError(`cxs_issuer_claim_serialize -> ${rc}`)
     }
   }
-
+  // send a claim offer to the connection
   async sendOffer (connection: Connection): Promise<void> {
     const claimHandle = this._claimHandle
     try {
@@ -136,6 +144,7 @@ export class IssuerClaim {
     }
   }
 
+  // Send a claim to the connection.
   async sendClaim (connection: Connection): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
@@ -163,11 +172,11 @@ export class IssuerClaim {
     this._state = state
   }
 
-  private async init (sourceId: string, schemaNumber: number, did: string, attr: string): Promise<void> {
+  private async init (sourceId: string, schemaNumber: number, issuerDid: string, attr: string): Promise<void> {
     this._schemaNum = schemaNumber
     this._attr = attr
     this._sourceId = sourceId
-    this._issuerDID = did
+    this._issuerDID = issuerDid
     try {
       const data = await createFFICallbackPromise<number>(
           (resolve, reject, cb) => {
