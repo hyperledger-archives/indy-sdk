@@ -1,35 +1,46 @@
 import * as ffi from 'ffi'
-import * as weak from 'weak'
-import { CXSRuntime } from '../index'
-import { CXSRuntimeConfig } from '../rustlib'
-import {
-    createFFICallbackPromise,
-    IConnectionData,
-    IConnections,
-    IConnectOptions,
-    IRecipientInfo,
-    StateType
-} from './api'
-import { ConnectionTimeoutError, CXSInternalError } from './errors'
 
-export class Connection implements IConnections {
-  public connectionHandle: string
-  private _state: StateType
-  private RUST_API: { [ index: string ]: ffi.ForeignFunction }
+import { ConnectionTimeoutError, CXSInternalError } from '../errors'
+import { rustAPI } from '../rustlib'
+import { createFFICallbackPromise } from '../utils/ffi-helpers'
+import { GCWatcher } from '../utils/memory-management-helpers'
+import { StateType } from './common'
 
-  constructor ( path?: string ) {
-    this._initRustApi(path)
-    this._state = StateType.None
-  }
+export interface IConnectionData {
+  source_id: string
+  invite_detail: string,
+  handle: number,
+  pw_did: string,
+  pw_verkey: string,
+  did_endpoint: string,
+  endpoint: string,
+  uuid: string,
+  wallet: string,
+  state: StateType
+}
 
-  static async create ( recipientInfo: IRecipientInfo, path?: string ): Promise<Connection> {
-    const connection = new Connection(path)
+export interface IRecipientInfo {
+  id: string
+}
+
+export interface IConnectOptions {
+  phone?: string,
+  timeout?: number
+}
+
+export class Connection extends GCWatcher {
+  protected _releaseFn = rustAPI().cxs_connection_release
+  protected _handle: string
+  private _state: StateType = StateType.None
+
+  static async create ( recipientInfo: IRecipientInfo): Promise<Connection> {
+    const connection = new Connection()
     await connection.init(recipientInfo)
     return connection
   }
 
-  static async deserialize (connectionData: IConnectionData, path?: string): Promise<Connection> {
-    const connection = new Connection(path)
+  static async deserialize (connectionData: IConnectionData): Promise<Connection> {
+    const connection = new Connection()
     await connection._initFromConnectionData(connectionData)
     return connection
   }
@@ -44,7 +55,7 @@ export class Connection implements IConnections {
     try {
       const data = await createFFICallbackPromise<string>(
             (resolve, reject, cb) => {
-              rc = this.RUST_API.cxs_connection_serialize(0, this.connectionHandle, cb)
+              rc = rustAPI().cxs_connection_serialize(0, this._handle, cb)
               if (rc) {
                 reject(rc)
               }
@@ -69,7 +80,7 @@ export class Connection implements IConnections {
     try {
       const state = await createFFICallbackPromise<number>(
           (resolve, reject, cb) => {
-            const rc = this.RUST_API.cxs_connection_update_state(0, this.connectionHandle, cb)
+            const rc = rustAPI().cxs_connection_update_state(0, this._handle, cb)
             if (rc) {
               resolve(StateType.None)
             }
@@ -91,20 +102,8 @@ export class Connection implements IConnections {
     return this._state
   }
 
-  async release (): Promise<number> {
-    return this.RUST_API.cxs_connection_release(this.connectionHandle)
-  }
-
   getHandle () {
-    return this.connectionHandle
-  }
-
-  _setConnectionHandle (handle) {
-    this.connectionHandle = handle
-  }
-
-  private _initRustApi (path?) {
-    this.RUST_API = new CXSRuntime(new CXSRuntimeConfig(path))._ffi
+    return this._handle
   }
 
   private _setState (state) {
@@ -114,9 +113,9 @@ export class Connection implements IConnections {
   private async init ( recipientInfo: IRecipientInfo ): Promise<void> {
     const id = recipientInfo.id // TODO verifiy that id is a string
     try {
-      this.connectionHandle = await createFFICallbackPromise<string>(
+      const connectionHandle = await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
-            const rc = this.RUST_API.cxs_connection_create(0, id, cb)
+            const rc = rustAPI().cxs_connection_create(0, id, cb)
             if (rc) {
               reject(rc)
             }
@@ -129,10 +128,11 @@ export class Connection implements IConnections {
             resolve( rtnHandle )
           })
       )
+      this._setHandle(connectionHandle)
+      await this.updateState()
     } catch (error) {
       throw new CXSInternalError(`cxs_connection_create -> ${error}`)
     }
-    this._clearOnExit()
   }
 
   private async _initFromConnectionData (connectionData: IConnectionData): Promise<void> {
@@ -140,7 +140,7 @@ export class Connection implements IConnections {
     try {
       const connectionHandle = await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
-            const rc = this.RUST_API.cxs_connection_deserialize(commandHandle, JSON.stringify(connectionData), cb)
+            const rc = rustAPI().cxs_connection_deserialize(commandHandle, JSON.stringify(connectionData), cb)
             if (rc) {
               reject(rc)
             }
@@ -152,22 +152,11 @@ export class Connection implements IConnections {
             resolve(JSON.stringify(handle))
           })
       )
-      this._setConnectionHandle(connectionHandle)
+      this._setHandle(connectionHandle)
       await this.updateState()
     } catch (error) {
       throw new CXSInternalError(`cxs_connection_deserialize -> ${error}`)
     }
-  }
-
-    // _clearOnExit creates a callback that will release the Rust Object
-    // when the node Connection object is Garbage collected
-  private _clearOnExit () {
-    const weakRef = weak(this)
-    const release = this.RUST_API.cxs_connection_release
-    const handle = this.connectionHandle
-    weak.addCallback(weakRef, () => {
-      release(handle)
-    })
   }
 
   private async _connect (options: IConnectOptions): Promise<number> {
@@ -177,7 +166,7 @@ export class Connection implements IConnections {
     try {
       return await createFFICallbackPromise<number>(
           (resolve, reject, cb) => {
-            const rc = this.RUST_API.cxs_connection_connect(0, this.connectionHandle, connectionData, cb)
+            const rc = rustAPI().cxs_connection_connect(0, this._handle, connectionData, cb)
             if (rc) {
               resolve(rc)
             }

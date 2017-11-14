@@ -1,12 +1,6 @@
 const assert = require('chai').assert
+const { IssuerClaim, Connection, StateType, Error, initCxs } = require('../dist/index')
 
-const IssuerClaim = require('../dist/index').IssuerClaim
-const cxs = require('../dist/index')
-const Connection = require('../dist/api/connection').Connection
-
-const api = require('../dist/api/api.js')
-const StateType = api.StateType
-const Error = api.Error
 const SCHEMANUM = 32
 const ATTR = '{"attr":"value"}'
 const DID = '8XFh8yBzrpJQmNyZzgoTqB'
@@ -15,7 +9,7 @@ describe('An issuerClaim', async function () {
   this.timeout(10000)
 
   before(async () => {
-    await cxs.init_cxs('ENABLE_TEST_MODE')
+    await initCxs('ENABLE_TEST_MODE')
   })
 
   it('can be created.', async function () {

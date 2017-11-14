@@ -1,14 +1,14 @@
 import { expect } from 'chai'
 import { describe, it } from 'mocha'
-import { init_cxs } from '../src/api/init'
+import { initCxs } from '../dist/index'
 
 describe('cxs_init', () => {
   it ('should return 0 when given a null argument', () => {
-    const result = init_cxs(null)
+    const result = initCxs(null)
     expect(result).to.equal(0)
   })
   it ('should return 1001 when given an invalid argument', () => {
-    const result = init_cxs('garbage')
+    const result = initCxs('garbage')
     expect(result).to.equal(1001)
   })
 })

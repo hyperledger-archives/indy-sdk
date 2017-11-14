@@ -1,10 +1,9 @@
 import * as ref from 'ref'
 import * as StructType from 'ref-struct'
 
-export type FFIEntryPoint = any
+import { CXSRuntime } from './cxs'
 
-/* tslint: disable */
-export let CxsStatus = StructType({
+export const CxsStatus = StructType({
   handle: 'int',
   msg: 'string',
   status: 'int'
@@ -19,7 +18,7 @@ export const FFI_STRING = 'string'
 export const FFI_CONFIG_PATH = FFI_STRING
 export const FFI_STRING_DATA = 'string'
 export const FFI_SOURCE_ID = 'string'
-export const FFI_CONNECTION_TYPE = 'string'
+export const FFI_CONNECTION_DATA = 'string'
 export const FFI_VOID = ref.types.void
 export const FFI_CONNECTION_HANDLE_PTR = ref.refType(FFI_CONNECTION_HANDLE)
 export const FFI_CALLBACK_PTR = 'pointer'
@@ -37,22 +36,38 @@ export type rust_wallet_handle = rust_object_handle
 export type rust_listener_handle = rust_object_handle
 export type rust_connection_handle = rust_object_handle
 
-export interface IFFIInterfaceConfig {
-  libraryPath?: string
-}
-
-export class CXSRuntimeConfig {
-  basepath?: string
-
-  constructor (basepath?: string) {
-    this.basepath = basepath
-  }
-}
-
-export const FFIConfiguration = {
-
+export interface IFFIEntryPoint {
+  cxs_init: (commandId: number, configPath: string, cb: any) => number,
   // connection
-  cxs_connection_connect: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CONNECTION_TYPE,
+  cxs_connection_connect: (commandId: number, handle: string, data: string, cb: any) => number,
+  cxs_connection_create: (commandId: number, data: string, cb: any) => number,
+  cxs_connection_deserialize: (commandId: number, data: string, cb: any) => number,
+  cxs_connection_release: (handle: string) => number,
+  cxs_connection_serialize: (commandId: number, handle: string, cb: any) => number,
+  cxs_connection_update_state: (commandId: number, handle: string, cb: any) => number,
+  // issuer
+  cxs_issuer_claim_deserialize: (commandId: number, data: string, cb: any) => number,
+  cxs_issuer_claim_serialize: (commandId: number, handle: string, cb: any) => number,
+  cxs_issuer_claim_update_state: (commandId: number, handle: string, cb: any) => number,
+  cxs_issuer_create_claim: any,
+  cxs_issuer_send_claim: (commandId: number, claimHandle: string, connectionHandle: string, cb: any) => number,
+  cxs_issuer_send_claim_offer: (commandId: number, claimHandle: string, connectionHandle: string, cb: any) => number,
+  // proof
+  cxs_proof_create: any,
+  cxs_proof_deserialize: any,
+  cxs_proof_release: any,
+  cxs_proof_serialize: any,
+  // cxs_proof_update_state: any,
+
+  free: any
+}
+
+// tslint:disable object-literal-sort-keys
+export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
+
+  cxs_init: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONFIG_PATH, FFI_CALLBACK_PTR]],
+  // connection
+  cxs_connection_connect: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CONNECTION_DATA,
     FFI_CALLBACK_PTR]],
   cxs_connection_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   cxs_connection_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
@@ -60,7 +75,6 @@ export const FFIConfiguration = {
   cxs_connection_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   cxs_connection_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   // issuer
-  cxs_init: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONFIG_PATH, FFI_CALLBACK_PTR]],
   cxs_issuer_claim_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   cxs_issuer_claim_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CALLBACK_PTR]],
   cxs_issuer_claim_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CALLBACK_PTR]],
@@ -78,5 +92,8 @@ export const FFIConfiguration = {
   // cxs_proof_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CALLBACK_PTR]],
 
   free: [FFI_VOID, ['void*']]
-
 }
+
+let _rustAPI: IFFIEntryPoint = null
+export const initRustAPI = (path?: string) => _rustAPI = new CXSRuntime({ basepath: path }).ffi
+export const rustAPI = () => _rustAPI

@@ -1,14 +1,10 @@
 const chai = require('chai')
 const parentDir = require('path')
-const currentDir = parentDir.dirname(module.filename)
-const api = require(parentDir.dirname(currentDir) + '/dist/api/api.js')
-const StateType = api.StateType
-const Error = api.Error
-const Connection = require(parentDir.dirname(currentDir) + '/dist/api/connection').Connection
-const path = parentDir.dirname(currentDir) + '/lib/libcxs.so'
-const cxs = require('../dist/index.js')
-const assert = chai.assert
 const ffi = require('ffi')
+const currentDir = parentDir.dirname(module.filename)
+const path = parentDir.dirname(currentDir) + '/lib/libcxs.so'
+const { Connection, StateType, Error, initCxs, rustAPI } = require('../dist/index.js')
+const assert = chai.assert
 
 const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
 
@@ -26,7 +22,7 @@ describe('A Connection object with ', function () {
   this.timeout(10000)
 
   before(async () => {
-    await cxs.init_cxs('ENABLE_TEST_MODE')
+    await initCxs('ENABLE_TEST_MODE', { libCXSPath: path })
     await sleep(3000)
   })
 
@@ -37,14 +33,13 @@ describe('A Connection object with ', function () {
       id: '234',
       DIDself: '456',
       DIDremote: '0'
-    },
-    path)
-    assert.notEqual(connection.connectionHandle, undefined)
+    })
+    assert.notEqual(connection._handle, undefined)
   })
 
   it('object with id as param in create should return success', async () => {
-    const connection = await Connection.create({ id: '999' }, path)
-    assert.notEqual(connection.connectionHandle, undefined)
+    const connection = await Connection.create({ id: '999' })
+    assert.notEqual(connection._handle, undefined)
   })
 
   // connection_connect tests
@@ -54,28 +49,27 @@ describe('A Connection object with ', function () {
       id: '234',
       DIDself: '548NLfYrPxtB299RVafcjR',
       DIDremote: '0'
-    },
-    path)
+    })
     await connection.connect({ sms: true })
   })
 
   it(' a call to create with no connection created should return unknown error', async () => {
-    const connection = new Connection(path)
+    const connection = new Connection()
     assert.equal(await connection._connect({ sms: true }), Error.INVALID_CONNECTION_HANDLE)
   })
 
   // connection_get_data tests
 
   it('a call to serialize where connection exists should return back the connections data', async () => {
-    const connection = await Connection.create({ id: '999' }, path)
-    assert.notEqual(connection.connectionHandle, undefined)
+    const connection = await Connection.create({ id: '999' })
+    assert.notEqual(connection._handle, undefined)
     const data = await connection.serialize()
     assert.notEqual(data, null)
-    assert.equal(data.handle, connection.connectionHandle)
+    assert.equal(data.handle, connection._handle)
   })
 
   it('a call to serialize where connection doesnt exist should throw error', async () => {
-    const connection = new Connection(path)
+    const connection = new Connection()
     try {
       await connection.serialize()
     } catch (error) {
@@ -84,15 +78,15 @@ describe('A Connection object with ', function () {
   })
 
   it('a call to serialize where connection was released should throw error', async () => {
-    const connection = await Connection.create({ id: '234' }, path)
-    assert.notEqual(connection.connectionHandle, undefined)
+    const connection = await Connection.create({ id: '234' })
+    assert.notEqual(connection._handle, undefined)
 
     await connection.connect({ sms: true })
     await connection.updateState()
     assert.equal(connection.getState(), StateType.OfferSent)
     let data = await connection.serialize()
     assert.notEqual(data, null)
-    assert.equal(data.handle, connection.connectionHandle)
+    assert.equal(data.handle, connection._handle)
     assert.equal(await connection.release(), Error.SUCCESS)
     try {
       await connection.serialize()
@@ -103,18 +97,18 @@ describe('A Connection object with ', function () {
 
   // deserialize
   it('a call to deserialize with correct data should return the connection handle', async () => {
-    const connection1 = await Connection.create({ id: '234' }, path)
-    assert.notEqual(connection1.connectionHandle, undefined)
+    const connection1 = await Connection.create({ id: '234' })
+    assert.notEqual(connection1._handle, undefined)
     const data = await connection1.serialize()
-    const connection2 = await Connection.deserialize(data, path)
-    assert.equal(connection2.connectionHandle, connection1.connectionHandle)
+    const connection2 = await Connection.deserialize(data)
+    assert.equal(connection2._handle, connection1._handle)
     const data2 = await connection2.serialize()
     assert.equal(JSON.stringify(data), JSON.stringify(data2))
   })
 
   it('a call to deserialize with incorrect data should throw error', async () => {
     try {
-      await Connection.deserialize({source_id: 'Invalid'}, path)
+      await Connection.deserialize({source_id: 'Invalid'})
     } catch (error) {
       assert.equal(error.toString(), 'Error: cxs_connection_deserialize -> 1001')
     }
@@ -122,14 +116,14 @@ describe('A Connection object with ', function () {
 
   it('a call to serialize then deserialize then serialize should have same data', async () => {
     const connection = await Connection.create({ id: '234' })
-    assert.notEqual(connection.connectionHandle, undefined)
+    assert.notEqual(connection._handle, undefined)
 
     await connection.connect({ sms: true })
     await connection.updateState()
     assert.equal(connection.getState(), StateType.OfferSent)
     let data = await connection.serialize()
-    const connection2 = await Connection.deserialize(data, path)
-    assert.equal(connection2.connectionHandle, connection.connectionHandle)
+    const connection2 = await Connection.deserialize(data)
+    assert.equal(connection2._handle, connection._handle)
     let data2 = await connection2.serialize()
     assert.equal(JSON.stringify(data2), JSON.stringify(data))
   })
@@ -137,21 +131,21 @@ describe('A Connection object with ', function () {
   // connection_getState tests
   it('call to updateState where connection exists should return success', async () => {
     const connection = await Connection.create({ id: '234' })
-    assert.notEqual(connection.connectionHandle, undefined)
+    assert.notEqual(connection._handle, undefined)
     await connection.connect({ sms: true })
     await connection.updateState()
     assert.equal(connection.getState(), StateType.OfferSent)
   })
 
   it('call to updateState where no connection exists should have a state value of 0', async () => {
-    const connection = new Connection(path)
+    const connection = new Connection()
     await connection.updateState()
     assert.equal(connection.getState(), StateType.None)
   })
 
   it('call to updateState where connection exists but not connected should have a state value of 1', async () => {
     const connection = await Connection.create({ id: 'Unique ID 999' })
-    assert.notEqual(connection.connectionHandle, undefined)
+    assert.notEqual(connection._handle, undefined)
     await connection.updateState()
     assert.equal(connection.getState(), StateType.Initialized)
   })
@@ -160,7 +154,7 @@ describe('A Connection object with ', function () {
 
   it('call to connection_release where connection exists should return success', async () => {
     const connection = await Connection.create({ id: '234' })
-    assert.notEqual(connection.connectionHandle, undefined)
+    assert.notEqual(connection._handle, undefined)
     await connection.connect({ sms: true })
     assert.equal(await connection.release(), Error.SUCCESS)
     assert.equal(await connection._connect({ sms: true }), Error.INVALID_CONNECTION_HANDLE)
@@ -172,7 +166,7 @@ describe('A Connection object with ', function () {
   })
 
   it('call to connection_release with no connection should return unknown error', async () => {
-    const connection = new Connection(path)
+    const connection = new Connection()
     assert.equal(await connection.release(), Error.INVALID_CONNECTION_HANDLE)
   })
 
@@ -183,17 +177,26 @@ describe('A Connection object with ', function () {
     assert.equal(result['state'], StateType.OfferSent)
   })
 
-  it('connection and GC deletes object should return null when get_data is called ', async () => {
-    this.timeout(30000)
-    let connection = new Connection(path)
-    await connection.init({ id: '234' })
-    assert.notEqual(connection.connectionHandle, undefined)
+  const connectionCreateCheckAndDelete = async () => {
+    let connection = await Connection.create({ id: '234' })
+    assert.notEqual(connection._handle, undefined)
     await connection._connect({ sms: true })
-    const serialize = connection.RUST_API.cxs_connection_serialize
-    const handle = connection.connectionHandle
+    const serialize = rustAPI().cxs_connection_serialize
+    const handle = connection._handle
     const data = await connection.serialize()
     assert.notEqual(data, null)
     connection = null
+    return {
+      handle,
+      serialize
+    }
+  }
+
+  it('connection and GC deletes object should return null when get_data is called ', async function () {
+    this.timeout(30000)
+
+    const { handle, serialize } = await connectionCreateCheckAndDelete()
+
     global.gc()
 
     let isComplete = false

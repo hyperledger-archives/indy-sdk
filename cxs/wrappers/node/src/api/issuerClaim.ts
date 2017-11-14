@@ -1,22 +1,34 @@
-import { Callback, ForeignFunction } from 'ffi'
-import { weak } from 'weak'
-import { CXSRuntime, CXSRuntimeConfig } from '../index'
-import { createFFICallbackPromise, IClaimData, StateType } from './api'
-import { Connection } from './connection'
-import { CXSInternalError } from './errors'
+import { Callback } from 'ffi'
 
-export class IssuerClaim {
+import { CXSInternalError } from '../errors'
+import { rustAPI } from '../rustlib'
+import { createFFICallbackPromise } from '../utils/ffi-helpers'
+import { GCWatcher } from '../utils/memory-management-helpers'
+import { StateType } from './common'
+import { Connection } from './connection'
+
+export interface IClaimData {
+  source_id: string
+  handle: number
+  schema_seq_no: number
+  claim_attributes: string
+  issuer_did: string
+  state: StateType
+}
+
+export class IssuerClaim extends GCWatcher {
+  protected _releaseFn = rustAPI().cxs_connection_release // TODO: Fix me
+  protected _handle: string
   private _attr: string
   private _schemaNum: number
   private _sourceId: string
-  private _claimHandle: number
   private _state: number
-  private _RUST_API: { [ index: string ]: ForeignFunction }
   private _issuerDID: string
+
   constructor (sourceId) {
+    super()
     this._sourceId = sourceId
-    this._initRustApi(null)
-    this._claimHandle = null
+    this._handle = null
     this._state = StateType.None
     this._schemaNum = null
     this._attr = null
@@ -43,11 +55,11 @@ export class IssuerClaim {
   // Calls the cxs update state.  Used for polling the state of the issuer claim.
   // For example, when waiting for a request to send a claim offer.
   async updateState (): Promise<void> {
-    const claimHandle = this._claimHandle
+    const claimHandle = this._handle
     const state = await createFFICallbackPromise<string>(
       (resolve, reject, callback) => {
         const commandHandle = 1
-        const rc = this._RUST_API.cxs_issuer_claim_update_state(commandHandle, claimHandle, callback)
+        const rc = rustAPI().cxs_issuer_claim_update_state(commandHandle, claimHandle, callback)
         if (rc) {
           reject(rc)
         }
@@ -72,7 +84,7 @@ export class IssuerClaim {
   }
 
   getClaimHandle () {
-    return this._claimHandle
+    return this._handle
   }
 
   getSchemaNum () {
@@ -83,21 +95,17 @@ export class IssuerClaim {
     return this._attr
   }
 
-  setClaimHandle (handle) {
-    this._claimHandle = handle
-  }
-
-  getState () {
+  getState (): StateType {
     return this._state
   }
 
   async serialize (): Promise<IClaimData> {
-    const claimHandle = this._claimHandle
+    const claimHandle = this._handle
     let rc = null
     try {
       const data = await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
-            rc = this._RUST_API.cxs_issuer_claim_serialize(0, claimHandle, cb)
+            rc = rustAPI().cxs_issuer_claim_serialize(0, claimHandle, cb)
             if (rc) {
               // TODO: handle correct exception
               reject(rc)
@@ -120,11 +128,11 @@ export class IssuerClaim {
   }
   // send a claim offer to the connection
   async sendOffer (connection: Connection): Promise<void> {
-    const claimHandle = this._claimHandle
+    const claimHandle = this._handle
     try {
       await createFFICallbackPromise<void>(
           (resolve, reject, cb) => {
-            const rc = this._RUST_API.cxs_issuer_send_claim_offer(0, claimHandle, connection.getHandle(), cb)
+            const rc = rustAPI().cxs_issuer_send_claim_offer(0, claimHandle, connection.getHandle(), cb)
             if (rc) {
               reject(rc)
             }
@@ -149,7 +157,7 @@ export class IssuerClaim {
     try {
       await createFFICallbackPromise<void>(
         (resolve, reject, cb) => {
-          const rc = this._RUST_API.cxs_issuer_send_claim(0, this._claimHandle, connection.getHandle(), cb)
+          const rc = rustAPI().cxs_issuer_send_claim(0, this._handle, connection.getHandle(), cb)
           if (rc) {
             reject(rc)
           }
@@ -168,7 +176,7 @@ export class IssuerClaim {
     }
   }
 
-  private _setState (state) {
+  private _setState (state: StateType) {
     this._state = state
   }
 
@@ -178,10 +186,10 @@ export class IssuerClaim {
     this._sourceId = sourceId
     this._issuerDID = issuerDid
     try {
-      const data = await createFFICallbackPromise<number>(
+      const data = await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
             // TODO: check if cxs_issuer_create_claim has a return value
-            this._RUST_API.cxs_issuer_create_claim(0, this._sourceId, this._schemaNum, this._issuerDID, this._attr, cb)
+            rustAPI().cxs_issuer_create_claim(0, this._sourceId, this._schemaNum, this._issuerDID, this._attr, cb)
           },
           (resolve, reject) => Callback('void', ['uint32', 'uint32', 'uint32'], (commandHandle, err, claimHandle) => {
             if (err) {
@@ -192,7 +200,7 @@ export class IssuerClaim {
             resolve(Number(value))
           })
         )
-      this.setClaimHandle(data)
+      this._setHandle(data)
       await this.updateState()
     } catch (err) {
       throw new CXSInternalError(`cxs_issuer_create_claim -> ${err}`)
@@ -201,9 +209,9 @@ export class IssuerClaim {
 
   private async _initFromClaimData (claimData: IClaimData): Promise<void> {
     try {
-      const xclaimHandle = await createFFICallbackPromise<number>(
+      const xclaimHandle = await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
-            this._RUST_API.cxs_issuer_claim_deserialize(0, JSON.stringify(claimData), cb)
+            rustAPI().cxs_issuer_claim_deserialize(0, JSON.stringify(claimData), cb)
           },
           (resolve, reject) => Callback('void', ['uint32', 'uint32', 'uint32'], (commandHandle, err, claimHandle) => {
             if (err) {
@@ -213,22 +221,10 @@ export class IssuerClaim {
             resolve(claimHandle)
           })
       )
-      this.setClaimHandle(xclaimHandle)
+      this._setHandle(xclaimHandle)
       await this.updateState()
     } catch (err) {
       throw new CXSInternalError(`cxs_issuer_claim_deserialize -> ${err}`)
     }
-  }
-
-  private _clearOnExit () {
-    const weakRef = weak(this)
-    const release = this._RUST_API.cxs_connection_release
-    const handle = this._claimHandle
-    weak.addCallback(weakRef, () => {
-      release(handle)
-    })
-  }
-  private _initRustApi (path?) {
-    this._RUST_API = new CXSRuntime(new CXSRuntimeConfig(path))._ffi
   }
 }

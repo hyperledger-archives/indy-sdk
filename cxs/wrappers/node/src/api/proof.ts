@@ -1,22 +1,33 @@
 import { Callback, ForeignFunction } from 'ffi'
-import * as weak from 'weak'
-import { CXSRuntime, CXSRuntimeConfig } from '../index'
-import { createFFICallbackPromise, IProofData, StateType } from './api'
-// import { Connection } from './connection'
-import { CXSInternalError } from './errors'
 
-export class Proof {
+import { CXSInternalError } from '../errors'
+import { rustAPI } from '../rustlib'
+import { createFFICallbackPromise } from '../utils/ffi-helpers'
+import { GCWatcher } from '../utils/memory-management-helpers'
+import { StateType } from './common'
+
+export interface IProofData {
+  source_id: string
+  handle: number
+  proof_attributes: string
+  proof_requester_did: string
+  proover_did: string
+  state: StateType
+}
+
+export class Proof extends GCWatcher {
+  protected _releaseFn = rustAPI().cxs_proof_release
+  protected _handle: string
   private _attr: string
   private _sourceId: string
-  private _proofHandle: number
   private _state: number
   private _RUST_API: { [ index: string ]: ForeignFunction }
   private _proofRequesterDid: string
 
   constructor (sourceId) {
+    super()
     this._sourceId = sourceId
-    this._initRustApi(null)
-    this._proofHandle = null
+    this._handle = null
     this._state = StateType.None
     this._proofRequesterDid = null
     this._attr = null
@@ -35,12 +46,12 @@ export class Proof {
   }
 
   async serialize (): Promise<Proof> {
-    const proofHandle = this._proofHandle
+    const proofHandle = this._handle
     let rc = null
     try {
       const data = await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
-            rc = this._RUST_API.cxs_proof_serialize(0, proofHandle, cb)
+            rc = rustAPI().cxs_proof_serialize(0, proofHandle, cb)
             if (rc) {
               reject(rc)
             }
@@ -61,10 +72,6 @@ export class Proof {
     }
   }
 
-  async release (): Promise<number> {
-    return this._RUST_API.cxs_proof_release(this._proofHandle)
-  }
-
   getProofRequesterDid () {
     return this._proofRequesterDid
   }
@@ -73,15 +80,11 @@ export class Proof {
   }
 
   getProofHandle () {
-    return this._proofHandle
+    return this._handle
   }
 
   getAttr () {
     return this._attr
-  }
-
-  setProofHandle (handle) {
-    this._proofHandle = handle
   }
 
   getState () {
@@ -97,9 +100,9 @@ export class Proof {
     this._sourceId = sourceId
     this._proofRequesterDid = did
     try {
-      const data = await createFFICallbackPromise<number>(
+      const data = await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
-            this._RUST_API.cxs_proof_create(0, this._sourceId, this._proofRequesterDid, this._attr, cb)
+            rustAPI().cxs_proof_create(0, this._sourceId, this._proofRequesterDid, this._attr, cb)
           },
           (resolve, reject) => Callback('void', ['uint32', 'uint32', 'uint32'], (commandHandle, err, proofHandle) => {
             if (err) {
@@ -110,7 +113,7 @@ export class Proof {
             resolve(Number(value))
           })
         )
-      this.setProofHandle(data)
+      this._setHandle(data)
       // Todo: when updateState is working, call that instead of explicitly hardcoding the state
       this._setState(StateType.Initialized)
     //   await this.updateState()
@@ -121,9 +124,9 @@ export class Proof {
 
   private async _initFromProofData (proofData: IProofData): Promise<void> {
     try {
-      const xproofHandle = await createFFICallbackPromise<number>(
+      const xproofHandle = await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
-            this._RUST_API.cxs_proof_deserialize(0, JSON.stringify(proofData), cb)
+            rustAPI().cxs_proof_deserialize(0, JSON.stringify(proofData), cb)
           },
           (resolve, reject) => Callback('void', ['uint32', 'uint32', 'uint32'], (commandHandle, err, proofHandle) => {
             if (err) {
@@ -133,24 +136,10 @@ export class Proof {
             resolve(proofHandle)
           })
       )
-      this.setProofHandle(xproofHandle)
+      this._setHandle(xproofHandle)
     //   await this.updateState()
     } catch (err) {
       throw new CXSInternalError(`cxs_proof_deserialize -> ${err}`)
     }
-  }
-
-  private _initRustApi (path?) {
-    this._RUST_API = new CXSRuntime(new CXSRuntimeConfig(path))._ffi
-  }
-
-  private _clearOnExit () {
-    // Todo: need to add proof release and issuer_claim release
-    const weakRef = weak(this)
-    const release = this._RUST_API.cxs_connection_release
-    const handle = this._proofHandle
-    weak.addCallback(weakRef, () => {
-      release(handle)
-    })
   }
 }

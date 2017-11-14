@@ -1,22 +1,19 @@
 require('chai')
 require('fs-extra')
-let ffi = require('ffi')
-let parentDir = require('path')
-let currentDir = parentDir.dirname(module.filename)
-let index = require(parentDir.dirname(currentDir) + '/dist/index')
-let rustlib = require(parentDir.dirname(currentDir) + '/dist/rustlib')
-let assert = require('assert')
-let CXSRuntime = index.CXSRuntime
-let CXSRuntimeConfig = rustlib.CXSRuntimeConfig
+const ffi = require('ffi')
+const parentDir = require('path')
+const currentDir = parentDir.dirname(module.filename)
+const { CXSRuntime } = require(parentDir.dirname(currentDir) + '/dist/index')
+const assert = require('assert')
 
 describe('call to cxs_init with provided path', function () {
   let path = parentDir.dirname(currentDir)
   path += '/lib/libcxs.so'
-  const run = new CXSRuntime(new CXSRuntimeConfig(path))
+  const run = new CXSRuntime({ basepath: path })
 
   it('should return 0', async () => {
     let result = await new Promise((resolve, reject) =>
-            run._ffi.cxs_init(
+            run.ffi.cxs_init(
                 0,
                 null,
                 ffi.Callback('void', ['uint32', 'uint32'],
@@ -30,7 +27,7 @@ describe('call to cxs_init with provided path', function () {
   it('should return 1004', async () => {
     let result = null
     result = await new Promise((resolve, reject) => {
-      result = run._ffi.cxs_init(
+      result = run.ffi.cxs_init(
               0,
               'garbage',
               ffi.Callback('void', ['uint32', 'uint32'],
@@ -50,12 +47,12 @@ describe('call to cxs_init with provided path', function () {
 describe('Using the cxs ffi directly ', async () => {
   let path = parentDir.dirname(currentDir)
   path += '/lib/libcxs.so'
-  const run = new CXSRuntime(new CXSRuntimeConfig(path))
+  const run = new CXSRuntime({ basepath: path })
 
   it('a call to cxs_connection_create should return 0', async () => {
     let result = null
     result = await new Promise((resolve, reject) => {
-      result = run._ffi.cxs_connection_create(
+      result = run.ffi.cxs_connection_create(
           0,
           '1',
           ffi.Callback('void', ['uint32', 'uint32', 'uint32'],
@@ -72,7 +69,7 @@ describe('Using the cxs ffi directly ', async () => {
   it('a to cxs_connection_connect without the ability to connect should return 1', async () => {
     let connectResult = null
     connectResult = await new Promise((resolve, reject) => {
-      connectResult = run._ffi.cxs_connection_connect(
+      connectResult = run.ffi.cxs_connection_connect(
               0,
               1,
               JSON.stringify({connection_type: 'sms', phone: 123}),
@@ -89,7 +86,7 @@ describe('Using the cxs ffi directly ', async () => {
 
   it('a call to cxs_connection_serialize should return 0', async function () {
     const result = await new Promise(function (resolve, reject) {
-      const rc = run._ffi.cxs_connection_serialize(
+      const rc = run.ffi.cxs_connection_serialize(
         0,
         1,
         ffi.Callback('void', ['uint32', 'uint32', 'string'], (handle, err, data) => {
@@ -110,7 +107,7 @@ describe('Using the cxs ffi directly ', async () => {
 
   it('a call to cxs_connection_get_state should return 0', async () => {
     const state = await new Promise((resolve, reject) => {
-      const rc = run._ffi.cxs_connection_update_state(
+      const rc = run.ffi.cxs_connection_update_state(
           0,
           1,
           ffi.Callback('void', ['uint32', 'uint32', 'uint32'], (handle, err, state) => {
@@ -128,6 +125,6 @@ describe('Using the cxs ffi directly ', async () => {
   })
 
   it('a call to cxs_connection_release without ability to release should return 1', function () {
-    assert.equal(run._ffi.cxs_connection_release(2), 1003)
+    assert.equal(run.ffi.cxs_connection_release(2), 1003)
   })
 })
