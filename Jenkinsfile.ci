@@ -6,6 +6,7 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
+                'macos-test'  : { macosTesting() },
                 'redhat-test' : { rhelTesting() },
                 'windows-test': { windowsTesting() }
         ])
@@ -62,6 +63,28 @@ def windowsTesting() {
                     bat "docker -H $INDY_SDK_SERVER_IP rm indy_pool"
                 } catch (ignore) {
                 }
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
+
+def macosTesting() {
+    node('macos') {
+        stage('MacOS Test') {
+            try {
+                echo "MacOS Test: Checkout scm"
+                checkout scm
+
+                dir('libindy') {
+                    echo "MacOS Test: Build"
+                    sh "cargo build"
+
+                    // TODO testing
+                }
+
+                //TODO wrappers testing
+            } finally {
                 step([$class: 'WsCleanup'])
             }
         }
