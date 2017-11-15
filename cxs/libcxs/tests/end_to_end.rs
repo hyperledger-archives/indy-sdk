@@ -35,7 +35,7 @@ extern "C" fn send_offer_cb(command_handle: u32, err: u32) {
 #[allow(unused_assignments)]
 #[allow(unused_variables)]
 extern "C" fn generic_cb(command_handle:u32, err:u32) {
-    if err != 0 {panic!("failed connect")}
+    if err != 0 {panic!("failed connect: {}", err)}
     println!("connection established!");
 }
 

@@ -34,7 +34,7 @@ pub fn set_defaults() -> u32 {
     let mut settings = SETTINGS.write().unwrap();
 
     settings.set_default(CONFIG_POOL_NAME,"pool1");
-    settings.set_default(CONFIG_POOL_CONFIG_NAME,"config1");
+    settings.set_default(CONFIG_POOL_CONFIG_NAME,"");
     settings.set_default(CONFIG_WALLET_NAME,"wallet1");
     settings.set_default(CONFIG_WALLET_TYPE,"default");
     settings.set_default(CONFIG_AGENT_ENDPOINT,"http://127.0.0.1:8080");
@@ -70,8 +70,8 @@ fn validate_config() -> Result<u32, String> {
         let mut valid = true;
         if setting.0 == CONFIG_POOL_NAME && !is_valid(setting.1) {
             valid = false;
-        } else if setting.0 == CONFIG_POOL_CONFIG_NAME && !is_valid(setting.1) {
-            valid = false;
+        } else if setting.0 == CONFIG_POOL_CONFIG_NAME {
+            valid = true;
         } else if setting.0 == CONFIG_WALLET_NAME && !is_valid(setting.1) {
             valid = false;
         } else if setting.0 == CONFIG_AGENT_ENDPOINT {

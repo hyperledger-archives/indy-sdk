@@ -114,8 +114,12 @@ pub extern fn cxs_init (command_handle: u32,
     info!("Initializing wallet with name: {} and pool: {}", &wallet_name, &pool_name);
 
     thread::spawn(move|| {
-        let crc = pool::create_pool_config(&pool_name, &config_name);
-        let wrc = wallet::init_wallet(&pool_name, &wallet_name, &wallet_type);
+        /* TODO: handle pool config */
+        let crc = pool::create_pool_ledger_config(&pool_name,Some(&config_name));
+        let wrc = match wallet::init_wallet(&wallet_name, &pool_name, &wallet_type) {
+            Ok(x) => error::SUCCESS.code_num,
+            Err(x) => error::UNKNOWN_ERROR.code_num,
+        };
 
         cb(command_handle,(crc|wrc));
     });
@@ -162,12 +166,12 @@ mod tests {
     use std::ffi::CString;
     use std::error::Error;
     use std::io::prelude::*;
-    use utils::pool;
+    use std::time::Duration;
     use std::fs;
     use std::ptr;
 
     extern "C" fn init_cb(command_handle: u32, err: u32) {
-        if err != 0 {panic!("create_cb failed")}
+        if err != 0 {panic!("create_cb failed: {}", err)}
         println!("successfully called init_cb")
     }
 
@@ -183,7 +187,7 @@ mod tests {
             Ok(file) => file,
         };
 
-        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"my_config\", \"wallet_name\":\"my_wallet\", \
+        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"\", \"wallet_name\":\"my_wallet\", \
         \"agency_pairwise_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"agent_pairwise_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
         \"enterprise_did_agency\" : \"RF3JM851T4EQmhh8CdagSP\", \"enterprise_did_agent\" : \"AB3JM851T4EQmhh8CdagSP\", \"enterprise_name\" : \"enterprise\",\
         \"agency_pairwise_verkey\" : \"7118p4HubxzUK1dwxcc5FU\", \"agent_pairwise_verkey\" : \"U22jM6Cea2YVixjWwHN9wq\"}";
@@ -194,9 +198,9 @@ mod tests {
 
         let result = cxs_init(0,CString::new(config_path).unwrap().into_raw(),Some(init_cb));
         assert_eq!(result,0);
+        thread::sleep(Duration::from_secs(1));
         // Leave file around or other concurrent tests will fail
-//        fs::remove_file(config_path).unwrap();
-        pool::delete_pool_config("my_config");
+        //fs::remove_file(config_path).unwrap();
     }
 
 
@@ -212,6 +216,6 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let result = cxs_init(0,ptr::null(),Some(init_cb));
         assert_eq!(result,0);
-        pool::delete_pool_config("config1");
+        thread::sleep(Duration::from_secs(1));
     }
 }
