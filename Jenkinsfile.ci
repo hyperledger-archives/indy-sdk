@@ -95,14 +95,13 @@ def macosTesting() {
 def iosTesting() {
     node('macos') {
         stage('iOS Test') {
-            def poolInst
             try {
                 echo "iOS Test: Checkout scm"
                 checkout scm
 
                 echo "iOS Test: Running pool"
-                def poolEnv = dockerBuild('indy_pool', 'ci/indy-pool.dockerfile ci')
-                poolInst = poolEnv.run('-p 9701-9708:9701-9708')
+                sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
+                sh "docker run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 
                 dir('wrappers/ios/libindy-pod') {
                     echo "iOS Test: Build"
@@ -111,10 +110,18 @@ def iosTesting() {
                     sh "pod install"
 
                     echo "iOS Test: Testing"
-                    sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone 7 Plus,OS=11.1'"
+                    sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone 7 Plus,OS=10.3.1'"
                 }
             } finally {
-                closePool("iOS Test", null, poolInst)
+                try {
+                    sh "docker stop indy_pool"
+                } catch (ignore) {
+                }
+                try {
+                    sh "docker rm indy_pool"
+                } catch (ignore) {
+                }
+                step([$class: 'WsCleanup'])
             }
         }
     }
