@@ -108,14 +108,16 @@ def iosTesting() {
                     sh './build-libindy-ios.sh'
                 }
 
-                //TODO use local build pod for wrapper test
-
                 dir('wrappers/ios/libindy-pod') {
-                    echo "iOS Test: Build"
-
                     echo "iOS Test: Installing dependencies (pods)"
                     sh "pod install"
+                }
 
+                // FIXME replace this hack (manually rewrite installed pod)
+                sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
+                sh "cp libindy/out_libindy_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
+
+                dir('wrappers/ios/libindy-pod') {
                     echo "iOS Test: Testing"
                     sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone 7 Plus,OS=10.3.1'"
                 }
