@@ -5,6 +5,7 @@ use std::sync::mpsc::channel;
 use std::ffi::CString;
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
+use settings;
 
 extern {
     fn indy_create_and_store_my_did(command_handle: i32,
@@ -23,6 +24,10 @@ pub struct SignusUtils {}
 impl SignusUtils {
 
     pub fn create_and_store_my_did(wallet_handle: i32, seed: Option<&str>) -> Result<(String, String), i32> {
+        if settings::test_mode_enabled() {
+            return Ok(("8XFh8yBzrpJQmNyZzgoTqB".to_owned(), "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_owned()));
+        }
+
         let (create_and_store_my_did_sender, create_and_store_my_did_receiver) = channel();
         let create_and_store_my_did_cb = Box::new(move |err, did, verkey| {
             create_and_store_my_did_sender.send((err, did, verkey)).unwrap();

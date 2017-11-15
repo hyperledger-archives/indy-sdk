@@ -4,6 +4,7 @@ extern crate libc;
 
 use utils::wallet;
 use utils::error;
+use utils::signus::SignusUtils;
 use api::CxsStateType;
 use rand::Rng;
 use std::sync::Mutex;
@@ -196,7 +197,7 @@ pub fn create_agent_pairwise(handle: u32) -> Result<u32, u32> {
         .nonce("anything")
         .send() {
         Ok(_) => Ok(error::SUCCESS.code_num),
-        Err(_) => Err(error::POST_MSG_FAILURE.code_num),
+        Err(x) => Err(x),
     }
 }
 
@@ -212,7 +213,7 @@ pub fn update_agent_profile(handle: u32) -> Result<u32, u32> {
         .logo_url(&settings::get_config_value(settings::CONFIG_LOGO_URL).unwrap())
         .send() {
         Ok(_) => Ok(error::SUCCESS.code_num),
-        Err(_) => Err(error::POST_MSG_FAILURE.code_num),
+        Err(x) => Err(x),
     }
 }
 
@@ -249,10 +250,29 @@ pub fn build_connection(source_id: String) -> u32 {
 
     let new_handle = create_connection(source_id);
 
-    match wallet::create_and_store_my_did(new_handle, "{}") {
-        Ok(_) => info!("successfully created new did"),
-        Err(x) => error!("could not create DID: {}", x),
+    let (my_did, my_verkey) = match SignusUtils::create_and_store_my_did(wallet::get_wallet_handle(),None) {
+        Ok(y) => y,
+        Err(x) => {
+            error!("could not create DID/VK: {}", x);
+            return new_handle;
+        },
     };
+
+    info!("handle: {} did: {} verkey: {}", new_handle, my_did, my_verkey);
+    set_pw_did(new_handle, &my_did);
+    set_pw_verkey(new_handle, &my_verkey);
+
+    match create_agent_pairwise(new_handle) {
+        Err(x) => error!("could not create pairwise key on agent: {}", x),
+        Ok(_) => info!("created pairwise key on agent"),
+    };
+
+    match update_agent_profile(new_handle) {
+        Err(x) => error!("could not update profile on agent: {}", x),
+        Ok(_) => info!("updated profile on agent"),
+    };
+
+    set_state(new_handle, CxsStateType::CxsStateInitialized);
 
     new_handle
 }
@@ -550,6 +570,7 @@ mod tests {
 
     #[test]
     fn test_get_qr_code_data() {
+        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         let test_name = "test_get_qr_code_data";

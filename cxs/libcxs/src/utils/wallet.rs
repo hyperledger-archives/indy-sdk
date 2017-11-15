@@ -2,19 +2,12 @@ extern crate libc;
 
 use self::libc::c_char;
 use std::ffi::CString;
-use connection;
 use settings;
 use utils::error;
-use utils::cstring::CStringUtils;
 use std::ptr::null;
-use api::CxsStateType;
-use std::thread;
-use rand::{thread_rng, Rng};
-use std::time::Duration;
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
 use std::sync::mpsc::channel;
-
 
 pub static mut WALLET_HANDLE: i32 = 0;
 
@@ -52,60 +45,6 @@ extern {
 }
 
 pub fn get_wallet_handle() -> i32 { unsafe { WALLET_HANDLE } }
-
-pub fn create_and_store_my_did(handle: u32, did_json: &str) -> Result<u32, String> {
-
-    if settings::test_mode_enabled() {
-        //TEST MODE: sleep for a few milliseconds and fire off the callback with random data
-        let my_handle = handle.clone();
-        warn!("using test mode create_and_store_my_did with handle {}",my_handle);
-        thread::spawn(move|| {
-            thread::sleep(Duration::from_millis(200));
-            let did: String = "8XFh8yBzrpJQmNyZzgoTqB".to_string();
-            let verkey: String = "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string();
-            let pk: String = thread_rng().gen_ascii_chars().take(32).collect();
-            store_new_did_info_cb(my_handle as i32, 0, CString::new(did).unwrap().as_ptr(), CString::new(verkey).unwrap().as_ptr(), CString::new(pk).unwrap().as_ptr());
-        });
-
-        return Ok(0);
-    }
-
-    let wallet_handle = get_wallet_handle();
-
-    info!("creating and storing a new DID with handle {} and wallet {}",handle,wallet_handle);
-    unsafe {
-        match indy_create_and_store_my_did(handle as i32, wallet_handle, CString::new(did_json).unwrap().as_ptr(), Some(store_new_did_info_cb)) {
-            0 => return Ok(0),
-            _ => return Err("libindy returned error".to_owned()),
-        }
-    }
-}
-
-extern "C" fn store_new_did_info_cb(handle: i32,
-                                    err: i32,
-                                    did: *const c_char,
-                                    verkey: *const c_char,
-                                    pk: *const c_char) {
-    check_useful_c_str!(did, ());
-    check_useful_c_str!(verkey, ());
-    check_useful_c_str!(pk, ());
-    info!("handle: {} err: {} did: {} verkey: {} pk: {}", handle as u32, err, did, verkey, pk);
-    connection::set_pw_did(handle as u32, &did);
-    connection::set_pw_verkey(handle as u32, &verkey);
-
-    match connection::create_agent_pairwise(handle as u32) {
-        Err(_) => error!("could not create pairwise key on agent"),
-        Ok(_) => info!("created pairwise key on agent"),
-    };
-
-    match connection::update_agent_profile(handle as u32) {
-        Err(_) => error!("could not update profile on agent"),
-        Ok(_) => info!("updated profile on agent"),
-    };
-
-    connection::set_state(handle as u32, CxsStateType::CxsStateInitialized);
-}
-
 
 pub fn init_wallet(wallet_name: &str, pool_name: &str, wallet_type: &str) -> Result<i32, u32> {
     if settings::test_mode_enabled() {
@@ -240,6 +179,8 @@ pub mod tests {
     use utils::error;
     use std::thread;
     use utils::generate_command_handle;
+    use std::time::Duration;
+    use utils::cstring::CStringUtils;
 
     //TODO: make boilerplate test code use same wallet?
 
@@ -290,14 +231,4 @@ pub mod tests {
         assert_ne!(handle, get_wallet_handle());
         delete_wallet("wallet2");
     }
-
-    #[test]
-    fn test_cb_adds_verkey() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = connection::build_connection("test_cb_adds_verkey".to_owned());
-        thread::sleep(Duration::from_secs(1));
-        assert!(!connection::get_pw_verkey(handle).unwrap().is_empty());
-    }
-
 }
