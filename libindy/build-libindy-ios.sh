@@ -17,16 +17,15 @@ if [[ ! "$WORK_DIR" || ! -d "$WORK_DIR" ]]; then
   exit 1
 fi
 
-echo "Packing...\n\n"
+echo "Packing..."
 
 cp include/*.h $WORK_DIR
 cp target/universal/debug/libindy.a $WORK_DIR
-CUR_DIR=`pwd`
 cd $WORK_DIR
 tar -cvzf $POD_FILE_NAME *
+cd -
 ls -l $WORK_DIR/$POD_FILE_NAME
 
 echo "Packing completed."
-cd $CUR_DIR
 
 echo "Out directory: $WORK_DIR"
