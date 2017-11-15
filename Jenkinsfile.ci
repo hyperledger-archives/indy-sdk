@@ -103,6 +103,13 @@ def iosTesting() {
                 sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
                 sh "docker run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 
+                dir('libindy') {
+                    echo 'iOS Test: build libindy pod'
+                    sh './build-libindy-ios.sh'
+                }
+
+                //TODO use local build pod for wrapper test
+
                 dir('wrappers/ios/libindy-pod') {
                     echo "iOS Test: Build"
 
