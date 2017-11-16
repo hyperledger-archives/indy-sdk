@@ -4,9 +4,7 @@ use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
 use std::ptr;
-use api::CxsStateType;
 use std::thread;
-use std::time::Duration;
 use connection::{build_connection, connect, to_string, get_state, release, is_valid_handle, update_state, from_string};
 
 /**
@@ -23,19 +21,10 @@ pub extern fn cxs_connection_create(command_handle: u32,
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
 
     thread::spawn(move|| {
-        let handle = build_connection(source_id);
-        let mut rc = error::UNKNOWN_ERROR.code_num;
-
-        loop {
-            if get_state(handle) != CxsStateType::CxsStateNone as u32 {
-                rc = error::SUCCESS.code_num;
-                break;
-            }
-
-            thread::sleep(Duration::from_millis(100));
-        }
-
-        cb(command_handle, rc, handle);
+        match build_connection(source_id) {
+            Ok(handle) => cb(command_handle, error::SUCCESS.code_num, handle),
+            Err(x) => cb(command_handle, x, 0),
+        };
     });
 
     error::SUCCESS.code_num
@@ -200,7 +189,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let rc = cxs_connection_connect(0,0, CString::new("{}").unwrap().into_raw(),Some(connect_cb));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
-        let handle = build_connection("test_cxs_connection_connect".to_owned());
+        let handle = build_connection("test_cxs_connection_connect".to_owned()).unwrap();
         assert!(handle > 0);
         thread::sleep(Duration::from_millis(500));
         let rc = cxs_connection_connect(0,handle, CString::new("{}").unwrap().into_raw(),Some(connect_cb));
@@ -217,7 +206,7 @@ mod tests {
     fn test_cxs_connection_update_state() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_cxs_connection_update_state".to_owned());
+        let handle = build_connection("test_cxs_connection_update_state".to_owned()).unwrap();
         assert!(handle > 0);
         thread::sleep(Duration::from_millis(300));
         let rc = cxs_connection_update_state(0,handle,Some(update_state_cb));
@@ -229,7 +218,7 @@ mod tests {
     fn test_cxs_connection_update_state_fails() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_cxs_connection_update_state_fails".to_owned());
+        let handle = build_connection("test_cxs_connection_update_state_fails".to_owned()).unwrap();
         assert!(handle > 0);
 
         let rc = cxs_connection_update_state(0,0,None);
@@ -250,7 +239,7 @@ mod tests {
     fn test_cxs_connection_serialize() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_cxs_connection_get_data".to_owned());
+        let handle = build_connection("test_cxs_connection_get_data".to_owned()).unwrap();
         assert!(handle > 0);
 
         let data = cxs_connection_serialize(0,handle, Some(serialize_cb));
@@ -262,7 +251,7 @@ mod tests {
     fn test_cxs_connection_release() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_cxs_connection_release".to_owned());
+        let handle = build_connection("test_cxs_connection_release".to_owned()).unwrap();
         assert!(handle > 0);
 
         let rc = cxs_connection_release(handle);

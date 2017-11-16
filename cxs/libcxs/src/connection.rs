@@ -245,7 +245,7 @@ pub fn create_connection(source_id: String) -> u32 {
     new_handle
 }
 
-pub fn build_connection(source_id: String) -> u32 {
+pub fn build_connection(source_id: String) -> Result<u32,u32> {
     // Check to make sure source_id is unique
 
     let new_handle = create_connection(source_id);
@@ -254,7 +254,8 @@ pub fn build_connection(source_id: String) -> u32 {
         Ok(y) => y,
         Err(x) => {
             error!("could not create DID/VK: {}", x);
-            return new_handle;
+            release(new_handle);
+            return Err(error::UNKNOWN_ERROR.code_num);
         },
     };
 
@@ -263,18 +264,26 @@ pub fn build_connection(source_id: String) -> u32 {
     set_pw_verkey(new_handle, &my_verkey);
 
     match create_agent_pairwise(new_handle) {
-        Err(x) => error!("could not create pairwise key on agent: {}", x),
+        Err(x) => {
+            error!("could not create pairwise key on agent: {}", x);
+            release(new_handle);
+            return Err(error::UNKNOWN_ERROR.code_num);
+        },
         Ok(_) => info!("created pairwise key on agent"),
     };
 
     match update_agent_profile(new_handle) {
-        Err(x) => error!("could not update profile on agent: {}", x),
+        Err(x) => {
+            error!("could not update profile on agent: {}", x);
+            release(new_handle);
+            return Err(error::UNKNOWN_ERROR.code_num);
+        },
         Ok(_) => info!("updated profile on agent"),
     };
 
     set_state(new_handle, CxsStateType::CxsStateInitialized);
 
-    new_handle
+    Ok(new_handle)
 }
 
 pub fn update_state(handle: u32) -> u32{
@@ -381,8 +390,6 @@ mod tests {
     extern crate mockito;
     use super::*;
     use utils::wallet;
-    use std::thread;
-    use std::time::Duration;
 
     extern "C" fn create_cb(command_handle: u32, err: u32, connection_handle: u32) {
         assert_eq!(err, 0);
@@ -403,9 +410,8 @@ mod tests {
 
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
         wallet::tests::make_wallet("test_create_connection");
-        let handle = build_connection("test_create_connection".to_owned());
+        let handle = build_connection("test_create_connection".to_owned()).unwrap();
         assert!(handle > 0);
-        thread::sleep(Duration::from_secs(1));
         assert!(!get_pw_did(handle).unwrap().is_empty());
         assert!(!get_pw_verkey(handle).unwrap().is_empty());
         assert_eq!(get_state(handle), CxsStateType::CxsStateInitialized as u32);
@@ -430,10 +436,10 @@ mod tests {
     fn test_create_drop_create() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_create_drop_create".to_owned());
+        let handle = build_connection("test_create_drop_create".to_owned()).unwrap();
         let did1 = get_pw_did(handle).unwrap();
         release(handle);
-        let handle2 = build_connection("test_create_drop_create".to_owned());
+        let handle2 = build_connection("test_create_drop_create".to_owned()).unwrap();
         assert_ne!(handle,handle2);
         let did2 = get_pw_did(handle2).unwrap();
         assert_eq!(did1, did2);
@@ -444,7 +450,7 @@ mod tests {
     fn test_connection_release() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_cxn_release".to_owned());
+        let handle = build_connection("test_cxn_release".to_owned()).unwrap();
         assert!(handle > 0);
         let rc = release(handle);
         assert_eq!(rc, error::SUCCESS.code_num);
@@ -454,8 +460,7 @@ mod tests {
     fn test_state_not_connected() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_state_not_connected".to_owned());
-        thread::sleep(Duration::from_secs(1));
+        let handle = build_connection("test_state_not_connected".to_owned()).unwrap();
         let state = get_state(handle);
         assert_eq!(state, CxsStateType::CxsStateInitialized as u32);
         release(handle);
@@ -485,8 +490,7 @@ mod tests {
     fn test_set_get_pw_verkey() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_set_get_pw_verkey".to_owned());
-        thread::sleep(Duration::from_secs(1));
+        let handle = build_connection("test_set_get_pw_verkey".to_owned()).unwrap();
         assert!(!get_pw_did(handle).unwrap().is_empty());
         assert!(!get_pw_verkey(handle).unwrap().is_empty());
         set_pw_verkey(handle, &"HELLODOLLY");
@@ -559,7 +563,7 @@ mod tests {
         let endpoint = "hello";
         let test_name = "test_get_set_uuid_and_endpoint";
         let wallet_name = test_name;
-        let handle = build_connection(test_name.to_owned());
+        let handle = build_connection(test_name.to_owned()).unwrap();
         assert_eq!(get_endpoint(handle).unwrap(), "");
         set_uuid(handle, uuid);
         set_endpoint(handle, endpoint);
@@ -583,9 +587,8 @@ mod tests {
 
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
         wallet::tests::make_wallet(test_name);
-        let handle = build_connection(test_name.to_owned());
+        let handle = build_connection(test_name.to_owned()).unwrap();
         assert!(handle > 0);
-        thread::sleep(Duration::from_secs(1));
         assert!(!get_pw_did(handle).unwrap().is_empty());
         assert!(!get_pw_verkey(handle).unwrap().is_empty());
         assert_eq!(get_state(handle), CxsStateType::CxsStateInitialized as u32);
@@ -682,9 +685,8 @@ mod tests {
     fn test_serialize_deserialize() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_serialize_deserialize".to_owned());
+        let handle = build_connection("test_serialize_deserialize".to_owned()).unwrap();
         assert!(handle > 0);
-        thread::sleep(Duration::from_millis(300));
         let first_string = to_string(handle).unwrap();
         release(handle);
         let handle = from_string(&first_string).unwrap();
@@ -699,14 +701,21 @@ mod tests {
     fn test_deserialize_existing() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_serialize_deserialize".to_owned());
+        let handle = build_connection("test_serialize_deserialize".to_owned()).unwrap();
         assert!(handle > 0);
-        thread::sleep(Duration::from_millis(300));
         let first_string = to_string(handle).unwrap();
         let handle = from_string(&first_string).unwrap();
         let second_string = to_string(handle).unwrap();
         println!("{}",first_string);
         println!("{}",second_string);
         assert_eq!(first_string,second_string);
+    }
+
+    #[test]
+    fn test_bad_wallet_connection_fails() {
+        wallet::tests::delete_wallet("dummy");
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        assert_eq!(build_connection("test_bad_wallet_connection_fails".to_owned()).unwrap_err(),error::UNKNOWN_ERROR.code_num);
     }
 }
