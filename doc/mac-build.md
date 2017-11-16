@@ -5,7 +5,7 @@
 
    ```
    brew install pkg-config
-   brew install libsodium
+   brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/65effd2b617bade68a8a2c5b39e1c3089cc0e945/Formula/libsodium.rb   
    brew install automake 
    brew install autoconf
    brew install cmake
