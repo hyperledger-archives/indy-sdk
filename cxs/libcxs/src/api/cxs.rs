@@ -33,6 +33,11 @@ pub extern fn cxs_init (command_handle: u32,
 
     settings::set_defaults();
 
+    if wallet::get_wallet_handle() > 0 {
+        error!("Library was already initialized");
+        return error::UNKNOWN_ERROR.code_num;
+    }
+
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
     if !config_path.is_null() {
@@ -115,13 +120,13 @@ pub extern fn cxs_init (command_handle: u32,
 
     thread::spawn(move|| {
         /* TODO: handle pool config */
-        let crc = pool::create_pool_ledger_config(&pool_name,Some(&config_name));
+        pool::create_pool_ledger_config(&pool_name,Some(&config_name));
         let wrc = match wallet::init_wallet(&wallet_name, &pool_name, &wallet_type) {
             Ok(x) => error::SUCCESS.code_num,
-            Err(x) => error::UNKNOWN_ERROR.code_num,
+            Err(x) => x,
         };
 
-        cb(command_handle,(crc|wrc));
+        cb(command_handle,wrc);
     });
 
     error::SUCCESS.code_num
@@ -177,6 +182,7 @@ mod tests {
 
     #[test]
     fn test_init_with_file() {
+        wallet::tests::delete_wallet("dummy");
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let config_path = "/tmp/test_init.json";

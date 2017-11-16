@@ -97,14 +97,14 @@ pub fn init_wallet(wallet_name: &str, pool_name: &str, wallet_type: &str) -> Res
                              null(),
                              open_cb);
 
-        if err != 0 {
-            return Err(error::UNKNOWN_ERROR.code_num);
+        if err != 206 && err != 0 {
+            return Err(err as u32);
         }
 
         let (err, wallet_handle) = open_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
 
-        if err != 0 {
-            return Err(error::UNKNOWN_ERROR.code_num);
+        if err != 206 && err != 0 {
+            return Err(err as u32);
         }
 
         WALLET_HANDLE = wallet_handle;
@@ -140,6 +140,8 @@ pub fn delete_wallet(wallet_name: &str) -> Result<(), i32> {
             return Err(err);
         }
 
+        WALLET_HANDLE = 0;
+
         Ok(())
     }
 }
@@ -168,6 +170,8 @@ pub fn close_wallet(wallet_handle: i32) -> Result<(), i32> {
         if err != 0 {
             return Err(err);
         }
+
+        WALLET_HANDLE = 0;
 
         Ok(())
     }
@@ -210,6 +214,7 @@ pub mod tests {
                                              Some(dummy_callback));
         }
         thread::sleep(Duration::from_secs(1));
+        unsafe { WALLET_HANDLE = 0; }
     }
 
     #[test]
