@@ -7,6 +7,12 @@ import { GCWatcher } from '../utils/memory-management-helpers'
 import { StateType } from './common'
 import { Connection } from './connection'
 
+export interface IClaimConfig {
+  sourceId: string,
+  schemaNum: number,
+  issuerDid: string,
+  attr: string,
+}
 export interface IClaimData {
   source_id: string
   handle: number
@@ -34,14 +40,14 @@ export class IssuerClaim extends GCWatcher {
     this._attr = null
     this._issuerDID = null
   }
+
   // SourceId: String for SDK User's reference
   // schemaNumber: number representing the schema sequence number of the claim def
   // issuerDid: String, DID associated with the claim def
   // attributes: String(JSON formatted) representing the attributes of the claim def
-  static async create (sourceId: string, schemaNumber: number,
-                       issuerDid: string, attributes: string): Promise<IssuerClaim> {
-    const claim = new IssuerClaim(sourceId)
-    await claim.init(sourceId, schemaNumber, issuerDid, attributes)
+  static async create (config: IClaimConfig): Promise<IssuerClaim> {
+    const claim = new IssuerClaim(config.sourceId)
+    await claim.init(config.sourceId, config.schemaNum, config.issuerDid, config.attr)
     return claim
   }
 
