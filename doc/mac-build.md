@@ -1,7 +1,7 @@
 # Setup Indy SDK build environment for MacOS
 
 1. Install Rust and rustup (https://www.rust-lang.org/install.html).
-2. Install required native libraries and utilities
+2. Install required native libraries and utilities (libsodium is added with URL since non-latest version is required for it to function)
 
    ```
    brew install pkg-config
@@ -11,6 +11,8 @@
    brew install cmake
    brew install openssl
    ```
+   
+
 3. Setup environment variables:
    ```
    export PKG_CONFIG_ALLOW_CROSS=1
