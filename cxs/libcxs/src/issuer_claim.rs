@@ -11,6 +11,7 @@ use messages;
 use settings;
 use messages::GeneralMessage;
 use connection;
+use claim_request::ClaimRequest;
 
 lazy_static! {
     static ref ISSUER_CLAIM_MAP: Mutex<HashMap<u32, Box<IssuerClaim>>> = Default::default();
@@ -26,6 +27,7 @@ struct IssuerClaim {
     issuer_did: String,
     issued_did: String,
     state: CxsStateType,
+    claim_request: Option<ClaimRequest>,
 }
 
 impl IssuerClaim {
@@ -126,10 +128,17 @@ impl IssuerClaim {
         };
 
         for msg in msgs {
-            if msg["typ"].to_string() == "\"claimReq\"" {
+            if msg["typ"] == String::from("claimReq") {
                 //get the followup-claim-req using refMsgId
                 self.state = CxsStateType::CxsStateRequestReceived;
-                //TODO: store the claim request, blinded-master-secret, etc
+                let payload: serde_json::Value = match serde_json::from_str(&msg["edgeAgentPayload"].as_str().unwrap()){
+                    Ok(x) => x,
+                    Err(_) => {
+                        warn!("invalid json for claimReq's edgeAgentPayload");
+                        return
+                    },
+                };
+                self.claim_request = Some(ClaimRequest::create_from_api_msg(&payload));
                 return
             }
         }
@@ -153,7 +162,6 @@ impl IssuerClaim {
                 return
             },
         };
-
         let json: serde_json::Value = match serde_json::from_str(&response) {
             Ok(json) => json,
             Err(_) => {
@@ -173,7 +181,7 @@ impl IssuerClaim {
         for msg in msgs {
             if msg["statusCode"].to_string() == "\"MS-104\"" {
                 //get the followup-claim-req using refMsgId
-                self.get_claim_req(&msg["refMsgId"].to_string().as_ref());
+                self.get_claim_req(&msg["refMsgId"].as_str().unwrap());
             }
         }
     }
@@ -213,6 +221,7 @@ pub fn issuer_claim_create(schema_seq_no: u32,
         issuer_did,
         state: CxsStateType::CxsStateNone,
         schema_seq_no,
+        claim_request: None,
     });
 
     match new_issuer_claim.validate_claim_offer() {
@@ -312,7 +321,7 @@ fn get_offer_details(response: &str) -> Result<String,u32> {
         Ok(json) => {
             let json: serde_json::Value = json;
             let detail = &json["uid"];
-            Ok(detail.to_string())
+            Ok(String::from(detail.as_str().unwrap()))
         },
         Err(_) => {
             info!("Connect called without a valid response from server");
@@ -383,7 +392,7 @@ mod tests {
         assert_eq!(send_claim_offer(handle,connection_handle).unwrap(),error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(500));
         assert_eq!(get_state(handle),CxsStateType::CxsStateOfferSent as u32);
-        assert_eq!(get_offer_uid(handle).unwrap(),"\"6a9u7Jt\"");
+        assert_eq!(get_offer_uid(handle).unwrap(),"6a9u7Jt");
         _m.assert();
     }
 
@@ -408,6 +417,7 @@ mod tests {
             issued_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
             issuer_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
             state: CxsStateType::CxsStateRequestReceived,
+            claim_request: None,
             };
 
         let connection_handle = create_connection("test_send_claim_offer".to_owned());
@@ -444,9 +454,8 @@ mod tests {
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
 
         let response = "{\"msgs\":[{\"uid\":\"6gmsuWZ\",\"typ\":\"conReq\",\"statusCode\":\"MS-102\",\"statusMsg\":\"message sent\"},\
-            {\"statusCode\":\"MS-104\",\"edgeAgentPayload\":\"{\\\"attr\\\":\\\"value\\\"}\",\"sendStatusCode\":\"MSS-101\",\"typ\":\"claimOffer\",\"statusMsg\":\"message accepted\",\"uid\":\"6a9u7Jt\",\"refMsgId\":\"CKrG14Z\"},\
-            {\"statusCode\":\"MS-103\",\"edgeAgentPayload\":\"{\\\"attr\\\":\\\"value\\\"}\",\"typ\":\"claimReq\",\"statusMsg\":\"message pending\",\"uid\":\"CKrG14Z\"}]}";
-
+        {\"statusCode\":\"MS-104\",\"edgeAgentPayload\":\"{\\\"attr\\\":\\\"value\\\"}\",\"sendStatusCode\":\"MSS-101\",\"typ\":\"claimOffer\",\"statusMsg\":\"message accepted\",\"uid\":\"6a9u7Jt\",\"refMsgId\":\"CKrG14Z\"},\
+        {\"msg_type\":\"CLAIM_REQUEST\",\"typ\":\"claimReq\",\"edgeAgentPayload\":\"{\\\"blinded_ms\\\":{\\\"prover_did\\\":\\\"FQ7wPBUgSPnDGJnS1EYjTK\\\",\\\"u\\\":\\\"923...607\\\",\\\"ur\\\":\\\"null\\\"},\\\"version\\\":\\\"0.1\\\",\\\"mid\\\":\\\"\\\",\\\"to_did\\\":\\\"BnRXf8yDMUwGyZVDkSENeq\\\",\\\"from_did\\\":\\\"GxtnGN6ypZYgEqcftSQFnC\\\",\\\"iid\\\":\\\"cCanHnpFAD\\\",\\\"issuer_did\\\":\\\"QTrbV4raAcND4DWWzBmdsh\\\",\\\"schema_seq_no\\\":48,\\\"optional_data\\\":{\\\"terms_of_service\\\":\\\"<Large block of text>\\\",\\\"price\\\":6}}\"}]}";
         let _m = mockito::mock("POST", "/agency/route")
         .with_status(200)
         .with_body(response)
@@ -459,14 +468,18 @@ mod tests {
         schema_seq_no: 32,
         msg_uid: "1234".to_owned(),
         claim_attributes: "nothing".to_owned(),
-        issuer_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+        issuer_did: "QTrbV4raAcND4DWWzBmdsh".to_owned(),
         issued_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
         state: CxsStateType::CxsStateOfferSent,
+        claim_request: None,
         };
 
         claim.update_state();
         _m.assert();
-        assert_eq ! (claim.get_state(), CxsStateType::CxsStateRequestReceived as u32);
+        assert_eq !(claim.get_state(), CxsStateType::CxsStateRequestReceived as u32);
+        let claim_request = claim.claim_request.unwrap();
+        assert_eq!(claim_request.issuer_did, "QTrbV4raAcND4DWWzBmdsh");
+        assert_eq!(claim_request.schema_seq_no, "48");
     }
 
     #[test]
@@ -486,5 +499,6 @@ mod tests {
         }
         assert_eq!(get_state_from_string(string), 1);
     }
+
 }
 

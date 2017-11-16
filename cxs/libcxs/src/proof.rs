@@ -20,7 +20,7 @@ struct Proof {
     proof_attributes: String,
     msg_uid: String,
     proof_requester_did: String,
-    proover_did: String,
+    prover_did: String,
     state: CxsStateType,
 }
 
@@ -61,7 +61,7 @@ pub fn create_proof(source_id: Option<String>,
         msg_uid: String::new(),
         proof_attributes: proof_data,
         proof_requester_did: requester_did,
-        proover_did: String::new(),
+        prover_did: String::new(),
         state: CxsStateType::CxsStateNone,
     });
 

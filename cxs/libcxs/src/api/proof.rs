@@ -158,7 +158,7 @@ mod tests {
         assert_eq!(err, 0);
         assert!(proof_handle > 0);
         println!("successfully called deserialize_cb");
-        let original = "{\"source_id\":\"test_proof_serialize\",\"handle\":2035188318,\"proof_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"msg_uid\":\"\",\"proof_requester_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"proover_did\":\"7XFh8yBzrpJQmNyZzgoTqB\",\"state\":1}";
+        let original = "{\"source_id\":\"test_proof_serialize\",\"handle\":2035188318,\"proof_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"msg_uid\":\"\",\"proof_requester_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"prover_did\":\"7XFh8yBzrpJQmNyZzgoTqB\",\"state\":1}";
         let new = proof::to_string(proof_handle).unwrap();
         assert_eq!(original,new);
     }
@@ -205,7 +205,7 @@ mod tests {
     #[test]
     fn test_cxs_proof_deserialize_succeeds() {
         set_default_and_enable_test_mode();
-        let original = "{\"source_id\":\"test_proof_serialize\",\"handle\":2035188318,\"proof_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"msg_uid\":\"\",\"proof_requester_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"proover_did\":\"7XFh8yBzrpJQmNyZzgoTqB\",\"state\":1}";
+        let original = "{\"source_id\":\"test_proof_serialize\",\"handle\":2035188318,\"proof_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"msg_uid\":\"\",\"proof_requester_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"prover_did\":\"7XFh8yBzrpJQmNyZzgoTqB\",\"state\":1}";
         cxs_proof_deserialize(0,CString::new(original).unwrap().into_raw(), Some(deserialize_cb));
         thread::sleep(Duration::from_millis(200));
     }
