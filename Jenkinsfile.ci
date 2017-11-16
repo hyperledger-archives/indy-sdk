@@ -7,6 +7,7 @@ def testing() {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
                 'macos-test'  : { macosTesting() },
+                'ios-test'    : { iosTesting() },
                 'redhat-test' : { rhelTesting() },
                 'windows-test': { windowsTesting() }
         ])
@@ -85,6 +86,50 @@ def macosTesting() {
 
                 //TODO wrappers testing
             } finally {
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
+
+def iosTesting() {
+    node('macos') {
+        stage('iOS Test') {
+            try {
+                echo "iOS Test: Checkout scm"
+                checkout scm
+
+                echo "iOS Test: Running pool"
+                sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
+                sh "docker run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+
+                dir('libindy') {
+                    echo 'iOS Test: build libindy pod'
+                    sh './build-libindy-ios.sh'
+                }
+
+                dir('wrappers/ios/libindy-pod') {
+                    echo "iOS Test: Installing dependencies (pods)"
+                    sh "pod install"
+                }
+
+                // FIXME replace this hack (manually rewrite installed pod)
+                sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
+                sh "cp libindy/out_libindy_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
+
+                dir('wrappers/ios/libindy-pod') {
+                    echo "iOS Test: Testing"
+                    sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone 7 Plus,OS=10.3.1'"
+                }
+            } finally {
+                try {
+                    sh "docker stop indy_pool"
+                } catch (ignore) {
+                }
+                try {
+                    sh "docker rm indy_pool"
+                } catch (ignore) {
+                }
                 step([$class: 'WsCleanup'])
             }
         }
@@ -195,10 +240,12 @@ def openPool(env_name, network_name, pool_type = null, pool_ver = null, plenum_v
 
 def closePool(env_name, network_name, poolInst) {
     echo "${env_name} Test: Cleanup"
-    try {
-        sh "docker network inspect ${network_name}"
-    } catch (error) {
-        echo "${env_name} Tests: error while inspect network ${network_name} - ${error}"
+    if (network_name != null) {
+        try {
+            sh "docker network inspect ${network_name}"
+        } catch (error) {
+            echo "${env_name} Tests: error while inspect network ${network_name} - ${error}"
+        }
     }
     try {
         echo "${env_name} Test: stop pool"
@@ -206,16 +253,18 @@ def closePool(env_name, network_name, poolInst) {
     } catch (error) {
         echo "${env_name} Tests: error while stop pool ${error}"
     }
-    try {
-        sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f"
-    } catch (error) {
-        echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
-    }
-    try {
-        echo "${env_name} Test: remove pool network ${network_name}"
-        sh "docker network rm ${network_name}"
-    } catch (error) {
-        echo "${env_name} Test: error while delete ${network_name} - ${error}"
+    if (network_name != null) {
+        try {
+            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f"
+        } catch (error) {
+            echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
+        }
+        try {
+            echo "${env_name} Test: remove pool network ${network_name}"
+            sh "docker network rm ${network_name}"
+        } catch (error) {
+            echo "${env_name} Test: error while delete ${network_name} - ${error}"
+        }
     }
     step([$class: 'WsCleanup'])
 }
