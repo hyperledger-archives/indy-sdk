@@ -260,7 +260,16 @@ impl TransactionHandler {
 
         if let Some(in_progress_req) = self.pending_commands.get_mut(&req_id) {
             in_progress_req.parent_cmd_ids.push(cmd_id);
-            return Ok(());
+            let new_req_differ_cached = in_progress_req
+                .resendable_request.as_ref()
+                // TODO pop request filed from ResendableRequest to CommandProcess and check always
+                .map(|req| req.request.ne(req_str)).unwrap_or(false);
+            if new_req_differ_cached {
+                return Err(PoolError::CommonError(CommonError::InvalidStructure(
+                    "Different request already sent with same request ID".to_string())));
+            } else {
+                return Ok(());
+            }
         }
 
         let mut new_request = CommandProcess {
