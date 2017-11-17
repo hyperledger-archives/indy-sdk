@@ -179,21 +179,24 @@ impl TransactionHandler {
             return warn!("TransactionHandler::process_reply: <<< No pending command for request");
         }
 
-        let json_msg: HashableValue = match serde_json::from_str(raw_msg) {
-            Ok(raw_msg) => HashableValue { inner: raw_msg },
+        let msg_result: SJsonValue = match serde_json::from_str::<SJsonValue>(raw_msg) {
+            Ok(raw_msg) => raw_msg["result"].clone(),
             Err(err) => return warn!("{:?}", err)
         };
+        let mut msg_result_without_proof: SJsonValue = msg_result.clone();
+        msg_result_without_proof.as_object_mut().map(|obj| obj.remove("state_proof"));
+        let msg_result_without_proof = HashableValue { inner: msg_result_without_proof };
 
         let reply_cnt = *self.pending_commands
             .get(&req_id).unwrap()
-            .replies.get(&json_msg).unwrap_or(&0usize);
+            .replies.get(&msg_result_without_proof).unwrap_or(&0usize);
         trace!("TransactionHandler::process_reply: reply_cnt: {:?}, f: {:?}", reply_cnt, self.f);
 
         let consensus_reached = reply_cnt >= self.f || {
             debug!("TransactionHandler::process_reply: Try to verify proof and signature");
 
-            let data_to_check_proof = TransactionHandler::parse_reply_for_proof_checking(&json_msg.inner["result"]);
-            let data_to_check_proof_signature = TransactionHandler::parse_reply_for_proof_signature_checking(&json_msg.inner["result"]);
+            let data_to_check_proof = TransactionHandler::parse_reply_for_proof_checking(&msg_result);
+            let data_to_check_proof_signature = TransactionHandler::parse_reply_for_proof_signature_checking(&msg_result);
 
             data_to_check_proof.is_some() && data_to_check_proof_signature.is_some() && {
                 debug!("TransactionHandler::process_reply: Proof and signature are present");
@@ -236,7 +239,7 @@ impl TransactionHandler {
             self.pending_commands.remove(&req_id);
         } else {
             let pend_cmd: &mut CommandProcess = self.pending_commands.get_mut(&req_id).unwrap();
-            pend_cmd.replies.insert(json_msg, reply_cnt + 1);
+            pend_cmd.replies.insert(msg_result_without_proof, reply_cnt + 1);
             pend_cmd.try_send_to_next_node_if_exists(&self.nodes);
         }
 
