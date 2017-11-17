@@ -105,7 +105,7 @@ def iosTesting() {
 
                 dir('libindy') {
                     echo 'iOS Test: build libindy pod'
-                    sh './build-libindy-ios.sh'
+                    sh './build-libindy-ios.sh x86_64-apple-ios'
                 }
 
                 dir('wrappers/ios/libindy-pod') {
