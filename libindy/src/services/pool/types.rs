@@ -296,7 +296,7 @@ pub struct ResendableRequest {
     pub request: String,
     pub start_node: usize,
     pub next_node: usize,
-    pub next_try_send: Option<time::Tm>,
+    pub next_try_send_time: Option<time::Tm>,
 }
 
 #[derive(Debug, PartialEq, Eq)]

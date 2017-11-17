@@ -19,6 +19,7 @@ extern crate indy_crypto;
 use self::byteorder::{ByteOrder, LittleEndian};
 use self::digest::{FixedOutput, Input};
 use self::hex::ToHex;
+use self::rand::Rng;
 use self::rust_base58::FromBase58;
 use self::time::{Duration, Tm};
 use serde_json;
@@ -137,10 +138,10 @@ impl PoolWorkerHandler {
         };
     }
 
-    fn get_first_event(&self) -> Option<Tm> {
+    fn get_upcoming_timeout(&self) -> Option<Tm> {
         match self {
             &PoolWorkerHandler::CatchupHandler(_) => None,
-            &PoolWorkerHandler::TransactionHandler(ref ch) => ch.get_first_event(),
+            &PoolWorkerHandler::TransactionHandler(ref ch) => ch.get_upcoming_timeout(),
         }
     }
 
@@ -299,15 +300,14 @@ impl TransactionHandler {
         };
 
         if REQUESTS_FOR_STATE_PROOFS.contains(&req_json["operation"]["type"].as_str().unwrap_or("")) {
-            use self::rand::Rng;
             let start_node = rand::StdRng::new().unwrap().gen_range(0, self.nodes.len());
             let resendable_request = ResendableRequest {
                 request: req_str.to_string(),
                 start_node,
                 next_node: (start_node + 1) % self.nodes.len(),
-                next_try_send: Some(time::now_utc().add(Duration::seconds(RESENDABLE_REQUEST_TIMEOUT))),
+                next_try_send_time: Some(time::now_utc().add(Duration::seconds(RESENDABLE_REQUEST_TIMEOUT))),
             };
-            trace!("try_send_request schedule next sending to {:?}", resendable_request.next_try_send);
+            trace!("try_send_request schedule next sending to {:?}", resendable_request.next_try_send_time);
             new_request.resendable_request = Some(resendable_request);
             self.nodes[start_node].send_str(req_str)?;
         } else {
@@ -556,10 +556,10 @@ impl TransactionHandler {
         }
     }
 
-    fn get_first_event(&self) -> Option<time::Tm> {
+    fn get_upcoming_timeout(&self) -> Option<time::Tm> {
         self.pending_commands.iter().fold(None, |acc, (_, ref cur)| {
             let cur_tm: Option<Tm> = cur.resendable_request.as_ref()
-                .and_then(|resend: &ResendableRequest| resend.next_try_send);
+                .and_then(|resend: &ResendableRequest| resend.next_try_send_time);
             match (acc, cur_tm) {
                 (None, cur_tm) => cur_tm,
                 (Some(acc), None) => Some(acc),
@@ -570,10 +570,11 @@ impl TransactionHandler {
 
     fn process_timeout(&mut self) {
         for (_, pc) in &mut self.pending_commands {
-            let do_call = pc.resendable_request.as_ref()
-                .and_then(|resend| resend.next_try_send)
-                .map(|next_call| next_call <= time::now_utc()).unwrap_or(false);
-            if do_call {
+            let is_timeout = pc.resendable_request.as_ref()
+                .and_then(|resend| resend.next_try_send_time)
+                .map(|next_try_send_time| next_try_send_time <= time::now_utc())
+                .unwrap_or(false);
+            if is_timeout {
                 pc.try_send_to_next_node_if_exists(&self.nodes);
             }
         }
@@ -584,8 +585,8 @@ impl CommandProcess {
     //TODO return err or bool for more complex handling
     fn try_send_to_next_node_if_exists(&mut self, nodes: &Vec<RemoteNode>) {
         if let Some(ref mut resend) = self.resendable_request {
-            resend.next_try_send = Some(time::now_utc().add(Duration::seconds(RESENDABLE_REQUEST_TIMEOUT)));
-            trace!("try_send_to_next_node_if_exists schedule next sending to {:?}", resend.next_try_send);
+            resend.next_try_send_time = Some(time::now_utc().add(Duration::seconds(RESENDABLE_REQUEST_TIMEOUT)));
+            trace!("try_send_to_next_node_if_exists schedule next sending to {:?}", resend.next_try_send_time);
             while resend.next_node != resend.start_node {
                 let cur_node = resend.next_node;
                 resend.next_node = (cur_node + 1) % nodes.len();
@@ -594,7 +595,7 @@ impl CommandProcess {
                     Err(err) => warn!("Can't send request to the next node, skip it ({})", err),
                 }
             }
-            resend.next_try_send = None;
+            resend.next_try_send_time = None;
         }
     }
 }
@@ -807,7 +808,7 @@ impl PoolWorker {
     }
 
     fn get_zmq_poll_timeout(&self) -> i64 {
-        let first_event: time::Tm = match self.handler.get_first_event() {
+        let first_event: time::Tm = match self.handler.get_upcoming_timeout() {
             None => return -1,
             Some(tm) => tm,
         };
