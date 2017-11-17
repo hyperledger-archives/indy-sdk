@@ -7,8 +7,10 @@ mod state_proof;
 extern crate byteorder;
 extern crate digest;
 extern crate hex;
+extern crate rand;
 extern crate rust_base58;
 extern crate sha2;
+extern crate time;
 extern crate zmq_pw as zmq;
 extern crate rmp_serde;
 extern crate indy_crypto;
@@ -17,15 +19,19 @@ extern crate indy_crypto;
 use self::byteorder::{ByteOrder, LittleEndian};
 use self::digest::{FixedOutput, Input};
 use self::hex::ToHex;
+use self::rand::Rng;
 use self::rust_base58::FromBase58;
+use self::time::{Duration, Tm};
 use serde_json;
 use serde_json::Value as SJsonValue;
 use std::cell::RefCell;
+use std::cmp::max;
 use std::collections::HashMap;
+use std::error::Error;
 use std::{fmt, fs, io, thread};
 use std::fmt::Debug;
 use std::io::{BufRead, Write};
-use std::error::Error;
+use std::ops::{Add, Sub};
 
 use base64;
 use commands::{Command, CommandExecutor};
@@ -75,6 +81,9 @@ struct TransactionHandler {
     nodes: Vec<RemoteNode>,
     pending_commands: HashMap<u64 /* requestId */, CommandProcess>,
 }
+
+const REQUESTS_FOR_STATE_PROOFS: [&'static str; 4] = [constants::GET_NYM, constants::GET_SCHEMA, constants::GET_CLAIM_DEF, constants::GET_ATTR];
+const RESENDABLE_REQUEST_TIMEOUT: i64 = 1;
 
 impl PoolWorkerHandler {
     fn process_msg(&mut self, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
@@ -127,6 +136,20 @@ impl PoolWorkerHandler {
             &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.f = f,
             &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.f = f,
         };
+    }
+
+    fn get_upcoming_timeout(&self) -> Option<Tm> {
+        match self {
+            &PoolWorkerHandler::CatchupHandler(_) => None,
+            &PoolWorkerHandler::TransactionHandler(ref ch) => ch.get_upcoming_timeout(),
+        }
+    }
+
+    fn process_timeout(&mut self) {
+        match self {
+            &mut PoolWorkerHandler::CatchupHandler(_) => {}
+            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.process_timeout(),
+        }
     }
 }
 
@@ -203,7 +226,7 @@ impl TransactionHandler {
         debug!("TransactionHandler::process_reply: consensus_reached {}", consensus_reached);
 
         if consensus_reached {
-            let cmd_ids = self.pending_commands.get(&req_id).unwrap().cmd_ids.clone();
+            let cmd_ids = self.pending_commands.get(&req_id).unwrap().parent_cmd_ids.clone();
 
             for cmd_id in cmd_ids {
                 CommandExecutor::instance().send(
@@ -214,6 +237,7 @@ impl TransactionHandler {
         } else {
             let pend_cmd: &mut CommandProcess = self.pending_commands.get_mut(&req_id).unwrap();
             pend_cmd.replies.insert(json_msg, reply_cnt + 1);
+            pend_cmd.try_send_to_next_node_if_exists(&self.nodes);
         }
 
         trace!("TransactionHandler::process_reply: <<<");
@@ -226,7 +250,7 @@ impl TransactionHandler {
         if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
             pend_cmd.nack_cnt += 1;
             if pend_cmd.nack_cnt == self.f + 1 {
-                for &cmd_id in &pend_cmd.cmd_ids {
+                for &cmd_id in &pend_cmd.parent_cmd_ids {
                     CommandExecutor::instance().send(
                         Command::Ledger(
                             LedgerCommand::SubmitAck(cmd_id,
@@ -234,6 +258,8 @@ impl TransactionHandler {
                     ).unwrap();
                 }
                 remove = true;
+            } else {
+                pend_cmd.try_send_to_next_node_if_exists(&self.nodes);
             }
         }
         if remove {
@@ -241,31 +267,55 @@ impl TransactionHandler {
         }
     }
 
-    fn try_send_request(&mut self, cmd: &str, cmd_id: i32) -> Result<(), PoolError> {
-        info!("cmd {:?}", cmd);
-        let request: SJsonValue = serde_json::from_str(cmd)
+    fn try_send_request(&mut self, req_str: &str, cmd_id: i32) -> Result<(), PoolError> {
+        info!("cmd {:?}", req_str);
+        let req_json: SJsonValue = serde_json::from_str(req_str)
             .map_err(|err|
                 CommonError::InvalidStructure(
                     format!("Invalid request json: {}", err.description())))?;
 
-        let request_id: u64 = request["reqId"]
+        let req_id: u64 = req_json["reqId"]
             .as_u64()
             .ok_or(CommonError::InvalidStructure("No reqId in request".to_string()))?;
 
-        if self.pending_commands.contains_key(&request_id) {
-            self.pending_commands.get_mut(&request_id).unwrap().cmd_ids.push(cmd_id);
-        } else {
-            let pc = CommandProcess {
-                cmd_ids: vec!(cmd_id),
-                nack_cnt: 0,
-                replies: HashMap::new(),
-            };
-            self.pending_commands.insert(request_id, pc);
-            for node in &self.nodes {
-                let node: &RemoteNode = node;
-                node.send_str(cmd)?;
+        if let Some(in_progress_req) = self.pending_commands.get_mut(&req_id) {
+            in_progress_req.parent_cmd_ids.push(cmd_id);
+            let new_req_differ_cached = in_progress_req
+                .resendable_request.as_ref()
+                // TODO pop request filed from ResendableRequest to CommandProcess and check always
+                .map(|req| req.request.ne(req_str)).unwrap_or(false);
+            if new_req_differ_cached {
+                return Err(PoolError::CommonError(CommonError::InvalidStructure(
+                    "Different request already sent with same request ID".to_string())));
+            } else {
+                return Ok(());
             }
         }
+
+        let mut new_request = CommandProcess {
+            parent_cmd_ids: vec!(cmd_id),
+            nack_cnt: 0,
+            replies: HashMap::new(),
+            resendable_request: None,
+        };
+
+        if REQUESTS_FOR_STATE_PROOFS.contains(&req_json["operation"]["type"].as_str().unwrap_or("")) {
+            let start_node = rand::StdRng::new().unwrap().gen_range(0, self.nodes.len());
+            let resendable_request = ResendableRequest {
+                request: req_str.to_string(),
+                start_node,
+                next_node: (start_node + 1) % self.nodes.len(),
+                next_try_send_time: Some(time::now_utc().add(Duration::seconds(RESENDABLE_REQUEST_TIMEOUT))),
+            };
+            trace!("try_send_request schedule next sending to {:?}", resendable_request.next_try_send_time);
+            new_request.resendable_request = Some(resendable_request);
+            self.nodes[start_node].send_str(req_str)?;
+        } else {
+            for node in &self.nodes {
+                node.send_str(req_str)?;
+            }
+        }
+        self.pending_commands.insert(req_id, new_request);
         Ok(())
     }
 
@@ -279,7 +329,7 @@ impl TransactionHandler {
             Err(err) => {
                 for (_, pending_cmd) in &self.pending_commands {
                     let pending_cmd: &CommandProcess = pending_cmd;
-                    for cmd_id in &pending_cmd.cmd_ids {
+                    for cmd_id in &pending_cmd.parent_cmd_ids {
                         CommandExecutor::instance()
                             .send(Command::Ledger(LedgerCommand::SubmitAck(
                                 cmd_id.clone(), Err(PoolError::Terminate))))
@@ -304,7 +354,7 @@ impl TransactionHandler {
             return None;
         };
 
-        if ![constants::GET_NYM, constants::GET_SCHEMA, constants::GET_CLAIM_DEF, constants::GET_ATTR].contains(&xtype) {
+        if !REQUESTS_FOR_STATE_PROOFS.contains(&xtype) {
             //TODO GET_DDO, GET_TXN
             trace!("TransactionHandler::parse_reply_for_proof_checking: <<< type not supported");
             return None;
@@ -505,6 +555,49 @@ impl TransactionHandler {
             _ => None
         }
     }
+
+    fn get_upcoming_timeout(&self) -> Option<time::Tm> {
+        self.pending_commands.iter().fold(None, |acc, (_, ref cur)| {
+            let cur_tm: Option<Tm> = cur.resendable_request.as_ref()
+                .and_then(|resend: &ResendableRequest| resend.next_try_send_time);
+            match (acc, cur_tm) {
+                (None, cur_tm) => cur_tm,
+                (Some(acc), None) => Some(acc),
+                (Some(acc), Some(cur_tm)) => Some(acc.min(cur_tm)),
+            }
+        })
+    }
+
+    fn process_timeout(&mut self) {
+        for (_, pc) in &mut self.pending_commands {
+            let is_timeout = pc.resendable_request.as_ref()
+                .and_then(|resend| resend.next_try_send_time)
+                .map(|next_try_send_time| next_try_send_time <= time::now_utc())
+                .unwrap_or(false);
+            if is_timeout {
+                pc.try_send_to_next_node_if_exists(&self.nodes);
+            }
+        }
+    }
+}
+
+impl CommandProcess {
+    //TODO return err or bool for more complex handling
+    fn try_send_to_next_node_if_exists(&mut self, nodes: &Vec<RemoteNode>) {
+        if let Some(ref mut resend) = self.resendable_request {
+            resend.next_try_send_time = Some(time::now_utc().add(Duration::seconds(RESENDABLE_REQUEST_TIMEOUT)));
+            trace!("try_send_to_next_node_if_exists schedule next sending to {:?}", resend.next_try_send_time);
+            while resend.next_node != resend.start_node {
+                let cur_node = resend.next_node;
+                resend.next_node = (cur_node + 1) % nodes.len();
+                match nodes[cur_node].send_str(&resend.request) {
+                    Ok(()) => return,
+                    Err(err) => warn!("Can't send request to the next node, skip it ({})", err),
+                }
+            }
+            resend.next_try_send_time = None;
+        }
+    }
 }
 
 impl Default for TransactionHandler {
@@ -651,6 +744,9 @@ impl PoolWorker {
                             })
                     })?;
                 }
+                &ZMQLoopAction::Timeout => {
+                    self.handler.process_timeout();
+                }
             }
         }
         Ok(())
@@ -660,8 +756,12 @@ impl PoolWorker {
         let mut actions: Vec<ZMQLoopAction> = Vec::new();
 
         let mut poll_items = self.get_zmq_poll_items()?;
-        let r = zmq::poll(poll_items.as_mut_slice(), -1)?;
+        let t = self.get_zmq_poll_timeout();
+        let r = zmq::poll(poll_items.as_mut_slice(), t)?;
         trace!("zmq poll {:?}", r);
+        if r == 0 {
+            actions.push(ZMQLoopAction::Timeout);
+        }
 
         for i in 0..self.handler.nodes().len() {
             if poll_items[1 + i].is_readable() {
@@ -705,6 +805,21 @@ impl PoolWorker {
             poll_items.push(s.as_poll_item(zmq::POLLIN));
         }
         Ok(poll_items)
+    }
+
+    fn get_zmq_poll_timeout(&self) -> i64 {
+        let first_event: time::Tm = match self.handler.get_upcoming_timeout() {
+            None => return -1,
+            Some(tm) => tm,
+        };
+        let now_utc = time::now_utc();
+        trace!("get_zmq_poll_timeout first_event {:?}", first_event);
+        trace!("get_zmq_poll_timeout now_utc {:?}", now_utc);
+        let diff: Duration = first_event.sub(now_utc);
+        trace!("get_zmq_poll_timeout diff Duration {:?}", diff);
+        let diff: i64 = max(diff.num_milliseconds(), 1);
+        trace!("get_zmq_poll_timeout diff ms {}", diff);
+        return diff;
     }
 
 
@@ -1356,9 +1471,10 @@ mod tests {
         let mut th: TransactionHandler = Default::default();
         th.f = 1;
         let mut pc = super::types::CommandProcess {
-            cmd_ids: Vec::new(),
+            parent_cmd_ids: Vec::new(),
             replies: HashMap::new(),
             nack_cnt: 0,
+            resendable_request: None,
         };
         let json = "{\"value\":1}";
         pc.replies.insert(HashableValue { inner: serde_json::from_str(json).unwrap() }, 1);
@@ -1375,9 +1491,10 @@ mod tests {
         let mut th: TransactionHandler = Default::default();
         th.f = 1;
         let mut pc = super::types::CommandProcess {
-            cmd_ids: Vec::new(),
+            parent_cmd_ids: Vec::new(),
             replies: HashMap::new(),
             nack_cnt: 0,
+            resendable_request: None,
         };
         let json1 = "{\"value\":1}";
         let json2 = "{\"value\":2}";
@@ -1406,7 +1523,8 @@ mod tests {
         let exp_command_process = CommandProcess {
             nack_cnt: 0,
             replies: HashMap::new(),
-            cmd_ids: vec!(cmd_id),
+            parent_cmd_ids: vec!(cmd_id),
+            resendable_request: None,
         };
         assert_eq!(pending_cmd, &exp_command_process);
     }
