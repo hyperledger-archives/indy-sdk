@@ -2,6 +2,12 @@ extern crate cxs;
 extern crate tempfile;
 extern crate libc;
 extern crate mockito;
+extern crate serde_json;
+
+#[macro_use]
+extern crate lazy_static;
+
+mod utils;
 
 use self::libc::c_char;
 use tempfile::NamedTempFileOptions;
@@ -12,9 +18,9 @@ use std::ffi::CString;
 use cxs::api;
 use std::ffi::CStr;
 
+
 static mut CONNECTION_HANDLE: u32 = 0;
 static mut CLAIM_SENT: bool = false;
-
 #[allow(unused_variables)]
 extern "C" fn serialize_cb(connection_handle: u32, err: u32, data: *const c_char) {
     if err != 0 {panic!("failed to serialize connection")}
@@ -113,7 +119,6 @@ extern "C" fn create_and_send_offer_cb(command_handle: u32, err: u32, claim_hand
 
 #[test]
 fn claim_offer_ete() {
-
     let config_string = format!("{{\"agent_endpoint\":\"{}\",\
     \"agency_pairwise_did\":\"72x8p4HubxzUK1dwxcc5FU\",\
     \"agent_pairwise_did\":\"UJGjM6Cea2YVixjWwHN9wq\",\
@@ -164,3 +169,5 @@ fn test_better_http_response_messages(){
     \"agency_pairwise_verkey\":\"7118p4HubxzUK1dwxcc5FU\",\
     \"agent_pairwise_verkey\":\"U22jM6Cea2YVixjWwHN9wq\"}}", mockito::SERVER_URL);
 }
+
+

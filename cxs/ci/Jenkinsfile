@@ -18,6 +18,7 @@ node('ubuntu') {
         app = buildDocker()
         buildRust(app)
         testRust(app) 
+        createZip(app)
         testNodeWrapper(app)
         if (env.BRANCH_NAME == "master") {
             createZip(app)
@@ -93,11 +94,11 @@ def testNodeWrapper(envn) {
         }
         stage ('Build Node Artifact'){
             envn.inside {
-                if (env.BRANCH_NAME == "master") {
+                //if (env.BRANCH_NAME == "master") {
                     sh 'npm pack'
                     sh 'test -f cxs-1.0.0.tgz'
                     archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.tgz'
-                }
+                //}
             }
         }
     }

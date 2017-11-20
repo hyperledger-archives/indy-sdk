@@ -222,6 +222,7 @@ pub fn update_agent_profile(handle: u32) -> Result<u32, u32> {
 //       you can call create_connection without test_mode and you don't have to build a wallet or
 //       mock the agency during the connection phase
 //
+// TODO: This should take a ref?
 pub fn create_connection(source_id: String) -> u32 {
     let new_handle = rand::thread_rng().gen::<u32>();
 

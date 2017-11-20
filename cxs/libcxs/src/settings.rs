@@ -130,12 +130,12 @@ pub fn test_mode_enabled() -> bool {
 }
 
 pub fn process_config_file(path: &str) -> Result<u32, String> {
-
     if !Path::new(path).is_file() {
         Err("could not find configuration file".to_owned())
     } else {
         // if this fails the program should exit
         SETTINGS.write().unwrap().merge(config::File::with_name(path)).unwrap();
+        info!("path: {}", path);
 
         match validate_config() {
             Err(x) => Err(x),

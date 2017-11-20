@@ -46,6 +46,7 @@ pub extern fn cxs_init (command_handle: u32,
         if config_path == "ENABLE_TEST_MODE" {
             settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         } else {
+            info!("config_path: {}", config_path);
             match settings::process_config_file(&config_path) {
                 Err(_) => {
                     error!("Invalid configuration specified");

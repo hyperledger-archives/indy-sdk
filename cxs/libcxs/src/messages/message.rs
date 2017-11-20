@@ -202,7 +202,6 @@ impl GeneralMessage for SendMessage{
             Ok(x) => x,
             Err(x) => return Err(x),
         };
-
         match httpclient::post(&json_msg, &url) {
             Err(_) => Err(error::POST_MSG_FAILURE.code_num),
             Ok(response) => Ok(response),

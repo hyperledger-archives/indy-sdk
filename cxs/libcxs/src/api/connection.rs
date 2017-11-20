@@ -121,7 +121,6 @@ pub extern fn cxs_connection_update_state(command_handle: u32,
     thread::spawn(move|| {
         let rc = update_state(connection_handle);
         let state = get_state(connection_handle);
-
         cb(command_handle, rc, state);
     });
 

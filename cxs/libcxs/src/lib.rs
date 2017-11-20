@@ -19,7 +19,7 @@ extern crate serde_json;
 extern crate lazy_static;
 
 #[macro_use]
-mod utils;
+pub mod utils;
 mod settings;
 mod messages;
 
