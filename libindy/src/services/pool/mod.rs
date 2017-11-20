@@ -854,9 +854,7 @@ impl PoolWorker {
         Ok(mt)
     }
 
-    #[allow(unreachable_code)]
     fn get_f(cnt: usize) -> usize {
-        return cnt / 2; /* FIXME ugly hack to work with pool instability, remove after pool will be fixed */
         if cnt < 4 {
             return 0;
         }
@@ -1459,7 +1457,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] /* FIXME remove after get_f will be restored */
     fn pool_worker_get_f_works() {
         assert_eq!(PoolWorker::get_f(0), 0);
         assert_eq!(PoolWorker::get_f(3), 0);
