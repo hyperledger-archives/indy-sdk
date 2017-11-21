@@ -93,8 +93,8 @@ fn validate_config() -> Result<u32, String> {
             valid = false;
         } else if setting.0 == CONFIG_AGENT_PAIRWISE_DID && !is_valid(setting.1) {
             valid = false;
-        } else if setting.0 == CONFIG_ENTERPRISE_NAME && !is_valid(setting.1) {
-            valid = false;
+        } else if setting.0 == CONFIG_ENTERPRISE_NAME {
+            valid = true;
         } else if setting.0 == CONFIG_LOGO_URL {
             match Url::parse(setting.1) {
                 Err(x) => valid = false,

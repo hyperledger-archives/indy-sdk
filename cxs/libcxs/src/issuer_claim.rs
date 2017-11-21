@@ -338,17 +338,21 @@ pub fn create_claim_payload_using_wallet<'a>(claim_req: &ClaimRequest, claim_dat
     let claim_req_master_secret = match claim_req.blinded_ms.clone() {
         Some(ms) => ms,
         // TODO: need new error
-        None => panic!("No Master Secret in the Claim Request!"),
+        None => {
+            error!("No Master Secret in the Claim Request!");
+            return Err(error::UNKNOWN_ERROR.code_num);
+        },
     };
 
     let claim_req_str = match serde_json::to_string(&claim_req) {
         Ok(s) => s,
         // TODO: need new error
-        Err(_) => panic!("Claim Request is not properly formatted/formed"),
+        Err(x) => {
+            error!("Claim Request is not properly formatted/formed: {}", x);
+            return Err(error::UNKNOWN_ERROR.code_num);
+        },
     };
 
-    info!("wallet_handle: {}", wallet_handle);
-    info!("claim_req_str: {}", claim_req_str);
     unsafe {
         let err = indy_issuer_create_claim(command_handle,
                                            wallet_handle,
@@ -356,14 +360,21 @@ pub fn create_claim_payload_using_wallet<'a>(claim_req: &ClaimRequest, claim_dat
                                            CString::new(claim_data).unwrap().as_ptr(),
                                            -1,
                                            cb);
-        assert_eq!(err, 0);
+        if err != 0 {
+            error!("could not create claim: {}", err);
+            return Err(error::UNKNOWN_ERROR.code_num);
+        }
     }
+
     let (err, revoc_reg_update_json, xclaim_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    assert_eq!(err, 0);
+
+    if err != 0 {
+        error!("could not create claim: {}", err);
+        return Err(error::UNKNOWN_ERROR.code_num);
+    };
+
     info!("xclaim_json: {}", xclaim_json);
     Ok(xclaim_json)
-
-
 }
 
 pub fn get_offer_uid(handle: u32) -> Result<String,u32> {
@@ -401,11 +412,8 @@ pub fn issuer_claim_create(schema_seq_no: u32,
 
     new_issuer_claim.state = CxsStateType::CxsStateInitialized;
 
-    {
-        let mut m = ISSUER_CLAIM_MAP.lock().unwrap();
-        info!("inserting handle {} into claim_issuer table", new_handle);
-        m.insert(new_handle, new_issuer_claim);
-    }
+    info!("inserting handle {} into claim_issuer table", new_handle);
+    ISSUER_CLAIM_MAP.lock().unwrap().insert(new_handle, new_issuer_claim);;
 
     Ok(new_handle)
 }
@@ -627,13 +635,6 @@ mod tests {
         issuer_claim
     }
 
-    fn print_error_message(e: &u32) -> (){
-        use utils::error::error_message;
-        ::utils::logger::LoggerUtils::init();
-        info!("error message: {}", error_message(e));
-    }
-
-
     fn normalize_claims(c1: &str, c2: &str) -> (serde_json::Value, serde_json::Value) {
         let mut v1:serde_json::Value = serde_json::from_str(c1.clone()).unwrap();
         let mut v2:serde_json::Value = serde_json::from_str(c2.clone()).unwrap();
@@ -703,7 +704,6 @@ mod tests {
     #[test]
     fn test_send_a_claim() {
         let test_name = "test_send_a_claim";
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
@@ -732,7 +732,7 @@ mod tests {
         match claim.send_claim(connection_handle) {
             Ok(_) => assert_eq!(0,0),
             Err(x) => {
-                print_error_message(&x);
+                info!("error message: {}", error::error_message(&x));
                 assert_eq!(x, 0)
             },
          };
@@ -820,7 +820,6 @@ mod tests {
 //    #[test]
 //    fn test_issuer_claim_can_build_claim_from_correct_parts(){
 //        let test_name = "test_issuer_claim_can_build_from_correct_parts";
-//        ::utils::logger::LoggerUtils::init();
 //        let schema_str = SCHEMA;
 //        let mut issuer_claim = create_standard_issuer_claim();
 //        let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e".to_owned();
@@ -857,7 +856,6 @@ mod tests {
 //    #[test]
 //    fn test_issuer_claim_request_changes_reflect_in_claim_payload(){
 //        // TODO: Is this duplicate of the above test?
-//        ::utils::logger::LoggerUtils::init();
 //        settings::set_defaults();
 //        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
 //        settings::set_config_value(settings::CONFIG_ENTERPRISE_DID,"NcYxiDXkpYi6ov5FcYDi1e");
@@ -887,7 +885,6 @@ mod tests {
     #[test]
     fn basic_add_attribute_encoding() {
         // FIXME Make this a real test and add additional test for create_attributes_encodings
-        ::utils::logger::LoggerUtils::init();
         let issuer_claim = create_standard_issuer_claim();
         issuer_claim.create_attributes_encodings();
         info!("{}", issuer_claim.create_attributes_encodings().unwrap())

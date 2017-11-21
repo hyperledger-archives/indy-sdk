@@ -28,7 +28,6 @@ pub extern fn cxs_init (command_handle: u32,
                         config_path:*const c_char,
                         cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
 
-    //TODO: ensure routine is NOT idempotent, return error if already initialized
     ::utils::logger::LoggerUtils::init();
 
     settings::set_defaults();
@@ -196,7 +195,7 @@ mod tests {
 
         let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"\", \"wallet_name\":\"my_wallet\", \
         \"agency_pairwise_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"agent_pairwise_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
-        \"enterprise_did_agency\" : \"RF3JM851T4EQmhh8CdagSP\", \"enterprise_did_agent\" : \"AB3JM851T4EQmhh8CdagSP\", \"enterprise_name\" : \"enterprise\",\
+        \"enterprise_did_agency\" : \"RF3JM851T4EQmhh8CdagSP\", \"enterprise_did_agent\" : \"AB3JM851T4EQmhh8CdagSP\", \"enterprise_name\" : \"evernym enterprise\",\
         \"agency_pairwise_verkey\" : \"7118p4HubxzUK1dwxcc5FU\", \"agent_pairwise_verkey\" : \"U22jM6Cea2YVixjWwHN9wq\"}";
         match file.write_all(content.as_bytes()) {
             Err(why) => panic!("couldn't write to sample config file: {}", why.description()),

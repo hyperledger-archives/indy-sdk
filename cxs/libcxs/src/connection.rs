@@ -575,7 +575,6 @@ mod tests {
 
     #[test]
     fn test_get_qr_code_data() {
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         let test_name = "test_get_qr_code_data";

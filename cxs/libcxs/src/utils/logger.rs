@@ -23,7 +23,10 @@ impl LoggerUtils {
                 builder.parse(&env::var("RUST_LOG").unwrap());
             }
 
-            builder.init().unwrap();
+            match builder.init() {
+                Ok(_) => info!("logging started"),
+                Err(x) => println!("could not initialize logging: {}", x),
+            };
         });
     }
 }

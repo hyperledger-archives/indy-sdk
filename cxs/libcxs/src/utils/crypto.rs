@@ -138,9 +138,12 @@ pub mod tests {
     use utils::wallet;
     use utils::signus::SignusUtils;
     use utils::constants::*;
+    use settings;
 
     #[test]
     fn test_send_msg() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         let my_wallet = wallet::init_wallet("test_send_msg_my_wallet",POOL, "Default").unwrap();
         let their_wallet = wallet::init_wallet("test_send_msg_their_wallet",POOL, "Default").unwrap();
 
