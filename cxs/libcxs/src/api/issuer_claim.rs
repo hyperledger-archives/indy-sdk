@@ -310,7 +310,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID,"8XFh8yBzrpJQmNyZzgoTqB");
 
-        let original_issuer_claim_str = "{\"source_id\":\"test_cxs_issuer_send_claim\",\"handle\":123,\"claim_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"msg_uid\":\"\",\"schema_seq_no\":32,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"issued_did\":\"\",\"state\":3}";
+        let original_issuer_claim_str = "{\"source_id\":\"test_cxs_issuer_send_claim\",\"handle\":123,\"claim_attributes\":\"{\\\"state\\\":[\\\"UT\\\"],\\\"zip\\\":[\\\"84000\\\"],\\\"city\\\":[\\\"Draper\\\"],\\\"address2\\\":[\\\"Suite 3\\\"],\\\"address1\\\":[\\\"123 Main St\\\"]}\",\"msg_uid\":\"\",\"schema_seq_no\":32,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"issued_did\":\"\",\"state\":3}";
         let handle = issuer_claim::from_string(original_issuer_claim_str).unwrap();
 
         /* align claim request and claim def ***********************************/

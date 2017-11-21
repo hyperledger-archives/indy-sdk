@@ -63,7 +63,7 @@ pub mod tests{
                             "data":{{
                                 "name":"gvt",
                                 "version":"1.0",
-                                "keys":["age","sex","height","name"]
+                                "keys":["address1","address2","zip","state", "city"]
                             }}
                          }}"#, schema_seq_no);
         String::from(schema)
