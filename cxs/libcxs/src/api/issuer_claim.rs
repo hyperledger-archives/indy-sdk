@@ -314,7 +314,10 @@ mod tests {
         let handle = issuer_claim::from_string(original_issuer_claim_str).unwrap();
 
         /* align claim request and claim def ***********************************/
-        let mut claim_request = create_claim_request_from_str(CLAIM_REQ_STRING);
+        let mut claim_request = match create_claim_request_from_str(CLAIM_REQ_STRING) {
+            Ok(x) => x,
+            Err(_) => panic!("error with claim request"),
+        };
         // set claim request to have the same did as enterprise did (and sam as claim def)
         claim_request.issuer_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID).clone().unwrap();
         // set claim request to have the same sequence number as the schema sequence number

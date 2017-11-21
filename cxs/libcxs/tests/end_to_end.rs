@@ -169,5 +169,3 @@ fn test_better_http_response_messages(){
     \"agency_pairwise_verkey\":\"7118p4HubxzUK1dwxcc5FU\",\
     \"agent_pairwise_verkey\":\"U22jM6Cea2YVixjWwHN9wq\"}}", mockito::SERVER_URL);
 }
-
-

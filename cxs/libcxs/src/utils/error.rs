@@ -25,6 +25,7 @@ pub static NOT_BASE58: Error = Error{code_num:1014, message:"Value needs to be b
 pub static INVALID_ISSUER_CLAIM_HANDLE: Error = Error{code_num:1015, message:"Invalid Claim Issuer Handle"};
 pub static INVALID_JSON: Error = Error{code_num:1016, message:"Invalid JSON string"};
 pub static INVALID_PROOF_HANDLE: Error = Error{code_num:1017, message:"Invalid Proof Handle"};
+pub static INVALID_CLAIM_REQUEST: Error = Error{code_num:1018, message:"Invalid Claim Request"};
 
 lazy_static! {
     static ref ERROR_MESSAGES: HashMap<u32, &'static str> = {
