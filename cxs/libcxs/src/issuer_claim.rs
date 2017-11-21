@@ -141,17 +141,19 @@ impl IssuerClaim {
         }
 
         let attrs_with_encodings = self.create_attributes_encodings()?;
-
-        let data = match self.claim_request.clone() {
-            Some(d) => match create_claim_payload_using_wallet(&d, &attrs_with_encodings, wallet::get_wallet_handle()){
-                Ok(p) => p,
-                Err(e) => return Err(error::UNKNOWN_ERROR.code_num),
-            },
-            None => panic!("Cant create a claim without a claim request"),
-        };
-
+        let data;
+        if settings::test_mode_enabled() {
+            data = String::from("dummytestmodedata");
+        } else {
+            data = match self.claim_request.clone() {
+                Some(d) => match create_claim_payload_using_wallet(&d, &attrs_with_encodings, wallet::get_wallet_handle()) {
+                    Ok(p) => p,
+                    Err(e) => return Err(error::UNKNOWN_ERROR.code_num),
+                },
+                None => return Err(error::INVALID_CLAIM_REQUEST.code_num),
+            };
+        }
         let to = connection::get_pw_did(connection_handle).unwrap();
-
         match messages::send_message().to(&to).msg_type("claim").edge_agent_payload(&data).send() {
             Err(x) => {
                 warn!("could not send claim: {}", x);
@@ -962,4 +964,36 @@ mod tests {
                                   to_did, from_did, issuer_claim.claim_attributes, issuer_claim.schema_seq_no, issuer_claim.issuer_did, issuer_claim.claim_name);
         assert_eq!(payload_raw, payload_json.to_string())
     }
+
+    #[test]
+    fn test_that_test_mode_enabled_bypasses_libindy_create_claim(){
+        ::utils::logger::LoggerUtils::init();
+        let test_name = "test_that_TEST_MODE_ENABLED_bypasses_libindy_create_claim";
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, "QTrbV4raAcND4DWWzBmdsh");
+
+        let claim_req_value = &serde_json::from_str(CLAIM_REQ_STRING).unwrap();
+        let claim_req:ClaimRequest = match ClaimRequest::create_from_api_msg_json(&claim_req_value) {
+            Ok(x) => x,
+            Err(_) => panic!("error with claim request"),
+        };
+        let issuer_did = claim_req.issuer_did;
+
+        let mut claim = create_standard_issuer_claim();
+        claim.state = CxsStateType::CxsStateRequestReceived;
+
+        let connection_handle = create_connection("test_send_claim_offer".to_owned());
+        connection::set_pw_did(connection_handle, "8XFh8yBzrpJQmNyZzgoTqB");
+        match claim.send_claim(connection_handle) {
+            Ok(_) => assert_eq!(0, 0),
+            Err(x) => {
+                info!("error message: {}", error::error_message(&x));
+                assert_eq!(x, 0)
+            },
+        };
+        assert_eq!(claim.state, CxsStateType::CxsStateAccepted);
+
+    }
+
 }
