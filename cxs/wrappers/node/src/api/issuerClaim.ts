@@ -12,6 +12,7 @@ export interface IClaimConfig {
   schemaNum: number,
   issuerDid: string,
   attr: string,
+  claimName: string,
 }
 export interface IClaimData {
   source_id: string
@@ -30,6 +31,7 @@ export class IssuerClaim extends GCWatcher {
   private _sourceId: string
   private _state: number
   private _issuerDID: string
+  private _claimName: string
 
   constructor (sourceId) {
     super()
@@ -39,6 +41,7 @@ export class IssuerClaim extends GCWatcher {
     this._schemaNum = null
     this._attr = null
     this._issuerDID = null
+    this._claimName = 'Claim Name Here'
   }
 
   // SourceId: String for SDK User's reference
@@ -47,7 +50,7 @@ export class IssuerClaim extends GCWatcher {
   // attributes: String(JSON formatted) representing the attributes of the claim def
   static async create (config: IClaimConfig): Promise<IssuerClaim> {
     const claim = new IssuerClaim(config.sourceId)
-    await claim.init(config.sourceId, config.schemaNum, config.issuerDid, config.attr)
+    await claim.init(config.sourceId, config.schemaNum, config.issuerDid, config.attr, config.claimName)
     return claim
   }
 
@@ -186,16 +189,19 @@ export class IssuerClaim extends GCWatcher {
     this._state = state
   }
 
-  private async init (sourceId: string, schemaNumber: number, issuerDid: string, attr: string): Promise<void> {
+  private async init (sourceId: string, schemaNumber: number, issuerDid: string, attr: string, claimName: string):
+   Promise<void> {
     this._schemaNum = schemaNumber
     this._attr = attr
     this._sourceId = sourceId
     this._issuerDID = issuerDid
+    this._claimName = claimName
     try {
       const data = await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
             // TODO: check if cxs_issuer_create_claim has a return value
-            rustAPI().cxs_issuer_create_claim(0, this._sourceId, this._schemaNum, this._issuerDID, this._attr, cb)
+            rustAPI().cxs_issuer_create_claim(0,
+               this._sourceId, this._schemaNum, this._issuerDID, this._attr, this._claimName, cb)
           },
           (resolve, reject) => Callback('void', ['uint32', 'uint32', 'uint32'], (commandHandle, err, claimHandle) => {
             if (err) {

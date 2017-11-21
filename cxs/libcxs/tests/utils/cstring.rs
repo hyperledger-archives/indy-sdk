@@ -5,6 +5,7 @@ use self::libc::c_char;
 use std::ffi::CStr;
 use std::str::Utf8Error;
 use std::ffi::CString;
+#[allow(dead_code)]
 pub struct CStringUtils {}
 
 #[allow(dead_code)]

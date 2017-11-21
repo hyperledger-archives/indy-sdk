@@ -8,9 +8,7 @@ extern crate serde_json;
 extern crate lazy_static;
 mod utils;
 use utils::demo::*;
-//use utils::demo::generic_cb;
 use utils::timeout::TimeoutUtils;
-use utils::cstring::CStringUtils;
 use utils::claim_def_wallet;
 
 use self::tempfile::NamedTempFileOptions;
@@ -20,9 +18,11 @@ use std::time::Duration;
 use std::ffi::CString;
 use cxs::api;
 use std::sync::mpsc::channel;
-use cxs::utils::wallet::{init_wallet, get_wallet_handle};
+use cxs::utils::wallet::get_wallet_handle;
 
+#[allow(dead_code)]
 static SERIALIZED_CONNECTION: &str = r#"{"source_id":"test_cxs_connection_connect","handle":2608616713,"pw_did":"62LeFLkN9ZeCr32j73PUyD","pw_verkey":"3jnnnL65mTW786LaTJSwEKENEMwmMowuJTYmVho23qNU","did_endpoint":"","state":4,"uuid":"","endpoint":"","invite_detail":{"e":"34.210.228.152:80","rid":"6oHwpBN","sakdp":"key","sn":"enterprise","sD":"62LeFLkN9ZeCr32j73PUyD","lu":"https://s19.postimg.org/ykyz4x8jn/evernym.png","sVk":"3jnnnL65mTW786LaTJSwEKENEMwmMowuJTYmVho23qNU","tn":"there"}}"#;
+#[allow(dead_code)]
 static SERIALIZED_CLAIM: &str = r#"{"source_id":"Claim For Driver's License","handle":3664805180,"claim_attributes":"{\"age\":[\"28\",\"28\"],\"height\":[\"175\",\"175\"],\"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"]}","msg_uid":"7TKyPLr","schema_seq_no":12,"issuer_did":"V4SGRU86Z58d6TV7PBUe6f","issued_did":"62LeFLkN9ZeCr32j73PUyD","state":2,"claim_request":null}"#;
 static CLAIM_DATA: &str = r#"{"sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"], "name":["Alex","1139481716457488690172217916278103335"], "height":["175","175"], "age":["28","28"] }"#;
 
@@ -40,7 +40,6 @@ fn test_demo(){
 
     // Init SDK  *********************************************************************
     let issuer_did = "TCwEv4tiAuA5DfC7VTdu83";
-    let schema_seq_num = 11;
     let config_string = format!("{{\"agent_endpoint\":\"{}\",\
     \"agency_pairwise_did\":\"72x8p4HubxzUK1dwxcc5FU\",\
     \"agent_pairwise_did\":\"UJGjM6Cea2YVixjWwHN9wq\",\
@@ -66,10 +65,11 @@ fn test_demo(){
 
     // Create Claim Offer ***************************************************************
     let source_id = "Claim For Driver's License";
+    let claim_name = "Driver's License";
     let claim_data:serde_json::Value = serde_json::from_str(CLAIM_DATA).unwrap(); // this format will make it easier to modify in the futre
     let ledger_issuer_did = "V4SGRU86Z58d6TV7PBUe6f";
     let ledger_schema_seq_num = 12;
-    let (err, claim_handle) = create_claim_offer(source_id, claim_data, ledger_issuer_did, ledger_schema_seq_num);
+    let (err, claim_handle) = create_claim_offer(claim_name, source_id, claim_data, ledger_issuer_did, ledger_schema_seq_num);
     assert_eq!(err, 0);
     assert!(claim_handle>0);
 
@@ -86,6 +86,7 @@ fn test_demo(){
     //    let issuer_did_cstring = CString::new(issuer_did).unwrap();
     let rc = api::connection::cxs_connection_create(
         command_handle,CString::new("test_cxs_connection_connect").unwrap().into_raw(),create_connection_cb);
+    assert_eq!(rc,0);
     let (err, connection_handle) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     println!("Connection Handle: {}", connection_handle);
     assert_eq!(err, 0);
@@ -126,8 +127,6 @@ fn test_demo(){
     receive_request_send_claim(connection_handle,claim_handle)
 }
 
-//#[ignore]
-//#[test]
 fn receive_request_send_claim(connection_handle: u32, claim_handle:u32){
 
     // update claim *******************************************************************
@@ -145,15 +144,14 @@ fn receive_request_send_claim(connection_handle: u32, claim_handle:u32){
 
 fn insert_claim_def(){
     // init the wallet
-//    let wallet_handle = init_wallet("wallet1", "pool1", "default").unwrap();
     let claim_def_issuer_did= CLAIM_DEF_ISSUER_DID;
     let schema_string = claim_def_wallet::create_default_schema(CLAIM_DEF_SCHEMA_SEQ_NUM);
     claim_def_wallet::put_claim_def_in_wallet(get_wallet_handle(), claim_def_issuer_did, &schema_string); }
 
+#[allow(dead_code)]
 fn init_sdk(){
         // Init SDK  *********************************************************************
         let issuer_did = "TCwEv4tiAuA5DfC7VTdu83";
-        let schema_seq_num = 11;
         let config_string = format!("{{\"agent_endpoint\":\"{}\",\
         \"agency_pairwise_did\":\"72x8p4HubxzUK1dwxcc5FU\",\
         \"agent_pairwise_did\":\"UJGjM6Cea2YVixjWwHN9wq\",\

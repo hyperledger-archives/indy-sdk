@@ -1,5 +1,4 @@
 extern crate libc;
-
 use self::libc::c_char;
 use claim_request::ClaimRequest;
 use serde_json;
@@ -55,6 +54,7 @@ pub fn create_claim_request_from_str(s: &str) -> Result<ClaimRequest, u32>{
         }
     }
 }
+
 
 #[cfg(test)]
 pub mod tests{

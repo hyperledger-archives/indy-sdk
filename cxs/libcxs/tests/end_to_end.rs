@@ -143,11 +143,13 @@ fn claim_offer_ete() {
     let id = CString::new("{\"id\":\"ckmMPiEDcH4R5URY\"}").unwrap();
     let claim_data = CString::new("{\"claim\":\"attributes\"}").unwrap();
     let issuer_did = CString::new("UJGjM6Cea2YVixjWwHN9wq").unwrap();
+    let claim_name = CString::new("claim name").unwrap();
     let rc = api::issuer_claim::cxs_issuer_create_claim(0,
                                                         id.as_ptr(),
                                                         32,
                                                         issuer_did.as_ptr(),
                                                         claim_data.as_ptr(),
+                                                        claim_name.as_ptr(),
                                                         Some(create_and_send_offer_cb));
 
     assert_eq!(rc,0);

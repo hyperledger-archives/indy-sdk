@@ -1,7 +1,7 @@
 const assert = require('chai').assert
 const expect = require('chai').expect
 const cxs = require('../dist')
-const { stubInitCXS } = require('./helpers')
+const { stubInitCXS, shouldThrow } = require('./helpers')
 
 const { IssuerClaim, Connection, StateType, Error } = cxs
 
@@ -9,7 +9,8 @@ let config = {
   sourceId: 'jsonCreation',
   schemaNum: 1234,
   issuerDid: 'arandomdidfoobar',
-  attr: "{key: 'value'}"
+  attr: "{key: 'value'}",
+  claimName: 'Claim Name'
 }
 describe('An issuerClaim', async function () {
   this.timeout(30000)
@@ -146,35 +147,35 @@ describe('An issuerClaim', async function () {
     assert.equal(claim.getIssuedDid(), config.issuerDid)
   })
 
-  // it('throws exception for sending claim with invalid claim handle', async function () {
-  //   let connection = await Connection.create({id: '123'})
-  //   const claim = new IssuerClaim(null)
-  //   try {
-  //     await claim.sendClaim(connection)
-  //   } catch (error) {
-  //     assert.equal(error.toString(), 'Error: cxs_issuer_send_claim -> ' + Error.INVALID_ISSUER_CLAIM_HANDLE)
-  //   }
-  // })
+  it('throws exception for sending claim with invalid claim handle', async function () {
+    let connection = await Connection.create({id: '123'})
+    const claim = new IssuerClaim(null)
+    try {
+      await claim.sendClaim(connection)
+    } catch (error) {
+      assert.equal(error.toString(), 'Error: cxs_issuer_send_claim -> ' + Error.INVALID_ISSUER_CLAIM_HANDLE)
+    }
+  })
 
-  // it('throws exception for sending claim with invalid connection handle', async function () {
-  //   let releasedConnection = await Connection.create({id: '123'})
-  //   await releasedConnection.release()
-  //   const sourceId = 'Claim'
-  //   const claim = await IssuerClaim.create({ ...config, sourceId })
-  //   try {
-  //     await claim.sendClaim(releasedConnection)
-  //   } catch (error) {
-  //     assert.equal(error.toString(), 'Error: cxs_issuer_send_claim -> ' + Error.INVALID_CONNECTION_HANDLE)
-  //   }
-  // })
+  it('throws exception for sending claim with invalid connection handle', async function () {
+    let releasedConnection = await Connection.create({id: '123'})
+    await releasedConnection.release()
+    const sourceId = 'Claim'
+    const claim = await IssuerClaim.create({ ...config, sourceId })
+    try {
+      await claim.sendClaim(releasedConnection)
+    } catch (error) {
+      assert.equal(error.toString(), 'Error: cxs_issuer_send_claim -> ' + Error.INVALID_CONNECTION_HANDLE)
+    }
+  })
 
-  // it('sending claim with no claim offer should throw exception', async function () {
-  //   let connection = await Connection.create({id: '123'})
-  //   const sourceId = 'Claim'
-  //   const claim = await IssuerClaim.create({ ...config, sourceId })
-  //   const error = await shouldThrow(() => claim.sendClaim(connection))
-  //   assert.equal(error.toString(), 'Error: cxs_issuer_send_claim -> ' + Error.NOT_READY)
-  // })
+  it('sending claim with no claim offer should throw exception', async function () {
+    let connection = await Connection.create({id: '123'})
+    const sourceId = 'Claim'
+    const claim = await IssuerClaim.create({ ...config, sourceId })
+    const error = await shouldThrow(() => claim.sendClaim(connection))
+    assert.equal(error.toString(), 'Error: cxs_issuer_send_claim -> ' + Error.NOT_READY)
+  })
 
   // it('sending claim with valid claim offer should have state CxsStateAccepted', async function () {
   //   let connection = await Connection.create({id: '123'})
