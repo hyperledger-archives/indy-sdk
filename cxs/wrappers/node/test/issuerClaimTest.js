@@ -9,7 +9,7 @@ let config = {
   sourceId: 'jsonCreation',
   schemaNum: 1234,
   issuerDid: 'arandomdidfoobar',
-  attr: "{key: 'value'}",
+  attr: JSON.stringify({key: ['value']}),
   claimName: 'Claim Name'
 }
 describe('An issuerClaim', async function () {
@@ -177,20 +177,24 @@ describe('An issuerClaim', async function () {
     assert.equal(error.toString(), 'Error: cxs_issuer_send_claim -> ' + Error.NOT_READY)
   })
 
-  // it('sending claim with valid claim offer should have state CxsStateAccepted', async function () {
-  //   let connection = await Connection.create({id: '123'})
-  //   await connection.connect({ sms: true })
-  //   const sourceId = 'Claim'
-  //   let claim = await IssuerClaim.create({ ...config, sourceId })
-  //   await claim.sendOffer(connection)
-  //   assert.equal(await claim.getState(), StateType.OfferSent)
-  //   let jsonClaim = await claim.serialize()
-  //   jsonClaim.state = StateType.RequestReceived
-  //   jsonClaim.handle += 1
-  //   claim = await IssuerClaim.deserialize(jsonClaim)
-  //   await claim.sendClaim(connection)
-  //   assert.equal(claim.getState(), StateType.Accepted)
-  // })
+  it('sending claim with valid claim offer should have state CxsStateAccepted', async function () {
+    let connection = await Connection.create({id: '123'})
+    await connection.connect({ sms: true })
+    const sourceId = 'Claim'
+    let claim = await IssuerClaim.create({ ...config, sourceId })
+    await claim.sendOffer(connection)
+    assert.equal(await claim.getState(), StateType.OfferSent)
+    // we serialize and deserialize because this is the only
+    // way to fool the libcxs into thinking we've received a
+    // valid claim requset.
+    let jsonClaim = await claim.serialize()
+    jsonClaim.state = StateType.RequestReceived
+    jsonClaim.handle += 1
+    claim = await IssuerClaim.deserialize(jsonClaim)
+    console.log('Claim Data' + claim.claimData)
+    await claim.sendClaim(connection)
+    assert.equal(claim.getState(), StateType.Accepted)
+  })
 
   it('can be created from a json', async function () {
     const claim = await IssuerClaim.create(config)
