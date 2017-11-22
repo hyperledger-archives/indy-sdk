@@ -10,8 +10,7 @@ General types that relate to the .NET wrapper as a whole.  This includes excepti
 See the <xref:Hyperledger.Indy> Namespace topic for details. 
 
 ## Hyperledger.Indy.AgentApi
-Types allowing interaction between Indy agents, including setting up connections, sending and receiving messages and managing 
-listeners that can receive incoming connections.
+Types for preparing and parsing messages for secure delivery between Indy agents.
 
 See the <xref:Hyperledger.Indy.AgentApi> Namespace topic for details. 
 
@@ -19,6 +18,12 @@ See the <xref:Hyperledger.Indy.AgentApi> Namespace topic for details.
 Types for generating and managing anonymous credentials including claims, claim schema, proofs, etc.
 
 See the <xref:Hyperledger.Indy.AnonCredsApi> Namespace topic for details. 
+
+## Hyperledger.Indy.CryptoApi
+Types for performing common pure cryptographic functions that are not specific to the <xref:Hyperledger.Indy.SignusApi.Signus> functionality such as generating 
+key-pairs, signing, verifying and anonymous encryption.
+
+See the <xref:Hyperledger.Indy.CryptoApi> Namespace topic for details. 
 
 ## Hyperledger.Indy.LedgerApi
 Types for generating transaction messages as well as signing and sending them to a ledger pool.

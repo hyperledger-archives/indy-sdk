@@ -8,7 +8,7 @@ using static Hyperledger.Indy.CryptoApi.NativeMethods;
 namespace Hyperledger.Indy.CryptoApi
 {
     /// <summary>
-    /// Provides methods for performing .
+    /// Provides methods for pure cryptographic functions.
     /// </summary>
     public static class Crypto
     {
