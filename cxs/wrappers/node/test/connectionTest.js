@@ -71,7 +71,7 @@ describe('A Connection object with ', function () {
 
     await connection.connect({ sms: true })
     await connection.updateState()
-    assert.equal(connection.getState(), StateType.OfferSent)
+    assert.equal(connection.state, StateType.OfferSent)
     let data = await connection.serialize()
     assert.notEqual(data, null)
     assert.equal(data.handle, connection._handle)
@@ -108,7 +108,7 @@ describe('A Connection object with ', function () {
 
     await connection.connect({ sms: true })
     await connection.updateState()
-    assert.equal(connection.getState(), StateType.OfferSent)
+    assert.equal(connection.state, StateType.OfferSent)
     let data = await connection.serialize()
     const connection2 = await Connection.deserialize(data)
     assert.equal(connection2._handle, connection._handle)
@@ -122,20 +122,20 @@ describe('A Connection object with ', function () {
     assert.notEqual(connection._handle, undefined)
     await connection.connect({ sms: true })
     await connection.updateState()
-    assert.equal(connection.getState(), StateType.OfferSent)
+    assert.equal(connection.state, StateType.OfferSent)
   })
 
   it('call to updateState where no connection exists should have a state value of 0', async () => {
     const connection = new Connection()
     await connection.updateState()
-    assert.equal(connection.getState(), StateType.None)
+    assert.equal(connection.state, StateType.None)
   })
 
   it('call to updateState where connection exists but not connected should have a state value of 1', async () => {
     const connection = await Connection.create({ id: 'Unique ID 999' })
     assert.notEqual(connection._handle, undefined)
     await connection.updateState()
-    assert.equal(connection.getState(), StateType.Initialized)
+    assert.equal(connection.state, StateType.Initialized)
   })
 
   // connection_release tests
@@ -180,6 +180,7 @@ describe('A Connection object with ', function () {
     }
   }
 
+  // Fix the GC issue
   it('connection and GC deletes object should return null when get_data is called ', async function () {
     this.timeout(30000)
 
