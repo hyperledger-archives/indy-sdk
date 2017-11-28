@@ -27,12 +27,12 @@ describe('An issuerClaim', async function () {
 
   it('can have a source Id.', async function () {
     const claim = await new IssuerClaim('Bank Claim')
-    assert.equal(claim.getSourceId(), 'Bank Claim')
+    assert.equal(claim.sourceId, 'Bank Claim')
   })
 
   it('has a state of 0 after instanstiated', async function () {
     const claim = await new IssuerClaim('State Claim')
-    const state = await claim.getState()
+    const state = await claim.state
     assert.equal(state, 0)
   })
 
@@ -40,15 +40,15 @@ describe('An issuerClaim', async function () {
     const sourceId = 'Claim'
     config.sourceId = sourceId
     const claim = await IssuerClaim.create(config)
-    assert(claim.getClaimHandle() > 0)
-    assert.equal(claim.getSourceId(), sourceId)
+    assert(claim.handle > 0)
+    assert.equal(claim.sourceId, sourceId)
   })
 
   it('has state that can be found', async function () {
     config.sourceId = 'TestState'
     const claim = await IssuerClaim.create(config)
     await claim.updateState()
-    assert.equal(claim.getState(), 1)
+    assert.equal(claim.state, 1)
   })
 
   it('can be sent with a valid connection', async function () {
@@ -57,11 +57,11 @@ describe('An issuerClaim', async function () {
     let connection = await Connection.create({ id: '234' })
     await connection.connect()
     await connection.updateState()
-    assert.equal(2, connection.getState())
+    assert.equal(2, connection.state)
     const claim = await IssuerClaim.create(config)
     await claim.sendOffer(connection)
     await claim.updateState()
-    assert.equal(await claim.getState(), 2)
+    assert.equal(await claim.state, 2)
   })
 
   it('can be created, then serialized, then deserialized and have the same sourceId, state, and claimHandle', async function () {
@@ -71,8 +71,8 @@ describe('An issuerClaim', async function () {
     const jsonClaim = await claim.serialize()
     assert.equal(jsonClaim.state, StateType.Initialized)
     const claim2 = await IssuerClaim.deserialize(jsonClaim)
-    assert.equal(claim.getClaimHandle(), claim2.getClaimHandle())
-    assert.equal(claim.getState(), claim2.getState())
+    assert.equal(claim.handle, claim2.handle)
+    assert.equal(claim.state, claim2.state)
   })
 
   it('can be sent, then serialized, then deserialized', async function () {
@@ -91,9 +91,9 @@ describe('An issuerClaim', async function () {
     const claim2 = await IssuerClaim.deserialize(claimData)
     await claim.updateState()
     await claim2.updateState()
-    assert.equal(claim.getState(), StateType.OfferSent)
-    assert.equal(claim.getState(), claim2.getState())
-    assert.equal(claim.getClaimHandle(), claim2.getClaimHandle())
+    assert.equal(claim.state, StateType.OfferSent)
+    assert.equal(claim.state, claim2.state)
+    assert.equal(claim.handle, claim2.handle)
   })
 
   it('serialize without correct handle throws error', async function () {
@@ -109,7 +109,7 @@ describe('An issuerClaim', async function () {
     const sourceId = 'staticMethodCreation'
     config.sourceId = sourceId
     const claim = await IssuerClaim.create(config)
-    assert(claim.getSourceId(), sourceId)
+    assert(claim.sourceId, sourceId)
   })
 
   it('will have different claim handles even with the same sourceIds', async function () {
@@ -117,7 +117,7 @@ describe('An issuerClaim', async function () {
     config.sourceId = sourceId
     const claim = await IssuerClaim.create(config)
     const claim2 = await IssuerClaim.create(config)
-    assert.notEqual(claim.getClaimHandle(), claim2.getClaimHandle)
+    assert.notEqual(claim.handle, claim2.handle)
   })
 
   it('deserialize is a static method', async function () {
@@ -127,24 +127,24 @@ describe('An issuerClaim', async function () {
     const serializedJson = await claim.serialize()
 
     const claimDeserialized = await IssuerClaim.deserialize(serializedJson)
-    assert.equal(claimDeserialized.getState(), StateType.Initialized)
+    assert.equal(claimDeserialized.state, StateType.Initialized)
   })
 
   it('accepts claim attributes and schema sequence number', async function () {
     const sourceId = 'attributesAndSequenceNumber'
     config.sourceId = sourceId
     const claim = await IssuerClaim.create(config)
-    assert.equal(claim.getSourceId(), config.sourceId)
-    assert.equal(claim.getSchemaNum(), config.schemaNum)
-    assert.equal(claim.getAttr(), config.attr)
+    assert.equal(claim.sourceId, config.sourceId)
+    assert.equal(claim.schemaNum, config.schemaNum)
+    assert.equal(claim.attr, config.attr)
   })
 
   it('accepts a claim offer DID as part of create', async function () {
     const sourceId = 'claimOfferDidTest'
     config.sourceId = sourceId
     const claim = await IssuerClaim.create(config)
-    assert.equal(claim.getSourceId(), config.sourceId)
-    assert.equal(claim.getIssuedDid(), config.issuerDid)
+    assert.equal(claim.sourceId, config.sourceId)
+    assert.equal(claim.issuerDid, config.issuerDid)
   })
 
   it('throws exception for sending claim with invalid claim handle', async function () {
@@ -183,7 +183,7 @@ describe('An issuerClaim', async function () {
     const sourceId = 'Claim'
     let claim = await IssuerClaim.create({ ...config, sourceId })
     await claim.sendOffer(connection)
-    assert.equal(await claim.getState(), StateType.OfferSent)
+    assert.equal(await claim.state, StateType.OfferSent)
     // we serialize and deserialize because this is the only
     // way to fool the libcxs into thinking we've received a
     // valid claim requset.
@@ -193,11 +193,11 @@ describe('An issuerClaim', async function () {
     claim = await IssuerClaim.deserialize(jsonClaim)
     console.log('Claim Data' + claim.claimData)
     await claim.sendClaim(connection)
-    assert.equal(claim.getState(), StateType.Accepted)
+    assert.equal(claim.state, StateType.Accepted)
   })
 
   it('can be created from a json', async function () {
     const claim = await IssuerClaim.create(config)
-    expect(claim.getSourceId()).to.equal(config.sourceId)
+    expect(claim.sourceId).to.equal(config.sourceId)
   })
 })
