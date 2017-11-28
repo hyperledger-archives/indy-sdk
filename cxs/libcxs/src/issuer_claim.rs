@@ -81,7 +81,7 @@ impl IssuerClaim {
         }
 
         //TODO: call to libindy to encrypt payload
-        let to_did = connection::get_pw_did(connection_handle).unwrap();
+        let to_did = connection::get_pw_did(connection_handle)?;
         let from_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT).unwrap();
         let payload = format!("{{\"msg_type\":\"CLAIM_OFFER\",\"claim_name\":\"{}\",\"version\":\"0.1\",\"to_did\":\"{}\",\"from_did\":\"{}\",\"claim\":{},\"schema_seq_no\":{},\"issuer_did\":\"{}\",\"claim_offer_id\":\"{}\"}}", self.claim_name, to_did, from_did, self.claim_attributes, self.schema_seq_no, self.issuer_did, self.claim_id);
 
@@ -93,10 +93,7 @@ impl IssuerClaim {
                 return Err(x);
             },
             Ok(response) => {
-                self.msg_uid = match get_offer_details(&response) {
-                    Ok(x) => x,
-                    Err(x) => return Err(x),
-                };
+                self.msg_uid = get_offer_details(&response)?;
                 self.issued_did = to_did;
                 self.state = CxsStateType::CxsStateOfferSent;
                 return Ok(error::SUCCESS.code_num);
@@ -146,35 +143,23 @@ impl IssuerClaim {
             return Err(error::INVALID_CONNECTION_HANDLE.code_num);
         }
 
-        let to = connection::get_pw_did(connection_handle).unwrap();
+        let to = connection::get_pw_did(connection_handle)?;
         let attrs_with_encodings = self.create_attributes_encodings()?;
         let mut data;
         if settings::test_mode_enabled() {
             data = String::from("dummytestmodedata");
         } else {
             data = match self.claim_request.clone() {
-                Some(d) => match create_claim_payload_using_wallet(&self.claim_id, &d, &attrs_with_encodings, wallet::get_wallet_handle()) {
-                    Ok(p) => p,
-                    Err(e) => return Err(error::UNKNOWN_ERROR.code_num),
-                },
+                Some(d) => create_claim_payload_using_wallet(&self.claim_id, &d, &attrs_with_encodings, wallet::get_wallet_handle())?,
                 None => return Err(error::INVALID_CLAIM_REQUEST.code_num),
             };
             // append values we need for example 'from_did' and 'claim_id'
 
-            data = match append_value(&data, "from_did", &to){
-                Ok(d) => d,
-                Err(_) => return Err(error::INVALID_JSON.code_num),
-            };
+            data = append_value(&data, "from_did", &to)?;
 
-            data = match append_value(&data, "version", "0.1"){
-                Ok(d) => d,
-                Err(_) => return Err(error::INVALID_JSON.code_num),
-            };
+            data = append_value(&data, "version", "0.1")?;
 
-            data = match append_value(&data, "msg_type", "CLAIM"){
-                Ok(d) => d,
-                Err(_) => return Err(error::INVALID_JSON.code_num),
-            };
+            data = append_value(&data, "msg_type", "CLAIM")?;
 
         }
         match messages::send_message().to(&to).msg_type("claim").edge_agent_payload(&data).send() {
@@ -183,13 +168,7 @@ impl IssuerClaim {
                 return Err(x);
             },
             Ok(response) => {
-                self.msg_uid = match get_offer_details(&response) {
-                    Ok(x) => x,
-                    Err(x) => {
-                        info!("Error in response: {}", x);
-                        return Err(x);
-                    },
-                };
+                self.msg_uid = get_offer_details(&response)?;
                 self.issued_did = to;
                 self.state = CxsStateType::CxsStateAccepted;
                 return Ok(error::SUCCESS.code_num);
@@ -475,7 +454,7 @@ pub fn issuer_claim_create(schema_seq_no: u32,
     new_issuer_claim.state = CxsStateType::CxsStateInitialized;
 
     info!("inserting handle {} into claim_issuer table", new_handle);
-    ISSUER_CLAIM_MAP.lock().unwrap().insert(new_handle, new_issuer_claim);;
+    ISSUER_CLAIM_MAP.lock().unwrap().insert(new_handle, new_issuer_claim);
 
     Ok(new_handle)
 }

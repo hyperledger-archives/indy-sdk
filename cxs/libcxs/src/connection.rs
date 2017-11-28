@@ -184,11 +184,8 @@ pub fn get_state(handle: u32) -> u32 {
 
 pub fn create_agent_pairwise(handle: u32) -> Result<u32, u32> {
     let enterprise_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENCY).unwrap();
-    let pw_did = match get_pw_did(handle) {
-        Ok(x) => x,
-        Err(x) => return Err(x),
-    };
-    let pw_verkey = get_pw_verkey(handle).unwrap();
+    let pw_did = get_pw_did(handle)?;
+    let pw_verkey = get_pw_verkey(handle)?;
 
     match messages::create_keys()
         .for_did(&pw_did)
@@ -202,10 +199,7 @@ pub fn create_agent_pairwise(handle: u32) -> Result<u32, u32> {
 }
 
 pub fn update_agent_profile(handle: u32) -> Result<u32, u32> {
-    let pw_did = match get_pw_did(handle) {
-        Ok(x) => x,
-        Err(x) => return Err(x),
-    };
+    let pw_did = get_pw_did(handle)?;
 
     match messages::update_data()
         .to(&pw_did)
