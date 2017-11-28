@@ -27,7 +27,7 @@ static SERIALIZED_CLAIM: &str = r#"{"source_id":"Claim For Driver's License","ha
 static CLAIM_DATA: &str = r#"{"sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"], "name":["Alex","1139481716457488690172217916278103335"], "height":["175","175"], "age":["28","28"] }"#;
 
 static CLAIM_DEF_ISSUER_DID: &str = "V4SGRU86Z58d6TV7PBUe6f";
-static CLAIM_DEF_SCHEMA_SEQ_NUM: u32 = 12;
+static CLAIM_DEF_SCHEMA_SEQ_NUM: u32 = 103;
 
 
 
@@ -66,9 +66,10 @@ fn test_demo(){
     // Create Claim Offer ***************************************************************
     let source_id = "Claim For Driver's License";
     let claim_name = "Driver's License";
+    let claim_id = "cCanHnpFAD";
     let claim_data:serde_json::Value = serde_json::from_str(CLAIM_DATA).unwrap(); // this format will make it easier to modify in the futre
     let ledger_issuer_did = "V4SGRU86Z58d6TV7PBUe6f";
-    let ledger_schema_seq_num = 12;
+    let ledger_schema_seq_num = 103;
     let (err, claim_handle) = create_claim_offer(claim_name, source_id, claim_data, ledger_issuer_did, ledger_schema_seq_num);
     assert_eq!(err, 0);
     assert!(claim_handle>0);
@@ -112,7 +113,7 @@ fn test_demo(){
 
     // Send Claim Offer ***************************************************************
     println!("ABOUT TO SEND CLAIM OFFER");
-    std::thread::sleep(Duration::from_millis(10000));
+    std::thread::sleep(Duration::from_millis(5000));
     let err = send_claim_offer(claim_handle, connection_handle);
     assert_eq!(err,0);
 
