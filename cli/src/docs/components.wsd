@@ -6,37 +6,20 @@ interface CommandParamCompleter {
 
 interface CommandParam {
     +is_optional() -> bool
-    +name() -> &str
+    +id() -> &str
     +help() -> &str
     +completer() -> Option<&Completer>
 }
-
-CommandParam ..> CommandParamCompleter
+CommandParamCompleter ..> CommandParam
 
 interface Command {
-    +name() -> &str
+    +id() -> &str
     +help() -> &str
     +main_param()-> &CommandParam
     +params() -> &[&CommandParam]
-    +execute(param_values: Map<String, String>, app_cnxt: &ApplicationContext) -> ???
+    +execute(param_values: Map<String, String>)
 }
-
-Command ..> CommandParam
-
-interface CommandGroup {
-    +name() -> &str,
-    +help() -> &str,    
-}
-
-enum CommandError {
-    UnknownCommandError
-    InvalidInternalStateError
-    TerminationError
-}
-
-CommandExecutor ..> Command
-CommandExecutor ..> CommandGroup
-CommandExecutor ..> CommandError
+CommandParam ..> Command
 
 class EntryPoint {
     +main()
@@ -47,33 +30,42 @@ class EntryPoint {
 class ApplicationContext {
     +set_cmd_prompt()
     +set_progress()
-    +...()
+    +exit()
 }
-
 EntryPoint --* ApplicationContext
-
-class CommandExecutor {
-    +registerCommandGroup(group: &CommandGroup) -> ()
-    +registerCommand(comamnd: Command, group_name: &str) -> ()
-    +execute(line: &str): Result<CommandError, ()>
-    +complete(line: &str, position: usize): Vec<String>        
-}
-
-EntryPoint --* CommandExecutor
 
 class LibindyContext
 EntryPoint --* LibindyContext
 
-class LibindyWrapper
-EntryPoint --* LibindyWrapper
+class Libindy
+EntryPoint --* Libindy
+
+class WalletCreateCommand
+Command --|> WalletCreateCommand
+EntryPoint --* WalletCreateCommand
+ApplicationContext --o WalletCreateCommand
+LibindyContext --o WalletCreateCommand
+Libindy --o WalletCreateCommand
+
+interface CommandGroup {
+    +name() -> &str,
+    +help() -> &str,
+}
 
 class WalletCommandGroup
 CommandGroup --|> WalletCommandGroup
 EntryPoint --* WalletCommandGroup
 
-class WalletCreateCommand 
-Command --|> WalletCreateCommand
-EntryPoint --* WalletCreateCommand
-
+class CommandExecutor {
+    +registerCommandGroup(group: &CommandGroup) -> ()
+    +registerCommand(comamnd: Command, group_name: &str) -> ()
+    +execute(line: &str): Result<CommandError, ()>
+    +complete(line: &str, position: usize): Vec<String>
+}
+EntryPoint --* CommandExecutor
+Command ..> CommandExecutor
+CommandGroup ..> CommandExecutor
+WalletCreateCommand --o CommandExecutor
+WalletCommandGroup --o CommandExecutor
 
 @enduml
