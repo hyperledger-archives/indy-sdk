@@ -21,6 +21,11 @@ interface Command {
 }
 CommandParam ..> Command
 
+interface CommandGroup {
+    +id() -> &str,
+    +help() -> &str,
+}
+
 class EntryPoint {
     +main()
     -execReadline()
@@ -47,20 +52,15 @@ ApplicationContext --o WalletCreateCommand
 LibindyContext --o WalletCreateCommand
 Libindy --o WalletCreateCommand
 
-interface CommandGroup {
-    +name() -> &str,
-    +help() -> &str,
-}
-
 class WalletCommandGroup
 CommandGroup --|> WalletCommandGroup
 EntryPoint --* WalletCommandGroup
 
 class CommandExecutor {
-    +registerCommandGroup(group: &CommandGroup) -> ()
-    +registerCommand(comamnd: Command, group_name: &str) -> ()
-    +execute(line: &str): Result<CommandError, ()>
-    +complete(line: &str, position: usize): Vec<String>
+    +addGroup(group: &CommandGroup) -> ()
+    +addCommand(group_id: &str, command: &Command)
+    +execute(line: &str)
+    +complete(line: &str, position: usize)
 }
 EntryPoint --* CommandExecutor
 Command ..> CommandExecutor
