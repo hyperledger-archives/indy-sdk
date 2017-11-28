@@ -1,0 +1,79 @@
+@startuml CLI components
+
+interface CommandParamCompleter {
+    complete(value: &str) -> String
+}
+
+interface CommandParam {
+    +is_optional() -> bool
+    +name() -> &str
+    +help() -> &str
+    +completer() -> Option<&Completer>
+}
+
+CommandParam ..> CommandParamCompleter
+
+interface Command {
+    +name() -> &str
+    +help() -> &str
+    +main_param()-> &CommandParam
+    +params() -> &[&CommandParam]
+    +execute(param_values: Map<String, String>, app_cnxt: &ApplicationContext) -> ???
+}
+
+Command ..> CommandParam
+
+interface CommandGroup {
+    +name() -> &str,
+    +help() -> &str,    
+}
+
+enum CommandError {
+    UnknownCommandError
+    InvalidInternalStateError
+    TerminationError
+}
+
+CommandExecutor ..> Command
+CommandExecutor ..> CommandGroup
+CommandExecutor ..> CommandError
+
+class EntryPoint {
+    +main()
+    -execReadline()
+    -execBatch()
+}
+
+class ApplicationContext {
+    +set_cmd_prompt()
+    +set_progress()
+    +...()
+}
+
+EntryPoint --* ApplicationContext
+
+class CommandExecutor {
+    +registerCommandGroup(group: &CommandGroup) -> ()
+    +registerCommand(comamnd: Command, group_name: &str) -> ()
+    +execute(line: &str): Result<CommandError, ()>
+    +complete(line: &str, position: usize): Vec<String>        
+}
+
+EntryPoint --* CommandExecutor
+
+class LibindyContext
+EntryPoint --* LibindyContext
+
+class LibindyWrapper
+EntryPoint --* LibindyWrapper
+
+class WalletCommandGroup
+CommandGroup --|> WalletCommandGroup
+EntryPoint --* WalletCommandGroup
+
+class WalletCreateCommand 
+Command --|> WalletCreateCommand
+EntryPoint --* WalletCreateCommand
+
+
+@enduml
