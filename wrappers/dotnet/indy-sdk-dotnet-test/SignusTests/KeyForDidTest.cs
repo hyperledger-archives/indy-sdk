@@ -24,12 +24,12 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestKeyForDidWorksForTheirDid()
         {
-            var identityJson = string.Format("{{\"did\":\"{0}\", \"verkey\":\"{1}\"}}", DID_FOR_MY1_SEED, VERKEY_FOR_MY1_SEED);
+            var identityJson = string.Format(IDENTITY_JSON_TEMPLATE, DID_MY1, VERKEY_MY1);
             await Signus.StoreTheirDidAsync(wallet, identityJson);
 
-            var receivedKey = await Signus.KeyForDidAsync(pool, wallet, DID_FOR_MY1_SEED);
+            var receivedKey = await Signus.KeyForDidAsync(pool, wallet, DID_MY1);
 
-            Assert.AreEqual(VERKEY_FOR_MY1_SEED, receivedKey);
+            Assert.AreEqual(VERKEY_MY1, receivedKey);
         }
 
         [TestMethod]
@@ -38,22 +38,22 @@ namespace Hyperledger.Indy.Test.SignusTests
             var result = await Signus.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var trusteeDid = result.Did;
 
-            var identityJson = string.Format("{{\"did\":\"{0}\", \"verkey\":\"{1}\"}}", DID_FOR_MY1_SEED, VERKEY_FOR_MY1_SEED);
+            var identityJson = string.Format(IDENTITY_JSON_TEMPLATE, DID_MY1, VERKEY_MY1);
             await Signus.StoreTheirDidAsync(wallet, identityJson);
 
-            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, DID_FOR_MY1_SEED, VERKEY_FOR_MY1_SEED, null, null);
+            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, DID_MY1, VERKEY_MY1, null, null);
             await Ledger.SignAndSubmitRequestAsync(pool, wallet, trusteeDid, nymRequest);
 
-            var receivedKey = await Signus.KeyForDidAsync(pool, wallet, DID_FOR_MY1_SEED);
+            var receivedKey = await Signus.KeyForDidAsync(pool, wallet, DID_MY1);
 
-            Assert.AreEqual(VERKEY_FOR_MY1_SEED, receivedKey);
+            Assert.AreEqual(VERKEY_MY1, receivedKey);
         }
 
         [TestMethod]
         public async Task TestKeyForDidWorksForNoKey()
         {
             var ex = await Assert.ThrowsExceptionAsync<InvalidStateException>(() =>
-               Signus.KeyForDidAsync(pool, wallet, DID_FOR_MY2_SEED)
+               Signus.KeyForDidAsync(pool, wallet, DID_MY2)
            );
         }
     }
