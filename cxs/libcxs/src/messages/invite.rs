@@ -181,10 +181,7 @@ impl GeneralMessage for CreateKeyMsg  {
     fn send(&mut self) -> Result<String, u32> {
         let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
-        let json_msg = match self.serialize_message() {
-            Ok(x) => x,
-            Err(x) => return Err(x),
-        };
+        let json_msg = self.serialize_message()?;
 
         match httpclient::post(&json_msg, &url) {
             Err(_) => Err(error::POST_MSG_FAILURE.code_num),
@@ -257,10 +254,7 @@ impl GeneralMessage for SendInvite{
     fn send(&mut self) -> Result<String, u32> {
         let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
-        let json_msg = match self.serialize_message() {
-            Ok(x) => x,
-            Err(x) => return Err(x),
-        };
+        let json_msg = self.serialize_message()?;
 
         match httpclient::post(&json_msg, &url) {
             Err(_) => Err(error::POST_MSG_FAILURE.code_num),
@@ -325,10 +319,7 @@ impl GeneralMessage for UpdateProfileData{
     fn send(&mut self) -> Result<String, u32> {
         let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
-        let json_msg = match self.serialize_message() {
-            Ok(x) => x,
-            Err(x) => return Err(x),
-        };
+        let json_msg = self.serialize_message()?;
 
         match httpclient::post(&json_msg, &url) {
             Err(_) => Err(error::POST_MSG_FAILURE.code_num),
@@ -456,10 +447,7 @@ impl GeneralMessage for AcceptInvitation{
     fn send(&mut self) -> Result<String, u32> {
         let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
-        let json_msg = match self.serialize_message() {
-            Ok(x) => x,
-            Err(x) => return Err(x),
-        };
+        let json_msg = self.serialize_message()?;
 
         match httpclient::post(&json_msg, &url) {
             Err(_) => Err(error::POST_MSG_FAILURE.code_num),
