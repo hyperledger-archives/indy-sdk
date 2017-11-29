@@ -7,25 +7,26 @@ pub mod commands;
 pub mod libindy;
 pub mod utils;
 
-//use commands::CommandExecutor;
+use commands::CommandExecutor;
 
 use linefeed::{Reader, ReadResult};
 use linefeed::complete::PathCompleter;
 
-fn main() {
+use std::rc::Rc;
 
-    let mut reader = Reader::new("path-completion-demo").unwrap();
-    //let mut command_executor = CommandExecutor::new();
+fn main() {    
 
-    //reader.set_completer(Rc::new(PathCompleter));
-    reader.set_prompt("path> ");
-    //reader.set_completer()
+    let mut reader = Reader::new("indy-cli").unwrap();
+    let mut command_executor = CommandExecutor::new();
+
+    reader.set_completer(Rc::new(PathCompleter));
+    reader.set_prompt("indy> ");
 
     while let Ok(ReadResult::Input(line)) = reader.read_line() {
         println!("read input: {:?}", line);
 
         if !line.trim().is_empty() {
-            //command_executor.execute(line.trim());
+            command_executor.execute(line.trim());
             reader.add_history(line);
         }
     }
