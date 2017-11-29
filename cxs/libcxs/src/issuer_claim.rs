@@ -185,7 +185,7 @@ impl IssuerClaim {
             }
         };
 
-        let mut map = match attributes.as_object_mut() {
+        let map = match attributes.as_object_mut() {
             Some(x) => x,
             None => {
                 warn!("Invalid Json for Attribute data");
@@ -193,8 +193,8 @@ impl IssuerClaim {
             }
         };
 
-        for (attr, mut vec) in map.iter_mut(){
-            let mut list = match vec.as_array_mut() {
+        for (attr, vec) in map.iter_mut(){
+            let list = match vec.as_array_mut() {
                 Some(x) => x,
                 None => {
                     warn!("Invalid Json for Attribute data");

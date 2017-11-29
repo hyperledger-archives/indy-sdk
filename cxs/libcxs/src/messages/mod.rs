@@ -1,8 +1,18 @@
+extern crate serde;
+extern crate rmp_serde;
+
+pub mod create_key;
 pub mod invite;
 pub mod validation;
 pub mod message;
 
-use self::invite::{CreateKeyMsg, SendInvite, AcceptInvitation, UpdateProfileData};
+use settings;
+use utils::crypto;
+use utils::wallet;
+use utils::error;
+use self::rmp_serde::encode;
+use self::create_key::CreateKeyMsg;
+use self::invite::{SendInvite, UpdateProfileData};
 use self::message::{GetMessages, SendMessage};
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
@@ -10,9 +20,57 @@ pub enum MessageType {
     EmptyPayload{},
     CreateKeyMsg(CreateKeyMsg),
     SendInviteMsg(SendInvite),
-    AcceptInviteMsg(AcceptInvitation),
     UpdateInfoMsg(UpdateProfileData),
     GetMessagesMsg(GetMessages),
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
+pub struct Bundled<T> {
+    bundled: Vec<T>,
+}
+
+impl<T> Bundled<T> {
+    pub fn create(bundled: T) -> Bundled<T> {
+        let mut vec = Vec::new();
+        vec.push(bundled);
+        Bundled {
+            bundled: vec,
+        }
+    }
+}
+
+pub fn bundle_for_agency(message: Vec<u8>, did: &str) -> Result<Vec<u8>, u32> {
+    let agency_vk = settings::get_config_value(settings::CONFIG_AGENCY_PAIRWISE_VERKEY).unwrap();
+    let agent_vk = settings::get_config_value(settings::CONFIG_AGENT_PAIRWISE_VERKEY).unwrap();
+    let my_vk = settings::get_config_value(settings::CONFIG_ENTERPRISE_VERKEY).unwrap();
+
+    let msg = crypto::prep_msg(wallet::get_wallet_handle(), &my_vk, &agent_vk, &message[..])?;
+
+    let outer = Forward {
+        msg_type: "{\"name\":\"FWD\",\"ver\":\"0.1\"}".to_owned(),
+        fwd: did.to_owned(),
+        msg,
+    };
+
+    let bundle = Bundled::create(outer);
+    let msg = match encode::to_vec_named(&bundle) {
+        Ok(x) => x,
+        Err(x) => {
+            error!("Could not convert bundle to messagepack: {}", x);
+            return Err(error::INVALID_MSGPACK.code_num)
+        },
+    };
+    crypto::prep_anonymous_msg(&agency_vk, &msg[..])
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
+struct Forward {
+    #[serde(rename = "@type")]
+    msg_type: String,
+    #[serde(rename = "@fwd")]
+    fwd: String,
+    #[serde(rename = "@msg")]
+    msg: Vec<u8>,
 }
 
 pub trait GeneralMessage{
@@ -36,9 +94,12 @@ pub trait GeneralMessage{
     }
 
     fn serialize_message(&mut self) -> Result<String, u32>;
+    fn set_to_vk(&mut self, to_vk: String);
     fn set_to_did(&mut self, to_did: String);
     fn set_validate_rc(&mut self, rc: u32);
     fn send(&mut self) -> Result<String, u32>;
+    fn to_post(&mut self) -> Result<Vec<u8>, u32>;
+    fn send_enc(&mut self) -> Result<String, u32>;
 
 }
 
@@ -53,10 +114,6 @@ pub fn send_invite() -> SendInvite{
 
 pub fn update_data() -> UpdateProfileData{
     UpdateProfileData::create()
-}
-
-pub fn accept_invitation() -> AcceptInvitation{
-    AcceptInvitation::create()
 }
 
 pub fn get_messages() -> GetMessages { GetMessages::create() }

@@ -57,6 +57,8 @@ impl SignusUtils {
     }
 
     pub fn store_their_did_from_parts(wallet_handle: i32, their_did: &str, their_verkey: &str) -> Result<(), i32> {
+        if settings::test_mode_enabled() { return Ok(()) }
+
         let (store_their_did_sender, store_their_did_receiver) = channel();
         let store_their_did_cb = Box::new(move |err| { store_their_did_sender.send((err)).unwrap(); });
         let (store_their_did_command_handle, store_their_did_callback) = CallbackUtils::closure_to_store_their_did_cb(store_their_did_cb);

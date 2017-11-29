@@ -26,6 +26,7 @@ pub static INVALID_ISSUER_CLAIM_HANDLE: Error = Error{code_num:1015, message:"In
 pub static INVALID_JSON: Error = Error{code_num:1016, message:"Invalid JSON string"};
 pub static INVALID_PROOF_HANDLE: Error = Error{code_num:1017, message:"Invalid Proof Handle"};
 pub static INVALID_CLAIM_REQUEST: Error = Error{code_num:1018, message:"Invalid Claim Request"};
+pub static INVALID_MSGPACK: Error = Error{code_num:1019, message:"Invalid MessagePack"};
 
 lazy_static! {
     static ref ERROR_MESSAGES: HashMap<u32, &'static str> = {
@@ -47,6 +48,7 @@ lazy_static! {
         insert_message(&mut m, &NOT_BASE58);
         insert_message(&mut m, &INVALID_ISSUER_CLAIM_HANDLE);
         insert_message(&mut m, &INVALID_JSON);
+        insert_message(&mut m, &INVALID_MSGPACK);
         m
     };
 }

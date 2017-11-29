@@ -59,17 +59,11 @@ pub fn create_claim_request_from_str(s: &str) -> Result<ClaimRequest, u32>{
 #[cfg(test)]
 pub mod tests{
     use super::*;
-    use utils::wallet::tests::make_wallet;
     use std::sync::mpsc::channel;
     use utils::callback::CallbackUtils;
     use utils::timeout::TimeoutUtils;
     use std::ffi::CString;
     use std::ptr::null;
-
-    pub fn create_dummy_wallet(wallet_name: &str) -> Result<u32,u32>{
-        make_wallet(wallet_name);
-        Ok(0)
-    }
 
     pub fn create_default_schema(schema_seq_no: u32) -> String {
         let schema = format!(r#"{{
@@ -77,7 +71,7 @@ pub mod tests{
                             "data":{{
                                 "name":"gvt",
                                 "version":"1.0",
-                                "keys":["address1","address2","zip","state", "city"]
+                                "attr_names":["address1","address2","zip","state", "city"]
                             }}
                          }}"#, schema_seq_no);
         String::from(schema)

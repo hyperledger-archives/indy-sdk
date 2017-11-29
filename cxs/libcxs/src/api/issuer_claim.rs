@@ -193,7 +193,6 @@ mod tests {
     use connection;
     use utils::wallet;
     use api::CxsStateType;
-    use utils::issuer_claim::tests::{ create_dummy_wallet };
     use utils::issuer_claim::create_claim_request_from_str;
     use utils::issuer_claim::CLAIM_REQ_STRING;
     use utils::issuer_claim::tests::put_claim_def_in_issuer_wallet;
@@ -333,7 +332,7 @@ mod tests {
         issuer_claim::set_claim_request(handle, &claim_request).unwrap();
         assert_eq!(issuer_claim::get_state(handle),CxsStateType::CxsStateRequestReceived as u32);
         let schema = create_default_schema(schema_seq_num);
-        let wallet_name = create_dummy_wallet("dummy_wallet");
+        wallet::tests::make_wallet("test_cxs_issuer_send_a_claim");
         put_claim_def_in_issuer_wallet(&settings::get_config_value(
             settings::CONFIG_ENTERPRISE_DID).unwrap(), &schema, get_wallet_handle());
         /**********************************************************************/
