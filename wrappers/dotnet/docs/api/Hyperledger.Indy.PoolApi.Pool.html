@@ -1,0 +1,394 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Class Pool
+   | Hyperledger Indy .NET Wrapper </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Class Pool
+   | Hyperledger Indy .NET Wrapper ">
+    <meta name="generator" content="docfx 2.25.1.0">
+    
+    <link rel="shortcut icon" href="../images/favicon.png">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="../">
+    <meta property="docfx:newtab" content="true">
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../images/hyperledger_logo.png" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+        
+        <div id="search-results">
+          <div class="search-list"></div>
+          <div class="sr-items"></div>
+          <ul id="pagination"></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div id="sidetoc"></div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="Hyperledger.Indy.PoolApi.Pool">
+  
+  
+  <h1 id="Hyperledger_Indy_PoolApi_Pool" data-uid="Hyperledger.Indy.PoolApi.Pool" class="text-break">Class Pool
+  </h1>
+  <div class="markdown level0 summary"><p>Represents a connection to a pool of ledger nodes and provides static methods for managing
+connections to pools.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.object(v=vs.110).aspx">Object</a></div>
+    <div class="level1"><span class="xref">Pool</span></div>
+  </div>
+  <div classs="implements">
+    <h5>Implements</h5>
+    <div><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.idisposable(v=vs.110).aspx">IDisposable</a></div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.PoolApi.html">Hyperledger.Indy.PoolApi</a></h6>
+  <h6><strong>Assembly</strong>: Hyperledger.Indy.Sdk.dll</h6>
+  <h5 id="Hyperledger_Indy_PoolApi_Pool_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public sealed class Pool : Object, IDisposable</code></pre>
+  </div>
+  <h3 id="methods">Methods
+  </h3>
+  <a id="Hyperledger_Indy_PoolApi_Pool_CloseAsync_" data-uid="Hyperledger.Indy.PoolApi.Pool.CloseAsync*"></a>
+  <h4 id="Hyperledger_Indy_PoolApi_Pool_CloseAsync" data-uid="Hyperledger.Indy.PoolApi.Pool.CloseAsync">CloseAsync()</h4>
+  <div class="markdown level1 summary"><p>Closes the pool.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Task CloseAsync()</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a></td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a> that completes when the operation completes.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_PoolApi_Pool_CloseAsync_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><div class="NOTE"><h5>note</h5><p>Once a Pool instance is closed it cannot be opened again.  Instead call the 
+<a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html#Hyperledger_Indy_PoolApi_Pool_OpenPoolLedgerAsync_System_String_System_String_">OpenPoolLedgerAsync(String, String)</a> method to open a new Pool instance.</p></div>
+</div>
+  <a id="Hyperledger_Indy_PoolApi_Pool_CreatePoolLedgerConfigAsync_" data-uid="Hyperledger.Indy.PoolApi.Pool.CreatePoolLedgerConfigAsync*"></a>
+  <h4 id="Hyperledger_Indy_PoolApi_Pool_CreatePoolLedgerConfigAsync_System_String_System_String_" data-uid="Hyperledger.Indy.PoolApi.Pool.CreatePoolLedgerConfigAsync(System.String,System.String)">CreatePoolLedgerConfigAsync(String, String)</h4>
+  <div class="markdown level1 summary"><p>Creates a new local pool configuration with the specified name that can be used later to open a connection to 
+pool nodes.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task CreatePoolLedgerConfigAsync(string configName, string config)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">configName</span></td>
+        <td><p>The name for the configuration.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">config</span></td>
+        <td><p>The configuration JSON.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a></td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> with no return value that completes when
+the configuration is created.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_PoolApi_Pool_CreatePoolLedgerConfigAsync_System_String_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+If the configuration specified in the <code data-dev-comment-type="paramref" class="paramref">config</code> parameter is null then the 
+default configuration will be used, however if specified the value should adhere to the following
+JSON format:
+<pre><code>{
+    &quot;genesis_txn&quot;: &quot;path/to/genesis/transaction/file&quot;
+}</code></pre>
+If the value of the <code>genesis_txn</code> key in the JSON is null then a default file will be
+used.  If the file specified does not exist it will be created.
+</p>
+</div>
+  <h5 id="Hyperledger_Indy_PoolApi_Pool_CreatePoolLedgerConfigAsync_System_String_System_String__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html#Hyperledger_Indy_PoolApi_Pool_OpenPoolLedgerAsync_System_String_System_String_">OpenPoolLedgerAsync(String, String)</a></div>
+      <div><a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html#Hyperledger_Indy_PoolApi_Pool_DeletePoolLedgerConfigAsync_System_String_">DeletePoolLedgerConfigAsync(String)</a></div>
+  </div>
+  <a id="Hyperledger_Indy_PoolApi_Pool_DeletePoolLedgerConfigAsync_" data-uid="Hyperledger.Indy.PoolApi.Pool.DeletePoolLedgerConfigAsync*"></a>
+  <h4 id="Hyperledger_Indy_PoolApi_Pool_DeletePoolLedgerConfigAsync_System_String_" data-uid="Hyperledger.Indy.PoolApi.Pool.DeletePoolLedgerConfigAsync(System.String)">DeletePoolLedgerConfigAsync(String)</h4>
+  <div class="markdown level1 summary"><p>Deletes an existing pool configuration.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task DeletePoolLedgerConfigAsync(string configName)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">configName</span></td>
+        <td><p>The name of the configuration to delete.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a></td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> with no return value that completes when
+the configuration is deleted.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_PoolApi_Pool_DeletePoolLedgerConfigAsync_System_String__seealso">See Also</h5>
+  <div class="seealso">
+      <div><a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html#Hyperledger_Indy_PoolApi_Pool_CreatePoolLedgerConfigAsync_System_String_System_String_">CreatePoolLedgerConfigAsync(String, String)</a></div>
+  </div>
+  <a id="Hyperledger_Indy_PoolApi_Pool_Dispose_" data-uid="Hyperledger.Indy.PoolApi.Pool.Dispose*"></a>
+  <h4 id="Hyperledger_Indy_PoolApi_Pool_Dispose" data-uid="Hyperledger.Indy.PoolApi.Pool.Dispose">Dispose()</h4>
+  <div class="markdown level1 summary"><p>Disposes of resources.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void Dispose()</code></pre>
+  </div>
+  <a id="Hyperledger_Indy_PoolApi_Pool_Finalize_" data-uid="Hyperledger.Indy.PoolApi.Pool.Finalize*"></a>
+  <h4 id="Hyperledger_Indy_PoolApi_Pool_Finalize" data-uid="Hyperledger.Indy.PoolApi.Pool.Finalize">Finalize()</h4>
+  <div class="markdown level1 summary"><p>Finalizes the resource during GC if it hasn&apos;t been already.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">protected override void Finalize()</code></pre>
+  </div>
+  <a id="Hyperledger_Indy_PoolApi_Pool_OpenPoolLedgerAsync_" data-uid="Hyperledger.Indy.PoolApi.Pool.OpenPoolLedgerAsync*"></a>
+  <h4 id="Hyperledger_Indy_PoolApi_Pool_OpenPoolLedgerAsync_System_String_System_String_" data-uid="Hyperledger.Indy.PoolApi.Pool.OpenPoolLedgerAsync(System.String,System.String)">OpenPoolLedgerAsync(String, String)</h4>
+  <div class="markdown level1 summary"><p>Opens a pool and connects to the ledger nodes.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;Pool&gt; OpenPoolLedgerAsync(string configName, string config)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">configName</span></td>
+        <td><p>The name of the pool configuration to use.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="parametername">config</span></td>
+        <td><p>The runtime configuration to use.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html">Pool</a>&gt;</td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task&lt;TResult&gt;</a> that resolves to a Pool instance once the pool is opened.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Hyperledger_Indy_PoolApi_Pool_OpenPoolLedgerAsync_System_String_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>A Pool cannot be opened unless the a pool configuration with the specified name was previously
+configured using the <a class="xref" href="Hyperledger.Indy.PoolApi.Pool.html#Hyperledger_Indy_PoolApi_Pool_CreatePoolLedgerConfigAsync_System_String_System_String_">CreatePoolLedgerConfigAsync(String, String)</a> method.</p>
+<p>When opening a pool the runtime configuration can be specified using the <code data-dev-comment-type="paramref" class="paramref">config</code>
+parameter, which expects a JSON string with the following format:</p>
+<pre><code>{
+    &quot;refresh_on_open&quot;: bool (optional), Forces pool ledger to be refreshed immediately after opening.
+                     Defaults to true.
+    &quot;auto_refresh_time&quot;: int (optional), After this time in minutes pool ledger will be automatically refreshed.
+                       Use 0 to disable automatic refresh. Defaults to 24*60.
+    &quot;network_timeout&quot;: int (optional), Network timeout for communication with nodes in milliseconds.
+                      Defaults to 20000.
+}</code></pre>
+
+<p>If the <code data-dev-comment-type="paramref" class="paramref">config</code> parameter is null then the default configuration will be used.</p>
+<div class="NOTE"><h5>note</h5><p>Attempting to open a pool with the same name more than once will result in an error.</p></div>
+</div>
+  <a id="Hyperledger_Indy_PoolApi_Pool_RefreshAsync_" data-uid="Hyperledger.Indy.PoolApi.Pool.RefreshAsync*"></a>
+  <h4 id="Hyperledger_Indy_PoolApi_Pool_RefreshAsync" data-uid="Hyperledger.Indy.PoolApi.Pool.RefreshAsync">RefreshAsync()</h4>
+  <div class="markdown level1 summary"><p>Refreshes a local copy of the pool and updates the pool&apos;s node connections.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public Task RefreshAsync()</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a></td>
+        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a> that completes when the operation completes.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="implements">Implements</h3>
+  <div>
+      <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.idisposable(v=vs.110).aspx">IDisposable</a>
+  </div>
+</article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+            Copyright &copy; 2017 The Linux Foundation&reg;
+            
+          </div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>
