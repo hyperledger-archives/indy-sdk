@@ -25,8 +25,7 @@ namespace Hyperledger.Indy.Test.DemoTests
             await Ledger.SignAndSubmitRequestAsync(pool, wallet, trusteeDid, nymRequest);
 
             // 4. Start replacing of keys
-            var newKeys = await Signus.ReplaceKeysStartAsync(wallet, myDid, "{}");
-            var newVerkey = newKeys.VerKey;
+            var newVerkey = await Signus.ReplaceKeysStartAsync(wallet, myDid, "{}");
 
             // 5. Build and send Nym Request with new key
             nymRequest = await Ledger.BuildNymRequestAsync(myDid, myDid, newVerkey, null, null);

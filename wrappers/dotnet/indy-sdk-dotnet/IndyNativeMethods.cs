@@ -451,8 +451,7 @@ namespace Hyperledger.Indy
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="did">The created DID.</param>
         /// <param name="verkey">The verification key for the signature.</param>
-        /// <param name="pk">The public key for decryption.</param>
-        internal delegate void CreateAndStoreMyDidResultDelegate(int xcommand_handle, int err, string did, string verkey, string pk);
+        internal delegate void CreateAndStoreMyDidResultDelegate(int xcommand_handle, int err, string did, string verkey);
 
         /// <summary>
         /// Generates new keys (signing and encryption keys) for an existing
@@ -473,8 +472,7 @@ namespace Hyperledger.Indy
         /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
         /// <param name="err">The outcome of execution of the command.</param>
         /// <param name="verkey">The key for verification of signature.</param>
-        /// <param name="pk">The public key for decryption.</param>
-        internal delegate void ReplaceKeysStartResultDelegate(int xcommand_handle, int err, string verkey, string pk);
+        internal delegate void ReplaceKeysStartResultDelegate(int xcommand_handle, int err, string verkey);
 
         /// <summary>
         /// Apply temporary keys as main for an existing DID (owned by the caller of the library).
@@ -576,6 +574,7 @@ namespace Hyperledger.Indy
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
         /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
+        /// <param name="pool_handle">pool handle (created by open_pool).</param>
         /// <param name="my_did">DID</param>
         /// <param name="did">DID that signed the message</param>
         /// <param name="encrypted_msg_raw">encrypted message as a byte array.</param>
@@ -585,7 +584,7 @@ namespace Hyperledger.Indy
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_decrypt(int command_handle, IntPtr wallet_handle, string my_did, string did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, DecryptResultDelegate cb);
+        internal static extern int indy_decrypt(int command_handle, IntPtr wallet_handle, IntPtr pool_handle, string my_did, string did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, DecryptResultDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the indy_decrypt function.
@@ -631,6 +630,46 @@ namespace Hyperledger.Indy
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_decrypt_sealed(int command_handle, IntPtr wallet_handle, string did, byte[] encrypted_msg_raw, int encrypted_msg_len, DecryptResultDelegate cb);
+
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_create_key(int command_handle, IntPtr wallet_handle, string key_json, SignusCreateKeyCompletedDelegate cb);
+
+        internal delegate void SignusCreateKeyCompletedDelegate(int xcommand_handle, int err, string verkey);
+
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_set_key_metadata(int command_handle, IntPtr wallet_handle, string verkey, string metadata, NoValueDelegate cb);
+
+        
+
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_get_key_metadata(int command_handle, IntPtr wallet_handle, string verkey, SignusGetKeyMetadataCompletedDelegate cb);
+
+        internal delegate void SignusGetKeyMetadataCompletedDelegate(int xcommand_handle, int err, string metadata);
+
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_key_for_did(int command_handle, IntPtr pool_handle, IntPtr wallet_handle, string did, SignusKeyForDidCompletedDelegate cb);
+
+        internal delegate void SignusKeyForDidCompletedDelegate(int xcommand_handle, int err, string key);
+
+
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_set_endpoint_for_did(int command_handle, IntPtr wallet_handle, string did, string address, string transportKey, NoValueDelegate cb);
+
+        
+
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_get_endpoint_for_did(int command_handle, IntPtr wallet_handle, string did, SignusGetEndpointForDidCompletedDelegate cb);
+
+        internal delegate void SignusGetEndpointForDidCompletedDelegate(int xcommand_handle, int err, string endpoint, string transport_vk);
+
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_set_did_metadata(int command_handle, IntPtr wallet_handle, string did, string metadata, NoValueDelegate cb);
+
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_get_did_metadata(int command_handle, IntPtr wallet_handle, string did, SignusGetDidMetadataCompletedDelegate cb);
+
+        internal delegate void SignusGetDidMetadataCompletedDelegate(int xcommand_handle, int err, string metadata);
+
 
 
         // anoncreds.rs
@@ -881,6 +920,64 @@ namespace Hyperledger.Indy
         internal delegate void VerifierVerifyProofResultDelegate(int xcommand_handle, int err, bool valid);
 
         // agent.rs
+
+        /// <summary>
+        /// Delegate for agent functions that prepare messages.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that will be passed to the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="encrypted_data">The encrypted data message.</param>
+        /// <param name="encrypted_len">The encrypted data length.</param>
+        internal delegate void AgentMessagePreparedDelegate(int xcommand_handle, int err, IntPtr encrypted_data, int encrypted_len);
+
+        /// <summary>
+        /// Prepares a message.
+        /// </summary>
+        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
+        /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
+        /// <param name="sender_pk">Primary key of the sender.</param>
+        /// <param name="recipient_vk">Validation key of the recipient.</param>
+        /// <param name="msg_data">Message data.</param>
+        /// <param name="msg_len">Length of message data in bytes.</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_prep_msg(int command_handle,IntPtr wallet_handle, string sender_pk, string recipient_vk, byte[] msg_data, int msg_len, AgentMessagePreparedDelegate cb);
+
+        /// <summary>
+        /// Prepares an anonymous message.
+        /// </summary>
+        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
+        /// <param name="recipient_vk">Validation key of the recipient.</param>
+        /// <param name="msg_data">Message data.</param>
+        /// <param name="msg_len">Length of message data in bytes.</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_prep_anonymous_msg(int command_handle, string recipient_vk, byte[] msg_data, int msg_len, AgentMessagePreparedDelegate cb);
+
+        /// <summary>
+        /// Parses a message.
+        /// </summary>
+        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
+        /// <param name="wallet_handle">wallet handle (created by open_wallet).</param>
+        /// <param name="recipient_vk">Validation key of the recipient.</param>
+        /// <param name="encrypted_data">The encrypted data.</param>
+        /// <param name="encrypted_len">The length of the encrypted data in bytes.</param>
+        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
+        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
+        [DllImport(NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_parse_msg(int command_handle, IntPtr wallet_handle, string recipient_vk, byte[] encrypted_data, int encrypted_len, AgentMessageParsedDelegate cb);
+
+        /// <summary>
+        /// Delegate for agent callbacks that parse messages.
+        /// </summary>
+        /// <param name="xcommand_handle">The handle for the command that will be passed to the callback.</param>
+        /// <param name="err">The outcome of execution of the command.</param>
+        /// <param name="sender_key">The key of the sender.</param>
+        /// <param name="msg_data">The message data.</param>
+        /// <param name="msg_len">The message data length</param>
+        internal delegate void AgentMessageParsedDelegate(int xcommand_handle, int err, string sender_key, IntPtr msg_data, int msg_len);
 
         /// <summary>
         /// Delegate for the agent functions that receive messages.

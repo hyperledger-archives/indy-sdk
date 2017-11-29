@@ -99,22 +99,3 @@ impl Did {
 impl JsonEncodable for Did {}
 
 impl<'a> JsonDecodable<'a> for Did {}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Endpoint {
-    pub ha: String,
-    pub verkey: String
-}
-
-impl Endpoint {
-    pub fn new(ha: String, verkey: String) -> Endpoint {
-        Endpoint {
-            ha: ha,
-            verkey: verkey
-        }
-    }
-}
-
-impl JsonEncodable for Endpoint {}
-
-impl<'a> JsonDecodable<'a> for Endpoint {}

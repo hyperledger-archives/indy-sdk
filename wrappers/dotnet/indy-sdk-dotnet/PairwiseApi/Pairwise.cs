@@ -66,6 +66,9 @@ namespace Hyperledger.Indy.PairwiseApi
         /// DID, otherwise false.</returns>
         public static Task<bool> IsExistsAsync(Wallet wallet, string theirDid)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(theirDid, "theirDid");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -90,6 +93,10 @@ namespace Hyperledger.Indy.PairwiseApi
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public static Task CreateAsync(Wallet wallet, string theirDid, string myDid, string metadata)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(theirDid, "theirDid");
+            ParamGuard.NotNullOrWhiteSpace(myDid, "myDid");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -130,6 +137,8 @@ namespace Hyperledger.Indy.PairwiseApi
         /// an array of all pairwise relationships stored in the wallet.</returns>
         public static Task<string> ListAsync(Wallet wallet)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -167,6 +176,9 @@ namespace Hyperledger.Indy.PairwiseApi
         /// a pairwise record.</returns>
         public static Task<string> GetAsync(Wallet wallet, string theirDid)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(theirDid, "theirDid");
+
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -195,6 +207,9 @@ namespace Hyperledger.Indy.PairwiseApi
         /// <returns>An asynchronous <see cref="Task"/> completes once the operation completes.</returns>
         public static Task SetMetadataAsync(Wallet wallet, string theirDid, string metadata)
         {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(theirDid, "theirDid");
+
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 

@@ -9,8 +9,6 @@ namespace Hyperledger.Indy.Test.PairwiseTests
     {
         protected string myDid;
         protected string theirDid;
-        protected const string METADATA = "some metadata";
-        protected const string PAIRWISE_TEMPLATE = "{{\"my_did\":\"{0}\",\"metadata\":\"{1}\"}}";
         protected const string PAIR_TEMPLATE = "{{\"my_did\":\"{0}\",\"their_did\":\"{1}\"}}";
 
         [TestInitialize]

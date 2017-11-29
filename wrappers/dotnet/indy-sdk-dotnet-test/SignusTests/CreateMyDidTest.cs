@@ -7,11 +7,7 @@ namespace Hyperledger.Indy.Test.SignusTests
 {
     [TestClass]
     public class CreateMyDidTest : IndyIntegrationTestWithSingleWallet
-    {
-        private const string _expectedDid = "VsKV7grR1BUE29mG2Fm2kX";
-        private const string _expectedVerkey = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
-        private const string _existsCryptoType = "ed25519";
-        
+    {        
         [TestMethod]
         public async Task TestCreateMyDidWorksForEmptyJson()
         {
@@ -28,8 +24,8 @@ namespace Hyperledger.Indy.Test.SignusTests
             var result = await Signus.CreateAndStoreMyDidAsync(wallet, MY1_IDENTITY_JSON);
             Assert.IsNotNull(result);
 
-            Assert.AreEqual(_expectedDid, result.Did);
-            Assert.AreEqual(_expectedVerkey, result.VerKey);
+            Assert.AreEqual(DID_FOR_MY1_SEED, result.Did);
+            Assert.AreEqual(VERKEY_FOR_MY1_SEED, result.VerKey);
         }
 
         [TestMethod]
@@ -40,8 +36,8 @@ namespace Hyperledger.Indy.Test.SignusTests
             var result = await Signus.CreateAndStoreMyDidAsync(wallet, json);
             Assert.IsNotNull(result);
 
-            Assert.AreEqual(_expectedVerkey, result.Did);
-            Assert.AreEqual(_expectedVerkey, result.VerKey);
+            Assert.AreEqual(VERKEY_FOR_MY1_SEED, result.Did);
+            Assert.AreEqual(VERKEY_FOR_MY1_SEED, result.VerKey);
         }
 
         [TestMethod]
@@ -58,10 +54,13 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestCreateMyDidWorksForCorrectCryptoType()
         {
-            var json = string.Format("{{\"seed\":\"{0}\",\"crypto_type\":\"{1}\"}}", MY1_SEED, _existsCryptoType);
+            var json = string.Format("{{\"seed\":\"{0}\",\"crypto_type\":\"{1}\"}}", MY1_SEED, CRYPTO_TYPE);
 
             var result = await Signus.CreateAndStoreMyDidAsync(wallet, json);
-            Assert.IsNotNull(result);
+
+
+            Assert.AreEqual(DID_FOR_MY1_SEED, result.Did);
+            Assert.AreEqual(VERKEY_FOR_MY1_SEED, result.VerKey); 
         }
 
         [TestMethod]
@@ -87,13 +86,13 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestCreateMyDidWorksForAllParams()
         {
-            var json = string.Format("{{\"did\":\"{0}\",\"seed\":\"{1}\",\"crypto_type\":\"{2}\",\"cid\":true}}", DID1, MY1_SEED, _existsCryptoType);
+            var json = string.Format("{{\"did\":\"{0}\",\"seed\":\"{1}\",\"crypto_type\":\"{2}\",\"cid\":true}}", DID1, MY1_SEED, CRYPTO_TYPE);
 
             var result = await Signus.CreateAndStoreMyDidAsync(wallet, json);
             Assert.IsNotNull(result);
 
             Assert.AreEqual(DID1, result.Did);
-            Assert.AreEqual(_expectedVerkey, result.VerKey);
+            Assert.AreEqual(VERKEY_FOR_MY1_SEED, result.VerKey);
         }
 
     }

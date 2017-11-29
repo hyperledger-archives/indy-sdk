@@ -37,14 +37,14 @@ public class ReplaceKeysStartTest extends IndyIntegrationTestWithSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Signus.replaceKeysStart(this.wallet, DID1, "{}").get();
+		Signus.replaceKeysStart(this.wallet, DID, "{}").get();
 	}
 
 	@Test
 	public void testReplaceKeysStartWorksForSeed() throws Exception {
-		String verkey = Signus.replaceKeysStart(this.wallet, this.did, "{\"seed\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}").get();
+		String verkey = Signus.replaceKeysStart(this.wallet, this.did, String.format("{\"seed\":\"%s\"}", MY1_SEED)).get();
 
-		assertEquals("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", verkey);
+		assertEquals(VERKEY_MY1, verkey);
 		assertNotEquals(this.verkey, verkey);
 	}
 }

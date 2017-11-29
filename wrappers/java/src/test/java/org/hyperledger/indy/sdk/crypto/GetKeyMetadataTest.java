@@ -1,4 +1,4 @@
-package org.hyperledger.indy.sdk.signus;
+package org.hyperledger.indy.sdk.crypto;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
 import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
@@ -14,15 +14,15 @@ public class GetKeyMetadataTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testGetKeyMetadataWorks() throws Exception {
-		Signus.setKeyMetadata(wallet, VERKEY, METADATA).get();
-		String receivedMetadata = Signus.getKeyMetadata(wallet, VERKEY).get();
+		Crypto.setKeyMetadata(wallet, VERKEY, METADATA).get();
+		String receivedMetadata = Crypto.getKeyMetadata(wallet, VERKEY).get();
 		assertEquals(METADATA, receivedMetadata);
 	}
 
 	@Test
 	public void testGetKeyMetadataWorksForEmptyString() throws Exception {
-		Signus.setKeyMetadata(wallet, VERKEY, "").get();
-		String receivedMetadata = Signus.getKeyMetadata(wallet, VERKEY).get();
+		Crypto.setKeyMetadata(wallet, VERKEY, "").get();
+		String receivedMetadata = Crypto.getKeyMetadata(wallet, VERKEY).get();
 		assertEquals("", receivedMetadata);
 	}
 
@@ -31,6 +31,6 @@ public class GetKeyMetadataTest extends IndyIntegrationTestWithSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Signus.getKeyMetadata(wallet, VERKEY).get();
+		Crypto.getKeyMetadata(wallet, VERKEY).get();
 	}
 }

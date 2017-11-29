@@ -2,8 +2,8 @@ use utils::json::{JsonDecodable, JsonEncodable};
 use errors::common::CommonError;
 use errors::wallet::WalletError;
 use errors::indy::IndyError;
-use services::signus::types::{KeyInfo, MyDidInfo, TheirDidInfo, Did, Key, Endpoint};
-use services::ledger::types::{Reply, GetNymResultData, GetNymReplyResult};
+use services::signus::types::{KeyInfo, MyDidInfo, TheirDidInfo, Did, Key};
+use services::ledger::types::{Reply, GetNymResultData, GetNymReplyResult, GetAttribReplyResult, Endpoint, AttribData};
 use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::signus::SignusService;
@@ -77,19 +77,6 @@ pub enum SignusCommand {
         String, // my did
         Vec<u8>, // msg
         Box<Fn(Result<Vec<u8>, IndyError>) + Send>),
-    CreateKey(
-        i32, // wallet handle
-        String, // key info json
-        Box<Fn(Result<String/*verkey*/, IndyError>) + Send>),
-    SetKeyMetadata(
-        i32, // wallet handle
-        String, // verkey
-        String, // metadata
-        Box<Fn(Result<(), IndyError>) + Send>),
-    GetKeyMetadata(
-        i32, // wallet handle
-        String, // verkey
-        Box<Fn(Result<String, IndyError>) + Send>),
     KeyForDid(
         i32, // pool handle
         i32, // wallet handle
@@ -103,6 +90,7 @@ pub enum SignusCommand {
         Box<Fn(Result<(), IndyError>) + Send>),
     GetEndpointForDid(
         i32, // wallet handle
+        i32, // pool handle
         String, // did
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     SetDidMetadata(
@@ -119,6 +107,12 @@ pub enum SignusCommand {
         i32, // wallet_handle
         Result<String, IndyError>, // GetNym Result
         i32, // deferred cmd id
+    ),
+    // Internal commands
+    GetAttribAck(
+        i32, // wallet_handle
+        Result<String, IndyError>, // GetAttrib Result
+        i32, // deferred cmd id
     )
 }
 
@@ -134,6 +128,10 @@ macro_rules! ensure_their_did {
     ($self_:ident, $wallet_handle:ident, $pool_handle:ident, $their_did:ident, $deferred_cmd:expr, $cb:ident) => (match $self_._wallet_get_their_did($wallet_handle, &$their_did) {
           Ok(val) => val,
           Err(IndyError::WalletError(WalletError::NotFound(_))) => {
+
+              check_wallet_and_pool_handles_consistency!($self_.wallet_service, $self_.pool_service,
+                                                         $wallet_handle, $pool_handle, $cb);
+
               // No their their_did present in the wallet. Deffer this command until it is fetched from ledger.
               return $self_._fetch_their_did_from_ledger($wallet_handle, $pool_handle, &$their_did, $deferred_cmd);
             }
@@ -197,18 +195,6 @@ impl SignusCommandExecutor {
                 info!("DecryptSealed command received");
                 cb(self.decrypt_sealed(wallet_handle, my_did, encrypted_msg));
             }
-            SignusCommand::CreateKey(wallet_handle, key_info_json, cb) => {
-                info!("CreateKey command received");
-                cb(self.create_key(wallet_handle, key_info_json));
-            }
-            SignusCommand::SetKeyMetadata(wallet_handle, verkey, metadata, cb) => {
-                info!("SetKeyMetadata command received");
-                cb(self.set_key_metadata(wallet_handle, verkey, metadata));
-            }
-            SignusCommand::GetKeyMetadata(wallet_handle, verkey, cb) => {
-                info!("GetKeyMetadata command received");
-                cb(self.get_key_metadata(wallet_handle, verkey));
-            }
             SignusCommand::KeyForDid(pool_handle, wallet_handle, did, cb) => {
                 info!("KeyForDid command received");
                 self.key_for_did(pool_handle, wallet_handle, did, cb);
@@ -217,9 +203,9 @@ impl SignusCommandExecutor {
                 info!("SetEndpointForDid command received");
                 cb(self.set_endpoint_for_did(wallet_handle, did, address, transport_key));
             }
-            SignusCommand::GetEndpointForDid(wallet_handle, did, cb) => {
+            SignusCommand::GetEndpointForDid(wallet_handle, pool_handle, did, cb) => {
                 info!("GetEndpointForDid command received");
-                cb(self.get_endpoint_for_did(wallet_handle, did));
+                self.get_endpoint_for_did(wallet_handle, pool_handle, did, cb);
             }
             SignusCommand::SetDidMetadata(wallet_handle, did, metadata, cb) => {
                 info!("SetDidMetadata command received");
@@ -232,6 +218,10 @@ impl SignusCommandExecutor {
             SignusCommand::GetNymAck(wallet_handle, result, deferred_cmd_id) => {
                 info!("GetNymAck command received");
                 self.get_nym_ack(wallet_handle, result, deferred_cmd_id);
+            }
+            SignusCommand::GetAttribAck(wallet_handle, result, deferred_cmd_id) => {
+                info!("GetAttribAck command received");
+                self.get_attrib_ack(wallet_handle, result, deferred_cmd_id);
             }
         };
     }
@@ -324,9 +314,6 @@ impl SignusCommandExecutor {
                         cb: Box<Fn(Result<bool, IndyError>) + Send>) {
         try_cb!(self.signus_service.validate_did(&their_did), cb);
 
-        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                   wallet_handle, pool_handle, cb);
-
         let their_did = ensure_their_did!(self,
                                           wallet_handle,
                                           pool_handle,
@@ -354,9 +341,6 @@ impl SignusCommandExecutor {
         try_cb!(self.signus_service.validate_did(&my_did), cb);
         try_cb!(self.signus_service.validate_did(&their_did), cb);
 
-        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                   wallet_handle, pool_handle, cb);
-
         let my_did = try_cb!(self._wallet_get_my_did(wallet_handle, &my_did), cb);
         let my_key = try_cb!(self._wallet_get_key(wallet_handle, &my_did.verkey), cb);
 
@@ -374,7 +358,7 @@ impl SignusCommandExecutor {
                                            cb);
 
         let res = try_cb!(self.signus_service.encrypt(&my_key, &their_did.verkey, &msg), cb);
-        cb(Ok(res));
+        cb(Ok(res))
     }
 
     fn decrypt(&self,
@@ -387,9 +371,6 @@ impl SignusCommandExecutor {
                cb: Box<Fn(Result<Vec<u8>, IndyError>) + Send>) {
         try_cb!(self.signus_service.validate_did(&my_did), cb);
         try_cb!(self.signus_service.validate_did(&their_did), cb);
-
-        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                   wallet_handle, pool_handle, cb);
 
         let my_did = try_cb!(self._wallet_get_my_did(wallet_handle, &my_did), cb);
         let my_key = try_cb!(self._wallet_get_key(wallet_handle, &my_did.verkey), cb);
@@ -409,7 +390,7 @@ impl SignusCommandExecutor {
                                            cb);
 
         let res = try_cb!(self.signus_service.decrypt(&my_key, &their_did.verkey, &encrypted_msg, &nonce), cb);
-        cb(Ok(res));
+        cb(Ok(res))
     }
 
     fn encrypt_sealed(&self,
@@ -419,9 +400,6 @@ impl SignusCommandExecutor {
                       msg: Vec<u8>,
                       cb: Box<Fn(Result<Vec<u8>, IndyError>) + Send>) {
         try_cb!(self.signus_service.validate_did(&their_did), cb);
-
-        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                   wallet_handle, pool_handle, cb);
 
         let their_did = ensure_their_did!(self,
                                           wallet_handle,
@@ -436,7 +414,7 @@ impl SignusCommandExecutor {
                                            cb);
 
         let res = try_cb!(self.signus_service.encrypt_sealed(&their_did.verkey, &msg), cb);
-        cb(Ok(res));
+        cb(Ok(res))
     }
 
     fn decrypt_sealed(&self,
@@ -452,44 +430,12 @@ impl SignusCommandExecutor {
         Ok(res)
     }
 
-    fn create_key(&self, wallet_handle: i32, key_info_json: String) -> Result<String, IndyError> {
-        let key_info = KeyInfo::from_json(&key_info_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidStructure(
-                    format!("Invalid KeyInfo json: {}", err.description())))?;
-
-        let key = self.signus_service.create_key(&key_info)?;
-        self._wallet_set_key(wallet_handle, &key)?;
-
-        let res = key.verkey;
-        Ok(res)
-    }
-
-    fn set_key_metadata(&self, wallet_handle: i32, verkey: String, metadata: String) -> Result<(), IndyError> {
-        self.signus_service.validate_key(&verkey)?;
-        self._wallet_set_key_metadata(wallet_handle, &verkey, &metadata)?;
-        Ok(())
-    }
-
-    fn get_key_metadata(&self,
-                        wallet_handle: i32,
-                        verkey: String) -> Result<String, IndyError> {
-        self.signus_service.validate_key(&verkey)?;
-        let res = self._wallet_get_key_metadata(wallet_handle, &verkey)?;
-        Ok(res)
-    }
-
     fn key_for_did(&self,
                    pool_handle: i32,
                    wallet_handle: i32,
                    did: String,
                    cb: Box<Fn(Result<String, IndyError>) + Send>) {
         try_cb!(self.signus_service.validate_did(&did), cb);
-
-
-        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                   wallet_handle, pool_handle, cb);
 
         // Look to my did
         match self._wallet_get_my_did(wallet_handle, &did) {
@@ -530,14 +476,28 @@ impl SignusCommandExecutor {
 
     fn get_endpoint_for_did(&self,
                             wallet_handle: i32,
-                            did: String) -> Result<(String, String), IndyError> {
-        self.signus_service.validate_did(&did)?;
+                            pool_handle: i32,
+                            did: String,
+                            cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        try_cb!(self.signus_service.validate_did(&did), cb);
 
-        // TODO: FIXME: It should support resolving of endpoint from ledget!!!
-        let endpoint = self._wallet_get_did_endpoint(wallet_handle, &did)?;
+        match self._wallet_get_did_endpoint(wallet_handle, &did) {
+            Ok(endpoint) => cb(Ok((endpoint.ha, endpoint.verkey))),
+            Err(IndyError::WalletError(WalletError::NotFound(_))) => {
+                check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
+                                                           wallet_handle, pool_handle, cb);
 
-        let res = (endpoint.ha, endpoint.verkey);
-        Ok(res)
+                return self._fetch_attrib_from_ledger(wallet_handle,
+                                                      pool_handle,
+                                                      &did,
+                                                      SignusCommand::GetEndpointForDid(
+                                                          wallet_handle,
+                                                          pool_handle,
+                                                          did.clone(),
+                                                          cb));
+            }
+            Err(err) => cb(Err(err))
+        };
     }
 
     fn set_did_metadata(&self, wallet_handle: i32, did: String, metadata: String) -> Result<(), IndyError> {
@@ -584,6 +544,32 @@ impl SignusCommandExecutor {
                     format!("Can't serialize Did: {}", err.description())))?;
 
         self.wallet_service.set(wallet_handle, &format!("their_did::{}", their_did.did), &their_did_json)?;
+        Ok(())
+    }
+
+    fn get_attrib_ack(&self,
+                      wallet_handle: i32,
+                      get_attrib_reply_result: Result<String, IndyError>,
+                      deferred_cmd_id: i32) {
+        let res = self._get_attrib_ack(wallet_handle, get_attrib_reply_result);
+        self._execute_deferred_command(deferred_cmd_id, res.err());
+    }
+
+    fn _get_attrib_ack(&self, wallet_handle: i32, get_attrib_reply_result: Result<String, IndyError>) -> Result<(), IndyError> {
+        let get_attrib_reply = get_attrib_reply_result?;
+
+        let get_attrib_response: Reply<GetAttribReplyResult> = Reply::from_json(&get_attrib_reply)
+            .map_err(map_err_trace!())
+            .map_err(|_| CommonError::InvalidState(format!("Invalid GetAttribReplyResult json")))?;
+
+        let attrib_data: AttribData = AttribData::from_json(&get_attrib_response.result.data)
+            .map_err(map_err_trace!())
+            .map_err(|_| CommonError::InvalidState(format!("Invalid GetAttribResultData json")))?;
+
+        let endpoint = Endpoint::new(attrib_data.endpoint.ha, attrib_data.endpoint.verkey);
+
+        self._wallet_set_did_endpoint(wallet_handle, &get_attrib_response.result.dest, &endpoint)?;
+
         Ok(())
     }
 
@@ -637,10 +623,10 @@ impl SignusCommandExecutor {
             SignusCommand::DecryptSealed(_, _, _, cb) => {
                 return cb(Err(err));
             }
-            SignusCommand::CreateKey(_, _, cb) => {
+            SignusCommand::KeyForDid(_, _, _, cb) => {
                 return cb(Err(err));
             }
-            SignusCommand::KeyForDid(_, _, _, cb) => {
+            SignusCommand::GetEndpointForDid(_, _, _, cb) => {
                 return cb(Err(err));
             }
             _ => {}
@@ -659,7 +645,7 @@ impl SignusCommandExecutor {
             .map_err(|err|
                 CommonError::InvalidState(
                     // TODO: FIXME: Remove this unwrap by sending GetNymAck with the error.
-                    format!("Invalid Get Num Request: {}", err.description()))).unwrap();
+                    format!("Invalid Get Nym Request: {}", err.description()))).unwrap();
 
         CommandExecutor::instance()
             .send(Command::Ledger(LedgerCommand::SubmitRequest(
@@ -668,6 +654,35 @@ impl SignusCommandExecutor {
                 Box::new(move |result| {
                     CommandExecutor::instance()
                         .send(Command::Signus(SignusCommand::GetNymAck(
+                            wallet_handle,
+                            result,
+                            deferred_cmd_id
+                        ))).unwrap();
+                })
+            ))).unwrap();
+    }
+
+    fn _fetch_attrib_from_ledger(&self,
+                                 wallet_handle: i32, pool_handle: i32,
+                                 did: &str, deferred_cmd: SignusCommand) {
+        // Deffer this command until their did is fetched from ledger.
+        let deferred_cmd_id = self._defer_command(deferred_cmd);
+
+        // TODO we need passing of my_did as identifier
+        let get_attrib_request = self.ledger_service.build_get_attrib_request(did, did, "endpoint")
+            .map_err(map_err_trace!())
+            .map_err(|err|
+                CommonError::InvalidState(
+                    // TODO: FIXME: Remove this unwrap by sending GetAttribAck with the error.
+                    format!("Invalid Get Attrib Request: {}", err.description()))).unwrap();
+
+        CommandExecutor::instance()
+            .send(Command::Ledger(LedgerCommand::SubmitRequest(
+                pool_handle,
+                get_attrib_request,
+                Box::new(move |result| {
+                    CommandExecutor::instance()
+                        .send(Command::Signus(SignusCommand::GetAttribAck(
                             wallet_handle,
                             result,
                             deferred_cmd_id
@@ -761,16 +776,6 @@ impl SignusCommandExecutor {
             .map_err(|err|
                 CommonError::InvalidState(
                     format!("Can't deserialize Key: {}", err.description())))?;
-        Ok(res)
-    }
-
-    fn _wallet_set_key_metadata(&self, wallet_handle: i32, verkey: &str, metadata: &str) -> Result<(), IndyError> {
-        self.wallet_service.set(wallet_handle, &format!("key::{}::metadata", verkey), metadata)?;
-        Ok(())
-    }
-
-    fn _wallet_get_key_metadata(&self, wallet_handle: i32, verkey: &str) -> Result<String, IndyError> {
-        let res = self.wallet_service.get(wallet_handle, &format!("key::{}::metadata", verkey))?;
         Ok(res)
     }
 

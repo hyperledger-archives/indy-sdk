@@ -17,9 +17,9 @@ public class GetTxnRequestTest extends IndyIntegrationTestWithPoolAndSingleWalle
 				"\"operation\":{" +
 				"\"type\":\"3\"," +
 				"\"data\":%s" +
-				"}", DID1, data);
+				"}", DID, data);
 
-		String getTxnRequest = Ledger.buildGetTxnRequest(DID1, data).get();
+		String getTxnRequest = Ledger.buildGetTxnRequest(DID, data).get();
 		assertTrue(getTxnRequest.replace("\\", "").contains(expectedResult));
 	}
 

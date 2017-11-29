@@ -6,6 +6,7 @@ pub mod callback;
 pub mod environment;
 
 pub mod pool;
+pub mod crypto;
 pub mod signus;
 pub mod wallet;
 pub mod ledger;

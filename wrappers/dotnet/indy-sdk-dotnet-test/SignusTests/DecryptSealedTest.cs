@@ -61,7 +61,7 @@ namespace Hyperledger.Indy.Test.SignusTests
             byte[] encryptedMessage = (byte[])(Array)new sbyte[] { -105, 30, 89, 75, 76, 28, -59, -45, 105, -46, 20 };
 
             var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-                Signus.DecryptSealedAsync(wallet, "unknowDid", encryptedMessage)
+                Signus.DecryptSealedAsync(wallet, DID1, encryptedMessage)
             );
 
         }

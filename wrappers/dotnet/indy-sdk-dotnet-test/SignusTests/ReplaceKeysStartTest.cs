@@ -27,7 +27,7 @@ namespace Hyperledger.Indy.Test.SignusTests
             var result = await Signus.ReplaceKeysStartAsync(wallet, _did, "{}");
 
             Assert.IsNotNull(result);
-            Assert.AreEqual(32, Base58CheckEncoding.DecodePlain(result.VerKey).Length);
+            Assert.AreEqual(32, Base58CheckEncoding.DecodePlain(result).Length);
         }
 
         [TestMethod]
@@ -42,10 +42,9 @@ namespace Hyperledger.Indy.Test.SignusTests
         public async Task TestReplaceKeysStartWorksForSeed()
         {
             var result = await Signus.ReplaceKeysStartAsync(wallet, _did, "{\"seed\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}");
-            string verkey = result.VerKey;
 
-            Assert.AreEqual("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", verkey);
-            Assert.AreNotEqual(this._verkey, verkey);
+            Assert.AreEqual("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", result);
+            Assert.AreNotEqual(this._verkey, result);
         }
     }
 }
