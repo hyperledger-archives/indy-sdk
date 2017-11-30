@@ -2,7 +2,6 @@ use super::{Command, CommandMetadata, CommandMetadataBuilder};
 use super::super::IndyContext;
 
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 
 pub struct CreateCommand {
@@ -22,8 +21,8 @@ impl CreateCommand {
 }
 
 impl Command for CreateCommand {
-    fn execute(&self, line: &str) {
-        println!("wallet create: >>> execute {} while context {:?}", line, self.ctx);
+    fn execute(&self, line: &Vec<(&str, &str)>) {
+        println!("wallet create: >>> execute {:?} while context {:?}", line, self.ctx);
     }
 
     fn metadata(&self) -> &CommandMetadata {
@@ -53,20 +52,25 @@ impl Command for OpenCommand {
         &self.metadata
     }
 
-    fn execute(&self, line: &str) {
-        println!("wallet open: >>> execute {} while context {:?}", line, self.ctx);
-        self.ctx.borrow_mut().cur_wallet = Some(line.to_string());
+    fn execute(&self, line: &Vec<(&str, &str)>) {
+        println!("wallet open: >>> execute {:?} while context {:?}", line, self.ctx);
+        self.ctx.borrow_mut().cur_wallet = Some(line[0].1.to_string());
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    pub fn exec_works() {
-        let ctx = Rc::new(RefCell::new(IndyContext { cur_wallet: None }));
-        let cmd = CreateCommand::new(ctx);
-        cmd.metadata().help();
-        cmd.execute("");
+    mod create {
+        use super::*;
+
+        #[test]
+        pub fn exec_works() {
+            let ctx = Rc::new(RefCell::new(IndyContext { cur_wallet: None }));
+            let cmd = CreateCommand::new(ctx);
+            cmd.metadata().help();
+            cmd.execute(&Vec::new());
+        }
     }
 }

@@ -10,9 +10,11 @@ struct ParamMetadata {
     name: &'static str,
     is_optional: bool,
     is_main: bool,
+    #[allow(dead_code)] //TODO FIXME
     help: &'static str,
 }
 
+#[allow(dead_code)] //TODO FIXME
 impl ParamMetadata {
     pub fn new(name: &'static str, is_optional: bool, is_main: bool, help: &'static str) -> ParamMetadata {
         ParamMetadata {
@@ -42,6 +44,7 @@ struct CommandMetadata {
     params: Vec<ParamMetadata>,
 }
 
+#[allow(dead_code)] //TODO FIXME
 impl CommandMetadata {
     pub fn name(&self) -> &str {
         self.name
@@ -54,12 +57,19 @@ impl CommandMetadata {
     pub fn params(&self) -> &[ParamMetadata] {
         self.params.as_slice()
     }
+
+    pub fn main_param_name(&self) -> Option<&str> {
+        self.params.iter()
+            .find(|param| param.is_main)
+            .map(|meta| meta.name)
+    }
 }
 
 struct CommandMetadataBuilder {
     help: &'static str,
     name: &'static str,
     params: Vec<ParamMetadata>,
+    already_has_main: bool,
 }
 
 impl CommandMetadataBuilder {
@@ -69,6 +79,7 @@ impl CommandMetadataBuilder {
             name,
             params,
             help,
+            already_has_main: false,
         }
     }
 
@@ -78,6 +89,10 @@ impl CommandMetadataBuilder {
                      is_main: bool,
                      help: &'static str) -> CommandMetadataBuilder {
         self.params.push(ParamMetadata::new(name, is_optional, is_main, help));
+        if is_main {
+            assert!(!self.already_has_main);
+            self.already_has_main = true;
+        }
         self
     }
 
@@ -92,7 +107,7 @@ impl CommandMetadataBuilder {
 
 trait Command {
     fn metadata(&self) -> &CommandMetadata;
-    fn execute(&self, line: &str);
+    fn execute(&self, params: &Vec<(&str, &str)>);
 }
 
 pub struct CommandExecutor {
@@ -117,10 +132,37 @@ impl CommandExecutor {
 
     pub fn execute(&self, line: &str) {
         let tokens: Vec<&str> = line.splitn(3, " ").collect();
-        self.cmds.get(tokens[0]).unwrap().get(tokens[1]).unwrap().execute(tokens[2]);
+        assert_eq!(tokens.len(), 3); //TODO
+        let cmd_group = if let Some(cmd_group) = self.cmds.get(tokens[0]) {
+            cmd_group
+        } else {
+            println!("Commands group {} is not found.", tokens[0]);
+            //TODO print common help
+            return;
+        };
+        let cmd = if let Some(cmd) = cmd_group.get(tokens[1]) {
+            cmd
+        } else {
+            println!("Command {} is not found in group {}.", tokens[1], tokens[0]);
+            //TODO print group help
+            return;
+        };
+        let mut params: Vec<(&str, &str)> = Vec::new();
+        for param_with_value in tokens[2].split(" ") {
+            let param_and_value: Vec<&str> = param_with_value.splitn(2, "=").collect();
+
+            if param_and_value.len() == 1 {
+                params.push((cmd.metadata().main_param_name().unwrap(), param_and_value[0]));
+            } else {
+                params.push((param_and_value[0], param_and_value[1]));
+            }
+        }
+
+        cmd.execute(&params);
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

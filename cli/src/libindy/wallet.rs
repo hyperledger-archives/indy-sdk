@@ -10,7 +10,6 @@ use std::ffi::CString;
 use std::ptr::null;
 use std::sync::Mutex;
 use std::sync::mpsc::channel;
-use std::slice;
 
 pub struct Wallet {}
 
