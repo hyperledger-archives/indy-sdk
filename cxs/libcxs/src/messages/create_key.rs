@@ -13,7 +13,7 @@ use self::rmp_serde::encode;
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
 struct CreateKeyPayload{
-    #[serde(rename = "@type")]
+    #[serde(rename = "type")]
     msg_type: String,
     #[serde(rename = "forDID")]
     for_did: String,
