@@ -101,11 +101,11 @@ pub struct CommandExecutor {
 
 impl CommandExecutor {
     pub fn new(indy_context: IndyContext) -> CommandExecutor {
-        let cnxt = Rc::new(RefCell::new(indy_context));
+        let ctx = Rc::new(RefCell::new(indy_context));
 
         let mut wallet_cmds: HashMap<String, Box<Command>> = HashMap::new();
-        wallet_cmds.insert("create".to_owned(), Box::new(wallet::CreateCommand::new(cnxt.clone())));
-        wallet_cmds.insert("open".to_owned(), Box::new(wallet::OpenCommand::new(cnxt.clone())));
+        wallet_cmds.insert("create".to_owned(), Box::new(wallet::CreateCommand::new(ctx.clone())));
+        wallet_cmds.insert("open".to_owned(), Box::new(wallet::OpenCommand::new(ctx.clone())));
 
         let mut cmds = HashMap::new();
         cmds.insert("wallet".to_owned(), wallet_cmds);
@@ -126,8 +126,8 @@ mod tests {
 
     #[test]
     pub fn execute_works() {
-        let cmd_executor = CommandExecutor::new();
-        cmd_executor.execute("test");
+        let cmd_executor = CommandExecutor::new(IndyContext { cur_wallet: None });
+        cmd_executor.execute("wallet create newWalletName");
     }
 }
 
