@@ -8,6 +8,7 @@ pub const TRUSTEE_SEED: &'static str = "000000000000000000000000Trustee1";
 pub const STEWARD_SEED: &'static str = "000000000000000000000000Steward1";
 pub const MY1_SEED: &'static str = "00000000000000000000000000000My1";
 pub const MY2_SEED: &'static str = "00000000000000000000000000000My2";
+pub const MY3_SEED: &'static str = "00000000000000000000000000000My3";
 pub const ISSUER_DID: &'static str = "NcYxiDXkpYi6ov5FcYDi1e";
 pub const DID: &'static str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 pub const DID_MY1: &'static str = "VsKV7grR1BUE29mG2Fm2kX";

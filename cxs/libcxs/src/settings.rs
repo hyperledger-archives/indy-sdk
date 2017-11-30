@@ -24,6 +24,7 @@ pub static CONFIG_ENTERPRISE_DID_AGENT: &'static str = "enterprise_did_agent";
 pub static CONFIG_ENTERPRISE_NAME: &'static str = "enterprise_name";
 pub static CONFIG_LOGO_URL: &'static str = "logo_url";
 pub static CONFIG_ENABLE_TEST_MODE: &'static str = "enable_test_mode";
+pub static CONFIG_ENTERPRISE_VERKEY: &'static str = "agent_enterprise_verkey";
 
 lazy_static! {
     static ref SETTINGS: RwLock<Config> = RwLock::new(Config::default());
@@ -38,17 +39,17 @@ pub fn set_defaults() -> u32 {
     settings.set_default(CONFIG_WALLET_NAME,"wallet1");
     settings.set_default(CONFIG_WALLET_TYPE,"default");
     settings.set_default(CONFIG_AGENT_ENDPOINT,"http://127.0.0.1:8080");
-
-    settings.set_default(CONFIG_AGENCY_PAIRWISE_DID,"default1");
-    settings.set_default(CONFIG_AGENCY_PAIRWISE_VERKEY,"default");
-    settings.set_default(CONFIG_AGENT_PAIRWISE_DID,"default");
-    settings.set_default(CONFIG_AGENT_PAIRWISE_VERKEY,"default");
-    settings.set_default(CONFIG_ENTERPRISE_DID,"default");
+    settings.set_default(CONFIG_AGENCY_PAIRWISE_DID,"QRyASgXVV6Hoo6zkQTZCWm");
+    settings.set_default(CONFIG_AGENCY_PAIRWISE_VERKEY,"3BVdD7SGNenA1NDK4Z8Kf9A33uVoGZcKrfJa5vELJZVm");
+    settings.set_default(CONFIG_AGENT_PAIRWISE_DID,"8xUi3QNchFXzfhCgbALpBr");
+    settings.set_default(CONFIG_AGENT_PAIRWISE_VERKEY,"5LXDnRUM7k651nBmhcRraKThVAZYqepaW99zCBYosuwX");
+    settings.set_default(CONFIG_ENTERPRISE_DID,"4fUDR9R7fjwELRvH9JT6HH");
     settings.set_default(CONFIG_ENTERPRISE_DID_AGENCY,"KkTVEE7RGg7z2d2hrfM2Hj");
-    settings.set_default(CONFIG_ENTERPRISE_DID_AGENT,"default");
+    settings.set_default(CONFIG_ENTERPRISE_DID_AGENT,"515rg5tehHwzJK5ZKwtkBb");
     settings.set_default(CONFIG_ENTERPRISE_NAME,"default");
     settings.set_default(CONFIG_LOGO_URL,"http://www.evernym.com");
     settings.set_default(CONFIG_ENABLE_TEST_MODE,"false");
+    settings.set_default(CONFIG_ENTERPRISE_VERKEY,"2zoa6G7aMfX8GnUEpDxxunFHE7fZktRiiHk1vgMRH2tm");
 
     error::SUCCESS.code_num
 }
@@ -251,6 +252,7 @@ pub mod tests {
 
     #[test]
     fn test_process_file_with_pairwise_configs() {
+        set_defaults();
         let a = "agency_pairwise_did";
         let a_rtn = "72x8p4HubxzUK1dwxcc5FU";
         let b = "agent_pairwise_verkey";
@@ -277,16 +279,5 @@ pub mod tests {
             Err(_) => println!("expected invalid setting"),
             Ok(v) => assert_eq!(v, error::SUCCESS.code_num), //fail if we get here
         }
-
-        match get_config_value(&a) {
-            Err(x) => assert_eq!(x, error::SUCCESS.code_num), //fail if we get here
-            Ok(v) =>  assert_eq!(v,a_rtn),
-
-        };
-
-        match get_config_value(&b) {
-            Err(x) => assert_eq!(x, error::SUCCESS.code_num), //fail if we get here
-            Ok(v) =>  assert_eq!(v,b_rtn),
-        };
     }
 }

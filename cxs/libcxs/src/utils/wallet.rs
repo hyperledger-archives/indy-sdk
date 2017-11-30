@@ -42,6 +42,11 @@ extern {
                                                          did: *const c_char,
                                                          verkey: *const c_char,
                                                          pk: *const c_char)>) -> i32;
+
+    fn indy_store_their_did(command_handle: i32,
+                            wallet_handle: i32,
+                            identity_json: *const c_char,
+                            cb: Option<extern fn(xcommand_handle: i32, err: i32)>) -> i32;
 }
 
 pub fn get_wallet_handle() -> i32 { unsafe { WALLET_HANDLE } }
@@ -177,6 +182,40 @@ pub fn close_wallet(wallet_handle: i32) -> Result<(), i32> {
     }
 }
 
+pub fn store_their_did(identity_json: &str) -> Result<(), u32> {
+    let (sender, receiver) = channel();
+
+    let cb = Box::new(move |err| {
+        sender.send((err)).unwrap();
+    });
+
+    let (command_handle, cb) = CallbackUtils::closure_to_store_their_did_cb(cb);
+
+    let identity_json = CString::new(identity_json).unwrap();
+
+    let wallet_handle = get_wallet_handle();
+
+    unsafe {
+        let err =
+            indy_store_their_did(command_handle,
+                                 wallet_handle,
+                                 identity_json.as_ptr(),
+                                 cb);
+
+        if err != 0 {
+            return Err(err as u32);
+        }
+
+        let err = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != 0 {
+            return Err(err as u32);
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -192,7 +231,6 @@ pub mod tests {
         let pool_name = String::from("pool1");
         let wallet_type = String::from("default");
         assert!(init_wallet(&wallet_name, &pool_name, &wallet_type).unwrap() >  0);
-        thread::sleep(Duration::from_secs(1));
     }
 
     pub fn delete_wallet(wallet_name: &str) {

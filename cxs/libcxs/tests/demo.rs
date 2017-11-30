@@ -66,7 +66,6 @@ fn test_demo(){
     // Create Claim Offer ***************************************************************
     let source_id = "Claim For Driver's License";
     let claim_name = "Driver's License";
-    let claim_id = "cCanHnpFAD";
     let claim_data:serde_json::Value = serde_json::from_str(CLAIM_DATA).unwrap(); // this format will make it easier to modify in the futre
     let ledger_issuer_did = "V4SGRU86Z58d6TV7PBUe6f";
     let ledger_schema_seq_num = 103;

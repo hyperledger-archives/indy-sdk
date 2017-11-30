@@ -23,6 +23,9 @@ config = "0.6"
 url = "1.5.1"
 reqwest = "0.8"
 rust-base58 = "0.0.4"
+rmpv = "0.4.0"
+rmp = "0.8"
+rmp-serde = "0.13.7"
 
 [dev-dependencies]
 futures = "0.1"

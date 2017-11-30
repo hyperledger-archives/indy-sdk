@@ -1,4 +1,4 @@
-/* test isn't ready until > libindy 1.0.1
+/* test isn't ready until > libindy 1.0.1 */
 extern crate libc;
 
 use self::libc::c_char;
@@ -6,6 +6,7 @@ use std::sync::mpsc::channel;
 use std::ffi::CString;
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
+use settings;
 
 extern {
 fn indy_prep_msg(command_handle: i32,
@@ -30,7 +31,11 @@ fn indy_parse_msg(command_handle: i32,
                   cb: Option<extern fn(command_handle_: i32, err: i32, sender_vk: *const c_char, msg_data: *const u8, msg_len: u32)>) -> i32;
 }
 
-pub fn prep_msg(wallet_handle: i32, sender_vk: &str, recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, i32> {
+pub fn prep_msg(wallet_handle: i32, sender_vk: &str, recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
+    info!("prep_msg svk: {} rvk: {}",sender_vk, recipient_vk);
+
+    if settings::test_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
+
     let (sender, receiver) = channel();
 
     let cb = Box::new(move |err, encrypted_msg| {
@@ -52,20 +57,24 @@ pub fn prep_msg(wallet_handle: i32, sender_vk: &str, recipient_vk: &str, msg: &[
                                 cb);
 
         if err != 0 {
-            return Err(err);
+            return Err(err as u32);
         }
 
         let (err, encrypted_msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
 
         if err != 0 {
-            return Err(err);
+            return Err(err as u32);
         }
 
         Ok(encrypted_msg)
     }
 }
 
-pub fn prep_anonymous_msg(recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, i32> {
+pub fn prep_anonymous_msg(recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
+    info!("prep_anonymous_msg rvk: {}",recipient_vk);
+
+    if settings::test_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
+
     let (sender, receiver) = channel();
 
     let cb = Box::new(move |err, encrypted_msg| {
@@ -84,20 +93,20 @@ pub fn prep_anonymous_msg(recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, i32
                                           cb);
 
         if err != 0 {
-            return Err(err);
+            return Err(err as u32);
         }
 
         let (err, encrypted_msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
 
         if err != 0 {
-            return Err(err);
+            return Err(err as u32);
         }
 
         Ok(encrypted_msg)
     }
 }
 
-pub fn parse_msg(wallet_handle: i32, recipient_vk: &str, msg: &[u8]) -> Result<(Option<String>, Vec<u8>), i32> {
+pub fn parse_msg(wallet_handle: i32, recipient_vk: &str, msg: &[u8]) -> Result<(Option<String>, Vec<u8>), u32> {
     let (sender, receiver) = channel();
 
     let cb = Box::new(move |err, verkey, msg| {
@@ -117,13 +126,13 @@ pub fn parse_msg(wallet_handle: i32, recipient_vk: &str, msg: &[u8]) -> Result<(
                                  cb);
 
         if err != 0 {
-            return Err(err);
+            return Err(err as u32);
         }
 
         let (err, verkey, msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
 
         if err != 0 {
-            return Err(err);
+            return Err(err as u32);
         }
 
         Ok((verkey, msg))
@@ -138,7 +147,6 @@ pub mod tests {
     use utils::wallet;
     use utils::signus::SignusUtils;
     use utils::constants::*;
-    use settings;
 
     #[test]
     fn test_send_msg() {
@@ -148,7 +156,7 @@ pub mod tests {
         let their_wallet = wallet::init_wallet("test_send_msg_their_wallet",POOL, "Default").unwrap();
 
         let (my_did, my_vk) = SignusUtils::create_and_store_my_did(my_wallet, Some(MY1_SEED)).unwrap();
-        let (their_did, their_vk) = SignusUtils::create_and_store_my_did(their_wallet, Some(MY1_SEED)).unwrap();
+        let (their_did, their_vk) = SignusUtils::create_and_store_my_did(their_wallet, Some(MY2_SEED)).unwrap();
 
         SignusUtils::store_their_did_from_parts(my_wallet, their_did.as_ref(), their_vk.as_ref()).unwrap();
         SignusUtils::store_their_did_from_parts(their_wallet, my_did.as_ref(), my_vk.as_ref()).unwrap();
@@ -158,7 +166,8 @@ pub mod tests {
         let (_, decrypted_message) = parse_msg(their_wallet,their_vk.as_ref(),&encrypted_message[..]).unwrap();
 
         assert_eq!(message.as_bytes().to_vec(), decrypted_message);
+        wallet::delete_wallet("test_send_msg_my_wallet").unwrap();
+        wallet::delete_wallet("test_send_msg_their_wallet").unwrap();
     }
 }
-*/
 
