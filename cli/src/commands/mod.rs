@@ -1,5 +1,8 @@
 mod wallet;
 
+use super::IndyContext;
+
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -70,10 +73,10 @@ impl CommandMetadataBuilder {
     }
 
     pub fn add_param(mut self,
-                    name: &'static str,
-                    is_optional: bool,
-                    is_main: bool,
-                    help: &'static str) -> CommandMetadataBuilder {
+                     name: &'static str,
+                     is_optional: bool,
+                     is_main: bool,
+                     help: &'static str) -> CommandMetadataBuilder {
         self.params.push(ParamMetadata::new(name, is_optional, is_main, help));
         self
     }
@@ -88,21 +91,24 @@ impl CommandMetadataBuilder {
 }
 
 trait Command {
-   fn metadata(&self) -> &CommandMetadata;
-   fn execute(&self);
+    fn metadata(&self) -> &CommandMetadata;
+    fn execute(&self, line: &str);
 }
 
 pub struct CommandExecutor {
-    cmds: HashMap<String, Box<Command>>
+    cmds: HashMap<String, HashMap<String, Box<Command>>>
 }
 
 impl CommandExecutor {
+    pub fn new(indy_context: IndyContext) -> CommandExecutor {
+        let cnxt = Rc::new(RefCell::new(indy_context));
 
-    pub fn new() -> CommandExecutor {
-        let cnxt = Rc::new("test".to_owned());
+        let mut wallet_cmds: HashMap<String, Box<Command>> = HashMap::new();
+        wallet_cmds.insert("create".to_owned(), Box::new(wallet::CreateCommand::new(cnxt.clone())));
+        wallet_cmds.insert("open".to_owned(), Box::new(wallet::OpenCommand::new(cnxt.clone())));
 
-        let mut cmds: HashMap<String, Box<Command>> = HashMap::new();
-        cmds.insert("test".to_owned(), Box::new(wallet::CreateCommand::new(cnxt.clone())));
+        let mut cmds = HashMap::new();
+        cmds.insert("wallet".to_owned(), wallet_cmds);
 
         CommandExecutor {
             cmds
@@ -110,7 +116,8 @@ impl CommandExecutor {
     }
 
     pub fn execute(&self, line: &str) {
-        self.cmds.get("test").unwrap().execute();
+        let tokens: Vec<&str> = line.splitn(3, " ").collect();
+        self.cmds.get(tokens[0]).unwrap().get(tokens[1]).unwrap().execute(tokens[2]);
     }
 }
 
