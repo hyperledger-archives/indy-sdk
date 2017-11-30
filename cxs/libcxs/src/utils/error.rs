@@ -27,6 +27,7 @@ pub static INVALID_JSON: Error = Error{code_num:1016, message:"Invalid JSON stri
 pub static INVALID_PROOF_HANDLE: Error = Error{code_num:1017, message:"Invalid Proof Handle"};
 pub static INVALID_CLAIM_REQUEST: Error = Error{code_num:1018, message:"Invalid Claim Request"};
 pub static INVALID_MSGPACK: Error = Error{code_num:1019, message:"Invalid MessagePack"};
+pub static INVALID_MESSAGES: Error = Error{code_num:1020, message:"Error Retrieving messages from API"};
 
 lazy_static! {
     static ref ERROR_MESSAGES: HashMap<u32, &'static str> = {
@@ -48,6 +49,7 @@ lazy_static! {
         insert_message(&mut m, &NOT_BASE58);
         insert_message(&mut m, &INVALID_ISSUER_CLAIM_HANDLE);
         insert_message(&mut m, &INVALID_JSON);
+        insert_message(&mut m, &INVALID_MESSAGES);
         insert_message(&mut m, &INVALID_MSGPACK);
         m
     };
@@ -140,5 +142,10 @@ mod tests {
     #[test]
     fn test_invalid_option_error(){
         assert_eq!(error_message(&INVALID_OPTION.code_num), INVALID_OPTION.message);
+    }
+
+    #[test]
+    fn test_error_retrieving_messages(){
+        assert_eq!(error_message(&INVALID_MESSAGES.code_num), INVALID_MESSAGES.message);
     }
 }

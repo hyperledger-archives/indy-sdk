@@ -29,6 +29,7 @@ static DEFAULT_CLAIM_ID: &str = "defaultClaimId";
 static CLAIM_OFFER_ID_KEY: &str = "claim_offer_id";
 static MESSAGE_TYPE_KEY: &str = "msg_type";
 static MESSAGE_TYPE_CLAIM: &str = "claim";
+static MESSAGES_KEY: &str = "msgs";
 extern {
     fn indy_issuer_create_and_store_claim_def(command_handle: i32,
                                               wallet_handle: i32,
@@ -61,6 +62,7 @@ pub struct IssuerClaim {
     claim_request: Option<ClaimRequest>,
     claim_name: String,
     claim_id: String,
+    ref_msg_id: String,
 }
 
 impl IssuerClaim {
@@ -99,6 +101,7 @@ impl IssuerClaim {
                 return Ok(error::SUCCESS.code_num);
             }
         }
+
     }
     fn create_send_claim_offer_payload(&self, to_did: &str, from_did: &str ) -> Result<String, u32> {
         #[derive(Serialize, Deserialize)]
@@ -154,6 +157,10 @@ impl IssuerClaim {
                 None => return Err(error::INVALID_CLAIM_REQUEST.code_num),
             };
             // append values we need for example 'from_did' and 'claim_id'
+            data = match append_value(&data, CLAIM_OFFER_ID_KEY, &self.msg_uid) {
+                Ok(s) => s,
+                Err(_) => return Err(error::INVALID_JSON.code_num),
+            };
 
             data = append_value(&data, "from_did", &to)?;
 
@@ -162,7 +169,8 @@ impl IssuerClaim {
             data = append_value(&data, "msg_type", "CLAIM")?;
 
         }
-        match messages::send_message().to(&to).msg_type("claim").edge_agent_payload(&data).send() {
+
+        match messages::send_message().to(&to).ref_msg_id(&self.ref_msg_id).msg_type("claim").edge_agent_payload(&data).send() {
             Err(x) => {
                 warn!("could not send claim: {}", x);
                 return Err(x);
@@ -316,6 +324,7 @@ impl IssuerClaim {
                         return
                     }
                 };
+                self.ref_msg_id = ref_msg_id.to_owned();
                 self.get_claim_req(ref_msg_id);
             }
         }
@@ -352,6 +361,7 @@ impl IssuerClaim {
             },
             claim_name: "Claim".to_owned(),
             claim_id: String::from(DEFAULT_CLAIM_ID),
+            ref_msg_id: String::new(),
         };
         Ok(issuer_claim)
     }
@@ -408,12 +418,8 @@ pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRe
 
     info!("xclaim_json: {}", xclaim_json);
     // add required fields for Consumer API
-    let json = match append_value(&xclaim_json, CLAIM_OFFER_ID_KEY, &claim_id) {
-        Ok(s) => s,
-        Err(_) => return Err(error::INVALID_JSON.code_num),
-    };
 
-    Ok(json)
+    Ok(xclaim_json)
 }
 
 pub fn get_offer_uid(handle: u32) -> Result<String,u32> {
@@ -444,6 +450,7 @@ pub fn issuer_claim_create(schema_seq_no: u32,
         claim_request: None,
         claim_name: String::from("Claim"),
         claim_id: new_handle.to_string(),
+        ref_msg_id: String::new(),
     });
 
     match new_issuer_claim.validate_claim_offer() {
@@ -630,7 +637,7 @@ mod tests {
         }"#;
 
     static X_CLAIM_JSON: &str =
-        r#"{"claim_offer_id":"defaultClaimId","claim":{"address1":["101 Tela Lane","1139481716457488690172217916278103335"],"address2":["101 Wilson Lane","1139481716457488690172217916278103335"],"city":["SLC","1139481716457488690172217916278103335"],"state":["UT","1139481716457488690172217916278103335"],"zip":["87121","1139481716457488690172217916278103335"]},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_seq_no":48,"signature":{"non_revocation_claim":null,"primary_claim":{"a":"","e":"","m2":"","v":""}}}"#;
+        r#"{"claim":{"address1":["101 Tela Lane","1139481716457488690172217916278103335"],"address2":["101 Wilson Lane","1139481716457488690172217916278103335"],"city":["SLC","1139481716457488690172217916278103335"],"state":["UT","1139481716457488690172217916278103335"],"zip":["87121","1139481716457488690172217916278103335"]},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_seq_no":48,"signature":{"non_revocation_claim":null,"primary_claim":{"a":"","e":"","m2":"","v":""}}}"#;
 
     fn util_put_claim_def_in_issuer_wallet(schema_seq_num: u32, wallet_handle: i32) {
         let schema = &create_default_schema(schema_seq_num);
@@ -678,6 +685,7 @@ mod tests {
                 }
             },
             claim_id: String::from(DEFAULT_CLAIM_ID),
+            ref_msg_id: String::new(),
         };
         issuer_claim
     }
@@ -792,6 +800,7 @@ mod tests {
             },
         };
         _m.assert();
+        assert_eq!(claim.msg_uid, "6a9u7Jt");
         assert_eq!(claim.state, CxsStateType::CxsStateAccepted);
         wallet::close_wallet(wallet::get_wallet_handle()).unwrap();
         wallet::delete_wallet(test_name).unwrap();
@@ -846,6 +855,7 @@ mod tests {
             },
             claim_name: DEFAULT_CLAIM_NAME.to_owned(),
             claim_id: String::from(DEFAULT_CLAIM_ID),
+            ref_msg_id: String::new(),
         };
 
         claim.update_state();
