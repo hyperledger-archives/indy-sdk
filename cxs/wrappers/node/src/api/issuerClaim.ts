@@ -33,9 +33,7 @@ export class IssuerClaim extends CXSBase {
   private _claimName: string
 
   constructor (sourceId) {
-    super()
-    this._sourceId = sourceId
-    this._handle = null
+    super(sourceId)
     this._schemaNum = null
     this._issuerDID = null
     this._claimName = 'Claim Name Here'
@@ -65,9 +63,9 @@ export class IssuerClaim extends CXSBase {
   }
 
   // Deserializes a JSON representing a issuer claim object
-  static async deserialize (claimData: IClaimData): Promise<IssuerClaim> {
+  static async deserialize (claimData: IClaimData) {
     try {
-      return await super.deserialize(IssuerClaim, claimData)
+      return await super._deserialize(IssuerClaim, claimData)
     } catch (err) {
       throw new CXSInternalError(`cxs_issuer_claim_deserialize -> ${err}`)
     }

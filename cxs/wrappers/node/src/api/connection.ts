@@ -33,11 +33,6 @@ export class Connection extends CXSBase {
   protected _serializeFn = rustAPI().cxs_connection_serialize
   protected _deserializeFn = rustAPI().cxs_connection_deserialize
 
-  constructor (sourceId) {
-    super()
-    this._sourceId = sourceId
-  }
-
   static async create ( recipientInfo: IRecipientInfo): Promise<Connection> {
     const connection = new Connection(recipientInfo.id)
     const commandHandle = 0
@@ -49,9 +44,9 @@ export class Connection extends CXSBase {
     }
   }
 
-  static async deserialize (connectionData: IConnectionData): Promise<CXSBase> {
+  static async deserialize (connectionData: IConnectionData) {
     try {
-      return await super.deserialize(Connection, connectionData)
+      return await super._deserialize(Connection, connectionData)
     } catch (err) {
       throw new CXSInternalError(`cxs_connection_deserialize -> ${err}`)
     }
