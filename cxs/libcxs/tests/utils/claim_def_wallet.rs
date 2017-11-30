@@ -31,7 +31,7 @@ pub fn create_default_schema(schema_seq_no: u32) -> String {
                             "data":{{
                                 "name":"gvt",
                                 "version":"1.0",
-                                "keys":["age","sex","height","name"]
+                                "attr_names":["age","sex","height","name"]
                             }}
                          }}"#, schema_seq_no);
     String::from(schema)
