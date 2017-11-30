@@ -603,7 +603,7 @@ mod tests {
                             "data":{{
                                 "name":"gvt",
                                 "version":"1.0",
-                                "keys":["address1","address2","city","state", "zip"]
+                                "attr_names":["address1","address2","city","state", "zip"]
                             }}
                          }}"#;
 
