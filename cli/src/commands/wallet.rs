@@ -1,10 +1,28 @@
-use super::{Command, CommandMetadata, CommandMetadataBuilder};
+use super::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
 use super::super::IndyContext;
 
 use libindy::wallet::Wallet;
 
 use std::collections::HashMap;
 use std::rc::Rc;
+
+pub struct Group {
+    metadata: GroupMetadata
+}
+
+impl Group {
+    pub fn new() -> Group {
+        Group {
+            metadata: GroupMetadata::new("wallet", "Wallet management commands")
+        }
+    }
+}
+
+impl GroupTrait for Group {
+    fn metadata(&self) -> &GroupMetadata {
+        &self.metadata
+    }
+}
 
 pub struct CreateCommand {
     ctx: Rc<IndyContext>,
@@ -21,8 +39,8 @@ impl CreateCommand {
     pub fn new(ctx: Rc<IndyContext>) -> CreateCommand {
         CreateCommand {
             ctx,
-            metadata: CommandMetadataBuilder::new("create", "Create new wallet with specified name")
-                .add_param("name", false, true, "The name of new wallet")
+            metadata: CommandMetadata::build("create", "Create new wallet with specified name")
+                .add_main_param("name", "The name of new wallet")
                 .finalize()
         }
     }
@@ -43,8 +61,8 @@ impl OpenCommand {
     pub fn new(ctx: Rc<IndyContext>) -> OpenCommand {
         OpenCommand {
             ctx,
-            metadata: CommandMetadataBuilder::new("open", "Open wallet with specified name. Also close previously opened.")
-                .add_param("name", false, true, "The name of wallet")
+            metadata: CommandMetadata::build("open", "Open wallet with specified name. Also close previously opened.")
+                .add_main_param("name", "The name of wallet")
                 .finalize()
         }
     }

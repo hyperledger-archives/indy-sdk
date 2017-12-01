@@ -8,6 +8,7 @@ pub mod libindy;
 pub mod utils;
 
 use commands::CommandExecutor;
+use commands::wallet;
 use libindy::IndyHandle;
 
 use linefeed::{Reader, ReadResult};
@@ -23,15 +24,24 @@ pub struct IndyContext {
 }
 
 fn main() {
-    let indy_context = IndyContext {
-        cur_wallet: RefCell::new(None),
-    };
-    let command_executor = CommandExecutor::new(indy_context);
+    let command_executor = build_executor();
+
     if env::args().len() == 1 {
         console_mod_start(command_executor);
     } else {
         unimplemented!("Batch mod");
     }
+}
+
+fn build_executor() -> CommandExecutor {
+    let indy_context = Rc::new(IndyContext::new());
+
+    CommandExecutor::build()
+        .add_group(Box::new(wallet::Group::new()))
+        .add_command(Box::new(wallet::CreateCommand::new(indy_context.clone())))
+        .add_command(Box::new(wallet::OpenCommand::new(indy_context)))
+        .finalize_group()
+        .finalize()
 }
 
 fn console_mod_start(command_executor: CommandExecutor) {
@@ -50,6 +60,12 @@ fn console_mod_start(command_executor: CommandExecutor) {
 }
 
 impl IndyContext {
+    pub fn new() -> IndyContext {
+        IndyContext {
+            cur_wallet: RefCell::new(None),
+        }
+    }
+
     pub fn set_current_wallet(&self, wallet_name: &str, wallet_handle: IndyHandle) {
         *self.cur_wallet.borrow_mut() = Some((wallet_name.to_string(), wallet_handle));
     }
