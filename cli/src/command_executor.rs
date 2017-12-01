@@ -1,5 +1,3 @@
-pub mod wallet;
-
 use std::collections::HashMap;
 
 #[derive(Debug)]

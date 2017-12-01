@@ -1,4 +1,4 @@
-use super::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
+use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
 use super::super::IndyContext;
 
 use libindy::wallet::Wallet;
@@ -72,9 +72,9 @@ impl OpenCommand {
         for param in params {
             params_map.insert(param.0.to_string(), param.1);
         }
-        for required_param in self.metadata.params.iter()
+        for required_param in self.metadata.params().iter()
             .filter(|p| !p.is_optional()) {
-            if !params_map.contains_key(required_param.name) {
+            if !params_map.contains_key(required_param.name()) {
                 return Err(());
             }
         }

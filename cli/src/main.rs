@@ -3,11 +3,12 @@ extern crate lazy_static;
 extern crate libc;
 extern crate linefeed;
 
+pub mod command_executor;
 pub mod commands;
 pub mod libindy;
 pub mod utils;
 
-use commands::CommandExecutor;
+use command_executor::CommandExecutor;
 use commands::wallet;
 use libindy::IndyHandle;
 
