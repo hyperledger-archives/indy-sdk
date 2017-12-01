@@ -107,7 +107,7 @@ impl CommandMetadataBuilder {
 
 trait Command {
     fn metadata(&self) -> &CommandMetadata;
-    fn execute(&self, params: &Vec<(&str, &str)>);
+    fn execute(&self, params: &[(&str, &str)]) -> Result<(), ()>;
 }
 
 pub struct CommandExecutor {
@@ -116,7 +116,7 @@ pub struct CommandExecutor {
 
 impl CommandExecutor {
     pub fn new(indy_context: IndyContext) -> CommandExecutor {
-        let ctx = Rc::new(RefCell::new(indy_context));
+        let ctx = Rc::new(indy_context);
 
         let mut wallet_cmds: HashMap<String, Box<Command>> = HashMap::new();
         wallet_cmds.insert("create".to_owned(), Box::new(wallet::CreateCommand::new(ctx.clone())));
@@ -158,7 +158,7 @@ impl CommandExecutor {
             }
         }
 
-        cmd.execute(&params);
+        cmd.execute(&params).unwrap();
     }
 }
 
@@ -168,7 +168,7 @@ mod tests {
 
     #[test]
     pub fn execute_works() {
-        let cmd_executor = CommandExecutor::new(IndyContext { cur_wallet: None });
+        let cmd_executor = CommandExecutor::new(IndyContext { cur_wallet: RefCell::new(None) });
         cmd_executor.execute("wallet create newWalletName");
     }
 }

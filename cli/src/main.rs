@@ -8,21 +8,23 @@ pub mod libindy;
 pub mod utils;
 
 use commands::CommandExecutor;
+use libindy::IndyHandle;
 
 use linefeed::{Reader, ReadResult};
 use linefeed::complete::PathCompleter;
 
+use std::cell::RefCell;
 use std::env;
 use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct IndyContext {
-    cur_wallet: Option<String>,
+    cur_wallet: RefCell<Option<(String, IndyHandle)>>,
 }
 
 fn main() {
     let indy_context = IndyContext {
-        cur_wallet: None,
+        cur_wallet: RefCell::new(None),
     };
     let command_executor = CommandExecutor::new(indy_context);
     if env::args().len() == 1 {
@@ -45,4 +47,10 @@ fn console_mod_start(command_executor: CommandExecutor) {
     }
 
     println!("\nGoodbye.");
+}
+
+impl IndyContext {
+    pub fn set_current_wallet(&self, wallet_name: &str, wallet_handle: IndyHandle) {
+        *self.cur_wallet.borrow_mut() = Some((wallet_name.to_string(), wallet_handle));
+    }
 }

@@ -1,5 +1,7 @@
 pub mod wallet;
 
+pub type IndyHandle = i32;
+
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
 pub enum ErrorCode
