@@ -1,4 +1,4 @@
-mod wallet;
+pub mod wallet;
 
 use std::collections::HashMap;
 
@@ -101,7 +101,7 @@ impl CommandMetadataBuilder {
 
 pub trait Command {
     fn metadata(&self) -> &CommandMetadata;
-    fn execute(&self, params: &HashMap<String, String>);
+    fn execute(&self, params: &[(&str, &str)]) -> Result<(), ()>;
 }
 
 #[derive(Debug)]
@@ -380,8 +380,9 @@ mod tests {
             &self.metadata
         }
 
-        fn execute(&self, params: &HashMap<String, String>) {
-            println!("Test comamnd params: {:?}", params)
+        fn execute(&self, params: &[(&str, &str)]) -> Result<(), ()> {
+            println!("Test comamnd params: {:?}", params);
+            Ok(())
         }
     }
 

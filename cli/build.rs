@@ -3,6 +3,10 @@ use std::fs;
 use std::path::Path;
 
 fn main() {
+	println!("cargo:rustc-link-lib=indy");
+	println!("cargo:rustc-link-lib=zmq-pw");
+	println!("cargo:rustc-link-lib=ssl");
+	println!("cargo:rustc-link-lib=sodium");
 	let target = env::var("TARGET").unwrap();
 	println!("target={}", target);
 	match target.find("-windows-") {
@@ -14,9 +18,6 @@ fn main() {
 			let dst = Path::new(&output_dir[..]).join("..\\..\\..");
 			let prebuilt_lib = Path::new(&prebuilt_dir[..]).join("lib");
 
-			println!("cargo:rustc-link-lib=indy");
-			println!("cargo:rustc-link-lib=zmq-pw");
-			println!("cargo:rustc-link-lib=sodium");
 			println!("cargo:rustc-link-search=native={}", prebuilt_dir);
 			println!("cargo:rustc-flags=-L {}/lib", prebuilt_dir);
 			println!("cargo:include={}/include", prebuilt_dir);
