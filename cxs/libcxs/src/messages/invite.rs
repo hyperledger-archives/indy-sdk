@@ -6,11 +6,13 @@ extern crate rmp_serde;
 use settings;
 use utils::httpclient;
 use utils::error;
-use messages::{validation, GeneralMessage, Bundled, bundle_for_agency};
+use messages::{validation, GeneralMessage, Bundled, MsgResponse, bundle_for_agency, unbundle_from_agency};
 use self::rmp_serde::encode;
+use serde::Deserialize;
+use self::rmp_serde::Deserializer;
 
 
-#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
 struct UpdateProfileDataPayload{
     #[serde(rename = "type")]
@@ -31,7 +33,7 @@ pub struct UpdateProfileData {
     validate_rc: u32,
 }
 
-#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
 struct SendInvitePayload{
     #[serde(rename = "type")]
@@ -51,6 +53,25 @@ pub struct SendInvite {
     payload: SendInvitePayload,
     #[serde(skip_serializing, default)]
     validate_rc: u32,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct UpdateProfileResponse {
+    code: String,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct InviteDetails {
+    msg_type: String,
+    invite_details: String,
+    invite_url: String,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct SendInviteResponse {
+    create_response: MsgResponse,
+    invite_details: InviteDetails,
+    send_response: MsgResponse,
 }
 
 impl SendInvite{
@@ -127,7 +148,7 @@ impl GeneralMessage for SendInvite{
 
     fn set_to_vk(&mut self, to_vk: String){ /* nothing to do here for SendInvite */ }
 
-    fn to_post(&mut self) -> Result<Vec<u8>,u32> {
+    fn to_post(&self) -> Result<Vec<u8>,u32> {
         if self.validate_rc != error::SUCCESS.code_num {
             return Err(self.validate_rc)
         }
@@ -145,7 +166,7 @@ impl GeneralMessage for SendInvite{
     }
 
     fn send_enc(&mut self) -> Result<String, u32> {
-        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
         let data = match self.to_post() {
             Ok(x) => x,
@@ -154,13 +175,29 @@ impl GeneralMessage for SendInvite{
 
         match httpclient::post_u8(&data, &url) {
             Err(_) => Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => parse_send_invite_response(&response),
+            Ok(response) => parse_send_invite_response(response),
         }
     }
 }
 
-fn parse_send_invite_response(response: &Vec<u8>) -> Result<String, u32> {
-    Ok(String::new().to_owned())
+fn parse_send_invite_response(response: Vec<u8>) -> Result<String, u32> {
+    let data = unbundle_from_agency(response)?;
+
+    let mut de = Deserializer::new(&data[..]);
+    let bundle: Bundled<SendInviteResponse> = match Deserialize::deserialize(&mut de) {
+        Ok(x) => x,
+        Err(x) => {
+            error!("Could not parse messagepack: {}", x);
+            return Err(error::INVALID_MSGPACK.code_num)
+        },
+    };
+
+    let invite_details = &bundle.bundled[0].invite_details.invite_details;
+
+    match serde_json::to_string(invite_details) {
+        Ok(x) => Ok(x),
+        Err(_) => Err(error::INVALID_JSON.code_num),
+    }
 }
 
 impl UpdateProfileData{
@@ -229,7 +266,7 @@ impl GeneralMessage for UpdateProfileData{
 
     fn set_to_vk(&mut self, to_vk: String){ /* nothing to do here for CreateKeymsg */ }
 
-    fn to_post(&mut self) -> Result<Vec<u8>,u32> {
+    fn to_post(&self) -> Result<Vec<u8>,u32> {
         if self.validate_rc != error::SUCCESS.code_num {
             return Err(self.validate_rc)
         }
@@ -247,7 +284,7 @@ impl GeneralMessage for UpdateProfileData{
     }
 
     fn send_enc(&mut self) -> Result<String, u32> {
-        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
         let data = match self.to_post() {
             Ok(x) => x,
@@ -256,19 +293,36 @@ impl GeneralMessage for UpdateProfileData{
 
         match httpclient::post_u8(&data, &url) {
             Err(_) => Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => parse_update_profile_response(&response),
+            Ok(response) => parse_update_profile_response(response),
         }
     }
 }
 
-fn parse_update_profile_response(response: &Vec<u8>) -> Result<String, u32> {
-    Ok(String::new().to_owned())
+fn parse_update_profile_response(response: Vec<u8>) -> Result<String, u32> {
+    let data = unbundle_from_agency(response)?;
+
+    let mut de = Deserializer::new(&data[..]);
+    let bundle: Bundled<UpdateProfileResponse> = match Deserialize::deserialize(&mut de) {
+        Ok(x) => x,
+        Err(x) => {
+            error!("Could not parse messagepack: {}", x);
+            return Err(error::INVALID_MSGPACK.code_num)
+        },
+    };
+
+    match serde_json::to_string(&bundle.bundled) {
+        Ok(x) => Ok(x),
+        Err(_) => Err(error::INVALID_JSON.code_num),
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use messages::{update_data, send_invite};
+    use utils::wallet;
+    use utils::signus::SignusUtils;
+    use utils::constants::*;
 
     #[test]
     fn test_send_invite_set_values_and_serialize(){
@@ -291,6 +345,38 @@ mod tests {
     }
 
     #[test]
+    fn test_send_invite_set_values_and_post(){
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        let agency_wallet = wallet::init_wallet("test_send_invite_set_values_and_serialize_agency").unwrap();
+        let agent_wallet = wallet::init_wallet("test_send_invite_set_values_and_serialize_agent").unwrap();
+        let my_wallet = wallet::init_wallet("test_send_invite_set_values_and_serialize_mine").unwrap();
+
+        let (agent_did, agent_vk) = SignusUtils::create_and_store_my_did(agent_wallet, Some(MY2_SEED)).unwrap();
+        let (my_did, my_vk) = SignusUtils::create_and_store_my_did(my_wallet, Some(MY1_SEED)).unwrap();
+        let (agency_did, agency_vk) = SignusUtils::create_and_store_my_did(agency_wallet, Some(MY3_SEED)).unwrap();
+
+        SignusUtils::store_their_did_from_parts(my_wallet, agent_did.as_ref(), agent_vk.as_ref()).unwrap();
+        SignusUtils::store_their_did_from_parts(my_wallet, agency_did.as_ref(), agency_vk.as_ref()).unwrap();
+
+        settings::set_config_value(settings::CONFIG_AGENCY_PAIRWISE_VERKEY, &agency_vk);
+        settings::set_config_value(settings::CONFIG_AGENT_PAIRWISE_VERKEY, &agent_vk);
+        settings::set_config_value(settings::CONFIG_ENTERPRISE_VERKEY, &my_vk);
+
+        let msg = send_invite()
+            .to(agent_did.as_ref())
+            .phone_number("phone")
+            .key_delegate("key")
+            .to_post().unwrap();
+
+        assert!(msg.len() > 0);
+
+        wallet::delete_wallet("test_send_invite_set_values_and_serialize_mine").unwrap();
+        wallet::delete_wallet("test_send_invite_set_values_and_serialize_agent").unwrap();
+        wallet::delete_wallet("test_send_invite_set_values_and_serialize_agency").unwrap();
+    }
+
+    #[test]
     fn test_update_data_set_values_and_serialize(){
         let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
         let name = "name";
@@ -306,5 +392,74 @@ mod tests {
             \\\"type\\\":\\\"UPDATE_PROFILE_DATA\\\"}\",\
         \"to\":\"8XFh8yBzrpJQmNyZzgoTqB\"}");
 
+    }
+
+    #[test]
+    fn test_update_data_set_values_and_post(){
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        let agency_wallet = wallet::init_wallet("test_update_data_set_values_and_serialize_agency").unwrap();
+        let agent_wallet = wallet::init_wallet("test_update_data_set_values_and_serialize_agent").unwrap();
+        let my_wallet = wallet::init_wallet("test_update_data_set_values_and_serialize_mine").unwrap();
+
+        let (agent_did, agent_vk) = SignusUtils::create_and_store_my_did(agent_wallet, Some(MY2_SEED)).unwrap();
+        let (my_did, my_vk) = SignusUtils::create_and_store_my_did(my_wallet, Some(MY1_SEED)).unwrap();
+        let (agency_did, agency_vk) = SignusUtils::create_and_store_my_did(agency_wallet, Some(MY3_SEED)).unwrap();
+
+        SignusUtils::store_their_did_from_parts(my_wallet, agent_did.as_ref(), agent_vk.as_ref()).unwrap();
+        SignusUtils::store_their_did_from_parts(my_wallet, agency_did.as_ref(), agency_vk.as_ref()).unwrap();
+
+        settings::set_config_value(settings::CONFIG_AGENCY_PAIRWISE_VERKEY, &agency_vk);
+        settings::set_config_value(settings::CONFIG_AGENT_PAIRWISE_VERKEY, &agent_vk);
+        settings::set_config_value(settings::CONFIG_ENTERPRISE_VERKEY, &my_vk);
+
+        let msg = update_data()
+            .to(agent_did.as_ref())
+            .name("name")
+            .logo_url("https://random.com")
+            .to_post().unwrap();
+        assert!(msg.len() > 0);
+
+        wallet::delete_wallet("test_update_data_set_values_and_serialize_mine").unwrap();
+        wallet::delete_wallet("test_update_data_set_values_and_serialize_agent").unwrap();
+        wallet::delete_wallet("test_update_data_set_values_and_serialize_agency").unwrap();
+    }
+
+    #[test]
+    fn test_parse_send_invite_response() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
+
+        let payload = SendInviteResponse {
+            create_response: MsgResponse { msg_type: "MSG_CREATED".to_string(), msg_id: "id1".to_string(), },
+            invite_details: InviteDetails { msg_type: "MSG_DETAIL".to_string(), invite_details: "{\"attr\":\"value\"}".to_string(), invite_url: "url".to_string(), },
+            send_response: MsgResponse { msg_type: "MSG_SENT".to_string(), msg_id: "id2".to_string(), },
+        };
+
+        let bundle = Bundled::create(payload);
+        let data = encode::to_vec_named(&bundle).unwrap();
+        let result = parse_send_invite_response(data).unwrap();
+
+        println!("result: {}", result);
+
+        assert!(result.len() > 0);
+    }
+
+    #[test]
+    fn test_parse_update_profile_response() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
+
+        let payload = UpdateProfileResponse {
+            code: "MS-103".to_string(),
+        };
+
+        let bundle = Bundled::create(payload);
+        let data = encode::to_vec_named(&bundle).unwrap();
+        let result = parse_update_profile_response(data).unwrap();
+
+        println!("result: {}", result);
+
+        assert!(result.len() > 0);
     }
 }

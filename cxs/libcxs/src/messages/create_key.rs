@@ -6,8 +6,10 @@ extern crate rmp_serde;
 use settings;
 use utils::httpclient;
 use utils::error;
-use messages::{Bundled, GeneralMessage, validation, bundle_for_agency};
+use messages::{Bundled, GeneralMessage, validation, bundle_for_agency, unbundle_from_agency};
 use self::rmp_serde::encode;
+use serde::Deserialize;
+use self::rmp_serde::Deserializer;
 
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
@@ -32,6 +34,13 @@ pub struct CreateKeyMsg {
     payload: CreateKeyPayload,
     #[serde(skip_serializing, default)]
     validate_rc: u32,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CreateKeyResponse {
+    msg_type: String,
+    for_did: String,
+    for_verkey: String,
 }
 
 impl CreateKeyMsg{
@@ -120,7 +129,7 @@ impl GeneralMessage for CreateKeyMsg  {
 
     fn set_to_vk(&mut self, to_vk: String){ /* nothing to do here for CreateKeymsg */ }
 
-    fn to_post(&mut self) -> Result<Vec<u8>,u32> {
+    fn to_post(&self) -> Result<Vec<u8>,u32> {
         if self.validate_rc != error::SUCCESS.code_num {
             return Err(self.validate_rc)
         }
@@ -138,7 +147,7 @@ impl GeneralMessage for CreateKeyMsg  {
     }
 
     fn send_enc(&mut self) -> Result<String, u32> {
-        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
         let data = match self.to_post() {
             Ok(x) => x,
@@ -147,13 +156,28 @@ impl GeneralMessage for CreateKeyMsg  {
 
         match httpclient::post_u8(&data, &url) {
             Err(_) => Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => parse_create_keys_response(&response),
+            Ok(response) => parse_create_keys_response(response),
         }
     }
 }
 
-fn parse_create_keys_response(response: &Vec<u8>) -> Result<String, u32> {
-    Ok(String::new().to_owned())
+fn parse_create_keys_response(response: Vec<u8>) -> Result<String, u32> {
+
+    let data = unbundle_from_agency(response)?;
+
+    let mut de = Deserializer::new(&data[..]);
+    let bundle: Bundled<CreateKeyResponse> = match Deserialize::deserialize(&mut de) {
+        Ok(x) => x,
+        Err(x) => {
+            error!("Could not parse messagepack: {}", x);
+            return Err(error::INVALID_MSGPACK.code_num)
+        },
+    };
+
+    match serde_json::to_string(&bundle.bundled) {
+        Ok(x) => Ok(x),
+        Err(_) => Err(error::INVALID_JSON.code_num),
+    }
 }
 
 
@@ -162,11 +186,8 @@ mod tests {
     use super::*;
     use utils::constants::*;
     use utils::signus::SignusUtils;
-    use messages::{create_keys, Forward};
+    use messages::create_keys;
     use utils::wallet;
-    use utils::crypto;
-    use serde::Deserialize;
-    use self::rmp_serde::Deserializer;
 
     #[test]
     fn test_create_key_returns_message_with_create_key_as_payload() {
@@ -204,9 +225,9 @@ mod tests {
     fn test_create_key_set_values_and_serialize() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let agency_wallet = wallet::init_wallet("test_create_key_set_values_and_serialize_agency", POOL, "Default").unwrap();
-        let agent_wallet = wallet::init_wallet("test_create_key_set_values_and_serialize_agent", POOL, "Default").unwrap();
-        let my_wallet = wallet::init_wallet("test_create_key_set_values_and_serialize_mine", POOL, "Default").unwrap();
+        let agency_wallet = wallet::init_wallet("test_create_key_set_values_and_serialize_agency").unwrap();
+        let agent_wallet = wallet::init_wallet("test_create_key_set_values_and_serialize_agent").unwrap();
+        let my_wallet = wallet::init_wallet("test_create_key_set_values_and_serialize_mine").unwrap();
 
         let (agent_did, agent_vk) = SignusUtils::create_and_store_my_did(agent_wallet, Some(MY2_SEED)).unwrap();
         let (my_did, my_vk) = SignusUtils::create_and_store_my_did(my_wallet, Some(MY1_SEED)).unwrap();
@@ -214,42 +235,42 @@ mod tests {
 
         SignusUtils::store_their_did_from_parts(my_wallet, agent_did.as_ref(), agent_vk.as_ref()).unwrap();
         SignusUtils::store_their_did_from_parts(my_wallet, agency_did.as_ref(), agency_vk.as_ref()).unwrap();
-        SignusUtils::store_their_did_from_parts(agent_wallet, my_did.as_ref(), my_vk.as_ref()).unwrap();
-        SignusUtils::store_their_did_from_parts(agency_wallet, my_did.as_ref(), my_vk.as_ref()).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_PAIRWISE_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_AGENT_PAIRWISE_VERKEY, &agent_vk);
         settings::set_config_value(settings::CONFIG_ENTERPRISE_VERKEY, &my_vk);
-        let nonce = "nonce";
+
         let bytes = create_keys()
             .to(&agent_did)
             .for_did(&my_did)
             .for_verkey(&my_vk)
-            .nonce(nonce)
+            .nonce("nonce")
             .to_post().unwrap();
         assert!(bytes.len() > 0);
-
-        let (_, msg) = crypto::parse_msg(agency_wallet,&agency_vk,&bytes[..]).unwrap();
-
-        let mut de = Deserializer::new(&msg[..]);
-        let bundle: Bundled<Forward> = Deserialize::deserialize(&mut de).unwrap();
-
-        println!("first unbundle");
-        println!("{:?}", bundle);
-
-        let msg = bundle.bundled[0].msg.clone();
-        println!("msg: {:?}", msg);
-        let (_, msg) = crypto::parse_msg(agent_wallet,&agent_vk,&msg[..]).unwrap();
-
-        let mut de = Deserializer::new(&msg[..]);
-        let bundle: Bundled<CreateKeyPayload> = Deserialize::deserialize(&mut de).unwrap();
-
-        println!("second unbundle");
-        println!("{:?}", bundle);
 
         wallet::delete_wallet("test_create_key_set_values_and_serialize_mine").unwrap();
         wallet::delete_wallet("test_create_key_set_values_and_serialize_agent").unwrap();
         wallet::delete_wallet("test_create_key_set_values_and_serialize_agency").unwrap();
+    }
+
+    #[test]
+    fn test_parse_create_keys_response() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
+
+        let payload = CreateKeyResponse {
+            msg_type: "type".to_string(),
+            for_did: "for_did".to_string(),
+            for_verkey: "for_verkey".to_string(),
+        };
+
+        let bundle = Bundled::create(payload);
+        let data = encode::to_vec_named(&bundle).unwrap();
+        let result = parse_create_keys_response(data).unwrap();
+
+        println!("result: {}", result);
+
+        assert!(result.len() > 0);
     }
 
     #[test]

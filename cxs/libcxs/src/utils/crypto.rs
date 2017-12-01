@@ -34,7 +34,7 @@ fn indy_parse_msg(command_handle: i32,
 pub fn prep_msg(wallet_handle: i32, sender_vk: &str, recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
     info!("prep_msg svk: {} rvk: {}",sender_vk, recipient_vk);
 
-    if settings::test_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
+    if settings::test_indy_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
 
     let (sender, receiver) = channel();
 
@@ -73,7 +73,7 @@ pub fn prep_msg(wallet_handle: i32, sender_vk: &str, recipient_vk: &str, msg: &[
 pub fn prep_anonymous_msg(recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
     info!("prep_anonymous_msg rvk: {}",recipient_vk);
 
-    if settings::test_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
+    if settings::test_indy_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
 
     let (sender, receiver) = channel();
 
@@ -106,7 +106,9 @@ pub fn prep_anonymous_msg(recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32
     }
 }
 
-pub fn parse_msg(wallet_handle: i32, recipient_vk: &str, msg: &[u8]) -> Result<(Option<String>, Vec<u8>), u32> {
+pub fn parse_msg(wallet_handle: i32, recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
+    if settings::test_indy_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
+
     let (sender, receiver) = channel();
 
     let cb = Box::new(move |err, verkey, msg| {
@@ -135,7 +137,7 @@ pub fn parse_msg(wallet_handle: i32, recipient_vk: &str, msg: &[u8]) -> Result<(
             return Err(err as u32);
         }
 
-        Ok((verkey, msg))
+        Ok(msg)
     }
 }
 
@@ -152,8 +154,8 @@ pub mod tests {
     fn test_send_msg() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        let my_wallet = wallet::init_wallet("test_send_msg_my_wallet",POOL, "Default").unwrap();
-        let their_wallet = wallet::init_wallet("test_send_msg_their_wallet",POOL, "Default").unwrap();
+        let my_wallet = wallet::init_wallet("test_send_msg_my_wallet").unwrap();
+        let their_wallet = wallet::init_wallet("test_send_msg_their_wallet").unwrap();
 
         let (my_did, my_vk) = SignusUtils::create_and_store_my_did(my_wallet, Some(MY1_SEED)).unwrap();
         let (their_did, their_vk) = SignusUtils::create_and_store_my_did(their_wallet, Some(MY2_SEED)).unwrap();
@@ -163,7 +165,7 @@ pub mod tests {
 
         let message = "this is a test message for encryption";
         let encrypted_message = prep_msg(my_wallet, my_vk.as_ref(), their_vk.as_ref(),message.as_bytes()).unwrap();
-        let (_, decrypted_message) = parse_msg(their_wallet,their_vk.as_ref(),&encrypted_message[..]).unwrap();
+        let decrypted_message = parse_msg(their_wallet,their_vk.as_ref(),&encrypted_message[..]).unwrap();
 
         assert_eq!(message.as_bytes().to_vec(), decrypted_message);
         wallet::delete_wallet("test_send_msg_my_wallet").unwrap();

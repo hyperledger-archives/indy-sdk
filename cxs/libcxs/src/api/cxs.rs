@@ -120,9 +120,9 @@ pub extern fn cxs_init (command_handle: u32,
 
     thread::spawn(move|| {
         /* TODO: handle pool config */
-        pool::create_pool_ledger_config(&pool_name,Some(&config_name));
-        let wrc = match wallet::init_wallet(&wallet_name, &pool_name, &wallet_type) {
-            Ok(x) => error::SUCCESS.code_num,
+        pool::create_pool_ledger_config();
+        let wrc = match wallet::init_wallet(&wallet_name) {
+            Ok(_) => error::SUCCESS.code_num,
             Err(x) => x,
         };
 
@@ -182,7 +182,6 @@ mod tests {
 
     #[test]
     fn test_init_with_file() {
-        wallet::tests::delete_wallet("dummy");
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let config_path = "/tmp/test_init.json";
@@ -207,6 +206,7 @@ mod tests {
         thread::sleep(Duration::from_secs(1));
         // Leave file around or other concurrent tests will fail
         //fs::remove_file(config_path).unwrap();
+        wallet::delete_wallet("my_wallet").unwrap();
     }
 
 
@@ -223,5 +223,6 @@ mod tests {
         let result = cxs_init(0,ptr::null(),Some(init_cb));
         assert_eq!(result,0);
         thread::sleep(Duration::from_secs(1));
+        wallet::delete_wallet("wallet1").unwrap();
     }
 }

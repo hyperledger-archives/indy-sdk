@@ -5,6 +5,7 @@ extern crate libc;
 use utils::wallet;
 use utils::error;
 use utils::signus::SignusUtils;
+use utils::crypto;
 use api::CxsStateType;
 use rand::Rng;
 use std::sync::Mutex;
@@ -99,6 +100,7 @@ impl Connection {
     fn get_pw_did(&self) -> String { self.pw_did.clone() }
     fn get_pw_verkey(&self) -> String { self.pw_verkey.clone() }
     fn set_pw_verkey(&mut self, verkey: &str) { self.pw_verkey = verkey.to_string(); }
+    fn get_their_pw_verkey(&self) -> String {self.invite_detail.sVk.clone() }
     fn get_uuid(&self) -> String { self.uuid.clone() }
     fn get_endpoint(&self) -> String { self.endpoint.clone() }
     fn set_uuid(&mut self, uuid: &str) { self.uuid = uuid.to_string(); }
@@ -171,6 +173,13 @@ pub fn get_endpoint(handle: u32) -> Result<String, u32> {
 pub fn get_pw_verkey(handle: u32) -> Result<String, u32> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
         Some(cxn) => Ok(cxn.get_pw_verkey()),
+        None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
+    }
+}
+
+pub fn get_their_pw_verkey(handle: u32) -> Result<String, u32> {
+    match CONNECTION_MAP.lock().unwrap().get(&handle) {
+        Some(cxn) => Ok(cxn.get_their_pw_verkey()),
         None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
     }
 }
@@ -380,11 +389,17 @@ pub fn convert_invite_details(json: &serde_json::Value) -> InviteDetail {
     json_converted
 }
 
+pub fn encrypt_payload(handle: u32, payload: &str) -> Result<Vec<u8>, u32> {
+    let my_vk = get_pw_verkey(handle)?;
+    let their_vk = get_their_pw_verkey(handle)?;
+
+    crypto::prep_msg(wallet::get_wallet_handle(),&my_vk, &their_vk, payload.as_bytes())
+}
+
 #[cfg(test)]
 mod tests {
     extern crate mockito;
     use super::*;
-    use utils::wallet;
 
     extern "C" fn create_cb(command_handle: u32, err: u32, connection_handle: u32) {
         assert_eq!(err, 0);
@@ -395,7 +410,7 @@ mod tests {
     #[test]
     fn test_create_connection() {
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"indy");
         let _m = mockito::mock("POST", "/agency/route")
             .with_status(202)
             .with_header("content-type", "text/plain")
@@ -404,7 +419,6 @@ mod tests {
             .create();
 
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
-        wallet::tests::make_wallet("test_create_connection");
         let handle = build_connection("test_create_connection".to_owned()).unwrap();
         assert!(handle > 0);
         assert!(!get_pw_did(handle).unwrap().is_empty());
@@ -422,7 +436,6 @@ mod tests {
 
         assert_eq!(update_state(handle),error::SUCCESS.code_num);
         assert_eq!(get_state(handle), CxsStateType::CxsStateAccepted as u32);
-        wallet::tests::delete_wallet("test_create_connection");
         _m.assert();
         release(handle);
     }
@@ -570,7 +583,7 @@ mod tests {
     #[test]
     fn test_get_qr_code_data() {
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"indy");
         let test_name = "test_get_qr_code_data";
         let _m = mockito::mock("POST", "/agency/route")
             .with_status(202)
@@ -580,7 +593,6 @@ mod tests {
             .create();
 
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
-        wallet::tests::make_wallet(test_name);
         let handle = build_connection(test_name.to_owned()).unwrap();
         assert!(handle > 0);
         assert!(!get_pw_did(handle).unwrap().is_empty());
@@ -622,7 +634,6 @@ mod tests {
 
         assert_eq!(update_state(handle),error::SUCCESS.code_num);
         assert_eq!(get_state(handle), CxsStateType::CxsStateAccepted as u32);
-        wallet::tests::delete_wallet(test_name);
         _m.assert();
         release(handle);
     }
@@ -707,7 +718,6 @@ mod tests {
 
     #[test]
     fn test_bad_wallet_connection_fails() {
-        wallet::tests::delete_wallet("dummy");
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         assert_eq!(build_connection("test_bad_wallet_connection_fails".to_owned()).unwrap_err(),error::UNKNOWN_ERROR.code_num);

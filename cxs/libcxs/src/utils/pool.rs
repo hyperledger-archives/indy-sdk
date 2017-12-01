@@ -11,6 +11,7 @@ use std::ptr::null;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 use utils::error;
+use settings;
 
 
 extern {
@@ -115,7 +116,10 @@ pub fn create_genesis_txn_file_for_test_pool(pool_name: &str,
     create_genesis_txn_file(pool_name, txn_file_data.as_str(), txn_file_path)
 }
 
-pub fn create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> u32 {
+pub fn create_pool_ledger_config() -> u32 {
+    let pool_name = settings::get_config_value(settings::CONFIG_POOL_NAME).unwrap();
+    let pool_config = settings::get_config_value(settings::CONFIG_POOL_CONFIG_NAME).unwrap();
+
     let (sender, receiver) = channel();
 
     let cb = Box::new(move |err| {
@@ -125,12 +129,12 @@ pub fn create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> 
     let (command_handle, cb) = CallbackUtils::closure_to_create_pool_ledger_cb(cb);
 
     let pool_name = CString::new(pool_name).unwrap();
-    let pool_config_str = pool_config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let pool_config = CString::new(pool_config).unwrap();
 
     unsafe {
         let err = indy_create_pool_ledger_config(command_handle,
                                                  pool_name.as_ptr(),
-                                                 if pool_config.is_some() { pool_config_str.as_ptr() } else { null() },
+                                                 pool_config.as_ptr(),
                                                  cb);
 
         if err != 0 && err != 306 {
@@ -179,13 +183,6 @@ pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<u32, u3
 
         Ok(pool_handle as u32)
     }
-}
-
-pub fn create_and_open_pool_ledger(pool_name: &str) -> Result<u32, u32> {
-    let txn_file_path = create_genesis_txn_file_for_test_pool(pool_name, None, None);
-    let pool_config = format!("{{ \"genesis_txn\":\"{}\" }}", txn_file_path.as_path().to_string_lossy());
-    create_pool_ledger_config(pool_name, Some(pool_config.as_str()));
-    open_pool_ledger(pool_name, None)
 }
 
 pub fn refresh(pool_handle: i32) -> Result<(), u32> {

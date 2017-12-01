@@ -24,6 +24,12 @@ pub enum MessageType {
     GetMessagesMsg(GetMessages),
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct MsgResponse {
+    msg_type: String,
+    msg_id: String,
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
 pub struct Bundled<T> {
     bundled: Vec<T>,
@@ -63,6 +69,12 @@ pub fn bundle_for_agency(message: Vec<u8>, did: &str) -> Result<Vec<u8>, u32> {
     crypto::prep_anonymous_msg(&agency_vk, &msg[..])
 }
 
+pub fn unbundle_from_agency(message: Vec<u8>) -> Result<Vec<u8>, u32> {
+    let my_vk = settings::get_config_value(settings::CONFIG_ENTERPRISE_VERKEY).unwrap();
+
+    crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, &message[..])
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
 struct Forward {
     #[serde(rename = "@type")]
@@ -98,7 +110,7 @@ pub trait GeneralMessage{
     fn set_to_did(&mut self, to_did: String);
     fn set_validate_rc(&mut self, rc: u32);
     fn send(&mut self) -> Result<String, u32>;
-    fn to_post(&mut self) -> Result<Vec<u8>, u32>;
+    fn to_post(&self) -> Result<Vec<u8>, u32>;
     fn send_enc(&mut self) -> Result<String, u32>;
 
 }

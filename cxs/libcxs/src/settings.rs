@@ -121,12 +121,21 @@ fn validate_config() -> Result<u32, String> {
     }
 }
 
-pub fn test_mode_enabled() -> bool {
+pub fn test_indy_mode_enabled() -> bool {
+     let config = SETTINGS.read().unwrap();
+
+    match config.get_str(CONFIG_ENABLE_TEST_MODE) {
+        Err(_) => false,
+        Ok(value) => if value == "true" { true } else { if value == "indy" { true } else {false }},
+    }
+}
+
+pub fn test_agency_mode_enabled() -> bool {
     let config = SETTINGS.read().unwrap();
 
     match config.get_str(CONFIG_ENABLE_TEST_MODE) {
         Err(_) => false,
-        Ok(value) => if value == "true" { true } else { false },
+        Ok(value) => if value == "true" { true } else { if value == "agency" { true } else {false }},
     }
 }
 

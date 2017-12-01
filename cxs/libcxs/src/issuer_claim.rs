@@ -109,7 +109,9 @@ impl IssuerClaim {
             Ok(p) => p,
             Err(_) => return Err(error::INVALID_JSON.code_num)
         };
-        //TODO: call  libindy to encrypt payload
+
+        /* let data = connection::encrypt_payload(connection_handle, data)?; */
+
         match messages::send_message().to(&to_did).msg_type("claimOffer").edge_agent_payload(&payload).send() {
             Err(x) => {
                 warn!("could not send claimOffer: {}", x);
@@ -139,7 +141,7 @@ impl IssuerClaim {
         let to = connection::get_pw_did(connection_handle)?;
         let attrs_with_encodings = self.create_attributes_encodings()?;
         let mut data;
-        if settings::test_mode_enabled() {
+        if settings::test_indy_mode_enabled() {
             data = String::from("dummytestmodedata");
         } else {
             data = match self.claim_request.clone() {
@@ -160,6 +162,8 @@ impl IssuerClaim {
             data = append_value(&data, "msg_type", "CLAIM")?;
 
         }
+
+        /* let data = connection::encrypt_payload(connection_handle, data)?; */
 
         match messages::send_message().to(&to).ref_msg_id(&self.ref_msg_id).msg_type("claim").edge_agent_payload(&data).send() {
             Err(x) => {
@@ -537,7 +541,7 @@ pub fn send_claim(handle: u32, connection_handle: u32) -> Result<u32,u32> {
 }
 
 fn get_offer_details(response: &str) -> Result<String,u32> {
-    if settings::test_mode_enabled() {return Ok("test_mode_response".to_owned());}
+    if settings::test_agency_mode_enabled() {return Ok("test_mode_response".to_owned());}
     match serde_json::from_str(response) {
         Ok(json) => {
             let json: serde_json::Value = json;
@@ -638,10 +642,8 @@ mod tests {
     }
 
     fn stand_up_a_wallet() -> (String, i32, String) {
-        let pool_name = String::from("pool1");
         let wallet_name = String::from("wallet1");
-        let wallet_type = String::from("default");
-        let wallet_handle = init_wallet(&wallet_name, &pool_name, &wallet_type).unwrap();
+        let wallet_handle = init_wallet(&wallet_name).unwrap();
         info!("Wallet Handle: {}", wallet_handle);
         let (did, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
         info!("Successfully used wallet handle {} to create_and_store_my_did", wallet_handle);
@@ -715,7 +717,7 @@ mod tests {
     #[test]
     fn test_send_claim_offer() {
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
 
         let connection_handle = create_connection("test_send_claim_offer".to_owned());
@@ -745,10 +747,9 @@ mod tests {
     fn test_send_a_claim() {
         let test_name = "test_send_a_claim";
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, "QTrbV4raAcND4DWWzBmdsh");
-        wallet::tests::make_wallet(test_name);
 
         let claim_req:ClaimRequest = match ClaimRequest::from_str(&CLAIM_REQ_STRING) {
             Ok(x) => x,
@@ -763,7 +764,7 @@ mod tests {
 
         let mut claim = create_standard_issuer_claim();
         claim.state = CxsStateType::CxsStateRequestReceived;
-        util_put_claim_def_in_issuer_wallet(48, wallet::get_wallet_handle());
+        util_put_claim_def_in_issuer_wallet(48, 0);
 
         let connection_handle = create_connection("test_send_claim_offer".to_owned());
         connection::set_pw_did(connection_handle, "8XFh8yBzrpJQmNyZzgoTqB");
@@ -778,8 +779,6 @@ mod tests {
         _m.assert();
         assert_eq!(claim.msg_uid, "6a9u7Jt");
         assert_eq!(claim.state, CxsStateType::CxsStateAccepted);
-        wallet::close_wallet(wallet::get_wallet_handle()).unwrap();
-        wallet::delete_wallet(test_name).unwrap();
     }
 
     #[test]
@@ -871,7 +870,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, &issuer_did);
-        wallet::tests::make_wallet(test_name);
+        wallet::init_wallet(test_name).unwrap();
         let wallet_handle = wallet::get_wallet_handle();
         SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
         util_put_claim_def_in_issuer_wallet(48, wallet_handle);
@@ -895,8 +894,6 @@ mod tests {
 
         assert_eq!(serde_json::to_string(&n1).unwrap(), serde_json::to_string(&n2).unwrap());
 
-
-        wallet::close_wallet(wallet_handle).unwrap();
         wallet::delete_wallet(test_name).unwrap();
     }
 
@@ -907,7 +904,7 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, "NcYxiDXkpYi6ov5FcYDi1e");
-        wallet::tests::make_wallet("test_issuer_claim_request_changes_reflect_in_claim");
+        wallet::init_wallet("test_issuer_claim_request_changes_reflect_in_claim").unwrap();
         let wallet_handle = wallet::get_wallet_handle();
 
         util_put_claim_def_in_issuer_wallet(48, wallet_handle);
@@ -932,7 +929,6 @@ mod tests {
         let claim_payload_with_from_did = append_value(&claim_payload, "from_did", &settings::CONFIG_ENTERPRISE_DID);
         info!("claim_payload_with_from_did: {:?}",claim_payload_with_from_did.unwrap());
 
-        wallet::close_wallet(wallet_handle).unwrap();
         wallet::delete_wallet("test_issuer_claim_request_changes_reflect_in_claim").unwrap();
     }
 

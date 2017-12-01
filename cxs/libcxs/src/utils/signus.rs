@@ -24,7 +24,7 @@ pub struct SignusUtils {}
 impl SignusUtils {
 
     pub fn create_and_store_my_did(wallet_handle: i32, seed: Option<&str>) -> Result<(String, String), i32> {
-        if settings::test_mode_enabled() {
+        if settings::test_indy_mode_enabled() {
             return Ok(("8XFh8yBzrpJQmNyZzgoTqB".to_owned(), "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_owned()));
         }
 
@@ -57,7 +57,7 @@ impl SignusUtils {
     }
 
     pub fn store_their_did_from_parts(wallet_handle: i32, their_did: &str, their_verkey: &str) -> Result<(), i32> {
-        if settings::test_mode_enabled() { return Ok(()) }
+        if settings::test_indy_mode_enabled() { return Ok(()) }
 
         let (store_their_did_sender, store_their_did_receiver) = channel();
         let store_their_did_cb = Box::new(move |err| { store_their_did_sender.send((err)).unwrap(); });

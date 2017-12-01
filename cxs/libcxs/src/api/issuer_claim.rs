@@ -278,7 +278,7 @@ mod tests {
     #[test]
     fn test_cxs_issuer_send_claim_offer() {
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"indy");
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
         let _m = mockito::mock("POST", "/agency/route")
             .with_status(200)
@@ -305,8 +305,8 @@ mod tests {
     #[test]
     fn test_cxs_issuer_send_a_claim() {
         settings::set_defaults();
-        wallet::tests::make_wallet("test_cxs_issuer_send_a_claim");
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        wallet::init_wallet("test_cxs_issuer_send_a_claim").unwrap();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"indy");
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, DEFAULT_DID);
         use claim_request::ClaimRequest;
@@ -332,7 +332,7 @@ mod tests {
         issuer_claim::set_claim_request(handle, &claim_request).unwrap();
         assert_eq!(issuer_claim::get_state(handle),CxsStateType::CxsStateRequestReceived as u32);
         let schema = create_default_schema(schema_seq_num);
-        wallet::tests::make_wallet("test_cxs_issuer_send_a_claim");
+        assert!(wallet::init_wallet("test_cxs_issuer_send_a_claim").unwrap() > 0);
         put_claim_def_in_issuer_wallet(&settings::get_config_value(
             settings::CONFIG_ENTERPRISE_DID).unwrap(), &schema, get_wallet_handle());
         /**********************************************************************/
@@ -352,7 +352,7 @@ mod tests {
         assert_eq!(cxs_issuer_send_claim(command_handle, handle, connection_handle, Some(send_offer_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(1000));
         _m.assert();
-        wallet::tests::delete_wallet("test_cxs_issuer_send_a_claim");
+        wallet::delete_wallet("test_cxs_issuer_send_a_claim").unwrap();
     }
     extern "C" fn deserialize_cb(command_handle: u32, err: u32, claim_handle: u32) {
         fn formatter(original: &str) -> String {
