@@ -28,6 +28,7 @@ pub static INVALID_PROOF_HANDLE: Error = Error{code_num:1017, message:"Invalid P
 pub static INVALID_CLAIM_REQUEST: Error = Error{code_num:1018, message:"Invalid Claim Request"};
 pub static INVALID_MSGPACK: Error = Error{code_num:1019, message:"Invalid MessagePack"};
 pub static INVALID_MESSAGES: Error = Error{code_num:1020, message:"Error Retrieving messages from API"};
+pub static INVALID_ATTRIBUTES_STRUCTURE: Error = Error{code_num:1021, message: "Attributes provided to Claim Offer are not correct, possibly malformed"};
 
 lazy_static! {
     static ref ERROR_MESSAGES: HashMap<u32, &'static str> = {
@@ -51,6 +52,7 @@ lazy_static! {
         insert_message(&mut m, &INVALID_JSON);
         insert_message(&mut m, &INVALID_MESSAGES);
         insert_message(&mut m, &INVALID_MSGPACK);
+        insert_message(&mut m, &INVALID_ATTRIBUTES_STRUCTURE);
         m
     };
 }
@@ -147,5 +149,10 @@ mod tests {
     #[test]
     fn test_error_retrieving_messages(){
         assert_eq!(error_message(&INVALID_MESSAGES.code_num), INVALID_MESSAGES.message);
+    }
+
+    #[test]
+    fn test_malformed_attributes_for_claim_offer(){
+        assert_eq!(error_message(&INVALID_ATTRIBUTES_STRUCTURE.code_num), INVALID_ATTRIBUTES_STRUCTURE.message);
     }
 }

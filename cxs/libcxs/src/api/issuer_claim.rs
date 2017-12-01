@@ -193,7 +193,6 @@ mod tests {
     use connection;
     use utils::wallet;
     use api::CxsStateType;
-    use utils::issuer_claim::create_claim_request_from_str;
     use utils::issuer_claim::CLAIM_REQ_STRING;
     use utils::issuer_claim::tests::put_claim_def_in_issuer_wallet;
     use utils::issuer_claim::tests::create_default_schema;
@@ -310,6 +309,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, DEFAULT_DID);
+        use claim_request::ClaimRequest;
 
         let test_name = "test_cxs_issuer_send_a_claim";
         let schema_seq_num = 32 as u32;
@@ -320,7 +320,7 @@ mod tests {
         let handle = issuer_claim::from_string(ISSUER_CLAIM_STATE_ACCEPTED).unwrap();
 
         /* align claim request and claim def ***********************************/
-        let mut claim_request = match create_claim_request_from_str(CLAIM_REQ_STRING) {
+        let mut claim_request = match ClaimRequest::from_str(CLAIM_REQ_STRING) {
             Ok(x) => x,
             Err(_) => panic!("error with claim request"),
         };

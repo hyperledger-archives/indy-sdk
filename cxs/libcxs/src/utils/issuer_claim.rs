@@ -1,8 +1,5 @@
 extern crate libc;
 use self::libc::c_char;
-use claim_request::ClaimRequest;
-use serde_json;
-use utils::error;
 
 extern {
     fn indy_issuer_create_and_store_claim_def(command_handle: i32,
@@ -22,7 +19,7 @@ pub static CLAIM_REQ_STRING: &str =
            "version":"0.1",
            "to_did":"BnRXf8yDMUwGyZVDkSENeq",
            "from_did":"GxtnGN6ypZYgEqcftSQFnC",
-           "iid":"cCanHnpFAD",
+           "tid":"cCanHnpFAD",
            "mid":"",
            "blinded_ms":{
               "prover_did":"FQ7wPBUgSPnDGJnS1EYjTK",
@@ -36,25 +33,6 @@ pub static CLAIM_REQ_STRING: &str =
               "price":6
            }
         }"#;
-
-pub fn create_claim_request_from_str(s: &str) -> Result<ClaimRequest, u32>{
-    let claim_request_json: serde_json::Value = match serde_json::from_str(s) {
-        Ok(x) => x,
-        Err(x) => {
-            warn!("invalid json for claim requests edgeAgentPayload");
-            return Err(error::INVALID_JSON.code_num)
-        },
-    };
-
-    match ClaimRequest::create_from_api_msg_json(&claim_request_json) {
-        Ok(x) => Ok(x),
-        Err(_) => {
-            warn!("invalid claim request");
-            Err(error::INVALID_CLAIM_REQUEST.code_num)
-        }
-    }
-}
-
 
 #[cfg(test)]
 pub mod tests{
