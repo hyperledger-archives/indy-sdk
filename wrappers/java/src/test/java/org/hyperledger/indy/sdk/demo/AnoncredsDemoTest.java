@@ -119,7 +119,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//11. Prover gets Claims for Proof Request
 		String proofRequestJson = "{\n" +
-				"                          \"nonce\":\"123432421212\",\n" +
+				"                          \"nonce\":{\"value\":\"123432421212\"},\n" +
 				"                          \"name\":\"proof_req_1\",\n" +
 				"                          \"version\":\"0.1\",\n" +
 				"                          \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"},\n" +
@@ -139,7 +139,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		assertEquals(claimsForAttribute2.length(), 1);
 		assertEquals(claimsForPredicate.length(), 1);
 
-		String claimUuid = claimsForAttribute1.getJSONObject(0).getString("claim_uuid");
+		String claimUuid = claimsForAttribute1.getJSONObject(0).getString("claim_id");
 
 		//12. Prover create Proof
 		String selfAttestedValue = "yes";
@@ -269,7 +269,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//14. Prover gets Claims for Proof Request
 		String proofRequestJson = "{\n" +
-				"                          \"nonce\":\"123432421212\",\n" +
+				"                          \"nonce\":{\"value\":\"123432421212\"},\n" +
 				"                          \"name\":\"proof_req_1\",\n" +
 				"                          \"version\":\"0.1\",\n" +
 				"                          \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"},\n" +
@@ -293,10 +293,10 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		assertEquals(claimsForPredicate1.length(), 1);
 		assertEquals(claimsForPredicate2.length(), 1);
 
-		String claimUuidForAttr1 = claimsForAttribute1.getJSONObject(0).getString("claim_uuid");
-		String claimUuidForAttr2 = claimsForAttribute2.getJSONObject(0).getString("claim_uuid");
-		String claimUuidForPredicate1 = claimsForPredicate1.getJSONObject(0).getString("claim_uuid");
-		String claimUuidForPredicate2 = claimsForPredicate2.getJSONObject(0).getString("claim_uuid");
+		String claimUuidForAttr1 = claimsForAttribute1.getJSONObject(0).getString("claim_id");
+		String claimUuidForAttr2 = claimsForAttribute2.getJSONObject(0).getString("claim_id");
+		String claimUuidForPredicate1 = claimsForPredicate1.getJSONObject(0).getString("claim_id");
+		String claimUuidForPredicate2 = claimsForPredicate2.getJSONObject(0).getString("claim_id");
 
 		//15. Prover create Proof
 		String requestedClaimsJson = String.format("{\n" +
@@ -422,7 +422,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//13. Prover gets Claims for Proof Request
 		String proofRequestJson = "{\n" +
-				"                          \"nonce\":\"123432421212\",\n" +
+				"                          \"nonce\":{\"value\":\"123432421212\"},\n" +
 				"                          \"name\":\"proof_req_1\",\n" +
 				"                          \"version\":\"0.1\",\n" +
 				"                          \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"}},\n" +
@@ -443,9 +443,9 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		assertEquals(claimsForPredicate1.length(), 1);
 		assertEquals(claimsForPredicate2.length(), 1);
 
-		String claimUuidForAttr1 = claimsForAttribute1.getJSONObject(0).getString("claim_uuid");
-		String claimUuidForPredicate1 = claimsForPredicate1.getJSONObject(0).getString("claim_uuid");
-		String claimUuidForPredicate2 = claimsForPredicate2.getJSONObject(0).getString("claim_uuid");
+		String claimUuidForAttr1 = claimsForAttribute1.getJSONObject(0).getString("claim_id");
+		String claimUuidForPredicate1 = claimsForPredicate1.getJSONObject(0).getString("claim_id");
+		String claimUuidForPredicate2 = claimsForPredicate2.getJSONObject(0).getString("claim_id");
 
 		//14. Prover create Proof
 		String requestedClaimsJson = String.format("{\n" +
@@ -534,7 +534,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//8. Prover gets Claims for Proof Request
 		String proofRequestJson = "{\n" +
-				"                          \"nonce\":\"123432421212\",\n" +
+				"                          \"nonce\":{\"value\":\"123432421212\"},\n" +
 				"                          \"name\":\"proof_req_1\",\n" +
 				"                          \"version\":\"0.1\",\n" +
 				"                          \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"}},\n" +
@@ -549,7 +549,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		assertEquals(claimsForAttribute1.length(), 1);
 
-		String claimUuid = claimsForAttribute1.getJSONObject(0).getString("claim_uuid");
+		String claimUuid = claimsForAttribute1.getJSONObject(0).getString("claim_id");
 
 		//9. Prover create Proof
 		String selfAttestedValue = "yes";
@@ -577,7 +577,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("self1"));
 
 		proofRequestJson = "{\n" +
-				"                    \"nonce\":\"123432421212\",\n" +
+				"                    \"nonce\":{\"value\":\"123432421212\"},\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\",\n" +
 				"                    \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"}},\n" +

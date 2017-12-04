@@ -10,7 +10,7 @@ import pytest
 async def test_prover_get_claims_for_proof_req_works_for_revealed_attr(wallet_handle, prepopulated_wallet,
                                                                        schema_seq_no):
     proof_req = {
-        "nonce": "123432421212",
+        "nonce": {"value": "123432421212"},
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
@@ -35,7 +35,7 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr(wallet_ha
 async def test_prover_get_claims_for_proof_req_works_for_not_found_attribute(wallet_handle, prepopulated_wallet,
                                                                              schema_seq_no):
     proof_req = {
-        "nonce": "123432421212",
+        "nonce": {"value": "123432421212"},
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
@@ -59,7 +59,7 @@ async def test_prover_get_claims_for_proof_req_works_for_not_found_attribute(wal
 @pytest.mark.asyncio
 async def test_prover_get_claims_for_proof_req_works_for_satisfy_predicate(wallet_handle, prepopulated_wallet):
     proof_req = {
-        "nonce": "123432421212",
+        "nonce": {"value": "123432421212"},
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {},
@@ -85,7 +85,7 @@ async def test_prover_get_claims_for_proof_req_works_for_satisfy_predicate(walle
 @pytest.mark.asyncio
 async def test_prover_get_claims_for_proof_req_works_for_not_satisfy_predicate(wallet_handle, prepopulated_wallet):
     proof_req = {
-        "nonce": "123432421212",
+        "nonce": {"value": "123432421212"},
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {},
@@ -113,7 +113,7 @@ async def test_prover_get_claims_for_proof_req_works_for_multiply_attribute_and_
                                                                                            prepopulated_wallet,
                                                                                            schema_seq_no):
     proof_req = {
-        "nonce": "123432421212",
+        "nonce": {"value": "123432421212"},
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
@@ -142,7 +142,7 @@ async def test_prover_get_claims_for_proof_req_works_for_multiply_attribute_and_
 async def test_prover_get_claims_for_proof_req_works_for_invalid_wallet_handle(wallet_handle,
                                                                                prepopulated_wallet):
     proof_req = {
-        "nonce": "123432421212",
+        "nonce": {"value": "123432421212"},
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {},
