@@ -99,7 +99,7 @@ impl CommandMetadataBuilder {
 
 pub trait Command {
     fn metadata(&self) -> &CommandMetadata;
-    fn execute(&self, params: &[(&str, &str)]) -> Result<(), ()>;
+    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()>;
 }
 
 #[derive(Debug)]
@@ -284,6 +284,20 @@ impl CommandExecutor {
             None => (s, "")
         }
     }
+
+    fn _parse_params<'a>(metadata: &CommandMetadata, params: &'a [(&str, &str)]) -> Result<HashMap<String, &'a str>, ()> {
+        let mut params_map: HashMap<String, &str> = HashMap::new();
+        for param in params {
+            params_map.insert(param.0.to_string(), param.1);
+        }
+        for required_param in metadata.params().iter()
+            .filter(|p| !p.is_optional()) {
+            if !params_map.contains_key(required_param.name()) {
+                return Err(());
+            }
+        }
+        Ok(params_map)
+    }
 }
 
 pub struct CommandExecutorBuilder {
@@ -378,7 +392,7 @@ mod tests {
             &self.metadata
         }
 
-        fn execute(&self, params: &[(&str, &str)]) -> Result<(), ()> {
+        fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
             println!("Test comamnd params: {:?}", params);
             Ok(())
         }

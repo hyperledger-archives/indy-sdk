@@ -47,8 +47,8 @@ impl CreateCommand {
 }
 
 impl Command for CreateCommand {
-    fn execute(&self, line: &[(&str, &str)]) -> Result<(), ()> {
-        println!("wallet create: >>> execute {:?} while context {:?}", line, self.ctx);
+    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        println!("wallet create: >>> execute {:?} while context {:?}", params, self.ctx);
         Ok(())
     }
 
@@ -66,20 +66,6 @@ impl OpenCommand {
                 .finalize()
         }
     }
-
-    fn parse_params<'a>(&self, params: &'a [(&str, &str)]) -> Result<HashMap<String, &'a str>, ()> {
-        let mut params_map: HashMap<String, &str> = HashMap::new();
-        for param in params {
-            params_map.insert(param.0.to_string(), param.1);
-        }
-        for required_param in self.metadata.params().iter()
-            .filter(|p| !p.is_optional()) {
-            if !params_map.contains_key(required_param.name()) {
-                return Err(());
-            }
-        }
-        Ok(params_map)
-    }
 }
 
 impl Command for OpenCommand {
@@ -87,9 +73,8 @@ impl Command for OpenCommand {
         &self.metadata
     }
 
-    fn execute(&self, line: &[(&str, &str)]) -> Result<(), ()> {
-        println!("wallet open: >>> execute {:?} while context {:?}", line, self.ctx);
-        let params = self.parse_params(line)?;
+    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        println!("wallet open: >>> execute {:?} while context {:?}", params, self.ctx);
         let wallet_name = params.get("name").unwrap();
         let config = params.get("config").map(|cfg| *cfg);
         let wallet_handle = Wallet::open_wallet(wallet_name, config)
@@ -115,7 +100,7 @@ mod tests {
             let ctx = Rc::new((IndyContext { cur_wallet: RefCell::new(None) }));
             let cmd = CreateCommand::new(ctx);
             cmd.metadata().help();
-            cmd.execute(&Vec::new()).unwrap();
+            cmd.execute(&HashMap::new()).unwrap();
             TestUtils::cleanup_storage();
         }
     }
@@ -128,8 +113,10 @@ mod tests {
             TestUtils::cleanup_storage();
             let ctx = Rc::new((IndyContext { cur_wallet: RefCell::new(None) }));
             let cmd = OpenCommand::new(ctx);
+            let mut params = HashMap::new();
             cmd.metadata().help();
-            cmd.execute(&[("name", "wallet")]).unwrap_err(); //open not created wallet
+            params.insert("name", "wallet");
+            cmd.execute(&params).unwrap_err(); //open not created wallet
             TestUtils::cleanup_storage();
         }
     }
