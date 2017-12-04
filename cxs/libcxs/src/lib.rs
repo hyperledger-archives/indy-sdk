@@ -5,6 +5,7 @@ extern crate rand;
 extern crate reqwest;
 extern crate config;
 extern crate url;
+extern crate openssl;
 
 #[macro_use]
 extern crate log;

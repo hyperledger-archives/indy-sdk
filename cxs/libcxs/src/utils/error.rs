@@ -29,6 +29,7 @@ pub static INVALID_CLAIM_REQUEST: Error = Error{code_num:1018, message:"Invalid 
 pub static INVALID_MSGPACK: Error = Error{code_num:1019, message:"Invalid MessagePack"};
 pub static INVALID_MESSAGES: Error = Error{code_num:1020, message:"Error Retrieving messages from API"};
 pub static INVALID_ATTRIBUTES_STRUCTURE: Error = Error{code_num:1021, message: "Attributes provided to Claim Offer are not correct, possibly malformed"};
+pub static BIG_NUMBER_ERROR: Error = Error{code_num: 1022, message: "Could not encode string to a big integer."};
 
 lazy_static! {
     static ref ERROR_MESSAGES: HashMap<u32, &'static str> = {
@@ -53,6 +54,7 @@ lazy_static! {
         insert_message(&mut m, &INVALID_MESSAGES);
         insert_message(&mut m, &INVALID_MSGPACK);
         insert_message(&mut m, &INVALID_ATTRIBUTES_STRUCTURE);
+        insert_message(&mut m, &BIG_NUMBER_ERROR);
         m
     };
 }
@@ -154,5 +156,10 @@ mod tests {
     #[test]
     fn test_malformed_attributes_for_claim_offer(){
         assert_eq!(error_message(&INVALID_ATTRIBUTES_STRUCTURE.code_num), INVALID_ATTRIBUTES_STRUCTURE.message);
+    }
+
+    #[test]
+    fn test_big_number(){
+        assert_eq!(error_message(&BIG_NUMBER_ERROR.code_num), BIG_NUMBER_ERROR.message);
     }
 }

@@ -26,6 +26,7 @@ rust-base58 = "0.0.4"
 rmpv = "0.4.0"
 rmp = "0.8"
 rmp-serde = "0.13.7"
+openssl = "0.9.20"
 
 [dev-dependencies]
 futures = "0.1"

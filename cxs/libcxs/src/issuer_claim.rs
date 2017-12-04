@@ -19,6 +19,7 @@ use std::sync::mpsc::channel;
 use std::ffi::CString;
 use utils::timeout::TimeoutUtils;
 use utils::wallet;
+use utils::openssl::encode;
 
 lazy_static! {
     static ref ISSUER_CLAIM_MAP: Mutex<HashMap<u32, Box<IssuerClaim>>> = Default::default();
@@ -206,8 +207,18 @@ impl IssuerClaim {
             };
 //          FIXME This is hardcode but should have logic for finding strings and integers and
 //          doing a real encoding (sha256)
-            let encoded = serde_json::Value::from("1139481716457488690172217916278103335");
-            list.push(encoded)
+//            let encoded = serde_json::Value::from("1139481716457488690172217916278103335");
+            let i = list[0].clone();
+            let value = match i.as_str(){
+                Some(v) => v,
+                None => {
+                    warn!("Cannot encode attribute: {}", error::INVALID_ATTRIBUTES_STRUCTURE.message);
+                    return Err(error::INVALID_ATTRIBUTES_STRUCTURE.code_num)
+                },
+            };
+            let encoded = encode(value)?;
+            let encoded_as_value: serde_json::Value = serde_json::Value::from(encoded);
+            list.push(encoded_as_value);
         }
 
         match serde_json::to_string_pretty(&map) {
@@ -623,7 +634,7 @@ mod tests {
         }"#;
 
     static X_CLAIM_JSON: &str =
-        r#"{"claim":{"address1":["101 Tela Lane","1139481716457488690172217916278103335"],"address2":["101 Wilson Lane","1139481716457488690172217916278103335"],"city":["SLC","1139481716457488690172217916278103335"],"state":["UT","1139481716457488690172217916278103335"],"zip":["87121","1139481716457488690172217916278103335"]},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_seq_no":48,"signature":{"non_revocation_claim":null,"primary_claim":{"a":"","e":"","m2":"","v":""}}}"#;
+        r#"{"claim":{"address1":["101 Tela Lane","63690509275174663089934667471948380740244018358024875547775652380902762701972"],"address2":["101 Wilson Lane","68086943237164982734333428280784300550565381723532936263016368251445461241953"],"city":["SLC","101327353979588246869873249766058188995681113722618593621043638294296500696424"],"state":["UT","93856629670657830351991220989031130499313559332549427637940645777813964461231"],"zip":["87121","87121"]},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_seq_no":48,"signature":{"non_revocation_claim":null,"primary_claim":{"a":"","e":"","m2":"","v":""}}}"#;
 
     fn util_put_claim_def_in_issuer_wallet(schema_seq_num: u32, wallet_handle: i32) {
         let schema = &create_default_schema(schema_seq_num);
@@ -938,7 +949,10 @@ mod tests {
         // FIXME Make this a real test and add additional test for create_attributes_encodings
         let issuer_claim = create_standard_issuer_claim();
         match issuer_claim.create_attributes_encodings() {
-            Ok(_) => assert!(true),
+            Ok(x) => {
+                println!("{}", x);
+                assert!(true)
+            },
             Err(e) => {
                 error!("Error in create_attributes_encodings test");
                 assert_eq!(0, 1)
