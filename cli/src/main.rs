@@ -76,4 +76,12 @@ impl IndyContext {
     pub fn set_current_wallet(&self, wallet_name: &str, wallet_handle: IndyHandle) {
         *self.cur_wallet.borrow_mut() = Some((wallet_name.to_string(), wallet_handle));
     }
+
+    pub fn reset_current_wallet(&self) {
+        *self.cur_wallet.borrow_mut() = None;
+    }
+
+    pub fn get_current_wallet_handle(&self) -> Option<IndyHandle> {
+        self.cur_wallet.borrow().as_ref().map(|&(_, handle)| handle)
+    }
 }

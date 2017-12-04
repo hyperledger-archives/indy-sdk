@@ -34,6 +34,11 @@ pub struct OpenCommand {
     metadata: CommandMetadata,
 }
 
+pub struct CloseCommand {
+    ctx: Rc<IndyContext>,
+    metadata: CommandMetadata,
+}
+
 
 impl CreateCommand {
     pub fn new(ctx: Rc<IndyContext>) -> CreateCommand {
@@ -96,6 +101,31 @@ impl Command for OpenCommand {
     }
 }
 
+impl CloseCommand {
+    pub fn new(ctx: Rc<IndyContext>) -> CloseCommand {
+        CloseCommand {
+            ctx,
+            metadata: CommandMetadata::build("close", "Close wallet with specified handle.")
+                .add_main_param("handle", "The handle of wallet")
+                .finalize()
+        }
+    }
+}
+
+impl Command for CloseCommand {
+    fn metadata(&self) -> &CommandMetadata {
+        &self.metadata
+    }
+
+    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        println!("wallet close: >>> execute {:?} while context {:?}", params, self.ctx);
+        let wallet_handle = self.ctx.get_current_wallet_handle().ok_or((/* TODO error */))?;
+        Wallet::close_wallet(wallet_handle).map_err(|_| ())?;
+        self.ctx.reset_current_wallet();
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -132,6 +162,35 @@ mod tests {
             cmd.metadata().help();
             params.insert("name", "wallet");
             cmd.execute(&params).unwrap_err(); //open not created wallet
+            TestUtils::cleanup_storage();
+        }
+
+        //TODO add open_for_created_works
+    }
+
+    mod close {
+        use super::*;
+
+        #[test]
+        pub fn exec_for_opened_works() {
+            TestUtils::cleanup_storage();
+            let ctx = Rc::new((IndyContext { cur_wallet: RefCell::new(None) }));
+
+            let cmd = CreateCommand::new(ctx.clone());
+            let mut params = HashMap::new();
+            params.insert("name", "wallet");
+            params.insert("pool_name", "pool");
+            cmd.execute(&params).unwrap();
+
+            let cmd = OpenCommand::new(ctx.clone());
+            let mut params = HashMap::new();
+            params.insert("name", "wallet");
+            cmd.execute(&params).unwrap();
+
+            let cmd = CloseCommand::new(ctx.clone());
+            let params = HashMap::new();
+            cmd.execute(&params).unwrap();
+
             TestUtils::cleanup_storage();
         }
     }
