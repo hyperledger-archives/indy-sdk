@@ -49,7 +49,8 @@ export class IssuerClaim extends CXSBase {
     claim._issuerDID = config.issuerDid
     claim._attr = config.attr
     claim._claimName = config.claimName
-    await claim._create((cb) => rustAPI().cxs_issuer_create_claim(
+    try {
+      await claim._create((cb) => rustAPI().cxs_issuer_create_claim(
         0,
         config.sourceId,
         config.schemaNum,
@@ -57,9 +58,12 @@ export class IssuerClaim extends CXSBase {
         config.attr,
         config.claimName,
         cb
+        )
       )
-    )
-    return claim
+      return claim
+    } catch (err) {
+      throw new CXSInternalError(`cxs_issuer_create_claim -> ${err}`)
+    }
   }
 
   // Deserializes a JSON representing a issuer claim object
@@ -91,11 +95,10 @@ export class IssuerClaim extends CXSBase {
 
   // send a claim offer to the connection
   async sendOffer (connection: Connection): Promise<void> {
-    const claimHandle = this.handle
     try {
       await createFFICallbackPromise<void>(
           (resolve, reject, cb) => {
-            const rc = rustAPI().cxs_issuer_send_claim_offer(0, claimHandle, connection.handle, cb)
+            const rc = rustAPI().cxs_issuer_send_claim_offer(0, this.handle, connection.handle, cb)
             if (rc) {
               reject(rc)
             }
