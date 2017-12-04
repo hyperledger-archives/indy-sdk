@@ -169,9 +169,9 @@ impl InmemWallet {
         ErrorCode::Success
     }
 
-    pub extern "C" fn get_not_expied(xhandle: i32,
-                                     key: *const c_char,
-                                     value_ptr: *mut *const c_char) -> ErrorCode {
+    pub extern "C" fn get_not_expired(xhandle: i32,
+                                      key: *const c_char,
+                                      value_ptr: *mut *const c_char) -> ErrorCode {
         check_useful_c_str!(key, ErrorCode::CommonInvalidStructure);
 
         let handles = INMEM_WALLET_HANDLES.lock().unwrap();
