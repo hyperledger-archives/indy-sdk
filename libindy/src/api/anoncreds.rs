@@ -88,7 +88,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                                                      wallet_handle: i32,
                                                      issuer_did: *const c_char,
                                                      schema_seq_no: i32,
-                                                     max_claim_num: i32,
+                                                     max_claim_num: u32,
                                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                           revoc_reg_json: *const c_char
                                                      )>) -> ErrorCode {
@@ -168,7 +168,7 @@ pub extern fn indy_issuer_create_claim(command_handle: i32,
     check_useful_c_str!(claim_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    let user_revoc_index = if user_revoc_index != -1 { Some(user_revoc_index) } else { None };
+    let user_revoc_index = if user_revoc_index != -1 { Some(user_revoc_index as u32) } else { None };
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateClaim(
@@ -211,7 +211,7 @@ pub extern fn indy_issuer_revoke_claim(command_handle: i32,
                                        wallet_handle: i32,
                                        issuer_did: *const c_char,
                                        schema_seq_no: i32,
-                                       user_revoc_index: i32,
+                                       user_revoc_index: u32,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             revoc_reg_update_json: *const c_char,
                                        )>) -> ErrorCode {
@@ -703,6 +703,35 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
                 let (err, proof_json) = result_to_err_code_1!(result, String::new());
                 let proof_json = CStringUtils::string_to_cstring(proof_json);
                 cb(command_handle, err, proof_json.as_ptr())
+            })
+        ))));
+
+    result_to_err_code!(result)
+}
+
+/// Create random nonce.
+///
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// nonce: json will contain random nonce
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_create_nonce(command_handle: i32,
+                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                     nonce_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(AnoncredsCommand::Verifier(VerifierCommand::CreateNonce(
+            Box::new(move |result| {
+                let (err, nonce_json) = result_to_err_code_1!(result, String::new());
+                let nonce_json = CStringUtils::string_to_cstring(nonce_json);
+                cb(command_handle, err, nonce_json.as_ptr())
             })
         ))));
 

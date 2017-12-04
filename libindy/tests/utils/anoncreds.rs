@@ -4,20 +4,17 @@ use indy::api::anoncreds::*;
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
 use utils::wallet::WalletUtils;
-use utils::types::{
-    ProofClaimsJson,
-    ClaimInfo
-};
 use utils::test::TestUtils;
+use utils::types::{ClaimsForProofRequest, ClaimInfo};
 
 use std::ffi::CString;
 use std::ptr::null;
 use std::sync::mpsc::channel;
-use std::collections::HashSet;
 use std::sync::{Once, ONCE_INIT};
 use std::mem;
 use utils::constants::*;
 
+use std::collections::HashSet;
 
 pub struct AnoncredsUtils {}
 
@@ -381,7 +378,7 @@ impl AnoncredsUtils {
         Ok(valid)
     }
 
-    pub fn indy_issuer_create_and_store_revoc_reg(wallet_handle: i32, issuer_did: &str, schema_seq_no: i32, max_claim_num: i32) -> Result<String, ErrorCode> {
+    pub fn indy_issuer_create_and_store_revoc_reg(wallet_handle: i32, issuer_did: &str, schema_seq_no: i32, max_claim_num: u32) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, revoc_reg_json| {
@@ -412,7 +409,7 @@ impl AnoncredsUtils {
         Ok(revoc_reg_json)
     }
 
-    pub fn issuer_revoke_claim(wallet_handle: i32, issuer_did: &str, schema_seq_no: i32, user_revoc_index: i32) -> Result<String, ErrorCode> {
+    pub fn issuer_revoke_claim(wallet_handle: i32, issuer_did: &str, schema_seq_no: i32, user_revoc_index: u32) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, revoc_reg_update_json| {
@@ -511,16 +508,16 @@ impl AnoncredsUtils {
     pub fn get_gvt_claim_req() -> String {
         format!(r#"{{
             "blinded_ms":{{
-                "prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
                 "u":"72052674960029442327236458752017934128206007798774128392572211954456711136771871346204637748253860917837147111221378456345006764308173447177933384497678611527908801900335623480700015849806575534757455484512742315652166882850683721692964547448843598104385874050447011820051099399087175505815748958014671544911179795524159951193233504921329404534187047046492036161628814022862661479869322137573048331473599346645871295570237032991261433025344456232326409789544299441933427561947291495434188942844516539974096858281005872862193803356400358925349350554630231733687344283622639185011395343616612151755685912869590344206893",
                 "ur":null
             }},
+            "prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
             "issuer_did":"{}",
             "schema_seq_no":1
         }}"#, ISSUER_DID)
     }
 
-    pub fn get_unique_claims(proof_claims: &ProofClaimsJson) -> Vec<ClaimInfo> {
+    pub fn get_unique_claims(proof_claims: &ClaimsForProofRequest) -> Vec<ClaimInfo> {
         let attrs_claims =
             proof_claims.attrs
                 .values()

@@ -1,6 +1,7 @@
 extern crate rust_base58;
 extern crate serde_json;
 extern crate zmq_pw as zmq;
+extern crate indy_crypto;
 
 use std::rc::Rc;
 
@@ -10,7 +11,7 @@ use errors::common::CommonError;
 use services::signus::SignusService;
 use services::signus::types::Key;
 use services::wallet::WalletService;
-use utils::json::{JsonEncodable, JsonDecodable};
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 pub type AgentPrepMsgCB = Box<Fn(Result<Vec<u8>, IndyError>) + Send>;
 pub type AgentParseMsgCB = Box<Fn(Result<(Option<String>, Vec<u8>), IndyError>) + Send>;

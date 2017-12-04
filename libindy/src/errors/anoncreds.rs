@@ -9,6 +9,8 @@ use errors::common::CommonError;
 use api::ErrorCode;
 use errors::ToErrorCode;
 
+use self::indy_crypto::errors::IndyCryptoError;
+
 #[derive(Debug)]
 pub enum AnoncredsError {
     NotIssuedError(String),
@@ -87,7 +89,13 @@ impl From<CommonError> for AnoncredsError {
 
 impl From<indy_crypto::errors::IndyCryptoError> for AnoncredsError {
     fn from(err: indy_crypto::errors::IndyCryptoError) -> Self {
-        AnoncredsError::CommonError(CommonError::from(err))
+        match err {
+            IndyCryptoError::AnoncredsRevocationAccumulatorIsFull(err) => AnoncredsError::AccumulatorIsFull(err),
+            IndyCryptoError::AnoncredsProofRejected(err) => AnoncredsError::ProofRejected(err),
+            IndyCryptoError::AnoncredsInvalidRevocationAccumulatorIndex(err) => AnoncredsError::InvalidUserRevocIndex(err),
+            IndyCryptoError::AnoncredsClaimRevoked(err) => AnoncredsError::ClaimRevoked(err),
+            _ => AnoncredsError::CommonError(CommonError::InvalidStructure("Invalid error code".to_string()))
+        }
     }
 }
 

@@ -27,9 +27,6 @@ pub mod agent;
 #[path = "../../src/utils/sequence.rs"]
 pub mod sequence;
 
-#[path = "../../src/utils/json.rs"]
-pub mod json;
-
 #[macro_use]
 #[allow(unused_macros)]
 #[path = "../../src/utils/cstring.rs"]

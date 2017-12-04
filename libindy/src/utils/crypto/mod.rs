@@ -1,7 +1,3 @@
-#[cfg(feature = "bn_openssl")]
-#[path = "bn/openssl.rs"]
-pub mod bn;
-
 #[cfg(feature = "box_sodium")]
 #[path = "box_/sodium.rs"]
 pub mod box_;
