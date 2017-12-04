@@ -2,6 +2,9 @@
 extern crate lazy_static;
 extern crate libc;
 extern crate linefeed;
+extern crate serde;
+#[macro_use]
+extern crate serde_json;
 
 pub mod command_executor;
 pub mod commands;

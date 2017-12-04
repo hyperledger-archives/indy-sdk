@@ -49,6 +49,17 @@ impl CreateCommand {
 impl Command for CreateCommand {
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         println!("wallet create: >>> execute {:?} while context {:?}", params, self.ctx);
+        let pool_name = params.get("pool_name").ok_or((/* TODO error */))?;
+        let wallet_name = params.get("name").ok_or((/* TODO error */))?;
+        let config: Option<String> = params.get("key").map(|key|
+            json!({
+                "key": key
+            }).to_string());
+        Wallet::create_wallet(pool_name,
+                              wallet_name,
+                              None,
+                              config.as_ref().map(String::as_str))
+            .map_err(|_| ())?;
         Ok(())
     }
 
@@ -75,10 +86,11 @@ impl Command for OpenCommand {
 
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         println!("wallet open: >>> execute {:?} while context {:?}", params, self.ctx);
-        let wallet_name = params.get("name").unwrap();
+        let wallet_name = params.get("name").ok_or((/* TODO error */))?;
         let config = params.get("config").map(|cfg| *cfg);
         let wallet_handle = Wallet::open_wallet(wallet_name, config)
             .map_err(|_| ())?;
+        //TODO close previously opened wallet
         self.ctx.set_current_wallet(wallet_name, wallet_handle);
         Ok(())
     }
@@ -100,7 +112,10 @@ mod tests {
             let ctx = Rc::new((IndyContext { cur_wallet: RefCell::new(None) }));
             let cmd = CreateCommand::new(ctx);
             cmd.metadata().help();
-            cmd.execute(&HashMap::new()).unwrap();
+            let mut params = HashMap::new();
+            params.insert("name", "wallet");
+            params.insert("pool_name", "pool");
+            cmd.execute(&params).unwrap();
             TestUtils::cleanup_storage();
         }
     }
