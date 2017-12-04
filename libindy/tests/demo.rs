@@ -371,7 +371,7 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     let proof_req_json = format!(r#"{{
-                                   "nonce":{{"value":"123432421212"}},
+                                   "nonce":"123432421212",
                                    "name":"proof_req_1",
                                    "version":"0.1",
                                    "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
@@ -398,10 +398,10 @@ fn anoncreds_demo_works() {
                                           "self_attested_attributes":{{}},
                                           "requested_attrs":{{"attr1_uuid":["{}",true]}},
                                           "requested_predicates":{{"predicate1_uuid":"{}"}}
-                                        }}"#, claim.claim_id, claim.claim_id);
+                                        }}"#, claim.claim_uuid, claim.claim_uuid);
 
-    let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_id, schema);
-    let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_id, claim_def_json);
+    let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
+    let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
     let revoc_regs_jsons = "{}";
 
     // 9. Prover create Proof for Proof Request

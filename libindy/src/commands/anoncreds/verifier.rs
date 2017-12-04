@@ -8,11 +8,9 @@ use services::anoncreds::AnoncredsService;
 use services::anoncreds::types::*;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use self::indy_crypto::utils::json::{JsonDecodable};
 
 pub enum VerifierCommand {
-    CreateNonce(
-        Box<Fn(Result<String, IndyError>) + Send>),
     VerifyProof(
         String, // proof request json
         String, // proof json
@@ -42,24 +40,7 @@ impl VerifierCommandExecutor {
                 self.verify_proof(&proof_request_json, &proof_json, &schemas_json,
                                   &claim_defs_jsons, &revoc_regs_json, cb);
             }
-            VerifierCommand::CreateNonce(cb) => {
-                info!(target: "verifier_command_executor", "CreateNonce command received");
-                self.create_nonce(cb);
-            }
         };
-    }
-
-    fn create_nonce(&self,
-                    cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let result = self._create_nonce();
-        cb(result)
-    }
-    fn _create_nonce(&self) -> Result<String, IndyError> {
-        let nonce = self.anoncreds_service.verifier.new_nonce()?;
-        let nonce_json = nonce.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize nonce: {:?}", err)))?;
-
-        Ok(nonce_json)
     }
 
     fn verify_proof(&self,

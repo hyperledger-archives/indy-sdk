@@ -18,7 +18,7 @@ public class IssuerRevokeClaimTest extends AnoncredsIntegrationTest
     private final String walletName = "issuerWallet";
     private final int userRevocIndex = 1;
     private final String proofReqJson = "{" +
-                                   "\"nonce\":{\"value\":\"123432421212\"}," +
+                                   "\"nonce\":\"123432421212\"," +
                                    "\"name\":\"proof_req_1\"," +
                                    "\"version\":\"0.1\"," +
                                    "\"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"}}," +
@@ -100,7 +100,7 @@ public class IssuerRevokeClaimTest extends AnoncredsIntegrationTest
         String claimsJson =  Anoncreds.proverGetClaimsForProofReq(issuerWallet, proofReqJson).get();
         JSONObject claims = new JSONObject(claimsJson);
         JSONArray claimsForAttr1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid"); 
-        String claimUuid = claimsForAttr1.getJSONObject(0).getString("claim_id");
+        String claimUuid = claimsForAttr1.getJSONObject(0).getString("claim_uuid");
 
         //11. Prover create Proof
         String requestedClaimsJson = String.format(requestedClaimsJsonTemplate, claimUuid);
@@ -125,7 +125,7 @@ public class IssuerRevokeClaimTest extends AnoncredsIntegrationTest
         String claimsJson =  Anoncreds.proverGetClaimsForProofReq(issuerWallet, proofReqJson).get();
         JSONObject claims = new JSONObject(claimsJson);
         JSONArray claimsForAttr1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid"); 
-        String claimUuid = claimsForAttr1.getJSONObject(0).getString("claim_id");
+        String claimUuid = claimsForAttr1.getJSONObject(0).getString("claim_uuid");
 
         //10. Prover create Proof
         String requestedClaimsJson = String.format(requestedClaimsJsonTemplate, claimUuid);

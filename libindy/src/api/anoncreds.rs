@@ -709,35 +709,6 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Create random nonce.
-///
-/// cb: Callback that takes command result as parameter.
-///
-/// #Returns
-/// nonce: json will contain random nonce
-///
-/// #Errors
-/// Annoncreds*
-/// Common*
-/// Wallet*
-#[no_mangle]
-pub extern fn indy_create_nonce(command_handle: i32,
-                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                     nonce_json: *const c_char)>) -> ErrorCode {
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
-
-    let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Verifier(VerifierCommand::CreateNonce(
-            Box::new(move |result| {
-                let (err, nonce_json) = result_to_err_code_1!(result, String::new());
-                let nonce_json = CStringUtils::string_to_cstring(nonce_json);
-                cb(command_handle, err, nonce_json.as_ptr())
-            })
-        ))));
-
-    result_to_err_code!(result)
-}
-
 /// Verifies a proof (of multiple claim).
 /// All required schemas, public keys and revocation registries must be provided.
 ///

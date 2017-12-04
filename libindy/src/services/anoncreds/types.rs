@@ -37,8 +37,8 @@ impl<'a> JsonDecodable<'a> for Filter {}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ClaimInfo {
-    pub claim_id: String,
-    pub values: HashMap<String, String>,
+    pub claim_uuid: String,
+    pub attrs: HashMap<String, String>,
     pub schema_seq_no: i32,
     pub issuer_did: String,
     pub revoc_reg_seq_no: Option<i32>

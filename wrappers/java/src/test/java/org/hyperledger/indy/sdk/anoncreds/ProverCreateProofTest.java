@@ -18,7 +18,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"                                \"name\":\"proof_req_1\",\n" +
 				"                                \"version\":\"0.1\",\n" +
 				"                                \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},\n" +
@@ -31,7 +31,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		JSONObject claimForAttribute = claims.getJSONObject("attrs").getJSONArray("attr1_uuid").getJSONObject(0);
 
-		String claimUuid = claimForAttribute.getString("claim_id");
+		String claimUuid = claimForAttribute.getString("claim_uuid");
 
 		String requestedClaimsJson = String.format("{\n" +
 				"                                          \"self_attested_attributes\":{},\n" +
@@ -60,9 +60,9 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		JSONArray claims = new JSONArray(claimsJson);
 
-		String claimUuid = claims.getJSONObject(0).getString("claim_id");
+		String claimUuid = claims.getJSONObject(0).getString("claim_uuid");
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"               \"name\":\"proof_req_1\",\n" +
 				"               \"version\":\"0.1\",\n" +
 				"               \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"some_attr\"}},\n" +
@@ -90,7 +90,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"                                \"name\":\"proof_req_1\",\n" +
 				"                                \"version\":\"0.1\",\n" +
 				"                                \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},\n" +
@@ -103,7 +103,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		JSONObject claimForAttribute = claims.getJSONObject("attrs").getJSONArray("attr1_uuid").getJSONObject(0);
 
-		String claimUuid = claimForAttribute.getString("claim_id");
+		String claimUuid = claimForAttribute.getString("claim_uuid");
 
 		String requestedClaimsJson = String.format("{\n" +
 				"                                          \"self_attested_attributes\":{},\n" +
@@ -126,7 +126,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"                                \"name\":\"proof_req_1\",\n" +
 				"                                \"version\":\"0.1\",\n" +
 				"                                \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},\n" +
@@ -139,7 +139,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		JSONObject claimForAttribute = claims.getJSONObject("attrs").getJSONArray("attr1_uuid").getJSONObject(0);
 
-		String claimUuid = claimForAttribute.getString("claim_id");
+		String claimUuid = claimForAttribute.getString("claim_uuid");
 
 		String requestedClaimsJson = String.format("{\n" +
 				"                                          \"self_attested_attributes\":{},\n" +
@@ -162,7 +162,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"                                \"name\":\"proof_req_1\",\n" +
 				"                                \"version\":\"0.1\",\n" +
 				"                                \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},\n" +
@@ -175,7 +175,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		JSONObject claimForAttribute = claims.getJSONObject("attrs").getJSONArray("attr1_uuid").getJSONObject(0);
 
-		String claimUuid = claimForAttribute.getString("claim_id");
+		String claimUuid = claimForAttribute.getString("claim_uuid");
 
 		String requestedClaimsJson = "{\"self_attested_attributes\":{},\n" +
 				"                      \"requested_predicates\":{}\n" +

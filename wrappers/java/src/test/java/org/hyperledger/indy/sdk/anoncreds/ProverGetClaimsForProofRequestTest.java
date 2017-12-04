@@ -17,7 +17,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
 				"              \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},\n" +
@@ -37,7 +37,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
 				"              \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"attribute\"}},\n" +
@@ -57,7 +57,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
 				"              \"requested_attrs\":{},\n" +
@@ -77,7 +77,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
 				"              \"requested_attrs\":{},\n" +
@@ -97,7 +97,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"               \"name\":\"proof_req_1\",\n" +
 				"               \"version\":\"0.1\",\n" +
 				"               \"requested_attrs\":{\n" +
@@ -131,7 +131,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
 				"              \"requested_attrs\":{},\n" +
@@ -151,7 +151,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
 				"              \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":2, \"name\":\"name\"}},\n" +
@@ -171,7 +171,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
 				"              \"requested_attrs\":{\"attr1_uuid\":{\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"name\":\"name\"}},\n" +
@@ -191,7 +191,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
 				"              \"requested_attrs\":{},\n" +
@@ -214,7 +214,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
 				"              \"requested_predicates\":{}\n" +
@@ -231,7 +231,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String proofRequest = "{\"nonce\":{\"value\":\"123432421212\"},\n" +
+		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
 				"              \"requested_attrs\":{},\n" +

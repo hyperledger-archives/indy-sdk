@@ -224,7 +224,7 @@ def predicate_value():
 @pytest.fixture(scope="module")
 def proof_req(predicate_value):
     return {
-        "nonce": {"value": "123432421212"},
+        "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {

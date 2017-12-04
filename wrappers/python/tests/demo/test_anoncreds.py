@@ -53,7 +53,7 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home):
 
     # 7. Prover gets Claims for Proof Request
     proof_req_json = json.dumps({
-        'nonce': {'value': '123432421212'},
+        'nonce': '123432421212',
         'name': 'proof_req_1',
         'version': '0.1',
         'requested_attrs': {
@@ -68,17 +68,17 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home):
     claims_for_proof = json.loads(claim_for_proof_json)
 
     claim_for_attr1 = claims_for_proof['attrs']['attr1_uuid']
-    claim_id = claim_for_attr1[0]['claim_id']
+    claim_uuid = claim_for_attr1[0]['claim_uuid']
 
     # 8. Prover create Proof for Proof Request
     requested_claims_json = json.dumps({
         'self_attested_attributes': {},
-        'requested_attrs': {'attr1_uuid': [claim_id, True]},
-        'requested_predicates': {'predicate1_uuid': claim_id}
+        'requested_attrs': {'attr1_uuid': [claim_uuid, True]},
+        'requested_predicates': {'predicate1_uuid': claim_uuid}
     })
 
-    schemas_json = json.dumps({claim_id: schema})
-    claim_defs_json = json.dumps({claim_id: json.loads(claim_def_json)})
+    schemas_json = json.dumps({claim_uuid: schema})
+    claim_defs_json = json.dumps({claim_uuid: json.loads(claim_def_json)})
     revoc_regs_json = json.dumps({})
 
     proof_json = await anoncreds.prover_create_proof(wallet_handle, proof_req_json, requested_claims_json, schemas_json,

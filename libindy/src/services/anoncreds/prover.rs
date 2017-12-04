@@ -66,7 +66,7 @@ impl Prover {
             let mut claims_for_attribute: Vec<ClaimInfo> = Vec::new();
 
             for claim in claims {
-                if claim.values.contains_key(&requested_attr.name) &&
+                if claim.attrs.contains_key(&requested_attr.name) &&
                     if requested_attr.schema_seq_no.is_some() { claim.schema_seq_no == requested_attr.schema_seq_no.unwrap() } else { true } &&
                     if requested_attr.issuer_did.is_some() { claim.issuer_did == requested_attr.issuer_did.clone().unwrap() } else { true } {
                     claims_for_attribute.push(claim.clone());
@@ -79,7 +79,7 @@ impl Prover {
             let mut claims_for_predicate: Vec<ClaimInfo> = Vec::new();
 
             for claim in claims {
-                if let Some(attribute_value) = claim.values.get(&requested_predicate.attr_name) {
+                if let Some(attribute_value) = claim.attrs.get(&requested_predicate.attr_name) {
                     if Prover::_attribute_satisfy_predicate(&requested_predicate, attribute_value)? &&
                         if requested_predicate.schema_seq_no.is_some() { claim.schema_seq_no == requested_predicate.schema_seq_no.unwrap() } else { true } &&
                         if requested_predicate.issuer_did.is_some() { claim.issuer_did == requested_predicate.issuer_did.clone().unwrap() } else { true } {
@@ -115,21 +115,21 @@ impl Prover {
 
         let mut identifiers: HashSet<Identifier> = HashSet::new();
 
-        for (claim_id, claim) in claims {
-            let schema = schemas.get(claim_id.as_str())
+        for (claim_uuid, claim) in claims {
+            let schema = schemas.get(claim_uuid.as_str())
                 .ok_or(CommonError::InvalidStructure(format!("Schema not found")))?;
-            let claim_definition = claim_defs.get(claim_id.as_str())
+            let claim_definition = claim_defs.get(claim_uuid.as_str())
                 .ok_or(CommonError::InvalidStructure(format!("Claim definition not found")))?;
-            let revocation_registry = revoc_regs.get(claim_id.as_str());
+            let revocation_registry = revoc_regs.get(claim_uuid.as_str());
 
-            let attrs_for_claim = Prover::_get_revealed_attributes_for_claim(claim_id.as_str(), requested_claims, proof_req)?;
-            let predicates_for_claim = Prover::_get_predicates_for_claim(claim_id.as_str(), requested_claims, proof_req)?;
+            let attrs_for_claim = Prover::_get_revealed_attributes_for_claim(claim_uuid.as_str(), requested_claims, proof_req)?;
+            let predicates_for_claim = Prover::_get_predicates_for_claim(claim_uuid.as_str(), requested_claims, proof_req)?;
 
             let claim_schema = build_claim_schema(&schema.data.attr_names)?;
             let claim_values = build_claim_values(&claim.values)?;
             let sub_proof_request = build_sub_proof_request(&attrs_for_claim, &predicates_for_claim)?;
 
-            proof_builder.add_sub_proof_request(claim_id.as_str(),
+            proof_builder.add_sub_proof_request(claim_uuid.as_str(),
                                                 &sub_proof_request,
                                                 &claim_schema,
                                                 &claim.signature,
@@ -182,14 +182,14 @@ impl Prover {
         res
     }
 
-    fn _get_revealed_attributes_for_claim(claim_id: &str, requested_claims: &RequestedClaims, proof_req: &ProofRequest) -> Result<Vec<String>, CommonError> {
-        info!(target: "services/anoncreds/prover", "_get_revealed_attributes_for_claim >>> claim_id: {:?}, requested_claims: {:?}, proof_req: {:?}",
-              claim_id, requested_claims, proof_req);
+    fn _get_revealed_attributes_for_claim(claim_uuid: &str, requested_claims: &RequestedClaims, proof_req: &ProofRequest) -> Result<Vec<String>, CommonError> {
+        info!(target: "services/anoncreds/prover", "_get_revealed_attributes_for_claim >>> claim_uuid: {:?}, requested_claims: {:?}, proof_req: {:?}",
+              claim_uuid, requested_claims, proof_req);
 
         let mut revealed_attrs_for_claim: Vec<String> = Vec::new();
 
-        for (attr_uuid, &(ref requested_claim_id, ref revealed)) in &requested_claims.requested_attrs {
-            if claim_id.eq(requested_claim_id) && revealed.clone() {
+        for (attr_uuid, &(ref requested_claim_uuid, ref revealed)) in &requested_claims.requested_attrs {
+            if claim_uuid.eq(requested_claim_uuid) && revealed.clone() {
                 if let Some(attr) = proof_req.requested_attrs.get(attr_uuid) {
                     revealed_attrs_for_claim.push(attr.name.clone());
                 }
@@ -201,14 +201,14 @@ impl Prover {
         Ok(revealed_attrs_for_claim)
     }
 
-    fn _get_predicates_for_claim(claim_id: &str, requested_claims: &RequestedClaims, proof_req: &ProofRequest) -> Result<Vec<PredicateInfo>, CommonError> {
-        info!(target: "services/anoncreds/prover", "_get_predicates_for_claim >>> claim_id: {:?}, requested_claims: {:?}, proof_req: {:?}",
-              claim_id, requested_claims, proof_req);
+    fn _get_predicates_for_claim(claim_uuid: &str, requested_claims: &RequestedClaims, proof_req: &ProofRequest) -> Result<Vec<PredicateInfo>, CommonError> {
+        info!(target: "services/anoncreds/prover", "_get_predicates_for_claim >>> claim_uuid: {:?}, requested_claims: {:?}, proof_req: {:?}",
+              claim_uuid, requested_claims, proof_req);
 
         let mut predicates_for_claim: Vec<PredicateInfo> = Vec::new();
 
-        for (predicate_uuid, requested_claim_id) in &requested_claims.requested_predicates {
-            if claim_id.eq(requested_claim_id) {
+        for (predicate_uuid, requested_claim_uuid) in &requested_claims.requested_predicates {
+            if claim_uuid.eq(requested_claim_uuid) {
                 if let Some(predicate) = proof_req.requested_predicates.get(predicate_uuid) {
                     predicates_for_claim.push(predicate.clone());
                 }
@@ -229,8 +229,8 @@ impl Prover {
         let mut revealed_attrs: HashMap<String, (String, String, String)> = HashMap::new();
         let mut unrevealed_attrs: HashMap<String, String> = HashMap::new();
 
-        for (attr_uuid, &(ref claim_id, ref revealed)) in &requested_claims.requested_attrs {
-            let claim = claims.get(claim_id)
+        for (attr_uuid, &(ref claim_uuid, ref revealed)) in &requested_claims.requested_attrs {
+            let claim = claims.get(claim_uuid)
                 .ok_or(CommonError::InvalidStructure(format!("Claim not found")))?;
 
             let attribute = proof_req.requested_attrs.get(attr_uuid)
@@ -238,7 +238,7 @@ impl Prover {
 
             if revealed.clone() {
                 let attribute_values = claim.values.get(&attribute.name)
-                    .ok_or(CommonError::InvalidStructure(format!("Attributes for claim {} not found", claim_id)))?;
+                    .ok_or(CommonError::InvalidStructure(format!("Attributes for claim {} not found", claim_uuid)))?;
 
                 let value = attribute_values.get(0)
                     .ok_or(CommonError::InvalidStructure(format!("Raw value not found")))?;
@@ -246,9 +246,9 @@ impl Prover {
                 let encoded_value = attribute_values.get(1)
                     .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?;
 
-                revealed_attrs.insert(attr_uuid.clone(), (claim_id.clone(), value.clone(), encoded_value.clone()));
+                revealed_attrs.insert(attr_uuid.clone(), (claim_uuid.clone(), value.clone(), encoded_value.clone()));
             } else {
-                unrevealed_attrs.insert(attr_uuid.clone(), claim_id.clone());
+                unrevealed_attrs.insert(attr_uuid.clone(), claim_uuid.clone());
             }
         }
 

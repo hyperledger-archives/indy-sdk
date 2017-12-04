@@ -187,7 +187,7 @@ pub struct AttributeInfo {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct ClaimInfo {
-    pub claim_id: String,
+    pub claim_uuid: String,
     pub schema_seq_no: i32,
     pub issuer_did: String,
     pub revoc_reg_seq_no: Option<i32>

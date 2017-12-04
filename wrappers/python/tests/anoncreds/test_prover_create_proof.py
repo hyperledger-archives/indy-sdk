@@ -11,7 +11,7 @@ async def test_prover_create_proof_works(wallet_handle, prepopulated_wallet, gvt
     claim_def_json, = prepopulated_wallet
 
     proof_req = {
-        "nonce": {"value":"123432421212"},
+        "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
@@ -30,8 +30,8 @@ async def test_prover_create_proof_works(wallet_handle, prepopulated_wallet, gvt
     }
 
     claims = json.loads(await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
-    claim_for_attr = claims['attrs']['attr1_uuid'][0]['claim_id']
-    claim_for_predicate = claims['predicates']['predicate1_uuid'][0]['claim_id']
+    claim_for_attr = claims['attrs']['attr1_uuid'][0]['claim_uuid']
+    claim_for_predicate = claims['predicates']['predicate1_uuid'][0]['claim_uuid']
 
     requested_claims = {
         "self_attested_attributes": {},
@@ -62,10 +62,10 @@ async def test_prover_create_proof_works_for_using_not_satisfy_claim(wallet_hand
                                                                      schema_seq_no):
     claim_def_json, = prepopulated_wallet
     claims = json.loads(await prover_get_claims(wallet_handle, "{}"))
-    claim_id = claims[0]['claim_id']
+    claim_uuid = claims[0]['claim_uuid']
 
     proof_req = {
-        "nonce": {"value":"123432421212"},
+        "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
@@ -80,7 +80,7 @@ async def test_prover_create_proof_works_for_using_not_satisfy_claim(wallet_hand
     requested_claims = {
         "self_attested_attributes": {},
         "requested_attrs": {
-            "attr1_uuid": [claim_id, True]
+            "attr1_uuid": [claim_uuid, True]
         },
         "requested_predicates": {
             "predicate1_uuid": {}
@@ -88,11 +88,11 @@ async def test_prover_create_proof_works_for_using_not_satisfy_claim(wallet_hand
     }
 
     schemas = {
-        claim_id: gvt_schema
+        claim_uuid: gvt_schema
     }
 
     claim_defs = {
-        claim_id: json.loads(claim_def_json)
+        claim_uuid: json.loads(claim_def_json)
     }
 
     with pytest.raises(IndyError) as e:
@@ -110,7 +110,7 @@ async def test_prover_create_proof_works_for_invalid_wallet_handle(wallet_handle
     claim_def_json, = prepopulated_wallet
 
     proof_req = {
-        "nonce": {"value":"123432421212"},
+        "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
@@ -129,8 +129,8 @@ async def test_prover_create_proof_works_for_invalid_wallet_handle(wallet_handle
     }
 
     claims = json.loads(await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
-    claim_for_attr = claims['attrs']['attr1_uuid'][0]['claim_id']
-    claim_for_predicate = claims['predicates']['predicate1_uuid'][0]['claim_id']
+    claim_for_attr = claims['attrs']['attr1_uuid'][0]['claim_uuid']
+    claim_for_predicate = claims['predicates']['predicate1_uuid'][0]['claim_uuid']
 
     requested_claims = {
         "self_attested_attributes": {},

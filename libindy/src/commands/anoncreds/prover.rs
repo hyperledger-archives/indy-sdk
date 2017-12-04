@@ -362,7 +362,7 @@ impl ProverCommandExecutor {
 
         let mut claims_info: Vec<ClaimInfo> = Vec::new();
 
-        for &(ref claim_id, ref claim) in claims.iter() {
+        for &(ref claim_uuid, ref claim) in claims.iter() {
             let claim: Claim = Claim::from_json(claim)
                 .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim: {:?}", err)))?;
 
@@ -373,8 +373,8 @@ impl ProverCommandExecutor {
 
             claims_info.push(
                 ClaimInfo {
-                    claim_id: claim_id.clone(),
-                    values: claim_values,
+                    claim_uuid: claim_uuid.clone(),
+                    attrs: claim_values,
                     schema_seq_no: claim.schema_seq_no.clone(),
                     issuer_did: claim.issuer_did.clone(),
                     revoc_reg_seq_no: claim.rev_reg_seq_no.clone()
