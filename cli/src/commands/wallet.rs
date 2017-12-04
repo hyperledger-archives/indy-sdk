@@ -1,5 +1,5 @@
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
-use super::super::IndyContext;
+use super::super::{IndyContext, serde_json};
 
 use libindy::wallet::Wallet;
 
@@ -91,12 +91,36 @@ impl Command for OpenCommand {
 
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         println!("wallet open: >>> execute {:?} while context {:?}", params, self.ctx);
+
         let wallet_name = params.get("name").ok_or((/* TODO error */))?;
-        let config = params.get("config").map(|cfg| *cfg);
-        let wallet_handle = Wallet::open_wallet(wallet_name, config)
+
+        let config: Option<String> =
+            if params.contains_key("key")
+                || params.contains_key("rekey")
+                || params.contains_key("freshness_time") {
+                let mut config = serde_json::Map::new();
+
+                for str_config_option in &["key", "rekey"] {
+                    if let Some(config_option) = params.get(str_config_option) {
+                        config.insert(config_option.to_string(), serde_json::Value::String(config_option.to_string()));
+                    }
+                }
+
+                if let Some(freshness_time) = params.get("freshness_time") {
+                    let freshness_time: i64 = freshness_time.parse().map_err(|_| (/* TODO error */))?;
+                    config.insert("freshness_time".to_string(), serde_json::Value::from(freshness_time));
+                }
+
+                Some(serde_json::to_string(&serde_json::Value::from(config)).unwrap())
+            } else {
+                None
+            };
+
+        let wallet_handle = Wallet::open_wallet(wallet_name, config.as_ref().map(String::as_str))
             .map_err(|_| ())?;
         //TODO close previously opened wallet
         self.ctx.set_current_wallet(wallet_name, wallet_handle);
+
         Ok(())
     }
 }
