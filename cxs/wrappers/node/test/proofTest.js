@@ -3,8 +3,7 @@ const cxs = require('../dist/index')
 const { stubInitCXS } = require('./helpers')
 const { Connection, Proof, StateType, Error } = cxs
 
-const ATTR = [{'issuer_did': '8XFh8yBzrpJQmNyZzgoTqB', schema_seq_no: 1, name: 'test'}]
-const DID = '8XFh8yBzrpJQmNyZzgoTqB'
+const ATTR = [{issuerDid: '8XFh8yBzrpJQmNyZzgoTqB', schemaSeqNo: 1, name: 'test'}]
 
 describe('A Proof', function () {
   this.timeout(30000)
@@ -32,20 +31,20 @@ describe('A Proof', function () {
 
   it('has a proofHandle and a sourceId after it is created', async () => {
     const sourceId = '1'
-    const proof = await Proof.create({ sourceId, proof_requester_did: DID, attrs: ATTR, name: 'TestProof' })
+    const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
     assert(proof.handle)
     assert.equal(proof.sourceId, sourceId)
   })
 
   it('has state of Initialized after creating', async () => {
     const sourceId = 'Proof ID'
-    const proof = await Proof.create({ sourceId, proof_requester_did: DID, attrs: ATTR, name: 'TestProof' })
+    const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
     assert.equal(proof.state, StateType.Initialized)
   })
 
   it('can be created, then serialized, then deserialized and have the same sourceId, state, and claimHandle', async () => {
     const sourceId = 'SerializeDeserialize'
-    const proof = await Proof.create({ sourceId, proof_requester_did: DID, attrs: ATTR, name: 'TestProof' })
+    const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
     const jsonProof = await proof.serialize()
     assert.equal(jsonProof.state, StateType.Initialized)
     const proof2 = await Proof.deserialize(jsonProof)
@@ -55,7 +54,7 @@ describe('A Proof', function () {
 
   it('will throw error on serialize when proof has been released', async () => {
     const sourceId = 'SerializeDeserialize'
-    const proof = await Proof.create({ sourceId, proof_requester_did: DID, attrs: ATTR, name: 'TestProof' })
+    const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
     const jsonProof = await proof.serialize()
     assert.equal(await proof.state, StateType.Initialized)
     let data = await proof.serialize()
@@ -71,7 +70,7 @@ describe('A Proof', function () {
 
   it('has correct state after deserializing', async () => {
     const sourceId = 'SerializeDeserialize'
-    const proof = await Proof.create({ sourceId, proof_requester_did: DID, attrs: ATTR, name: 'TestProof' })
+    const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
     const jsonProof = await proof.serialize()
     const proof2 = await Proof.deserialize(jsonProof)
     assert.equal(proof2.state, StateType.Initialized)
@@ -81,7 +80,7 @@ describe('A Proof', function () {
     let connection = await Connection.create({ id: '234' })
     await connection.connect()
     const sourceId = 'SerializeDeserialize'
-    const proof = await Proof.create({ sourceId, proof_requester_did: DID, attrs: ATTR, name: 'TestProof' })
+    const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
     await proof.requestProof(connection)
     assert.equal(proof.state, StateType.OfferSent)
   })
@@ -91,7 +90,7 @@ describe('A Proof', function () {
     await connection.connect()
     await connection.release()
     const sourceId = 'SerializeDeserialize'
-    const proof = await Proof.create({ sourceId, proof_requester_did: DID, attrs: ATTR, name: 'TestProof' })
+    const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
     try {
       await proof.requestProof(connection)
     } catch (err) {
@@ -104,7 +103,7 @@ describe('A Proof', function () {
     await connection.connect()
     await connection.release()
     const sourceId = 'SerializeDeserialize'
-    const proof = await Proof.create({ sourceId, proof_requester_did: DID, attrs: ATTR, name: 'TestProof' })
+    const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
     await proof.release()
     try {
       await proof.requestProof(connection)

@@ -45,7 +45,7 @@ impl Proof {
             return Err(error::NOT_READY.code_num);
         }
         self.prover_did = connection::get_pw_did(connection_handle)?;
-        let from_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT).unwrap();
+        self.requester_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT).unwrap();
         //TODO: call to libindy to encrypt payload
         //TODO: Set expiration date
         let proof_request = messages::proof_request()
@@ -140,7 +140,6 @@ impl Proof {
 }
 
 pub fn create_proof(source_id: Option<String>,
-                    requester_did: String,
                     requested_attrs: String,
                     requested_predicates: String,
                     name: String) -> Result<u32, String> {
@@ -155,7 +154,7 @@ pub fn create_proof(source_id: Option<String>,
         msg_uid: String::new(),
         requested_attrs,
         requested_predicates,
-        requester_did,
+        requester_did: String::new(),
         prover_did: String::new(),
         state: CxsStateType::CxsStateNone,
         tid: 0,
@@ -303,7 +302,6 @@ mod tests {
         set_default_and_enable_test_mode();
 
         match create_proof(None,
-                           "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                            REQUESTED_ATTRS.to_owned(),
                            REQUESTED_PREDICATES.to_owned(),
                             "Optional".to_owned()) {
@@ -317,7 +315,6 @@ mod tests {
         set_default_and_enable_test_mode();
 
         let handle = match create_proof(None,
-                           "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                         REQUESTED_ATTRS.to_owned(),
                                         REQUESTED_PREDICATES.to_owned(),
                                         "Optional".to_owned()) {
@@ -332,7 +329,6 @@ mod tests {
     fn test_from_string_succeeds() {
         set_default_and_enable_test_mode();
         let handle = match create_proof(None,
-                                        "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                         REQUESTED_ATTRS.to_owned(),
                                         REQUESTED_PREDICATES.to_owned(),
                                         "Optional".to_owned()) {
@@ -352,7 +348,6 @@ mod tests {
     fn test_release_proof() {
         set_default_and_enable_test_mode();
         let handle = match create_proof(Some("1".to_string()),
-                                        "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                         REQUESTED_ATTRS.to_owned(),
                                         REQUESTED_PREDICATES.to_owned(),
                                         "Optional".to_owned()) {
@@ -366,7 +361,7 @@ mod tests {
     #[test]
     fn test_send_proof_request() {
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
 
         let connection_handle = create_connection("test_send_proof_request".to_owned());
@@ -379,7 +374,6 @@ mod tests {
             .create();
 
         let handle = match create_proof(Some("1".to_string()),
-                                        "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                         REQUESTED_ATTRS.to_owned(),
                                         REQUESTED_PREDICATES.to_owned(),
                                         "Optional".to_owned()) {

@@ -8,7 +8,6 @@ import { CXSBase } from './CXSBase'
 
 export interface IProofConfig {
   sourceId: string,
-  proof_requester_did: string,
   attrs: IProofAttr[],
   name: string,
 }
@@ -16,16 +15,15 @@ export interface IProofConfig {
 export interface IProofData {
   source_id: string
   handle: number
-  proof_attributes: string
-  proof_requester_did: string
+  requested_attrs: string
   prover_did: string
   state: StateType
-  proof_request_name: string
+  name: string
 }
 
 export interface IProofAttr {
-  issuer_did: string,
-  schema_seq_no: number,
+  issuerDid?: string,
+  schemaSeqNo?: number,
   name: string,
 }
 
@@ -42,18 +40,15 @@ export class Proof extends CXSBase {
   protected _updateStFn = rustAPI().cxs_proof_update_state
   protected _serializeFn = rustAPI().cxs_proof_serialize
   protected _deserializeFn = rustAPI().cxs_proof_deserialize
-  private _proofRequesterDid: string
   private _requestedAttributes: IProofAttr[]
   private _name: string
 
   constructor (sourceId) {
     super(sourceId)
-    this._proofRequesterDid = null
   }
 
   static async create (data: IProofConfig): Promise<Proof> {
     const proof = new Proof(data.sourceId)
-    proof._proofRequesterDid = data.proof_requester_did
     proof._requestedAttributes = data.attrs
     proof._name = data.name
     const commandHandle = 0
@@ -61,7 +56,6 @@ export class Proof extends CXSBase {
       await proof._create((cb) => rustAPI().cxs_proof_create(
         commandHandle,
         proof.sourceId,
-        proof.proofRequesterDid,
         JSON.stringify(proof._requestedAttributes),
         JSON.stringify([]),
         proof._name,
@@ -98,10 +92,6 @@ export class Proof extends CXSBase {
     } catch (error) {
       throw new CXSInternalError(`cxs_proof_updateState -> ${error}`)
     }
-  }
-
-  get proofRequesterDid () {
-    return this._proofRequesterDid
   }
 
   // send a proof request to the connection

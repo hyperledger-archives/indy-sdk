@@ -12,14 +12,12 @@ use api::CxsStatus;
 #[no_mangle]
 pub extern fn cxs_proof_create(command_handle: u32,
                                source_id: *const c_char,
-                               requester_did: *const c_char,
                                requested_attrs: *const c_char,
                                requested_predicates: *const c_char,
                                name: *const c_char,
                                cb: Option<extern fn(xcommand_handle: u32, err: u32, proof_handle: u32)>) -> u32 {
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-    check_useful_c_str!(requester_did, error::INVALID_OPTION.code_num);
     check_useful_c_str!(requested_attrs, error::INVALID_OPTION.code_num);
     check_useful_c_str!(requested_predicates, error::INVALID_OPTION.code_num);
     check_useful_c_str!(name, error::INVALID_OPTION.code_num);
@@ -32,7 +30,7 @@ pub extern fn cxs_proof_create(command_handle: u32,
 
     thread::spawn( move|| {
         let ( rc, handle) = match proof::create_proof(
-            source_id_opt, requester_did, requested_attrs, requested_predicates, name) {
+            source_id_opt, requested_attrs, requested_predicates, name) {
             Ok(x) => (error::SUCCESS.code_num, x),
             Err(_) => (error::UNKNOWN_ERROR.code_num, 0),
         };
@@ -233,7 +231,6 @@ mod tests {
         set_default_and_enable_test_mode();
         assert_eq!(cxs_proof_create(0,
                                     ptr::null(),
-                                    CString::new("8XFh8yBzrpJQmNyZzgoTqB").unwrap().into_raw(),
                                     CString::new(REQUESTED_ATTRS).unwrap().into_raw(),
                                     CString::new(REQUESTED_PREDICATES).unwrap().into_raw(),
                                     CString::new("optional").unwrap().into_raw(),
@@ -250,7 +247,6 @@ mod tests {
             ptr::null(),
             ptr::null(),
             ptr::null(),
-            ptr::null(),
             Some(create_cb)), error::INVALID_OPTION.code_num);
         thread::sleep(Duration::from_millis(200));
     }
@@ -260,7 +256,6 @@ mod tests {
         set_default_and_enable_test_mode();
         assert_eq!(cxs_proof_create(0,
                                     ptr::null(),
-                                    CString::new("8XFh8yBzrpJQmNyZzgoTqB").unwrap().into_raw(),
                                     CString::new(REQUESTED_ATTRS).unwrap().into_raw(),
                                     CString::new(REQUESTED_PREDICATES).unwrap().into_raw(),
                                     CString::new("optional data").unwrap().into_raw(),
@@ -281,7 +276,6 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle = match create_proof(None,
-                                        "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                         REQUESTED_ATTRS.to_owned(),
                                         REQUESTED_PREDICATES.to_owned(),
                                         "Name".to_owned()) {
@@ -298,7 +292,7 @@ mod tests {
     #[test]
     fn test_cxs_proof_send_request() {
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"indy");
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
         let _m = mockito::mock("POST", "/agency/route")
             .with_status(200)
@@ -307,7 +301,6 @@ mod tests {
             .create();
 
         let handle = match create_proof(None,
-                                        "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                         REQUESTED_ATTRS.to_owned(),
                                         REQUESTED_PREDICATES.to_owned(),
                                         "Name".to_owned()) {

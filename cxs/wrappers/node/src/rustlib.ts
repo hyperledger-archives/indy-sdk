@@ -53,7 +53,7 @@ export interface IFFIEntryPoint {
   cxs_issuer_send_claim: (commandId: number, claimHandle: string, connectionHandle: string, cb: any) => number,
   cxs_issuer_send_claim_offer: (commandId: number, claimHandle: string, connectionHandle: string, cb: any) => number,
   // proof
-  cxs_proof_create: (commandId: number, sourceId: string, requesterDid: string, attrs: string, predicates: string,
+  cxs_proof_create: (commandId: number, sourceId: string, attrs: string, predicates: string,
                      name: string, cb: any) => number,
   cxs_proof_deserialize: (commandId: number, data: string, cb: any) => number,
   cxs_proof_release: (handle: string) => number,
@@ -88,7 +88,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_CALLBACK_PTR]],
   // proof
   cxs_proof_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,
-    FFI_STRING_DATA, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+    FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   cxs_proof_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   cxs_proof_release: [FFI_ERROR_CODE, [FFI_PROOF_HANDLE]],
   cxs_proof_send_request: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CONNECTION_HANDLE,
