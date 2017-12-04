@@ -200,16 +200,19 @@ mod tests {
             TestUtils::cleanup_storage();
             let ctx = Rc::new((IndyContext { cur_wallet: RefCell::new(None) }));
 
-            let cmd = CreateCommand::new(ctx.clone());
-            let mut params = HashMap::new();
-            params.insert("name", "wallet");
-            params.insert("pool_name", "pool");
-            cmd.execute(&params).unwrap();
-
-            let cmd = OpenCommand::new(ctx.clone());
-            let mut params = HashMap::new();
-            params.insert("name", "wallet");
-            cmd.execute(&params).unwrap();
+            {
+                let cmd = CreateCommand::new(ctx.clone());
+                let mut params = HashMap::new();
+                params.insert("name", "wallet");
+                params.insert("pool_name", "pool");
+                cmd.execute(&params).unwrap();
+            }
+            {
+                let cmd = OpenCommand::new(ctx.clone());
+                let mut params = HashMap::new();
+                params.insert("name", "wallet");
+                cmd.execute(&params).unwrap();
+            }
 
             let cmd = CloseCommand::new(ctx.clone());
             let params = HashMap::new();
