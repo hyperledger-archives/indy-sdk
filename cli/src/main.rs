@@ -27,7 +27,7 @@ use std::env;
 use std::rc::Rc;
 
 fn main() {
-    utils::logger::LoggerUtils::init();
+    //FIXME move from SDK utils::logger::LoggerUtils::init();
 
     let command_executor = build_executor();
 
@@ -44,7 +44,8 @@ fn build_executor() -> CommandExecutor {
     CommandExecutor::build()
         .add_group(Box::new(wallet::Group::new()))
         .add_command(Box::new(wallet::CreateCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::OpenCommand::new(indy_context)))
+        .add_command(Box::new(wallet::OpenCommand::new(indy_context.clone())))
+        .add_command(Box::new(wallet::CloseCommand::new(indy_context.clone())))
         .finalize_group()
         .finalize()
 }

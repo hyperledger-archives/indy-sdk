@@ -22,11 +22,15 @@ impl IndyContext {
         *self.opened_wallet.borrow_mut() = None;
     }
 
+    pub fn get_opened_wallet(&self) -> Option<(String, IndyHandle)> {
+        self.opened_wallet.borrow().as_ref().map(|&(ref name, handle)| (name.to_owned(), handle))
+    }
+
     pub fn get_opened_wallet_name(&self) -> Option<String> {
         self.opened_wallet.borrow().as_ref().map(|&(ref name, _)| name.to_owned())
     }
 
-    pub fn get_current_wallet_handle(&self) -> Option<IndyHandle> {
+    pub fn get_opened_wallet_handle(&self) -> Option<IndyHandle> {
         self.opened_wallet.borrow().as_ref().map(|&(_, handle)| handle)
     }
 }
