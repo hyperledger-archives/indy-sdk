@@ -143,11 +143,12 @@ impl CommandExecutor {
         }
     }
 
-    pub fn execute(&self, line: &str) {
+    pub fn execute(&self, line: &str) -> Result<(), ()> {
         let (cmd, params) = CommandExecutor::_split_first_word(line);
 
         if cmd == "help" {
-            return self._print_help();
+            self._print_help();
+            return Ok(())
         }
 
         if let Some(&(ref group, ref commands)) = self.grouped_commands.get(cmd) {
@@ -157,29 +158,48 @@ impl CommandExecutor {
         if let Some(ref command) = self.commands.get(cmd) {
             return self._execute_command(None, command, params);
         }
+
+        println!("Unknown group or command {}", cmd);
+        println!();
+        self._print_help();
+        Err(())
     }
 
-    fn _execute_group_command(&self, group: &Box<Group>, commands: &HashMap<&'static str, Box<Command>>, line: &str) {
+    fn _execute_group_command(&self, group: &Box<Group>, commands: &HashMap<&'static str, Box<Command>>, line: &str) -> Result<(), ()> {
         let (cmd, params) = CommandExecutor::_split_first_word(line);
 
         if cmd == "help" {
-            return self._print_group_help(group, commands);
+            self._print_group_help(group, commands);
+            return Ok(());
         }
 
         if let Some(ref command) = commands.get(cmd) {
             return self._execute_command(Some(group), command, params);
         }
+
+        println!("Unknown command {} {}", group.metadata().name(), cmd);
+        println!();
+        self._print_group_help(group, commands);
+        Err(())
     }
 
-    fn _execute_command(&self, group: Option<&Box<Group>>, command: &Box<Command>, params: &str) {
-
-        let (main_param, rest_params) = CommandExecutor::_split_first_word(params);
+    fn _execute_command(&self, group: Option<&Box<Group>>, command: &Box<Command>, params: &str) -> Result<(), ()> {
+        let (main_param, _) = CommandExecutor::_split_first_word(params);
 
         if main_param == "help" {
-            return self._print_command_help(group, command);
+            self._print_command_help(group, command);
+            return Ok(());
         }
 
-        println!("cmd: {:?} main_param: {} rest_params: {}", command.metadata(), main_param, rest_params);
+        match CommandExecutor::_parse_params(command.metadata(), params) {
+            Ok(ref params) => command.execute(params),
+            Err(ref err) => {
+                println!("{}", err);
+                println!();
+                self._print_command_help(group, command);
+                Err(())
+            }
+        }
     }
 
     fn _print_help(&self) {
@@ -263,6 +283,10 @@ impl CommandExecutor {
         println!();
         println!("Parameters are:");
 
+        if let Some(ref main_param) = command.metadata().main_param() {
+            println!("\t{} - {}", main_param.name(), main_param.help())
+        }
+
         for param in command.metadata().params() {
             print!("\t{} - ", param.name());
 
@@ -276,27 +300,67 @@ impl CommandExecutor {
         println!();
     }
 
-    fn _split_first_word(s: &str) -> (&str, &str) {
-        let s = s.trim();
+    fn _parse_params<'a>(command: &CommandMetadata, params: &'a str) -> Result<HashMap<&'static str, &'a str>, String> {
+        let mut res: HashMap<&'static str, &str> = HashMap::new();
+        let mut params = params;
 
-        match s.find(|ch: char| ch.is_whitespace()) {
-            Some(pos) => (&s[..pos], s[pos..].trim_left()),
-            None => (s, "")
-        }
-    }
+        // Read main param
+        if let Some(param_metadata) = command.main_param() {
+            let (param_value, tail) = CommandExecutor::_split_first_word(params);
+            params = tail;
 
-    fn _parse_params<'a>(metadata: &CommandMetadata, params: &'a [(&str, &str)]) -> Result<HashMap<String, &'a str>, ()> {
-        let mut params_map: HashMap<String, &str> = HashMap::new();
-        for param in params {
-            params_map.insert(param.0.to_string(), param.1);
+            if param_value.is_empty() {
+                return Err(format!("No main {} parameter present", param_metadata.name()));
+            }
+
+            res.insert(param_metadata.name(), param_value);
         }
-        for required_param in metadata.params().iter()
-            .filter(|p| !p.is_optional()) {
-            if !params_map.contains_key(required_param.name()) {
-                return Err(());
+
+        // Read rest params
+        loop {
+            let (param, tail) = CommandExecutor::_split_first_word(params);
+            params = tail;
+
+            if param.is_empty() {
+                break;
+            }
+
+            let mut split = param.splitn(2, '=');
+            let param_name = split.next().unwrap();
+            let param_value = split.next();
+            let param_metadata = command.params().iter().find(|p| p.name() == param_name);
+
+            if let Some(param_metadata) = param_metadata  {
+                if let Some(param_value) = param_value {
+                    res.insert(param_metadata.name(), param_value);
+
+                } else {
+                    return Err(format!("No value for {} parameter present", param_name));
+                }
+
+            } else {
+                return Err(format!("Unknown {} parameter present", param_name));
             }
         }
-        Ok(params_map)
+
+        Ok(res)
+    }
+
+    fn _split_first_word(s: &str) -> (&str, &str) {
+        let mut is_whitespace_escape = false;
+        let s = s.trim();
+
+        for (pos, ch) in s.char_indices() {
+            if ch.is_whitespace() && !is_whitespace_escape {
+                return (&s[..pos], s[pos..].trim_left());
+            }
+
+            if ch == '"' {
+                is_whitespace_escape = !is_whitespace_escape;
+            }
+        }
+
+        (s, "")
     }
 }
 
@@ -350,6 +414,7 @@ impl CommandExecutorGroupBuilder {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -402,11 +467,11 @@ mod tests {
     pub fn execute_works() {
         let cmd_executor = CommandExecutor::build()
             .add_group(Box::new(TestGroup::new()))
-                .add_command(Box::new(TestCommand::new()))
-                .finalize_group()
+            .add_command(Box::new(TestCommand::new()))
+            .finalize_group()
             .add_command(Box::new(TestCommand::new()))
             .finalize();
-        cmd_executor.execute("help");
+        cmd_executor.execute("test_group test_command \"main param\" param1=\"param1 value\" param2=param2-value").unwrap();
     }
 }
 
