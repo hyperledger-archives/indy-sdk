@@ -28,9 +28,9 @@ fn main() {
     let command_executor = build_executor();
 
     if env::args().len() == 1 {
-        console_mod_start(command_executor);
+        execute_interactive(command_executor);
     } else {
-        unimplemented!("Batch mod");
+        execute_batch(command_executor, &env::args().next().unwrap())
     }
 }
 
@@ -45,19 +45,22 @@ fn build_executor() -> CommandExecutor {
         .finalize()
 }
 
-fn console_mod_start(command_executor: CommandExecutor) {
+fn execute_interactive(command_executor: CommandExecutor) {
     let mut reader = Reader::new("indy-cli").unwrap();
     reader.set_completer(Rc::new(PathCompleter));
     reader.set_prompt("indy> ");
 
     while let Ok(ReadResult::Input(line)) = reader.read_line() {
-        if !line.trim().is_empty() {
-            command_executor.execute(line.trim());
+        if command_executor.execute(&line).is_ok() {
             reader.add_history(line);
         }
     }
 
     println!("\nGoodbye.");
+}
+
+fn execute_batch(_command_executor: CommandExecutor, _script_path: &str) {
+    unimplemented!()
 }
 
 impl IndyContext {
