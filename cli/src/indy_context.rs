@@ -30,6 +30,7 @@ impl IndyContext {
         self.opened_wallet.borrow().as_ref().map(|&(ref name, _)| name.to_owned())
     }
 
+    #[allow(dead_code)] // FIXME
     pub fn get_opened_wallet_handle(&self) -> Option<IndyHandle> {
         self.opened_wallet.borrow().as_ref().map(|&(_, handle)| handle)
     }

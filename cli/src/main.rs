@@ -45,6 +45,7 @@ fn build_executor() -> CommandExecutor {
         .add_group(Box::new(wallet::Group::new()))
         .add_command(Box::new(wallet::CreateCommand::new(indy_context.clone())))
         .add_command(Box::new(wallet::OpenCommand::new(indy_context.clone())))
+        .add_command(Box::new(wallet::ListCommand::new(indy_context.clone())))
         .add_command(Box::new(wallet::CloseCommand::new(indy_context.clone())))
         .add_command(Box::new(wallet::DeleteCommand::new(indy_context.clone())))
         .finalize_group()

@@ -379,6 +379,7 @@ impl CommandExecutorBuilder {
         }
     }
 
+    #[allow(dead_code)] // FIXME
     pub fn add_command(mut self, command: Box<Command>) -> CommandExecutorBuilder {
         self.commands.insert(command.metadata().name, command);
         self

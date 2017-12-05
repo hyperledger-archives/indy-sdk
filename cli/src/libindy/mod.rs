@@ -1,4 +1,5 @@
 pub mod wallet;
+mod callbacks;
 
 pub type IndyHandle = i32;
 

@@ -42,6 +42,12 @@ pub struct OpenCommand {
 }
 
 #[derive(Debug)]
+pub struct ListCommand {
+    ctx: Rc<IndyContext>,
+    metadata: CommandMetadata,
+}
+
+#[derive(Debug)]
 pub struct CloseCommand {
     ctx: Rc<IndyContext>,
     metadata: CommandMetadata,
@@ -159,6 +165,46 @@ impl Command for OpenCommand {
 
         trace!("CreateCommand::execute << {:?}", res);
         Ok(())
+    }
+}
+
+impl ListCommand {
+    pub fn new(ctx: Rc<IndyContext>) -> ListCommand {
+        ListCommand {
+            ctx,
+            metadata: CommandMetadata::build("list", "List existing wallets.")
+                .finalize()
+        }
+    }
+}
+
+impl Command for ListCommand {
+    fn metadata(&self) -> &CommandMetadata {
+        &self.metadata
+    }
+
+    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("ListCommand::execute >> self {:?} params {:?}", self, params);
+
+        let res = match Wallet::list_wallets() {
+            Ok(wallets) => {
+                let wallets = wallets.replace("},{", "}\n{").replace("]", "").replace("[", "");
+                //TODO parse JSON and print table
+                if wallets.trim().len() > 0 {
+                    println_succ!("Existing wallets: \n{}", wallets.trim());
+                } else {
+                    println_succ!("There are no wallets");
+                }
+                if let Some(cur_wallet) = self.ctx.get_opened_wallet_name() {
+                    println_succ!("Current wallet \"{}\"", cur_wallet);
+                }
+                Ok(())
+            }
+            Err(err) => Err(println_err!("List wallets failed with unexpected Indy SDK error {:?}", err)),
+        };
+
+        trace!("ListCommand::execute << {:?}", res);
+        res
     }
 }
 

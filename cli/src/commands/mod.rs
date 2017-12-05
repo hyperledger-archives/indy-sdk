@@ -16,6 +16,7 @@ pub fn get_opt_str_param<'a>(key: &'a str, params: &'a HashMap<&'static str, &st
     Ok(params.get(key).map(|v| *v))
 }
 
+#[allow(dead_code)] // FIXME
 pub fn get_i64_param(name: &str, params: &HashMap<&'static str, &str>) -> Result<i64, ()> {
     match params.get(name) {
         Some(v) => {
