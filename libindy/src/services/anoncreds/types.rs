@@ -101,22 +101,6 @@ impl ClaimDefinitionData {
     }
 }
 
-//FIXME workaround for ledger: serialize required dictionary as empty instead of using null
-extern crate serde;
-
-use self::serde::Serializer;
-use self::serde::ser::SerializeMap;
-
-fn empty_map_instead_of_null<S>(x: &Option<IssuerRevocationPublicKey>, s: S) -> Result<S::Ok, S::Error>
-    where S: Serializer {
-    if let &Some(ref x) = x {
-        s.serialize_some(&x)
-    } else {
-        s.serialize_map(None)?.end()
-    }
-}
-//FIXME
-
 impl JsonEncodable for ClaimDefinitionData {}
 
 impl<'a> JsonDecodable<'a> for ClaimDefinitionData {}

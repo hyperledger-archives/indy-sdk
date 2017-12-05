@@ -12,7 +12,7 @@ pub struct ClaimDefinition {
     #[serde(rename = "origin")]
     pub issuer_did: String,
     pub signature_type: String,
-    pub data: IssuerPublicKey
+    pub data: ClaimDefinitionData
 }
 
 #[derive(Deserialize, Debug, Serialize, PartialEq)]
