@@ -2,10 +2,13 @@ pub mod wallet;
 
 use std::collections::HashMap;
 
-pub fn get_str_param<'a>(key: &'a str, params: &'a HashMap<&'static str, &str>) -> Result<&'a str, ()> {
-    match params.get(key) {
+pub fn get_str_param<'a>(name: &'a str, params: &'a HashMap<&'static str, &str>) -> Result<&'a str, ()> {
+    match params.get(name) {
         Some(v) => Ok(*v),
-        None => Err(()),
+        None => {
+            println!("No required \"{}\" parameter present", name);
+            Err(())
+        },
     }
 }
 

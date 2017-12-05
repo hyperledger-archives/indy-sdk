@@ -2,6 +2,7 @@ use IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
 use commands::{get_opt_i64_param, get_str_param, get_opt_str_param};
 
+use libindy::ErrorCode;
 use libindy::wallet::Wallet;
 
 use serde_json::Value as JSONValue;
@@ -28,6 +29,7 @@ impl GroupTrait for Group {
     }
 }
 
+#[derive(Debug)]
 pub struct CreateCommand {
     ctx: Rc<IndyContext>,
     metadata: CommandMetadata,
@@ -50,6 +52,8 @@ impl CreateCommand {
             ctx,
             metadata: CommandMetadata::build("create", "Create new wallet with specified name")
                 .add_main_param("name", "The name of new wallet")
+                .add_param("pool_name", false, "The name of associated Indy pool")
+                .add_param("key", true, "Auth key for the wallet")
                 .finalize()
         }
     }
@@ -57,19 +61,31 @@ impl CreateCommand {
 
 impl Command for CreateCommand {
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        println!("wallet create: >>> execute {:?} while context {:?}", params, self.ctx);
-        let pool_name = get_str_param("pool_name", params)?;
-        let name = get_str_param("name", params)?;
-        let config: Option<String> = get_opt_str_param("key", params)?.map(|key|
-            json!({
-                "key": key
-            }).to_string());
-        Wallet::create_wallet(pool_name,
-                              name,
-                              None,
-                              config.as_ref().map(String::as_str))
-            .map_err(|_| ())?;
-        Ok(())
+        trace!("CreateCommand::execute >> self {:?} params {:?}", self, params);
+
+        let pool_name = get_str_param("pool_name", params).map_err(log_err!())?;
+        let name = get_str_param("name", params).map_err(log_err!())?;
+        let key = get_opt_str_param("key", params).map_err(log_err!())?;
+
+        let config: Option<String> = key.map(|key| json!({ "key": key }).to_string());
+
+        trace!(r#"Wallet::create_wallet try: name {}, pool_name {}, config {:?}"#, name, pool_name, config);
+
+        let res = Wallet::create_wallet(pool_name,
+                                        name,
+                                        None,
+                                        config.as_ref().map(String::as_str));
+
+        trace!(r#"Wallet::create_wallet return: {:?}"#, res);
+
+        let res = match res {
+            Ok(()) => Ok(println_succ!("Wallet \"{}\" has been created", name)),
+            Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", name)),
+            Err(err) => Err(println_err!("Wallet \"{}\" create failed with unexpected Indy SDK error {:?}", name, err)),
+        };
+
+        trace!("CreateCommand::execute << {:?}", res);
+        res
     }
 
     fn metadata(&self) -> &CommandMetadata {
@@ -126,7 +142,7 @@ impl Command for OpenCommand {
         let wallet_handle = Wallet::open_wallet(name, config.as_ref().map(String::as_str))
             .map_err(|_| ())?;
         //TODO close previously opened wallet
-        self.ctx.set_current_wallet(name, wallet_handle);
+        self.ctx.set_opened_wallet(name, wallet_handle);
 
         Ok(())
     }
@@ -152,7 +168,7 @@ impl Command for CloseCommand {
         println!("wallet close: >>> execute {:?} while context {:?}", params, self.ctx);
         let wallet_handle = self.ctx.get_current_wallet_handle().ok_or((/* TODO error */))?;
         Wallet::close_wallet(wallet_handle).map_err(|_| ())?;
-        self.ctx.reset_current_wallet();
+        self.ctx.unset_opened_wallet();
         Ok(())
     }
 }

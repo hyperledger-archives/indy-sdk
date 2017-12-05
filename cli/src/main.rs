@@ -1,33 +1,34 @@
+extern crate ansi_term;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
 extern crate linefeed;
+#[macro_use]
+extern crate log;
 extern crate serde;
 #[macro_use]
 extern crate serde_json;
 
-pub mod command_executor;
-pub mod commands;
-pub mod libindy;
-pub mod utils;
+#[macro_use]
+mod utils;
+mod command_executor;
+mod commands;
+mod indy_context;
+mod libindy;
 
 use command_executor::CommandExecutor;
 use commands::wallet;
-use libindy::IndyHandle;
+use indy_context::IndyContext;
 
 use linefeed::{Reader, ReadResult};
 use linefeed::complete::PathCompleter;
 
-use std::cell::RefCell;
 use std::env;
 use std::rc::Rc;
 
-#[derive(Debug)]
-pub struct IndyContext {
-    cur_wallet: RefCell<Option<(String, IndyHandle)>>,
-}
-
 fn main() {
+    utils::logger::LoggerUtils::init();
+
     let command_executor = build_executor();
 
     if env::args().len() == 1 {
@@ -64,24 +65,4 @@ fn execute_interactive(command_executor: CommandExecutor) {
 
 fn execute_batch(_command_executor: CommandExecutor, _script_path: &str) {
     unimplemented!()
-}
-
-impl IndyContext {
-    pub fn new() -> IndyContext {
-        IndyContext {
-            cur_wallet: RefCell::new(None),
-        }
-    }
-
-    pub fn set_current_wallet(&self, wallet_name: &str, wallet_handle: IndyHandle) {
-        *self.cur_wallet.borrow_mut() = Some((wallet_name.to_string(), wallet_handle));
-    }
-
-    pub fn reset_current_wallet(&self) {
-        *self.cur_wallet.borrow_mut() = None;
-    }
-
-    pub fn get_current_wallet_handle(&self) -> Option<IndyHandle> {
-        self.cur_wallet.borrow().as_ref().map(|&(_, handle)| handle)
-    }
 }
