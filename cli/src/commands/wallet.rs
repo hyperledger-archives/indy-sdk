@@ -1,7 +1,11 @@
+use IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
-use super::super::{IndyContext, serde_json};
+use commands::{get_opt_i64_param, get_str_param, get_opt_str_param};
 
 use libindy::wallet::Wallet;
+
+use serde_json::Value as JSONValue;
+use serde_json::Map as JSONMap;
 
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -54,14 +58,14 @@ impl CreateCommand {
 impl Command for CreateCommand {
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         println!("wallet create: >>> execute {:?} while context {:?}", params, self.ctx);
-        let pool_name = params.get("pool_name").ok_or((/* TODO error */))?;
-        let wallet_name = params.get("name").ok_or((/* TODO error */))?;
-        let config: Option<String> = params.get("key").map(|key|
+        let pool_name = get_str_param("pool_name", params)?;
+        let name = get_str_param("name", params)?;
+        let config: Option<String> = get_opt_str_param("key", params)?.map(|key|
             json!({
                 "key": key
             }).to_string());
         Wallet::create_wallet(pool_name,
-                              wallet_name,
+                              name,
                               None,
                               config.as_ref().map(String::as_str))
             .map_err(|_| ())?;
@@ -92,35 +96,37 @@ impl Command for OpenCommand {
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         println!("wallet open: >>> execute {:?} while context {:?}", params, self.ctx);
 
-        let wallet_name = params.get("name").ok_or((/* TODO error */))?;
+        let name = get_str_param("name", params)?;
+        let key = get_opt_str_param("key", params)?;
+        let rekey = get_opt_str_param("rekey", params)?;
+        let freshness_time = get_opt_i64_param("freshness_time", params)?;
 
-        let is_config_required = params.contains_key("key")
-            || params.contains_key("rekey")
-            || params.contains_key("freshness_time");
+        let config = {
+            let mut json = JSONMap::new();
 
-        let config: Option<String> = if is_config_required {
-            let mut config = serde_json::Map::new();
-
-            for str_config_option in &["key", "rekey"] {
-                if let Some(config_option) = params.get(str_config_option) {
-                    config.insert(config_option.to_string(), serde_json::Value::String(config_option.to_string()));
-                }
+            if let Some(key) = key {
+                json.insert("key".to_string(), JSONValue::from(key));
             }
 
-            if let Some(freshness_time) = params.get("freshness_time") {
-                let freshness_time: i64 = freshness_time.parse().map_err(|_| (/* TODO error */))?;
-                config.insert("freshness_time".to_string(), serde_json::Value::from(freshness_time));
+            if let Some(rekey) = rekey {
+                json.insert("rekey".to_string(), JSONValue::from(rekey));
             }
 
-            Some(serde_json::to_string(&serde_json::Value::from(config)).unwrap())
-        } else {
-            None
+            if let Some(freshness_time) = freshness_time {
+                json.insert("freshness_time".to_string(), JSONValue::from(freshness_time));
+            }
+
+            if !json.is_empty() {
+                Some(JSONValue::from(json).to_string())
+            } else {
+                None
+            }
         };
 
-        let wallet_handle = Wallet::open_wallet(wallet_name, config.as_ref().map(String::as_str))
+        let wallet_handle = Wallet::open_wallet(name, config.as_ref().map(String::as_str))
             .map_err(|_| ())?;
         //TODO close previously opened wallet
-        self.ctx.set_current_wallet(wallet_name, wallet_handle);
+        self.ctx.set_current_wallet(name, wallet_handle);
 
         Ok(())
     }
