@@ -190,7 +190,7 @@ dependencies = [
 [[package]]
 name = "indy-crypto"
 version = "0.1.6"
-source = "git+https://github.com/jovfer/indy-crypto#c1d8c4aa8c1580776bcc40c71f5c1ff3d10d530b"
+source = "git+https://github.com/jovfer/indy-crypto#858d4e92967f9fe85ae1da6beb336019e97019db"
 dependencies = [
  "amcl 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",

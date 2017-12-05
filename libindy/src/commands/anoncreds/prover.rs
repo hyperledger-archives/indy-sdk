@@ -122,7 +122,7 @@ impl ProverCommandExecutor {
     }
 
     fn _store_claim_offer(&self, wallet_handle: i32, claim_offer_json: &str) -> Result<(), IndyError> {
-        info!(target: "commands/anoncreds/prover", "store_claim_offer >>> wallet_handle: {:?}, claim_offer_json: {:?}", wallet_handle, claim_offer_json);
+        info!("store_claim_offer >>> wallet_handle: {:?}, claim_offer_json: {:?}", wallet_handle, claim_offer_json);
 
         let claim_offer: ClaimOffer = ClaimOffer::from_json(claim_offer_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize claim offer: {:?}", err)))?;
@@ -133,7 +133,7 @@ impl ProverCommandExecutor {
         let id = get_composite_id(&claim_offer.issuer_did, claim_offer.schema_seq_no);
         self.wallet_service.set(wallet_handle, &format!("claim_offer::{}", &id), &claim_offer_json)?;
 
-        info!(target: "commands/anoncreds/prover", "store_claim_offer <<<");
+        info!("store_claim_offer <<<");
 
         Ok(())
     }
@@ -148,7 +148,7 @@ impl ProverCommandExecutor {
     fn _get_claim_offers(&self,
                          wallet_handle: i32,
                          filter_json: &str) -> Result<String, IndyError> {
-        info!(target: "commands/anoncreds/prover", "get_claim_offers >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
+        info!("get_claim_offers >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
 
         let claim_offer_jsons: Vec<(String, String)> = self.wallet_service.list(wallet_handle, &format!("claim_offer::"))?;
 
@@ -175,7 +175,7 @@ impl ProverCommandExecutor {
         let claim_offers_json = serde_json::to_string(&claim_offers)
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of claim offers: {:?}", err)))?;
 
-        info!(target: "commands/anoncreds/prover", "get_claim_offers <<< claim_offers_json: {:?}", claim_offers_json);
+        info!("get_claim_offers <<< claim_offers_json: {:?}", claim_offers_json);
 
         Ok(claim_offers_json)
     }
@@ -188,7 +188,7 @@ impl ProverCommandExecutor {
     }
 
     fn _create_master_secret(&self, wallet_handle: i32, master_secret_name: &str) -> Result<(), IndyError> {
-        info!(target: "commands/anoncreds/prover", "create_master_secret >>> wallet_handle: {:?}, master_secret_name: {:?}", wallet_handle, master_secret_name);
+        info!("create_master_secret >>> wallet_handle: {:?}, master_secret_name: {:?}", wallet_handle, master_secret_name);
 
         if let Ok(_) = self.wallet_service.get(wallet_handle, &format!("master_secret::{}", master_secret_name)) {
             return Err(IndyError::AnoncredsError(
@@ -201,7 +201,7 @@ impl ProverCommandExecutor {
 
         self.wallet_service.set(wallet_handle, &format!("master_secret::{}", master_secret_name), &master_secret_json)?;
 
-        info!(target: "commands/anoncreds/prover", "create_master_secret <<<");
+        info!("create_master_secret <<<");
 
         Ok(())
     }
@@ -223,8 +223,8 @@ impl ProverCommandExecutor {
                                        claim_offer_json: &str,
                                        claim_def_json: &str,
                                        master_secret_name: &str) -> Result<String, IndyError> {
-        info!(target: "commands/anoncreds/prover", "create_and_store_claim_request >>> wallet_handle: {:?}, prover_did: {:?}, claim_offer_json: {:?}, \
-                        claim_def_json: {:?}, master_secret_name: {:?}", wallet_handle, prover_did, claim_offer_json, claim_def_json, master_secret_name);
+        info!("create_and_store_claim_request >>> wallet_handle: {:?}, prover_did: {:?}, claim_offer_json: {:?}, claim_def_json: {:?}, \
+               master_secret_name: {:?}", wallet_handle, prover_did, claim_offer_json, claim_def_json, master_secret_name);
 
         Base58::decode(&prover_did)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid prover did: {:?}", err)))?;
@@ -263,7 +263,7 @@ impl ProverCommandExecutor {
 
         self.wallet_service.set(wallet_handle, &format!("claim_definition::{}", id), &claim_def_json)?;
 
-        info!(target: "commands/anoncreds/prover", "create_and_store_claim_request <<< claim_request_json: {:?}", claim_request_json);
+        info!("create_and_store_claim_request <<< claim_request_json: {:?}", claim_request_json);
 
         Ok(claim_request_json)
     }
@@ -276,7 +276,7 @@ impl ProverCommandExecutor {
     }
 
     fn _store_claim(&self, wallet_handle: i32, claim_json: &str) -> Result<(), IndyError> {
-        info!(target: "commands/anoncreds/prover", "store_claim >>> wallet_handle: {:?}, claim_json: {:?}", wallet_handle, claim_json);
+        info!("store_claim >>> wallet_handle: {:?}, claim_json: {:?}", wallet_handle, claim_json);
 
         let mut claim: Claim = Claim::from_json(&claim_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannon deserialize claim: {:?}", err)))?;
@@ -310,7 +310,7 @@ impl ProverCommandExecutor {
         let uuid = Uuid::new_v4().to_string();
         self.wallet_service.set(wallet_handle, &format!("claim::{}", &uuid), &claim_json)?;
 
-        info!(target: "commands/anoncreds/prover", "store_claim <<<");
+        info!("store_claim <<<");
 
         Ok(())
     }
@@ -326,7 +326,7 @@ impl ProverCommandExecutor {
     fn _get_claims(&self,
                    wallet_handle: i32,
                    filter_json: &str) -> Result<String, IndyError> {
-        info!(target: "commands/anoncreds/prover", "get_claims >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
+        info!("get_claims >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
 
         let mut claims_info: Vec<ClaimInfo> = self.get_claims_info(wallet_handle)?;
 
@@ -350,13 +350,13 @@ impl ProverCommandExecutor {
         let claims_info_json = serde_json::to_string(&claims_info)
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claims info: {:?}", err)))?;
 
-        info!(target: "commands/anoncreds/prover", "get_claims <<< claims_info_json: {:?}", claims_info_json);
+        info!("get_claims <<< claims_info_json: {:?}", claims_info_json);
 
         Ok(claims_info_json)
     }
 
     fn get_claims_info(&self, wallet_handle: i32) -> Result<Vec<ClaimInfo>, IndyError> {
-        info!(target: "commands/anoncreds/prover", "get_claims_info >>>");
+        info!("get_claims_info >>>");
 
         let claims: Vec<(String, String)> = self.wallet_service.list(wallet_handle, &format!("claim::"))?;
 
@@ -381,7 +381,7 @@ impl ProverCommandExecutor {
                 });
         }
 
-        info!(target: "commands/anoncreds/prover", "get_claims_info <<< claims_info: {:?}", claims_info);
+        info!("get_claims_info <<< claims_info: {:?}", claims_info);
 
         Ok(claims_info)
     }
@@ -397,7 +397,7 @@ impl ProverCommandExecutor {
     fn _get_claims_for_proof_req(&self,
                                  wallet_handle: i32,
                                  proof_req_json: &str, ) -> Result<String, IndyError> {
-        info!(target: "commands/anoncreds/prover", "get_claims_for_proof_req >>> wallet_handle: {:?}, proof_req_json: {:?}", wallet_handle, proof_req_json);
+        info!("get_claims_for_proof_req >>> wallet_handle: {:?}, proof_req_json: {:?}", wallet_handle, proof_req_json);
 
         let proof_req: ProofRequest = ProofRequest::from_json(proof_req_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize proof request: {:?}", err)))?;
@@ -408,7 +408,7 @@ impl ProverCommandExecutor {
         let claims_for_proof_request_json = claims_for_proof_request.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claims for proof request: {:?}", err)))?;
 
-        info!(target: "commands/anoncreds/prover", "get_claims_for_proof_req <<< claims_for_proof_request_json: {:?}", claims_for_proof_request_json);
+        info!("get_claims_for_proof_req <<< claims_for_proof_request_json: {:?}", claims_for_proof_request_json);
 
         Ok(claims_for_proof_request_json)
     }

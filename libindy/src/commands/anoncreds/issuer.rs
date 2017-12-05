@@ -100,7 +100,7 @@ impl IssuerCommandExecutor {
                                           schema_json: &str,
                                           signature_type: Option<&str>,
                                           create_non_revoc: bool) -> Result<String, IndyError> {
-        info!(target: "commands/anoncreds/issuer", "create_and_store_claim_definition >>> wallet_handle: {:?}, issuer_did: {:?}, schema_json: {:?}, \
+        info!("create_and_store_claim_definition >>> wallet_handle: {:?}, issuer_did: {:?}, schema_json: {:?}, \
                        signature_type: {:?}, create_non_revoc: {:?}", wallet_handle, issuer_did, schema_json, signature_type, create_non_revoc);
 
         let schema: Schema = Schema::from_json(schema_json)
@@ -119,7 +119,7 @@ impl IssuerCommandExecutor {
         self.wallet_service.set(wallet_handle, &format!("claim_definition::{}", id), &claim_definition_json)?;
         self.wallet_service.set(wallet_handle, &format!("claim_definition_private_key::{}", id), &private_key_json)?;
 
-        info!(target: "commands/anoncreds/issuer", "create_and_store_claim_definition <<< claim_definition_json: {:?}", claim_definition_json);
+        info!("create_and_store_claim_definition <<< claim_definition_json: {:?}", claim_definition_json);
 
         Ok(claim_definition_json)
     }
@@ -139,8 +139,8 @@ impl IssuerCommandExecutor {
                                              issuer_did: &str,
                                              schema_seq_no: i32,
                                              max_claim_num: u32) -> Result<String, IndyError> {
-        info!(target: "commands/anoncreds/issuer", "create_and_store_revocation_registry >>> wallet_handle: {:?}, issuer_did: {:?}, schema_seq_no: {:?}, \
-                       max_claim_num: {:?}", wallet_handle, issuer_did, schema_seq_no, max_claim_num);
+        info!("create_and_store_revocation_registry >>> wallet_handle: {:?}, issuer_did: {:?}, schema_seq_no: {:?}, max_claim_num: {:?}",
+              wallet_handle, issuer_did, schema_seq_no, max_claim_num);
 
         let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &get_composite_id(issuer_did, schema_seq_no)))?;
         let claim_def: ClaimDefinition = ClaimDefinition::from_json(&claim_def_json)
@@ -159,13 +159,8 @@ impl IssuerCommandExecutor {
         self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", id), &revocation_registry_json)?;
         self.wallet_service.set(wallet_handle, &format!("revocation_registry_private::{}", id), &revocation_registry_private_json)?;
 
-        //        // TODO: change it
-        //        let tails_dash = serde_json::to_string(&revocation_registry_private.tails_dash)
-        //            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize tails: {:?}", err)))?;
-        //
-        //        self.wallet_service.set(wallet_handle, &format!("tails"), &tails_dash)?;
-
-        info!(target: "commands/anoncreds/issuer", "create_and_store_revocation_registry <<< revocation_registry_json: {:?}", revocation_registry_json);
+        // TODO: decide about tails storing
+        info!("create_and_store_revocation_registry <<< revocation_registry_json: {:?}", revocation_registry_json);
 
         Ok(revocation_registry_json)
     }
@@ -185,7 +180,7 @@ impl IssuerCommandExecutor {
                   claim_req_json: &str,
                   claim_json: &str,
                   rev_idx: Option<u32>) -> Result<(String, String), IndyError> {
-        info!(target: "commands/anoncreds/issuer", "new_claim >>> wallet_handle: {:?}, claim_req_json: {:?}, claim_json: {:?}, rev_idx: {:?}",
+        info!("new_claim >>> wallet_handle: {:?}, claim_req_json: {:?}, claim_json: {:?}, rev_idx: {:?}",
               wallet_handle, claim_req_json, claim_json, rev_idx);
 
         let claim_request: ClaimRequest = ClaimRequest::from_json(claim_req_json)
@@ -250,7 +245,7 @@ impl IssuerCommandExecutor {
         let claim_json = claim.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claim: {:?}", err)))?;
 
-        info!(target: "commands/anoncreds/issuer", "new_claim <<< revocation_registry_json: {:?}, claim_json: {:?}", revocation_registry_json, claim_json);
+        info!("new_claim <<< revocation_registry_json: {:?}, claim_json: {:?}", revocation_registry_json, claim_json);
 
         Ok((revocation_registry_json, claim_json))
     }
@@ -270,7 +265,7 @@ impl IssuerCommandExecutor {
                      issuer_did: &str,
                      schema_seq_no: i32,
                      user_revoc_index: u32) -> Result<String, IndyError> {
-        info!(target: "commands/anoncreds/issuer", "revoke_claim >>> wallet_handle: {:?}, issuer_did: {:?}, schema_seq_no: {:?}, user_revoc_index: {:?}",
+        info!("revoke_claim >>> wallet_handle: {:?}, issuer_did: {:?}, schema_seq_no: {:?}, user_revoc_index: {:?}",
               wallet_handle, issuer_did, schema_seq_no, user_revoc_index);
 
         let id = get_composite_id(&issuer_did, schema_seq_no);
@@ -290,7 +285,7 @@ impl IssuerCommandExecutor {
 
         self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", id), &revocation_registry_updated_json)?;
 
-        info!(target: "commands/anoncreds/issuer", "revoke_claim <<< revocation_registry_updated_json: {:?}", revocation_registry_updated_json);
+        info!("revoke_claim <<< revocation_registry_updated_json: {:?}", revocation_registry_updated_json);
 
         Ok(revocation_registry_updated_json)
     }

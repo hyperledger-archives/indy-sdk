@@ -68,7 +68,7 @@ pub struct ClaimDefinition {
     #[serde(rename = "origin")]
     pub issuer_did: String,
     pub signature_type: SignatureTypes,
-    pub data: IssuerPublicKey
+    pub data: ClaimDefinitionData
 }
 
 impl ClaimDefinition {
@@ -85,6 +85,41 @@ impl ClaimDefinition {
 impl JsonEncodable for ClaimDefinition {}
 
 impl<'a> JsonDecodable<'a> for ClaimDefinition {}
+
+#[derive(Deserialize, Debug, Serialize, PartialEq)]
+pub struct ClaimDefinitionData {
+    pub primary: IssuerPrimaryPublicKey,
+    pub revocation: Option<IssuerRevocationPublicKey>
+}
+
+impl ClaimDefinitionData {
+    pub fn clone(&self) -> Result<ClaimDefinitionData, CommonError> {
+        Ok(ClaimDefinitionData {
+            primary: self.primary.clone()?,
+            revocation: self.revocation.clone()
+        })
+    }
+}
+
+//FIXME workaround for ledger: serialize required dictionary as empty instead of using null
+extern crate serde;
+
+use self::serde::Serializer;
+use self::serde::ser::SerializeMap;
+
+fn empty_map_instead_of_null<S>(x: &Option<IssuerRevocationPublicKey>, s: S) -> Result<S::Ok, S::Error>
+    where S: Serializer {
+    if let &Some(ref x) = x {
+        s.serialize_some(&x)
+    } else {
+        s.serialize_map(None)?.end()
+    }
+}
+//FIXME
+
+impl JsonEncodable for ClaimDefinitionData {}
+
+impl<'a> JsonDecodable<'a> for ClaimDefinitionData {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Claim {

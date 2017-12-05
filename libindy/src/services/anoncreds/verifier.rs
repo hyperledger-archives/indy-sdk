@@ -3,7 +3,8 @@ extern crate indy_crypto;
 use services::anoncreds::types::*;
 use std::collections::HashMap;
 use errors::common::CommonError;
-use self::indy_crypto::cl::verifier;
+use self::indy_crypto::cl::IssuerPublicKey;
+use self::indy_crypto::cl::verifier::Verifier as CryptoVerifier;
 use services::anoncreds::helpers::*;
 
 pub struct Verifier {}
@@ -19,10 +20,10 @@ impl Verifier {
                   claim_defs: &HashMap<String, ClaimDefinition>,
                   revoc_regs: &HashMap<String, RevocationRegistry>,
                   schemas: &HashMap<String, Schema>) -> Result<bool, CommonError> {
-        info!(target: "services/anoncreds/verifier", "verify >>> full_proof: {:?}, proof_req: {:?}, claim_defs: {:?}, revoc_regs: {:?}, schemas: {:?}",
+        info!("verify >>> full_proof: {:?}, proof_req: {:?}, claim_defs: {:?}, revoc_regs: {:?}, schemas: {:?}",
               full_proof, proof_req, claim_defs, revoc_regs, schemas);
 
-        let mut proof_verifier = verifier::Verifier::new_proof_verifier()?;
+        let mut proof_verifier = CryptoVerifier::new_proof_verifier()?;
 
         for (claim_uuid, claim_definition) in claim_defs {
             let schema = schemas.get(claim_uuid.as_str())
@@ -35,22 +36,24 @@ impl Verifier {
             let claim_schema = build_claim_schema(&schema.data.attr_names)?;
             let sub_proof_request = build_sub_proof_request(&attrs_for_claim, &predicates_for_claim)?;
 
+            let issuer_pub_key = IssuerPublicKey::build_from_parts(&claim_definition.data.primary, claim_definition.data.revocation.as_ref())?;
+
             proof_verifier.add_sub_proof_request(claim_uuid.as_str(),
                                                  &sub_proof_request,
                                                  &claim_schema,
-                                                 &claim_definition.data,
+                                                 &issuer_pub_key,
                                                  revocation_registry.map(|rev_reg| &rev_reg.data))?;
         }
 
         let valid = proof_verifier.verify(&full_proof.proof, &proof_req.nonce)?;
 
-        info!(target: "services/anoncreds/verifier", "verify <<< valid: {:?}", valid);
+        info!("verify <<< valid: {:?}", valid);
 
         Ok(valid)
     }
 
     fn _get_revealed_attributes_for_claim(claim_uuid: &str, requested_proof: &RequestedProof, proof_req: &ProofRequest) -> Result<Vec<String>, CommonError> {
-        info!(target: "services/anoncreds/verifier", "_get_revealed_attributes_for_claim >>> claim_uuid: {:?}, requested_claims: {:?}, proof_req: {:?}",
+        info!("_get_revealed_attributes_for_claim >>> claim_uuid: {:?}, requested_claims: {:?}, proof_req: {:?}",
               claim_uuid, requested_proof, proof_req);
 
         let mut revealed_attrs_for_claim: Vec<String> = Vec::new();
@@ -63,13 +66,13 @@ impl Verifier {
             }
         }
 
-        info!(target: "services/anoncreds/verifier", "_get_revealed_attributes_for_claim <<< revealed_attrs_for_claim: {:?}", revealed_attrs_for_claim);
+        info!("_get_revealed_attributes_for_claim <<< revealed_attrs_for_claim: {:?}", revealed_attrs_for_claim);
 
         Ok(revealed_attrs_for_claim)
     }
 
     fn _get_predicates_for_claim(claim_uuid: &str, requested_proof: &RequestedProof, proof_req: &ProofRequest) -> Result<Vec<PredicateInfo>, CommonError> {
-        info!(target: "services/anoncreds/verifier", "_get_predicates_for_claim >>> claim_uuid: {:?}, requested_claims: {:?}, proof_req: {:?}",
+        info!("_get_predicates_for_claim >>> claim_uuid: {:?}, requested_claims: {:?}, proof_req: {:?}",
               claim_uuid, requested_proof, proof_req);
 
         let mut predicates_for_claim: Vec<PredicateInfo> = Vec::new();
@@ -82,7 +85,7 @@ impl Verifier {
             }
         }
 
-        info!(target: "services/anoncreds/verifier", "_get_predicates_for_claim <<< predicates_for_claim: {:?}", predicates_for_claim);
+        info!("_get_predicates_for_claim <<< predicates_for_claim: {:?}", predicates_for_claim);
 
         Ok(predicates_for_claim)
     }

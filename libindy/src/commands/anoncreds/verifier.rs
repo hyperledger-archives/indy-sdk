@@ -60,6 +60,9 @@ impl VerifierCommandExecutor {
                      schemas_json: &str,
                      claim_defs_jsons: &str,
                      revoc_regs_json: &str) -> Result<bool, IndyError> {
+        info!("verify_proof >>> proof_request_json: {:?}, proof_json: {:?}, schemas_json: {:?}, claim_defs_jsons: {:?}, \
+               revoc_regs_json: {:?}", proof_request_json, proof_json, schemas_json, claim_defs_jsons, revoc_regs_json);
+
         let proof_req: ProofRequest = ProofRequest::from_json(proof_request_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize proof request: {:?}", err)))?;
 
@@ -135,6 +138,8 @@ impl VerifierCommandExecutor {
                                                             &claim_defs,
                                                             &revoc_regs,
                                                             &schemas)?;
+
+        info!("verify_proof <<< result: {:?}", result);
 
         Ok(result)
     }

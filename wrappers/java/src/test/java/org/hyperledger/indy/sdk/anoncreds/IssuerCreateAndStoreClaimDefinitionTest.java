@@ -50,7 +50,7 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 		assertNotNull(claimDef);
 
 		JSONObject claimDefObject = new JSONObject(claimDef);
-		JSONObject primary = claimDefObject.getJSONObject("data").getJSONObject("p_key");
+		JSONObject primary = claimDefObject.getJSONObject("data").getJSONObject("primary");
 
 		assertEquals(4, primary.getJSONObject("r").length());
 		assertTrue(primary.getString("n").length() > 0);
@@ -96,7 +96,7 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 		assertNotNull(claimDef);
 
 		JSONObject claimDefObject = new JSONObject(claimDef);
-		JSONObject primary = claimDefObject.getJSONObject("data").getJSONObject("p_key");
+		JSONObject primary = claimDefObject.getJSONObject("data").getJSONObject("primary");
 
 		assertEquals(4, primary.getJSONObject("r").length());
 		assertTrue(primary.getString("n").length() > 0);

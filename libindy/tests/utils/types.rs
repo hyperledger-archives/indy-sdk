@@ -17,12 +17,9 @@ pub struct ClaimDefinition {
 
 #[derive(Deserialize, Debug, Serialize, PartialEq)]
 pub struct ClaimDefinitionData {
-    #[serde(rename = "primary")]
-    pub public_key: IssuerPrimaryPublicKey,
-    #[serde(rename = "revocation")]
-    pub public_key_revocation: Option<serde_json::Value>,
+    pub primary: IssuerPrimaryPublicKey,
+    pub revocation: Option<serde_json::Value>,
 }
-
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]

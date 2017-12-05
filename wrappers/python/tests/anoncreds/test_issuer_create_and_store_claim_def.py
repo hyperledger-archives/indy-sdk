@@ -10,12 +10,12 @@ from indy.error import ErrorCode, IndyError
 async def test_issuer_create_and_store_claim_def_works(wallet_handle, issuer_did, gvt_schema_json):
     claim_def = json.loads(await issuer_create_and_store_claim_def(wallet_handle, issuer_did, gvt_schema_json, "CL", False))
 
-    assert len(claim_def['data']['p_key']['r']) == 4
-    assert len(claim_def['data']['p_key']['n']) > 0
-    assert len(claim_def['data']['p_key']['s']) > 0
-    assert len(claim_def['data']['p_key']['rms']) > 0
-    assert len(claim_def['data']['p_key']['z']) > 0
-    assert len(claim_def['data']['p_key']['rctxt']) > 0
+    assert len(claim_def['data']['primary']['r']) == 4
+    assert len(claim_def['data']['primary']['n']) > 0
+    assert len(claim_def['data']['primary']['s']) > 0
+    assert len(claim_def['data']['primary']['rms']) > 0
+    assert len(claim_def['data']['primary']['z']) > 0
+    assert len(claim_def['data']['primary']['rctxt']) > 0
 
 
 @pytest.mark.asyncio

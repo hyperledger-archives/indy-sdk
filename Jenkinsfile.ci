@@ -140,7 +140,7 @@ def iosTesting() {
 def ubuntuTesting() {
     node('ubuntu') {
         stage('Ubuntu Test') {
-            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", true, "pool_network")
+            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", false, "pool_network")
         }
     }
 }
