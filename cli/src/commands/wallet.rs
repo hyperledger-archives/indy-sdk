@@ -47,6 +47,12 @@ pub struct CloseCommand {
     metadata: CommandMetadata,
 }
 
+#[derive(Debug)]
+pub struct DeleteCommand {
+    ctx: Rc<IndyContext>,
+    metadata: CommandMetadata,
+}
+
 
 impl CreateCommand {
     pub fn new(ctx: Rc<IndyContext>) -> CreateCommand {
@@ -190,6 +196,43 @@ impl Command for CloseCommand {
 
         trace!("CloseCommand::execute << {:?}", res);
         res
+    }
+}
+
+impl DeleteCommand {
+    pub fn new(ctx: Rc<IndyContext>) -> DeleteCommand {
+        DeleteCommand {
+            ctx,
+            metadata: CommandMetadata::build("delete", "Delete wallet with specified name")
+                .add_main_param("name", "The name of deleted wallet")
+                .finalize()
+        }
+    }
+}
+
+impl Command for DeleteCommand {
+    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("DeleteCommand::execute >> self {:?} params {:?}", self, params);
+
+        let name = get_str_param("name", params).map_err(log_err!())?;
+
+        trace!(r#"Wallet::delete_wallet try: name {}"#, name);
+
+        let res = Wallet::delete_wallet(name);
+
+        trace!(r#"Wallet::delete_wallet return: {:?}"#, res);
+
+        let res = match res {
+            Ok(()) => Ok(println_succ!("Wallet \"{}\" has been deleted", name)),
+            Err(err) => Err(println_err!("Wallet \"{}\" delete failed with unexpected Indy SDK error {:?}", name, err)),
+        };
+
+        trace!("DeleteCommand::execute << {:?}", res);
+        res
+    }
+
+    fn metadata(&self) -> &CommandMetadata {
+        &self.metadata
     }
 }
 
