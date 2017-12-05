@@ -17,8 +17,9 @@ mod indy_context;
 mod libindy;
 
 use command_executor::CommandExecutor;
-use commands::{pool, wallet};
+use commands::{common, pool, wallet};
 use indy_context::IndyContext;
+use libindy::IndyHandle;
 
 use linefeed::{Reader, ReadResult};
 use linefeed::complete::PathCompleter;
@@ -42,6 +43,7 @@ fn build_executor() -> CommandExecutor {
     let indy_context = Rc::new(IndyContext::new());
 
     CommandExecutor::build()
+        .add_command(Box::new(common::AboutCommand::new()))
         .add_group(Box::new(wallet::Group::new()))
         .add_command(Box::new(wallet::CreateCommand::new(indy_context.clone())))
         .add_command(Box::new(wallet::OpenCommand::new(indy_context.clone())))

@@ -148,7 +148,7 @@ impl CommandExecutor {
 
         if cmd == "help" {
             self._print_help();
-            return Ok(())
+            return Ok(());
         }
 
         if let Some(&(ref group, ref commands)) = self.grouped_commands.get(cmd) {
@@ -160,8 +160,7 @@ impl CommandExecutor {
         }
 
         println!("Unknown group or command {}", cmd);
-        println!();
-        self._print_help();
+        println!("Type \"help\" to display the help");
         Err(())
     }
 
@@ -177,9 +176,8 @@ impl CommandExecutor {
             return self._execute_command(Some(group), command, params);
         }
 
-        println!("Unknown command {} {}", group.metadata().name(), cmd);
-        println!();
-        self._print_group_help(group, commands);
+        println!("Unknown command \"{} {}\"", group.metadata().name(), cmd);
+        println!("Type \"{} help\" to display the help for \"{}\" group", group.metadata().name(), group.metadata().name());
         Err(())
     }
 
@@ -195,8 +193,15 @@ impl CommandExecutor {
             Ok(ref params) => command.execute(params),
             Err(ref err) => {
                 println!("{}", err);
-                println!();
-                self._print_command_help(group, command);
+                if group.is_some() {
+                    println!("Type \"{} {} help\" to display the help for \"{} {}\" command",
+                             group.unwrap().metadata().name(), command.metadata().name(),
+                             group.unwrap().metadata().name(), command.metadata().name());
+                } else {
+                    println!("Type \"{} help\" to display the help for \"{}\" command",
+                             command.metadata().name(),
+                             command.metadata().name());
+                }
                 Err(())
             }
         }
@@ -310,7 +315,7 @@ impl CommandExecutor {
             params = tail;
 
             if param_value.is_empty() {
-                return Err(format!("No main {} parameter present", param_metadata.name()));
+                return Err(format!("No main \"{}\" parameter present", param_metadata.name()));
             }
 
             res.insert(param_metadata.name(), param_value);
@@ -330,16 +335,14 @@ impl CommandExecutor {
             let param_value = split.next();
             let param_metadata = command.params().iter().find(|p| p.name() == param_name);
 
-            if let Some(param_metadata) = param_metadata  {
+            if let Some(param_metadata) = param_metadata {
                 if let Some(param_value) = param_value {
                     res.insert(param_metadata.name(), param_value);
-
                 } else {
-                    return Err(format!("No value for {} parameter present", param_name));
+                    return Err(format!("No value for \"{}\" parameter present", param_name));
                 }
-
             } else {
-                return Err(format!("Unknown {} parameter present", param_name));
+                return Err(format!("Unknown \"{}\" parameter present", param_name));
             }
         }
 
