@@ -36,6 +36,7 @@ struct Proof {
 impl Proof {
     fn validate_proof_request(&self) -> Result<u32, String> {
         //TODO: validate proof request
+        info!("successfully validated proof {}", self.handle);
         Ok(error::SUCCESS.code_num)
     }
 
@@ -79,7 +80,7 @@ impl Proof {
     }
 
     fn get_proof_request_status(&mut self) {
-        // If proof received Todo: fix states to make sense for proofs
+        // If proof received
         if self.state == CxsStateType::CxsStateRequestReceived {
             return;
         }
@@ -88,30 +89,11 @@ impl Proof {
             return;
         }
 
-        // State is proof request sent
-        let response = match messages::get_messages().to(&self.prover_did).uid(&self.msg_uid).send() {
+        let msg_uid = self.msg_uid.clone();
+        let msgs = match self.get_matching_messages(&msg_uid) {
             Ok(x) => x,
-            Err(x) => {
-                warn!("invalid response to get_messages for proof {}", self.handle);
-                return
-            },
+            Err(_) => return,
         };
-        let json: serde_json::Value = match serde_json::from_str(&response) {
-            Ok(json) => json,
-            Err(_) => {
-                warn!("invalid json in get_messages for proof {}", self.handle);
-                return
-            },
-        };
-
-        let msgs = match json["msgs"].as_array() {
-            Some(array) => array,
-            None => {
-                warn!("invalid msgs array returned for proof {}", self.handle);
-                return
-            },
-        };
-
         for msg in msgs {
             //Todo: Find out what message will look like for proof offer??
             //Todo: This will see if there is a proof offer from user
@@ -126,8 +108,34 @@ impl Proof {
                 self.get_proof_offer(ref_msg_id);
             }
         }
+    }
+
+    fn get_matching_messages(&mut self, msg_uid:&str) -> Result<Vec<serde_json::Value>, u32> {
+        let response = match messages::get_messages().to(&self.prover_did).uid(&self.msg_uid).send() {
+            Ok(x) => x,
+            Err(x) => {
+                warn!("invalid response to get_messages for proof {}", self.handle);
+                return Err(error::INVALID_JSON.code_num)
+            },
+        };
+
+        let json: serde_json::Value = match serde_json::from_str(&response) {
+            Ok(json) => json,
+            Err(_) => {
+                warn!("invalid json in get_messages for proof {}", self.handle);
+                return Err(error::INVALID_JSON.code_num)
 
 
+            },
+        };
+
+        match json["msgs"].as_array() {
+            Some(array) => Ok(array.to_owned()),
+            None => {
+                warn!("invalid msgs array returned for proof {}", self.handle);
+                Err(error::INVALID_JSON.code_num)
+            },
+        }
     }
 
     fn update_state(&mut self) {
@@ -162,10 +170,7 @@ pub fn create_proof(source_id: Option<String>,
         name,
     });
 
-    match new_proof.validate_proof_request() {
-        Ok(_) => info!("successfully validated proof {}", new_handle),
-        Err(x) => return Err(x),
-    };
+    new_proof.validate_proof_request()?;
 
     new_proof.state = CxsStateType::CxsStateInitialized;
 
@@ -235,10 +240,7 @@ pub fn from_string(proof_data: &str) -> Result<u32, u32> {
 
 pub fn send_proof_request(handle: u32, connection_handle: u32) -> Result<u32,u32> {
     match PROOF_MAP.lock().unwrap().get_mut(&handle) {
-        Some(c) => match c.send_proof_request(connection_handle) {
-            Ok(_) => Ok(error::SUCCESS.code_num),
-            Err(x) => Err(x),
-        },
+        Some(c) => Ok(c.send_proof_request(connection_handle)?),
         None => Err(error::INVALID_PROOF_HANDLE.code_num),
     }
 }
@@ -386,6 +388,31 @@ mod tests {
         assert_eq!(get_state(handle), CxsStateType::CxsStateOfferSent as u32);
         assert_eq!(get_offer_uid(handle).unwrap(), "6a9u7Jt");
         _m.assert();
+    }
+
+    #[test]
+    fn test_send_proof_request_fails_with_no_pw() {
+        //This test has 2 purposes:
+        //1. when send_proof_request fails, Ok(c.send_proof_request(connection_handle)?) returns error instead of Ok(_)
+        //2. Test that when no PW connection exists, send message fails on invalid did
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
+        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
+        //This t
+        let connection_handle = create_connection("test_send_proof_request".to_owned());
+
+        let handle = match create_proof(Some("1".to_string()),
+                                        REQUESTED_ATTRS.to_owned(),
+                                        REQUESTED_PREDICATES.to_owned(),
+                                        "Optional".to_owned()) {
+            Ok(x) => x,
+            Err(_) => panic!("Proof creation failed"),
+        };
+        thread::sleep(Duration::from_millis(500));
+        match send_proof_request(handle, connection_handle) {
+            Ok(x) => panic!("Should have failed in send_proof_request"),
+            Err(y) => assert_eq!(y, error::INVALID_DID.code_num)
+        }
     }
 
 }
