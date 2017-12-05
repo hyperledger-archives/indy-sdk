@@ -42,26 +42,26 @@ macro_rules! try_log {
 macro_rules! _map_err {
     ($lvl:expr, $expr:expr) => (
         |err| {
-            log!($lvl, "{} - {}", $expr, err);
+            log!($lvl, "{} - {:?}", $expr, err);
             err
         }
     );
     ($lvl:expr) => (
         |err| {
-            log!($lvl, "{}", err);
+            log!($lvl, "{:?}", err);
             err
         }
     )
 }
 
 #[macro_export]
-macro_rules! map_err_err {
+macro_rules! log_err {
     () => ( _map_err!(::log::LogLevel::Error) );
     ($($arg:tt)*) => ( _map_err!(::log::LogLevel::Error, $($arg)*) )
 }
 
 #[macro_export]
-macro_rules! map_err_trace {
+macro_rules! log_trace {
     () => ( _map_err!(::log::LogLevel::Trace) );
     ($($arg:tt)*) => ( _map_err!(::log::LogLevel::Trace, $($arg)*) )
 }
