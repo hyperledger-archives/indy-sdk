@@ -54,6 +54,8 @@ lazy_static! {
         insert_message(&mut m, &INVALID_MESSAGES);
         insert_message(&mut m, &INVALID_MSGPACK);
         insert_message(&mut m, &INVALID_ATTRIBUTES_STRUCTURE);
+        insert_message(&mut m, &INVALID_PROOF_HANDLE);
+        insert_message(&mut m, &INVALID_CLAIM_REQUEST);
         insert_message(&mut m, &BIG_NUMBER_ERROR);
         m
     };
@@ -159,6 +161,15 @@ mod tests {
     }
 
     #[test]
+    fn test_invalid_proof_handle_error(){
+        assert_eq!(error_message(&INVALID_PROOF_HANDLE.code_num), INVALID_PROOF_HANDLE.message);
+    }
+
+    #[test]
+    fn test_claim_request_incorrect_json_format_error(){
+        assert_eq!(error_message(&INVALID_CLAIM_REQUEST.code_num), INVALID_CLAIM_REQUEST.message);
+    }
+    
     fn test_big_number(){
         assert_eq!(error_message(&BIG_NUMBER_ERROR.code_num), BIG_NUMBER_ERROR.message);
     }
