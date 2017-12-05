@@ -33,6 +33,7 @@ def windowsTesting() {
                     echo "Windows Test: Build"
                     withEnv([
                             "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "INDY_CRYPTO_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "MILAGRO_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "ZMQPW_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "SODIUM_LIB_DIR=$WORKSPACE\\libindy\\prebuilt",
