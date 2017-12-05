@@ -257,17 +257,18 @@ impl WalletService {
     pub fn list_wallets(&self) -> Result<Vec<WalletMetadata>, WalletError> {
         let mut descriptors = Vec::new();
         let wallet_home_path = EnvironmentUtils::wallet_home_path();
+
         for entry in fs::read_dir(wallet_home_path)? {
-            if let Some(wallet_name) = entry?.path().file_name().and_then(|os_str| os_str.to_str()) {
+            let dir_entry = if let Ok(dir_entry) = entry { dir_entry } else { continue };
+            if let Some(wallet_name) = dir_entry.path().file_name().and_then(|os_str| os_str.to_str()) {
                 let mut descriptor_json = String::new();
-                let descriptor: WalletDescriptor = WalletDescriptor::from_json({
-                    let mut file = File::open(_wallet_descriptor_path(wallet_name))?; // FIXME: Better error!
-                    file.read_to_string(&mut descriptor_json)?;
-                    descriptor_json.as_str()
-                })?;
-                descriptors.push(descriptor.into());
+                File::open(_wallet_descriptor_path(wallet_name)).ok()
+                    .and_then(|mut f| f.read_to_string(&mut descriptor_json).ok())
+                    .and_then(|_| WalletDescriptor::from_json(descriptor_json.as_str()).ok())
+                    .map(|descriptor| descriptors.push(descriptor.into()));
             }
         }
+
         Ok(descriptors)
     }
 
