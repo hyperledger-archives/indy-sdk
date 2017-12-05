@@ -35,12 +35,26 @@ pub struct CreateCommand {
     metadata: CommandMetadata,
 }
 
+#[derive(Debug)]
 pub struct OpenCommand {
     ctx: Rc<IndyContext>,
     metadata: CommandMetadata,
 }
 
+#[derive(Debug)]
+pub struct ListCommand {
+    ctx: Rc<IndyContext>,
+    metadata: CommandMetadata,
+}
+
+#[derive(Debug)]
 pub struct CloseCommand {
+    ctx: Rc<IndyContext>,
+    metadata: CommandMetadata,
+}
+
+#[derive(Debug)]
+pub struct DeleteCommand {
     ctx: Rc<IndyContext>,
     metadata: CommandMetadata,
 }
@@ -110,12 +124,12 @@ impl Command for OpenCommand {
     }
 
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        println!("wallet open: >>> execute {:?} while context {:?}", params, self.ctx);
+        trace!("OpenCommand::execute >> self {:?} params {:?}", self, params);
 
-        let name = get_str_param("name", params)?;
-        let key = get_opt_str_param("key", params)?;
-        let rekey = get_opt_str_param("rekey", params)?;
-        let freshness_time = get_opt_i64_param("freshness_time", params)?;
+        let name = get_str_param("name", params).map_err(log_err!())?;
+        let key = get_opt_str_param("key", params).map_err(log_err!())?;
+        let rekey = get_opt_str_param("rekey", params).map_err(log_err!())?;
+        let freshness_time = get_opt_i64_param("freshness_time", params).map_err(log_err!())?;
 
         let config = {
             let mut json = JSONMap::new();
@@ -139,12 +153,58 @@ impl Command for OpenCommand {
             }
         };
 
-        let wallet_handle = Wallet::open_wallet(name, config.as_ref().map(String::as_str))
-            .map_err(|_| ())?;
         //TODO close previously opened wallet
-        self.ctx.set_opened_wallet(name, wallet_handle);
+        let res = match Wallet::open_wallet(name, config.as_ref().map(String::as_str)) {
+            Ok(handle) => {
+                self.ctx.set_opened_wallet(name, handle);
+                Ok(println_succ!("Wallet \"{}\" has been opened", name))
+            }
+            Err(ErrorCode::WalletAlreadyOpenedError) => Err(println_err!("Wallet \"{}\" already opened", name)),
+            Err(err) => Err(println_err!("Wallet \"{}\" open failed with unexpected Indy SDK error {:?}", name, err)),
+        };
 
+        trace!("CreateCommand::execute << {:?}", res);
         Ok(())
+    }
+}
+
+impl ListCommand {
+    pub fn new(ctx: Rc<IndyContext>) -> ListCommand {
+        ListCommand {
+            ctx,
+            metadata: CommandMetadata::build("list", "List existing wallets.")
+                .finalize()
+        }
+    }
+}
+
+impl Command for ListCommand {
+    fn metadata(&self) -> &CommandMetadata {
+        &self.metadata
+    }
+
+    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("ListCommand::execute >> self {:?} params {:?}", self, params);
+
+        let res = match Wallet::list_wallets() {
+            Ok(wallets) => {
+                let wallets = wallets.replace("},{", "}\n{").replace("]", "").replace("[", "");
+                //TODO parse JSON and print table
+                if wallets.trim().len() > 0 {
+                    println_succ!("Existing wallets: \n{}", wallets.trim());
+                } else {
+                    println_succ!("There are no wallets");
+                }
+                if let Some(cur_wallet) = self.ctx.get_opened_wallet_name() {
+                    println_succ!("Current wallet \"{}\"", cur_wallet);
+                }
+                Ok(())
+            }
+            Err(err) => Err(println_err!("List wallets failed with unexpected Indy SDK error {:?}", err)),
+        };
+
+        trace!("ListCommand::execute << {:?}", res);
+        res
     }
 }
 
@@ -153,7 +213,6 @@ impl CloseCommand {
         CloseCommand {
             ctx,
             metadata: CommandMetadata::build("close", "Close wallet with specified handle.")
-                .add_main_param("handle", "The handle of wallet")
                 .finalize()
         }
     }
@@ -165,11 +224,61 @@ impl Command for CloseCommand {
     }
 
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        println!("wallet close: >>> execute {:?} while context {:?}", params, self.ctx);
-        let wallet_handle = self.ctx.get_current_wallet_handle().ok_or((/* TODO error */))?;
-        Wallet::close_wallet(wallet_handle).map_err(|_| ())?;
-        self.ctx.unset_opened_wallet();
-        Ok(())
+        trace!("OpenCommand::execute >> self {:?} params {:?}", self, params);
+
+        let (name, wallet_handle) = if let Some(opened_wallet) = self.ctx.get_opened_wallet() {
+            opened_wallet
+        } else {
+            return Err(println_err!("There is no opened wallet now"));
+        };
+
+        let res = match Wallet::close_wallet(wallet_handle) {
+            Ok(()) => {
+                self.ctx.unset_opened_wallet();
+                Ok(println_succ!("Wallet \"{}\" has been closed", name))
+            }
+            Err(err) => Err(println_err!("Wallet \"{}\" close failed with unexpected Indy SDK error {:?}", name, err)),
+        };
+
+        trace!("CloseCommand::execute << {:?}", res);
+        res
+    }
+}
+
+impl DeleteCommand {
+    pub fn new(ctx: Rc<IndyContext>) -> DeleteCommand {
+        DeleteCommand {
+            ctx,
+            metadata: CommandMetadata::build("delete", "Delete wallet with specified name")
+                .add_main_param("name", "The name of deleted wallet")
+                .finalize()
+        }
+    }
+}
+
+impl Command for DeleteCommand {
+    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("DeleteCommand::execute >> self {:?} params {:?}", self, params);
+
+        let name = get_str_param("name", params).map_err(log_err!())?;
+
+        trace!(r#"Wallet::delete_wallet try: name {}"#, name);
+
+        let res = Wallet::delete_wallet(name);
+
+        trace!(r#"Wallet::delete_wallet return: {:?}"#, res);
+
+        let res = match res {
+            Ok(()) => Ok(println_succ!("Wallet \"{}\" has been deleted", name)),
+            Err(err) => Err(println_err!("Wallet \"{}\" delete failed with unexpected Indy SDK error {:?}", name, err)),
+        };
+
+        trace!("DeleteCommand::execute << {:?}", res);
+        res
+    }
+
+    fn metadata(&self) -> &CommandMetadata {
+        &self.metadata
     }
 }
 

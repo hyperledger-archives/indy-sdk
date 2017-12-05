@@ -1,14 +1,11 @@
 use super::ErrorCode;
 
 use utils::timeout::TimeoutUtils;
-use utils::sequence::SequenceUtils;
 
 use libc::c_char;
 
-use std::collections::HashMap;
 use std::ffi::CString;
 use std::ptr::null;
-use std::sync::Mutex;
 use std::sync::mpsc::channel;
 
 pub struct Wallet {}
@@ -26,7 +23,7 @@ impl Wallet {
         let pool_name = CString::new(pool_name).unwrap();
         let wallet_name = CString::new(wallet_name).unwrap();
         let xtype_str = xtype.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-        let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());        
+        let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
             indy_create_wallet(command_handle,
@@ -82,6 +79,32 @@ impl Wallet {
         }
 
         Ok(wallet_handle)
+    }
+
+    pub fn list_wallets() -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, wallets| {
+            sender.send((err, wallets)).unwrap();
+        });
+
+        let (command_handle, cb) = Wallet::_closure_to_list_wallets_cb(cb);
+
+        let err = unsafe {
+            indy_list_wallets(command_handle, cb)
+        };
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, wallets) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(wallets)
     }
 
     pub fn delete_wallet(wallet_name: &str) -> Result<(), ErrorCode> {
@@ -147,62 +170,28 @@ impl Wallet {
     fn _closure_to_create_wallet_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
                                                                                Option<extern fn(command_handle: i32,
                                                                                                 err: ErrorCode)>) {
-        lazy_static! {
-            static ref CREATE_WALLET_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
-        }
-
-        extern "C" fn create_wallet_callback(command_handle: i32, err: ErrorCode) {
-            let mut callbacks = CREATE_WALLET_CALLBACKS.lock().unwrap();
-            let mut cb = callbacks.remove(&command_handle).unwrap();
-            cb(err)
-        }
-
-        let mut callbacks = CREATE_WALLET_CALLBACKS.lock().unwrap();
-        let command_handle = SequenceUtils::get_next_id();
-        callbacks.insert(command_handle, closure);
-
-        (command_handle, Some(create_wallet_callback))
+        super::callbacks::_closure_to_cb_ec(closure)
     }
 
-    pub fn _closure_to_open_wallet_cb(closure: Box<FnMut(ErrorCode, i32) + Send>)
-                                      -> (i32,
-                                          Option<extern fn(command_handle: i32, err: ErrorCode,
-                                                           handle: i32)>) {
-        lazy_static! {
-            static ref OPEN_WALLET_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, i32) + Send>>> = Default::default();
-        }
-
-        extern "C" fn open_wallet_callback(command_handle: i32, err: ErrorCode, handle: i32) {
-            let mut callbacks = OPEN_WALLET_CALLBACKS.lock().unwrap();
-            let mut cb = callbacks.remove(&command_handle).unwrap();
-            cb(err, handle)
-        }
-
-        let mut callbacks = OPEN_WALLET_CALLBACKS.lock().unwrap();
-        let command_handle = SequenceUtils::get_next_id();
-        callbacks.insert(command_handle, closure);
-
-        (command_handle, Some(open_wallet_callback))
+    fn _closure_to_open_wallet_cb(closure: Box<FnMut(ErrorCode, i32) + Send>)
+                                  -> (i32,
+                                      Option<extern fn(command_handle: i32, err: ErrorCode,
+                                                       handle: i32)>) {
+        super::callbacks::_closure_to_cb_ec_i32(closure)
     }
+
+    fn _closure_to_list_wallets_cb(closure: Box<FnMut(ErrorCode, String) + Send>)
+                                   -> (i32,
+                                       Option<extern fn(command_handle: i32, err: ErrorCode,
+                                                        wallets: *const c_char)>) {
+        super::callbacks::_closure_to_cb_ec_string(closure)
+    }
+
 
     fn _closure_to_delete_wallet_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
                                                                                Option<extern fn(command_handle: i32,
                                                                                                 err: ErrorCode)>) {
-        lazy_static! {
-            static ref DELETE_WALLET_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
-        }
-
-        extern "C" fn delete_wallet_callback(command_handle: i32, err: ErrorCode) {
-            let mut callbacks = DELETE_WALLET_CALLBACKS.lock().unwrap();
-            let mut cb = callbacks.remove(&command_handle).unwrap();
-            cb(err)
-        }
-
-        let mut callbacks = DELETE_WALLET_CALLBACKS.lock().unwrap();
-        let command_handle = SequenceUtils::get_next_id();
-        callbacks.insert(command_handle, closure);
-
-        (command_handle, Some(delete_wallet_callback))
+        super::callbacks::_closure_to_cb_ec(closure)
     }
 }
 
@@ -223,6 +212,10 @@ extern {
                         credentials: *const c_char,
                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, handle: i32)>) -> ErrorCode;
 
+    #[no_mangle]
+    fn indy_list_wallets(command_handle: i32,
+                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                              wallets: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
     fn indy_close_wallet(command_handle: i32,

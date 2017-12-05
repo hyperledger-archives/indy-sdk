@@ -1,9 +1,11 @@
 pub mod wallet;
+mod callbacks;
 
 pub type IndyHandle = i32;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
+#[allow(dead_code)]
 pub enum ErrorCode
 {
     Success = 0,
