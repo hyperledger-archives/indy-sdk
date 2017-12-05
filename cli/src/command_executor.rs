@@ -159,7 +159,7 @@ impl CommandExecutor {
             return self._execute_command(None, command, params);
         }
 
-        println!("Unknown group or command {}", cmd);
+        println_err!("Unknown group or command \"{}\"", cmd);
         println!("Type \"help\" to display the help");
         Err(())
     }
@@ -176,7 +176,7 @@ impl CommandExecutor {
             return self._execute_command(Some(group), command, params);
         }
 
-        println!("Unknown command \"{} {}\"", group.metadata().name(), cmd);
+        println_err!("Unknown command \"{} {}\"", group.metadata().name(), cmd);
         println!("Type \"{} help\" to display the help for \"{}\" group", group.metadata().name(), group.metadata().name());
         Err(())
     }
@@ -192,7 +192,7 @@ impl CommandExecutor {
         match CommandExecutor::_parse_params(command.metadata(), params) {
             Ok(ref params) => command.execute(params),
             Err(ref err) => {
-                println!("{}", err);
+                println_err!("{}", err);
                 if group.is_some() {
                     println!("Type \"{} {} help\" to display the help for \"{} {}\" command",
                              group.unwrap().metadata().name(), command.metadata().name(),
@@ -208,24 +208,24 @@ impl CommandExecutor {
     }
 
     fn _print_help(&self) {
-        println!("Hyperledger Indy CLI");
+        println_acc!("Hyperledger Indy CLI");
         println!();
-        println!("Usage:");
+        println_acc!("Usage:");
         println!("\t[<command-group>] <command> [[<main-param-name>=]<main-param-value>] [<param_name-1>=<param_value-1>]...[<param_name-n>=<param_value-n>]");
         println!();
-        println!("Getting help:");
+        println_acc!("Getting help:");
         println!("\thelp - Display this help");
         println!("\t<command-group> help - Display the help for the specific command group");
         println!("\t[<command-group>] <command> help - Display the help for the specific command");
         println!();
-        println!("Command groups are:");
+        println_acc!("Command groups are:");
 
         for (_, &(ref group, _)) in &self.grouped_commands {
             println!("\t{} - {}", group.metadata().name(), group.metadata().help())
         }
 
         println!();
-        println!("Top level commands are:");
+        println_acc!("Top level commands are:");
 
         for (_, ref command) in &self.commands {
             println!("\t{} - {}", command.metadata().name(), command.metadata().help())
@@ -235,16 +235,16 @@ impl CommandExecutor {
     }
 
     fn _print_group_help(&self, group: &Box<Group>, commands: &HashMap<&'static str, Box<Command>>) {
-        println!("Group:");
+        println_acc!("Group:");
         println!("\t{} - {}", group.metadata().name(), group.metadata().help());
         println!();
-        println!("Usage:");
+        println_acc!("Usage:");
         println!("\t{} <command> [[<main-param-name>=]<main-param-value>] [<param_name-1>=<param_value-1>]...[<param_name-n>=<param_value-n>]", group.metadata().name());
         println!();
-        println!("Getting help:");
+        println_acc!("Getting help:");
         println!("\t{} <command> help - Display the help for the specific command", group.metadata().name());
         println!();
-        println!("Group commands are:");
+        println_acc!("Group commands are:");
 
         for (_, ref command) in commands {
             println!("\t{} - {}", command.metadata().name(), command.metadata().help())
@@ -254,7 +254,7 @@ impl CommandExecutor {
     }
 
     fn _print_command_help(&self, group: Option<&Box<Group>>, command: &Box<Command>) {
-        println!("Command:");
+        println_acc!("Command:");
 
         if let Some(group) = group {
             println!("\t{} {} - {}", group.metadata().name(), command.metadata().name(), command.metadata().help());
@@ -264,7 +264,7 @@ impl CommandExecutor {
 
         println!();
         println!();
-        println!("Usage:");
+        println_acc!("Usage:");
 
         if let Some(group) = group {
             print!("\t{} {}", group.metadata().name(), command.metadata().name());
@@ -286,7 +286,7 @@ impl CommandExecutor {
 
         println!();
         println!();
-        println!("Parameters are:");
+        println_acc!("Parameters are:");
 
         if let Some(ref main_param) = command.metadata().main_param() {
             println!("\t{} - {}", main_param.name(), main_param.help())

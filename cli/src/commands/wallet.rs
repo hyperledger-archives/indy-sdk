@@ -77,9 +77,9 @@ impl Command for CreateCommand {
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("CreateCommand::execute >> self {:?} params {:?}", self, params);
 
-        let pool_name = get_str_param("pool_name", params).map_err(log_err!())?;
-        let name = get_str_param("name", params).map_err(log_err!())?;
-        let key = get_opt_str_param("key", params).map_err(log_err!())?;
+        let pool_name = get_str_param("pool_name", params).map_err(error_err!())?;
+        let name = get_str_param("name", params).map_err(error_err!())?;
+        let key = get_opt_str_param("key", params).map_err(error_err!())?;
 
         let config: Option<String> = key.map(|key| json!({ "key": key }).to_string());
 
@@ -298,7 +298,7 @@ mod tests {
         #[test]
         pub fn exec_works() {
             TestUtils::cleanup_storage();
-            let ctx = Rc::new((IndyContext { cur_wallet: RefCell::new(None) }));
+            let ctx = Rc::new(IndyContext::new());
             let cmd = CreateCommand::new(ctx);
             cmd.metadata().help();
             let mut params = HashMap::new();
@@ -315,7 +315,7 @@ mod tests {
         #[test]
         pub fn exec_works() {
             TestUtils::cleanup_storage();
-            let ctx = Rc::new((IndyContext { cur_wallet: RefCell::new(None) }));
+            let ctx = Rc::new(IndyContext::new());
             let cmd = OpenCommand::new(ctx);
             let mut params = HashMap::new();
             cmd.metadata().help();
@@ -333,7 +333,7 @@ mod tests {
         #[test]
         pub fn exec_for_opened_works() {
             TestUtils::cleanup_storage();
-            let ctx = Rc::new((IndyContext { cur_wallet: RefCell::new(None) }));
+            let ctx = Rc::new(IndyContext::new());
 
             {
                 let cmd = CreateCommand::new(ctx.clone());

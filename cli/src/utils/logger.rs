@@ -12,19 +12,20 @@ static LOGGER_INIT: Once = ONCE_INIT;
 
 impl LoggerUtils {
     pub fn init() {
-        LOGGER_INIT.call_once(|| {
-            let format = |record: &LogRecord| {
-                format!("{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.location().file(), record.location().line(), record.args())
-            };
-            let mut builder = LogBuilder::new();
-            builder.format(format).filter(None, LogLevelFilter::Off);
-
-            if env::var("RUST_LOG").is_ok() {
-                builder.parse(&env::var("RUST_LOG").unwrap());
-            }
-
-            builder.init().unwrap();
-        });
+        // TODO: FIXME: Correct init of logger!!!
+//        LOGGER_INIT.call_once(|| {
+//            let format = |record: &LogRecord| {
+//                format!("{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.location().file(), record.location().line(), record.args())
+//            };
+//            let mut builder = LogBuilder::new();
+//            builder.format(format).filter(None, LogLevelFilter::Off);
+//
+//            if env::var("RUST_LOG").is_ok() {
+//                builder.parse(&env::var("RUST_LOG").unwrap());
+//            }
+//
+//            builder.init().unwrap();
+//        });
     }
 }
 
@@ -39,7 +40,7 @@ macro_rules! try_log {
     })
 }
 
-macro_rules! _map_err {
+macro_rules! _log_err {
     ($lvl:expr, $expr:expr) => (
         |err| {
             log!($lvl, "{} - {:?}", $expr, err);
@@ -55,13 +56,13 @@ macro_rules! _map_err {
 }
 
 #[macro_export]
-macro_rules! log_err {
-    () => ( _map_err!(::log::LogLevel::Error) );
-    ($($arg:tt)*) => ( _map_err!(::log::LogLevel::Error, $($arg)*) )
+macro_rules! error_err {
+    () => ( _log_err!(::log::LogLevel::Error) );
+    ($($arg:tt)*) => ( _log_err!(::log::LogLevel::Error, $($arg)*) )
 }
 
 #[macro_export]
-macro_rules! log_trace {
-    () => ( _map_err!(::log::LogLevel::Trace) );
-    ($($arg:tt)*) => ( _map_err!(::log::LogLevel::Trace, $($arg)*) )
+macro_rules! trace_err {
+    () => ( _log_err!(::log::LogLevel::Trace) );
+    ($($arg:tt)*) => ( _log_err!(::log::LogLevel::Trace, $($arg)*) )
 }
