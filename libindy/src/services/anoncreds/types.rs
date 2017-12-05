@@ -146,7 +146,8 @@ impl<'a> JsonDecodable<'a> for ProofRequest {}
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct Identifier {
     pub issuer_did: String,
-    pub schema_seq_no: i32
+    pub schema_seq_no: i32,
+    pub rev_reg_seq_no: Option<i32>
 }
 
 impl JsonEncodable for Identifier {}

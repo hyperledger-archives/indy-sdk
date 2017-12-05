@@ -139,7 +139,8 @@ impl Prover {
 
             identifiers.insert(Identifier {
                 schema_seq_no: claim.schema_seq_no,
-                issuer_did: claim.issuer_did.clone()
+                issuer_did: claim.issuer_did.clone(),
+                rev_reg_seq_no: claim.rev_reg_seq_no.clone()
             });
         }
 
