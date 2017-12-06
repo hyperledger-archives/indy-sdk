@@ -306,8 +306,6 @@ mod tests {
     use super::*;
     use utils::test::TestUtils;
 
-    use std::cell::RefCell;
-
     mod create {
         use super::*;
 

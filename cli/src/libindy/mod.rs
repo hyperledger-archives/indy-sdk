@@ -126,6 +126,8 @@ pub enum ErrorCode
 }
 
 impl ErrorCode {
+    #[allow(non_snake_case)]
+    #[allow(dead_code)]
     pub fn description(&self) -> &'static str {
         match self {
             CommonInvalidParam1 => "Caller passed invalid value as param 1",
