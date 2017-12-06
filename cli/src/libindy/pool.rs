@@ -92,6 +92,32 @@ impl Pool {
         Ok(())
     }
 
+    pub fn list() -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, pools| {
+            sender.send((err, pools)).unwrap();
+        });
+
+        let (command_handle, cb) = Pool::_closure_to_list_pools_cb(cb);
+
+        let err = unsafe {
+            indy_list_pools(command_handle, cb)
+        };
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, pools) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(pools)
+    }
+
     pub fn close(pool_handle: i32) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
         let (command_handle, cb) = Pool::closure_to_close_pool_ledger_cb(
@@ -146,6 +172,13 @@ impl Pool {
         super::callbacks::_closure_to_cb_ec(closure)
     }
 
+    fn _closure_to_list_pools_cb(closure: Box<FnMut(ErrorCode, String) + Send>)
+                                 -> (i32,
+                                     Option<extern fn(command_handle: i32, err: ErrorCode,
+                                                      pools: *const c_char)>) {
+        super::callbacks::_closure_to_cb_ec_string(closure)
+    }
+
     pub fn closure_to_close_pool_ledger_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
                                                                                       Option<extern fn(command_handle: i32,
                                                                                                        err: ErrorCode)>) {
@@ -176,6 +209,12 @@ extern {
     pub fn indy_refresh_pool_ledger(command_handle: i32,
                                     handle: i32,
                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode;
+
+    #[no_mangle]
+    pub fn indy_list_pools(command_handle: i32,
+                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                pools: *const c_char)>) -> ErrorCode;
+
     #[no_mangle]
     pub fn indy_close_pool_ledger(command_handle: i32,
                                   handle: i32,

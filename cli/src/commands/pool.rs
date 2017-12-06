@@ -155,7 +155,26 @@ impl Command for ListCommand {
     }
 
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        Err(println_err!("Pool list unimplemented"))
+        trace!("ListCommand::execute >> self {:?} params {:?}", self, params);
+
+        let res = match Pool::list() {
+            Ok(pools) => {
+                let pools = pools.replace(",", "\n").replace("]", "").replace("[", "");
+                if pools.trim().len() > 0 {
+                    println_succ!("Existing pools: \n{}", pools.trim());
+                } else {
+                    println_succ!("There are no pools");
+                }
+                if let Some(cur_pool) = self.ctx.get_connected_pool_name() {
+                    println_succ!("Current pool \"{}\"", cur_pool);
+                }
+                Ok(())
+            }
+            Err(err) => Err(println_err!("List pools failed with unexpected Indy SDK error {:?}", err)),
+        };
+
+        trace!("ListCommand::execute << {:?}", res);
+        res
     }
 }
 
