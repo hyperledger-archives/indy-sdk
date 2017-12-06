@@ -147,6 +147,7 @@ struct SendMessagePayload{
     uid: String,
     status_code: String,
     edge_agent_payload: String,
+    ref_msg_id: String,
 }
 
 #[derive(Serialize, Debug, PartialEq, PartialOrd, Clone)]
@@ -163,6 +164,7 @@ pub struct SendMessage {
     validate_rc: u32,
     #[serde(rename = "refMsgId")]
     ref_msg_id: String,
+    status_code: String,
 }
 
 impl SendMessage{
@@ -177,10 +179,12 @@ impl SendMessage{
                 uid: String::new(),
                 status_code: String::new(),
                 edge_agent_payload: String::new(),
+                ref_msg_id: String::new(),
             },
             agent_payload: String::new(),
             validate_rc: error::SUCCESS.code_num,
             ref_msg_id: String::new(),
+            status_code: String::new(),
         }
     }
 
@@ -210,7 +214,7 @@ impl SendMessage{
     }
 
     pub fn ref_msg_id(&mut self, id: &str) -> &mut Self {
-        self.ref_msg_id = String::from(id);
+        self.payload.ref_msg_id = String::from(id);
         self
     }
 
@@ -334,7 +338,7 @@ mod tests {
         let status_code = "0";
         let payload = "Some Data";
         let msg_type = "message";
-        let ref_msg_id = "alpha123";
+        let ref_msg_id = "6tZ5kQo";
         let msg = match send_message()
             .to(&to_did)
             .msg_type(&msg_type)
@@ -352,10 +356,12 @@ mod tests {
         assert_eq!(msg, "{\"agentPayload\":\
         \"{\\\"edgeAgentPayload\\\":\\\"Some Data\\\",\
             \\\"msgType\\\":\\\"message\\\",\
+            \\\"refMsgId\\\":\\\"6tZ5kQo\\\",\
             \\\"statusCode\\\":\\\"0\\\",\
             \\\"type\\\":\\\"SEND_MSG\\\",\
             \\\"uid\\\":\\\"123\\\"}\",\
-            \"refMsgId\":\"alpha123\",\
+        \"refMsgId\":\"\",\
+        \"statusCode\":\"\",\
         \"to\":\"8XFh8yBzrpJQmNyZzgoTqB\"}");
     }
 }
