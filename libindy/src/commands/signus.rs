@@ -308,7 +308,7 @@ impl SignusCommandExecutor {
     }
 
     fn list_my_dids_with_meta(&self, wallet_handle: i32) -> Result<String, IndyError> {
-        let dids: Vec<String> = self.wallet_service
+        let dids: Vec<::serde_json::Value> = self.wallet_service
             .list(wallet_handle, "my_did::").map_err(IndyError::from)?
             .iter().flat_map(|&(_, ref did_json)| {
             Did::from_json(&did_json).ok()
@@ -318,7 +318,7 @@ impl SignusCommandExecutor {
                 "did": did.did,
                 "verkey": did.verkey,
                 "metadata": meta,
-            }).to_string()
+            })
         }).collect();
 
         ::serde_json::to_string(&dids)

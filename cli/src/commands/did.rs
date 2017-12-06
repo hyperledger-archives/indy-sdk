@@ -49,6 +49,12 @@ pub struct RotateKeyCommand {
     metadata: CommandMetadata,
 }
 
+#[derive(Debug)]
+pub struct ListCommand {
+    ctx: Rc<IndyContext>,
+    metadata: CommandMetadata,
+}
+
 impl NewCommand {
     pub fn new(ctx: Rc<IndyContext>) -> NewCommand {
         NewCommand {
@@ -211,3 +217,46 @@ impl Command for RotateKeyCommand {
         &self.metadata
     }
 }
+
+impl ListCommand {
+    pub fn new(ctx: Rc<IndyContext>) -> ListCommand {
+        ListCommand {
+            ctx,
+            metadata: CommandMetadata::build("list", "List my DIDs stored in the opened wallet.")
+                .finalize()
+        }
+    }
+}
+
+impl Command for ListCommand {
+    fn metadata(&self) -> &CommandMetadata {
+        &self.metadata
+    }
+
+    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("ListCommand::execute >> self {:?} params {:?}", self, params);
+
+        let wallet_handle = get_opened_wallet_handle(&self.ctx)?;
+
+        let res = match Did::list_dids_with_meta(wallet_handle) {
+            Ok(dids) => {
+                let dids = dids.replace("},{", "}\n{").replace("]", "").replace("[", "");
+                //TODO parse JSON and print table
+                if dids.trim().len() > 0 {
+                    println_succ!("Existing dids: \n{}", dids.trim());
+                } else {
+                    println_succ!("There are no dids");
+                }
+                if let Some(cur_did) = self.ctx.get_active_did() {
+                    println_succ!("Current did \"{}\"", cur_did);
+                }
+                Ok(())
+            }
+            Err(err) => Err(println_err!("List dids failed with unexpected Indy SDK error {:?}", err)),
+        };
+
+        trace!("ListCommand::execute << {:?}", res);
+        res
+    }
+}
+

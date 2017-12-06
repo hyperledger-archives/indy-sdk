@@ -58,6 +58,7 @@ fn build_executor(application_context: Rc<ApplicationContext>,
         .add_command(Box::new(did::NewCommand::new(indy_context.clone())))
         .add_command(Box::new(did::UseCommand::new(indy_context.clone())))
         .add_command(Box::new(did::RotateKeyCommand::new(indy_context.clone())))
+        .add_command(Box::new(did::ListCommand::new(indy_context.clone())))
         .finalize_group()
         .add_group(Box::new(pool::Group::new()))
         .add_command(Box::new(pool::CreateCommand::new(indy_context.clone())))
