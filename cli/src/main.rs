@@ -7,12 +7,15 @@ extern crate linefeed;
 extern crate log;
 extern crate serde;
 #[macro_use]
+extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 
 #[macro_use]
 mod utils;
 mod application_context;
 mod command_executor;
+#[macro_use]
 mod commands;
 mod indy_context;
 mod libindy;
@@ -20,7 +23,7 @@ mod libindy;
 use application_context::ApplicationContext;
 use command_executor::CommandExecutor;
 
-use commands::{common, pool, wallet};
+use commands::{common, did, pool, wallet, ledger};
 use indy_context::IndyContext;
 
 use linefeed::{Reader, ReadResult};
@@ -51,12 +54,9 @@ fn build_executor(application_context: Rc<ApplicationContext>,
         .add_command(Box::new(common::ExitCommand::new(application_context.clone())))
         .add_command(Box::new(common::PromptCommand::new(application_context.clone())))
         .add_command(Box::new(common::ShowCommand::new()))
-        .add_group(Box::new(wallet::Group::new()))
-        .add_command(Box::new(wallet::CreateCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::OpenCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::ListCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::CloseCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::DeleteCommand::new(indy_context.clone())))
+        .add_group(Box::new(did::Group::new()))
+        .add_command(Box::new(did::NewCommand::new(indy_context.clone())))
+        .add_command(Box::new(did::UseCommand::new(indy_context.clone())))
         .finalize_group()
         .add_group(Box::new(pool::Group::new()))
         .add_command(Box::new(pool::CreateCommand::new(indy_context.clone())))
@@ -64,6 +64,25 @@ fn build_executor(application_context: Rc<ApplicationContext>,
         .add_command(Box::new(pool::ListCommand::new(indy_context.clone())))
         .add_command(Box::new(pool::DisconnectCommand::new(indy_context.clone())))
         .add_command(Box::new(pool::DeleteCommand::new(indy_context.clone())))
+        .finalize_group()
+        .add_group(Box::new(wallet::Group::new()))
+        .add_command(Box::new(wallet::CreateCommand::new(indy_context.clone())))
+        .add_command(Box::new(wallet::OpenCommand::new(indy_context.clone())))
+        .add_command(Box::new(wallet::ListCommand::new(indy_context.clone())))
+        .add_command(Box::new(wallet::CloseCommand::new(indy_context.clone())))
+        .add_command(Box::new(wallet::DeleteCommand::new(indy_context.clone())))
+        .finalize_group()
+        .add_group(Box::new(ledger::Group::new()))
+        .add_command(Box::new(ledger::SendNymCommand::new(indy_context.clone())))
+        .add_command(Box::new(ledger::GetNymCommand::new(indy_context.clone())))
+        .add_command(Box::new(ledger::SendAttribCommand::new(indy_context.clone())))
+        .add_command(Box::new(ledger::GetAttribCommand::new(indy_context.clone())))
+        .add_command(Box::new(ledger::SendSchemaCommand::new(indy_context.clone())))
+        .add_command(Box::new(ledger::GetSchemaCommand::new(indy_context.clone())))
+        .add_command(Box::new(ledger::SendClaimDefCommand::new(indy_context.clone())))
+        .add_command(Box::new(ledger::GetClaimDefCommand::new(indy_context.clone())))
+        .add_command(Box::new(ledger::SendNodeCommand::new(indy_context.clone())))
+        .add_command(Box::new(ledger::SenCustomCommand::new(indy_context.clone())))
         .finalize_group()
         .finalize()
 }

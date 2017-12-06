@@ -1124,6 +1124,20 @@ impl PoolService {
             .map(|()| cmd_id)
     }
 
+    pub fn list(&self) -> Result<Vec<String>, PoolError> {
+        let mut pool_names = Vec::new();
+
+        let pool_home_path = EnvironmentUtils::pool_home_path();
+        for entry in fs::read_dir(pool_home_path)? {
+            let dir_entry = if let Ok(dir_entry) = entry { dir_entry } else { continue };
+            if let Some(pool_name) = dir_entry.path().file_name().and_then(|os_str| os_str.to_str()) {
+                pool_names.push(pool_name.to_owned());
+            }
+        }
+
+        Ok(pool_names)
+    }
+
     pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
         self.pools.try_borrow().map_err(CommonError::from)?.get(&handle).map_or(
             Err(PoolError::InvalidHandle(format!("Pool doesn't exists for handle {}", handle))),

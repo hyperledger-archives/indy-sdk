@@ -39,6 +39,9 @@ pub enum SignusCommand {
         i32, // wallet handle
         String, // their did info json
         Box<Fn(Result<(), IndyError>) + Send>),
+    ListMyDidsWithMeta(
+        i32, // wallet handle
+        Box<Fn(Result<String, IndyError>) + Send>),
     Sign(
         i32, // wallet handle
         String, // my did
@@ -175,6 +178,10 @@ impl SignusCommandExecutor {
                 info!("StoreTheirDid command received");
                 cb(self.store_their_did(wallet_handle, &identity_json));
             }
+            SignusCommand::ListMyDidsWithMeta(wallet_handle, cb) => {
+                info!("ListMyDidsWithMeta command received");
+                cb(self.list_my_dids_with_meta(wallet_handle));
+            }
             SignusCommand::Sign(wallet_handle, did, msg, cb) => {
                 info!("Sign command received");
                 cb(self.sign(wallet_handle, &did, &msg));
@@ -298,6 +305,26 @@ impl SignusCommandExecutor {
         self._wallet_set_their_did(wallet_handle, &their_did)?;
 
         Ok(())
+    }
+
+    fn list_my_dids_with_meta(&self, wallet_handle: i32) -> Result<String, IndyError> {
+        let dids: Vec<String> = self.wallet_service
+            .list(wallet_handle, "my_did::").map_err(IndyError::from)?
+            .iter().flat_map(|&(_, ref did_json)| {
+            Did::from_json(&did_json).ok()
+        }).map(|did| {
+            let meta: Option<String> = self._wallet_get_did_metadata(wallet_handle, &did.did).ok();
+            json!({
+                "did": did.did,
+                "verkey": did.verkey,
+                "metadata": meta,
+            }).to_string()
+        }).collect();
+
+        ::serde_json::to_string(&dids)
+            .map_err(|err|
+                WalletError::CommonError(CommonError::InvalidState(format!("Can't serialize DIDs list {}", err))))
+            .map_err(IndyError::from)
     }
 
     fn sign(&self,

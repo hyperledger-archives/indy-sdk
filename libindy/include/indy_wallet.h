@@ -122,6 +122,7 @@ extern "C" {
     /// Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool
     extern indy_error_t indy_list_wallets(indy_handle_t command_handle,
                                           void          (*fn)(indy_handle_t xcommand_handle, indy_error_t err, const char *const wallets)
+                                          );
 
     /// Closes opened wallet and frees allocated resources.
     ///
