@@ -1,4 +1,4 @@
-use IndyContext;
+use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
 use commands::{get_opt_i64_param, get_str_param, get_opt_str_param};
 
@@ -113,6 +113,9 @@ impl OpenCommand {
             ctx,
             metadata: CommandMetadata::build("open", "Open wallet with specified name. Also close previously opened.")
                 .add_main_param("name", "The name of wallet")
+                .add_param("key", true, "Auth key for the wallet")
+                .add_param("rekey", true, "New auth key for the wallet (will replace previous one).")
+                .add_param("freshness_time", true, "Freshness time for entities in the wallet")
                 .finalize()
         }
     }
@@ -212,7 +215,7 @@ impl CloseCommand {
     pub fn new(ctx: Rc<IndyContext>) -> CloseCommand {
         CloseCommand {
             ctx,
-            metadata: CommandMetadata::build("close", "Close wallet with specified handle.")
+            metadata: CommandMetadata::build("close", "Close opened wallet.")
                 .finalize()
         }
     }

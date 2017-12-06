@@ -19,8 +19,8 @@ mod libindy;
 
 use application_context::ApplicationContext;
 use command_executor::CommandExecutor;
-use commands::common;
-use commands::wallet;
+
+use commands::{common, pool, wallet};
 use indy_context::IndyContext;
 
 use linefeed::{Reader, ReadResult};
@@ -57,6 +57,13 @@ fn build_executor(application_context: Rc<ApplicationContext>,
         .add_command(Box::new(wallet::ListCommand::new(indy_context.clone())))
         .add_command(Box::new(wallet::CloseCommand::new(indy_context.clone())))
         .add_command(Box::new(wallet::DeleteCommand::new(indy_context.clone())))
+        .finalize_group()
+        .add_group(Box::new(pool::Group::new()))
+        .add_command(Box::new(pool::CreateCommand::new(indy_context.clone())))
+        .add_command(Box::new(pool::ConnectCommand::new(indy_context.clone())))
+        .add_command(Box::new(pool::ListCommand::new(indy_context.clone())))
+        .add_command(Box::new(pool::DisconnectCommand::new(indy_context.clone())))
+        .add_command(Box::new(pool::DeleteCommand::new(indy_context.clone())))
         .finalize_group()
         .finalize()
 }
