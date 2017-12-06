@@ -1,13 +1,32 @@
+use application_context::ApplicationContext;
 use command_executor::{Command, CommandMetadata};
 use commands::get_str_param;
 
 use std::collections::HashMap;
 use std::fs::{File, DirBuilder};
 use std::io::{Read, Write};
+use std::rc::Rc;
 use std::path::Path;
 
 #[derive(Debug)]
 pub struct AboutCommand {
+    metadata: CommandMetadata,
+}
+
+#[derive(Debug)]
+pub struct ShowCommand {
+    metadata: CommandMetadata,
+}
+
+#[derive(Debug)]
+pub struct PromptCommand {
+    cnxt: Rc<ApplicationContext>,
+    metadata: CommandMetadata,
+}
+
+#[derive(Debug)]
+pub struct ExitCommand {
+    cnxt: Rc<ApplicationContext>,
     metadata: CommandMetadata,
 }
 
@@ -44,11 +63,6 @@ impl Command for AboutCommand {
     }
 }
 
-#[derive(Debug)]
-pub struct ShowCommand {
-    metadata: CommandMetadata,
-}
-
 impl ShowCommand {
     pub fn new() -> ShowCommand {
         ShowCommand {
@@ -78,10 +92,65 @@ impl Command for ShowCommand {
         };
 
         println!("{}", content);
-
         let res = Ok(());
 
         trace!("ShowCommand::execute << {:?}", res);
+        res
+    }
+
+    fn metadata(&self) -> &CommandMetadata {
+        &self.metadata
+    }
+}
+
+impl PromptCommand {
+    pub fn new(cnxt: Rc<ApplicationContext>) -> PromptCommand {
+        PromptCommand {
+            cnxt,
+            metadata: CommandMetadata::build("prompt", "Change command prompt")
+                .add_main_param("prompt", "New prompt string")
+                .finalize()
+        }
+    }
+}
+
+impl Command for PromptCommand {
+    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("PromptCommand::execute >> self: {:?}, params: {:?}", self, params);
+
+        let prompt = get_str_param("prompt", params).map_err(error_err!())?;
+
+        self.cnxt.set_main_prompt(prompt);
+        println_succ!("Command prompt has been set to \"{}\"", prompt);
+        let res = Ok(());
+
+        trace!("PromptCommand::execute << {:?}", res);
+        res
+    }
+
+    fn metadata(&self) -> &CommandMetadata {
+        &self.metadata
+    }
+}
+
+impl ExitCommand {
+    pub fn new(cnxt: Rc<ApplicationContext>) -> ExitCommand {
+        ExitCommand {
+            cnxt,
+            metadata: CommandMetadata::build("exit", "Exit Indy CLI").finalize()
+        }
+    }
+}
+
+impl Command for ExitCommand {
+    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("ExitCommand::execute >> self: {:?}, params: {:?}", self, params);
+
+        self.cnxt.set_exit();
+        println_succ!("Goodbye...");
+        let res = Ok(());
+
+        trace!("ExitCommand::execute << {:?}", res);
         res
     }
 
