@@ -1,6 +1,7 @@
 pub mod did;
 pub mod pool;
 pub mod wallet;
+pub mod ledger;
 mod callbacks;
 
 pub type IndyHandle = i32;
