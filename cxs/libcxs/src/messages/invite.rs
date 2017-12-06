@@ -7,7 +7,6 @@ use settings;
 use utils::httpclient;
 use utils::error;
 use messages::{validation, GeneralMessage, Bundled, MsgResponse, bundle_for_agency, unbundle_from_agency};
-use self::rmp_serde::encode;
 use serde::Deserialize;
 use self::rmp_serde::Deserializer;
 
@@ -152,15 +151,8 @@ impl GeneralMessage for SendInvite{
         if self.validate_rc != error::SUCCESS.code_num {
             return Err(self.validate_rc)
         }
-        let bundle = Bundled::create(self.payload.clone());
 
-        let msg = match encode::to_vec_named(&bundle) {
-                        Ok(x) => x,
-            Err(x) => {
-                error!("Could not convert bundle to messagepack: {}", x);
-                return Err(error::INVALID_MSGPACK.code_num)
-            },
-        };
+        let msg = Bundled::create(self.payload.clone()).encode()?;
 
         bundle_for_agency(msg, self.to_did.as_ref())
     }
@@ -270,15 +262,7 @@ impl GeneralMessage for UpdateProfileData{
         if self.validate_rc != error::SUCCESS.code_num {
             return Err(self.validate_rc)
         }
-        let bundle = Bundled::create(self.payload.clone());
-
-        let msg = match encode::to_vec_named(&bundle) {
-                        Ok(x) => x,
-            Err(x) => {
-                error!("Could not convert bundle to messagepack: {}", x);
-                return Err(error::INVALID_MSGPACK.code_num)
-            },
-        };
+        let msg = Bundled::create(self.payload.clone()).encode()?;
 
         bundle_for_agency(msg, self.to_did.as_ref())
     }
@@ -319,6 +303,7 @@ fn parse_update_profile_response(response: Vec<u8>) -> Result<String, u32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use self::rmp_serde::encode;
     use messages::{update_data, send_invite};
     use utils::wallet;
     use utils::signus::SignusUtils;

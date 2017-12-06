@@ -30,7 +30,10 @@ pub fn post_u8(body_content: &Vec<u8>, url: &str) -> Result<Vec<u8>,String> {
     if settings::test_agency_mode_enabled() {return Ok(Vec::new().to_owned());}
     let mut response = match  client.post(url).body(body_content.to_owned()).header(ContentType::octet_stream()).send() {
         Ok(result) => result,
-        Err(err) => return Err("could not connect".to_string()),
+        Err(err) => {
+            error!("error: {}", err);
+            return Err("could not connect".to_string())
+        },
     };
 
     info!("Response Header: {:?}", response);

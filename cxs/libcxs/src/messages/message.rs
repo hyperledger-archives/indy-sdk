@@ -6,18 +6,18 @@ extern crate rmp_serde;
 use settings;
 use utils::httpclient;
 use utils::error;
-use messages::GeneralMessage;
+use messages::{MsgType, GeneralMessage, Bundled, bundle_for_agency};
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
 struct GetMessagesPayload{
-    #[serde(rename = "type")]
-    msg_type: String,
-    #[serde(rename = "msgType")]
-    message: String,
-    uid: String,
+    #[serde(rename = "@type")]
+    msg_type: MsgType,
+    #[serde(rename = "excludePayload")]
+    exclude_payload: String,
+    uids: String,
+    #[serde(rename = "statusCodes")]
     status_code: String,
-    include_edge_payload: String,
 }
 
 #[derive(Serialize, Debug, PartialEq, PartialOrd, Clone)]
@@ -41,11 +41,10 @@ impl GetMessages{
             to_did: String::new(),
             to_vk: String::new(),
             payload: GetMessagesPayload{
-                msg_type: "GET_MSGS".to_string(),
-                message: String::new(),
-                uid: String::new(),
+                msg_type: MsgType { name: "GET_MSGS".to_string(), ver: "1.0".to_string(), },
+                uids: String::new(),
                 status_code: String::new(),
-                include_edge_payload: String::new(),
+                exclude_payload: "Y".to_string(),
             },
             agent_payload: String::new(),
             validate_rc: error::SUCCESS.code_num,
@@ -54,13 +53,13 @@ impl GetMessages{
 
     pub fn msg_type(&mut self, msg: &str) -> &mut Self{
         //Todo: validate msg??
-        self.payload.message = msg.to_string();
+        self.payload.msg_type.name = msg.to_string();
         self
     }
 
     pub fn uid(&mut self, uid: &str) -> &mut Self{
         //Todo: validate msg_uid??
-        self.payload.uid = uid.to_string();
+        self.payload.uids = uid.to_string();
         self
     }
 
@@ -73,7 +72,7 @@ impl GetMessages{
 
     pub fn include_edge_payload(&mut self, payload: &str) -> &mut Self {
         //todo: is this a json value, String??
-        self.payload.include_edge_payload = payload.to_string();
+        self.payload.exclude_payload = payload.to_string();
         self
     }
 
@@ -115,7 +114,10 @@ impl GeneralMessage for GetMessages{
         if self.validate_rc != error::SUCCESS.code_num {
             return Err(self.validate_rc)
         }
-        Ok(Vec::new().to_owned())
+
+        let msg = Bundled::create(self.payload.clone()).encode()?;
+
+        bundle_for_agency(msg, self.to_did.as_ref())
     }
 
     fn send_enc(&mut self) -> Result<String, u32> {
@@ -256,11 +258,13 @@ impl GeneralMessage for SendMessage{
             return Err(self.validate_rc)
         }
 
-        Ok(Vec::new().to_owned())
+        let msg = Bundled::create(self.payload.clone()).encode()?;
+
+        bundle_for_agency(msg, self.to_did.as_ref())
     }
 
     fn send_enc(&mut self) -> Result<String, u32> {
-        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
         let data = match self.to_post() {
             Ok(x) => x,
@@ -293,10 +297,8 @@ mod tests {
         let msg_type = "message";
         let msg = match get_messages()
             .to(&to_did)
-            .msg_type(&msg_type)
             .uid(&uid)
             .status_code(&status_code)
-            .include_edge_payload(&payload)
             .serialize_message(){
             Ok(x) => x.to_string(),
             Err(y) => {
@@ -304,12 +306,13 @@ mod tests {
                 String::from("error")
             }
         };
-        assert_eq!(msg, "{\"agentPayload\":\
-        \"{\\\"includeEdgePayload\\\":\\\"Some Data\\\",\
-            \\\"msgType\\\":\\\"message\\\",\
-            \\\"statusCode\\\":\\\"0\\\",\
-            \\\"type\\\":\\\"GET_MSGS\\\",\
-            \\\"uid\\\":\\\"123\\\"}\",\
+        assert_eq!(msg, "{\"agentPayload\":\"\
+        {\\\"@type\\\":\
+        {\\\"name\\\":\\\"GET_MSGS\\\",\
+        \\\"ver\\\":\\\"1.0\\\"},\
+        \\\"excludePayload\\\":\\\"Y\\\",\
+        \\\"statusCodes\\\":\\\"0\\\",\
+        \\\"uids\\\":\\\"123\\\"}\",\
         \"to\":\"8XFh8yBzrpJQmNyZzgoTqB\"}");
     }
 
