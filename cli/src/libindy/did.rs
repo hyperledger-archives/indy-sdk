@@ -105,6 +105,34 @@ impl Did {
         Ok(())
     }
 
+    pub fn set_metadata(wallet_handle: i32, did: &str, metadata: &str) -> Result<(), ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err| {
+            sender.send((err)).unwrap();
+        });
+        let (command_handle, callback) = Did::closure_to_store_did_metadata_cb(cb);
+
+        let did = CString::new(did).unwrap();
+        let metadata = CString::new(metadata).unwrap();
+
+        let err = unsafe {
+            indy_set_did_metadata(command_handle,
+                                  wallet_handle,
+                                  did.as_ptr(),
+                                  metadata.as_ptr(),
+                                  callback)
+        };
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let err = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok(())
+    }
+
     pub fn closure_to_create_and_store_my_did_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
                                                                                                             Option<extern fn(command_handle: i32,
                                                                                                                              err: ErrorCode,
@@ -122,6 +150,12 @@ impl Did {
 
     pub fn closure_to_replace_keys_apply_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32, Option<extern fn(command_handle: i32,
                                                                                                              err: ErrorCode)>) {
+        super::callbacks::_closure_to_cb_ec(closure)
+    }
+
+    pub fn closure_to_store_did_metadata_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
+                                                                                       Option<extern fn(command_handle: i32,
+                                                                                                        err: ErrorCode)>) {
         super::callbacks::_closure_to_cb_ec(closure)
     }
 }
@@ -149,4 +183,12 @@ extern {
                                    did: *const c_char,
                                    cb: Option<extern fn(xcommand_handle: i32,
                                                         err: ErrorCode)>) -> ErrorCode;
+
+    #[no_mangle]
+    fn indy_set_did_metadata(command_handle: i32,
+                             wallet_handle: i32,
+                             did: *const c_char,
+                             metadata: *const c_char,
+                             cb: Option<extern fn(command_handle_: i32,
+                                                  err: ErrorCode)>) -> ErrorCode;
 }

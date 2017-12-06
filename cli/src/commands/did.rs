@@ -79,7 +79,6 @@ impl Command for NewCommand {
             update_json_map_opt_key!(json, "did", did);
             update_json_map_opt_key!(json, "seed", seed);
             update_json_map_opt_key!(json, "cid", cid);
-            update_json_map_opt_key!(json, "metadata", metadata);
             JSONValue::from(json).to_string()
         };
 
@@ -90,8 +89,23 @@ impl Command for NewCommand {
         trace!(r#"Did::new return: {:?}"#, res);
 
         let res = match res {
-            Ok((did, vk)) => Ok(println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk)),
+            Ok((did, vk)) => {
+                println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk);
+                Ok(did)
+            },
             Err(err) => Err(println_err!("Did create failed with unexpected Indy SDK error {:?}", err)),
+        };
+
+        let res = if let Some(metadata) = metadata {
+            res.and_then(|did| {
+                let res = Did::set_metadata(wallet_handle, &did, metadata);
+                match res {
+                    Ok(()) => Ok(println_succ!("Metadata has been saved for DID \"{}\"", did)),
+                    Err(err) => Err(println_err!("Metadata save failed with unexpected Indy SDK error {:?}", err))
+                }
+            })
+        } else {
+            res.map(|_| ())
         };
 
         trace!("NewCommand::execute << {:?}", res);
