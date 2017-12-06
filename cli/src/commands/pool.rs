@@ -90,7 +90,7 @@ impl Command for CreateCommand {
         let res = match res {
             Ok(()) => Ok(println_succ!("Pool config \"{}\" has been created", name)),
             Err(ErrorCode::PoolLedgerConfigAlreadyExistsError) => Err(println_err!("Pool config \"{}\" already exists", name)),
-            Err(err) => Err(println_err!("Pool config \"{}\" create failed with unexpected Indy SDK error {:?}", name, err)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         trace!("CreateCommand::execute << {:?}", res);
@@ -129,7 +129,7 @@ impl Command for ConnectCommand {
                 self.ctx.set_connected_pool(name, handle);
                 Ok(println_succ!("Pool \"{}\" has been connected", name))
             }
-            Err(err) => Err(println_err!("Pool \"{}\" connect failed with unexpected Indy SDK error {:?}", name, err)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         trace!("CreateCommand::execute << {:?}", res);
@@ -168,7 +168,7 @@ impl Command for ListCommand {
                 }
                 Ok(())
             }
-            Err(err) => Err(println_err!("List pools failed with unexpected Indy SDK error {:?}", err)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         trace!("ListCommand::execute << {:?}", res);
@@ -205,7 +205,7 @@ impl Command for DisconnectCommand {
                 self.ctx.unset_connected_pool();
                 Ok(println_succ!("Pool \"{}\" has been disconnected", name))
             }
-            Err(err) => Err(println_err!("Pool \"{}\" disconnect failed with unexpected Indy SDK error {:?}", name, err)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         trace!("DisconnectCommand::execute << {:?}", res);
@@ -238,7 +238,7 @@ impl Command for DeleteCommand {
 
         let res = match res {
             Ok(()) => Ok(println_succ!("Pool \"{}\" has been deleted", name)),
-            Err(err) => Err(println_err!("Pool \"{}\" delete failed with unexpected Indy SDK error {:?}", name, err)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         trace!("DeleteCommand::execute << {:?}", res);
