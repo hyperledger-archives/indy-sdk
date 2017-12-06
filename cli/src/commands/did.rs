@@ -1,8 +1,11 @@
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
-use commands::{get_opt_bool_param, get_opt_str_param, get_str_param};
+use commands::*;
+
+use libindy::ErrorCode;
 
 use libindy::did::Did;
+use libindy::ledger::Ledger;
 
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
@@ -40,6 +43,12 @@ pub struct UseCommand {
     metadata: CommandMetadata,
 }
 
+#[derive(Debug)]
+pub struct RotateKeyCommand {
+    ctx: Rc<IndyContext>,
+    metadata: CommandMetadata,
+}
+
 impl NewCommand {
     pub fn new(ctx: Rc<IndyContext>) -> NewCommand {
         NewCommand {
@@ -58,11 +67,7 @@ impl Command for NewCommand {
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("NewCommand::execute >> self {:?} params {:?}", self, params);
 
-        let wallet_handle = if let Some(wallet_handle) = self.ctx.get_opened_wallet_handle() {
-            wallet_handle
-        } else {
-            return Err(println_err!("There is no opened wallet"));
-        };
+        let wallet_handle = get_opened_wallet_handle(&self.ctx)?;
 
         let did = get_opt_str_param("did", params).map_err(error_err!())?;
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
@@ -121,6 +126,71 @@ impl Command for UseCommand {
 
         trace!("UseCommand::execute << {:?}", ());
         Ok(())
+    }
+
+    fn metadata(&self) -> &CommandMetadata {
+        &self.metadata
+    }
+}
+
+impl RotateKeyCommand {
+    pub fn new(ctx: Rc<IndyContext>) -> RotateKeyCommand {
+        RotateKeyCommand {
+            ctx,
+            metadata: CommandMetadata::build("rotate-key", "Rotate keys for active did")
+                .add_param("seed", true, "If not provide then a random one will be created")
+                .finalize()
+        }
+    }
+}
+
+impl Command for RotateKeyCommand {
+    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("RotateKeyCommand::execute >> self {:?} params {:?}", self, params);
+
+        let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
+
+        let did = get_active_did(&self.ctx)?;
+        let pool_handle = get_connected_pool_handle(&self.ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&self.ctx)?;
+
+        let identity_json = {
+            let mut json = JSONMap::new();
+
+            if let Some(seed) = seed {
+                json.insert("seed".to_string(), JSONValue::from(seed));
+            }
+
+            JSONValue::from(json).to_string()
+        };
+
+        let new_verkey = match Did::replace_keys_start(wallet_handle, &did, &identity_json) {
+            Ok(request) => Ok(request),
+            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
+            Err(_) => return Err(println_err!("Wrong command params")),
+        }?;
+
+        let request = match Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None) {
+            Ok(request) => Ok(request),
+            Err(_) => return Err(println_err!("Wrong command params")),
+        }?;
+
+        match Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request) {
+            Ok(response) => Ok(response),
+            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
+            Err(ErrorCode::WalletIncompatiblePoolError) => Err(println_err!("Pool handle \"{}\" invalid for wallet handle \"{}\"", pool_handle, wallet_handle)),
+            Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid NYM transaction \"{}\"", request)),
+            Err(err) => Err(println_err!("Send NYM request failed with unexpected Indy SDK error {:?}", err))
+        }?;
+
+        let res = match Did::replace_keys_apply(wallet_handle, &did) {
+            Ok(_) => Ok(println_succ!("Verkey has been updated. New verkey: \"{}\"", new_verkey)),
+            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
+            Err(_) => return Err(println_err!("Wrong command params")),
+        };
+
+        trace!("RotateKeyCommand::execute << {:?}", res);
+        res
     }
 
     fn metadata(&self) -> &CommandMetadata {
