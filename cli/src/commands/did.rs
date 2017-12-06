@@ -1,6 +1,6 @@
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
-use commands::{get_opt_bool_param, get_opt_str_param};
+use commands::{get_opt_bool_param, get_opt_str_param, get_str_param};
 
 use libindy::did::Did;
 
@@ -34,6 +34,11 @@ pub struct NewCommand {
     metadata: CommandMetadata,
 }
 
+#[derive(Debug)]
+pub struct UseCommand {
+    ctx: Rc<IndyContext>,
+    metadata: CommandMetadata,
+}
 
 impl NewCommand {
     pub fn new(ctx: Rc<IndyContext>) -> NewCommand {
@@ -91,6 +96,36 @@ impl Command for NewCommand {
 
         trace!("NewCommand::execute << {:?}", res);
         res
+    }
+
+    fn metadata(&self) -> &CommandMetadata {
+        &self.metadata
+    }
+}
+
+impl UseCommand {
+    pub fn new(ctx: Rc<IndyContext>) -> UseCommand {
+        UseCommand {
+            ctx,
+            metadata: CommandMetadata::build("use", "Use DID")
+                .add_main_param("did", "Did stored in wallet")
+                .finalize()
+        }
+    }
+}
+
+impl Command for UseCommand {
+    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("UseCommand::execute >> self {:?} params {:?}", self, params);
+
+        let did = get_str_param("did", params).map_err(error_err!())?;
+
+        self.ctx.set_active_did(did);
+
+        println_succ!("Did \"{}\" has been set as active", did);
+
+        trace!("UseCommand::execute << {:?}", ());
+        Ok(())
     }
 
     fn metadata(&self) -> &CommandMetadata {

@@ -6,6 +6,7 @@ use std::cell::RefCell;
 pub struct IndyContext {
     opened_wallet: RefCell<Option<(String, IndyHandle)>>,
     connected_pool: RefCell<Option<(String, IndyHandle)>>,
+    active_did: RefCell<Option<String>>,
 }
 
 impl IndyContext {
@@ -13,6 +14,7 @@ impl IndyContext {
         IndyContext {
             opened_wallet: RefCell::new(None),
             connected_pool: RefCell::new(None),
+            active_did: RefCell::new(None),
         }
     }
 
@@ -56,5 +58,14 @@ impl IndyContext {
     #[allow(dead_code)]
     pub fn get_connected_pool_handle(&self) -> Option<IndyHandle> {
         self.connected_pool.borrow().as_ref().map(|&(_, handle)| handle)
+    }
+
+    pub fn set_active_did(&self, did: &str) {
+        *self.active_did.borrow_mut() = Some(did.to_owned());
+    }
+
+    #[allow(dead_code)]
+    pub fn get_active_did(&self) -> Option<String> {
+        self.active_did.borrow().clone()
     }
 }
