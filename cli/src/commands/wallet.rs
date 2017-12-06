@@ -83,19 +83,19 @@ impl Command for CreateCommand {
 
         let config: Option<String> = key.map(|key| json!({ "key": key }).to_string());
 
-        trace!(r#"Wallet::create_wallet try: name {}, pool_name {}, config {:?}"#, name, pool_name, config);
+        trace!("Wallet::create_wallet try: name {}, pool_name {}, config {:?}", name, pool_name, config);
 
         let res = Wallet::create_wallet(pool_name,
                                         name,
                                         None,
                                         config.as_ref().map(String::as_str));
 
-        trace!(r#"Wallet::create_wallet return: {:?}"#, res);
+        trace!("Wallet::create_wallet return: {:?}", res);
 
         let res = match res {
             Ok(()) => Ok(println_succ!("Wallet \"{}\" has been created", name)),
             Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", name)),
-            Err(err) => Err(println_err!("Wallet \"{}\" create failed with unexpected Indy SDK error {:?}", name, err)),
+            Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         trace!("CreateCommand::execute << {:?}", res);
@@ -156,15 +156,31 @@ impl Command for OpenCommand {
             }
         };
 
-        //TODO close previously opened wallet
-        let res = match Wallet::open_wallet(name, config.as_ref().map(String::as_str)) {
-            Ok(handle) => {
-                self.ctx.set_opened_wallet(name, handle);
-                Ok(println_succ!("Wallet \"{}\" has been opened", name))
-            }
-            Err(ErrorCode::WalletAlreadyOpenedError) => Err(println_err!("Wallet \"{}\" already opened", name)),
-            Err(err) => Err(println_err!("Wallet \"{}\" open failed with unexpected Indy SDK error {:?}", name, err)),
-        };
+        let res = Ok(())
+            .and_then(|_| {
+                if let Some((name, handle)) = self.ctx.get_opened_wallet() {
+                    match Wallet::close_wallet(handle) {
+                        Ok(()) => {
+                            self.ctx.unset_opened_wallet();
+                            Ok(println_succ!("Wallet \"{}\" has been closed", name))
+                        }
+                        Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                    }
+                } else {
+                    Ok(())
+                }
+            })
+            .and_then(|_| {
+                match Wallet::open_wallet(name, config.as_ref().map(String::as_str)) {
+                    Ok(handle) => {
+                        self.ctx.set_opened_wallet(name, handle);
+                        Ok(println_succ!("Wallet \"{}\" has been opened", name))
+                    }
+                    Err(ErrorCode::WalletAlreadyOpenedError) => Err(println_err!("Wallet \"{}\" already opened", name)),
+                    Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
+                    Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                }
+            });
 
         trace!("CreateCommand::execute << {:?}", res);
         Ok(())
@@ -203,7 +219,7 @@ impl Command for ListCommand {
                 }
                 Ok(())
             }
-            Err(err) => Err(println_err!("List wallets failed with unexpected Indy SDK error {:?}", err)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         trace!("ListCommand::execute << {:?}", res);
@@ -229,19 +245,24 @@ impl Command for CloseCommand {
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("OpenCommand::execute >> self {:?} params {:?}", self, params);
 
-        let (name, wallet_handle) = if let Some(opened_wallet) = self.ctx.get_opened_wallet() {
-            opened_wallet
-        } else {
-            return Err(println_err!("There is no opened wallet now"));
-        };
-
-        let res = match Wallet::close_wallet(wallet_handle) {
-            Ok(()) => {
-                self.ctx.unset_opened_wallet();
-                Ok(println_succ!("Wallet \"{}\" has been closed", name))
-            }
-            Err(err) => Err(println_err!("Wallet \"{}\" close failed with unexpected Indy SDK error {:?}", name, err)),
-        };
+        let res = Ok(())
+            .and_then(|_| {
+                if let Some(wallet) = self.ctx.get_opened_wallet() {
+                    Ok(wallet)
+                } else {
+                    Err(println_err!("There is no opened wallet now"))
+                }
+            })
+            .and_then(|wallet| {
+                let (name, handle) = wallet;
+                match Wallet::close_wallet(handle) {
+                    Ok(()) => {
+                        self.ctx.unset_opened_wallet();
+                        Ok(println_succ!("Wallet \"{}\" has been closed", name))
+                    }
+                    Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                }
+            });
 
         trace!("CloseCommand::execute << {:?}", res);
         res
@@ -265,15 +286,10 @@ impl Command for DeleteCommand {
 
         let name = get_str_param("name", params).map_err(error_err!())?;
 
-        trace!(r#"Wallet::delete_wallet try: name {}"#, name);
-
-        let res = Wallet::delete_wallet(name);
-
-        trace!(r#"Wallet::delete_wallet return: {:?}"#, res);
-
-        let res = match res {
+        let res = match Wallet::delete_wallet(name) {
             Ok(()) => Ok(println_succ!("Wallet \"{}\" has been deleted", name)),
-            Err(err) => Err(println_err!("Wallet \"{}\" delete failed with unexpected Indy SDK error {:?}", name, err)),
+            Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         trace!("DeleteCommand::execute << {:?}", res);
@@ -289,8 +305,6 @@ impl Command for DeleteCommand {
 mod tests {
     use super::*;
     use utils::test::TestUtils;
-
-    use std::cell::RefCell;
 
     mod create {
         use super::*;
