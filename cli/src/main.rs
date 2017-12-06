@@ -20,7 +20,7 @@ mod libindy;
 use application_context::ApplicationContext;
 use command_executor::CommandExecutor;
 
-use commands::{common, pool, wallet};
+use commands::{common, did, pool, wallet};
 use indy_context::IndyContext;
 
 use linefeed::{Reader, ReadResult};
@@ -51,12 +51,8 @@ fn build_executor(application_context: Rc<ApplicationContext>,
         .add_command(Box::new(common::ExitCommand::new(application_context.clone())))
         .add_command(Box::new(common::PromptCommand::new(application_context.clone())))
         .add_command(Box::new(common::ShowCommand::new()))
-        .add_group(Box::new(wallet::Group::new()))
-        .add_command(Box::new(wallet::CreateCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::OpenCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::ListCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::CloseCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::DeleteCommand::new(indy_context.clone())))
+        .add_group(Box::new(did::Group::new()))
+        .add_command(Box::new(did::NewCommand::new(indy_context.clone())))
         .finalize_group()
         .add_group(Box::new(pool::Group::new()))
         .add_command(Box::new(pool::CreateCommand::new(indy_context.clone())))
@@ -64,6 +60,13 @@ fn build_executor(application_context: Rc<ApplicationContext>,
         .add_command(Box::new(pool::ListCommand::new(indy_context.clone())))
         .add_command(Box::new(pool::DisconnectCommand::new(indy_context.clone())))
         .add_command(Box::new(pool::DeleteCommand::new(indy_context.clone())))
+        .finalize_group()
+        .add_group(Box::new(wallet::Group::new()))
+        .add_command(Box::new(wallet::CreateCommand::new(indy_context.clone())))
+        .add_command(Box::new(wallet::OpenCommand::new(indy_context.clone())))
+        .add_command(Box::new(wallet::ListCommand::new(indy_context.clone())))
+        .add_command(Box::new(wallet::CloseCommand::new(indy_context.clone())))
+        .add_command(Box::new(wallet::DeleteCommand::new(indy_context.clone())))
         .finalize_group()
         .finalize()
 }
