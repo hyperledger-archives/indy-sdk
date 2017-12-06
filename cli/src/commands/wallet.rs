@@ -129,10 +129,10 @@ impl Command for OpenCommand {
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("OpenCommand::execute >> self {:?} params {:?}", self, params);
 
-        let name = get_str_param("name", params).map_err(log_err!())?;
-        let key = get_opt_str_param("key", params).map_err(log_err!())?;
-        let rekey = get_opt_str_param("rekey", params).map_err(log_err!())?;
-        let freshness_time = get_opt_i64_param("freshness_time", params).map_err(log_err!())?;
+        let name = get_str_param("name", params).map_err(error_err!())?;
+        let key = get_opt_str_param("key", params).map_err(error_err!())?;
+        let rekey = get_opt_str_param("rekey", params).map_err(error_err!())?;
+        let freshness_time = get_opt_i64_param("freshness_time", params).map_err(error_err!())?;
 
         let config = {
             let mut json = JSONMap::new();
@@ -263,7 +263,7 @@ impl Command for DeleteCommand {
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("DeleteCommand::execute >> self {:?} params {:?}", self, params);
 
-        let name = get_str_param("name", params).map_err(log_err!())?;
+        let name = get_str_param("name", params).map_err(error_err!())?;
 
         trace!(r#"Wallet::delete_wallet try: name {}"#, name);
 
