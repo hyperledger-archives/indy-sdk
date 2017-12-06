@@ -99,7 +99,7 @@ impl Command for NewCommand {
                 println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk);
                 Ok(did)
             },
-            Err(err) => Err(println_err!("Did create failed with unexpected Indy SDK error {:?}", err)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         let res = if let Some(metadata) = metadata {
@@ -107,7 +107,7 @@ impl Command for NewCommand {
                 let res = Did::set_metadata(wallet_handle, &did, metadata);
                 match res {
                     Ok(()) => Ok(println_succ!("Metadata has been saved for DID \"{}\"", did)),
-                    Err(err) => Err(println_err!("Metadata save failed with unexpected Indy SDK error {:?}", err))
+                    Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                 }
             })
         } else {
@@ -200,7 +200,7 @@ impl Command for RotateKeyCommand {
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
             Err(ErrorCode::WalletIncompatiblePoolError) => Err(println_err!("Pool handle \"{}\" invalid for wallet handle \"{}\"", pool_handle, wallet_handle)),
             Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid NYM transaction \"{}\"", request)),
-            Err(err) => Err(println_err!("Send NYM request failed with unexpected Indy SDK error {:?}", err))
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         }?;
 
         let res = match Did::replace_keys_apply(wallet_handle, &did) {
@@ -252,7 +252,7 @@ impl Command for ListCommand {
                 }
                 Ok(())
             }
-            Err(err) => Err(println_err!("List dids failed with unexpected Indy SDK error {:?}", err)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         trace!("ListCommand::execute << {:?}", res);
