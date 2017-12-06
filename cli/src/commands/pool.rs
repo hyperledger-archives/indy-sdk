@@ -1,12 +1,10 @@
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
-use commands::{get_opt_i64_param, get_str_param, get_opt_str_param};
+use commands::{get_str_param, get_opt_str_param};
 
 use libindy::ErrorCode;
 use libindy::pool::Pool;
 
-use serde_json::Value as JSONValue;
-use serde_json::Map as JSONMap;
 
 use std::collections::HashMap;
 use std::rc::Rc;

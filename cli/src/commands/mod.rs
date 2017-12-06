@@ -1,11 +1,3 @@
-#[macro_export]
-macro_rules! update_json_map_opt_key {
-    ($map:expr, $key:expr, $val:expr) => (match $val {
-        Some(val) => { $map.insert($key.to_string(), JSONValue::from(val)); }
-        None => {}
-    })
-}
-
 pub mod common;
 pub mod did;
 pub mod pool;

@@ -3,10 +3,9 @@ use command_executor::{Command, CommandMetadata};
 use commands::get_str_param;
 
 use std::collections::HashMap;
-use std::fs::{File, DirBuilder};
-use std::io::{Read, Write};
+use std::fs::File;
+use std::io::Read;
 use std::rc::Rc;
-use std::path::Path;
 
 #[derive(Debug)]
 pub struct AboutCommand {

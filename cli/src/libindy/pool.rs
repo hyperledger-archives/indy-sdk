@@ -75,6 +75,7 @@ impl Pool {
         Ok(pool_handle)
     }
 
+    #[allow(dead_code)] //FIXME
     pub fn refresh(pool_handle: i32) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
         let (command_handle, cb) = Pool::closure_to_refresh_pool_ledger_cb(

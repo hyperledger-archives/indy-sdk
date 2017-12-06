@@ -4,7 +4,6 @@ use utils::timeout::TimeoutUtils;
 
 use libc::c_char;
 use std::ffi::CString;
-use std::ptr::null;
 use std::sync::mpsc::channel;
 
 

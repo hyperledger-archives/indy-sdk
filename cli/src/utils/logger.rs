@@ -1,9 +1,9 @@
 extern crate env_logger;
 extern crate log;
 
-use self::env_logger::LogBuilder;
-use self::log::{LogRecord, LogLevelFilter};
-use std::env;
+//use self::env_logger::LogBuilder;
+//use self::log::{LogRecord, LogLevelFilter};
+//use std::env;
 use std::sync::{Once, ONCE_INIT};
 
 pub struct LoggerUtils {}

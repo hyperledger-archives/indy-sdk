@@ -1,8 +1,7 @@
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
-use commands::{get_opt_bool_param, get_opt_i64_param, get_str_param, get_opt_str_param};
+use commands::{get_opt_bool_param, get_opt_str_param};
 
-use libindy::ErrorCode;
 use libindy::did::Did;
 
 use serde_json::Value as JSONValue;
