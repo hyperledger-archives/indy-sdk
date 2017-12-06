@@ -1,5 +1,3 @@
-use libindy::IndyHandle;
-
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 
@@ -10,6 +8,7 @@ pub struct ApplicationContext {
     is_exit: RefCell<bool>,
 }
 
+#[allow(dead_code)] //FIXME
 impl ApplicationContext {
     pub fn new() -> ApplicationContext {
         ApplicationContext {

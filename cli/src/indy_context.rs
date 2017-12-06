@@ -53,6 +53,7 @@ impl IndyContext {
         self.connected_pool.borrow().as_ref().map(|&(ref name, _)| name.to_owned())
     }
 
+    #[allow(dead_code)]
     pub fn get_connected_pool_handle(&self) -> Option<IndyHandle> {
         self.connected_pool.borrow().as_ref().map(|&(_, handle)| handle)
     }

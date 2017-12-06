@@ -44,34 +44,11 @@ pub fn get_opt_i64_param(key: &str, params: &HashMap<&'static str, &str>) -> Res
     Ok(res)
 }
 
-#[allow(dead_code)] // FIXME
-pub fn get_i32_param(name: &str, params: &HashMap<&'static str, &str>) -> Result<i32, ()> {
-    match params.get(name) {
-        Some(v) => {
-            Ok(v.parse::<i32>().map_err(|err|
-                println_err!("Can't parse integer parameter \"{}\": err {}", name, err))?)
-        }
-        None => {
-            println_err!("No required \"{}\" parameter present", name);
-            Err(())
-        }
-    }
-}
-
-pub fn get_bool_param(name: &str, params: &HashMap<&'static str, &str>) -> Result<bool, ()> {
-    match params.get(name) {
-        Some(v) => FromStr::from_str(v).map_err(|err|
-            println_err!("Can't parse boolean parameter \"{}\": err {}", name, err)),
-        None => {
-            println_err!("No required \"{}\" parameter present", name);
-            Err(())
-        }
-    }
-}
-
-pub fn get_str_array_param<'a>(name: &'a str, params: &'a HashMap<&'static str, &str>) -> Result<Vec<&'a str>, ()> {
-    match params.get(name) {
-        Some(v) => Ok(v.split(",").collect::<Vec<&'a str>>()),
-        None => Ok(vec!())
-    }
+pub fn get_opt_bool_param(key: &str, params: &HashMap<&'static str, &str>) -> Result<Option<bool>, ()> {
+    let res = match params.get(key) {
+        Some(value) => Some(value.parse::<bool>().map_err(|err|
+            println_err!("Can't parse bool parameter \"{}\": err {}", key, err))?),
+        None => None
+    };
+    Ok(res)
 }

@@ -1,8 +1,7 @@
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
-use commands::{get_opt_i64_param, get_str_param, get_opt_str_param};
+use commands::{get_opt_bool_param, get_opt_str_param};
 
-use libindy::ErrorCode;
 use libindy::did::Did;
 
 use serde_json::Value as JSONValue;
@@ -41,7 +40,11 @@ impl NewCommand {
         NewCommand {
             ctx,
             metadata: CommandMetadata::build("new", "Create new DID")
-                //TODO implement parameters
+                .add_param("did", true, "Known DID for new wallet instance")
+                .add_param("seed", true, "Seed for creating DID key-pair")
+                .add_param("cid", true, "Create DID as CID (default false)")
+                .add_param("metadata", true, "DID metadata")
+                .add_param("publish_to_ledger", true, "Send DID to ledger from current DID")
                 .finalize()
         }
     }
@@ -57,7 +60,21 @@ impl Command for NewCommand {
             return Err(println_err!("There is no opened wallet"));
         };
 
-        let config: String = "{ }".to_string(); //FIXME
+        let did = get_opt_str_param("did", params).map_err(error_err!())?;
+        let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
+        let cid = get_opt_bool_param("cid", params).map_err(error_err!())?;
+        let metadata = get_opt_str_param("metadata", params).map_err(error_err!())?;
+        let publish_to_ledger = get_opt_bool_param("publish_to_ledger", params).map_err(error_err!())?;
+
+        let config = {
+            let mut json = JSONMap::new();
+            update_json_map_opt_key!(json, "did", did);
+            update_json_map_opt_key!(json, "seed", seed);
+            update_json_map_opt_key!(json, "cid", cid);
+            update_json_map_opt_key!(json, "metadata", metadata);
+            update_json_map_opt_key!(json, "publish_to_ledger", publish_to_ledger);
+            JSONValue::from(json).to_string()
+        };
 
         trace!(r#"Did::new try: config {:?}"#, config);
 
