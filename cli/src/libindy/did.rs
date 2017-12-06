@@ -69,6 +69,32 @@ impl Did {
         Ok(())
     }
 
+    pub fn list_dids_with_meta(wallet_handle: i32) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, dids| {
+            sender.send((err, dids)).unwrap();
+        });
+
+        let (command_handle, cb) = Did::closure_to_list_dids_with_meta(cb);
+
+        let err = unsafe {
+            indy_list_my_dids_with_meta(command_handle, wallet_handle, cb)
+        };
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, dids) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(dids)
+    }
+
     pub fn closure_to_create_and_store_my_did_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
                                                                                                             Option<extern fn(command_handle: i32,
                                                                                                                              err: ErrorCode,
@@ -81,6 +107,13 @@ impl Did {
                                                                                        Option<extern fn(command_handle: i32,
                                                                                                         err: ErrorCode)>) {
         super::callbacks::_closure_to_cb_ec(closure)
+    }
+
+    fn closure_to_list_dids_with_meta(closure: Box<FnMut(ErrorCode, String) + Send>)
+                                      -> (i32,
+                                          Option<extern fn(command_handle: i32, err: ErrorCode,
+                                                           dids: *const c_char)>) {
+        super::callbacks::_closure_to_cb_ec_string(closure)
     }
 }
 
@@ -100,4 +133,10 @@ extern {
                              metadata: *const c_char,
                              cb: Option<extern fn(command_handle_: i32,
                                                   err: ErrorCode)>) -> ErrorCode;
+
+    #[no_mangle]
+    fn indy_list_my_dids_with_meta(command_handle: i32,
+                                   wallet_handle: i32,
+                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                        dids: *const c_char)>) -> ErrorCode;
 }
