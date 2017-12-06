@@ -189,7 +189,7 @@ impl Command for GetNymCommand {
 
         let res = match serde_json::from_str::<Reply<String>>(&response) {
             Ok(nym) => Ok(println_succ!("Following NYM has been received: \"{}\"", nym.result.data)),
-            Err(err) => Err(println_err!("NYM not found"))
+            Err(_) => Err(println_err!("NYM not found"))
         };
 
         trace!("SendNymCommand::execute << {:?}", res);
@@ -297,7 +297,7 @@ impl Command for GetAttribCommand {
 
         let res = match serde_json::from_str::<Reply<String>>(&response) {
             Ok(attrib) => Ok(println_succ!("Following ATTRIB has been received: \"{}\"", attrib.result.data)),
-            Err(err) => Err(println_err!("Attribute not found"))
+            Err(_) => Err(println_err!("Attribute not found"))
         };
 
         trace!("GetAttribCommand::execute << {:?}", res);
@@ -420,7 +420,7 @@ impl Command for GetSchemaCommand {
 
         let res = match serde_json::from_str::<Reply<SchemaData>>(&response) {
             Ok(schema) => Ok(println_succ!("Following Schema has been received: \"{:?}\"", schema.result.data)),
-            Err(err) => Err(println_err!("Schema not found"))
+            Err(_) => Err(println_err!("Schema not found"))
         };
 
         trace!("GetSchemaCommand::execute << {:?}", res);
@@ -542,7 +542,7 @@ impl Command for GetClaimDefCommand {
 
         let res = match serde_json::from_str::<Reply<SchemaData>>(&response) {
             Ok(claim_def) => Ok(println_succ!("Following ClaimDef has been received: \"{:?}\"", claim_def.result.data)),
-            Err(err) => Err(println_err!("Claim definition not found"))
+            Err(_) => Err(println_err!("Claim definition not found"))
         };
 
         trace!("GetClaimDefCommand::execute << {:?}", res);
@@ -649,7 +649,7 @@ impl Command for SenCustomCommand {
         trace!("SenCustomCommand::execute >> self {:?} params {:?}", self, params);
 
         let txn = get_str_param("txn", params).map_err(error_err!())?;
-        let sign = get_bool_param("sign", params).map_err(error_err!())?;
+        let sign = get_opt_bool_param("sign", params).map_err(error_err!())?.unwrap_or(false);
         let submitter_did = get_opt_str_param("submitter", params).map_err(error_err!())?;
 
         let pool_handle = match self.ctx.get_connected_pool_handle() {
