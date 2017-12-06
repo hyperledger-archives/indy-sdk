@@ -19,9 +19,9 @@ mod libindy;
 
 use application_context::ApplicationContext;
 use command_executor::CommandExecutor;
+
 use commands::{common, pool, wallet};
 use indy_context::IndyContext;
-use libindy::IndyHandle;
 
 use linefeed::{Reader, ReadResult};
 use linefeed::complete::PathCompleter;

@@ -76,8 +76,8 @@ impl Command for CreateCommand {
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("CreateCommand::execute >> self {:?} params {:?}", self, params);
 
-        let name = get_str_param("name", params).map_err(log_err!())?;
-        let gen_txn_file = get_opt_str_param("gen_txn_file", params).map_err(log_err!())?
+        let name = get_str_param("name", params).map_err(error_err!())?;
+        let gen_txn_file = get_opt_str_param("gen_txn_file", params).map_err(error_err!())?
             .unwrap_or("pool_transactions_genesis");
 
         let config: String = json!({ "genesis_txn": gen_txn_file }).to_string();
@@ -123,7 +123,7 @@ impl Command for ConnectCommand {
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("OpenCommand::execute >> self {:?} params {:?}", self, params);
 
-        let name = get_str_param("name", params).map_err(log_err!())?;
+        let name = get_str_param("name", params).map_err(error_err!())?;
 
         //TODO close previously opened pool
         let res = match Pool::open_pool_ledger(name, None) {
@@ -211,7 +211,7 @@ impl Command for DeleteCommand {
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("DeleteCommand::execute >> self {:?} params {:?}", self, params);
 
-        let name = get_str_param("name", params).map_err(log_err!())?;
+        let name = get_str_param("name", params).map_err(error_err!())?;
 
         trace!(r#"Pool::delete try: name {}"#, name);
 
