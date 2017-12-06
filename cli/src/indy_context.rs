@@ -64,7 +64,6 @@ impl IndyContext {
         *self.active_did.borrow_mut() = Some(did.to_owned());
     }
 
-    #[allow(dead_code)]
     pub fn get_active_did(&self) -> Option<String> {
         self.active_did.borrow().clone()
     }

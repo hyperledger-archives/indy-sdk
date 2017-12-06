@@ -5,6 +5,7 @@ pub mod wallet;
 pub mod ledger;
 
 use std::collections::HashMap;
+use IndyContext;
 
 pub fn get_str_param<'a>(name: &'a str, params: &'a HashMap<&'static str, &str>) -> Result<&'a str, ()> {
     match params.get(name) {
@@ -70,5 +71,26 @@ pub fn get_str_array_param<'a>(name: &'a str, params: &'a HashMap<&'static str, 
     match params.get(name) {
         Some(v) => Ok(v.split(",").collect::<Vec<&'a str>>()),
         None => Ok(vec!())
+    }
+}
+
+pub fn get_active_did(ctx: &IndyContext) -> Result<String, ()> {
+    match ctx.get_active_did() {
+        Some(did) => Ok(did),
+        None => Err(println_err!("There is no active did"))
+    }
+}
+
+pub fn get_opened_wallet_handle(ctx: &IndyContext) -> Result<i32, ()> {
+    match ctx.get_opened_wallet_handle() {
+        Some(wallet_handle) => Ok(wallet_handle),
+        None => Err(println_err!("There is no opened wallet now"))
+    }
+}
+
+pub fn get_connected_pool_handle(ctx: &IndyContext) -> Result<i32, ()> {
+    match ctx.get_connected_pool_handle() {
+        Some(pool_handle) => Ok(pool_handle),
+        None => Err(println_err!("There is no opened pool now"))
     }
 }
