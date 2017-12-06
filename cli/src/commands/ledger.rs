@@ -132,7 +132,7 @@ impl Command for SendNymCommand {
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did)),
             Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid NYM transaction \"{}\"", request)),
             Err(ErrorCode::WalletIncompatiblePoolError) => Err(println_err!("Pool handle \"{}\" invalid for wallet handle \"{}\"", pool_handle, wallet_handle)),
-            Err(err) => Err(println_err!("Send NYM request failed with unexpected Indy SDK error {:?}", err)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         trace!("SendNymCommand::execute << {:?}", res);
@@ -172,7 +172,7 @@ impl Command for GetNymCommand {
         let response = match Ledger::submit_request(pool_handle, &request) {
             Ok(response) => Ok(response),
             Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid Get NYM transaction \"{}\"", request)),
-            Err(err) => Err(println_err!("Get NYM failed with unexpected Indy SDK error {:?}", err)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         }?;
 
         let res = match serde_json::from_str::<Reply<String>>(&response) {
@@ -226,7 +226,7 @@ impl Command for SendAttribCommand {
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did)),
             Err(ErrorCode::WalletIncompatiblePoolError) => Err(println_err!("Pool handle \"{}\" invalid for wallet handle \"{}\"", pool_handle, wallet_handle)),
             Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid ATTRIB transaction \"{}\"", request)),
-            Err(err) => Err(println_err!("Send ATTRIB request failed with unexpected Indy SDK error {:?}", err)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         trace!("SendAttribCommand::execute << {:?}", res);
@@ -268,7 +268,7 @@ impl Command for GetAttribCommand {
         let response = match Ledger::submit_request(pool_handle, &request) {
             Ok(response) => Ok(response),
             Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid Get ATTRIB transaction \"{}\"", request)),
-            Err(err) => Err(println_err!("Get ATTRIB failed with unexpected Indy SDK error {:?}", err)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         }?;
 
         let res = match serde_json::from_str::<Reply<String>>(&response) {
@@ -328,7 +328,7 @@ impl Command for SendSchemaCommand {
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did)),
             Err(ErrorCode::WalletIncompatiblePoolError) => Err(println_err!("Pool handle \"{}\" invalid for wallet handle \"{}\"", pool_handle, wallet_handle)),
             Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid Schema transaction \"{}\"", request)),
-            Err(err) => Err(println_err!("Send Schema request failed with unexpected Indy SDK error {:?}", err))
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         trace!("SendSchemaCommand::execute << {:?}", res);
@@ -379,7 +379,7 @@ impl Command for GetSchemaCommand {
         let response = match Ledger::submit_request(pool_handle, &request) {
             Ok(response) => Ok(response),
             Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid Get Schema transaction \"{}\"", request)),
-            Err(err) => Err(println_err!("Get Schema failed with unexpected Indy SDK error {:?}", err)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         }?;
 
         let res = match serde_json::from_str::<Reply<SchemaData>>(&response) {
@@ -444,7 +444,7 @@ impl Command for SendClaimDefCommand {
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did)),
             Err(ErrorCode::WalletIncompatiblePoolError) => Err(println_err!("Pool handle \"{}\" invalid for wallet handle \"{}\"", pool_handle, wallet_handle)),
             Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid ClaimDef transaction \"{}\"", request)),
-            Err(err) => Err(println_err!("Send ClaimDef request failed with unexpected Indy SDK error {:?}", err))
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         trace!("SendClaimDefCommand::execute << {:?}", res);
@@ -488,7 +488,7 @@ impl Command for GetClaimDefCommand {
         let response = match Ledger::submit_request(pool_handle, &request) {
             Ok(response) => Ok(response),
             Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid Get ClaimDef transaction \"{}\"", request)),
-            Err(err) => Err(println_err!("Get ClaimDef failed with unexpected Indy SDK error {:?}", err)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         }?;
 
         let res = match serde_json::from_str::<Reply<SchemaData>>(&response) {
@@ -562,7 +562,7 @@ impl Command for SendNodeCommand {
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did)),
             Err(ErrorCode::WalletIncompatiblePoolError) => Err(println_err!("Pool handle \"{}\" invalid for wallet handle \"{}\"", pool_handle, wallet_handle)),
             Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid NODE transaction \"{}\"", request)),
-            Err(err) => Err(println_err!("Send NODE request failed with unexpected Indy SDK error {:?}", err))
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         trace!("SendNodeCommand::execute << {:?}", res);
@@ -608,7 +608,7 @@ impl Command for SenCustomCommand {
             Ok(_) => Ok(println_succ!("Transaction has been sent to Ledger")),
             Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid transaction \"{}\"", txn)),
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("There is no active did")),
-            Err(err) => Err(println_err!("Send transaction failed with unexpected Indy SDK error {:?}", err)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
         trace!("SenCustomCommand::execute << {:?}", res);
