@@ -7,22 +7,47 @@ use utils::error;
 use settings;
 use std::thread;
 
-/// Possible values in the Config file:
+/// Initializes CXS with config file
+///
+/// Possible values in the Config file: ->
 ///
 /// pool_name:
+///
 /// config_name
+///
 /// wallet_name:
+///
 /// wallet_type
+///
 /// agent_endpoint: the url to interact with the agent
+///
 /// enterprise_did_agency: did for enterprise pairwise relationship with an agency
+///
 /// agency_pairwise_did: did for the agency pairwise relationship with an enterprise
+///
 /// agency_pairwise_verkey: verkey for the agency pairwise relationship with an enterprise
+///
 /// enterprise_did_agent: did for enterprise pairwise relationship with an agent
+///
 /// agent_pairwise_did: did for the agent pairwise relationship with an enterprise
+///
 /// agent_pairwise_verkey: verkey for the agent pairwise relationship with an enterprise
+///
 /// enterprise_name: enterprise's name
+///
 /// logo_url: url for enterprise's logo
-/// A example file is at libcxs/sample_config/config.json
+///
+/// An example file is at libcxs/sample_config/config.json
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// config_path: path to a config file to populate config attributes
+///
+/// cb: Callback that provides error status of initialization
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn cxs_init (command_handle: u32,
                         config_path:*const c_char,

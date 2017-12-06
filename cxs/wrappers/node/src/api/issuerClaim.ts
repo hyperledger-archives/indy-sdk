@@ -7,6 +7,13 @@ import { StateType } from './common'
 import { Connection } from './connection'
 import { CXSBase } from './CXSBase'
 
+/**
+ * @interface
+ * @description
+ * SourceId: String for SDK User's reference.
+ * issuerDid: DID associated with the claim def.
+ * attributes: String(JSON formatted) representing the attributes of the claim def.
+ */
 export interface IClaimConfig {
   sourceId: string,
   schemaNum: number,
@@ -14,6 +21,12 @@ export interface IClaimConfig {
   attr: string,
   claimName: string,
 }
+
+/**
+ * @description Interface that represents the attributes of an Issuer Claim object.
+ * This interface is expected as the type for deserialize's parameter and serialize's return value
+ * @interface
+ */
 export interface IClaimData {
   source_id: string
   handle: number
@@ -23,6 +36,9 @@ export interface IClaimData {
   state: StateType
 }
 
+/**
+ * @class Class representing an Issuer Claim
+ */
 export class IssuerClaim extends CXSBase {
   protected _releaseFn = rustAPI().cxs_connection_release // TODO: Fix me
   protected _updateStFn = rustAPI().cxs_issuer_claim_update_state
@@ -39,10 +55,17 @@ export class IssuerClaim extends CXSBase {
     this._claimName = 'Claim Name Here'
   }
 
-  // SourceId: String for SDK User's reference
-  // schemaNumber: number representing the schema sequence number of the claim def
-  // issuerDid: String, DID associated with the claim def
-  // attributes: String(JSON formatted) representing the attributes of the claim def
+  /**
+   * @memberof IssuerClaim
+   * @description Builds a generic Issuer Claim object
+   * @static
+   * @async
+   * @function create
+   * @param {IClaimConfig} config
+   * @example <caption>Example of IClaimConfig</caption>
+   * { sourceId: "12", schemaNum: 1, issuerDid: "did", attr: "{key: [\"value\"]}", claimName: "name of claim"}
+   * @returns {Promise<IssuerClaim>} An Issuer Claim Object
+   */
   static async create (config: IClaimConfig): Promise<IssuerClaim> {
     const claim = new IssuerClaim(config.sourceId)
     claim._schemaNum = config.schemaNum
@@ -66,7 +89,19 @@ export class IssuerClaim extends CXSBase {
     }
   }
 
-  // Deserializes a JSON representing a issuer claim object
+/**
+ * @memberof IssuerClaim
+ * @description Builds an Issuer Claim object with defined attributes.
+ * Attributes are often provided by a previous call to the serialize function.
+ * @static
+ * @async
+ * @function deserialize
+ * @param {IClaimData} claimData - contains the information that will be used to build a proof object
+ * @example <caption>Example of claimData.</caption>
+ * { source_id: "12", handle: 22, schema_seq_no: 1, claim_attributes: "{key: [\"value\"]}",
+ * issuer_did: "did", state: 1 }
+ * @returns {Promise<Connection>} An Issuer Claim Object
+ */
   static async deserialize (claimData: IClaimData) {
     try {
       return await super._deserialize(IssuerClaim, claimData)
@@ -75,8 +110,13 @@ export class IssuerClaim extends CXSBase {
     }
   }
 
-  // Calls the cxs update state.  Used for polling the state of the issuer claim.
-  // For example, when waiting for a request to send a claim offer.
+  /**
+   * @memberof IssuerClaim
+   * @description Communicates with the agent service for polling and setting the state of the issuer claim.
+   * @async
+   * @function updateState
+   * @returns {Promise<void>}
+   */
   async updateState (): Promise<void> {
     try {
       await this._updateState()
@@ -85,6 +125,15 @@ export class IssuerClaim extends CXSBase {
     }
   }
 
+  /**
+   * @memberof IssuerClaim
+   * @description Serializes an Issuer Claim object.
+   * Data returned can be used to recreate an Issuer Claim object by passing it to the deserialize function.
+   * @async
+   * @function serialize
+   * @returns {Promise<IProofData>} - Jason object with all of the underlying Rust attributes.
+   * Same json object structure that is passed to the deserialize function.
+   */
   async serialize (): Promise<IClaimData> {
     try {
       return JSON.parse(await super._serialize())
@@ -93,7 +142,16 @@ export class IssuerClaim extends CXSBase {
     }
   }
 
-  // send a claim offer to the connection
+  /**
+   * @memberof IssuerClaim
+   * @description Sends a Claim Offer to the end user.
+   * Claim Offer is made up of the data provided in the creation of this object
+   * @async
+   * @function sendOffer
+   * @param {Connection} connection
+   * Connection is the object that was created to set up the pairwise relationship.
+   * @returns {Promise<void>}
+   */
   async sendOffer (connection: Connection): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
@@ -118,7 +176,16 @@ export class IssuerClaim extends CXSBase {
     }
   }
 
-  // Send a claim to the connection.
+/**
+ * @memberof IssuerClaim
+ * @description Sends the Claim to the end user.
+ * Claim is made up of the data sent during Claim Offer
+ * @async
+ * @function sendClaim
+ * @param {Connection} connection
+ * Connection is the object that was created to set up the pairwise relationship.
+ * @returns {Promise<void>}
+ */
   async sendClaim (connection: Connection): Promise<void> {
     try {
       await createFFICallbackPromise<void>(

@@ -1,5 +1,6 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
+#![crate_name = "cxs"]
 extern crate serde;
 extern crate rand;
 extern crate reqwest;

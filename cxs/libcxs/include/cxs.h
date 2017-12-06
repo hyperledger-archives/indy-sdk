@@ -154,7 +154,7 @@ cxs_error_t cxs_issuer_accept_claim(cxs_claim_handle_t claim_handle);
  */
 
 /** Creates a proof object.  Populates a handle to the new proof. */
-cxs_error_t cxs_proof_create(cxs_command_handle_t command_handle, const char *source_id, const char *proof_requester_did, const char *proof_request_data, void (*cb)(cxs_command_handle_t command_handle, cxs_error_t err, cxs_proof_handle_t proof_handle));
+cxs_error_t cxs_proof_create(cxs_command_handle_t command_handle, const char *source_id, const char *requested_attrs, const char *requested_predicates, const char *name, void (*cb)(cxs_command_handle_t command_handle, cxs_error_t err, cxs_proof_handle_t proof_handle));
 
 /** Sets the specific connection for this proof request. */
 cxs_error_t cxs_proof_set_connection(cxs_command_handle_t command_handle, cxs_proof_handle_t proof_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err));

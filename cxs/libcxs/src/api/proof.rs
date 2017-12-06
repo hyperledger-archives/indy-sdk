@@ -9,6 +9,27 @@ use std::thread;
 use std::ptr;
 use api::CxsStatus;
 
+/// Create a new Proof object that requests a proof for an enterprise
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: Enterprise's personal identification for the user.
+///
+/// requested_attrs: attributes in json format prover is expected to include in proof offer.
+///
+/// # Example requested_attrs -> "[{"name":"attrName","issuer_did":"did","schema_seq_no":1}]"
+///
+/// requested_predicates: specific requirements regarding the prover's attributes.
+///
+/// # Example requested_predicates -> "[{"attr_name":"age","p_type":"GE","value":18,"schema_seq_no":1,"issuer_did":"DID"}]"
+///
+/// name: Name of the proof request - ex. Drivers Licence.
+///
+/// cb: Callback that provides proof handle and error status of request.
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn cxs_proof_create(command_handle: u32,
                                source_id: *const c_char,
@@ -47,6 +68,17 @@ pub extern fn cxs_proof_set_connection(command_handle: u32,
                                        connection_handle: u32,
                                        cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 { error::SUCCESS.code_num }
 
+/// Checks for any state change and updates the proof state attribute
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Proof handle that was provided during creation. Used to access proof object
+///
+/// cb: Callback that provides most current state of the proof and error status of request
+///
+/// #Returns
+/// Error code as a u32
 #[allow(unused_variables, unused_mut)]
 #[no_mangle]
 pub extern fn cxs_proof_update_state(command_handle: u32,
@@ -67,6 +99,17 @@ pub extern fn cxs_proof_update_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Takes the proof object and returns a json string of all its attributes
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Proof handle that was provided during creation. Used to access proof object
+///
+/// cb: Callback that provides json string of the proof's attributes and provides error status
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn cxs_proof_serialize(command_handle: u32,
                                   proof_handle: u32,
@@ -96,6 +139,19 @@ pub extern fn cxs_proof_serialize(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Takes a json string representing a proof object and recreates an object matching the json
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_data: json string representing a proof object
+///
+/// # Examples proof_data -> {"source_id":"id","handle":1,"requested_attrs":"[{\"issuerDid\":\"did\",\"schemaSeqNo\":1,\"name\":\"\"}]","requested_predicates":"[]","msg_uid":"","requester_did":"","prover_did":"","state":1,"tid":0,"mid":0,"name":"Proof Name"}
+///
+/// cb: Callback that provides proof handle and provides error status
+///
+/// #Returns
+/// Error code as a u32
 #[allow(unused_variables, unused_mut)]
 #[no_mangle]
 pub extern fn cxs_proof_deserialize(command_handle: u32,
@@ -116,11 +172,31 @@ pub extern fn cxs_proof_deserialize(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Releases the proof object by de-allocating memory
+///
+/// #Params
+/// proof_handle: Proof handle that was provided during creation. Used to access proof object
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn cxs_proof_release(proof_handle: u32) -> u32 {
     proof::release(proof_handle)
 }
 
+/// Sends a proof request to pairwise connection
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Proof handle that was provided during creation. Used to access proof object
+///
+/// connection_handle: Connection handle that identifies pairwise connection
+///
+/// cb: provides any error status of the proof_request
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn cxs_proof_send_request(command_handle: u32,
                                      proof_handle: u32,
