@@ -6,8 +6,7 @@ extern crate rmp_serde;
 use settings;
 use utils::httpclient;
 use utils::error;
-use messages::{Bundled, GeneralMessage, validation, bundle_for_agency, unbundle_from_agency};
-use self::rmp_serde::encode;
+use messages::{Bundled, GeneralMessage, validation, bundle_for_agency, unbundle_from_agency, MsgType};
 use serde::Deserialize;
 use self::rmp_serde::Deserializer;
 
@@ -38,7 +37,7 @@ pub struct CreateKeyMsg {
 
 #[derive(Serialize, Deserialize)]
 pub struct CreateKeyResponse {
-    msg_type: String,
+    msg_type: MsgType,
     for_did: String,
     for_verkey: String,
 }
@@ -133,15 +132,7 @@ impl GeneralMessage for CreateKeyMsg  {
         if self.validate_rc != error::SUCCESS.code_num {
             return Err(self.validate_rc)
         }
-        let bundle = Bundled::create(self.payload.clone());
-
-        let msg = match encode::to_vec_named(&bundle) {
-            Ok(x) => x,
-            Err(x) => {
-                error!("Could not convert bundle to messagepack: {}", x);
-                return Err(error::INVALID_MSGPACK.code_num)
-            },
-        };
+        let msg = Bundled::create(self.payload.clone()).encode()?;
 
         bundle_for_agency(msg, self.to_did.as_ref())
     }
@@ -161,7 +152,7 @@ impl GeneralMessage for CreateKeyMsg  {
     }
 }
 
-fn parse_create_keys_response(response: Vec<u8>) -> Result<String, u32> {
+pub fn parse_create_keys_response(response: Vec<u8>) -> Result<String, u32> {
 
     let data = unbundle_from_agency(response)?;
 
@@ -184,6 +175,7 @@ fn parse_create_keys_response(response: Vec<u8>) -> Result<String, u32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use self::rmp_serde::encode;
     use utils::constants::*;
     use utils::signus::SignusUtils;
     use messages::create_keys;
@@ -259,7 +251,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
 
         let payload = CreateKeyResponse {
-            msg_type: "type".to_string(),
+            msg_type: MsgType { name: "CREATE_KEYS".to_string(), ver: "1.0".to_string(), },
             for_did: "for_did".to_string(),
             for_verkey: "for_verkey".to_string(),
         };

@@ -10,7 +10,7 @@
     "compile": "./node_modules/.bin/tsc -p ./tsconfig.json",
     "lint": "./node_modules/.bin/tslint --type-check -c ./tslint.json -p ./tsconfig.json && ./node_modules/.bin/standard 'test/**/*.js'",
     "test": "mocha -gc --expose-gc test/**/*Test.js && mocha -gc --expose-gc test/**/*Test.separate.js",
-    "doc-gen": "./node_modules/.bin/jsdoc -d doc src/*"
+    "doc-gen": "./node_modules/.bin/jsdoc -r -d doc dist/*"
   },
   "repository": {
     "type": "git",

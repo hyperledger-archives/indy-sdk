@@ -112,6 +112,11 @@ fn test_demo(){
     let connection_state = wait_for_updated_state(connection_handle, 4, api::connection::cxs_connection_update_state);
     assert_eq!(connection_state, 4);
 
+    // update claim *******************************************************************
+    let target_claim_state = 1;
+    let claim_state = wait_for_updated_state(claim_handle, target_claim_state, api::issuer_claim::cxs_issuer_claim_update_state);
+    assert_eq!(claim_state, target_claim_state);
+
     // Send Claim Offer ***************************************************************
     println!("ABOUT TO SEND CLAIM OFFER");
     std::thread::sleep(Duration::from_millis(5000));

@@ -113,8 +113,11 @@ impl IssuerClaim {
         };
 
         /* let data = connection::encrypt_payload(connection_handle, data)?; */
-
-        match messages::send_message().to(&to_did).msg_type("claimOffer").edge_agent_payload(&payload).send() {
+        match messages::send_message().to(&to_did).msg_type("claimOffer")
+            .edge_agent_payload(&payload)
+            .ref_msg_id(&self.ref_msg_id)
+            .status_code("MS-104")
+            .send() {
             Err(x) => {
                 warn!("could not send claimOffer: {}", x);
                 return Err(x);
@@ -166,8 +169,12 @@ impl IssuerClaim {
         }
 
         /* let data = connection::encrypt_payload(connection_handle, data)?; */
-
-        match messages::send_message().to(&to).ref_msg_id(&self.ref_msg_id).msg_type("claim").edge_agent_payload(&data).send() {
+        match messages::send_message().to(&to)
+            .ref_msg_id(&self.ref_msg_id)
+            .msg_type("claim")
+            .status_code(("MS-104"))
+            .edge_agent_payload(&data)
+            .send() {
             Err(x) => {
                 warn!("could not send claim: {}", x);
                 return Err(x);
@@ -249,8 +256,10 @@ impl IssuerClaim {
                         return
                     }
                 };
+
                 let p = String::from(payload).replace("\\\"","\"");
                 self.claim_request = match ClaimRequest::from_str(&p) {
+
                     Ok(x) => Some(x),
                     Err(_) => {
                         warn!("invalid claim request for claim {}", self.handle);

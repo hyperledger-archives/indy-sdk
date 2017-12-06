@@ -12,6 +12,11 @@ export interface IProofConfig {
   name: string,
 }
 
+/**
+ * @description Interface that represents the attributes of a Proof object.
+ * This interface is expected as the type for deserialize's parameter and serialize's return value
+ * @interface
+ */
 export interface IProofData {
   source_id: string
   handle: number
@@ -21,6 +26,11 @@ export interface IProofData {
   name: string
 }
 
+/**
+ * @description This represents one attribute expected for user to prove.
+ * A list of these attributes will be composed of all requirements for user to prove.
+ * @interface
+ */
 export interface IProofAttr {
   issuerDid?: string,
   schemaSeqNo?: number,
@@ -35,6 +45,9 @@ export interface IProofAttr {
 //   issuer_did: string,
 // }
 
+/**
+ * @class Class representing a Connection
+ */
 export class Proof extends CXSBase {
   protected _releaseFn = rustAPI().cxs_proof_release
   protected _updateStFn = rustAPI().cxs_proof_update_state
@@ -47,6 +60,17 @@ export class Proof extends CXSBase {
     super(sourceId)
   }
 
+  /**
+   * @memberof Proof
+   * @description Builds a generic Proof object
+   * @static
+   * @async
+   * @function create
+   * @param {IProofConfig} data
+   * @example <caption>Example of IProofConfig</caption>
+   * {sourceId: string,attrs: [{issuerDid: "123",schemaSeqNo: 1, name: "name of attr expected"}], name: "name of proof"}
+   * @returns {Promise<Proof>} A Proof Object
+   */
   static async create (data: IProofConfig): Promise<Proof> {
     const proof = new Proof(data.sourceId)
     proof._requestedAttributes = data.attrs
@@ -67,6 +91,19 @@ export class Proof extends CXSBase {
     }
   }
 
+  /**
+   * @description Builds a Proof object with defined attributes.
+   * Attributes are often provided by a previous call to the serialize function.
+   * @static
+   * @async
+   * @memberof Proof
+   * @function deserialize
+   * @param {IProofData} proofData - contains the information that will be used to build a proof object
+   * @example <caption>Example of proofData.</caption>
+   * proofData = {source_id:"12",handle:1,"requested_attrs":[{issuerDid:"did",schemaSeqNo:1,name:"test"}],
+   * requested_predicates:[],msg_uid:"",requester_did:"",prover_did:"",state:1,tid:0,mid:0,name:"Proof of Address"}
+   * @returns {Promise<Connection>} A Connection Object
+   */
   static async deserialize (proofData: IProofData) {
     try {
       return await super._deserialize(Proof, proofData)
@@ -75,6 +112,15 @@ export class Proof extends CXSBase {
     }
   }
 
+  /**
+   * @description Serializes a proof object.
+   * Data returned can be used to recreate a Proof object by passing it to the deserialize function.
+   * @async
+   * @memberof Proof
+   * @function serialize
+   * @returns {Promise<IProofData>} - Jason object with all of the underlying Rust attributes.
+   * Same json object structure that is passed to the deserialize function.
+   */
   async serialize (): Promise<IProofData> {
     try {
       const data: IProofData = JSON.parse(await super._serialize())
@@ -84,8 +130,13 @@ export class Proof extends CXSBase {
     }
   }
 
-  // Calls the cxs update state.  Used for polling the state of the issuer claim.
-  // For example, when waiting for a request to send a claim offer.
+  /**
+   * @description Communicates with the agent service for polling and setting the state of the Proof.
+   * @async
+   * @memberof Proof
+   * @function updateState
+   * @returns {Promise<void>}
+   */
   async updateState (): Promise<void> {
     try {
       await this._updateState()
@@ -94,7 +145,16 @@ export class Proof extends CXSBase {
     }
   }
 
-  // send a proof request to the connection
+  /**
+   * @memberof Proof
+   * @description Sends a proof request to the end user.
+   * Proof request is made up of the data provided in the creation of this object
+   * @async
+   * @param {Connection} connection
+   * Connection is the object that was created to set up the pairwise relationship.
+   * @function requestProof
+   * @returns {Promise<void>}
+   */
   async requestProof (connection: Connection): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
@@ -114,7 +174,6 @@ export class Proof extends CXSBase {
         )
       await this.updateState()
     } catch (err) {
-      // TODO handle error
       throw new CXSInternalError(`cxs_proof_send_request -> ${err}`)
     }
   }
