@@ -49,7 +49,6 @@ impl NewCommand {
                 .add_param("seed", true, "Seed for creating DID key-pair")
                 .add_param("cid", true, "Create DID as CID (default false)")
                 .add_param("metadata", true, "DID metadata")
-                .add_param("publish_to_ledger", true, "Send DID to ledger from current DID")
                 .finalize()
         }
     }
@@ -69,7 +68,6 @@ impl Command for NewCommand {
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
         let cid = get_opt_bool_param("cid", params).map_err(error_err!())?;
         let metadata = get_opt_str_param("metadata", params).map_err(error_err!())?;
-        let publish_to_ledger = get_opt_bool_param("publish_to_ledger", params).map_err(error_err!())?;
 
         let config = {
             let mut json = JSONMap::new();
@@ -77,7 +75,6 @@ impl Command for NewCommand {
             update_json_map_opt_key!(json, "seed", seed);
             update_json_map_opt_key!(json, "cid", cid);
             update_json_map_opt_key!(json, "metadata", metadata);
-            update_json_map_opt_key!(json, "publish_to_ledger", publish_to_ledger);
             JSONValue::from(json).to_string()
         };
 
@@ -91,8 +88,6 @@ impl Command for NewCommand {
             Ok((did, vk)) => Ok(println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk)),
             Err(err) => Err(println_err!("Did create failed with unexpected Indy SDK error {:?}", err)),
         };
-
-        //TODO implement sending did
 
         trace!("NewCommand::execute << {:?}", res);
         res
