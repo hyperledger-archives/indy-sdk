@@ -1,3 +1,4 @@
+pub mod pool;
 pub mod wallet;
 
 use std::collections::HashMap;

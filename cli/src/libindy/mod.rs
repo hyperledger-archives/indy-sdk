@@ -1,3 +1,4 @@
+pub mod pool;
 pub mod wallet;
 mod callbacks;
 
