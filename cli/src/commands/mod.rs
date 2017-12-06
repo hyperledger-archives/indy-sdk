@@ -1,3 +1,11 @@
+#[macro_export]
+macro_rules! update_json_map_opt_key {
+    ($map:expr, $key:expr, $val:expr) => (match $val {
+        Some(val) => { $map.insert($key.to_string(), JSONValue::from(val)); }
+        None => {}
+    })
+}
+
 pub mod common;
 pub mod did;
 pub mod pool;
@@ -37,6 +45,15 @@ pub fn get_opt_i64_param(key: &str, params: &HashMap<&'static str, &str>) -> Res
     let res = match params.get(key) {
         Some(value) => Some(value.parse::<i64>().map_err(|err|
             println_err!("Can't parse integer parameter \"{}\": err {}", key, err))?),
+        None => None
+    };
+    Ok(res)
+}
+
+pub fn get_opt_bool_param(key: &str, params: &HashMap<&'static str, &str>) -> Result<Option<bool>, ()> {
+    let res = match params.get(key) {
+        Some(value) => Some(value.parse::<bool>().map_err(|err|
+            println_err!("Can't parse bool parameter \"{}\": err {}", key, err))?),
         None => None
     };
     Ok(res)

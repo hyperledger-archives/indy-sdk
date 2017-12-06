@@ -13,6 +13,7 @@ extern crate serde_json;
 mod utils;
 mod application_context;
 mod command_executor;
+#[macro_use]
 mod commands;
 mod indy_context;
 mod libindy;
