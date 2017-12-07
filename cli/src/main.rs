@@ -31,7 +31,7 @@ use linefeed::complete::PathCompleter;
 
 use std::env;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::BufReader;
 use std::rc::Rc;
 
 fn main() {
@@ -43,11 +43,11 @@ fn main() {
     let command_executor = build_executor(application_context.clone(), indy_context);
 
     if env::args().len() == 1 {
-        execute_interactive(command_executor, application_context);
+        execute_stdin(command_executor, application_context);
     } else {
         let mut args = env::args();
         args.next(); //skip 0 param
-        execute_batch(command_executor, &args.next().unwrap())
+        execute_batch(command_executor, Some(&args.next().unwrap()))
     }
 }
 
@@ -93,12 +93,19 @@ fn build_executor(application_context: Rc<ApplicationContext>,
         .finalize()
 }
 
-fn execute_interactive(command_executor: CommandExecutor,
-                       application_context: Rc<ApplicationContext>) {
+fn execute_stdin(command_executor: CommandExecutor,
+                 application_context: Rc<ApplicationContext>) {
+    match Reader::new("indy-cli") {
+        Ok(reader) => execute_interactive(command_executor, application_context, reader),
+        Err(_) => execute_batch(command_executor, None),
+    }
+}
+
+fn execute_interactive<T>(command_executor: CommandExecutor, application_context: Rc<ApplicationContext>, mut reader: Reader<T>)
+    where T: linefeed::Terminal {
     #[cfg(target_os = "windows")]
         ansi_term::enable_ansi_support().is_ok();
 
-    let mut reader = Reader::new("indy-cli").unwrap();
     reader.set_completer(Rc::new(PathCompleter));
     reader.set_prompt(&application_context.get_prompt());
 
@@ -117,17 +124,24 @@ fn execute_interactive(command_executor: CommandExecutor,
     }
 }
 
-fn execute_batch(command_executor: CommandExecutor, script_path: &str) {
-    let file = match File::open(script_path) {
-        Ok(file) => file,
-        Err(err) => return println_err!("Can't open script file {}\nError: {}", script_path, err),
+fn execute_batch(command_executor: CommandExecutor, script_path: Option<&str>) {
+    if let Some(script_path) = script_path {
+        let file = match File::open(script_path) {
+            Ok(file) => file,
+            Err(err) => return println_err!("Can't open script file {}\nError: {}", script_path, err),
+        };
+        _iter_batch(command_executor, BufReader::new(file));
+    } else {
+        let stdin = std::io::stdin();
+        _iter_batch(command_executor, stdin.lock());
     };
-    let reader = BufReader::new(file);
+}
 
-    let mut line_nym = 1;
+fn _iter_batch<T>(command_executor: CommandExecutor, reader: T) where T: std::io::BufRead {
+    let mut line_num = 1;
     for line in reader.lines() {
         let line = if let Ok(line) = line { line } else {
-            return println_err!("Can't parse line #{}", line_nym);
+            return println_err!("Can't parse line #{}", line_num);
         };
         println!("{}", line);
         let (line, force) = if line.starts_with("-") {
@@ -136,9 +150,9 @@ fn execute_batch(command_executor: CommandExecutor, script_path: &str) {
             (line[0..].as_ref(), false)
         };
         if command_executor.execute(line).is_err() && !force {
-            return println_err!("Batch execution failed at line #{}", line_nym);
+            return println_err!("Batch execution failed at line #{}", line_num);
         }
         println!();
-        line_nym += 1;
+        line_num += 1;
     }
 }
