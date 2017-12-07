@@ -1,5 +1,4 @@
-extern crate serde_json;
-
+use application_context::ApplicationContext;
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
 use commands::{get_opt_int_param, get_str_param, get_opt_str_param};
@@ -7,6 +6,7 @@ use commands::{get_opt_int_param, get_str_param, get_opt_str_param};
 use libindy::ErrorCode;
 use libindy::wallet::Wallet;
 
+use serde_json;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
@@ -39,7 +39,8 @@ pub struct CreateCommand {
 
 #[derive(Debug)]
 pub struct OpenCommand {
-    ctx: Rc<IndyContext>,
+    app_cnxt: Rc<ApplicationContext>,
+    indy_cnxt: Rc<IndyContext>,
     metadata: CommandMetadata,
 }
 
@@ -51,7 +52,8 @@ pub struct ListCommand {
 
 #[derive(Debug)]
 pub struct CloseCommand {
-    ctx: Rc<IndyContext>,
+    app_cnxt: Rc<ApplicationContext>,
+    indy_cnxt: Rc<IndyContext>,
     metadata: CommandMetadata,
 }
 
@@ -110,9 +112,10 @@ impl Command for CreateCommand {
 }
 
 impl OpenCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> OpenCommand {
+    pub fn new(app_cnxt: Rc<ApplicationContext>, indy_cnxt: Rc<IndyContext>) -> OpenCommand {
         OpenCommand {
-            ctx,
+            app_cnxt,
+            indy_cnxt,
             metadata: CommandMetadata::build("open", "Open wallet with specified name. Also close previously opened.")
                 .add_main_param("name", "The name of wallet")
                 .add_param("key", true, "Auth key for the wallet")
@@ -152,10 +155,11 @@ impl Command for OpenCommand {
 
         let res = Ok(())
             .and_then(|_| {
-                if let Some((name, handle)) = self.ctx.get_opened_wallet() {
+                if let Some((name, handle)) = self.indy_cnxt.get_opened_wallet() {
                     match Wallet::close_wallet(handle) {
                         Ok(()) => {
-                            self.ctx.unset_opened_wallet();
+                            self.app_cnxt.unset_sub_prompt(2);
+                            self.indy_cnxt.unset_opened_wallet();
                             Ok(println_succ!("Wallet \"{}\" has been closed", name))
                         }
                         Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
@@ -167,7 +171,8 @@ impl Command for OpenCommand {
             .and_then(|_| {
                 match Wallet::open_wallet(name, config.as_ref().map(String::as_str)) {
                     Ok(handle) => {
-                        self.ctx.set_opened_wallet(name, handle);
+                        self.app_cnxt.set_sub_prompt(2, &format!("wallet({})", name));
+                        self.indy_cnxt.set_opened_wallet(name, handle);
                         Ok(println_succ!("Wallet \"{}\" has been opened", name))
                     }
                     Err(ErrorCode::WalletAlreadyOpenedError) => Err(println_err!("Wallet \"{}\" already opened", name)),
@@ -226,9 +231,10 @@ impl Command for ListCommand {
 }
 
 impl CloseCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> CloseCommand {
+    pub fn new(app_cnxt: Rc<ApplicationContext>, indy_cnxt: Rc<IndyContext>) -> CloseCommand {
         CloseCommand {
-            ctx,
+            app_cnxt,
+            indy_cnxt,
             metadata: CommandMetadata::build("close", "Close opened wallet.")
                 .finalize()
         }
@@ -245,7 +251,7 @@ impl Command for CloseCommand {
 
         let res = Ok(())
             .and_then(|_| {
-                if let Some(wallet) = self.ctx.get_opened_wallet() {
+                if let Some(wallet) = self.indy_cnxt.get_opened_wallet() {
                     Ok(wallet)
                 } else {
                     Err(println_err!("There is no opened wallet now"))
@@ -255,7 +261,8 @@ impl Command for CloseCommand {
                 let (name, handle) = wallet;
                 match Wallet::close_wallet(handle) {
                     Ok(()) => {
-                        self.ctx.unset_opened_wallet();
+                        self.app_cnxt.unset_sub_prompt(2);
+                        self.indy_cnxt.unset_opened_wallet();
                         Ok(println_succ!("Wallet \"{}\" has been closed", name))
                     }
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
@@ -327,12 +334,16 @@ mod tests {
         #[test]
         pub fn exec_works() {
             TestUtils::cleanup_storage();
-            let ctx = Rc::new(IndyContext::new());
-            let cmd = OpenCommand::new(ctx);
+            let app_ctx = Rc::new(ApplicationContext::new());
+            let indy_ctx = Rc::new(IndyContext::new());
+
+            let cmd = OpenCommand::new(app_ctx, indy_ctx);
             let mut params = HashMap::new();
             cmd.metadata().help();
             params.insert("name", "wallet");
+
             cmd.execute(&params).unwrap_err(); //open not created wallet
+
             TestUtils::cleanup_storage();
         }
 
@@ -345,23 +356,24 @@ mod tests {
         #[test]
         pub fn exec_for_opened_works() {
             TestUtils::cleanup_storage();
-            let ctx = Rc::new(IndyContext::new());
+            let app_ctx = Rc::new(ApplicationContext::new());
+            let indy_ctx = Rc::new(IndyContext::new());
 
             {
-                let cmd = CreateCommand::new(ctx.clone());
+                let cmd = CreateCommand::new(indy_ctx.clone());
                 let mut params = HashMap::new();
                 params.insert("name", "wallet");
                 params.insert("pool_name", "pool");
                 cmd.execute(&params).unwrap();
             }
             {
-                let cmd = OpenCommand::new(ctx.clone());
+                let cmd = OpenCommand::new(app_ctx.clone(), indy_ctx.clone());
                 let mut params = HashMap::new();
                 params.insert("name", "wallet");
                 cmd.execute(&params).unwrap();
             }
 
-            let cmd = CloseCommand::new(ctx.clone());
+            let cmd = CloseCommand::new(app_ctx, indy_ctx);
             let params = HashMap::new();
             cmd.execute(&params).unwrap();
 

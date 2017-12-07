@@ -1,5 +1,4 @@
-extern crate serde_json;
-
+use application_context::ApplicationContext;
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
 use commands::*;
@@ -41,7 +40,8 @@ pub struct NewCommand {
 
 #[derive(Debug)]
 pub struct UseCommand {
-    ctx: Rc<IndyContext>,
+    app_cnxt: Rc<ApplicationContext>,
+    indy_cnxt: Rc<IndyContext>,
     metadata: CommandMetadata,
 }
 
@@ -126,9 +126,10 @@ impl Command for NewCommand {
 }
 
 impl UseCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> UseCommand {
+    pub fn new(app_cnxt: Rc<ApplicationContext>, indy_cnxt: Rc<IndyContext>) -> UseCommand {
         UseCommand {
-            ctx,
+            app_cnxt,
+            indy_cnxt,
             metadata: CommandMetadata::build("use", "Use DID")
                 .add_main_param("did", "Did stored in wallet")
                 .finalize()
@@ -142,7 +143,8 @@ impl Command for UseCommand {
 
         let did = get_str_param("did", params).map_err(error_err!())?;
 
-        self.ctx.set_active_did(did);
+        self.app_cnxt.set_sub_prompt(3, &format!("did({}...{})", &did[..3], &did[did.len()-3..]));
+        self.indy_cnxt.set_active_did(did);
 
         println_succ!("Did \"{}\" has been set as active", did);
 

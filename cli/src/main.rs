@@ -60,22 +60,22 @@ fn build_executor(application_context: Rc<ApplicationContext>,
         .add_command(Box::new(common::ShowCommand::new()))
         .add_group(Box::new(did::Group::new()))
         .add_command(Box::new(did::NewCommand::new(indy_context.clone())))
-        .add_command(Box::new(did::UseCommand::new(indy_context.clone())))
+        .add_command(Box::new(did::UseCommand::new(application_context.clone(), indy_context.clone())))
         .add_command(Box::new(did::RotateKeyCommand::new(indy_context.clone())))
         .add_command(Box::new(did::ListCommand::new(indy_context.clone())))
         .finalize_group()
         .add_group(Box::new(pool::Group::new()))
         .add_command(Box::new(pool::CreateCommand::new(indy_context.clone())))
-        .add_command(Box::new(pool::ConnectCommand::new(indy_context.clone())))
+        .add_command(Box::new(pool::ConnectCommand::new(application_context.clone(), indy_context.clone())))
         .add_command(Box::new(pool::ListCommand::new(indy_context.clone())))
-        .add_command(Box::new(pool::DisconnectCommand::new(indy_context.clone())))
+        .add_command(Box::new(pool::DisconnectCommand::new(application_context.clone(), indy_context.clone())))
         .add_command(Box::new(pool::DeleteCommand::new(indy_context.clone())))
         .finalize_group()
         .add_group(Box::new(wallet::Group::new()))
         .add_command(Box::new(wallet::CreateCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::OpenCommand::new(indy_context.clone())))
+        .add_command(Box::new(wallet::OpenCommand::new(application_context.clone(), indy_context.clone())))
         .add_command(Box::new(wallet::ListCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::CloseCommand::new(indy_context.clone())))
+        .add_command(Box::new(wallet::CloseCommand::new(application_context.clone(), indy_context.clone())))
         .add_command(Box::new(wallet::DeleteCommand::new(indy_context.clone())))
         .finalize_group()
         .add_group(Box::new(ledger::Group::new()))
@@ -95,6 +95,9 @@ fn build_executor(application_context: Rc<ApplicationContext>,
 
 fn execute_stdin(command_executor: CommandExecutor,
                  application_context: Rc<ApplicationContext>) {
+    #[cfg(target_os = "windows")]
+        ansi_term::enable_ansi_support().is_ok();
+
     match Reader::new("indy-cli") {
         Ok(reader) => execute_interactive(command_executor, application_context, reader),
         Err(_) => execute_batch(command_executor, None),
@@ -103,9 +106,6 @@ fn execute_stdin(command_executor: CommandExecutor,
 
 fn execute_interactive<T>(command_executor: CommandExecutor, application_context: Rc<ApplicationContext>, mut reader: Reader<T>)
     where T: linefeed::Terminal {
-    #[cfg(target_os = "windows")]
-        ansi_term::enable_ansi_support().is_ok();
-
     reader.set_completer(Rc::new(PathCompleter));
     reader.set_prompt(&application_context.get_prompt());
 
