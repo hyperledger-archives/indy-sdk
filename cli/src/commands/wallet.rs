@@ -3,7 +3,7 @@ extern crate serde_json;
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
 use commands::{get_opt_int_param, get_str_param, get_opt_str_param};
-
+use utils::table::print_table;
 use libindy::ErrorCode;
 use libindy::wallet::Wallet;
 
@@ -12,8 +12,6 @@ use serde_json::Map as JSONMap;
 
 use std::collections::HashMap;
 use std::rc::Rc;
-
-use prettytable::Table;
 
 pub struct Group {
     metadata: GroupMetadata
@@ -206,14 +204,14 @@ impl Command for ListCommand {
                 let wallets: Vec<serde_json::Value> = serde_json::from_str(&wallets)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                let mut table = Table::new();
-                table.add_row(row![Fgb->"name", Fgb->"associated pool name", Fgb->"type"]);
-                for wallet in wallets {
-                    table.add_row(row![wallet["name"].as_str().unwrap_or("-"),
-                                       wallet["associated_pool_name"].as_str().unwrap_or("-"),
-                                       wallet["type"].as_str().unwrap_or("-")]);
+                if wallets.len() > 0 {
+                    let keys: Vec<(String, String)> = vec![("name".to_owned(), "name".to_owned()),
+                                                           ("associated_pool_name".to_owned(), "associated pool name".to_owned()),
+                                                           ("type".to_owned(), "type".to_owned())];
+                    print_table(&keys, &wallets);
+                } else {
+                    println_succ!("There are no wallets");
                 }
-                table.printstd();
 
                 if let Some(cur_wallet) = self.ctx.get_opened_wallet_name() {
                     println_succ!("Current wallet \"{}\"", cur_wallet);

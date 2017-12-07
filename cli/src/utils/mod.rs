@@ -10,6 +10,7 @@ pub mod test;
 #[allow(dead_code)] // FIXME
 pub mod timeout;
 pub mod sequence;
+pub mod table;
 
 #[macro_export] //TODO move to more relevant place
 macro_rules! update_json_map_opt_key {

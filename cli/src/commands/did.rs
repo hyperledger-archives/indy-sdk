@@ -3,6 +3,7 @@ extern crate serde_json;
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
 use commands::*;
+use utils::table::print_table;
 
 use libindy::ErrorCode;
 
@@ -14,8 +15,6 @@ use serde_json::Map as JSONMap;
 
 use std::collections::HashMap;
 use std::rc::Rc;
-
-use prettytable::Table;
 
 pub struct Group {
     metadata: GroupMetadata
@@ -243,14 +242,12 @@ impl Command for ListCommand {
                 let dids: Vec<serde_json::Value> = serde_json::from_str(&dids)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
                 if dids.len() > 0 {
-                    let mut table = Table::new();
-                    table.add_row(row![Fgb->"did", Fgb->"verkey", Fgb->"metadata"]);
-                    for did in dids {
-                        table.add_row(row![did["did"].as_str().unwrap_or("-"),
-                                           did["verkey"].as_str().unwrap_or("-"),
-                                           did["metadata"].as_str().unwrap_or("-")]);
-                    }
-                    table.printstd();
+                    let keys: Vec<(String, String)> = vec![("did".to_owned(), "did".to_owned()),
+                                                           ("verkey".to_owned(), "verkey".to_owned()),
+                                                           ("metadata".to_owned(), "metadata".to_owned())];
+                    print_table(&keys, &dids);
+
+
                 } else {
                     println_succ!("There are no dids");
                 }

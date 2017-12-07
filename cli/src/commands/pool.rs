@@ -6,11 +6,11 @@ use commands::{get_str_param, get_opt_str_param};
 
 use libindy::ErrorCode;
 use libindy::pool::Pool;
+use utils::table::print_table;
 
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use prettytable::Table;
 
 pub struct Group {
     metadata: GroupMetadata
@@ -160,16 +160,16 @@ impl Command for ListCommand {
 
         let res = match Pool::list() {
             Ok(pools) => {
-                let pools: Vec<String> = serde_json::from_str(&pools)
+                println!("pools {:?}", pools);
+                let pools: Vec<serde_json::Value> = serde_json::from_str(&pools)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                let mut table = Table::new();
-                table.add_row(row![Fgb->"name"]);
-                for pool in pools {
-                    table.add_row(row![pool]);
+                if pools.len() > 0 {
+                    let keys: Vec<(String, String)> = vec![("pool".to_owned(), "pool".to_owned())];
+                    print_table(&keys, &pools);
+                } else {
+                    println_succ!("There are no pool");
                 }
-                table.printstd();
-
 
                 Ok(())
             }
