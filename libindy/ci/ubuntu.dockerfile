@@ -62,7 +62,8 @@ USER root
 RUN pip3 install \
     twine
 
-RUN apt-get install -y devscripts
+RUN apt-get install -y devscripts \
+                       libncursesw5-dev
 
 ARG anoncreds_revision=1.0.32-master
 USER indy

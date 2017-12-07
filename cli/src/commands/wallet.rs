@@ -177,7 +177,7 @@ impl Command for OpenCommand {
             });
 
         trace!("CreateCommand::execute << {:?}", res);
-        Ok(())
+        res
     }
 }
 
