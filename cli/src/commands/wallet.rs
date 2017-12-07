@@ -1,3 +1,5 @@
+extern crate serde_json;
+
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
 use commands::{get_opt_i64_param, get_str_param, get_opt_str_param};
@@ -207,10 +209,14 @@ impl Command for ListCommand {
 
         let res = match Wallet::list_wallets() {
             Ok(wallets) => {
-                let wallets = wallets.replace("},{", "}\n{").replace("]", "").replace("[", "");
-                //TODO parse JSON and print table
-                if wallets.trim().len() > 0 {
-                    println_succ!("Existing wallets: \n{}", wallets.trim());
+                let wallets: Vec<serde_json::Value> = serde_json::from_str(&wallets)
+                    .map_err(|_| println_err!("Wrong data has been received"))?;
+                if wallets.len() > 0 {
+                    println!("{0: <25} | {1: <25} | {2}", "name", "associated pool name", "type");
+                    for wallet in wallets {
+                        println!("{0: <25} | {1: <25} | {2}", wallet["name"].as_str().unwrap_or("-"),
+                                 wallet["associated_pool_name"].as_str().unwrap_or("-"), &wallet["type"].as_str().unwrap_or("-"));
+                    }
                 } else {
                     println_succ!("There are no wallets");
                 }

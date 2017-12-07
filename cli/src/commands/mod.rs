@@ -1,3 +1,5 @@
+extern crate serde_json;
+
 pub mod common;
 pub mod did;
 pub mod pool;
@@ -44,7 +46,6 @@ pub fn get_opt_i64_param(key: &str, params: &HashMap<&'static str, &str>) -> Res
     Ok(res)
 }
 
-#[allow(dead_code)] // FIXME
 pub fn get_i32_param(name: &str, params: &HashMap<&'static str, &str>) -> Result<i32, ()> {
     match params.get(name) {
         Some(v) => {
@@ -55,6 +56,16 @@ pub fn get_i32_param(name: &str, params: &HashMap<&'static str, &str>) -> Result
             println_err!("No required \"{}\" parameter present", name);
             Err(())
         }
+    }
+}
+
+pub fn get_opt_i32_param(name: &str, params: &HashMap<&'static str, &str>) -> Result<Option<i32>, ()> {
+    match params.get(name) {
+        Some(v) => {
+            Ok(Some(v.parse::<i32>().map_err(|err|
+                println_err!("Can't parse integer parameter \"{}\": err {}", name, err))?))
+        }
+        None => Ok(None)
     }
 }
 
@@ -70,7 +81,25 @@ pub fn get_opt_bool_param(key: &str, params: &HashMap<&'static str, &str>) -> Re
 pub fn get_str_array_param<'a>(name: &'a str, params: &'a HashMap<&'static str, &str>) -> Result<Vec<&'a str>, ()> {
     match params.get(name) {
         Some(v) => Ok(v.split(",").collect::<Vec<&'a str>>()),
-        None => Ok(vec!())
+        None => Err(println_err!("No required \"{}\" parameter present", name))
+    }
+}
+
+pub fn get_opt_str_array_param<'a>(name: &'a str, params: &'a HashMap<&'static str, &str>) -> Result<Option<Vec<&'a str>>, ()> {
+    match params.get(name) {
+        Some(v) => Ok(Some(v.split(",").collect::<Vec<&'a str>>())),
+        None => Ok(None)
+    }
+}
+
+pub fn get_object_param<'a>(name: &'a str, params: &'a HashMap<&'static str, &str>) -> Result<serde_json::Value, ()> {
+    match params.get(name) {
+        Some(v) => Ok(serde_json::from_str(*v).map_err(|err|
+            println_err!("Can't parse object parameter \"{}\": err {}", name, err))?),
+        None => {
+            println_err!("No required \"{}\" parameter present", name);
+            Err(())
+        }
     }
 }
 
