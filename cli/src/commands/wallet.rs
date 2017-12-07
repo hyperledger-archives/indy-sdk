@@ -139,17 +139,9 @@ impl Command for OpenCommand {
         let config = {
             let mut json = JSONMap::new();
 
-            if let Some(key) = key {
-                json.insert("key".to_string(), JSONValue::from(key));
-            }
-
-            if let Some(rekey) = rekey {
-                json.insert("rekey".to_string(), JSONValue::from(rekey));
-            }
-
-            if let Some(freshness_time) = freshness_time {
-                json.insert("freshness_time".to_string(), JSONValue::from(freshness_time));
-            }
+            update_json_map_opt_key!(json, "key", key);
+            update_json_map_opt_key!(json, "rekey", rekey);
+            update_json_map_opt_key!(json, "freshness_time", freshness_time);
 
             if !json.is_empty() {
                 Some(JSONValue::from(json).to_string())

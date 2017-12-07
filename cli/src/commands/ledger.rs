@@ -412,11 +412,7 @@ impl Command for SendClaimDefCommand {
         let claim_def_data = {
             let mut json = JSONMap::new();
             json.insert("primary".to_string(), primary);
-
-            if let Some(revocation) = revocation {
-                json.insert("revocation".to_string(), JSONValue::from(revocation));
-            }
-
+            update_json_map_opt_key!(json, "revocation", revocation);
             JSONValue::from(json).to_string()
         };
 
@@ -521,28 +517,13 @@ impl Command for SendNodeCommand {
 
         let node_data = {
             let mut json = JSONMap::new();
-
-            if let Some(node_ip) = node_ip {
-                json.insert("node_ip".to_string(), JSONValue::from(node_ip));
-            }
-            if let Some(node_port) = node_port {
-                json.insert("node_port".to_string(), JSONValue::from(node_port));
-            }
-            if let Some(client_ip) = client_ip {
-                json.insert("client_ip".to_string(), JSONValue::from(client_ip));
-            }
-            if let Some(client_port) = client_port {
-                json.insert("client_port".to_string(), JSONValue::from(client_port));
-            }
-            if let Some(alias) = alias {
-                json.insert("alias".to_string(), JSONValue::from(alias));
-            }
-            if let Some(blskey) = blskey {
-                json.insert("blskey".to_string(), JSONValue::from(blskey));
-            }
-            if let Some(services) = services {
-                json.insert("services".to_string(), JSONValue::from(services));
-            }
+            update_json_map_opt_key!(json, "node_ip", node_ip);
+            update_json_map_opt_key!(json, "node_port", node_port);
+            update_json_map_opt_key!(json, "client_ip", client_ip);
+            update_json_map_opt_key!(json, "client_port", client_port);
+            update_json_map_opt_key!(json, "alias", alias);
+            update_json_map_opt_key!(json, "blskey", blskey);
+            update_json_map_opt_key!(json, "services", services);
             JSONValue::from(json).to_string()
         };
 
