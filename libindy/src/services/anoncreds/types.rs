@@ -9,8 +9,8 @@ use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AttributeInfo {
     pub name: String,
-    pub schema_seq_no: Option<i32>,
-    pub issuer_did: Option<String>
+    pub schemas_seq_no: Option<Vec<i32>>,
+    pub issuer_dids: Option<Vec<String>>
 }
 
 impl JsonEncodable for AttributeInfo {}
@@ -37,7 +37,7 @@ impl<'a> JsonDecodable<'a> for Filter {}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ClaimInfo {
-    pub claim_uuid: String,
+    pub referent: String,
     pub attrs: HashMap<String, String>,
     pub schema_seq_no: i32,
     pub issuer_did: String,
@@ -123,20 +123,8 @@ pub struct PredicateInfo {
     pub attr_name: String,
     pub p_type: PredicateType,
     pub value: i32,
-    pub schema_seq_no: Option<i32>,
-    pub issuer_did: Option<String>
-}
-
-impl PredicateInfo {
-    pub fn new(attr_name: String, p_type: PredicateType, value: i32, schema_seq_no: Option<i32>, issuer_did: Option<String>) -> PredicateInfo {
-        PredicateInfo {
-            attr_name,
-            p_type,
-            value,
-            schema_seq_no,
-            issuer_did
-        }
-    }
+    pub schemas_seq_no: Option<Vec<i32>>,
+    pub issuer_dids: Option<Vec<String>>
 }
 
 #[derive(Debug, Deserialize, Serialize)]

@@ -307,8 +307,8 @@ impl ProverCommandExecutor {
         let claim_json = claim.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claim: {:?}", err)))?;
 
-        let uuid = Uuid::new_v4().to_string();
-        self.wallet_service.set(wallet_handle, &format!("claim::{}", &uuid), &claim_json)?;
+        let referent = Uuid::new_v4().to_string();
+        self.wallet_service.set(wallet_handle, &format!("claim::{}", &referent), &claim_json)?;
 
         info!("store_claim <<<");
 
@@ -362,7 +362,7 @@ impl ProverCommandExecutor {
 
         let mut claims_info: Vec<ClaimInfo> = Vec::new();
 
-        for &(ref claim_uuid, ref claim) in claims.iter() {
+        for &(ref referent, ref claim) in claims.iter() {
             let claim: Claim = Claim::from_json(claim)
                 .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim: {:?}", err)))?;
 
@@ -373,7 +373,7 @@ impl ProverCommandExecutor {
 
             claims_info.push(
                 ClaimInfo {
-                    claim_uuid: claim_uuid.clone(),
+                    referent: referent.clone(),
                     attrs: claim_values,
                     schema_seq_no: claim.schema_seq_no.clone(),
                     issuer_did: claim.issuer_did.clone(),

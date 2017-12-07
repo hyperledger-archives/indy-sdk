@@ -228,14 +228,14 @@ def proof_req(predicate_value):
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
-            "attr1_uuid":
+            "attr1_referent":
                 {
-                    "schema_seq_no": 1,
+                    "schemas_seq_no": [1],
                     "name": "name"
                 }
         },
         "requested_predicates": {
-            "predicate1_uuid": {
+            "predicate1_referent": {
                 "attr_name": "age",
                 "p_type": "GE",
                 "value": predicate_value

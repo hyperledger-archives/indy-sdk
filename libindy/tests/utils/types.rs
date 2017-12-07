@@ -171,20 +171,20 @@ pub struct PredicateInfo {
     pub attr_name: String,
     pub p_type: String,
     pub value: i32,
-    pub schema_seq_no: Option<i32>,
-    pub issuer_did: Option<String>
+    pub schemas_seq_no: Option<Vec<i32>>,
+    pub issuer_dids: Option<Vec<String>>
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AttributeInfo {
     pub name: String,
-    pub schema_seq_no: Option<i32>,
-    pub issuer_did: Option<String>
+    pub schema_seq_no: Option<Vec<i32>>,
+    pub issuer_did: Option<Vec<String>>
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct ClaimInfo {
-    pub claim_uuid: String,
+    pub referent: String,
     pub schema_seq_no: i32,
     pub issuer_did: String,
     pub revoc_reg_seq_no: Option<i32>

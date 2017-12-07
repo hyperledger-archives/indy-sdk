@@ -20,7 +20,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
-				"              \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},\n" +
+				"              \"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1], \"name\":\"name\"}},\n" +
 				"              \"requested_predicates\":{}\n" +
 				"             }";
 
@@ -28,7 +28,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid");
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
 		assertEquals(1, claimsForAttribute1.length());
 	}
 
@@ -40,7 +40,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
-				"              \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"attribute\"}},\n" +
+				"              \"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1], \"name\":\"attribute\"}},\n" +
 				"              \"requested_predicates\":{}\n" +
 				"             }";
 
@@ -48,7 +48,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid");
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
 		assertEquals(0, claimsForAttribute1.length());
 	}
 
@@ -61,14 +61,14 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
 				"              \"requested_attrs\":{},\n" +
-				"              \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+				"              \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
 				"             }";
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_uuid");
+		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
 		assertEquals(1, claimsForPredicate.length());
 	}
 
@@ -81,14 +81,14 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
 				"              \"requested_attrs\":{},\n" +
-				"              \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":58}}\n" +
+				"              \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":58}}\n" +
 				"             }";
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_uuid");
+		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
 		assertEquals(0, claimsForPredicate.length());
 	}
 
@@ -101,28 +101,28 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"               \"name\":\"proof_req_1\",\n" +
 				"               \"version\":\"0.1\",\n" +
 				"               \"requested_attrs\":{\n" +
-				"                     \"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"},\n" +
-				"                     \"attr2_uuid\":{\"schema_seq_no\":1, \"name\":\"sex\"}\n" +
+				"                     \"attr1_referent\":{\"schemas_seq_no\":[1], \"name\":\"name\"},\n" +
+				"                     \"attr2_referent\":{\"schemas_seq_no\":[1], \"name\":\"sex\"}\n" +
 				"               },\n" +
 				"               \"requested_predicates\":{\n" +
-				"                     \"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18},\n" +
-				"                     \"predicate2_uuid\":{\"attr_name\":\"height\",\"p_type\":\"GE\",\"value\":160}\n" +
+				"                     \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18},\n" +
+				"                     \"predicate2_referent\":{\"attr_name\":\"height\",\"p_type\":\"GE\",\"value\":160}\n" +
 				"               }}";
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid");
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
 		assertEquals(1, claimsForAttribute1.length());
 
-		JSONArray claimsForAttribute2 = claims.getJSONObject("attrs").getJSONArray("attr2_uuid");
+		JSONArray claimsForAttribute2 = claims.getJSONObject("attrs").getJSONArray("attr2_referent");
 		assertEquals(1, claimsForAttribute2.length());
 
-		JSONArray claimsForPredicate1 = claims.getJSONObject("predicates").getJSONArray("predicate1_uuid");
+		JSONArray claimsForPredicate1 = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
 		assertEquals(1, claimsForPredicate1.length());
 
-		JSONArray claimsForPredicate2 = claims.getJSONObject("predicates").getJSONArray("predicate2_uuid");
+		JSONArray claimsForPredicate2 = claims.getJSONObject("predicates").getJSONArray("predicate2_referent");
 		assertEquals(1, claimsForPredicate2.length());
 	}
 
@@ -154,7 +154,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
-				"              \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":2, \"name\":\"name\"}},\n" +
+				"              \"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[2], \"name\":\"name\"}},\n" +
 				"              \"requested_predicates\":{}\n" +
 				"             }";
 
@@ -162,7 +162,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid");
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
 		assertEquals(0, claimsForAttribute1.length());
 	}
 
@@ -174,7 +174,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
-				"              \"requested_attrs\":{\"attr1_uuid\":{\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"name\":\"name\"}},\n" +
+				"              \"requested_attrs\":{\"attr1_referent\":{\"issuer_dids\":[\"NcYxiDXkpYi6ov5FcYDi1e\"],\"name\":\"name\"}},\n" +
 				"              \"requested_predicates\":{}\n" +
 				"             }";
 
@@ -182,7 +182,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid");
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
 		assertEquals(1, claimsForAttribute1.length());
 	}
 
@@ -195,14 +195,14 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
 				"              \"requested_attrs\":{},\n" +
-				"              \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\"}}\n" +
+				"              \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schemas_seq_no\":[1],\"issuer_dids\":[\"NcYxiDXkpYi6ov5FcYDi1e\"]}}\n" +
 				"             }";
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_uuid");
+		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
 		assertEquals(1, claimsForPredicate.length());
 	}
 
@@ -235,7 +235,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"name\":\"proof_req_1\",\n" +
 				"              \"version\":\"0.1\",\n" +
 				"              \"requested_attrs\":{},\n" +
-				"              \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"LE\",\"value\":18}}\n" +
+				"              \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"LE\",\"value\":18}}\n" +
 				"             }";
 
 		Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();

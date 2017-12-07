@@ -14,8 +14,8 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr(wallet_ha
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
-            "attr1_uuid": {
-                "schema_seq_no": schema_seq_no,
+            "attr1_referent": {
+                "schemas_seq_no": [schema_seq_no],
                 "name": "name"
             }
         },
@@ -27,7 +27,7 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr(wallet_ha
 
     assert len(claims['attrs']) == 1
     assert len(claims['predicates']) == 0
-    assert len(claims['attrs']['attr1_uuid']) == 1
+    assert len(claims['attrs']['attr1_referent']) == 1
 
 
 # noinspection PyUnusedLocal
@@ -39,8 +39,8 @@ async def test_prover_get_claims_for_proof_req_works_for_not_found_attribute(wal
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
-            "attr1_uuid": {
-                "schema_seq_no": schema_seq_no,
+            "attr1_referent": {
+                "schemas_seq_no": [schema_seq_no],
                 "name": "some_attr"
             }
         },
@@ -52,7 +52,7 @@ async def test_prover_get_claims_for_proof_req_works_for_not_found_attribute(wal
 
     assert len(claims['attrs']) == 1
     assert len(claims['predicates']) == 0
-    assert len(claims['attrs']['attr1_uuid']) == 0
+    assert len(claims['attrs']['attr1_referent']) == 0
 
 
 # noinspection PyUnusedLocal
@@ -64,7 +64,7 @@ async def test_prover_get_claims_for_proof_req_works_for_satisfy_predicate(walle
         "version": "0.1",
         "requested_attrs": {},
         "requested_predicates": {
-            "predicate1_uuid":
+            "predicate1_referent":
                 {
                     "attr_name": "age",
                     "p_type": "GE",
@@ -78,7 +78,7 @@ async def test_prover_get_claims_for_proof_req_works_for_satisfy_predicate(walle
 
     assert len(claims['attrs']) == 0
     assert len(claims['predicates']) == 1
-    assert len(claims['predicates']['predicate1_uuid']) == 1
+    assert len(claims['predicates']['predicate1_referent']) == 1
 
 
 # noinspection PyUnusedLocal
@@ -90,7 +90,7 @@ async def test_prover_get_claims_for_proof_req_works_for_not_satisfy_predicate(w
         "version": "0.1",
         "requested_attrs": {},
         "requested_predicates": {
-            "predicate1_uuid":
+            "predicate1_referent":
                 {
                     "attr_name": "age",
                     "p_type": "GE",
@@ -104,7 +104,7 @@ async def test_prover_get_claims_for_proof_req_works_for_not_satisfy_predicate(w
 
     assert len(claims['attrs']) == 0
     assert len(claims['predicates']) == 1
-    assert len(claims['predicates']['predicate1_uuid']) == 0
+    assert len(claims['predicates']['predicate1_referent']) == 0
 
 
 # noinspection PyUnusedLocal
@@ -117,12 +117,12 @@ async def test_prover_get_claims_for_proof_req_works_for_multiply_attribute_and_
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
-            "attr1_uuid": {"schema_seq_no": schema_seq_no, "name": "name"},
-            "attr2_uuid": {"schema_seq_no": schema_seq_no, "name": "sex"}
+            "attr1_referent": {"schemas_seq_no": [schema_seq_no], "name": "name"},
+            "attr2_referent": {"schemas_seq_no": [schema_seq_no], "name": "sex"}
         },
         "requested_predicates": {
-            "predicate1_uuid": {"attr_name": "age", "p_type": "GE", "value": 18},
-            "predicate2_uuid": {"attr_name": "height", "p_type": "GE", "value": 160}
+            "predicate1_referent": {"attr_name": "age", "p_type": "GE", "value": 18},
+            "predicate2_referent": {"attr_name": "height", "p_type": "GE", "value": 160}
         }
     }
 
@@ -131,10 +131,10 @@ async def test_prover_get_claims_for_proof_req_works_for_multiply_attribute_and_
 
     assert len(claims['attrs']) == 2
     assert len(claims['predicates']) == 2
-    assert len(claims['attrs']['attr1_uuid']) == 1
-    assert len(claims['attrs']['attr2_uuid']) == 1
-    assert len(claims['predicates']['predicate1_uuid']) == 1
-    assert len(claims['predicates']['predicate2_uuid']) == 1
+    assert len(claims['attrs']['attr1_referent']) == 1
+    assert len(claims['attrs']['attr2_referent']) == 1
+    assert len(claims['predicates']['predicate1_referent']) == 1
+    assert len(claims['predicates']['predicate2_referent']) == 1
 
 
 # noinspection PyUnusedLocal
@@ -147,7 +147,7 @@ async def test_prover_get_claims_for_proof_req_works_for_invalid_wallet_handle(w
         "version": "0.1",
         "requested_attrs": {},
         "requested_predicates": {
-            "predicate1_uuid":
+            "predicate1_referent":
                 {
                     "attr_name": "age",
                     "p_type": "GE",

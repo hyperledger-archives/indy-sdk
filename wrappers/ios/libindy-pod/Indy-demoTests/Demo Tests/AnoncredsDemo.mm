@@ -140,13 +140,13 @@
                               "\"name\":\"proof_req_1\","
                               "\"version\":\"0.1\","
                               "\"requested_attrs\":{\
-                                    \"attr1_uuid\":{\
-                                        \"schema_seq_no\":%@,\
+                                    \"attr1_referent\":{\
+                                        \"schemas_seq_no\":[%@],\
                                         \"name\":\"name\"\
                                     }\
                               },\
                               \"requested_predicates\":{\
-                                    \"predicate1_uuid\":{\
+                                    \"predicate1_referent\":{\
                                         \"attr_name\":\"age\",\
                                         \"p_type\":\"GE\",\
                                         \"value\":18\
@@ -164,17 +164,17 @@
     NSDictionary *claims = [ NSDictionary fromString: claimsJson];
     XCTAssertTrue(claims, @"serialization failed");
     
-    NSDictionary *claims_for_attr_1 = [[ [claims objectForKey: @"attrs" ] objectForKey: @"attr1_uuid"] objectAtIndex: 0 ];
-    XCTAssertTrue( claims_for_attr_1, @"no object for key \"attr1_uuid\"");
-    NSString *claimUUID = [claims_for_attr_1 objectForKey:@"claim_uuid"];
+    NSDictionary *claims_for_attr_1 = [[ [claims objectForKey: @"attrs" ] objectForKey: @"attr1_referent"] objectAtIndex: 0 ];
+    XCTAssertTrue( claims_for_attr_1, @"no object for key \"attr1_referent\"");
+    NSString *claimUUID = [claims_for_attr_1 objectForKey:@"referent"];
     
     // 10. Prover create Proof for Proof Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     NSString* requestedClaimsJSON = [ NSString stringWithFormat: @"{\
                                      \"self_attested_attributes\":{},\
-                                     \"requested_attrs\":{\"attr1_uuid\":[\"%@\",true]},\
-                                     \"requested_predicates\":{\"predicate1_uuid\":\"%@\"}\
+                                     \"requested_attrs\":{\"attr1_referent\":[\"%@\",true]},\
+                                     \"requested_predicates\":{\"predicate1_referent\":\"%@\"}\
                                      }", claimUUID, claimUUID ];
     
     NSString *schemas_json = [NSString stringWithFormat: @"{\"%@\":%@}", claimUUID, schema];
@@ -327,13 +327,13 @@
                               "\"name\":\"proof_req_1\","
                               "\"version\":\"0.1\","
                               "\"requested_attrs\":{\
-                              \"attr1_uuid\":{\
-                              \"schema_seq_no\":%@,\
+                              \"attr1_referent\":{\
+                              \"schemas_seq_no\":[%@],\
                               \"name\":\"name\"\
                               }\
                               },\
                               \"requested_predicates\":{\
-                              \"predicate1_uuid\":{\
+                              \"predicate1_referent\":{\
                               \"attr_name\":\"age\",\
                               \"p_type\":\"GE\",\
                               \"value\":18\
@@ -351,16 +351,16 @@
     NSDictionary *claims = [ NSDictionary fromString: claimsJson];
     XCTAssertTrue(claims, @"serialization failed");
     
-    NSDictionary *claims_for_attr_1 = [[ [claims objectForKey: @"attrs" ] objectForKey: @"attr1_uuid"] objectAtIndex: 0 ];
-    XCTAssertTrue( claims_for_attr_1, @"no object for key \"attr1_uuid\"");
-    NSString *claimUUID = [claims_for_attr_1 objectForKey:@"claim_uuid"];
+    NSDictionary *claims_for_attr_1 = [[ [claims objectForKey: @"attrs" ] objectForKey: @"attr1_referent"] objectAtIndex: 0 ];
+    XCTAssertTrue( claims_for_attr_1, @"no object for key \"attr1_referent\"");
+    NSString *claimUUID = [claims_for_attr_1 objectForKey:@"referent"];
     
     // 10. Prover create Proof for Proof Request
     
     NSString* requestedClaimsJSON = [ NSString stringWithFormat: @"{\
                                      \"self_attested_attributes\":{},\
-                                     \"requested_attrs\":{\"attr1_uuid\":[\"%@\",true]},\
-                                     \"requested_predicates\":{\"predicate1_uuid\":\"%@\"}\
+                                     \"requested_attrs\":{\"attr1_referent\":[\"%@\",true]},\
+                                     \"requested_predicates\":{\"predicate1_referent\":\"%@\"}\
                                      }", claimUUID, claimUUID ];
     
     NSString *schemas_json = [NSString stringWithFormat: @"{\"%@\":%@}", claimUUID, schema];

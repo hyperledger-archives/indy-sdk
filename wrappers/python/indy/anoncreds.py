@@ -439,7 +439,7 @@ async def prover_get_claims(wallet_handle: int,
         }
     :return: claims json
         [{
-            "claim_uuid": <string>,
+            "referent": <string>,
             "attrs": [{"attr_name" : "attr_value"}],
             "schema_seq_no": string,
             "issuer_did": string,
@@ -480,23 +480,23 @@ async def prover_get_claims_for_proof_req(wallet_handle: int,
             "name": string,
             "version": string,
             "nonce": string,
-            "requested_attr1_uuid": <attr_info>,
-            "requested_attr2_uuid": <attr_info>,
-            "requested_attr3_uuid": <attr_info>,
-            "requested_predicate_1_uuid": <predicate_info>,
-            "requested_predicate_2_uuid": <predicate_info>,
+            "requested_attr1_referent": <attr_info>,
+            "requested_attr2_referent": <attr_info>,
+            "requested_attr3_referent": <attr_info>,
+            "requested_predicate_1_referent": <predicate_info>,
+            "requested_predicate_2_referent": <predicate_info>,
         }
     :return: json with claims for the given pool request.
         Claim consists of uuid, human-readable attributes (key-value map), schema_seq_no, issuer_did and revoc_reg_seq_no.
             {
-                "requested_attr1_uuid": [claim1, claim2],
-                "requested_attr2_uuid": [],
-                "requested_attr3_uuid": [claim3],
-                "requested_predicate_1_uuid": [claim1, claim3],
-                "requested_predicate_2_uuid": [claim2],
+                "requested_attr1_referent": [claim1, claim2],
+                "requested_attr2_referent": [],
+                "requested_attr3_referent": [claim3],
+                "requested_predicate_1_referent": [claim1, claim3],
+                "requested_predicate_2_referent": [claim2],
             }, where claim is
             {
-                "claim_uuid": <string>,
+                "referent": <string>,
                 "attrs": [{"attr_name" : "attr_value"}],
                 "schema_seq_no": string,
                 "issuer_did": string,
@@ -546,40 +546,40 @@ async def prover_create_proof(wallet_handle: int,
     :param proof_req_json: proof request json as come from the verifier
         {
             "nonce": string,
-            "requested_attr1_uuid": <attr_info>,
-            "requested_attr2_uuid": <attr_info>,
-            "requested_attr3_uuid": <attr_info>,
-            "requested_predicate_1_uuid": <predicate_info>,
-            "requested_predicate_2_uuid": <predicate_info>,
+            "requested_attr1_referent": <attr_info>,
+            "requested_attr2_referent": <attr_info>,
+            "requested_attr3_referent": <attr_info>,
+            "requested_predicate_1_referent": <predicate_info>,
+            "requested_predicate_2_referent": <predicate_info>,
         }
     :param requested_claims_json: either a claim or self-attested attribute for each requested attribute
         {
-            "requested_attr1_uuid": [claim1_uuid_in_wallet, true <reveal_attr>],
-            "requested_attr2_uuid": [self_attested_attribute],
-            "requested_attr3_uuid": [claim2_seq_no_in_wallet, false]
-            "requested_attr4_uuid": [claim2_seq_no_in_wallet, true]
-            "requested_predicate_1_uuid": [claim2_seq_no_in_wallet],
-            "requested_predicate_2_uuid": [claim3_seq_no_in_wallet],
+            "requested_attr1_referent": [claim1_referent_in_wallet, true <reveal_attr>],
+            "requested_attr2_referent": [self_attested_attribute],
+            "requested_attr3_referent": [claim2_seq_no_in_wallet, false]
+            "requested_attr4_referent": [claim2_seq_no_in_wallet, true]
+            "requested_predicate_1_referent": [claim2_seq_no_in_wallet],
+            "requested_predicate_2_referent": [claim3_seq_no_in_wallet],
         }
     :param schemas_json: all schema jsons participating in the proof request
         {
-            "claim1_uuid_in_wallet": <schema1>,
-            "claim2_uuid_in_wallet": <schema2>,
-            "claim3_uuid_in_wallet": <schema3>,
+            "claim1_referent_in_wallet": <schema1>,
+            "claim2_referent_in_wallet": <schema2>,
+            "claim3_referent_in_wallet": <schema3>,
         }
     :param master_secret_name: the name of the master secret stored in the wallet
 
     :param claim_defs_json: all claim definition jsons participating in the proof request
         {
-            "claim1_uuid_in_wallet": <claim_def1>,
-            "claim2_uuid_in_wallet": <claim_def2>,
-            "claim3_uuid_in_wallet": <claim_def3>,
+            "claim1_referent_in_wallet": <claim_def1>,
+            "claim2_referent_in_wallet": <claim_def2>,
+            "claim3_referent_in_wallet": <claim_def3>,
         }
     :param revoc_regs_json: all revocation registry jsons participating in the proof request
         {
-            "claim1_uuid_in_wallet": <revoc_reg1>,
-            "claim2_uuid_in_wallet": <revoc_reg2>,
-            "claim3_uuid_in_wallet": <revoc_reg3>,
+            "claim1_referent_in_wallet": <revoc_reg1>,
+            "claim2_referent_in_wallet": <revoc_reg2>,
+            "claim3_referent_in_wallet": <revoc_reg3>,
         }
     :return: Proof json
         For each requested attribute either a proof (with optionally revealed attribute value) or
@@ -588,17 +588,17 @@ async def prover_create_proof(wallet_handle: int,
         There ais also aggregated proof part common for all claim proofs.
             {
                 "requested": {
-                    "requested_attr1_id": [claim_proof1_uuid, revealed_attr1, revealed_attr1_as_int],
+                    "requested_attr1_id": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
                     "requested_attr2_id": [self_attested_attribute],
-                    "requested_attr3_id": [claim_proof2_uuid]
-                    "requested_attr4_id": [claim_proof2_uuid, revealed_attr4, revealed_attr4_as_int],
-                    "requested_predicate_1_uuid": [claim_proof2_uuid],
-                    "requested_predicate_2_uuid": [claim_proof3_uuid],
+                    "requested_attr3_id": [claim_proof2_referent]
+                    "requested_attr4_id": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
+                    "requested_predicate_1_referent": [claim_proof2_referent],
+                    "requested_predicate_2_referent": [claim_proof3_referent],
                 }
                 "claim_proofs": {
-                    "claim_proof1_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-                    "claim_proof2_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-                    "claim_proof3_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
+                    "claim_proof1_referent": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+                    "claim_proof2_referent": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+                    "claim_proof3_referent": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
                 },
                 "aggregated_proof": <aggregated_proof>
             }
@@ -656,11 +656,11 @@ async def verifier_verify_proof(proof_request_json: str,
     :param proof_request_json: initial proof request as sent by the verifier
         {
             "nonce": string,
-            "requested_attr1_uuid": <attr_info>,
-            "requested_attr2_uuid": <attr_info>,
-            "requested_attr3_uuid": <attr_info>,
-            "requested_predicate_1_uuid": <predicate_info>,
-            "requested_predicate_2_uuid": <predicate_info>,
+            "requested_attr1_referent": <attr_info>,
+            "requested_attr2_referent": <attr_info>,
+            "requested_attr3_referent": <attr_info>,
+            "requested_predicate_1_referent": <predicate_info>,
+            "requested_predicate_2_referent": <predicate_info>,
         }
     :param proof_json: proof json
         For each requested attribute either a proof (with optionally revealed attribute value) or
@@ -669,37 +669,37 @@ async def verifier_verify_proof(proof_request_json: str,
         There ais also aggregated proof part common for all claim proofs.
             {
                 "requested": {
-                    "requested_attr1_id": [claim_proof1_uuid, revealed_attr1, revealed_attr1_as_int],
+                    "requested_attr1_id": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
                     "requested_attr2_id": [self_attested_attribute],
-                    "requested_attr3_id": [claim_proof2_uuid]
-                    "requested_attr4_id": [claim_proof2_uuid, revealed_attr4, revealed_attr4_as_int],
-                    "requested_predicate_1_uuid": [claim_proof2_uuid],
-                    "requested_predicate_2_uuid": [claim_proof3_uuid],
+                    "requested_attr3_id": [claim_proof2_referent]
+                    "requested_attr4_id": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
+                    "requested_predicate_1_referent": [claim_proof2_referent],
+                    "requested_predicate_2_referent": [claim_proof3_referent],
                 }
                 "claim_proofs": {
-                    "claim_proof1_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-                    "claim_proof2_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-                    "claim_proof3_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
+                    "claim_proof1_referent": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+                    "claim_proof2_referent": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+                    "claim_proof3_referent": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
                 },
                 "aggregated_proof": <aggregated_proof>
             }
     :param schemas_json: all schema jsons participating in the proof
         {
-            "claim_proof1_uuid": <schema>,
-            "claim_proof2_uuid": <schema>,
-            "claim_proof3_uuid": <schema>
+            "claim_proof1_referent": <schema>,
+            "claim_proof2_referent": <schema>,
+            "claim_proof3_referent": <schema>
         }
     :param claim_defs_jsons: all claim definition jsons participating in the proof
         {
-            "claim_proof1_uuid": <claim_def>,
-            "claim_proof2_uuid": <claim_def>,
-            "claim_proof3_uuid": <claim_def>
+            "claim_proof1_referent": <claim_def>,
+            "claim_proof2_referent": <claim_def>,
+            "claim_proof3_referent": <claim_def>
         }
     :param revoc_regs_json: all revocation registry jsons participating in the proof
         {
-            "claim_proof1_uuid": <revoc_reg>,
-            "claim_proof2_uuid": <revoc_reg>,
-            "claim_proof3_uuid": <revoc_reg>
+            "claim_proof1_referent": <revoc_reg>,
+            "claim_proof2_referent": <revoc_reg>,
+            "claim_proof3_referent": <revoc_reg>
         }
     :return: valid: true - if signature is valid, false - otherwise
     """

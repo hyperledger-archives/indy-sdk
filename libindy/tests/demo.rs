@@ -374,8 +374,8 @@ fn anoncreds_demo_works() {
                                    "nonce":"123432421212",
                                    "name":"proof_req_1",
                                    "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
-                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
+                                   "requested_attrs":{{"attr1_referent":{{"schemas_seq_no":[{}],"name":"name"}}}},
+                                   "requested_predicates":{{"predicate1_referent":{{"attr_name":"age","p_type":"GE","value":18}}}}
                                 }}"#, schema_seq_no);
 
     // 8. Prover gets Claims for Proof Request
@@ -389,19 +389,19 @@ fn anoncreds_demo_works() {
     let (err, claims_json) = prover_get_claims_for_proof_req_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
     let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
-    let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
+    let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
     assert_eq!(1, claims_for_attr_1.len());
 
     let claim = claims_for_attr_1[0].clone();
 
     let requested_claims_json = format!(r#"{{
                                           "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_uuid":["{}",true]}},
-                                          "requested_predicates":{{"predicate1_uuid":"{}"}}
-                                        }}"#, claim.claim_uuid, claim.claim_uuid);
+                                          "requested_attrs":{{"attr1_referent":["{}",true]}},
+                                          "requested_predicates":{{"predicate1_referent":"{}"}}
+                                        }}"#, claim.referent, claim.referent);
 
-    let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
-    let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
+    let schemas_json = format!(r#"{{"{}":{}}}"#, claim.referent, schema);
+    let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.referent, claim_def_json);
     let revoc_regs_jsons = "{}";
 
     // 9. Prover create Proof for Proof Request

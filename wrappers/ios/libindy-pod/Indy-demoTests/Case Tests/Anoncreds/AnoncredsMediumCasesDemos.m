@@ -104,8 +104,8 @@
                               "\"name\":\"proof_req_1\","
                               "\"version\":\"0.1\","
                               "\"requested_attrs\":{"
-                                "\"attr1_uuid\":{"
-                                    "\"schema_seq_no\":%@,"
+                                "\"attr1_referent\":{"
+                                    "\"schemas_seq_no\":[%@],"
                                     "\"name\":\"name\"}},"
                               "\"requested_predicates\":{}"
                               "}", schemaSeqNo];
@@ -117,7 +117,7 @@
     XCTAssertTrue([claimsJson isValid], @"invalid claimsJson: %@", claimsJson);
     
     NSDictionary *claims = [NSDictionary fromString:claimsJson];
-    NSString *attrUUID = claims[@"attrs"][@"attr1_uuid"][0][@"claim_uuid"];
+    NSString *attrUUID = claims[@"attrs"][@"attr1_referent"][0][@"referent"];
     XCTAssertTrue([attrUUID isValid], @"invalid attrUUID: %@", attrUUID);
     
     // 8. Prover create Proof
@@ -125,7 +125,7 @@
                                      "\"self_attested_attributes\":{},"
                                      
                                      "\"requested_attrs\":{"
-                                            "\"attr1_uuid\":[\"%@\",true]},"
+                                            "\"attr1_referent\":[\"%@\",true]},"
                                      "\"requested_predicates\":{}"
                                      "}", attrUUID];
     NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", attrUUID, schema];
@@ -150,11 +150,11 @@
                                 "\"name\":\"proof_req_1\","
                                 "\"version\":\"0.1\","
                                 "\"requested_attrs\":{"
-                                    "\"attr1_uuid\":{"
-                                        "\"schema_seq_no\":%@,"
+                                    "\"attr1_referent\":{"
+                                        "\"schemas_seq_no\":[%@],"
                                         "\"name\":\"name\"}},"
                                "\"requested_predicates\":{"
-                                    "\"predicate1_uuid\":{"
+                                    "\"predicate1_referent\":{"
                                         "\"attr_name\":\"age\","
                                         "\"p_type\":\"GE\","
                                         "\"value\":18}}"
@@ -285,14 +285,14 @@
                              " \"name\":\"proof_req_1\","\
                              " \"version\":\"0.1\","\
                              " \"requested_attrs\":"\
-                             "             {\"attr1_uuid\":"\
+                             "             {\"attr1_referent\":"\
                              "                        {"\
-                             "                          \"schema_seq_no\":%@,\"name\":\"name\""\
+                             "                          \"schemas_seq_no\":[%@],\"name\":\"name\""\
                              "                        }"\
                              "             },"\
                              " \"requested_predicates\":"\
                              "             {"\
-                             "              \"predicate1_uuid\":"\
+                             "              \"predicate1_referent\":"\
                              "                      {\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}"\
                              "             }"\
                              "}", schemaSeqNo ];
@@ -305,13 +305,13 @@
     XCTAssertTrue([claimsJson isValid], @"invalid claimsJson: %@", claimsJson);
     
     NSDictionary *claims = [ NSDictionary fromString: claimsJson];
-    NSString *claimUUID = claims[@"attrs"][@"attr1_uuid"][0][@"claim_uuid"];
+    NSString *claimUUID = claims[@"attrs"][@"attr1_referent"][0][@"referent"];
     
     // 11. Prover create Proof
     NSString* requestedClaimsJson = [ NSString stringWithFormat:@"{"\
                                      "  \"self_attested_attributes\":{\"self1\":\"value\"},"\
-                                     "  \"requested_attrs\":{\"attr1_uuid\":[\"%@\",true]},"\
-                                     "  \"requested_predicates\":{\"predicate1_uuid\":\"%@\"}"\
+                                     "  \"requested_attrs\":{\"attr1_referent\":[\"%@\",true]},"\
+                                     "  \"requested_predicates\":{\"predicate1_referent\":\"%@\"}"\
                                      "}", claimUUID, claimUUID];
     
     NSString* schemasJson = [NSString stringWithFormat: @"{\"%@\":%@}", claimUUID, schema];
@@ -332,7 +332,7 @@
     XCTAssertTrue([proofJson isValid], @"invalid proofJson: %@", proofJson);
     
     NSDictionary *proof = [NSDictionary fromString:proofJson];
-    NSString *revealedAttrUUID = proof[@"requested_proof"][@"revealed_attrs"][@"attr1_uuid"][1];
+    NSString *revealedAttrUUID = proof[@"requested_proof"][@"revealed_attrs"][@"attr1_referent"][1];
     XCTAssertTrue([revealedAttrUUID isEqualToString:@"Alex"]);
     
     NSString *attestedAttrUUID = proof[@"requested_proof"][@"self_attested_attrs"][@"self1"];
@@ -556,20 +556,20 @@
                              " \"name\":\"proof_req_1\","\
                              " \"version\":\"0.1\","\
                              " \"requested_attrs\":"\
-                             "             {\"attr1_uuid\":"\
+                             "             {\"attr1_referent\":"\
                              "                        {"\
-                             "                          \"schema_seq_no\":%d,\"name\":\"name\""\
+                             "                          \"schemas_seq_no\":[%d],\"name\":\"name\""\
                              "                        },"\
-                             "              \"attr2_uuid\":"\
+                             "              \"attr2_referent\":"\
                              "                        {"\
-                             "                          \"schema_seq_no\":%d,\"name\":\"status\""\
+                             "                          \"schemas_seq_no\":[%d],\"name\":\"status\""\
                              "                        }"\
                              "             },"\
                              " \"requested_predicates\":"\
                              "             {"\
-                             "              \"predicate1_uuid\":"\
+                             "              \"predicate1_referent\":"\
                              "                      {\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18},"\
-                             "              \"predicate2_uuid\":"\
+                             "              \"predicate2_referent\":"\
                              "                      {\"attr_name\":\"period\",\"p_type\":\"GE\",\"value\":5}"\
                              "             }"\
                              "}", [gvtSchemaSeqNo intValue], [xyzSchemaSeqNo intValue] ];
@@ -584,24 +584,24 @@
     NSDictionary *claims = [ NSDictionary fromString: claimsJson];
     XCTAssertTrue(claims,  @"serialization failed");
     
-    NSDictionary *claimForAttr1 = claims[@"attrs"][@"attr1_uuid"][0];
-    NSDictionary *claimForAttr2 = claims[@"attrs"][@"attr2_uuid"][0];
+    NSDictionary *claimForAttr1 = claims[@"attrs"][@"attr1_referent"][0];
+    NSDictionary *claimForAttr2 = claims[@"attrs"][@"attr2_referent"][0];
     
-    XCTAssertTrue( claimForAttr1, @"no object for key \"attr1_uuid\"");
-    XCTAssertTrue( claimForAttr2, @"no object for key \"attr2_uuid\"");
+    XCTAssertTrue( claimForAttr1, @"no object for key \"attr1_referent\"");
+    XCTAssertTrue( claimForAttr2, @"no object for key \"attr2_referent\"");
     
-    NSDictionary *claimForPredicate1 = claims[@"predicates"][@"predicate1_uuid"][0];
-    NSDictionary *claimForPredicate2 = claims[@"predicates"][@"predicate2_uuid"][0];
+    NSDictionary *claimForPredicate1 = claims[@"predicates"][@"predicate1_referent"][0];
+    NSDictionary *claimForPredicate2 = claims[@"predicates"][@"predicate2_referent"][0];
     
-    XCTAssertTrue( claimForPredicate1, @"no object for key \"predicate1_uuid\"");
-    XCTAssertTrue( claimForPredicate2, @"no object for key \"predicate2_uuid\"");
+    XCTAssertTrue( claimForPredicate1, @"no object for key \"predicate1_referent\"");
+    XCTAssertTrue( claimForPredicate2, @"no object for key \"predicate2_referent\"");
     
     // 18. Prover create Proof
     
-    NSString *claim_attr_1_UUID = claimForAttr1[@"claim_uuid"];
-    NSString *claim_attr_2_UUID = claimForAttr2[@"claim_uuid"];
-    NSString *claim_predicate_1_UUID = claimForPredicate1[@"claim_uuid"];
-    NSString *claim_predicate_2_UUID = claimForPredicate2[@"claim_uuid"];
+    NSString *claim_attr_1_UUID = claimForAttr1[@"referent"];
+    NSString *claim_attr_2_UUID = claimForAttr2[@"referent"];
+    NSString *claim_predicate_1_UUID = claimForPredicate1[@"referent"];
+    NSString *claim_predicate_2_UUID = claimForPredicate2[@"referent"];
     
     XCTAssertNotNil( claim_attr_1_UUID, @"claim_attr_1_UUID = nil");
     XCTAssertNotNil( claim_attr_2_UUID, @"claim_attr_2_UUID = nil");
@@ -610,10 +610,10 @@
     
     NSString *requestedClaimsJson = [ NSString stringWithFormat:@"{"\
                                      "  \"self_attested_attributes\":{},"\
-                                     "  \"requested_attrs\":{\"attr1_uuid\":[\"%@\",true], "\
-                                     "                       \"attr2_uuid\":[\"%@\",true]},"\
-                                     "  \"requested_predicates\":{\"predicate1_uuid\":\"%@\","\
-                                     "                            \"predicate2_uuid\":\"%@\"}"\
+                                     "  \"requested_attrs\":{\"attr1_referent\":[\"%@\",true], "\
+                                     "                       \"attr2_referent\":[\"%@\",true]},"\
+                                     "  \"requested_predicates\":{\"predicate1_referent\":\"%@\","\
+                                     "                            \"predicate2_referent\":\"%@\"}"\
                                      "}", claim_attr_1_UUID, claim_attr_2_UUID,
                                      claim_predicate_1_UUID, claim_predicate_2_UUID];
     
@@ -629,8 +629,8 @@
     
     // Configure schemasJson
     // get claim's uuids
-    NSString *unique_claim_1_UUID = uniqueClaim1[@"claim_uuid"];
-    NSString *unique_claim_2_UUID = uniqueClaim2[@"claim_uuid"];
+    NSString *unique_claim_1_UUID = uniqueClaim1[@"referent"];
+    NSString *unique_claim_2_UUID = uniqueClaim2[@"referent"];
     XCTAssertNotNil(unique_claim_1_UUID, @"unique_claim_1_UUID = nil");
     XCTAssertNotNil(unique_claim_1_UUID, @"unique_claim_2_UUID = nil");
     
@@ -899,15 +899,15 @@
                              " \"name\":\"proof_req_1\","
                              " \"version\":\"0.1\","
                              " \"requested_attrs\":"\
-                             "             {\"attr1_uuid\":"\
+                             "             {\"attr1_referent\":"\
                              "                        {"\
-                             "                          \"schema_seq_no\":%ld,\"name\":\"name\""\
+                             "                          \"schemas_seq_no\":[%ld],\"name\":\"name\""\
                              "                        }},"\
                              " \"requested_predicates\":"\
                              "             {"\
-                             "              \"predicate1_uuid\":"\
+                             "              \"predicate1_referent\":"\
                              "                      {\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18},"\
-                             "              \"predicate2_uuid\":"\
+                             "              \"predicate2_referent\":"\
                              "                      {\"attr_name\":\"period\",\"p_type\":\"GE\",\"value\":5}"\
                              "             }"\
                              "}", (long)[gvtSchemaSeqNo integerValue] ];
@@ -924,20 +924,20 @@
     XCTAssertEqual([claims[@"attrs"] count], 1, @"claims.attrs.count != 1");
     XCTAssertEqual([claims[@"predicates"] count], 2, @"claims.predicates.count != 1");
     
-    NSDictionary *claimForAttr1 = claims[@"attrs"][@"attr1_uuid"][0];
-    XCTAssertTrue( claimForAttr1, @"no object for key \"attr1_uuid\"");
+    NSDictionary *claimForAttr1 = claims[@"attrs"][@"attr1_referent"][0];
+    XCTAssertTrue( claimForAttr1, @"no object for key \"attr1_referent\"");
     
-    NSDictionary *claimForPredicate1 = claims[@"predicates"][@"predicate1_uuid"][0];
-    NSDictionary *claimForPredicate2 = claims[@"predicates"][@"predicate2_uuid"][0];
+    NSDictionary *claimForPredicate1 = claims[@"predicates"][@"predicate1_referent"][0];
+    NSDictionary *claimForPredicate2 = claims[@"predicates"][@"predicate2_referent"][0];
     
-    XCTAssertTrue( claimForPredicate1, @"no object for key \"predicate1_uuid\"");
-    XCTAssertTrue( claimForPredicate2, @"no object for key \"predicate2_uuid\"");
+    XCTAssertTrue( claimForPredicate1, @"no object for key \"predicate1_referent\"");
+    XCTAssertTrue( claimForPredicate2, @"no object for key \"predicate2_referent\"");
     
     //16. Prover create Proof
     
-    NSString *claim_attr_1_UUID = claimForAttr1[@"claim_uuid"];
-    NSString *claim_predicate_1_UUID = claimForPredicate1[@"claim_uuid"];
-    NSString *claim_predicate_2_UUID = claimForPredicate2[@"claim_uuid"];
+    NSString *claim_attr_1_UUID = claimForAttr1[@"referent"];
+    NSString *claim_predicate_1_UUID = claimForPredicate1[@"referent"];
+    NSString *claim_predicate_2_UUID = claimForPredicate2[@"referent"];
     
     XCTAssertTrue( claim_attr_1_UUID, @"claim_attr_1_UUID = nil");
     XCTAssertTrue( claim_predicate_1_UUID, @"claim_predicate_1_UUID = nil");
@@ -945,9 +945,9 @@
     
     NSString *requestedClaimsJson = [ NSString stringWithFormat:@"{"\
                                      "  \"self_attested_attributes\":{},"\
-                                     "  \"requested_attrs\":{\"attr1_uuid\":[\"%@\",true]}, "\
-                                     "  \"requested_predicates\":{\"predicate1_uuid\":\"%@\","\
-                                     "                            \"predicate2_uuid\":\"%@\"}"\
+                                     "  \"requested_attrs\":{\"attr1_referent\":[\"%@\",true]}, "\
+                                     "  \"requested_predicates\":{\"predicate1_referent\":\"%@\","\
+                                     "                            \"predicate2_referent\":\"%@\"}"\
                                      "}", claim_attr_1_UUID, claim_predicate_1_UUID, claim_predicate_2_UUID ];
     
     NSArray *uniqueClaims = [[AnoncredsUtils sharedInstance] getUniqueClaimsFrom:claims];
@@ -961,8 +961,8 @@
     
     // Configure schemasJson
     // get claim's uuids
-    NSString *unique_claim_1_UUID = uniqueClaim1[@"claim_uuid"];
-    NSString *unique_claim_2_UUID = uniqueClaim2[@"claim_uuid"];
+    NSString *unique_claim_1_UUID = uniqueClaim1[@"referent"];
+    NSString *unique_claim_2_UUID = uniqueClaim2[@"referent"];
     XCTAssertTrue(unique_claim_1_UUID, @"unique_claim_1_UUID = nil");
     XCTAssertTrue(unique_claim_1_UUID, @"unique_claim_2_UUID = nil");
     
@@ -1012,7 +1012,7 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateProof() failed");
     
     NSDictionary *proof = [NSDictionary fromString:proofJson];
-    NSString *revealedAttrUUID = proof[@"requested_proof"][@"revealed_attrs"][@"attr1_uuid"][1];
+    NSString *revealedAttrUUID = proof[@"requested_proof"][@"revealed_attrs"][@"attr1_referent"][1];
     XCTAssertTrue([revealedAttrUUID isEqualToString:@"Alex"]);
     
     //17. Verifier verify proof

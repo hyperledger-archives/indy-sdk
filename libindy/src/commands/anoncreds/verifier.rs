@@ -86,21 +86,21 @@ impl VerifierCommandExecutor {
         let requested_attrs: HashSet<String> =
             proof_req.requested_attrs
                 .keys()
-                .map(|uuid| uuid.clone())
+                .map(|referent| referent.clone())
                 .into_iter()
                 .collect::<HashSet<String>>();
 
         let received_revealed_attrs: HashSet<String> =
             proof_claims.requested_proof.revealed_attrs
                 .keys()
-                .map(|uuid| uuid.clone())
+                .map(|referent| referent.clone())
                 .into_iter()
                 .collect::<HashSet<String>>();
 
         let received_unrevealed_attrs: HashSet<String> =
             proof_claims.requested_proof.unrevealed_attrs
                 .keys()
-                .map(|uuid| uuid.clone())
+                .map(|referent| referent.clone())
                 .into_iter()
                 .collect::<HashSet<String>>();
 
@@ -117,14 +117,14 @@ impl VerifierCommandExecutor {
         let requested_predicates: HashSet<String> =
             proof_req.requested_predicates
                 .keys()
-                .map(|uuid| uuid.clone())
+                .map(|referent| referent.clone())
                 .into_iter()
                 .collect::<HashSet<String>>();
 
         let received_predicates: HashSet<String> =
             proof_claims.requested_proof.predicates
                 .keys()
-                .map(|uuid| uuid.clone())
+                .map(|referent| referent.clone())
                 .into_iter()
                 .collect::<HashSet<String>>();
 
