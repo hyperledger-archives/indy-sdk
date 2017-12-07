@@ -180,11 +180,7 @@ impl Command for RotateKeyCommand {
 
         let identity_json = {
             let mut json = JSONMap::new();
-
-            if let Some(seed) = seed {
-                json.insert("seed".to_string(), JSONValue::from(seed));
-            }
-
+            update_json_map_opt_key!(json, "seed", seed);
             JSONValue::from(json).to_string()
         };
 
@@ -244,10 +240,15 @@ impl Command for ListCommand {
 
         let res = match Did::list_dids_with_meta(wallet_handle) {
             Ok(dids) => {
-                let dids = dids.replace("},{", "}\n{").replace("]", "").replace("[", "");
-                //TODO parse JSON and print table
-                if dids.trim().len() > 0 {
-                    println_succ!("Existing dids: \n{}", dids.trim());
+                let dids: Vec<serde_json::Value> = serde_json::from_str(&dids)
+                    .map_err(|_| println_err!("Wrong data has been received"))?;
+                if dids.len() > 0 {
+                    println_acc!("{0: <24} | {1: <46} | {2}", "did", "verkey", "metadata");
+
+                    for did in dids {
+                        println!("{0: <24} | {1: <46} | {2} ", did["did"].as_str().unwrap_or("-"),
+                                 did["verkey"].as_str().unwrap_or("-"), did["metadata"].as_str().unwrap_or("-"));
+                    }
                 } else {
                     println_succ!("There are no dids");
                 }

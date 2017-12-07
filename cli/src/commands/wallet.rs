@@ -1,11 +1,12 @@
 use application_context::ApplicationContext;
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
-use commands::{get_opt_i64_param, get_str_param, get_opt_str_param};
+use commands::{get_opt_int_param, get_str_param, get_opt_str_param};
 
 use libindy::ErrorCode;
 use libindy::wallet::Wallet;
 
+use serde_json;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
@@ -136,22 +137,14 @@ impl Command for OpenCommand {
         let name = get_str_param("name", params).map_err(error_err!())?;
         let key = get_opt_str_param("key", params).map_err(error_err!())?;
         let rekey = get_opt_str_param("rekey", params).map_err(error_err!())?;
-        let freshness_time = get_opt_i64_param("freshness_time", params).map_err(error_err!())?;
+        let freshness_time = get_opt_int_param::<i64>("freshness_time", params).map_err(error_err!())?;
 
         let config = {
             let mut json = JSONMap::new();
 
-            if let Some(key) = key {
-                json.insert("key".to_string(), JSONValue::from(key));
-            }
-
-            if let Some(rekey) = rekey {
-                json.insert("rekey".to_string(), JSONValue::from(rekey));
-            }
-
-            if let Some(freshness_time) = freshness_time {
-                json.insert("freshness_time".to_string(), JSONValue::from(freshness_time));
-            }
+            update_json_map_opt_key!(json, "key", key);
+            update_json_map_opt_key!(json, "rekey", rekey);
+            update_json_map_opt_key!(json, "freshness_time", freshness_time);
 
             if !json.is_empty() {
                 Some(JSONValue::from(json).to_string())
@@ -213,10 +206,14 @@ impl Command for ListCommand {
 
         let res = match Wallet::list_wallets() {
             Ok(wallets) => {
-                let wallets = wallets.replace("},{", "}\n{").replace("]", "").replace("[", "");
-                //TODO parse JSON and print table
-                if wallets.trim().len() > 0 {
-                    println_succ!("Existing wallets: \n{}", wallets.trim());
+                let wallets: Vec<serde_json::Value> = serde_json::from_str(&wallets)
+                    .map_err(|_| println_err!("Wrong data has been received"))?;
+                if wallets.len() > 0 {
+                    println_acc!("{0: <25} | {1: <25} | {2}", "name", "associated pool name", "type");
+                    for wallet in wallets {
+                        println!("{0: <25} | {1: <25} | {2}", wallet["name"].as_str().unwrap_or("-"),
+                                 wallet["associated_pool_name"].as_str().unwrap_or("-"), &wallet["type"].as_str().unwrap_or("-"));
+                    }
                 } else {
                     println_succ!("There are no wallets");
                 }

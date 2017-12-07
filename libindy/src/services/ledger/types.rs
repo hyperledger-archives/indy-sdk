@@ -339,27 +339,20 @@ pub enum Services {
 
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct NodeOperationData {
-    pub node_ip: String,
-    pub node_port: i32,
-    pub client_ip: String,
-    pub client_port: i32,
-    pub alias: String,
-    pub services: Vec<Services>,
-    pub blskey: String
-}
-
-impl NodeOperationData {
-    pub fn new(node_ip: String, node_port: i32, client_ip: String, client_port: i32, alias: String, services: Vec<Services>, blskey: String) -> NodeOperationData {
-        NodeOperationData {
-            node_ip: node_ip,
-            node_port: node_port,
-            client_ip: client_ip,
-            client_port: client_port,
-            alias: alias,
-            services: services,
-            blskey: blskey
-        }
-    }
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub node_ip: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub node_port: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_ip: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_port: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alias: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub services: Option<Vec<Services>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blskey: Option<String>
 }
 
 impl JsonEncodable for NodeOperationData {}
