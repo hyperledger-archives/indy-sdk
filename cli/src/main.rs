@@ -30,6 +30,8 @@ use linefeed::{Reader, ReadResult};
 use linefeed::complete::PathCompleter;
 
 use std::env;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use std::rc::Rc;
 
 fn main() {
@@ -43,7 +45,9 @@ fn main() {
     if env::args().len() == 1 {
         execute_interactive(command_executor, application_context);
     } else {
-        execute_batch(command_executor, &env::args().next().unwrap())
+        let mut args = env::args();
+        args.next(); //skip 0 param
+        execute_batch(command_executor, &args.next().unwrap())
     }
 }
 
@@ -113,6 +117,28 @@ fn execute_interactive(command_executor: CommandExecutor,
     }
 }
 
-fn execute_batch(_command_executor: CommandExecutor, _script_path: &str) {
-    unimplemented!()
+fn execute_batch(command_executor: CommandExecutor, script_path: &str) {
+    let file = match File::open(script_path) {
+        Ok(file) => file,
+        Err(err) => return println_err!("Can't open script file {}\nError: {}", script_path, err),
+    };
+    let reader = BufReader::new(file);
+
+    let mut line_nym = 1;
+    for line in reader.lines() {
+        let line = if let Ok(line) = line { line } else {
+            return println_err!("Can't parse line #{}", line_nym);
+        };
+        println!("{}", line);
+        let (line, force) = if line.starts_with("-") {
+            (line[1..].as_ref(), true)
+        } else {
+            (line[0..].as_ref(), false)
+        };
+        if command_executor.execute(line).is_err() && !force {
+            return println_err!("Batch execution failed at line #{}", line_nym);
+        }
+        println!();
+        line_nym += 1;
+    }
 }
