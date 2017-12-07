@@ -33,7 +33,7 @@ impl GroupTrait for Group {
 }
 
 #[derive(Debug)]
-pub struct SendNymCommand {
+pub struct NymCommand {
     ctx: Rc<IndyContext>,
     metadata: CommandMetadata,
 }
@@ -45,7 +45,7 @@ pub struct GetNymCommand {
 }
 
 #[derive(Debug)]
-pub struct SendAttribCommand {
+pub struct AttribCommand {
     ctx: Rc<IndyContext>,
     metadata: CommandMetadata,
 }
@@ -57,7 +57,7 @@ pub struct GetAttribCommand {
 }
 
 #[derive(Debug)]
-pub struct SendSchemaCommand {
+pub struct SchemaCommand {
     ctx: Rc<IndyContext>,
     metadata: CommandMetadata,
 }
@@ -69,7 +69,7 @@ pub struct GetSchemaCommand {
 }
 
 #[derive(Debug)]
-pub struct SendClaimDefCommand {
+pub struct ClaimDefCommand {
     ctx: Rc<IndyContext>,
     metadata: CommandMetadata,
 }
@@ -81,22 +81,22 @@ pub struct GetClaimDefCommand {
 }
 
 #[derive(Debug)]
-pub struct SendNodeCommand {
+pub struct NodeCommand {
     ctx: Rc<IndyContext>,
     metadata: CommandMetadata,
 }
 
 #[derive(Debug)]
-pub struct SenCustomCommand {
+pub struct CustomCommand {
     ctx: Rc<IndyContext>,
     metadata: CommandMetadata,
 }
 
-impl SendNymCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> SendNymCommand {
-        SendNymCommand {
+impl NymCommand {
+    pub fn new(ctx: Rc<IndyContext>) -> NymCommand {
+        NymCommand {
             ctx,
-            metadata: CommandMetadata::build("send-nym", "Add NYM to Ledger.")
+            metadata: CommandMetadata::build("nym", "Add NYM to Ledger.")
                 .add_param("did", false, "DID of new identity")
                 .add_param("verkey", true, "Verification key of new identity")
                 .add_param("alias", true, "Alias of new identity")
@@ -106,7 +106,7 @@ impl SendNymCommand {
     }
 }
 
-impl Command for SendNymCommand {
+impl Command for NymCommand {
     fn metadata(&self) -> &CommandMetadata {
         &self.metadata
     }
@@ -182,11 +182,11 @@ impl Command for GetNymCommand {
     }
 }
 
-impl SendAttribCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> SendAttribCommand {
-        SendAttribCommand {
+impl AttribCommand {
+    pub fn new(ctx: Rc<IndyContext>) -> AttribCommand {
+        AttribCommand {
             ctx,
-            metadata: CommandMetadata::build("send-attrib", "Add Attribute to exists NYM.")
+            metadata: CommandMetadata::build("attrib", "Add Attribute to exists NYM.")
                 .add_param("did", false, "DID of identity presented in Ledger")
                 .add_param("hash", true, "Hash of attribute data")
                 .add_param("raw", true, "JSON representation of attribute data")
@@ -196,7 +196,7 @@ impl SendAttribCommand {
     }
 }
 
-impl Command for SendAttribCommand {
+impl Command for AttribCommand {
     fn metadata(&self) -> &CommandMetadata {
         &self.metadata
     }
@@ -275,11 +275,11 @@ impl Command for GetAttribCommand {
     }
 }
 
-impl SendSchemaCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> SendSchemaCommand {
-        SendSchemaCommand {
+impl SchemaCommand {
+    pub fn new(ctx: Rc<IndyContext>) -> SchemaCommand {
+        SchemaCommand {
             ctx,
-            metadata: CommandMetadata::build("send-schema", "Add Schema to Ledger.")
+            metadata: CommandMetadata::build("schema", "Add Schema to Ledger.")
                 .add_param("name", false, "Schema name")
                 .add_param("version", false, "Schema version")
                 .add_param("attr_names", false, "Schema attributes split by comma")
@@ -288,7 +288,7 @@ impl SendSchemaCommand {
     }
 }
 
-impl Command for SendSchemaCommand {
+impl Command for SchemaCommand {
     fn metadata(&self) -> &CommandMetadata {
         &self.metadata
     }
@@ -378,11 +378,11 @@ impl Command for GetSchemaCommand {
     }
 }
 
-impl SendClaimDefCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> SendClaimDefCommand {
-        SendClaimDefCommand {
+impl ClaimDefCommand {
+    pub fn new(ctx: Rc<IndyContext>) -> ClaimDefCommand {
+        ClaimDefCommand {
             ctx,
-            metadata: CommandMetadata::build("send-claim-def", "Add claim definition to Ledger.")
+            metadata: CommandMetadata::build("claim-def", "Add claim definition to Ledger.")
                 .add_param("schema_no", false, "Sequence number of schema")
                 .add_param("signature_type", false, "Signature type (only CL supported now)")
                 .add_param("primary", false, "Primary key in json format")
@@ -392,7 +392,7 @@ impl SendClaimDefCommand {
     }
 }
 
-impl Command for SendClaimDefCommand {
+impl Command for ClaimDefCommand {
     fn metadata(&self) -> &CommandMetadata {
         &self.metadata
     }
@@ -476,11 +476,11 @@ impl Command for GetClaimDefCommand {
     }
 }
 
-impl SendNodeCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> SendNodeCommand {
-        SendNodeCommand {
+impl NodeCommand {
+    pub fn new(ctx: Rc<IndyContext>) -> NodeCommand {
+        NodeCommand {
             ctx,
-            metadata: CommandMetadata::build("send-node", "Add Node to Ledger.")
+            metadata: CommandMetadata::build("node", "Add Node to Ledger.")
                 .add_param("target", false, "DID of new identity")
                 .add_param("node_ip", false, "Node Ip")
                 .add_param("node_port", false, "Node port")
@@ -494,7 +494,7 @@ impl SendNodeCommand {
     }
 }
 
-impl Command for SendNodeCommand {
+impl Command for NodeCommand {
     fn metadata(&self) -> &CommandMetadata {
         &self.metadata
     }
@@ -540,11 +540,11 @@ impl Command for SendNodeCommand {
     }
 }
 
-impl SenCustomCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> SenCustomCommand {
-        SenCustomCommand {
+impl CustomCommand {
+    pub fn new(ctx: Rc<IndyContext>) -> CustomCommand {
+        CustomCommand {
             ctx,
-            metadata: CommandMetadata::build("send-custom", "Add NYM to Ledger.")
+            metadata: CommandMetadata::build("custom", "Send custom transaction to Ledger.")
                 .add_main_param("txn", "Transaction json")
                 .add_param("sign", true, "Is signature required")
                 .finalize()
@@ -552,7 +552,7 @@ impl SenCustomCommand {
     }
 }
 
-impl Command for SenCustomCommand {
+impl Command for CustomCommand {
     fn metadata(&self) -> &CommandMetadata {
         &self.metadata
     }

@@ -1,5 +1,6 @@
 extern crate serde_json;
 
+use application_context::ApplicationContext;
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
 use commands::{get_str_param, get_opt_str_param};
@@ -38,7 +39,8 @@ pub struct CreateCommand {
 
 #[derive(Debug)]
 pub struct ConnectCommand {
-    ctx: Rc<IndyContext>,
+    app_cnxt: Rc<ApplicationContext>,
+    indy_cnxt: Rc<IndyContext>,
     metadata: CommandMetadata,
 }
 
@@ -50,7 +52,8 @@ pub struct ListCommand {
 
 #[derive(Debug)]
 pub struct DisconnectCommand {
-    ctx: Rc<IndyContext>,
+    app_cnxt: Rc<ApplicationContext>,
+    indy_cnxt: Rc<IndyContext>,
     metadata: CommandMetadata,
 }
 
@@ -106,9 +109,10 @@ impl Command for CreateCommand {
 }
 
 impl ConnectCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> ConnectCommand {
+    pub fn new(app_cnxt: Rc<ApplicationContext>, indy_cnxt: Rc<IndyContext>) -> ConnectCommand {
         ConnectCommand {
-            ctx,
+            app_cnxt,
+            indy_cnxt,
             metadata: CommandMetadata::build("connect", "Connect to pool with specified name. Also disconnect from previously connected.")
                 .add_main_param("name", "The name of pool")
                 .finalize()
@@ -126,17 +130,34 @@ impl Command for ConnectCommand {
 
         let name = get_str_param("name", params).map_err(error_err!())?;
 
-        //TODO close previously opened pool
-        let res = match Pool::open_pool_ledger(name, None) {
-            Ok(handle) => {
-                self.ctx.set_connected_pool(name, handle);
-                Ok(println_succ!("Pool \"{}\" has been connected", name))
-            }
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
-        };
+        let res = Ok(())
+            .and_then(|_| {
+                if let Some((name, handle)) = self.indy_cnxt.get_connected_pool() {
+                    match Pool::close(handle) {
+                        Ok(()) => {
+                            self.app_cnxt.unset_sub_prompt(1);
+                            self.indy_cnxt.unset_connected_pool();
+                            Ok(println_succ!("Pool \"{}\" has been disconnected", name))
+                        }
+                        Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
+                    }
+                } else {
+                    Ok(())
+                }
+            })
+            .and_then(|_| {
+                match Pool::open_pool_ledger(name, None) {
+                    Ok(handle) => {
+                        self.app_cnxt.set_sub_prompt(1, &format!("pool({})", name));
+                        self.indy_cnxt.set_connected_pool(name, handle);
+                        Ok(println_succ!("Pool \"{}\" has been connected", name))
+                    }
+                    Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                }
+            });
 
         trace!("CreateCommand::execute << {:?}", res);
-        Ok(())
+        res
     }
 }
 
@@ -183,9 +204,10 @@ impl Command for ListCommand {
 }
 
 impl DisconnectCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> DisconnectCommand {
+    pub fn new(app_cnxt: Rc<ApplicationContext>, indy_cnxt: Rc<IndyContext>) -> DisconnectCommand {
         DisconnectCommand {
-            ctx,
+            app_cnxt,
+            indy_cnxt,
             metadata: CommandMetadata::build("disconnect", "Disconnect from current pool.")
                 .finalize()
         }
@@ -200,7 +222,7 @@ impl Command for DisconnectCommand {
     fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("DisconnectCommand::execute >> self {:?} params {:?}", self, params);
 
-        let (name, handle) = if let Some(pool) = self.ctx.get_connected_pool() {
+        let (name, handle) = if let Some(pool) = self.indy_cnxt.get_connected_pool() {
             pool
         } else {
             return Err(println_err!("There is no connected pool now"));
@@ -208,7 +230,8 @@ impl Command for DisconnectCommand {
 
         let res = match Pool::close(handle) {
             Ok(()) => {
-                self.ctx.unset_connected_pool();
+                self.app_cnxt.unset_sub_prompt(1);
+                self.indy_cnxt.unset_connected_pool();
                 Ok(println_succ!("Pool \"{}\" has been disconnected", name))
             }
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
