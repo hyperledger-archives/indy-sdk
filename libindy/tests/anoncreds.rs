@@ -25,8 +25,6 @@ use indy::api::ErrorCode;
 use utils::inmem_wallet::InmemWallet;
 use utils::constants::*;
 
-#[test]
-fn issuer_create_and_store_claim_def_works() {}
 mod high_cases {
     use super::*;
 

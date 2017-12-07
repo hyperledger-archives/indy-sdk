@@ -43,7 +43,7 @@
                                      schemaSeqNo:(NSNumber *)schemaSeqNo
                                      maxClaimNum:(NSNumber *)maxClaimNum
                                     walletHandle:(IndyHandle)walletHandle
-                                      completion:(void (^)(NSError *error, NSString *revocRegJSON, NSString *revocRegUUID)) completion;
+                                      completion:(void (^)(NSError *error, NSString *revocRegJSON)) completion;
 
 /**
  Signs a given claim for the given user by a given key (claim ef).
