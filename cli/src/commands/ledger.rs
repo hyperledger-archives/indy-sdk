@@ -404,7 +404,7 @@ impl Command for SendClaimDefCommand {
         let pool_handle = get_connected_pool_handle(&self.ctx)?;
         let wallet_handle = get_opened_wallet_handle(&self.ctx)?;
 
-        let xref = get_i32_param("schema_no", params).map_err(error_err!())?;
+        let xref = get_int_param::<i32>("schema_no", params).map_err(error_err!())?;
         let signature_type = get_str_param("signature_type", params).map_err(error_err!())?;
         let primary = get_object_param("primary", params).map_err(error_err!())?;
         let revocation = get_opt_str_param("revocation", params).map_err(error_err!())?;
@@ -412,11 +412,7 @@ impl Command for SendClaimDefCommand {
         let claim_def_data = {
             let mut json = JSONMap::new();
             json.insert("primary".to_string(), primary);
-
-            if let Some(revocation) = revocation {
-                json.insert("revocation".to_string(), JSONValue::from(revocation));
-            }
-
+            update_json_map_opt_key!(json, "revocation", revocation);
             JSONValue::from(json).to_string()
         };
 
@@ -458,7 +454,7 @@ impl Command for GetClaimDefCommand {
         let submitter_did = get_active_did(&self.ctx)?;
         let pool_handle = get_connected_pool_handle(&self.ctx)?;
 
-        let xref = get_i32_param("schema_no", params).map_err(error_err!())?;
+        let xref = get_int_param::<i32>("schema_no", params).map_err(error_err!())?;
         let signature_type = get_str_param("signature_type", params).map_err(error_err!())?;
         let origin = get_str_param("origin", params).map_err(error_err!())?;
 
@@ -512,37 +508,22 @@ impl Command for SendNodeCommand {
 
         let target_did = get_str_param("target", params).map_err(error_err!())?;
         let node_ip = get_opt_str_param("node_ip", params).map_err(error_err!())?;
-        let node_port = get_opt_i32_param("node_port", params).map_err(error_err!())?;
+        let node_port = get_opt_int_param::<i32>("node_port", params).map_err(error_err!())?;
         let client_ip = get_opt_str_param("client_ip", params).map_err(error_err!())?;
-        let client_port = get_opt_i32_param("client_port", params).map_err(error_err!())?;
+        let client_port = get_opt_int_param::<i32>("client_port", params).map_err(error_err!())?;
         let alias = get_opt_str_param("alias", params).map_err(error_err!())?;
         let blskey = get_opt_str_param("blskey", params).map_err(error_err!())?;
         let services = get_opt_str_array_param("services", params).map_err(error_err!())?;
 
         let node_data = {
             let mut json = JSONMap::new();
-
-            if let Some(node_ip) = node_ip {
-                json.insert("node_ip".to_string(), JSONValue::from(node_ip));
-            }
-            if let Some(node_port) = node_port {
-                json.insert("node_port".to_string(), JSONValue::from(node_port));
-            }
-            if let Some(client_ip) = client_ip {
-                json.insert("client_ip".to_string(), JSONValue::from(client_ip));
-            }
-            if let Some(client_port) = client_port {
-                json.insert("client_port".to_string(), JSONValue::from(client_port));
-            }
-            if let Some(alias) = alias {
-                json.insert("alias".to_string(), JSONValue::from(alias));
-            }
-            if let Some(blskey) = blskey {
-                json.insert("blskey".to_string(), JSONValue::from(blskey));
-            }
-            if let Some(services) = services {
-                json.insert("services".to_string(), JSONValue::from(services));
-            }
+            update_json_map_opt_key!(json, "node_ip", node_ip);
+            update_json_map_opt_key!(json, "node_port", node_port);
+            update_json_map_opt_key!(json, "client_ip", client_ip);
+            update_json_map_opt_key!(json, "client_port", client_port);
+            update_json_map_opt_key!(json, "alias", alias);
+            update_json_map_opt_key!(json, "blskey", blskey);
+            update_json_map_opt_key!(json, "services", services);
             JSONValue::from(json).to_string()
         };
 

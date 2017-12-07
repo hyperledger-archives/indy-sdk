@@ -180,11 +180,7 @@ impl Command for RotateKeyCommand {
 
         let identity_json = {
             let mut json = JSONMap::new();
-
-            if let Some(seed) = seed {
-                json.insert("seed".to_string(), JSONValue::from(seed));
-            }
-
+            update_json_map_opt_key!(json, "seed", seed);
             JSONValue::from(json).to_string()
         };
 
