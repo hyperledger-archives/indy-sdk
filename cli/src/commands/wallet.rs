@@ -2,7 +2,7 @@ extern crate serde_json;
 
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
-use commands::{get_opt_i64_param, get_str_param, get_opt_str_param};
+use commands::{get_opt_int_param, get_str_param, get_opt_str_param};
 
 use libindy::ErrorCode;
 use libindy::wallet::Wallet;
@@ -134,7 +134,7 @@ impl Command for OpenCommand {
         let name = get_str_param("name", params).map_err(error_err!())?;
         let key = get_opt_str_param("key", params).map_err(error_err!())?;
         let rekey = get_opt_str_param("rekey", params).map_err(error_err!())?;
-        let freshness_time = get_opt_i64_param("freshness_time", params).map_err(error_err!())?;
+        let freshness_time = get_opt_int_param::<i64>("freshness_time", params).map_err(error_err!())?;
 
         let config = {
             let mut json = JSONMap::new();

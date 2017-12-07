@@ -33,7 +33,7 @@ use std::env;
 use std::rc::Rc;
 
 fn main() {
-    //FIXME move from SDK utils::logger::LoggerUtils::init();
+    utils::logger::LoggerUtils::init();
 
     let application_context = Rc::new(ApplicationContext::new());
     let indy_context = Rc::new(IndyContext::new());
