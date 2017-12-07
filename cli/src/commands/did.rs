@@ -15,6 +15,8 @@ use serde_json::Map as JSONMap;
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use prettytable::Table;
+
 pub struct Group {
     metadata: GroupMetadata
 }
@@ -100,7 +102,7 @@ impl Command for NewCommand {
             Ok((did, vk)) => {
                 println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk);
                 Ok(did)
-            },
+            }
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -245,12 +247,14 @@ impl Command for ListCommand {
                 let dids: Vec<serde_json::Value> = serde_json::from_str(&dids)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
                 if dids.len() > 0 {
-                    println!("{0: <24} | {1: <46} | {2}", "did", "verkey", "metadata");
-
+                    let mut table = Table::new();
+                    table.add_row(row![Fgb->"did", Fgb->"verkey", Fgb->"metadata"]);
                     for did in dids {
-                        println!("{0: <24} | {1: <46} | {2} ", did["did"].as_str().unwrap_or("-"),
-                                 did["verkey"].as_str().unwrap_or("-"), did["metadata"].as_str().unwrap_or("-"));
+                        table.add_row(row![did["did"].as_str().unwrap_or("-"),
+                                           did["verkey"].as_str().unwrap_or("-"),
+                                           did["metadata"].as_str().unwrap_or("-")]);
                     }
+                    table.printstd();
                 } else {
                     println_succ!("There are no dids");
                 }
