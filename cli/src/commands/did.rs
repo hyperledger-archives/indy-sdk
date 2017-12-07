@@ -241,7 +241,7 @@ impl Command for ListCommand {
                 let dids: Vec<serde_json::Value> = serde_json::from_str(&dids)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
                 if dids.len() > 0 {
-                    println!("{0: <24} | {1: <46} | {2}", "did", "verkey", "metadata");
+                    println_acc!("{0: <24} | {1: <46} | {2}", "did", "verkey", "metadata");
 
                     for did in dids {
                         println!("{0: <24} | {1: <46} | {2} ", did["did"].as_str().unwrap_or("-"),

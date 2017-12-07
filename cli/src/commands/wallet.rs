@@ -204,7 +204,7 @@ impl Command for ListCommand {
                 let wallets: Vec<serde_json::Value> = serde_json::from_str(&wallets)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
                 if wallets.len() > 0 {
-                    println!("{0: <25} | {1: <25} | {2}", "name", "associated pool name", "type");
+                    println_acc!("{0: <25} | {1: <25} | {2}", "name", "associated pool name", "type");
                     for wallet in wallets {
                         println!("{0: <25} | {1: <25} | {2}", wallet["name"].as_str().unwrap_or("-"),
                                  wallet["associated_pool_name"].as_str().unwrap_or("-"), &wallet["type"].as_str().unwrap_or("-"));
