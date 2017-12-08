@@ -6,18 +6,18 @@ extern crate rmp_serde;
 use settings;
 use utils::httpclient;
 use utils::error;
-use messages::{MsgType, GeneralMessage, Bundled, bundle_for_agency};
+use messages::{GeneralMessage, Bundled, bundle_for_agency};
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
 struct GetMessagesPayload{
-    #[serde(rename = "@type")]
-    msg_type: MsgType,
-    #[serde(rename = "excludePayload")]
-    exclude_payload: String,
-    uids: String,
-    #[serde(rename = "statusCodes")]
+    #[serde(rename = "type")]
+    msg_type: String,
+    #[serde(rename = "msgType")]
+    message: String,
+    uid: String,
     status_code: String,
+    include_edge_payload: String,
 }
 
 #[derive(Serialize, Debug, PartialEq, PartialOrd, Clone)]
@@ -41,10 +41,11 @@ impl GetMessages{
             to_did: String::new(),
             to_vk: String::new(),
             payload: GetMessagesPayload{
-                msg_type: MsgType { name: "GET_MSGS".to_string(), ver: "1.0".to_string(), },
-                uids: String::new(),
+                msg_type: "GET_MSGS".to_string(),
+                message: String::new(),
+                uid: String::new(),
                 status_code: String::new(),
-                exclude_payload: "Y".to_string(),
+                include_edge_payload: "Y".to_string(),
             },
             agent_payload: String::new(),
             validate_rc: error::SUCCESS.code_num,
@@ -53,13 +54,13 @@ impl GetMessages{
 
     pub fn msg_type(&mut self, msg: &str) -> &mut Self{
         //Todo: validate msg??
-        self.payload.msg_type.name = msg.to_string();
+        self.payload.msg_type = msg.to_string();
         self
     }
 
     pub fn uid(&mut self, uid: &str) -> &mut Self{
         //Todo: validate msg_uid??
-        self.payload.uids = uid.to_string();
+        self.payload.uid = uid.to_string();
         self
     }
 
@@ -72,7 +73,7 @@ impl GetMessages{
 
     pub fn include_edge_payload(&mut self, payload: &str) -> &mut Self {
         //todo: is this a json value, String??
-        self.payload.exclude_payload = payload.to_string();
+        self.payload.include_edge_payload = payload.to_string();
         self
     }
 
@@ -306,14 +307,7 @@ mod tests {
                 String::from("error")
             }
         };
-        assert_eq!(msg, "{\"agentPayload\":\"\
-        {\\\"@type\\\":\
-        {\\\"name\\\":\\\"GET_MSGS\\\",\
-        \\\"ver\\\":\\\"1.0\\\"},\
-        \\\"excludePayload\\\":\\\"Y\\\",\
-        \\\"statusCodes\\\":\\\"0\\\",\
-        \\\"uids\\\":\\\"123\\\"}\",\
-        \"to\":\"8XFh8yBzrpJQmNyZzgoTqB\"}");
+        assert_eq!(msg,"{\"agentPayload\":\"{\\\"includeEdgePayload\\\":\\\"Y\\\",\\\"msgType\\\":\\\"\\\",\\\"statusCode\\\":\\\"0\\\",\\\"type\\\":\\\"GET_MSGS\\\",\\\"uid\\\":\\\"123\\\"}\",\"to\":\"8XFh8yBzrpJQmNyZzgoTqB\"}");
     }
 
     #[test]
