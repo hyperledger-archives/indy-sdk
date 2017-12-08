@@ -240,9 +240,12 @@ impl IssuerClaim {
 
     fn get_claim_req(&mut self, msg_uid: &str) {
         info!("Checking for outstanding claimReq for {} with uid: {}", self.handle, msg_uid);
-        let msgs = match self.get_matching_messages(msg_uid) {
+        let msgs = match get_matching_messages(msg_uid, &self.issued_did) {
             Ok(x) => x,
-            Err(_) => return,
+            Err(err) => {
+                warn!("{} {}", err, self.handle);
+                return
+            },
         };
 
         for msg in msgs {
@@ -280,9 +283,12 @@ impl IssuerClaim {
         }
         // state is "OfferSent" so check to see if there is a new claimReq
         let msg_uid = self.msg_uid.clone();
-        let msgs = match self.get_matching_messages(&msg_uid) {
+        let msgs = match get_matching_messages(&msg_uid, &self.issued_did) {
             Ok(x) => x,
-            Err(_) => return,
+            Err(err) => {
+                warn!("{} {}", err, self.handle);
+                return
+            },
         };
 
         for msg in msgs {
@@ -297,34 +303,6 @@ impl IssuerClaim {
                 self.ref_msg_id = ref_msg_id.to_owned();
                 self.get_claim_req(ref_msg_id);
             }
-        }
-    }
-
-    fn get_matching_messages(&mut self, msg_uid:&str) -> Result<Vec<serde_json::Value>, u32> {
-        let response = match messages::get_messages().to(&self.issued_did).uid(msg_uid).send() {
-            Ok(x) => x,
-            Err(x) => {
-                warn!("invalid response to get_messages for claim {}", self.handle);
-                return Err(error::INVALID_JSON.code_num)
-            },
-        };
-
-        let json: serde_json::Value = match serde_json::from_str(&response) {
-            Ok(json) => json,
-            Err(_) => {
-                warn!("invalid json in get_messages for claim {}", self.handle);
-                return Err(error::INVALID_JSON.code_num)
-
-
-            },
-        };
-
-        match json["msgs"].as_array() {
-            Some(array) => Ok(array.to_owned()),
-            None => {
-                warn!("invalid msgs array returned for claim {}", self.handle);
-                Err(error::INVALID_JSON.code_num)
-            },
         }
     }
 
@@ -589,6 +567,25 @@ pub fn convert_to_map(s:&str) -> Result<serde_json::Map<String, serde_json::Valu
             return Err(error::INVALID_ATTRIBUTES_STRUCTURE.code_num)},
     };
     Ok(v)
+}
+
+fn get_matching_messages<'a>(msg_uid:&'a str, did:&'a str) -> Result<Vec<serde_json::Value>, &'a str> {
+    let response = match messages::get_messages().to(did).uid(msg_uid).send() {
+        Ok(x) => x,
+        Err(x) => return Err("invalid response to get_messages for claim"),
+
+    };
+
+    let json: serde_json::Value = match serde_json::from_str(&response) {
+        Ok(json) => json,
+        Err(_) => return Err("invalid json in get_messages for claim"),
+
+    };
+
+    match json["msgs"].as_array() {
+        Some(array) => Ok(array.to_owned()),
+        None => Err("invalid msgs array returned for claim"),
+    }
 }
 
 #[cfg(test)]

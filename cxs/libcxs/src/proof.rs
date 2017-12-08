@@ -89,9 +89,12 @@ impl Proof {
         }
 
         let msg_uid = self.msg_uid.clone();
-        let msgs = match self.get_matching_messages(&msg_uid) {
+        let msgs = match get_matching_messages(&msg_uid, &self.prover_did) {
             Ok(x) => x,
-            Err(_) => return,
+            Err(msg) =>{
+                warn!("{} {}", msg, self.handle);
+                return
+            }
         };
         for msg in msgs {
             //Todo: Find out what message will look like for proof offer??
@@ -106,34 +109,6 @@ impl Proof {
                 };
                 self.get_proof_offer(ref_msg_id);
             }
-        }
-    }
-
-    fn get_matching_messages(&mut self, msg_uid:&str) -> Result<Vec<serde_json::Value>, u32> {
-        let response = match messages::get_messages().to(&self.prover_did).uid(&self.msg_uid).send() {
-            Ok(x) => x,
-            Err(x) => {
-                warn!("invalid response to get_messages for proof {}", self.handle);
-                return Err(error::INVALID_JSON.code_num)
-            },
-        };
-
-        let json: serde_json::Value = match serde_json::from_str(&response) {
-            Ok(json) => json,
-            Err(_) => {
-                warn!("invalid json in get_messages for proof {}", self.handle);
-                return Err(error::INVALID_JSON.code_num)
-
-
-            },
-        };
-
-        match json["msgs"].as_array() {
-            Some(array) => Ok(array.to_owned()),
-            None => {
-                warn!("invalid msgs array returned for proof {}", self.handle);
-                Err(error::INVALID_JSON.code_num)
-            },
         }
     }
 
@@ -271,6 +246,31 @@ pub fn get_offer_uid(handle: u32) -> Result<String,u32> {
     match PROOF_MAP.lock().unwrap().get(&handle) {
         Some(proof) => Ok(proof.get_offer_uid()),
         None => Err(error::INVALID_PROOF_HANDLE.code_num),
+    }
+}
+
+fn get_matching_messages<'a>(msg_uid:&'a str, to_did: &'a str) -> Result<Vec<serde_json::Value>, &'a str> {
+    let response = match messages::get_messages().to(to_did).uid(msg_uid).send() {
+        Ok(x) => x,
+        Err(x) => {
+            return Err("invalid response to get_messages for proof")
+        },
+    };
+
+    let json: serde_json::Value = match serde_json::from_str(&response) {
+        Ok(json) => json,
+        Err(_) => {
+            return Err("invalid json in get_messages for proof")
+
+
+        },
+    };
+
+    match json["msgs"].as_array() {
+        Some(array) => Ok(array.to_owned()),
+        None => {
+            Err("invalid msgs array returned for proof")
+        },
     }
 }
 
