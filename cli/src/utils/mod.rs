@@ -43,3 +43,27 @@ macro_rules! command_with_app_ctx {
         }
     )
 }
+
+#[macro_export] //TODO move to more relevant place
+macro_rules! command_with_indy_ctx {
+    ($meta:expr) => (
+        pub fn new(indy_ctx: Rc<IndyContext>) -> Command {
+            Command {
+                executor: Box::new(move |params| self::execute(indy_ctx.clone(), params)),
+                metadata: $meta
+            }
+        }
+    )
+}
+
+#[macro_export] //TODO move to more relevant place
+macro_rules! command_with_indy_and_indy_ctx {
+    ($meta:expr) => (
+        pub fn new(app_ctx: Rc<ApplicationContext>, indy_ctx: Rc<IndyContext>) -> Command {
+            Command {
+                executor: Box::new(move |params| self::execute(app_ctx.clone(), indy_ctx.clone(), params)),
+                metadata: $meta
+            }
+        }
+    )
+}

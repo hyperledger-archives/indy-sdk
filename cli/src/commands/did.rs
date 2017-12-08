@@ -33,50 +33,21 @@ impl GroupTrait for Group {
     }
 }
 
-#[derive(Debug)]
-pub struct NewCommand {
-    ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
+pub mod NewCommand {
+    use super::*;
 
-#[derive(Debug)]
-pub struct UseCommand {
-    app_ctx: Rc<ApplicationContext>,
-    indy_ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-#[derive(Debug)]
-pub struct RotateKeyCommand {
-    ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-#[derive(Debug)]
-pub struct ListCommand {
-    ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-impl NewCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> NewCommand {
-        NewCommand {
-            ctx,
-            metadata: CommandMetadata::build("new", "Create new DID")
+    command_with_indy_ctx!(CommandMetadata::build("new", "Create new DID")
                 .add_param("did", true, "Known DID for new wallet instance")
                 .add_param("seed", true, "Seed for creating DID key-pair")
                 .add_param("cid", true, "Create DID as CID (default false)")
                 .add_param("metadata", true, "DID metadata")
                 .finalize()
-        }
-    }
-}
+    );
 
-impl Command for NewCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("NewCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("NewCommand::execute >> self {:?} params {:?}", ctx, params);
 
-        let wallet_handle = get_opened_wallet_handle(&self.ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx)?;
 
         let did = get_opt_str_param("did", params).map_err(error_err!())?;
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
@@ -120,36 +91,26 @@ impl Command for NewCommand {
         trace!("NewCommand::execute << {:?}", res);
         res
     }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
 }
 
-impl UseCommand {
-    pub fn new(app_ctx: Rc<ApplicationContext>, indy_ctx: Rc<IndyContext>) -> UseCommand {
-        UseCommand {
-            app_ctx,
-            indy_ctx,
-            metadata: CommandMetadata::build("use", "Use DID")
+pub mod UseCommand {
+    use super::*;
+
+    command_with_indy_and_indy_ctx!(CommandMetadata::build("use", "Use DID")
                 .add_main_param("did", "Did stored in wallet")
-                .finalize()
-        }
-    }
-}
+                .finalize());
 
-impl Command for UseCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("UseCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(app_ctx: Rc<ApplicationContext>, indy_ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("UseCommand::execute >> app_ctx {:?}, indy_ctx {:?}, params {:?}", app_ctx, indy_ctx, params);
 
         let did = get_str_param("did", params).map_err(error_err!())?;
 
-        let wallet_handle = get_opened_wallet_handle(&self.indy_ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&indy_ctx)?;
 
         let res = match Did::get_did_with_meta(wallet_handle, did) {
             Ok(_) => {
-                self.app_ctx.set_sub_prompt(3, &format!("did({}...{})", &did[..3], &did[did.len() - 3..]));
-                self.indy_ctx.set_active_did(did);
+                app_ctx.set_sub_prompt(3, &format!("did({}...{})", &did[..3], &did[did.len() - 3..]));
+                indy_ctx.set_active_did(did);
                 Ok(println_succ!("Did \"{}\" has been set as active", did))
             }
             Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid DID format")),
@@ -160,32 +121,23 @@ impl Command for UseCommand {
         trace!("UseCommand::execute << {:?}", res);
         res
     }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
 }
 
-impl RotateKeyCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> RotateKeyCommand {
-        RotateKeyCommand {
-            ctx,
-            metadata: CommandMetadata::build("rotate-key", "Rotate keys for active did")
+pub mod RotateKeyCommand {
+    use super::*;
+
+    command_with_indy_ctx!(CommandMetadata::build("rotate-key", "Rotate keys for active did")
                 .add_param("seed", true, "If not provide then a random one will be created")
-                .finalize()
-        }
-    }
-}
+                .finalize());
 
-impl Command for RotateKeyCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("RotateKeyCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("RotateKeyCommand::execute >> ctx {:?} params {:?}", ctx, params);
 
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
 
-        let did = get_active_did(&self.ctx)?;
-        let pool_handle = get_connected_pool_handle(&self.ctx)?;
-        let wallet_handle = get_opened_wallet_handle(&self.ctx)?;
+        let did = get_active_did(&ctx)?;
+        let pool_handle = get_connected_pool_handle(&ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx)?;
 
         let identity_json = {
             let mut json = JSONMap::new();
@@ -221,31 +173,17 @@ impl Command for RotateKeyCommand {
         trace!("RotateKeyCommand::execute << {:?}", res);
         res
     }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
 }
 
-impl ListCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> ListCommand {
-        ListCommand {
-            ctx,
-            metadata: CommandMetadata::build("list", "List my DIDs stored in the opened wallet.")
-                .finalize()
-        }
-    }
-}
+pub mod ListCommand {
+    use super::*;
 
-impl Command for ListCommand {
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
+    command_with_indy_ctx!(CommandMetadata::build("list", "List my DIDs stored in the opened wallet.").finalize());
 
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("ListCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("ListCommand::execute >> ctx {:?} params {:?}", ctx, params);
 
-        let wallet_handle = get_opened_wallet_handle(&self.ctx)?;
+        let wallet_handle = get_opened_wallet_handle(&ctx)?;
 
         let res = match Did::list_dids_with_meta(wallet_handle) {
             Ok(dids) => {
@@ -259,7 +197,7 @@ impl Command for ListCommand {
                 } else {
                     println_succ!("There are no dids");
                 }
-                if let Some(cur_did) = self.ctx.get_active_did() {
+                if let Some(cur_did) = ctx.get_active_did() {
                     println_succ!("Current did \"{}\"", cur_did);
                 }
                 Ok(())

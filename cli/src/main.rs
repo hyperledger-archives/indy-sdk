@@ -24,7 +24,7 @@ mod libindy;
 use application_context::ApplicationContext;
 use command_executor::CommandExecutor;
 
-use commands::{common/*, did, pool, wallet, ledger*/};
+use commands::{common, did/*, pool, wallet, ledger*/};
 use indy_context::IndyContext;
 
 use linefeed::{Reader, ReadResult};
@@ -59,13 +59,13 @@ fn build_executor(application_context: Rc<ApplicationContext>,
         .add_command(common::ExitCommand::new(application_context.clone()))
         .add_command(common::PromptCommand::new(application_context.clone()))
         .add_command(common::ShowCommand::new())
-        /*
         .add_group(Box::new(did::Group::new()))
-        .add_command(Box::new(did::NewCommand::new(indy_context.clone())))
-        .add_command(Box::new(did::UseCommand::new(application_context.clone(), indy_context.clone())))
-        .add_command(Box::new(did::RotateKeyCommand::new(indy_context.clone())))
-        .add_command(Box::new(did::ListCommand::new(indy_context.clone())))
+        .add_command(did::NewCommand::new(indy_context.clone()))
+        .add_command(did::UseCommand::new(application_context.clone(), indy_context.clone()))
+        .add_command(did::RotateKeyCommand::new(indy_context.clone()))
+        .add_command(did::ListCommand::new(indy_context.clone()))
         .finalize_group()
+        /*
         .add_group(Box::new(pool::Group::new()))
         .add_command(Box::new(pool::CreateCommand::new(indy_context.clone())))
         .add_command(Box::new(pool::ConnectCommand::new(application_context.clone(), indy_context.clone())))
