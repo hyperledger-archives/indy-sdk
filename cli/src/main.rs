@@ -24,7 +24,7 @@ mod libindy;
 use application_context::ApplicationContext;
 use command_executor::CommandExecutor;
 
-use commands::{common, did/*, pool, wallet, ledger*/};
+use commands::{common, did, wallet};
 use indy_context::IndyContext;
 
 use linefeed::{Reader, ReadResult};
@@ -73,13 +73,15 @@ fn build_executor(application_context: Rc<ApplicationContext>,
         .add_command(Box::new(pool::DisconnectCommand::new(application_context.clone(), indy_context.clone())))
         .add_command(Box::new(pool::DeleteCommand::new(indy_context.clone())))
         .finalize_group()
+        */
         .add_group(Box::new(wallet::Group::new()))
-        .add_command(Box::new(wallet::CreateCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::OpenCommand::new(application_context.clone(), indy_context.clone())))
-        .add_command(Box::new(wallet::ListCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::CloseCommand::new(application_context.clone(), indy_context.clone())))
-        .add_command(Box::new(wallet::DeleteCommand::new(indy_context.clone())))
+        .add_command(wallet::CreateCommand::new())
+        .add_command(wallet::OpenCommand::new(application_context.clone(), indy_context.clone()))
+        .add_command(wallet::ListCommand::new(indy_context.clone()))
+        .add_command(wallet::CloseCommand::new(application_context.clone(), indy_context.clone()))
+        .add_command(wallet::DeleteCommand::new())
         .finalize_group()
+        /*
         .add_group(Box::new(ledger::Group::new()))
         .add_command(Box::new(ledger::NymCommand::new(indy_context.clone())))
         .add_command(Box::new(ledger::GetNymCommand::new(indy_context.clone())))
