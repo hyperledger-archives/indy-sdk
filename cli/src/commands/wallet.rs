@@ -73,7 +73,7 @@ pub mod CreateCommand {
 pub mod OpenCommand {
     use super::*;
 
-    command_with_indy_and_indy_ctx!(CommandMetadata::build("open", "Open wallet with specified name. Also close previously opened.")
+    command_with_app_and_indy_ctx!(CommandMetadata::build("open", "Open wallet with specified name. Also close previously opened.")
                 .add_main_param("name", "The name of wallet")
                 .add_param("key", true, "Auth key for the wallet")
                 .add_param("rekey", true, "New auth key for the wallet (will replace previous one).")
@@ -177,7 +177,7 @@ pub mod ListCommand {
 pub mod CloseCommand {
     use super::*;
 
-    command_with_indy_and_indy_ctx!(CommandMetadata::build("close", "Close opened wallet.")
+    command_with_app_and_indy_ctx!(CommandMetadata::build("close", "Close opened wallet.")
                 .finalize()
     );
 

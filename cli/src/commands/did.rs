@@ -96,7 +96,7 @@ pub mod NewCommand {
 pub mod UseCommand {
     use super::*;
 
-    command_with_indy_and_indy_ctx!(CommandMetadata::build("use", "Use DID")
+    command_with_app_and_indy_ctx!(CommandMetadata::build("use", "Use DID")
                 .add_main_param("did", "Did stored in wallet")
                 .finalize());
 

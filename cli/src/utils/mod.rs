@@ -57,7 +57,7 @@ macro_rules! command_with_indy_ctx {
 }
 
 #[macro_export] //TODO move to more relevant place
-macro_rules! command_with_indy_and_indy_ctx {
+macro_rules! command_with_app_and_indy_ctx {
     ($meta:expr) => (
         pub fn new(app_ctx: Rc<ApplicationContext>, indy_ctx: Rc<IndyContext>) -> Command {
             Command {
