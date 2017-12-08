@@ -5,15 +5,34 @@ extern crate libc;
 use std::sync::Mutex;
 use std::collections::HashMap;
 use rand::Rng;
-use api::CxsStateType;
+use api::{ CxsStateType, ProofStateType };
 use utils::error;
 use settings;
+use proof_offer::{ ProofOffer };
 use messages;
 use messages::GeneralMessage;
+use messages::MessageResponseCode::{ MessageAccepted };
 use connection;
+use utils::callback::CallbackUtils;
+use std::sync::mpsc::channel;
+use self::libc::c_char;
+use std::ffi::CString;
+use utils::timeout::TimeoutUtils;
 
 lazy_static! {
     static ref PROOF_MAP: Mutex<HashMap<u32, Box<Proof>>> = Default::default();
+}
+
+extern {
+    fn indy_verifier_verify_proof(command_handle: i32,
+                                  proof_request_json: *const c_char,
+                                  proof_json: *const c_char,
+                                  schemas_json: *const c_char,
+                                  claim_defs_jsons: *const c_char,
+                                  revoc_regs_json: *const c_char,
+                                  cb: Option<extern fn(xcommand_handle: i32, err: i32,
+                                                      valid: bool)>) -> i32;
+
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -23,21 +42,126 @@ struct Proof {
     requested_attrs: String,
     requested_predicates: String,
     msg_uid: String,
+    ref_msg_id: String,
     requester_did: String,
     prover_did: String,
     state: CxsStateType,
+    proof_state: ProofStateType,
     tid: u32,
     mid: u32,
     name: String,
     version: String,
     nonce: String,
+    proof_offer: Option<ProofOffer>,
 }
 
 impl Proof {
-    fn validate_proof_request(&self) -> Result<u32, String> {
+    fn validate_proof_request(&self) -> Result<u32, u32> {
         //TODO: validate proof request
         info!("successfully validated proof {}", self.handle);
         Ok(error::SUCCESS.code_num)
+    }
+    
+    fn validate_proof_against_request(&self) -> Result<u32, u32> {
+        Ok(error::SUCCESS.code_num)
+    }
+    
+    fn indy_validate_proof(&mut self) -> Result<u32, u32> {
+// proof_request_json: initial proof request as sent by the verifier
+//     {
+//         "nonce": string,
+//         "requested_attr1_uuid": <attr_info>,
+//         "requested_attr2_uuid": <attr_info>,
+//         "requested_attr3_uuid": <attr_info>,
+//         "requested_predicate_1_uuid": <predicate_info>,
+//         "requested_predicate_2_uuid": <predicate_info>,
+//     }
+// proof_json: proof json
+// For each requested attribute either a proof (with optionally revealed attribute value) or
+// self-attested attribute value is provided.
+// Each proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.
+// There ais also aggregated proof part common for all claim proofs.
+//     {
+//         "requested": {
+//             "requested_attr1_id": [claim_proof1_uuid, revealed_attr1, revealed_attr1_as_int],
+//             "requested_attr2_id": [self_attested_attribute],
+//             "requested_attr3_id": [claim_proof2_uuid]
+//             "requested_attr4_id": [claim_proof2_uuid, revealed_attr4, revealed_attr4_as_int],
+//             "requested_predicate_1_uuid": [claim_proof2_uuid],
+//             "requested_predicate_2_uuid": [claim_proof3_uuid],
+//         }
+//         "claim_proofs": {
+//             "claim_proof1_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+//             "claim_proof2_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+//             "claim_proof3_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
+//         },
+//         "aggregated_proof": <aggregated_proof>
+//     }
+// schemas_jsons: all schema jsons participating in the proof
+//         {
+//             "claim_proof1_uuid": <schema>,
+//             "claim_proof2_uuid": <schema>,
+//             "claim_proof3_uuid": <schema>
+//         }
+// claim_defs_jsons: all claim definition jsons participating in the proof
+//         {
+//             "claim_proof1_uuid": <claim_def>,
+//             "claim_proof2_uuid": <claim_def>,
+//             "claim_proof3_uuid": <claim_def>
+//         }
+// revoc_regs_jsons: all revocation registry jsons participating in the proof
+//         {
+//             "claim_proof1_uuid": <revoc_reg>,
+//             "claim_proof2_uuid": <revoc_reg>,
+//             "claim_proof3_uuid": <revoc_reg>
+//         }
+//pub extern fn indy_verifier_verify_proof(command_handle: i32,
+//                                         proof_request_json: *const c_char,
+//                                         proof_json: *const c_char,
+//                                         schemas_json: *const c_char,
+//                                         claim_defs_jsons: *const c_char,
+//                                         revoc_regs_json: *const c_char,
+//                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+//                                                              valid: bool)>) -> ErrorCode {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err, valid | {
+            sender.send((err, valid)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_verifier_verify_proof_cb(cb);
+        let proof_request_json = "";
+        let proof_json = "";
+        let schemas_json = "";
+        let claim_defs_jsons =  "";
+        let revoc_regs_json = "";
+
+        unsafe {
+            let indy_err = indy_verifier_verify_proof(command_handle,
+                                                      CString::new(proof_request_json).unwrap().as_ptr(),
+                                                      CString::new(proof_json).unwrap().as_ptr(),
+                                                      CString::new(schemas_json).unwrap().as_ptr(),
+                                                      CString::new(claim_defs_jsons).unwrap().as_ptr(),
+                                                      CString::new(revoc_regs_json).unwrap().as_ptr(),
+                                                      cb);
+            if indy_err != 0 {
+                return Err(self.set_invalid_proof_state(indy_err))
+            }
+        }
+
+        let (err, valid) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != 0 || !valid {
+            return Err(self.set_invalid_proof_state(err))
+        }
+        info!("Indy validated Proof Offer: {:?}", self.handle);
+        self.proof_state = ProofStateType::ProofValidated;
+        Ok(error::SUCCESS.code_num)
+    }
+
+    fn set_invalid_proof_state(&mut self, error:i32) -> u32 {
+        error!("Error: {}, Proof offer wasn't valid {}", error, self.handle);
+        self.proof_state = ProofStateType::ProofInvalid;
+        error::UNKNOWN_ERROR.code_num
     }
 
     fn send_proof_request(&mut self, connection_handle: u32) -> Result<u32, u32> {
@@ -47,8 +171,6 @@ impl Proof {
         }
         self.prover_did = connection::get_pw_did(connection_handle)?;
         self.requester_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT).unwrap();
-        //TODO: call to libindy to encrypt payload
-        //TODO: Set expiration date
         let data_version = ".1";
         let proof_request = messages::proof_request()
             .type_version(&self.version)
@@ -76,7 +198,30 @@ impl Proof {
         }
     }
 
-    fn get_proof_offer(&mut self, msg_uid: &str) {
+    fn get_proof_offer(&self) -> Result<String, u32> {
+        let proof_offer = match self.proof_offer {
+            Some(ref x) => x,
+            None => return Err(error::INVALID_PROOF_OFFER.code_num),
+        };
+        proof_offer.get_attrs()
+    }
+    fn build_proof_offer(&mut self, msg_uid: &str) {
+        info!("Checking for outstanding proofOffer for {} with uid: {}", self.handle, msg_uid);
+        let msgs = match get_matching_messages(msg_uid, &self.prover_did) {
+            Ok(x) => x,
+            Err(err) => {
+                warn!("{} {}", err, self.handle);
+                return
+            }
+        };
+
+        for msg in msgs {
+            self.state = CxsStateType::CxsStateRequestReceived;
+            // Todo: Parse proof values 
+            // Todo: check/compare against request
+            // Todo: Validate proof with lib-indy
+            // Todo: build proof offer object and set it in proof
+        }
         return
     }
 
@@ -89,18 +234,17 @@ impl Proof {
         }
 
         // State is proof request sent
-        let msg = match get_matching_messages(&self.msg_uid, &self.prover_did) {
+        let msgs = match get_matching_messages(&self.msg_uid, &self.prover_did) {
             Ok(x) => x,
             Err(err) => {
-                warn!("{} {}", msg, self.handle);
+                warn!("{} {}", err, self.handle);
                 return
             }
         };
 
         for msg in msgs {
-            //Todo: Find out what message will look like for proof offer??
-            //Todo: This will see if there is a proof offer from user
-            if msg["statusCode"].to_string() == "\"Don't hit yet\"" {
+            if msg["statusCode"] == serde_json::to_value(MessageAccepted.as_str())
+                .unwrap_or(serde_json::Value::Null){
                 let ref_msg_id = match msg["refMsgId"].as_str() {
                     Some(x) => x,
                     None => {
@@ -108,7 +252,8 @@ impl Proof {
                         return
                     }
                 };
-                self.get_proof_offer(ref_msg_id);
+                self.ref_msg_id = ref_msg_id.to_owned();
+                self.build_proof_offer(ref_msg_id);
             }
         }
 
@@ -127,7 +272,7 @@ impl Proof {
 pub fn create_proof(source_id: Option<String>,
                     requested_attrs: String,
                     requested_predicates: String,
-                    name: String) -> Result<u32, String> {
+                    name: String) -> Result<u32, u32> {
 
     let new_handle = rand::thread_rng().gen::<u32>();
 
@@ -137,16 +282,19 @@ pub fn create_proof(source_id: Option<String>,
         handle: new_handle,
         source_id: source_id_unwrap,
         msg_uid: String::new(),
+        ref_msg_id: String::new(),
         requested_attrs,
         requested_predicates,
         requester_did: String::new(),
         prover_did: String::new(),
         state: CxsStateType::CxsStateNone,
+        proof_state: ProofStateType::ProofUndefined,
         tid: 0,
         mid: 0,
         name,
         version: String::from("1.0"),
         nonce: generate_nonce().to_string(),
+        proof_offer: None,
     });
 
     new_proof.validate_proof_request()?;
@@ -274,6 +422,13 @@ fn get_matching_messages<'a>(msg_uid:&'a str, to_did: &'a str) -> Result<Vec<ser
         None => {
             Err("invalid msgs array returned for proof")
         },
+    }
+}
+
+pub fn get_proof_offer(handle: u32) -> Result<String,u32> {
+    match PROOF_MAP.lock().unwrap().get(&handle) {
+        Some(proof) => Ok(proof.get_proof_offer()?),
+        None => Err(error::INVALID_PROOF_OFFER.code_num),
     }
 }
 
@@ -420,6 +575,28 @@ mod tests {
         match send_proof_request(handle, connection_handle) {
             Ok(x) => panic!("Should have failed in send_proof_request"),
             Err(y) => assert_eq!(y, error::INVALID_DID.code_num)
+        }
+    }
+
+    #[test]
+    fn test_get_proof_offer_fails_with_no_proof_offer() {
+        set_default_and_enable_test_mode();
+        let handle = match create_proof(Some("1".to_string()),
+                                        REQUESTED_ATTRS.to_owned(),
+                                        REQUESTED_PREDICATES.to_owned(),
+                                        "Optional".to_owned()) {
+            Ok(x) => x,
+            Err(_) => panic!("Proof creation failed"),
+        };
+        assert!(is_valid_handle(handle));
+
+        match get_proof_offer(handle) {
+            Ok(x) => {
+                warn!("Should have failed with no proof");
+                assert_eq!(0, 1)
+            },
+            Err(x) => assert_eq!(x, error::INVALID_PROOF_OFFER.code_num),
+
         }
     }
 }
