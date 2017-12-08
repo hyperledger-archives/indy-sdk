@@ -181,7 +181,7 @@ impl Command for ListCommand {
 
         let res = match Pool::list() {
             Ok(pools) => {
-                println!("pools {:?}", pools);
+                trace!("pools {:?}", pools);
                 let pools: Vec<serde_json::Value> = serde_json::from_str(&pools)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
@@ -189,6 +189,9 @@ impl Command for ListCommand {
                     print_table(&pools, &vec![("pool", "Pool")]);
                 } else {
                     println_succ!("There are no pool");
+                }
+                if let Some(cur_pool) = self.ctx.get_connected_pool_name() {
+                    println_succ!("Current pool \"{}\"", cur_pool);
                 }
 
                 Ok(())
