@@ -2,7 +2,7 @@ use application_context::ApplicationContext;
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
 use commands::{get_opt_int_param, get_str_param, get_opt_str_param};
-
+use utils::table::print_table;
 use libindy::ErrorCode;
 use libindy::wallet::Wallet;
 
@@ -208,20 +208,22 @@ impl Command for ListCommand {
             Ok(wallets) => {
                 let wallets: Vec<serde_json::Value> = serde_json::from_str(&wallets)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
+
                 if wallets.len() > 0 {
-                    println_acc!("{0: <25} | {1: <25} | {2}", "name", "associated pool name", "type");
-                    for wallet in wallets {
-                        println!("{0: <25} | {1: <25} | {2}", wallet["name"].as_str().unwrap_or("-"),
-                                 wallet["associated_pool_name"].as_str().unwrap_or("-"), &wallet["type"].as_str().unwrap_or("-"));
-                    }
+                    print_table(&wallets,
+                                &vec![("name", "Name"),
+                                      ("associated_pool_name", "Associated pool name"),
+                                      ("type", "Type")]);
                 } else {
                     println_succ!("There are no wallets");
                 }
+
                 if let Some(cur_wallet) = self.ctx.get_opened_wallet_name() {
                     println_succ!("Current wallet \"{}\"", cur_wallet);
                 }
                 Ok(())
             }
+            Err(ErrorCode::CommonIOError) => Err(println_succ!("There are no wallets")),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 

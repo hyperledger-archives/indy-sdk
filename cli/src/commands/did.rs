@@ -2,6 +2,7 @@ use application_context::ApplicationContext;
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
 use commands::*;
+use utils::table::print_table;
 
 use libindy::ErrorCode;
 
@@ -100,7 +101,7 @@ impl Command for NewCommand {
             Ok((did, vk)) => {
                 println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk);
                 Ok(did)
-            },
+            }
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -143,7 +144,7 @@ impl Command for UseCommand {
 
         let did = get_str_param("did", params).map_err(error_err!())?;
 
-        self.app_cnxt.set_sub_prompt(3, &format!("did({}...{})", &did[..3], &did[did.len()-3..]));
+        self.app_cnxt.set_sub_prompt(3, &format!("did({}...{})", &did[..3], &did[did.len() - 3..]));
         self.indy_cnxt.set_active_did(did);
 
         println_succ!("Did \"{}\" has been set as active", did);
@@ -243,12 +244,10 @@ impl Command for ListCommand {
                 let dids: Vec<serde_json::Value> = serde_json::from_str(&dids)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
                 if dids.len() > 0 {
-                    println_acc!("{0: <24} | {1: <46} | {2}", "did", "verkey", "metadata");
-
-                    for did in dids {
-                        println!("{0: <24} | {1: <46} | {2} ", did["did"].as_str().unwrap_or("-"),
-                                 did["verkey"].as_str().unwrap_or("-"), did["metadata"].as_str().unwrap_or("-"));
-                    }
+                    print_table(&dids,
+                                &vec![("did", "Did"),
+                                      ("verkey", "Verkey"),
+                                      ("metadata", "Metadata")]);
                 } else {
                     println_succ!("There are no dids");
                 }

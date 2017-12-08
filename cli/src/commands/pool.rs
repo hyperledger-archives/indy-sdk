@@ -1,3 +1,5 @@
+extern crate serde_json;
+
 use application_context::ApplicationContext;
 use indy_context::IndyContext;
 use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
@@ -5,10 +7,11 @@ use commands::{get_str_param, get_opt_str_param};
 
 use libindy::ErrorCode;
 use libindy::pool::Pool;
-
+use utils::table::print_table;
 
 use std::collections::HashMap;
 use std::rc::Rc;
+
 
 pub struct Group {
     metadata: GroupMetadata
@@ -178,17 +181,19 @@ impl Command for ListCommand {
 
         let res = match Pool::list() {
             Ok(pools) => {
-                let pools = pools.replace(",", "\n").replace("]", "").replace("[", "");
-                if pools.trim().len() > 0 {
-                    println_succ!("Existing pools: \n{}", pools.trim());
+                println!("pools {:?}", pools);
+                let pools: Vec<serde_json::Value> = serde_json::from_str(&pools)
+                    .map_err(|_| println_err!("Wrong data has been received"))?;
+
+                if pools.len() > 0 {
+                    print_table(&pools, &vec![("pool", "Pool")]);
                 } else {
-                    println_succ!("There are no pools");
+                    println_succ!("There are no pool");
                 }
-                if let Some(cur_pool) = self.ctx.get_connected_pool_name() {
-                    println_succ!("Current pool \"{}\"", cur_pool);
-                }
+
                 Ok(())
             }
+            Err(ErrorCode::CommonIOError) => Err(println_succ!("There are no pool")),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 

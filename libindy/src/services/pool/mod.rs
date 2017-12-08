@@ -1124,18 +1124,19 @@ impl PoolService {
             .map(|()| cmd_id)
     }
 
-    pub fn list(&self) -> Result<Vec<String>, PoolError> {
-        let mut pool_names = Vec::new();
+    pub fn list(&self) -> Result<Vec<serde_json::Value>, PoolError> {
+        let mut pool = Vec::new();
 
         let pool_home_path = EnvironmentUtils::pool_home_path();
         for entry in fs::read_dir(pool_home_path)? {
             let dir_entry = if let Ok(dir_entry) = entry { dir_entry } else { continue };
             if let Some(pool_name) = dir_entry.path().file_name().and_then(|os_str| os_str.to_str()) {
-                pool_names.push(pool_name.to_owned());
+                let json = json!({"pool":pool_name.to_owned()});
+                pool.push(json);
             }
         }
 
-        Ok(pool_names)
+        Ok(pool)
     }
 
     pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
