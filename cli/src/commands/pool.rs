@@ -186,8 +186,7 @@ impl Command for ListCommand {
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 if pools.len() > 0 {
-                    let keys: Vec<(String, String)> = vec![("pool".to_owned(), "pool".to_owned())];
-                    print_table(&keys, &pools);
+                    print_table(&pools, &vec![("pool", "Pool")]);
                 } else {
                     println_succ!("There are no pool");
                 }

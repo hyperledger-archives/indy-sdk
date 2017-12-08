@@ -6,7 +6,7 @@ use prettytable::Table;
 use prettytable::row::Row;
 use prettytable::cell::Cell;
 
-pub fn print_table(headers: &Vec<(String, String)>, rows: &Vec<serde_json::Value>) {
+pub fn print_table(rows: &Vec<serde_json::Value>, headers: &[(&str, &str)]) {
     let mut table = Table::new();
 
     let tittles = headers.iter().clone()

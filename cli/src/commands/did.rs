@@ -144,7 +144,7 @@ impl Command for UseCommand {
 
         let did = get_str_param("did", params).map_err(error_err!())?;
 
-        self.app_cnxt.set_sub_prompt(3, &format!("did({}...{})", &did[..3], &did[did.len()-3..]));
+        self.app_cnxt.set_sub_prompt(3, &format!("did({}...{})", &did[..3], &did[did.len() - 3..]));
         self.indy_cnxt.set_active_did(did);
 
         println_succ!("Did \"{}\" has been set as active", did);
@@ -244,12 +244,10 @@ impl Command for ListCommand {
                 let dids: Vec<serde_json::Value> = serde_json::from_str(&dids)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
                 if dids.len() > 0 {
-                    let keys: Vec<(String, String)> = vec![("did".to_owned(), "did".to_owned()),
-                                                           ("verkey".to_owned(), "verkey".to_owned()),
-                                                           ("metadata".to_owned(), "metadata".to_owned())];
-                    print_table(&keys, &dids);
-
-
+                    print_table(&dids,
+                                &vec![("did", "Did"),
+                                      ("verkey", "Verkey"),
+                                      ("metadata", "Metadata")]);
                 } else {
                     println_succ!("There are no dids");
                 }

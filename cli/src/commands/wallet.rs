@@ -210,10 +210,10 @@ impl Command for ListCommand {
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 if wallets.len() > 0 {
-                    let keys: Vec<(String, String)> = vec![("name".to_owned(), "name".to_owned()),
-                                                           ("associated_pool_name".to_owned(), "associated pool name".to_owned()),
-                                                           ("type".to_owned(), "type".to_owned())];
-                    print_table(&keys, &wallets);
+                    print_table(&wallets,
+                                &vec![("name", "Name"),
+                                      ("associated_pool_name", "Associated pool name"),
+                                      ("type", "Type")]);
                 } else {
                     println_succ!("There are no wallets");
                 }
