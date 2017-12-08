@@ -1,0 +1,12 @@
+Package: libindy-cli
+Architecture: amd64
+Depends: libindy, libncursesw5-dev
+Suggests: build-essential
+Description: This is the official command line interface for Indy SDK,
+  which provides a distributed-ledger-based foundation for self-sovereign
+  identity. The major artifact of the SDK is a c-callable library; there
+  are also convenience wrappers for various programming languages.
+  All bugs, stories, and backlog for this project are managed through
+  Hyperledger's Jira in project IS (note that regular Indy tickets are
+  in the INDY project instead...). Also, join us on Jira's Rocket.Chat
+  at #indy-sdk to discuss.
