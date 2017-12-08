@@ -7,15 +7,11 @@ use std::fs::File;
 use std::io::Read;
 use std::rc::Rc;
 
+
 pub mod AboutCommand {
     use super::*;
 
-    pub fn new() -> Command {
-        Command {
-            executor: Box::new(|params| self::execute(params)),
-            metadata: CommandMetadata::build("about", "Show about information").finalize()
-        }
-    }
+    command_without_ctx!(CommandMetadata::build("about", "Show about information").finalize());
 
     fn execute(_params: &CommandExecParams) -> CommandResult {
         trace!("AboutCommand::execute >> self: params: {:?}", _params);
@@ -40,14 +36,9 @@ pub mod AboutCommand {
 pub mod ShowCommand {
     use super::*;
 
-    pub fn new() -> Command {
-        Command {
-            executor: Box::new(|params| self::execute(params)),
-            metadata: CommandMetadata::build("show", "Print the content of text file")
-                .add_main_param("file", "The path to file to show")
-                .finalize()
-        }
-    }
+    command_without_ctx!(CommandMetadata::build("show", "Print the content of text file")
+                            .add_main_param("file", "The path to file to show")
+                            .finalize());
 
     fn execute(params: &CommandExecParams) -> CommandResult {
         trace!("ShowCommand::execute >> params: {:?}", params);
@@ -77,14 +68,9 @@ pub mod ShowCommand {
 pub mod PromptCommand {
     use super::*;
 
-    pub fn new(ctx: Rc<ApplicationContext>) -> Command {
-        Command {
-            executor: Box::new(move |params| self::execute(ctx.clone(), params)),
-            metadata: CommandMetadata::build("prompt", "Change command prompt")
-                .add_main_param("prompt", "New prompt string")
-                .finalize()
-        }
-    }
+    command_with_app_ctx!(CommandMetadata::build("prompt", "Change command prompt")
+                            .add_main_param("prompt", "New prompt string")
+                            .finalize());
 
     fn execute(ctx: Rc<ApplicationContext>, params: &CommandExecParams) -> CommandResult {
         trace!("PromptCommand::execute >> ctx: {:?}, params: {:?}", ctx, params);
@@ -102,13 +88,8 @@ pub mod PromptCommand {
 
 pub mod ExitCommand {
     use super::*;
-    
-    pub fn new(ctx: Rc<ApplicationContext>) -> Command {
-        Command {
-            executor: Box::new(move |params| self::execute(ctx.clone(), params)),
-            metadata: CommandMetadata::build("exit", "Exit Indy CLI").finalize()
-        }
-    }
+
+    command_with_app_ctx!(CommandMetadata::build("exit", "Exit Indy CLI").finalize());
 
     fn execute(ctx: Rc<ApplicationContext>, params: &CommandExecParams) -> CommandResult {
         trace!("ExitCommand::execute >> ctx: {:?}, params: {:?}", ctx, params);

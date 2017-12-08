@@ -19,3 +19,27 @@ macro_rules! update_json_map_opt_key {
         None => {}
     })
 }
+
+#[macro_export] //TODO move to more relevant place
+macro_rules! command_without_ctx {
+    ($meta:expr) => (
+        pub fn new() -> Command {
+            Command {
+                executor: Box::new(|params| self::execute(params)),
+                metadata: $meta
+            }
+        }
+    )
+}
+
+#[macro_export] //TODO move to more relevant place
+macro_rules! command_with_app_ctx {
+    ($meta:expr) => (
+        pub fn new(app_ctx: Rc<ApplicationContext>) -> Command {
+            Command {
+                executor: Box::new(move |params| self::execute(app_ctx.clone(), params)),
+                metadata: $meta
+            }
+        }
+    )
+}
