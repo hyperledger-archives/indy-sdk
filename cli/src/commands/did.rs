@@ -41,8 +41,8 @@ pub struct NewCommand {
 
 #[derive(Debug)]
 pub struct UseCommand {
-    app_cnxt: Rc<ApplicationContext>,
-    indy_cnxt: Rc<IndyContext>,
+    app_ctx: Rc<ApplicationContext>,
+    indy_ctx: Rc<IndyContext>,
     metadata: CommandMetadata,
 }
 
@@ -127,10 +127,10 @@ impl Command for NewCommand {
 }
 
 impl UseCommand {
-    pub fn new(app_cnxt: Rc<ApplicationContext>, indy_cnxt: Rc<IndyContext>) -> UseCommand {
+    pub fn new(app_ctx: Rc<ApplicationContext>, indy_ctx: Rc<IndyContext>) -> UseCommand {
         UseCommand {
-            app_cnxt,
-            indy_cnxt,
+            app_ctx,
+            indy_ctx,
             metadata: CommandMetadata::build("use", "Use DID")
                 .add_main_param("did", "Did stored in wallet")
                 .finalize()
@@ -144,13 +144,21 @@ impl Command for UseCommand {
 
         let did = get_str_param("did", params).map_err(error_err!())?;
 
-        self.app_cnxt.set_sub_prompt(3, &format!("did({}...{})", &did[..3], &did[did.len() - 3..]));
-        self.indy_cnxt.set_active_did(did);
+        let wallet_handle = get_opened_wallet_handle(&self.indy_ctx)?;
 
-        println_succ!("Did \"{}\" has been set as active", did);
+        let res = match Did::get_did_with_meta(wallet_handle, did) {
+            Ok(_) => {
+                self.app_ctx.set_sub_prompt(3, &format!("did({}...{})", &did[..3], &did[did.len() - 3..]));
+                self.indy_ctx.set_active_did(did);
+                Ok(println_succ!("Did \"{}\" has been set as active", did))
+            }
+            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid DID format")),
+            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Requested DID not found")),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
+        };
 
-        trace!("UseCommand::execute << {:?}", ());
-        Ok(())
+        trace!("UseCommand::execute << {:?}", res);
+        res
     }
 
     fn metadata(&self) -> &CommandMetadata {
