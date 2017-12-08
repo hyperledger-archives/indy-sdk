@@ -27,6 +27,28 @@ pub enum MessageType {
     ProofRequestMsg(ProofRequest)
 }
 
+pub enum MessageResponseCode {
+    MessageCreate,
+    MessageSent,
+    MessagePending,
+    MessageAccepted,
+    MessageRejected,
+    MessageAnswered,
+}
+
+impl MessageResponseCode {
+    pub fn as_str(&self) -> &str {
+        match *self {
+            MessageResponseCode::MessageCreate => "MS-101",
+            MessageResponseCode::MessageSent => "MS-102",
+            MessageResponseCode::MessagePending => "MS-103",
+            MessageResponseCode::MessageAccepted => "MS-104",
+            MessageResponseCode::MessageRejected => "MS-105",
+            MessageResponseCode::MessageAnswered => "MS-106",
+        }
+    }
+}
+
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
 pub struct MsgType {
     name: String,

@@ -10,6 +10,7 @@ use utils::error;
 use messages;
 use settings;
 use messages::GeneralMessage;
+use messages::MessageResponseCode::{ MessageAccepted };
 use connection;
 use claim_request::ClaimRequest;
 use utils::issuer_claim::CLAIM_REQ_STRING;
@@ -116,7 +117,7 @@ impl IssuerClaim {
         match messages::send_message().to(&to_did).msg_type("claimOffer")
             .edge_agent_payload(&payload)
             .ref_msg_id(&self.ref_msg_id)
-            .status_code("MS-104")
+            .status_code(MessageAccepted.as_str())
             .send() {
             Err(x) => {
                 warn!("could not send claimOffer: {}", x);
@@ -172,7 +173,7 @@ impl IssuerClaim {
         match messages::send_message().to(&to)
             .ref_msg_id(&self.ref_msg_id)
             .msg_type("claim")
-            .status_code(("MS-104"))
+            .status_code((MessageAccepted.as_str()))
             .edge_agent_payload(&data)
             .send() {
             Err(x) => {
@@ -213,9 +214,9 @@ impl IssuerClaim {
                     return Err(error::INVALID_JSON.code_num)
                 }
             };
-//          FIXME This is hardcode but should have logic for finding strings and integers and
-//          doing a real encoding (sha256)
-//            let encoded = serde_json::Value::from("1139481716457488690172217916278103335");
+            //          FIXME This is hardcode but should have logic for finding strings and integers and
+            //          doing a real encoding (sha256)
+            //            let encoded = serde_json::Value::from("1139481716457488690172217916278103335");
             let i = list[0].clone();
             let value = match i.as_str(){
                 Some(v) => v,
@@ -279,9 +280,9 @@ impl IssuerClaim {
         if self.state == CxsStateType::CxsStateRequestReceived {
             return;
         }
-        else if self.state != CxsStateType::CxsStateOfferSent || self.msg_uid.is_empty() || self.issued_did.is_empty() {
-            return;
-        }
+            else if self.state != CxsStateType::CxsStateOfferSent || self.msg_uid.is_empty() || self.issued_did.is_empty() {
+                return;
+            }
 
         let msgs = match get_matching_messages(&self.msg_uid, &self.issued_did) {
             Ok(x) => x,
@@ -292,7 +293,8 @@ impl IssuerClaim {
         };
 
         for msg in msgs {
-            if msg["statusCode"].to_string() == "\"MS-104\"" {
+            if msg["statusCode"] == serde_json::to_value(MessageAccepted.as_str())
+                .unwrap_or(serde_json::Value::Null) {
                 //get the followup-claim-req using refMsgId
                 let ref_msg_id = match msg["refMsgId"].as_str() {
                     Some(x) => x,
@@ -541,11 +543,11 @@ fn get_offer_details(response: &str) -> Result<String,u32> {
 }
 
 pub fn set_claim_request(handle: u32, claim_request: &ClaimRequest) -> Result<u32,u32>{
-   match ISSUER_CLAIM_MAP.lock().unwrap().get_mut(&handle) {
-       Some(c) => {c.set_claim_request(claim_request);
-                    Ok(error::SUCCESS.code_num)},
-       None => Err(error::UNKNOWN_ERROR.code_num),
-   }
+    match ISSUER_CLAIM_MAP.lock().unwrap().get_mut(&handle) {
+        Some(c) => {c.set_claim_request(claim_request);
+            Ok(error::SUCCESS.code_num)},
+        None => Err(error::UNKNOWN_ERROR.code_num),
+    }
 }
 
 pub fn append_value(original_payload: &str,key: &str,  value: &str) -> Result<String, u32> {
@@ -572,7 +574,7 @@ pub fn convert_to_map(s:&str) -> Result<serde_json::Map<String, serde_json::Valu
 
 fn get_matching_messages<'a>(msg_uid:&'a str, did:&'a str) -> Result<Vec<serde_json::Value>, &'a str> {
     let response = match messages::get_messages().to(did).uid(msg_uid).send() {
-            Ok(x) => x,
+        Ok(x) => x,
         Err(x) => return Err("invalid response to get_messages for claim"),
 
     };
@@ -914,9 +916,9 @@ mod tests {
         info!("claim data: {:?}", &CLAIM_DATA);
         let encoded = issuer_claim.create_attributes_encodings().unwrap();
         let claim_payload = match create_claim_payload_using_wallet( &issuer_claim.claim_id,
-                                                                    &claim_request,
-                                                                    &encoded,
-                                                                    wallet_handle) {
+                                                                     &claim_request,
+                                                                     &encoded,
+                                                                     wallet_handle) {
             Ok(c) => c,
             Err(_) => panic!("Error creating claim payload"),
         };
