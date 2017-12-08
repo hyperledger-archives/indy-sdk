@@ -24,7 +24,7 @@ mod libindy;
 use application_context::ApplicationContext;
 use command_executor::CommandExecutor;
 
-use commands::{common, did, pool, wallet, ledger};
+use commands::{common/*, did, pool, wallet, ledger*/};
 use indy_context::IndyContext;
 
 use linefeed::{Reader, ReadResult};
@@ -55,10 +55,11 @@ fn main() {
 fn build_executor(application_context: Rc<ApplicationContext>,
                   indy_context: Rc<IndyContext>) -> CommandExecutor {
     CommandExecutor::build()
-        .add_command(Box::new(common::AboutCommand::new()))
-        .add_command(Box::new(common::ExitCommand::new(application_context.clone())))
-        .add_command(Box::new(common::PromptCommand::new(application_context.clone())))
-        .add_command(Box::new(common::ShowCommand::new()))
+        .add_command(common::AboutCommand::new())
+        .add_command(common::ExitCommand::new(application_context.clone()))
+        .add_command(common::PromptCommand::new(application_context.clone()))
+        .add_command(common::ShowCommand::new())
+        /*
         .add_group(Box::new(did::Group::new()))
         .add_command(Box::new(did::NewCommand::new(indy_context.clone())))
         .add_command(Box::new(did::UseCommand::new(application_context.clone(), indy_context.clone())))
@@ -91,6 +92,7 @@ fn build_executor(application_context: Rc<ApplicationContext>,
         .add_command(Box::new(ledger::NodeCommand::new(indy_context.clone())))
         .add_command(Box::new(ledger::CustomCommand::new(indy_context.clone())))
         .finalize_group()
+        */
         .finalize()
 }
 

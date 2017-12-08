@@ -1,5 +1,5 @@
 use application_context::ApplicationContext;
-use command_executor::{Command, CommandMetadata};
+use command_executor::{Command, CommandExecParams, CommandMetadata, CommandResult};
 use commands::get_str_param;
 
 use std::collections::HashMap;
@@ -7,39 +7,18 @@ use std::fs::File;
 use std::io::Read;
 use std::rc::Rc;
 
-#[derive(Debug)]
-pub struct AboutCommand {
-    metadata: CommandMetadata,
-}
+pub mod AboutCommand {
+    use super::*;
 
-#[derive(Debug)]
-pub struct ShowCommand {
-    metadata: CommandMetadata,
-}
-
-#[derive(Debug)]
-pub struct PromptCommand {
-    cnxt: Rc<ApplicationContext>,
-    metadata: CommandMetadata,
-}
-
-#[derive(Debug)]
-pub struct ExitCommand {
-    cnxt: Rc<ApplicationContext>,
-    metadata: CommandMetadata,
-}
-
-impl AboutCommand {
-    pub fn new() -> AboutCommand {
-        AboutCommand {
+    pub fn new() -> Command {
+        Command {
+            executor: Box::new(|params| self::execute(params)),
             metadata: CommandMetadata::build("about", "Show about information").finalize()
         }
     }
-}
 
-impl Command for AboutCommand {
-    fn execute(&self, _params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("AboutCommand::execute >> self: {:?}, _params: {:?}", self, _params);
+    fn execute(_params: &CommandExecParams) -> CommandResult {
+        trace!("AboutCommand::execute >> self: params: {:?}", _params);
 
         println_succ!("Hyperledger Indy CLI (https://github.com/hyperledger/indy-sdk)");
         println!();
@@ -56,25 +35,22 @@ impl Command for AboutCommand {
         trace!("AboutCommand::execute << {:?}", res);
         res
     }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
 }
 
-impl ShowCommand {
-    pub fn new() -> ShowCommand {
-        ShowCommand {
+pub mod ShowCommand {
+    use super::*;
+
+    pub fn new() -> Command {
+        Command {
+            executor: Box::new(|params| self::execute(params)),
             metadata: CommandMetadata::build("show", "Print the content of text file")
                 .add_main_param("file", "The path to file to show")
                 .finalize()
         }
     }
-}
 
-impl Command for ShowCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("ShowCommand::execute >> self: {:?}, params: {:?}", self, params);
+    fn execute(params: &CommandExecParams) -> CommandResult {
+        trace!("ShowCommand::execute >> params: {:?}", params);
 
         let file = get_str_param("file", params).map_err(error_err!())?;
 
@@ -96,64 +72,52 @@ impl Command for ShowCommand {
         trace!("ShowCommand::execute << {:?}", res);
         res
     }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
 }
 
-impl PromptCommand {
-    pub fn new(cnxt: Rc<ApplicationContext>) -> PromptCommand {
-        PromptCommand {
-            cnxt,
+pub mod PromptCommand {
+    use super::*;
+
+    pub fn new(ctx: Rc<ApplicationContext>) -> Command {
+        Command {
+            executor: Box::new(move |params| self::execute(ctx.clone(), params)),
             metadata: CommandMetadata::build("prompt", "Change command prompt")
                 .add_main_param("prompt", "New prompt string")
                 .finalize()
         }
     }
-}
 
-impl Command for PromptCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("PromptCommand::execute >> self: {:?}, params: {:?}", self, params);
+    fn execute(ctx: Rc<ApplicationContext>, params: &CommandExecParams) -> CommandResult {
+        trace!("PromptCommand::execute >> ctx: {:?}, params: {:?}", ctx, params);
 
         let prompt = get_str_param("prompt", params).map_err(error_err!())?;
 
-        self.cnxt.set_main_prompt(prompt);
+        ctx.set_main_prompt(prompt);
         println_succ!("Command prompt has been set to \"{}\"", prompt);
         let res = Ok(());
 
         trace!("PromptCommand::execute << {:?}", res);
         res
     }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
 }
 
-impl ExitCommand {
-    pub fn new(cnxt: Rc<ApplicationContext>) -> ExitCommand {
-        ExitCommand {
-            cnxt,
+pub mod ExitCommand {
+    use super::*;
+    
+    pub fn new(ctx: Rc<ApplicationContext>) -> Command {
+        Command {
+            executor: Box::new(move |params| self::execute(ctx.clone(), params)),
             metadata: CommandMetadata::build("exit", "Exit Indy CLI").finalize()
         }
     }
-}
 
-impl Command for ExitCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("ExitCommand::execute >> self: {:?}, params: {:?}", self, params);
+    fn execute(ctx: Rc<ApplicationContext>, params: &CommandExecParams) -> CommandResult {
+        trace!("ExitCommand::execute >> ctx: {:?}, params: {:?}", ctx, params);
 
-        self.cnxt.set_exit();
+        ctx.set_exit();
         println_succ!("Goodbye...");
         let res = Ok(());
 
         trace!("ExitCommand::execute << {:?}", res);
         res
-    }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
     }
 }

@@ -1,10 +1,10 @@
 extern crate serde_json;
 
 pub mod common;
-pub mod did;
-pub mod pool;
-pub mod wallet;
-pub mod ledger;
+//pub mod did;
+//pub mod pool;
+//pub mod wallet;
+//pub mod ledger;
 
 use indy_context::IndyContext;
 
