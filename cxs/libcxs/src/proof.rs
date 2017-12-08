@@ -36,6 +36,7 @@ struct Proof {
 impl Proof {
     fn validate_proof_request(&self) -> Result<u32, String> {
         //TODO: validate proof request
+        info!("successfully validated proof {}", self.handle);
         Ok(error::SUCCESS.code_num)
     }
 
@@ -88,27 +89,12 @@ impl Proof {
         }
 
         // State is proof request sent
-        let response = match messages::get_messages().to(&self.prover_did).uid(&self.msg_uid).send() {
+        let msg = match get_matching_messages(&self.msg_uid, &self.prover_did) {
             Ok(x) => x,
-            Err(x) => {
-                warn!("invalid response to get_messages for proof {}", self.handle);
+            Err(err) => {
+                warn!("{} {}", msg, self.handle);
                 return
-            },
-        };
-        let json: serde_json::Value = match serde_json::from_str(&response) {
-            Ok(json) => json,
-            Err(_) => {
-                warn!("invalid json in get_messages for proof {}", self.handle);
-                return
-            },
-        };
-
-        let msgs = match json["msgs"].as_array() {
-            Some(array) => array,
-            None => {
-                warn!("invalid msgs array returned for proof {}", self.handle);
-                return
-            },
+            }
         };
 
         for msg in msgs {
@@ -163,10 +149,7 @@ pub fn create_proof(source_id: Option<String>,
         nonce: generate_nonce().to_string(),
     });
 
-    match new_proof.validate_proof_request() {
-        Ok(_) => info!("successfully validated proof {}", new_handle),
-        Err(x) => return Err(x),
-    };
+    new_proof.validate_proof_request()?;
 
     new_proof.state = CxsStateType::CxsStateInitialized;
 
@@ -236,10 +219,7 @@ pub fn from_string(proof_data: &str) -> Result<u32, u32> {
 
 pub fn send_proof_request(handle: u32, connection_handle: u32) -> Result<u32,u32> {
     match PROOF_MAP.lock().unwrap().get_mut(&handle) {
-        Some(c) => match c.send_proof_request(connection_handle) {
-            Ok(_) => Ok(error::SUCCESS.code_num),
-            Err(x) => Err(x),
-        },
+        Some(c) => Ok(c.send_proof_request(connection_handle)?),
         None => Err(error::INVALID_PROOF_HANDLE.code_num),
     }
 }
@@ -269,6 +249,31 @@ pub fn get_offer_uid(handle: u32) -> Result<String,u32> {
     match PROOF_MAP.lock().unwrap().get(&handle) {
         Some(proof) => Ok(proof.get_offer_uid()),
         None => Err(error::INVALID_PROOF_HANDLE.code_num),
+    }
+}
+
+fn get_matching_messages<'a>(msg_uid:&'a str, to_did: &'a str) -> Result<Vec<serde_json::Value>, &'a str> {
+    let response = match messages::get_messages().to(to_did).uid(msg_uid).send() {
+            Ok(x) => x,
+        Err(x) => {
+            return Err("invalid response to get_messages for proof")
+        },
+    };
+
+    let json: serde_json::Value = match serde_json::from_str(&response) {
+        Ok(json) => json,
+        Err(_) => {
+            return Err("invalid json in get_messages for proof")
+
+
+        },
+    };
+
+    match json["msgs"].as_array() {
+        Some(array) => Ok(array.to_owned()),
+        None => {
+            Err("invalid msgs array returned for proof")
+        },
     }
 }
 
@@ -390,5 +395,31 @@ mod tests {
         assert_eq!(get_state(handle), CxsStateType::CxsStateOfferSent as u32);
         assert_eq!(get_offer_uid(handle).unwrap(), "6a9u7Jt");
         _m.assert();
+    }
+
+    
+    #[test]
+    fn test_send_proof_request_fails_with_no_pw() {
+        //This test has 2 purposes:
+        //1. when send_proof_request fails, Ok(c.send_proof_request(connection_handle)?) returns error instead of Ok(_)
+        //2. Test that when no PW connection exists, send message fails on invalid did
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
+        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
+        //This t
+        let connection_handle = create_connection("test_send_proof_request".to_owned());
+
+        let handle = match create_proof(Some("1".to_string()),
+                                            REQUESTED_ATTRS.to_owned(),
+                                        REQUESTED_PREDICATES.to_owned(),
+                                        "Optional".to_owned()) {
+            Ok(x) => x,
+            Err(_) => panic!("Proof creation failed"),
+        };
+        thread::sleep(Duration::from_millis(500));
+        match send_proof_request(handle, connection_handle) {
+            Ok(x) => panic!("Should have failed in send_proof_request"),
+            Err(y) => assert_eq!(y, error::INVALID_DID.code_num)
+        }
     }
 }
