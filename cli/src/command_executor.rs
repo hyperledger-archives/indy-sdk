@@ -318,7 +318,7 @@ impl CommandExecutor {
                 return Err(format!("No main \"{}\" parameter present", param_metadata.name()));
             }
 
-            res.insert(param_metadata.name(), param_value);
+            res.insert(param_metadata.name(), CommandExecutor::_trim_quotes(param_value));
         }
 
         // Read rest params
@@ -337,7 +337,7 @@ impl CommandExecutor {
 
             if let Some(param_metadata) = param_metadata {
                 if let Some(param_value) = param_value {
-                    res.insert(param_metadata.name(), param_value);
+                    res.insert(param_metadata.name(), CommandExecutor::_trim_quotes(param_value));
                 } else {
                     return Err(format!("No value for \"{}\" parameter present", param_name));
                 }
@@ -350,6 +350,7 @@ impl CommandExecutor {
     }
 
     fn _split_first_word(s: &str) -> (&str, &str) {
+        let mut is_quote_escape = false;
         let mut is_whitespace_escape = false;
         let s = s.trim();
 
@@ -358,12 +359,22 @@ impl CommandExecutor {
                 return (&s[..pos], s[pos..].trim_left());
             }
 
-            if ch == '"' {
+            if !is_quote_escape && ch == '"' {
                 is_whitespace_escape = !is_whitespace_escape;
             }
+
+            is_quote_escape = ch == '\\';
         }
 
         (s, "")
+    }
+
+    fn _trim_quotes(s: &str) -> &str {
+        if s.len() > 1 && s.starts_with("\"") && s.ends_with("\"") {
+            &s[1..s.len() - 1]
+        } else {
+            s
+        }
     }
 }
 
@@ -475,6 +486,14 @@ mod tests {
             .add_command(Box::new(TestCommand::new()))
             .finalize();
         cmd_executor.execute("test_group test_command \"main param\" param1=\"param1 value\" param2=param2-value").unwrap();
+    }
+
+    #[test]
+    pub fn _trim_quites_works() {
+        assert_eq!(CommandExecutor::_trim_quotes(""), "");
+        assert_eq!(CommandExecutor::_trim_quotes("\""), "\"");
+        assert_eq!(CommandExecutor::_trim_quotes("\"\""), "");
+        assert_eq!(CommandExecutor::_trim_quotes("\"123 456\""), "123 456");
     }
 }
 
