@@ -244,8 +244,7 @@ mod tests {
         #[test]
         pub fn exec_works() {
             TestUtils::cleanup_storage();
-            let ctx = Rc::new(IndyContext::new());
-            let cmd = CreateCommand::new(ctx);
+            let cmd = CreateCommand::new();
             cmd.metadata().help();
             let mut params = HashMap::new();
             params.insert("name", "wallet");
@@ -287,7 +286,7 @@ mod tests {
             let indy_ctx = Rc::new(IndyContext::new());
 
             {
-                let cmd = CreateCommand::new(indy_ctx.clone());
+                let cmd = CreateCommand::new();
                 let mut params = HashMap::new();
                 params.insert("name", "wallet");
                 params.insert("pool_name", "pool");

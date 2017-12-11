@@ -466,28 +466,16 @@ mod tests {
         }
     }
 
-    struct TestCommand {
-        metadata: CommandMetadata
-    }
+    pub mod TestCommand {
+        use super::*;
 
-    impl TestCommand {
-        pub fn new() -> TestCommand {
-            TestCommand {
-                metadata: CommandMetadata::build("test_command", "Test command help")
+        command_without_ctx!(CommandMetadata::build("test_command", "Test command help")
                     .add_main_param("main_param", "Main param help")
                     .add_param("param1", false, "Param1 help")
                     .add_param("param2", true, "Param2 help")
-                    .finalize()
-            }
-        }
-    }
+                    .finalize());
 
-    impl Command for TestCommand {
-        fn metadata(&self) -> &CommandMetadata {
-            &self.metadata
-        }
-
-        fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        fn execute(params: &HashMap<&'static str, &str>) -> Result<(), ()> {
             println!("Test comamnd params: {:?}", params);
             Ok(())
         }
@@ -497,9 +485,9 @@ mod tests {
     pub fn execute_works() {
         let cmd_executor = CommandExecutor::build()
             .add_group(Box::new(TestGroup::new()))
-            .add_command(Box::new(TestCommand::new()))
+            .add_command(TestCommand::new())
             .finalize_group()
-            .add_command(Box::new(TestCommand::new()))
+            .add_command(TestCommand::new())
             .finalize();
         cmd_executor.execute("test_group test_command \"main param\" param1=\"param1 value\" param2=param2-value").unwrap();
     }
