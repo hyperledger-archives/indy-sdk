@@ -39,6 +39,10 @@ pub enum SignusCommand {
         i32, // wallet handle
         String, // their did info json
         Box<Fn(Result<(), IndyError>) + Send>),
+    GetMyDidWithMeta(
+        i32, // wallet handle
+        String, // my did
+        Box<Fn(Result<String, IndyError>) + Send>),
     ListMyDidsWithMeta(
         i32, // wallet handle
         Box<Fn(Result<String, IndyError>) + Send>),
@@ -178,6 +182,10 @@ impl SignusCommandExecutor {
                 info!("StoreTheirDid command received");
                 cb(self.store_their_did(wallet_handle, &identity_json));
             }
+            SignusCommand::GetMyDidWithMeta(wallet_handle, my_did, cb) => {
+                info!("GetMyDidWithMeta command received");
+                cb(self.get_my_did_with_meta(wallet_handle, my_did))
+            }
             SignusCommand::ListMyDidsWithMeta(wallet_handle, cb) => {
                 info!("ListMyDidsWithMeta command received");
                 cb(self.list_my_dids_with_meta(wallet_handle));
@@ -305,6 +313,17 @@ impl SignusCommandExecutor {
         self._wallet_set_their_did(wallet_handle, &their_did)?;
 
         Ok(())
+    }
+
+    fn get_my_did_with_meta(&self, wallet_handle: i32, my_did: String) -> Result<String, IndyError> {
+        self.signus_service.validate_did(&my_did)?;
+        let did = self._wallet_get_my_did(wallet_handle, &my_did)?;
+        let meta: Option<String> = self._wallet_get_did_metadata(wallet_handle, &did.did).ok();
+        Ok(json!({
+            "did": did.did,
+            "verkey": did.verkey,
+            "metadata": meta,
+        }).to_string())
     }
 
     fn list_my_dids_with_meta(&self, wallet_handle: i32) -> Result<String, IndyError> {

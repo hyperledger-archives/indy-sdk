@@ -99,9 +99,23 @@ impl CommandMetadataBuilder {
     }
 }
 
-pub trait Command {
-    fn metadata(&self) -> &CommandMetadata;
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()>;
+pub type CommandExecParams<'a> = HashMap<&'static str, &'a str>;
+pub type CommandResult = Result<(), ()>;
+pub type CommandExec = Box<Fn(&CommandExecParams) -> CommandResult>;
+
+pub struct Command {
+    pub metadata: CommandMetadata,
+    pub executor: CommandExec
+}
+
+impl Command {
+    pub fn metadata(&self) -> &CommandMetadata {
+        &self.metadata
+    }
+
+    pub fn execute(&self, params: &CommandExecParams) -> CommandResult {
+        (self.executor)(params)
+    }
 }
 
 #[derive(Debug)]
@@ -133,8 +147,8 @@ pub trait Group {
 }
 
 pub struct CommandExecutor {
-    commands: HashMap<&'static str, Box<Command>>,
-    grouped_commands: HashMap<&'static str, (Box<Group>, HashMap<&'static str, Box<Command>>)>,
+    commands: HashMap<&'static str, Command>,
+    grouped_commands: HashMap<&'static str, (Box<Group>, HashMap<&'static str, Command>)>,
 }
 
 impl CommandExecutor {
@@ -166,7 +180,7 @@ impl CommandExecutor {
         Err(())
     }
 
-    fn _execute_group_command(&self, group: &Box<Group>, commands: &HashMap<&'static str, Box<Command>>, line: &str) -> Result<(), ()> {
+    fn _execute_group_command(&self, group: &Box<Group>, commands: &HashMap<&'static str, Command>, line: &str) -> Result<(), ()> {
         let (cmd, params) = CommandExecutor::_split_first_word(line);
 
         if cmd == "help" {
@@ -183,7 +197,7 @@ impl CommandExecutor {
         Err(())
     }
 
-    fn _execute_command(&self, group: Option<&Box<Group>>, command: &Box<Command>, params: &str) -> Result<(), ()> {
+    fn _execute_command(&self, group: Option<&Box<Group>>, command: &Command, params: &str) -> Result<(), ()> {
         let (main_param, _) = CommandExecutor::_split_first_word(params);
 
         if main_param == "help" {
@@ -236,7 +250,7 @@ impl CommandExecutor {
         println!();
     }
 
-    fn _print_group_help(&self, group: &Box<Group>, commands: &HashMap<&'static str, Box<Command>>) {
+    fn _print_group_help(&self, group: &Box<Group>, commands: &HashMap<&'static str, Command>) {
         println_acc!("Group:");
         println!("\t{} - {}", group.metadata().name(), group.metadata().help());
         println!();
@@ -255,7 +269,7 @@ impl CommandExecutor {
         println!();
     }
 
-    fn _print_command_help(&self, group: Option<&Box<Group>>, command: &Box<Command>) {
+    fn _print_command_help(&self, group: Option<&Box<Group>>, command: &Command) {
         println_acc!("Command:");
 
         if let Some(group) = group {
@@ -381,8 +395,8 @@ impl CommandExecutor {
 }
 
 pub struct CommandExecutorBuilder {
-    commands: HashMap<&'static str, Box<Command>>,
-    grouped_commands: HashMap<&'static str, (Box<Group>, HashMap<&'static str, Box<Command>>)>,
+    commands: HashMap<&'static str, Command>,
+    grouped_commands: HashMap<&'static str, (Box<Group>, HashMap<&'static str, Command>)>,
 }
 
 impl CommandExecutorBuilder {
@@ -395,7 +409,7 @@ impl CommandExecutorBuilder {
         }
     }
 
-    pub fn add_command(mut self, command: Box<Command>) -> CommandExecutorBuilder {
+    pub fn add_command(mut self, command: Command) -> CommandExecutorBuilder {
         self.commands.insert(command.metadata().name, command);
         self
     }
@@ -409,14 +423,14 @@ impl CommandExecutorBuilder {
 }
 
 pub struct CommandExecutorGroupBuilder {
-    commands: HashMap<&'static str, Box<Command>>,
-    grouped_commands: HashMap<&'static str, (Box<Group>, HashMap<&'static str, Box<Command>>)>,
+    commands: HashMap<&'static str, Command>,
+    grouped_commands: HashMap<&'static str, (Box<Group>, HashMap<&'static str, Command>)>,
     group: Box<Group>,
-    group_commands: HashMap<&'static str, Box<Command>>,
+    group_commands: HashMap<&'static str, Command>,
 }
 
 impl CommandExecutorGroupBuilder {
-    pub fn add_command(mut self, command: Box<Command>) -> CommandExecutorGroupBuilder {
+    pub fn add_command(mut self, command: Command) -> CommandExecutorGroupBuilder {
         self.group_commands.insert(command.metadata().name(), command);
         self
     }
