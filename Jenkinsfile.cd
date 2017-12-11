@@ -131,7 +131,7 @@ void getSrcVersion() {
     return version
 }
 
-def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
+def linuxTesting(file, env_name, run_interoperability_tests, network_name, stashBuildResults) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -160,6 +160,12 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
 
                     echo "${env_name} Test: Run tests"
                     sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release $featuresArgs"
+
+                    if (stashBuildResults) {
+                        stash includes: 'target/debug/libindy.so', name: 'libindySo'
+                        stash includes: 'target/debug/libindy.a', name: 'libindyA'
+                    }
+
                     /* TODO FIXME restore after xunit will be fixed
                     sh 'RUST_TEST_THREADS=1 cargo test-xunit'
                     */
@@ -190,6 +196,25 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
                     python3.5 -m pip install --user -e .
                     LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
                 '''
+            }
+        }
+
+        sh "cp libindy/target/debug/libindy.so cli"
+        dir('cli') {
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name} -u 0:0") {
+                sh "cp libindy.so /usr/lib"
+
+                echo "${env_name} Test: Test Libindy Cli"
+
+                echo "${env_name} Libindy Cli Test: Build"
+                sh "RUST_BACKTRACE=1 cargo build"
+
+                echo "${env_name} Libindy Cli Test: Run tests"
+                sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
+
+                if (stashResults) {
+                    stash includes: 'target/debug/indy-cli', name: 'libindyCliSo'
+                }
             }
         }
     }
@@ -257,7 +282,7 @@ def windowsTesting() {
 def ubuntuTesting() {
     node('ubuntu') {
         stage('Ubuntu Test') {
-            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", true, "pool_network")
+            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", true, "pool_network", true)
         }
     }
 }
@@ -265,7 +290,7 @@ def ubuntuTesting() {
 def rhelTesting() {
     node('ubuntu') {
         stage('RedHat Test') {
-            linuxTesting("ci/amazon.dockerfile ci", "RedHat", false, "pool_network")
+            linuxTesting("ci/amazon.dockerfile ci", "RedHat", false, "pool_network", false)
         }
     }
 }
@@ -317,6 +342,7 @@ def ubuntuPublishing() {
                 libindyDebPublishing(testEnv)
                 pythonWrapperPublishing(testEnv, false)
                 javaWrapperPublishing(testEnv, false)
+                libindyCliDebPublishing(testEnv)
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -398,6 +424,9 @@ def libindyDebPublishing(testEnv) {
                 downloadPackagingUtils()
             }
 
+            unstash name: 'libindySo'
+            unstash name: 'libindyA'
+
             withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
                 try {
                     sh "./ci/libindy-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
@@ -450,6 +479,38 @@ def javaWrapperPublishing(testEnv, isRelease) {
     }
 }
 
+def libindyCliDebPublishing(testEnv) {
+    dir('cli') {
+        echo 'Publish Libindy Cli deb files to Apt'
+
+        testEnv.inside('-u 0:0') {
+            sh 'chmod -R 755 ci/*.sh'
+
+            def suffix = "~$env.BUILD_NUMBER"
+
+            dir('sovrin-packaging') {
+                downloadPackagingUtils()
+            }
+
+            unstash name: 'libindyCliSo'
+            sh "ls"
+
+            withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
+                try {
+                    sh "./ci/libindy-cli-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
+
+                    if (env.BRANCH_NAME == 'rc') {
+                    stash includes: 'debs/*', name: 'libindyCliDebs'
+                    }
+                }
+                finally {
+                    sh "rm -rf debian"
+                }
+            }
+        }
+    }
+}
+
 def publishingRCtoStable() {
     node('ubuntu') {
         stage('Moving RC artifacts to Stable') {
@@ -473,6 +534,9 @@ def publishingRCtoStable() {
 
                 echo 'Moving RC artifacts to Stable: java wrapper'
                 javaWrapperPublishing(testEnv, true)
+
+                echo 'Moving Ubuntu RC artifacts to Stable: libindy-cli'
+                publishLibindyCliDebRCtoStable(testEnv, version)
             } finally {
                 echo 'Moving RC artifacts to Stable: Cleanup'
                 step([$class: 'WsCleanup'])
@@ -500,6 +564,18 @@ def publishLibindyDebRCtoStable(testEnv, version) {
 
         sh "deb-reversion -v $version debs/libindy_\"$rcFullVersion\"_amd64.deb"
         sh "deb-reversion -v $version debs/libindy-dev_\"$rcFullVersion\"_amd64.deb"
+
+        uploadDebianFilesToStable()
+    }
+}
+
+def publishLibindyCliDebRCtoStable(testEnv, version) {
+    testEnv.inside('-u 0:0') {
+        rcFullVersion = "${version}~${env.BUILD_NUMBER}"
+
+        unstash name: 'libindyCliDebs'
+
+        sh "deb-reversion -v $version debs/libindy-cli_\"$rcFullVersion\"_amd64.deb"
 
         uploadDebianFilesToStable()
     }

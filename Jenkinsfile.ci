@@ -183,9 +183,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
             }
         }
 
-        sh "ln -s libindy/target/debug/libindy.so usr/lib"
-
-
+        sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
         dir('wrappers/java') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test java wrapper"
@@ -194,6 +192,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
             }
         }
 
+        sh "cp libindy/target/debug/libindy.so wrappers/python"
         dir('wrappers/python') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test python wrapper"
@@ -205,14 +204,17 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
             }
         }
 
+        sh "cp libindy/target/debug/libindy.so cli"
         dir('cli') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Test: Test python wrapper"
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name} -u 0:0") {
+                sh "cp libindy.so /usr/lib"
 
-                echo "${env_name} Cli Test: Build"
+                echo "${env_name} Test: Test Libindy Cli"
+
+                echo "${env_name} Libindy Cli Test: Build"
                 sh "RUST_BACKTRACE=1 cargo test --no-run"
 
-                echo "${env_name} Cli Test: Run tests"
+                echo "${env_name} Libindy Cli Test: Run tests"
                 sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
             }
         }
