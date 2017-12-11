@@ -23,6 +23,10 @@ powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compressi
 rm -rf ./indy-cli-zip
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
+mkdir /var/repository/repos/windows/indy-cli
+mkdir /var/repository/repos/windows/indy-cli/master
+mkdir /var/repository/repos/windows/indy-cli/rc
+mkdir /var/repository/repos/windows/indy-cli/stable
 mkdir /var/repository/repos/windows/indy-cli/$type/$version-$number
 cd /var/repository/repos/windows/indy-cli/$type/$version-$number
 put -r indy-cli_"$version".zip
