@@ -1,7 +1,4 @@
-extern crate serde_json;
-
-use IndyContext;
-use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandGroup, CommandGroupMetadata};
 use commands::*;
 
 use libindy::ErrorCode;
@@ -12,30 +9,17 @@ use serde_json::Map as JSONMap;
 
 use std::collections::{HashMap, HashSet};
 use std::fmt;
-use std::rc::Rc;
 
-pub struct Group {
-    metadata: GroupMetadata
-}
+pub mod Group {
+    use super::*;
 
-impl Group {
-    pub fn new() -> Group {
-        Group {
-            metadata: GroupMetadata::new("ledger", "Ledger management commands")
-        }
-    }
-}
-
-impl GroupTrait for Group {
-    fn metadata(&self) -> &GroupMetadata {
-        &self.metadata
-    }
+    command_group!(CommandGroupMetadata::new("ledger", "Ledger management commands"));
 }
 
 pub mod NymCommand {
     use super::*;
 
-    command_with_indy_ctx!(CommandMetadata::build("nym", "Add NYM to Ledger.")
+    command!(CommandMetadata::build("nym", "Add NYM to Ledger.")
                 .add_param("did", false, "DID of new identity")
                 .add_param("verkey", true, "Verification key of new identity")
                 .add_param("alias", true, "Alias of new identity")
@@ -43,12 +27,12 @@ pub mod NymCommand {
                 .finalize()
     );
 
-    fn execute(ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("SendNymCommand::execute >> ctx {:?} params {:?}", ctx, params);
 
-        let submitter_did = get_active_did(&ctx)?;
-        let pool_handle = get_connected_pool_handle(&ctx)?;
-        let wallet_handle = get_opened_wallet_handle(&ctx)?;
+        let submitter_did = ensure_active_did(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let verkey = get_opt_str_param("verkey", params).map_err(error_err!())?;
@@ -72,16 +56,16 @@ pub mod NymCommand {
 pub mod GetNymCommand {
     use super::*;
 
-    command_with_indy_ctx!(CommandMetadata::build("get-nym", "Get NYM from Ledger.")
+    command!(CommandMetadata::build("get-nym", "Get NYM from Ledger.")
                 .add_param("did", false, "DID of identity presented in Ledger")
                 .finalize()
     );
 
-    fn execute(ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("GetNymCommand::execute >> ctx {:?} params {:?}", ctx, params);
 
-        let submitter_did = get_active_did(&ctx)?;
-        let pool_handle = get_connected_pool_handle(&ctx)?;
+        let submitter_did = ensure_active_did(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
 
@@ -109,7 +93,7 @@ pub mod GetNymCommand {
 pub mod AttribCommand {
     use super::*;
 
-    command_with_indy_ctx!(CommandMetadata::build("attrib", "Add Attribute to exists NYM.")
+    command!(CommandMetadata::build("attrib", "Add Attribute to exists NYM.")
                 .add_param("did", false, "DID of identity presented in Ledger")
                 .add_param("hash", true, "Hash of attribute data")
                 .add_param("raw", true, "JSON representation of attribute data")
@@ -117,12 +101,12 @@ pub mod AttribCommand {
                 .finalize()
     );
 
-    fn execute(ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("SendAttribCommand::execute >> ctx {:?} params {:?}", ctx, params);
 
-        let submitter_did = get_active_did(&ctx)?;
-        let pool_handle = get_connected_pool_handle(&ctx)?;
-        let wallet_handle = get_opened_wallet_handle(&ctx)?;
+        let submitter_did = ensure_active_did(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let hash = get_opt_str_param("hash", params).map_err(error_err!())?;
@@ -147,17 +131,17 @@ pub mod AttribCommand {
 pub mod GetAttribCommand {
     use super::*;
 
-    command_with_indy_ctx!(CommandMetadata::build("get-attrib", "Get ATTRIB from Ledger.")
+    command!(CommandMetadata::build("get-attrib", "Get ATTRIB from Ledger.")
                 .add_param("did", false, "DID of identity presented in Ledger")
                 .add_param("attr", false, "Name of attribute")
                 .finalize()
     );
 
-    fn execute(ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("GetAttribCommand::execute >> ctx {:?} params {:?}", ctx, params);
 
-        let submitter_did = get_active_did(&ctx)?;
-        let pool_handle = get_connected_pool_handle(&ctx)?;
+        let submitter_did = ensure_active_did(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let attr = get_str_param("attr", params).map_err(error_err!())?;
@@ -186,19 +170,19 @@ pub mod GetAttribCommand {
 pub mod SchemaCommand {
     use super::*;
 
-    command_with_indy_ctx!(CommandMetadata::build("schema", "Add Schema to Ledger.")
+    command!(CommandMetadata::build("schema", "Add Schema to Ledger.")
                 .add_param("name", false, "Schema name")
                 .add_param("version", false, "Schema version")
                 .add_param("attr_names", false, "Schema attributes split by comma")
                 .finalize()
     );
 
-    fn execute(ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("SendSchemaCommand::execute >> ctx {:?} params {:?}", ctx, params);
 
-        let submitter_did = get_active_did(&ctx)?;
-        let pool_handle = get_connected_pool_handle(&ctx)?;
-        let wallet_handle = get_opened_wallet_handle(&ctx)?;
+        let submitter_did = ensure_active_did(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
         let name = get_str_param("name", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
@@ -228,18 +212,18 @@ pub mod SchemaCommand {
 pub mod GetSchemaCommand {
     use super::*;
 
-    command_with_indy_ctx!(CommandMetadata::build("get-schema", "Get Schema from Ledger.")
+    command!(CommandMetadata::build("get-schema", "Get Schema from Ledger.")
                 .add_param("did", false, "DID of identity presented in Ledger")
                 .add_param("name", false, "Schema name")
                 .add_param("version", false, "Schema version")
                 .finalize()
     );
 
-    fn execute(ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("GetSchemaCommand::execute >> ctx {:?} params {:?}", ctx, params);
 
-        let submitter_did = get_active_did(&ctx)?;
-        let pool_handle = get_connected_pool_handle(&ctx)?;
+        let submitter_did = ensure_active_did(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let name = get_str_param("name", params).map_err(error_err!())?;
@@ -273,7 +257,7 @@ pub mod GetSchemaCommand {
 pub mod ClaimDefCommand {
     use super::*;
 
-    command_with_indy_ctx!(CommandMetadata::build("claim-def", "Add claim definition to Ledger.")
+    command!(CommandMetadata::build("claim-def", "Add claim definition to Ledger.")
                 .add_param("schema_no", false, "Sequence number of schema")
                 .add_param("signature_type", false, "Signature type (only CL supported now)")
                 .add_param("primary", false, "Primary key in json format")
@@ -281,12 +265,12 @@ pub mod ClaimDefCommand {
                 .finalize()
     );
 
-    fn execute(ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("SendClaimDefCommand::execute >> ctx {:?} params {:?}", ctx, params);
 
-        let submitter_did = get_active_did(&ctx)?;
-        let pool_handle = get_connected_pool_handle(&ctx)?;
-        let wallet_handle = get_opened_wallet_handle(&ctx)?;
+        let submitter_did = ensure_active_did(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
         let xref = get_int_param::<i32>("schema_no", params).map_err(error_err!())?;
         let signature_type = get_str_param("signature_type", params).map_err(error_err!())?;
@@ -317,18 +301,18 @@ pub mod ClaimDefCommand {
 pub mod GetClaimDefCommand {
     use super::*;
 
-    command_with_indy_ctx!(CommandMetadata::build("get-claim-def", "Add claim definition to Ledger.")
+    command!(CommandMetadata::build("get-claim-def", "Add claim definition to Ledger.")
                 .add_param("schema_no", false, "Sequence number of schema")
                 .add_param("signature_type", false, "Signature type (only CL supported now)")
                 .add_param("origin", false, "Claim definition owner DID")
                 .finalize()
     );
 
-    fn execute(ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("GetClaimDefCommand::execute >> ctx {:?} params {:?}", ctx, params);
 
-        let submitter_did = get_active_did(&ctx)?;
-        let pool_handle = get_connected_pool_handle(&ctx)?;
+        let submitter_did = ensure_active_did(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
 
         let xref = get_int_param::<i32>("schema_no", params).map_err(error_err!())?;
         let signature_type = get_str_param("signature_type", params).map_err(error_err!())?;
@@ -355,7 +339,7 @@ pub mod GetClaimDefCommand {
 pub mod NodeCommand {
     use super::*;
 
-    command_with_indy_ctx!(CommandMetadata::build("node", "Add Node to Ledger.")
+    command!(CommandMetadata::build("node", "Add Node to Ledger.")
                 .add_param("target", false, "DID of new identity")
                 .add_param("node_ip", false, "Node Ip")
                 .add_param("node_port", false, "Node port")
@@ -367,12 +351,12 @@ pub mod NodeCommand {
                 .finalize()
     );
 
-    fn execute(ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("SendNodeCommand::execute >> ctx {:?} params {:?}", ctx, params);
 
-        let submitter_did = get_active_did(&ctx)?;
-        let pool_handle = get_connected_pool_handle(&ctx)?;
-        let wallet_handle = get_opened_wallet_handle(&ctx)?;
+        let submitter_did = ensure_active_did(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
         let target_did = get_str_param("target", params).map_err(error_err!())?;
         let node_ip = get_opt_str_param("node_ip", params).map_err(error_err!())?;
@@ -411,23 +395,23 @@ pub mod NodeCommand {
 pub mod CustomCommand {
     use super::*;
 
-    command_with_indy_ctx!(CommandMetadata::build("custom", "Send custom transaction to Ledger.")
+    command!(CommandMetadata::build("custom", "Send custom transaction to Ledger.")
                 .add_main_param("txn", "Transaction json")
                 .add_param("sign", true, "Is signature required")
                 .finalize()
     );
 
-    fn execute(ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
         trace!("SenCustomCommand::execute >> ctx {:?} params {:?}", ctx, params);
 
-        let pool_handle = get_connected_pool_handle(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
 
         let txn = get_str_param("txn", params).map_err(error_err!())?;
         let sign = get_opt_bool_param("sign", params).map_err(error_err!())?.unwrap_or(false);
 
         let res = if sign {
-            let submitter_did = get_active_did(&ctx)?;
-            let wallet_handle = get_opened_wallet_handle(&ctx)?;
+            let submitter_did = ensure_active_did(&ctx)?;
+            let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
             Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, txn)
         } else {

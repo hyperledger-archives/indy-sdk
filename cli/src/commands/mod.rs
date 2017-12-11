@@ -6,7 +6,7 @@ pub mod pool;
 pub mod wallet;
 pub mod ledger;
 
-use indy_context::IndyContext;
+use command_executor::CommandContext;
 
 use std::collections::HashMap;
 use std;
@@ -83,23 +83,64 @@ pub fn get_object_param<'a>(name: &'a str, params: &'a HashMap<&'static str, &st
     }
 }
 
-pub fn get_active_did(ctx: &IndyContext) -> Result<String, ()> {
-    match ctx.get_active_did() {
+pub fn ensure_active_did(ctx: &CommandContext) -> Result<String, ()> {
+    match ctx.get_string_value("ACTIVE_DID") {
         Some(did) => Ok(did),
         None => Err(println_err!("There is no active did"))
     }
 }
 
-pub fn get_opened_wallet_handle(ctx: &IndyContext) -> Result<i32, ()> {
-    match ctx.get_opened_wallet_handle() {
+pub fn get_active_did(ctx: &CommandContext) -> Option<String> {
+    ctx.get_string_value("ACTIVE_DID")
+}
+
+pub fn set_active_did(ctx: &CommandContext, did: Option<String>) {
+    ctx.set_string_value("ACTIVE_DID", did.clone());
+    ctx.set_sub_prompt(3, did.map(|did| format!("did({}...{})", &did[..3], &did[did.len() - 3..])));
+}
+
+pub fn ensure_opened_wallet_handle(ctx: &CommandContext) -> Result<i32, ()> {
+    match ctx.get_int_value("OPENED_WALLET_HANDLE") {
         Some(wallet_handle) => Ok(wallet_handle),
         None => Err(println_err!("There is no opened wallet now"))
     }
 }
 
-pub fn get_connected_pool_handle(ctx: &IndyContext) -> Result<i32, ()> {
-    match ctx.get_connected_pool_handle() {
+pub fn get_opened_wallet(ctx: &CommandContext) -> Option<(i32, String)> {
+    if let Some(handle) = ctx.get_int_value("OPENED_WALLET_HANDLE") {
+        if let Some(name) = ctx.get_string_value("OPENED_WALLET_NAME") {
+            return Some((handle, name));
+        }
+    }
+
+    None
+}
+
+pub fn set_opened_wallet(ctx: &CommandContext, value: Option<(i32, String)>) {
+    ctx.set_int_value("OPENED_WALLET_HANDLE", value.as_ref().map(|value| value.0.to_owned()));
+    ctx.set_string_value("OPENED_WALLET_NAME", value.as_ref().map(|value| value.1.to_owned()));
+    ctx.set_sub_prompt(2, value.map(|value| format!("wallet({})", value.1)));
+}
+
+pub fn ensure_connected_pool_handle(ctx: &CommandContext) -> Result<i32, ()> {
+    match ctx.get_int_value("CONNECTED_POOL_HANDLE") {
         Some(pool_handle) => Ok(pool_handle),
         None => Err(println_err!("There is no opened pool now"))
     }
+}
+
+pub fn get_connected_pool(ctx: &CommandContext) -> Option<(i32, String)> {
+    if let Some(handle) = ctx.get_int_value("CONNECTED_POOL_HANDLE") {
+        if let Some(name) = ctx.get_string_value("CONNECTED_POOL_NAME") {
+            return Some((handle, name));
+        }
+    }
+
+    None
+}
+
+pub fn set_connected_pool(ctx: &CommandContext, value: Option<(i32, String)>) {
+    ctx.set_int_value("CONNECTED_POOL_HANDLE", value.as_ref().map(|value| value.0.to_owned()));
+    ctx.set_string_value("CONNECTED_POOL_NAME", value.as_ref().map(|value| value.1.to_owned()));
+    ctx.set_sub_prompt(1, value.map(|value| format!("pool({})", value.1)));
 }
