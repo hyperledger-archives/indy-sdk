@@ -14,6 +14,7 @@ use messages::GeneralMessage;
 use messages::MessageResponseCode::{ MessageAccepted };
 use connection;
 use utils::callback::CallbackUtils;
+use utils::pool;
 use std::sync::mpsc::channel;
 use self::libc::c_char;
 use std::ffi::CString;
@@ -35,7 +36,6 @@ extern {
 
     fn indy_build_get_schema_request(command_handle: i32,
                                      submitter_did: *const c_char,
-                                     dest: *const c_char,
                                      data: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: i32, err: i32,
                                                           request_json: *const c_char)>) -> i32;
@@ -55,6 +55,7 @@ pub fn get_schema_from_ledger(command_handle: u32,
                               dest_id: u32,
                               schema_name: &str,
                               version: &str) -> Result<String, u32> {
+    //Submitter_did = Settings::CONFIG_ENTERPRISE_DID ??
     Err(1)
 }
 
@@ -209,6 +210,7 @@ impl Proof {
                         return
                     }
                 };
+                println!("Proof offer: {:?}", self.proof_offer);
                 return
             }
             // Todo: build proof offer object and set it in proof
@@ -634,5 +636,26 @@ mod tests {
         thread::sleep(Duration::from_millis(500));
     }
 
+    #[derive(Serialize, Deserialize)]
+    struct PoolConfig {
+        pub genesis_txn: String
+    }
+
+    #[test]
+    fn test_open_pool() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
+
+        let path = pool::create_genesis_txn_file_for_test_pool(settings::CONFIG_POOL_NAME, None, None);
+        println!("Path Buf: {:?}", path);
+
+        let config = json!(PoolConfig{
+            genesis_txn: path.as_path().to_string_lossy().to_string()
+        }).to_string();
+
+        let error_code = pool::open_pool_ledger(settings::CONFIG_POOL_CONFIG_NAME, Some(&config));
+        assert_eq!(error_code.unwrap(), 0);
+    }
 
 }
