@@ -1,4 +1,5 @@
 extern crate ansi_term;
+extern crate unescape;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;

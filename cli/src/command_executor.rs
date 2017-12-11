@@ -1,3 +1,5 @@
+use unescape::unescape;
+
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -494,6 +496,11 @@ mod tests {
         assert_eq!(CommandExecutor::_trim_quotes("\""), "\"");
         assert_eq!(CommandExecutor::_trim_quotes("\"\""), "");
         assert_eq!(CommandExecutor::_trim_quotes("\"123 456\""), "123 456");
+    }
+
+    #[test]
+    pub fn _unescape_works() {
+        assert_eq!(unescape("123\\\"456"), Some("123\"456".to_owned()));
     }
 }
 
