@@ -24,7 +24,7 @@ mod libindy;
 use application_context::ApplicationContext;
 use command_executor::CommandExecutor;
 
-use commands::{common, did, pool, wallet};
+use commands::{common, did, ledger, pool, wallet};
 use indy_context::IndyContext;
 
 use linefeed::{Reader, ReadResult};
@@ -79,20 +79,18 @@ fn build_executor(application_context: Rc<ApplicationContext>,
         .add_command(wallet::CloseCommand::new(application_context.clone(), indy_context.clone()))
         .add_command(wallet::DeleteCommand::new())
         .finalize_group()
-        /*
         .add_group(Box::new(ledger::Group::new()))
-        .add_command(Box::new(ledger::NymCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::GetNymCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::AttribCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::GetAttribCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::SchemaCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::GetSchemaCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::ClaimDefCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::GetClaimDefCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::NodeCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::CustomCommand::new(indy_context.clone())))
+        .add_command(ledger::NymCommand::new(indy_context.clone()))
+        .add_command(ledger::GetNymCommand::new(indy_context.clone()))
+        .add_command(ledger::AttribCommand::new(indy_context.clone()))
+        .add_command(ledger::GetAttribCommand::new(indy_context.clone()))
+        .add_command(ledger::SchemaCommand::new(indy_context.clone()))
+        .add_command(ledger::GetSchemaCommand::new(indy_context.clone()))
+        .add_command(ledger::ClaimDefCommand::new(indy_context.clone()))
+        .add_command(ledger::GetClaimDefCommand::new(indy_context.clone()))
+        .add_command(ledger::NodeCommand::new(indy_context.clone()))
+        .add_command(ledger::CustomCommand::new(indy_context.clone()))
         .finalize_group()
-        */
         .finalize()
 }
 
