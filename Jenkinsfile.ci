@@ -5,10 +5,10 @@ testing()
 def testing() {
     stage('Testing') {
         parallel([
-                'ubuntu-test' : { ubuntuTesting() },
-                'macos-test'  : { macosTesting() },
-                'ios-test'    : { iosTesting() },
-                'redhat-test' : { rhelTesting() },
+                //'ubuntu-test' : { ubuntuTesting() },
+                //'macos-test'  : { macosTesting() },
+                //'ios-test'    : { iosTesting() },
+                //'redhat-test' : { rhelTesting() },
                 'windows-test': { windowsTesting() }
         ])
     }
@@ -40,16 +40,37 @@ def windowsTesting() {
                             "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
                             "RUST_BACKTRACE=1"
                     ]) {
-                        bat "cargo test --no-run"
+                        bat "cargo build"
 
-                        echo "Windows Test: Run tests"
-                        withEnv([
-                                "RUST_TEST_THREADS=1",
-                                "RUST_LOG=trace",
-                                "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
-                        ]) {
-                            bat "cargo test"
-                        }
+                        //echo "Windows Test: Run tests"
+                        //withEnv([
+                        //        "RUST_TEST_THREADS=1",
+                        //        "RUST_LOG=trace",
+                        //        "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
+                        //]) {
+                        //    bat "cargo test"
+                        //}
+                    }
+                }
+
+                dir('cli') {
+                    echo "Windows Libindy Cli Test: Build"
+                    withEnv([
+                            "INDY_DIR=$WORKSPACE\\libindy\\target\\debug",
+                            "SODIUM_LIB_DIR=$WORKSPACE\\libindy\\prebuilt\\lib",
+                            "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
+                            "RUST_BACKTRACE=1"
+                    ]) {
+                        bat "cargo build"
+
+                        //echo "Windows Libindy Cli Test: Run tests"
+                        //withEnv([
+                        //        "RUST_TEST_THREADS=1",
+                        //        "RUST_LOG=trace",
+                        //        "TEST_POOL_IP=$INDY_SDK_SERVER_IP"
+                        //]) {
+                        //    bat "cargo test"
+                        //}
                     }
                 }
 
