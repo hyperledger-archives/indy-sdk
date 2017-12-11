@@ -9,25 +9,48 @@ static PROVER_DID: &'static str = "prover_did";
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct ProofOffer{
-    pub requester_did: String,
-    pub schema_seq_no: i32,
-    optional_data: Option<serde_json::Map<String, Value>>,
-    tid: String,
+    version: String,
     to_did: String,
     from_did: String,
-    version: String,
+    proof_request_id: String,
+    proofs: Option<serde_json::Map<String, Value>>,
+    aggregated_proof: Option<serde_json::Map<String, Value>>,
+    requested_proof: Option<serde_json::Map<String, Value>>,
+    unrevealed_attrs: Option<serde_json::Map<String, Value>>,
+    self_attested_attrs: Option<serde_json::Map<String, Value>>,
+    predicates: Option<serde_json::Map<String, Value>>,
+
 }
+
+//#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+//pub struct Proofs{
+//
+//}
+//
+//#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+//pub struct AggregatedProof{
+//
+//}
+//
+//#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+//pub struct RequestedProof{
+//    revealed_attrs: serde_json::Map<String, Vec<serde_json::Value>>,
+//
+//}
 
 impl ProofOffer {
     pub fn new(did: &str) -> ProofOffer {
         ProofOffer {
-            requester_did: String::from(did),
-            schema_seq_no: 0,
-            to_did: String::new(),
-            from_did: String::new(),
-            tid: String::new(),
             version: String::new(),
-            optional_data: None,
+            to_did: String::new(),
+            from_did: String::from(did),
+            proof_request_id: String::new(),
+            proofs: None,
+            aggregated_proof: None,
+            requested_proof: None,
+            unrevealed_attrs: None,
+            self_attested_attrs: None,
+            predicates: None,
         }
     }
 
@@ -52,6 +75,7 @@ mod tests {
     use super::*;
 
     static TEMP_REQUESTER_DID: &'static str = "4reqXeZVm7JZAffAoaNLsb";
+    static EXAMPLE_PROOF: &'static str = "{\"msg_type\":\"proof\",\"version\":\"0.1\",\"to_did\":\"BnRXf8yDMUwGyZVDkSENeq\",\"from_did\":\"GxtnGN6ypZYgEqcftSQFnC\",\"proof_request_id\":\"cCanHnpFAD\",\"proofs\":{\"claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b\":{\"proof\":{\"primary_proof\":{\"eq_proof\":{\"revealed_attrs\":{\"state\":\"96473275571522321025213415717206189191162\"},\"a_prime\":\"921....546\",\"e\":\"158....756\",\"v\":\"114....069\",\"m\":{\"address1\":\"111...738\",\"zip\":\"149....066\",\"city\":\"209....294\",\"address2\":\"140....691\"},\"m1\":\"777....518\",\"m2\":\"515....229\"},\"ge_proofs\":[]},\"non_revoc_proof\":null},\"schema_seq_no\":15,\"issuer_did\":\"4fUDR9R7fjwELRvH9JT6HH\"}},\"aggregated_proof\":{\"c_hash\":\"25105671496406009212798488318112715144459298495509265715919744143493847046467\",\"c_list\":[[72,245,38,\"....\",46,195,18]]},\"requested_proof\":{\"revealed_attrs\":{\"attr_key_id\":[\"claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b\",\"UT\",\"96473275571522321025213415717206189191162\"]},\"unrevealed_attrs\":{},\"self_attested_attrs\":{},\"predicates\":{}}}";
 
     fn create_proof_offer() -> ProofOffer {
         let requester_did = String::from(TEMP_REQUESTER_DID);
@@ -60,7 +84,7 @@ mod tests {
     #[test]
     fn test_proof_offer_struct(){
         let offer = create_proof_offer();
-        assert_eq!(offer.requester_did, TEMP_REQUESTER_DID);
+        assert_eq!(offer.from_did, TEMP_REQUESTER_DID);
     }
 
     #[test]
@@ -73,28 +97,31 @@ mod tests {
                 String::from("Err")},
         };
 
-        let output = r#"{"requester_did":"4reqXeZVm7JZAffAoaNLsb","schema_seq_no":0,"optional_data":null,"tid":"","to_did":"","from_did":"","version":""}"#;
+        let output = r#"{"version":"","to_did":"","from_did":"4reqXeZVm7JZAffAoaNLsb","proof_request_id":"","proofs":null,"aggregated_proof":null,"requested_proof":null,"unrevealed_attrs":null,"self_attested_attrs":null,"predicates":null}"#;
 
         assert_eq!(string_serialized, output)
     }
 
     #[test]
     fn test_deserialize() {
-        let requester_did = String::from("4reqXeZVm7JZAffAoaNLsb");
-        let input = r#"{"requester_did":"4reqXeZVm7JZAffAoaNLsb","schema_seq_no":1,"optional_data":null,"tid":"","to_did":"","from_did":"","version":""}"#;
-        let offer: ProofOffer = match serde_json::from_str(&input) {
+        let requester_did = String::from("GxtnGN6ypZYgEqcftSQFnC");
+        let offer: ProofOffer = match serde_json::from_str(EXAMPLE_PROOF) {
             Ok(i) => i,
             Err(_) => ProofOffer::new("BAD_DID"),
         };
-        assert_eq!(offer.requester_did, requester_did);
+        let issuer_did = serde_json::to_value("4fUDR9R7fjwELRvH9JT6HH").unwrap();
+        assert_eq!(offer.from_did, requester_did);
+        assert_eq!(offer.proofs.unwrap()
+                       .get("claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b").unwrap()
+                       .get("issuer_did").unwrap(), &issuer_did);
 
     }
 
     #[test]
     fn test_proof_offer_is_parsed_correctly(){
-        let response = r#"{\"requester_did\":\"V4SGRU86Z58d6TV7PBUe6f\",\"schema_seq_no\":103,\"msg_type\":\"proofOffer\",\"version\":\"0.1\",\"to_did\":\"H35Tam37aefr7o9wJGvjM7\",\"from_did\":\"G16EUDB5dfd73w3oaywFzh\",\"tid\":\"1\"}"#;
+        let response = r#"{"version":"","to_did":"","from_did":"V4SGRU86Z58d6TV7PBUe6f","proof_request_id":"","proofs":null,"aggregated_proof":null,"requested_proof":null,"unrevealed_attrs":null,"self_attested_attrs":null,"predicates":null}"#;
         let v = String::from(response).replace("\\\"", "\"");
         let proof_offer:ProofOffer = ProofOffer::from_str(&v).unwrap();
-        assert_eq!(proof_offer.requester_did,"V4SGRU86Z58d6TV7PBUe6f");
+        assert_eq!(proof_offer.from_did,"V4SGRU86Z58d6TV7PBUe6f");
     }
 }

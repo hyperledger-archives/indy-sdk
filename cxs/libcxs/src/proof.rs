@@ -33,6 +33,37 @@ extern {
                                   cb: Option<extern fn(xcommand_handle: i32, err: i32,
                                                       valid: bool)>) -> i32;
 
+    fn indy_build_get_schema_request(command_handle: i32,
+                                     submitter_did: *const c_char,
+                                     dest: *const c_char,
+                                     data: *const c_char,
+                                     cb: Option<extern fn(xcommand_handle: i32, err: i32,
+                                                          request_json: *const c_char)>) -> i32;
+
+    fn indy_build_get_claim_def_txn(command_handle: i32,
+                                    submitter_did: *const c_char,
+                                    xref: i32,
+                                    signature_type: *const c_char,
+                                    origin: *const c_char,
+                                    cb: Option<extern fn(xcommand_handle: i32, err: i32,
+                                                         request_json: *const c_char)>) -> i32;
+
+}
+
+pub fn get_schema_from_ledger(command_handle: u32,
+                              submitter_did: &str,
+                              dest_id: u32,
+                              schema_name: &str,
+                              version: &str) -> Result<String, u32> {
+    Err(1)
+}
+
+pub fn get_claim_def_from_ledger(command_handle: u32,
+                                 submitter_did: &str,
+                                 schema_num:u32,
+                                 signature_type:&str,
+                                 issuer_did:&str) -> Result<String, u32> {
+    Err(1)
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -66,71 +97,15 @@ impl Proof {
         Ok(error::SUCCESS.code_num)
     }
     
-    fn indy_validate_proof(&mut self) -> Result<u32, u32> {
-// proof_request_json: initial proof request as sent by the verifier
-//     {
-//         "nonce": string,
-//         "requested_attr1_uuid": <attr_info>,
-//         "requested_attr2_uuid": <attr_info>,
-//         "requested_attr3_uuid": <attr_info>,
-//         "requested_predicate_1_uuid": <predicate_info>,
-//         "requested_predicate_2_uuid": <predicate_info>,
-//     }
-// proof_json: proof json
-// For each requested attribute either a proof (with optionally revealed attribute value) or
-// self-attested attribute value is provided.
-// Each proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.
-// There ais also aggregated proof part common for all claim proofs.
-//     {
-//         "requested": {
-//             "requested_attr1_id": [claim_proof1_uuid, revealed_attr1, revealed_attr1_as_int],
-//             "requested_attr2_id": [self_attested_attribute],
-//             "requested_attr3_id": [claim_proof2_uuid]
-//             "requested_attr4_id": [claim_proof2_uuid, revealed_attr4, revealed_attr4_as_int],
-//             "requested_predicate_1_uuid": [claim_proof2_uuid],
-//             "requested_predicate_2_uuid": [claim_proof3_uuid],
-//         }
-//         "claim_proofs": {
-//             "claim_proof1_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-//             "claim_proof2_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-//             "claim_proof3_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
-//         },
-//         "aggregated_proof": <aggregated_proof>
-//     }
-// schemas_jsons: all schema jsons participating in the proof
-//         {
-//             "claim_proof1_uuid": <schema>,
-//             "claim_proof2_uuid": <schema>,
-//             "claim_proof3_uuid": <schema>
-//         }
-// claim_defs_jsons: all claim definition jsons participating in the proof
-//         {
-//             "claim_proof1_uuid": <claim_def>,
-//             "claim_proof2_uuid": <claim_def>,
-//             "claim_proof3_uuid": <claim_def>
-//         }
-// revoc_regs_jsons: all revocation registry jsons participating in the proof
-//         {
-//             "claim_proof1_uuid": <revoc_reg>,
-//             "claim_proof2_uuid": <revoc_reg>,
-//             "claim_proof3_uuid": <revoc_reg>
-//         }
-//pub extern fn indy_verifier_verify_proof(command_handle: i32,
-//                                         proof_request_json: *const c_char,
-//                                         proof_json: *const c_char,
-//                                         schemas_json: *const c_char,
-//                                         claim_defs_jsons: *const c_char,
-//                                         revoc_regs_json: *const c_char,
-//                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-//                                                              valid: bool)>) -> ErrorCode {
+    fn validate_proof_indy(&mut self) -> Result<u32, u32> {
         let (sender, receiver) = channel();
         let cb = Box::new(move |err, valid | {
             sender.send((err, valid)).unwrap();
         });
 
         let (command_handle, cb) = CallbackUtils::closure_to_verifier_verify_proof_cb(cb);
-        let proof_request_json = "";
-        let proof_json = "";
+        let proof_request_json = ""; //requested_attributes
+        let proof_json = "";    // proofs, aggregated_proof, and requested proof
         let schemas_json = "";
         let claim_defs_jsons =  "";
         let revoc_regs_json = "";
@@ -205,7 +180,8 @@ impl Proof {
         };
         proof_offer.get_attrs()
     }
-    fn build_proof_offer(&mut self, msg_uid: &str) {
+
+    fn check_for_proof_offer(&mut self, msg_uid: &str) {
         info!("Checking for outstanding proofOffer for {} with uid: {}", self.handle, msg_uid);
         let msgs = match get_matching_messages(msg_uid, &self.prover_did) {
             Ok(x) => x,
@@ -216,13 +192,30 @@ impl Proof {
         };
 
         for msg in msgs {
-            self.state = CxsStateType::CxsStateRequestReceived;
-            // Todo: Parse proof values 
-            // Todo: check/compare against request
-            // Todo: Validate proof with lib-indy
+            if msg["typ"] == String::from("proof") {
+                self.state = CxsStateType::CxsStateRequestReceived;
+                let payload = match msg["edgeAgentPayload"].as_str() {
+                    Some(x) => x,
+                    None => {
+                        warn!("proof offer has no edge agent payload");
+                        return
+                    }
+                };
+
+                self.proof_offer = match ProofOffer::from_str(&payload) {
+                    Ok(x) => Some(x),
+                    Err(_) => {
+                        warn!("invalid claim request for proof {}", self.handle);
+                        return
+                    }
+                };
+                return
+            }
             // Todo: build proof offer object and set it in proof
+            // Todo: Get claim def form the ledger
+            // Todo: Get schema from the ledger
+            // Todo: check/compare against request && Validate proof with lib-indy
         }
-        return
     }
 
     fn get_proof_request_status(&mut self) {
@@ -232,7 +225,6 @@ impl Proof {
         else if self.state != CxsStateType::CxsStateOfferSent || self.msg_uid.is_empty() || self.prover_did.is_empty() {
             return;
         }
-
         // State is proof request sent
         let msgs = match get_matching_messages(&self.msg_uid, &self.prover_did) {
             Ok(x) => x,
@@ -241,7 +233,6 @@ impl Proof {
                 return
             }
         };
-
         for msg in msgs {
             if msg["statusCode"] == serde_json::to_value(MessageAccepted.as_str())
                 .unwrap_or(serde_json::Value::Null){
@@ -253,7 +244,8 @@ impl Proof {
                     }
                 };
                 self.ref_msg_id = ref_msg_id.to_owned();
-                self.build_proof_offer(ref_msg_id);
+                self.check_for_proof_offer(ref_msg_id);
+                return
             }
         }
 
@@ -599,4 +591,48 @@ mod tests {
 
         }
     }
+
+    #[test]
+    fn test_update_state_with_pending_proof_offer() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
+
+        let response = "{\"msgs\":[{\"uid\":\"6gmsuWZ\",\"typ\":\"conReq\",\"statusCode\":\"MS-102\",\"statusMsg\":\"message sent\"},\
+        {\"statusCode\":\"MS-104\",\"edgeAgentPayload\":\"{\\\"attr\\\":\\\"value\\\"}\",\"sendStatusCode\":\"MSS-101\",\"typ\":\"claimOffer\",\"statusMsg\":\"message accepted\",\"uid\":\"6a9u7Jt\",\"refMsgId\":\"CKrG14Z\"},\
+        {\"msg_type\":\"PROOF\",\"typ\":\"proof\",\"edgeAgentPayload\":\"{\\\"msg_type\\\":\\\"proof\\\",\\\"version\\\":\\\"0.1\\\",\\\"to_did\\\":\\\"BnRXf8yDMUwGyZVDkSENeq\\\",\\\"from_did\\\":\\\"GxtnGN6ypZYgEqcftSQFnC\\\",\\\"proof_request_id\\\":\\\"cCanHnpFAD\\\",\\\"proofs\\\":{\\\"claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b\\\":{\\\"proof\\\":{\\\"primary_proof\\\":{\\\"eq_proof\\\":{\\\"revealed_attrs\\\":{\\\"state\\\":\\\"96473275571522321025213415717206189191162\\\"},\\\"a_prime\\\":\\\"921....546\\\",\\\"e\\\":\\\"158....756\\\",\\\"v\\\":\\\"114....069\\\",\\\"m\\\":{\\\"address1\\\":\\\"111...738\\\",\\\"zip\\\":\\\"149....066\\\",\\\"city\\\":\\\"209....294\\\",\\\"address2\\\":\\\"140....691\\\"},\\\"m1\\\":\\\"777....518\\\",\\\"m2\\\":\\\"515....229\\\"},\\\"ge_proofs\\\":[]},\\\"non_revoc_proof\\\":null},\\\"schema_seq_no\\\":15,\\\"issuer_did\\\":\\\"4fUDR9R7fjwELRvH9JT6HH\\\"}},\\\"aggregated_proof\\\":{\\\"c_hash\\\":\\\"25105671496406009212798488318112715144459298495509265715919744143493847046467\\\",\\\"c_list\\\":[[72,245,38,\\\"....\\\",46,195,18]]},\\\"requested_proof\\\":{\\\"revealed_attrs\\\":{\\\"attr_key_id\\\":[\\\"claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b\\\",\\\"UT\\\",\\\"96473275571522321025213415717206189191162\\\"]},\\\"unrevealed_attrs\\\":{},\\\"self_attested_attrs\\\":{},\\\"predicates\\\":{}}}\"}]}";
+        let _m = mockito::mock("POST", "/agency/route")
+            .with_status(200)
+            .with_body(response)
+            .expect(2)
+            .create();
+
+        let new_handle = 1;
+        let mut proof = Box::new(Proof {
+            handle: new_handle,
+            source_id: "12".to_string(),
+            msg_uid: String::from("1234"),
+            ref_msg_id: String::new(),
+            requested_attrs: String::from("[]"),
+            requested_predicates:String::from("[]"),
+            requester_did: String::new(),
+            prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
+            state: CxsStateType::CxsStateOfferSent,
+            proof_state: ProofStateType::ProofUndefined,
+            tid: 0,
+            mid: 0,
+            name:String::new(),
+            version: String::from("1.0"),
+            nonce: generate_nonce().to_string(),
+            proof_offer: None,
+        });
+
+
+        proof.update_state();
+        _m.assert();
+        assert_eq!(proof.get_state(), CxsStateType::CxsStateRequestReceived as u32);
+        thread::sleep(Duration::from_millis(500));
+    }
+
+
 }
