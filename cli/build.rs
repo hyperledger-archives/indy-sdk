@@ -12,6 +12,7 @@ fn main() {
     match target.find("-windows-") {
         Some(..) => {
             println!("cargo:rustc-link-lib=ssleay32");
+            println!("cargo:rustc-link-lib=zmq-pw");
 
             // TODO: FIXME: Provide more reliable dependencies resolving
             let output_dir = env::var("OUT_DIR").unwrap();
