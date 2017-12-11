@@ -4,7 +4,6 @@ use std::path::Path;
 
 fn main() {
     println!("cargo:rustc-link-lib=indy");
-    println!("cargo:rustc-link-lib=sodium");
 
     let target = env::var("TARGET").unwrap();
     println!("target={}", target);
