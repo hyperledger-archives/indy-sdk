@@ -1,5 +1,5 @@
 use application_context::ApplicationContext;
-use command_executor::{Command, CommandMetadata};
+use command_executor::{Command, CommandExecParams, CommandMetadata, CommandResult};
 use commands::get_str_param;
 
 use std::collections::HashMap;
@@ -7,39 +7,14 @@ use std::fs::File;
 use std::io::Read;
 use std::rc::Rc;
 
-#[derive(Debug)]
-pub struct AboutCommand {
-    metadata: CommandMetadata,
-}
 
-#[derive(Debug)]
-pub struct ShowCommand {
-    metadata: CommandMetadata,
-}
+pub mod AboutCommand {
+    use super::*;
 
-#[derive(Debug)]
-pub struct PromptCommand {
-    cnxt: Rc<ApplicationContext>,
-    metadata: CommandMetadata,
-}
+    command_without_ctx!(CommandMetadata::build("about", "Show about information").finalize());
 
-#[derive(Debug)]
-pub struct ExitCommand {
-    cnxt: Rc<ApplicationContext>,
-    metadata: CommandMetadata,
-}
-
-impl AboutCommand {
-    pub fn new() -> AboutCommand {
-        AboutCommand {
-            metadata: CommandMetadata::build("about", "Show about information").finalize()
-        }
-    }
-}
-
-impl Command for AboutCommand {
-    fn execute(&self, _params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("AboutCommand::execute >> self: {:?}, _params: {:?}", self, _params);
+    fn execute(_params: &CommandExecParams) -> CommandResult {
+        trace!("AboutCommand::execute >> self: params: {:?}", _params);
 
         println_succ!("Hyperledger Indy CLI (https://github.com/hyperledger/indy-sdk)");
         println!();
@@ -56,25 +31,17 @@ impl Command for AboutCommand {
         trace!("AboutCommand::execute << {:?}", res);
         res
     }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
 }
 
-impl ShowCommand {
-    pub fn new() -> ShowCommand {
-        ShowCommand {
-            metadata: CommandMetadata::build("show", "Print the content of text file")
-                .add_main_param("file", "The path to file to show")
-                .finalize()
-        }
-    }
-}
+pub mod ShowCommand {
+    use super::*;
 
-impl Command for ShowCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("ShowCommand::execute >> self: {:?}, params: {:?}", self, params);
+    command_without_ctx!(CommandMetadata::build("show", "Print the content of text file")
+                            .add_main_param("file", "The path to file to show")
+                            .finalize());
+
+    fn execute(params: &CommandExecParams) -> CommandResult {
+        trace!("ShowCommand::execute >> params: {:?}", params);
 
         let file = get_str_param("file", params).map_err(error_err!())?;
 
@@ -96,64 +63,42 @@ impl Command for ShowCommand {
         trace!("ShowCommand::execute << {:?}", res);
         res
     }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
 }
 
-impl PromptCommand {
-    pub fn new(cnxt: Rc<ApplicationContext>) -> PromptCommand {
-        PromptCommand {
-            cnxt,
-            metadata: CommandMetadata::build("prompt", "Change command prompt")
-                .add_main_param("prompt", "New prompt string")
-                .finalize()
-        }
-    }
-}
+pub mod PromptCommand {
+    use super::*;
 
-impl Command for PromptCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("PromptCommand::execute >> self: {:?}, params: {:?}", self, params);
+    command_with_app_ctx!(CommandMetadata::build("prompt", "Change command prompt")
+                            .add_main_param("prompt", "New prompt string")
+                            .finalize());
+
+    fn execute(ctx: Rc<ApplicationContext>, params: &CommandExecParams) -> CommandResult {
+        trace!("PromptCommand::execute >> ctx: {:?}, params: {:?}", ctx, params);
 
         let prompt = get_str_param("prompt", params).map_err(error_err!())?;
 
-        self.cnxt.set_main_prompt(prompt);
+        ctx.set_main_prompt(prompt);
         println_succ!("Command prompt has been set to \"{}\"", prompt);
         let res = Ok(());
 
         trace!("PromptCommand::execute << {:?}", res);
         res
     }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
 }
 
-impl ExitCommand {
-    pub fn new(cnxt: Rc<ApplicationContext>) -> ExitCommand {
-        ExitCommand {
-            cnxt,
-            metadata: CommandMetadata::build("exit", "Exit Indy CLI").finalize()
-        }
-    }
-}
+pub mod ExitCommand {
+    use super::*;
 
-impl Command for ExitCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("ExitCommand::execute >> self: {:?}, params: {:?}", self, params);
+    command_with_app_ctx!(CommandMetadata::build("exit", "Exit Indy CLI").finalize());
 
-        self.cnxt.set_exit();
+    fn execute(ctx: Rc<ApplicationContext>, params: &CommandExecParams) -> CommandResult {
+        trace!("ExitCommand::execute >> ctx: {:?}, params: {:?}", ctx, params);
+
+        ctx.set_exit();
         println_succ!("Goodbye...");
         let res = Ok(());
 
         trace!("ExitCommand::execute << {:?}", res);
         res
-    }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
     }
 }

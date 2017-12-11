@@ -31,55 +31,18 @@ impl GroupTrait for Group {
     }
 }
 
-#[derive(Debug)]
-pub struct CreateCommand {
-    ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
+pub mod CreateCommand {
+    use super::*;
 
-#[derive(Debug)]
-pub struct OpenCommand {
-    app_cnxt: Rc<ApplicationContext>,
-    indy_cnxt: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-#[derive(Debug)]
-pub struct ListCommand {
-    ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-#[derive(Debug)]
-pub struct CloseCommand {
-    app_cnxt: Rc<ApplicationContext>,
-    indy_cnxt: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-#[derive(Debug)]
-pub struct DeleteCommand {
-    ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-
-impl CreateCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> CreateCommand {
-        CreateCommand {
-            ctx,
-            metadata: CommandMetadata::build("create", "Create new wallet with specified name")
+    command_without_ctx!(CommandMetadata::build("create", "Create new wallet with specified name")
                 .add_main_param("name", "The name of new wallet")
                 .add_param("pool_name", false, "The name of associated Indy pool")
                 .add_param("key", true, "Auth key for the wallet")
                 .finalize()
-        }
-    }
-}
+    );
 
-impl Command for CreateCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("CreateCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("CreateCommand::execute >> params {:?}", params);
 
         let pool_name = get_str_param("pool_name", params).map_err(error_err!())?;
         let name = get_str_param("name", params).map_err(error_err!())?;
@@ -105,34 +68,21 @@ impl Command for CreateCommand {
         trace!("CreateCommand::execute << {:?}", res);
         res
     }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
 }
 
-impl OpenCommand {
-    pub fn new(app_cnxt: Rc<ApplicationContext>, indy_cnxt: Rc<IndyContext>) -> OpenCommand {
-        OpenCommand {
-            app_cnxt,
-            indy_cnxt,
-            metadata: CommandMetadata::build("open", "Open wallet with specified name. Also close previously opened.")
+pub mod OpenCommand {
+    use super::*;
+
+    command_with_app_and_indy_ctx!(CommandMetadata::build("open", "Open wallet with specified name. Also close previously opened.")
                 .add_main_param("name", "The name of wallet")
                 .add_param("key", true, "Auth key for the wallet")
                 .add_param("rekey", true, "New auth key for the wallet (will replace previous one).")
                 .add_param("freshness_time", true, "Freshness time for entities in the wallet")
                 .finalize()
-        }
-    }
-}
+    );
 
-impl Command for OpenCommand {
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
-
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("OpenCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(app_ctx: Rc<ApplicationContext>, indy_ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("OpenCommand::execute >> app_ctx {:?} indy_ctx {:?} params {:?}", app_ctx, indy_ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
         let key = get_opt_str_param("key", params).map_err(error_err!())?;
@@ -155,11 +105,11 @@ impl Command for OpenCommand {
 
         let res = Ok(())
             .and_then(|_| {
-                if let Some((name, handle)) = self.indy_cnxt.get_opened_wallet() {
+                if let Some((name, handle)) = indy_ctx.get_opened_wallet() {
                     match Wallet::close_wallet(handle) {
                         Ok(()) => {
-                            self.app_cnxt.unset_sub_prompt(2);
-                            self.indy_cnxt.unset_opened_wallet();
+                            app_ctx.unset_sub_prompt(2);
+                            indy_ctx.unset_opened_wallet();
                             Ok(println_succ!("Wallet \"{}\" has been closed", name))
                         }
                         Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
@@ -171,8 +121,8 @@ impl Command for OpenCommand {
             .and_then(|_| {
                 match Wallet::open_wallet(name, config.as_ref().map(String::as_str)) {
                     Ok(handle) => {
-                        self.app_cnxt.set_sub_prompt(2, &format!("wallet({})", name));
-                        self.indy_cnxt.set_opened_wallet(name, handle);
+                        app_ctx.set_sub_prompt(2, &format!("wallet({})", name));
+                        indy_ctx.set_opened_wallet(name, handle);
                         Ok(println_succ!("Wallet \"{}\" has been opened", name))
                     }
                     Err(ErrorCode::WalletAlreadyOpenedError) => Err(println_err!("Wallet \"{}\" already opened", name)),
@@ -186,23 +136,15 @@ impl Command for OpenCommand {
     }
 }
 
-impl ListCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> ListCommand {
-        ListCommand {
-            ctx,
-            metadata: CommandMetadata::build("list", "List existing wallets.")
+pub mod ListCommand {
+    use super::*;
+
+    command_with_indy_ctx!(CommandMetadata::build("list", "List existing wallets.")
                 .finalize()
-        }
-    }
-}
+    );
 
-impl Command for ListCommand {
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
-
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("ListCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(indy_ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("ListCommand::execute >> indy_ctx {:?} params {:?}", indy_ctx, params);
 
         let res = match Wallet::list_wallets() {
             Ok(wallets) => {
@@ -218,7 +160,7 @@ impl Command for ListCommand {
                     println_succ!("There are no wallets");
                 }
 
-                if let Some(cur_wallet) = self.ctx.get_opened_wallet_name() {
+                if let Some(cur_wallet) = indy_ctx.get_opened_wallet_name() {
                     println_succ!("Current wallet \"{}\"", cur_wallet);
                 }
                 Ok(())
@@ -232,28 +174,19 @@ impl Command for ListCommand {
     }
 }
 
-impl CloseCommand {
-    pub fn new(app_cnxt: Rc<ApplicationContext>, indy_cnxt: Rc<IndyContext>) -> CloseCommand {
-        CloseCommand {
-            app_cnxt,
-            indy_cnxt,
-            metadata: CommandMetadata::build("close", "Close opened wallet.")
+pub mod CloseCommand {
+    use super::*;
+
+    command_with_app_and_indy_ctx!(CommandMetadata::build("close", "Close opened wallet.")
                 .finalize()
-        }
-    }
-}
+    );
 
-impl Command for CloseCommand {
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
-
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("OpenCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(app_ctx: Rc<ApplicationContext>, indy_ctx: Rc<IndyContext>, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("OpenCommand::execute >> app_ctx {:?} indy_ctx {:?} params {:?}", app_ctx, indy_ctx, params);
 
         let res = Ok(())
             .and_then(|_| {
-                if let Some(wallet) = self.indy_cnxt.get_opened_wallet() {
+                if let Some(wallet) = indy_ctx.get_opened_wallet() {
                     Ok(wallet)
                 } else {
                     Err(println_err!("There is no opened wallet now"))
@@ -263,8 +196,8 @@ impl Command for CloseCommand {
                 let (name, handle) = wallet;
                 match Wallet::close_wallet(handle) {
                     Ok(()) => {
-                        self.app_cnxt.unset_sub_prompt(2);
-                        self.indy_cnxt.unset_opened_wallet();
+                        app_ctx.unset_sub_prompt(2);
+                        indy_ctx.unset_opened_wallet();
                         Ok(println_succ!("Wallet \"{}\" has been closed", name))
                     }
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
@@ -276,20 +209,16 @@ impl Command for CloseCommand {
     }
 }
 
-impl DeleteCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> DeleteCommand {
-        DeleteCommand {
-            ctx,
-            metadata: CommandMetadata::build("delete", "Delete wallet with specified name")
+pub mod DeleteCommand {
+    use super::*;
+
+    command_without_ctx!(CommandMetadata::build("delete", "Delete wallet with specified name")
                 .add_main_param("name", "The name of deleted wallet")
                 .finalize()
-        }
-    }
-}
+    );
 
-impl Command for DeleteCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("DeleteCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        trace!("DeleteCommand::execute >> params {:?}", params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
 
@@ -301,10 +230,6 @@ impl Command for DeleteCommand {
 
         trace!("DeleteCommand::execute << {:?}", res);
         res
-    }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
     }
 }
 
