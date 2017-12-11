@@ -17,8 +17,8 @@ number="$4"
 
 mkdir indy-cli-zip
 mkdir indy-cli-zip/lib
-cp ./target/debug/*.dll ./indy-cli-zip/lib/
-cp ./target/debug/*.exe ./indy-cli-zip/lib/
+cp ./target/release/*.dll ./indy-cli-zip/lib/
+cp ./target/release/*.exe ./indy-cli-zip/lib/
 powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('indy-zip-cli', 'indy-cli_$version.zip'); }"
 rm -rf ./indy-cli-zip
 

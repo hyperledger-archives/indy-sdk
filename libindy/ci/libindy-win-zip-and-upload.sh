@@ -18,7 +18,7 @@ number="$4"
 mkdir libindy-zip
 mkdir libindy-zip/lib
 cp -r ./include ./libindy-zip
-cp ./target/debug/*.dll ./libindy-zip/lib/
+cp ./target/release/*.dll ./libindy-zip/lib/
 powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('libindy-zip', 'libindy_$version.zip'); }"
 rm -rf ./libindy-zip
 
