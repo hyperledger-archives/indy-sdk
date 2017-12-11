@@ -1,1 +1,1 @@
-indy-cli usr/lib/
+target/debug/libindy.so usr/lib/
