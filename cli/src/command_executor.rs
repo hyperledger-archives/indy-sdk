@@ -1,5 +1,7 @@
 use unescape::unescape;
 
+use std::cell::RefCell;
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -99,41 +101,136 @@ impl CommandMetadataBuilder {
     }
 }
 
+#[derive(Debug)]
+pub struct CommandContext {
+    main_prompt: RefCell<String>,
+    sub_prompts: RefCell<BTreeMap<usize, String>>,
+    is_exit: RefCell<bool>,
+    int_values: RefCell<HashMap<&'static str, i32>>,
+    string_values: RefCell<HashMap<&'static str, String>>,
+}
+
+#[allow(dead_code)] //FIXME
+impl CommandContext {
+    pub fn new() -> CommandContext {
+        CommandContext {
+            main_prompt: RefCell::new("indy".to_owned()),
+            sub_prompts: RefCell::new(BTreeMap::new()),
+            is_exit: RefCell::new(false),
+            int_values: RefCell::new(HashMap::new()),
+            string_values: RefCell::new(HashMap::new()),
+        }
+    }
+
+    pub fn set_main_prompt(&self, prompt: String) {
+        *self.main_prompt.borrow_mut() = prompt;
+    }
+
+    pub fn set_sub_prompt(&self, pos: usize, value: Option<String>) {
+        if let Some(value) = value {
+            self.sub_prompts.borrow_mut().insert(pos, value);
+        } else {
+            self.sub_prompts.borrow_mut().remove(&pos);
+        }
+    }
+
+    pub fn get_prompt(&self) -> String {
+        let mut prompt = String::new();
+
+        for (_key, value) in self.sub_prompts.borrow().iter() {
+            prompt.push_str(value);
+            prompt.push_str(":");
+        }
+
+        prompt.push_str(&self.main_prompt.borrow());
+        prompt.push_str("> ");
+        prompt
+    }
+
+    pub fn set_exit(&self) {
+        *self.is_exit.borrow_mut() = true;
+    }
+
+    pub fn is_exit(&self) -> bool {
+        *self.is_exit.borrow()
+    }
+
+    pub fn set_int_value(&self, key: &'static str, value: Option<i32>) {
+        if let Some(value) = value {
+            self.int_values.borrow_mut().insert(key, value);
+        } else {
+            self.int_values.borrow_mut().remove(key);
+        }
+    }
+
+    pub fn get_int_value(&self, key: &'static str) -> Option<i32> {
+        self.int_values.borrow().get(key).map(i32::to_owned)
+    }
+
+    pub fn set_string_value(&self, key: &'static str, value: Option<String>) {
+        if let Some(value) = value {
+            self.string_values.borrow_mut().insert(key, value);
+        } else {
+            self.string_values.borrow_mut().remove(key);
+        }
+    }
+
+    pub fn get_string_value(&self, key: &'static str) -> Option<String> {
+        self.string_values.borrow().get(key).map(String::to_owned)
+    }
+}
+
 pub type CommandExecParams<'a> = HashMap<&'static str, &'a str>;
 pub type CommandResult = Result<(), ()>;
-pub type CommandExec = Box<Fn(&CommandExecParams) -> CommandResult>;
+pub type CommandExecute = fn(&CommandContext, &CommandExecParams) -> CommandResult;
+pub type CommandCleanup = fn(&CommandContext) -> ();
 
 pub struct Command {
-    pub metadata: CommandMetadata,
-    pub executor: CommandExec
+    metadata: CommandMetadata,
+    execute: CommandExecute,
+    cleanup: Option<CommandCleanup>,
 }
 
 impl Command {
+    pub fn new(metadata: CommandMetadata,
+               execute: CommandExecute,
+               cleanup: Option<CommandCleanup>) -> Command {
+        Command {
+            metadata,
+            execute,
+            cleanup
+        }
+    }
+
     pub fn metadata(&self) -> &CommandMetadata {
         &self.metadata
     }
 
-    pub fn execute(&self, params: &CommandExecParams) -> CommandResult {
-        (self.executor)(params)
+    pub fn execute(&self, ctx: &CommandContext, params: &CommandExecParams) -> CommandResult {
+        self.execute(ctx, params)
+    }
+
+    pub fn cleanup(&self, ctx: &CommandContext) {
+        self.cleanup(ctx)
     }
 }
 
 #[derive(Debug)]
-pub struct GroupMetadata {
+pub struct CommandGroupMetadata {
     name: &'static str,
     help: &'static str,
 }
 
-impl GroupMetadata {
-    pub fn new(name: &'static str, help: &'static str) -> GroupMetadata {
-        GroupMetadata {
+impl CommandGroupMetadata {
+    pub fn new(name: &'static str, help: &'static str) -> CommandGroupMetadata {
+        CommandGroupMetadata {
             name,
             help
         }
     }
 }
 
-impl GroupMetadata {
+impl CommandGroupMetadata {
     pub fn name(&self) -> &'static str {
         self.name
     }
@@ -142,13 +239,25 @@ impl GroupMetadata {
     }
 }
 
-pub trait Group {
-    fn metadata(&self) -> &GroupMetadata;
+pub struct CommandGroup {
+    metadata: CommandGroupMetadata,
+}
+
+
+impl CommandGroup {
+    pub fn new(metadata: CommandGroupMetadata) -> CommandGroup {
+        CommandGroup { metadata }
+    }
+
+    pub fn metadata(&self) -> &CommandGroupMetadata {
+        &self.metadata
+    }
 }
 
 pub struct CommandExecutor {
+    ctx: CommandContext,
     commands: HashMap<&'static str, Command>,
-    grouped_commands: HashMap<&'static str, (Box<Group>, HashMap<&'static str, Command>)>,
+    grouped_commands: HashMap<&'static str, (CommandGroup, HashMap<&'static str, Command>)>,
 }
 
 impl CommandExecutor {
@@ -180,7 +289,11 @@ impl CommandExecutor {
         Err(())
     }
 
-    fn _execute_group_command(&self, group: &Box<Group>, commands: &HashMap<&'static str, Command>, line: &str) -> Result<(), ()> {
+    pub fn ctx(&self) -> &CommandContext {
+        &self.ctx
+    }
+
+    fn _execute_group_command(&self, group: &CommandGroup, commands: &HashMap<&'static str, Command>, line: &str) -> Result<(), ()> {
         let (cmd, params) = CommandExecutor::_split_first_word(line);
 
         if cmd == "help" {
@@ -197,7 +310,7 @@ impl CommandExecutor {
         Err(())
     }
 
-    fn _execute_command(&self, group: Option<&Box<Group>>, command: &Command, params: &str) -> Result<(), ()> {
+    fn _execute_command(&self, group: Option<&CommandGroup>, command: &Command, params: &str) -> Result<(), ()> {
         let (main_param, _) = CommandExecutor::_split_first_word(params);
 
         if main_param == "help" {
@@ -206,7 +319,7 @@ impl CommandExecutor {
         }
 
         match CommandExecutor::_parse_params(command.metadata(), params) {
-            Ok(ref params) => command.execute(params),
+            Ok(ref params) => command.execute(&self.ctx, params),
             Err(ref err) => {
                 println_err!("{}", err);
                 if group.is_some() {
@@ -250,7 +363,7 @@ impl CommandExecutor {
         println!();
     }
 
-    fn _print_group_help(&self, group: &Box<Group>, commands: &HashMap<&'static str, Command>) {
+    fn _print_group_help(&self, group: &CommandGroup, commands: &HashMap<&'static str, Command>) {
         println_acc!("Group:");
         println!("\t{} - {}", group.metadata().name(), group.metadata().help());
         println!();
@@ -269,7 +382,7 @@ impl CommandExecutor {
         println!();
     }
 
-    fn _print_command_help(&self, group: Option<&Box<Group>>, command: &Command) {
+    fn _print_command_help(&self, group: Option<&CommandGroup>, command: &Command) {
         println_acc!("Command:");
 
         if let Some(group) = group {
@@ -396,11 +509,11 @@ impl CommandExecutor {
 
 pub struct CommandExecutorBuilder {
     commands: HashMap<&'static str, Command>,
-    grouped_commands: HashMap<&'static str, (Box<Group>, HashMap<&'static str, Command>)>,
+    grouped_commands: HashMap<&'static str, (CommandGroup, HashMap<&'static str, Command>)>,
 }
 
 impl CommandExecutorBuilder {
-    pub fn add_group(self, group: Box<Group>) -> CommandExecutorGroupBuilder {
+    pub fn add_group(self, group: CommandGroup) -> CommandExecutorGroupBuilder {
         CommandExecutorGroupBuilder {
             commands: self.commands,
             grouped_commands: self.grouped_commands,
@@ -416,6 +529,7 @@ impl CommandExecutorBuilder {
 
     pub fn finalize(self) -> CommandExecutor {
         CommandExecutor {
+            ctx: CommandContext::new(),
             commands: self.commands,
             grouped_commands: self.grouped_commands,
         }
@@ -424,8 +538,8 @@ impl CommandExecutorBuilder {
 
 pub struct CommandExecutorGroupBuilder {
     commands: HashMap<&'static str, Command>,
-    grouped_commands: HashMap<&'static str, (Box<Group>, HashMap<&'static str, Command>)>,
-    group: Box<Group>,
+    grouped_commands: HashMap<&'static str, (CommandGroup, HashMap<&'static str, Command>)>,
+    group: CommandGroup,
     group_commands: HashMap<&'static str, Command>,
 }
 
@@ -448,34 +562,21 @@ impl CommandExecutorGroupBuilder {
 mod tests {
     use super::*;
 
-    struct TestGroup {
-        metadata: GroupMetadata
-    }
-
-    impl TestGroup {
-        pub fn new() -> TestGroup {
-            TestGroup {
-                metadata: GroupMetadata::new("test_group", "Test group help")
-            }
-        }
-    }
-
-    impl Group for TestGroup {
-        fn metadata(&self) -> &GroupMetadata {
-            &self.metadata
-        }
+    pub mod TestGroup {
+        use super::*;
+        command_group!(CommandGroupMetadata::new("test_group", "Test group help"));
     }
 
     pub mod TestCommand {
         use super::*;
 
-        command_without_ctx!(CommandMetadata::build("test_command", "Test command help")
+        command!(CommandMetadata::build("test_command", "Test command help")
                     .add_main_param("main_param", "Main param help")
                     .add_param("param1", false, "Param1 help")
                     .add_param("param2", true, "Param2 help")
                     .finalize());
 
-        fn execute(params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
             println!("Test comamnd params: {:?}", params);
             Ok(())
         }
@@ -484,7 +585,7 @@ mod tests {
     #[test]
     pub fn execute_works() {
         let cmd_executor = CommandExecutor::build()
-            .add_group(Box::new(TestGroup::new()))
+            .add_group(TestGroup::new())
             .add_command(TestCommand::new())
             .finalize_group()
             .add_command(TestCommand::new())
