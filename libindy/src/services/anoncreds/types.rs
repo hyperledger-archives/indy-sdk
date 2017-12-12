@@ -9,8 +9,7 @@ use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AttributeInfo {
     pub name: String,
-    pub schemas_seq_no: Option<Vec<i32>>,
-    pub issuer_dids: Option<Vec<String>>
+    pub restrictions: Option<Vec<Filter>>
 }
 
 impl JsonEncodable for AttributeInfo {}
@@ -27,7 +26,7 @@ impl JsonEncodable for ClaimOffer {}
 
 impl<'a> JsonDecodable<'a> for ClaimOffer {}
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
 pub struct Filter {
     pub issuer_did: Option<String>,
     pub schema_seq_no: Option<i32>
@@ -35,7 +34,7 @@ pub struct Filter {
 
 impl<'a> JsonDecodable<'a> for Filter {}
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct ClaimInfo {
     pub referent: String,
     pub attrs: HashMap<String, String>,
@@ -121,10 +120,9 @@ impl<'a> JsonDecodable<'a> for Claim {}
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct PredicateInfo {
     pub attr_name: String,
-    pub p_type: PredicateType,
+    pub p_type: String,
     pub value: i32,
-    pub schemas_seq_no: Option<Vec<i32>>,
-    pub issuer_dids: Option<Vec<String>>
+    pub restrictions: Option<Vec<Filter>>
 }
 
 #[derive(Debug, Deserialize, Serialize)]

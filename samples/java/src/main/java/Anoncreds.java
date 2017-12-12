@@ -84,9 +84,9 @@ class Anoncreds {
 				"                          \"nonce\":\"123432421212\",\n" +
 				"                          \"name\":\"proof_req_1\",\n" +
 				"                          \"version\":\"0.1\",\n" +
-				"                          \"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1],\"name\":\"name\"},\n" +
-				"                                                \"attr2_referent\":{\"schemas_seq_no\":[1],\"name\":\"sex\"}},\n" +
-				"                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+				"                          \"requested_attrs\":{\"attr1_referent\":{\"schema_seq_no\":[1],\"name\":\"name\"},\n" +
+				"                                                \"attr2_referent\":{\"schema_seq_no\":[1],\"name\":\"sex\"}},\n" +
+				"                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
 				"                  }";
 
 		String claimsForProofJson = proverGetClaimsForProofReq(proverWallet, proofRequestJson).get();

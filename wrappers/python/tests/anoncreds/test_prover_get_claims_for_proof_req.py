@@ -15,8 +15,8 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr(wallet_ha
         "version": "0.1",
         "requested_attrs": {
             "attr1_referent": {
-                "schemas_seq_no": [schema_seq_no],
-                "name": "name"
+                "name": "name",
+                "restrictions":[{"schema_seq_no":schema_seq_no}]
             }
         },
         "requested_predicates": {}
@@ -40,8 +40,8 @@ async def test_prover_get_claims_for_proof_req_works_for_not_found_attribute(wal
         "version": "0.1",
         "requested_attrs": {
             "attr1_referent": {
-                "schemas_seq_no": [schema_seq_no],
-                "name": "some_attr"
+                "name": "some_attr",
+                "restrictions":[{"schema_seq_no":schema_seq_no}]
             }
         },
         "requested_predicates": {}
@@ -67,7 +67,7 @@ async def test_prover_get_claims_for_proof_req_works_for_satisfy_predicate(walle
             "predicate1_referent":
                 {
                     "attr_name": "age",
-                    "p_type": "GE",
+                    "p_type": ">=",
                     "value": 18
                 }
         }
@@ -93,7 +93,7 @@ async def test_prover_get_claims_for_proof_req_works_for_not_satisfy_predicate(w
             "predicate1_referent":
                 {
                     "attr_name": "age",
-                    "p_type": "GE",
+                    "p_type": ">=",
                     "value": 58
                 }
         }
@@ -117,12 +117,12 @@ async def test_prover_get_claims_for_proof_req_works_for_multiply_attribute_and_
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
-            "attr1_referent": {"schemas_seq_no": [schema_seq_no], "name": "name"},
-            "attr2_referent": {"schemas_seq_no": [schema_seq_no], "name": "sex"}
+            "attr1_referent": {"name": "name","restrictions":[{"schema_seq_no":schema_seq_no}]},
+            "attr2_referent": {"name": "sex","restrictions":[{"schema_seq_no":schema_seq_no}]}
         },
         "requested_predicates": {
-            "predicate1_referent": {"attr_name": "age", "p_type": "GE", "value": 18},
-            "predicate2_referent": {"attr_name": "height", "p_type": "GE", "value": 160}
+            "predicate1_referent": {"attr_name": "age", "p_type": ">=", "value": 18},
+            "predicate2_referent": {"attr_name": "height", "p_type": ">=", "value": 160}
         }
     }
 
@@ -150,7 +150,7 @@ async def test_prover_get_claims_for_proof_req_works_for_invalid_wallet_handle(w
             "predicate1_referent":
                 {
                     "attr_name": "age",
-                    "p_type": "GE",
+                    "p_type": ">=",
                     "value": 58
                 }
         }

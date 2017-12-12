@@ -18,8 +18,8 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                     "                                \"name\":\"proof_req_1\",\n" +
                     "                                \"version\":\"0.1\",\n" +
-                    "                                \"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1], \"name\":\"name\"}},\n" +
-                    "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+                    "                                \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+                    "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                     "                              }";
 
             var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);                
@@ -60,7 +60,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                     "               \"name\":\"proof_req_1\",\n" +
                     "               \"version\":\"0.1\",\n" +
-                    "               \"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1], \"name\":\"some_attr\"}},\n" +
+                    "               \"requested_attrs\":{\"attr1_referent\":{\"name\":\"some_attr\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
                     "               \"requested_predicates\":{}\n" +
                     "              }";
 
@@ -87,8 +87,8 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "                                \"name\":\"proof_req_1\",\n" +
                 "                                \"version\":\"0.1\",\n" +
-                "                                \"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1], \"name\":\"name\"}},\n" +
-                "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+                "                                \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+                "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                 "                              }";
 
             var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
@@ -123,8 +123,8 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "                                \"name\":\"proof_req_1\",\n" +
                 "                                \"version\":\"0.1\",\n" +
-                "                                \"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1], \"name\":\"name\"}},\n" +
-                "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+                "                                \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+                "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                 "                              }";
 
             var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
@@ -159,8 +159,8 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "                                \"name\":\"proof_req_1\",\n" +
                 "                                \"version\":\"0.1\",\n" +
-                "                                \"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1], \"name\":\"name\"}},\n" +
-                "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+                "                                \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+                "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                 "                              }";
 
             var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);

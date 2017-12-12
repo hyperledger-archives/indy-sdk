@@ -374,8 +374,8 @@ fn anoncreds_demo_works() {
                                    "nonce":"123432421212",
                                    "name":"proof_req_1",
                                    "version":"0.1",
-                                   "requested_attrs":{{"attr1_referent":{{"schemas_seq_no":[{}],"name":"name"}}}},
-                                   "requested_predicates":{{"predicate1_referent":{{"attr_name":"age","p_type":"GE","value":18}}}}
+                                   "requested_attrs":{{"attr1_referent":{{"name":"name","restrictions":[{{"schema_seq_no":{}}}]}}}},
+                                   "requested_predicates":{{"predicate1_referent":{{"attr_name":"age","p_type":">=","value":18}}}}
                                 }}"#, schema_seq_no);
 
     // 8. Prover gets Claims for Proof Request

@@ -21,7 +21,7 @@ public class IssuerRevokeClaimTest extends AnoncredsIntegrationTest
                                    "\"nonce\":\"123432421212\"," +
                                    "\"name\":\"proof_req_1\"," +
                                    "\"version\":\"0.1\"," +
-                                   "\"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1],\"name\":\"name\"}}," +
+                                   "\"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}}," +
                                    "\"requested_predicates\":{}" +
                                 "}";    
     

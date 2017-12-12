@@ -171,8 +171,8 @@ pub struct PredicateInfo {
     pub attr_name: String,
     pub p_type: String,
     pub value: i32,
-    pub schemas_seq_no: Option<Vec<i32>>,
-    pub issuer_dids: Option<Vec<String>>
+    pub schema_seq_no: Option<Vec<i32>>,
+    pub issuer_did: Option<Vec<String>>
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

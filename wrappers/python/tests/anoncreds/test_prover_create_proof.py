@@ -16,14 +16,14 @@ async def test_prover_create_proof_works(wallet_handle, prepopulated_wallet, gvt
         "version": "0.1",
         "requested_attrs": {
             "attr1_referent": {
-                "schemas_seq_no": [schema_seq_no],
-                "name": "name"
+                "name": "name",
+                "restrictions":[{"schema_seq_no":schema_seq_no}]
             }
         },
         "requested_predicates": {
             "predicate1_referent": {
                 "attr_name": "age",
-                "p_type": "GE",
+                "p_type": ">=",
                 "value": 18
             }
         }
@@ -70,8 +70,8 @@ async def test_prover_create_proof_works_for_using_not_satisfy_claim(wallet_hand
         "version": "0.1",
         "requested_attrs": {
             "attr1_referent": {
-                "schemas_seq_no": [schema_seq_no],
-                "name": "some_attr"
+                "name": "some_attr",
+                "restrictions":[{"schema_seq_no":schema_seq_no}]
             }
         },
         "requested_predicates": {}
@@ -115,14 +115,14 @@ async def test_prover_create_proof_works_for_invalid_wallet_handle(wallet_handle
         "version": "0.1",
         "requested_attrs": {
             "attr1_referent": {
-                "schemas_seq_no": [schema_seq_no],
-                "name": "name"
+                "name": "name",
+                "restrictions":[{"schema_seq_no":schema_seq_no}]
             }
         },
         "requested_predicates": {
             "predicate1_referent": {
                 "attr_name": "age",
-                "p_type": "GE",
+                "p_type": ">=",
                 "value": 18
             }
         }

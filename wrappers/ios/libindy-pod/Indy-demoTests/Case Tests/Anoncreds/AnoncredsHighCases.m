@@ -839,7 +839,7 @@
         "\"version\":\"0.1\","\
         "\"requested_attrs\":{"
             "\"attr1_referent\":{"
-                "\"schemas_seq_no\":[1], \"name\":\"name\""
+                "\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]"
             "}"
         "},"
         "\"requested_predicates\":{}"
@@ -874,7 +874,7 @@
         "\"version\":\"0.1\","\
         "\"requested_attrs\":{"
             "\"attr1_referent\":{"
-                "\"schemas_seq_no\":[1], \"name\":\"some_attr\""
+                "\"name\":\"some_attr\",\"restrictions\":[{\"schema_seq_no\":1}]"
             "}"
         "},"
         "\"requested_predicates\":{}"
@@ -908,7 +908,7 @@
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","\
             "\"requested_attrs\":{},"
-            "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}"
+            "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}"
     "}";
     NSString *claimsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
@@ -939,7 +939,7 @@
     "\"name\":\"proof_req_1\","
     "\"version\":\"0.1\","\
     "\"requested_attrs\":{},"
-    "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":58}}"
+    "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":58}}"
     "}";
     NSString *claimsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
@@ -971,12 +971,12 @@
     "\"name\":\"proof_req_1\","
     "\"version\":\"0.1\","
     "\"requested_attrs\":{"
-        "\"attr1_referent\":{\"schemas_seq_no\":[1], \"name\":\"name\"},"
-        "\"attr2_referent\":{\"schemas_seq_no\":[1], \"name\":\"sex\"}"
+        "\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]},"
+        "\"attr2_referent\":{\"name\":\"sex\",\"restrictions\":[{\"schema_seq_no\":1}]}"
     "},"
     "\"requested_predicates\":{"
-        "\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18},"
-        "\"predicate2_referent\":{\"attr_name\":\"height\",\"p_type\":\"GE\",\"value\":160}"
+        "\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18},"
+        "\"predicate2_referent\":{\"attr_name\":\"height\",\"p_type\":\">=\",\"value\":160}"
     "}}";
     NSString *claimsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
@@ -1010,8 +1010,8 @@
         "\"nonce\":\"123432421212\","
         "\"name\":\"proof_req_1\","
         "\"version\":\"0.1\","
-        "\"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1], \"name\":\"name\"}},"
-        "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}"
+        "\"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},"
+        "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}"
     "}";
     IndyHandle invalidWalletHandle = walletHandle + 1;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:invalidWalletHandle
@@ -1040,8 +1040,8 @@
         "\"nonce\":\"123432421212\","
         "\"name\":\"proof_req_1\","
         "\"version\":\"0.1\","
-        "\"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1], \"name\":\"name\"}},"
-        "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}"
+        "\"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},"
+        "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}"
     "}";
     NSString *claimsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
@@ -1108,7 +1108,7 @@
         "\"nonce\":\"123432421212\","
         "\"name\":\"proof_req_1\","
         "\"version\":\"0.1\","
-        "\"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1], \"name\":\"some_attr\"}},"
+        "\"requested_attrs\":{\"attr1_referent\":{\"name\":\"some_attr\",\"restrictions\":[{\"schema_seq_no\":1}]}},"
         "\"requested_predicates\":{}"
     "}";
 
@@ -1152,7 +1152,7 @@
     "\"nonce\":\"123432421212\","
     "\"name\":\"proof_req_1\","
     "\"version\":\"0.1\","
-    "\"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1], \"name\":\"name\"}},"
+    "\"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},"
     "\"requested_predicates\":{}"
     "}";
     
@@ -1212,12 +1212,11 @@
             "\"version\":\"0.1\","
             "\"requested_attrs\":{"\
                 "\"attr1_referent\":{"\
-                    "\"schemas_seq_no\":[1],"\
-                    "\"name\":\"name\"}},"\
+                    "\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},"\
             "\"requested_predicates\":{"\
                 "\"predicate1_referent\":{"\
                     "\"attr_name\":\"age\","\
-                    "\"p_type\":\"GE\","\
+                    "\"p_type\":\">=\","\
                     "\"value\":18}"\
                 "}"\
             "}";
@@ -1262,12 +1261,11 @@
         "\"version\":\"0.1\","\
         "\"requested_attrs\":{"\
             "\"attr1_referent\":{"\
-                "\"schemas_seq_no\":[1],"\
-                "\"name\":\"sex\"}},"\
+                "\"name\":\"sex\",\"restrictions\":[{\"schema_seq_no\":1}]}},"\
         "\"requested_predicates\":{"\
             "\"predicate1_referent\":{"\
                 "\"attr_name\":\"height\","\
-                "\"p_type\":\"GE\","\
+                "\"p_type\":\">=\","\
                 "\"value\":180}"\
         "}"\
     "}";
@@ -1311,12 +1309,11 @@
             "\"version\":\"0.1\","
             "\"requested_attrs\":{"\
                 "\"attr1_referent\":{"\
-                    "\"schemas_seq_no\":[1],"\
-                    "\"name\":\"name\"}},"\
+                    "\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},"\
             "\"requested_predicates\":{"\
                 "\"predicate1_referent\":{"\
                     "\"attr_name\":\"age\","\
-                    "\"p_type\":\"GE\","\
+                    "\"p_type\":\">=\","\
                     "\"value\":18}}"\
             "}";
     

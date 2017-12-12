@@ -68,16 +68,13 @@ impl Prover {
             let mut claims_for_attribute: Vec<ClaimInfo> = Vec::new();
 
             for claim in claims {
-                if claim.attrs.contains_key(&requested_attr.name) &&
-                    if requested_attr.schemas_seq_no.is_some() {
-                        requested_attr.schemas_seq_no.clone().unwrap().contains(&claim.schema_seq_no)
-                    } else { true } &&
-                    if requested_attr.issuer_dids.is_some() {
-                        requested_attr.issuer_dids.clone().unwrap().contains(&claim.issuer_did)
-                    } else { true } {
-                    claims_for_attribute.push(claim.clone());
-                }
+                let mut satisfy = claim.attrs.contains_key(&requested_attr.name);
+
+                satisfy = satisfy && Prover::_claim_satisfy_restrictions(claim, &requested_attr.restrictions);
+
+                if satisfy { claims_for_attribute.push(claim.clone()); }
             }
+
             found_attributes.insert(attr_id.clone(), claims_for_attribute);
         }
 
@@ -85,18 +82,16 @@ impl Prover {
             let mut claims_for_predicate: Vec<ClaimInfo> = Vec::new();
 
             for claim in claims {
-                if let Some(attribute_value) = claim.attrs.get(&requested_predicate.attr_name) {
-                    if Prover::_attribute_satisfy_predicate(&requested_predicate, attribute_value)? &&
-                        if requested_predicate.schemas_seq_no.is_some() {
-                            requested_predicate.schemas_seq_no.clone().unwrap().contains(&claim.schema_seq_no)
-                        } else { true } &&
-                        if requested_predicate.issuer_dids.is_some() {
-                            requested_predicate.issuer_dids.clone().unwrap().contains(&claim.issuer_did)
-                        } else { true } {
-                        claims_for_predicate.push(claim.clone());
-                    }
-                }
+                let mut satisfy = match claim.attrs.get(&requested_predicate.attr_name) {
+                    Some(attribute_value) => Prover::_attribute_satisfy_predicate(&requested_predicate, attribute_value)?,
+                    None => false
+                };
+
+                satisfy = satisfy && Prover::_claim_satisfy_restrictions(claim, &requested_predicate.restrictions);
+
+                if satisfy { claims_for_predicate.push(claim.clone()); }
             }
+
             found_predicates.insert(predicate_id.clone(), claims_for_predicate);
         }
 
@@ -179,15 +174,48 @@ impl Prover {
         Ok(full_proof)
     }
 
+    fn _claim_satisfy_restrictions(claim: &ClaimInfo, restrictions: &Option<Vec<Filter>>) -> bool {
+        info!("_claim_satisfy_restrictions >>> claim: {:?}, restrictions: {:?}", claim, restrictions);
+
+        let res = match restrictions {
+            &Some(ref restrictions) => restrictions.iter().any(|restriction|
+                Prover::_claim_satisfy_restriction(claim, &restriction)),
+            &None => true
+        };
+
+        info!("_claim_satisfy_restrictions <<< res: {:?}", res);
+
+        res
+    }
+
+    fn _claim_satisfy_restriction(claim: &ClaimInfo, restriction: &Filter) -> bool {
+        info!("_claim_satisfy_restriction >>> claim: {:?}, restriction: {:?}", claim, restriction);
+
+        let mut res = true;
+
+        if let Some(schema_seq_no) = restriction.schema_seq_no {
+            res = res && claim.schema_seq_no == schema_seq_no;
+        }
+
+        if let Some(issuer_did) = restriction.issuer_did.clone() {
+            res = res && claim.issuer_did == issuer_did;
+        }
+
+        info!("_claim_satisfy_restriction >>> res: {:?}", res);
+
+        res
+    }
+
     fn _attribute_satisfy_predicate(predicate: &PredicateInfo, attribute_value: &String) -> Result<bool, CommonError> {
         info!("_attribute_satisfy_predicate >>> predicate: {:?}, attribute_value: {:?}", predicate, attribute_value);
 
-        let res = match predicate.p_type {
-            PredicateType::GE => Ok({
+        let res = match predicate.p_type.as_str() {
+            ">=" => Ok({
                 let attribute_value = attribute_value.parse::<i32>()
                     .map_err(|err| CommonError::InvalidStructure(format!("Ivalid format of predicate attribute: {}", attribute_value)))?;
                 attribute_value >= predicate.value
-            })
+            }),
+            _ => return Err(CommonError::InvalidStructure(format!("Invalid predicate type: {:?}", predicate.p_type)))
         };
 
         info!("_attribute_satisfy_predicate <<< res: {:?}", res);

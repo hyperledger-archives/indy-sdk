@@ -495,7 +495,7 @@ pub extern fn indy_prover_store_claim(command_handle: i32,
 /// claims json
 ///     [{
 ///         "referent": <string>,
-///         "attrs": [{"attr_name" : "attr_value"}],
+///         "attrs": [{"attr_name" : "attr_raw_value"}],
 ///         "schema_seq_no": string,
 ///         "issuer_did": string,
 ///         "revoc_reg_seq_no": string,
@@ -546,6 +546,30 @@ pub extern fn indy_prover_get_claims(command_handle: i32,
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
+/// where attr_info:
+///     {
+///         "name": attribute name,
+///         "restrictions": [
+///             {
+///                 "schema_seq_no": int, (Optional)
+///                 "issuer_did": string (Optional)
+///             }
+///         ]  (Optional) - if specified, claim must be created for one of the given
+///                         schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
+///     }
+/// predicate_info:
+///     {
+///         "attr_name": attribute name,
+///         "p_type": predicate type (Currently >= only)
+///         "value": requested value of attribute
+///         "restrictions": [
+///             {
+///                 "schema_seq_no": int, (Optional)
+///                 "issuer_did": string (Optional)
+///             }
+///         ]  (Optional) - if specified, claim must be created for one of the given
+///                         schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
+///     }
 /// #Returns
 /// json with claims for the given pool request.
 /// Claim consists of referent, human-readable attributes (key-value map), schema_seq_no, issuer_did and revoc_reg_seq_no.
@@ -558,7 +582,7 @@ pub extern fn indy_prover_get_claims(command_handle: i32,
 ///     }, where claim is
 ///     {
 ///         "referent": <string>,
-///         "attrs": [{"attr_name" : "attr_value"}],
+///         "attrs": [{"attr_name" : "attr_raw_value"}],
 ///         "schema_seq_no": string,
 ///         "issuer_did": string,
 ///         "revoc_reg_seq_no": string,
@@ -647,16 +671,24 @@ pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
 /// where attr_info:
 ///     {
 ///         "name": attribute name,
-///         "schemas_seq_no": a list of schema sequence numbers allowed for proving of the attribute
-///         "issuer_dids":  a list of issuer dids allowed for proving of the attribute
+///         "restrictions": [
+///             {
+///                 "schema_seq_no": int, (Optional)
+///                 "issuer_did": string (Optional)
+///             }
+///         ]  (Optional)
 ///     }
 /// predicate_info:
 ///     {
 ///         "attr_name": attribute name,
-///         "p_type": predicate type (Currently GE only)
+///         "p_type": predicate type (Currently >= only)
 ///         "value": requested value of attribute
-///         "schemas_seq_no": a list of schema sequence numbers allowed for proving of the attribute
-///         "issuer_dids":  a list of issuer dids allowed for proving of the attribute
+///         "restrictions": [
+///             {
+///                 "schema_seq_no": int, (Optional)
+///                 "issuer_did": string (Optional)
+///             }
+///         ]  (Optional)
 ///     }
 ///
 /// #Returns

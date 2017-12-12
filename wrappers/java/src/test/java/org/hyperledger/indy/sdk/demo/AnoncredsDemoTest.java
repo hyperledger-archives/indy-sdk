@@ -122,9 +122,9 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                          \"nonce\":\"123432421212\",\n" +
 				"                          \"name\":\"proof_req_1\",\n" +
 				"                          \"version\":\"0.1\",\n" +
-				"                          \"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1],\"name\":\"name\"},\n" +
-				"                                                \"attr2_referent\":{\"schemas_seq_no\":[1],\"name\":\"sex\"}},\n" +
-				"                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+				"                          \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]},\n" +
+				"                                                \"attr2_referent\":{\"name\":\"sex\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+				"                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
 				"                  }";
 
 		String claimsForProofJson = Anoncreds.proverGetClaimsForProofReq(proverWallet, proofRequestJson).get();
@@ -272,10 +272,10 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                          \"nonce\":\"123432421212\",\n" +
 				"                          \"name\":\"proof_req_1\",\n" +
 				"                          \"version\":\"0.1\",\n" +
-				"                          \"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1],\"name\":\"name\"},\n" +
-				"                                               \"attr2_referent\":{\"schemas_seq_no\":[2],\"name\":\"status\"}},\n" +
-				"                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}," +
-				"                                                    \"predicate2_referent\":{\"attr_name\":\"period\",\"p_type\":\"GE\",\"value\":5}}\n" +
+				"                          \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]},\n" +
+				"                                               \"attr2_referent\":{\"name\":\"status\",\"restrictions\":[{\"schema_seq_no\":2}]}},\n" +
+				"                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}," +
+				"                                                    \"predicate2_referent\":{\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}}\n" +
 				"                  }";
 
 
@@ -425,9 +425,9 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                          \"nonce\":\"123432421212\",\n" +
 				"                          \"name\":\"proof_req_1\",\n" +
 				"                          \"version\":\"0.1\",\n" +
-				"                          \"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1],\"name\":\"name\"}},\n" +
-				"                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}," +
-				"                                                    \"predicate2_referent\":{\"attr_name\":\"period\",\"p_type\":\"GE\",\"value\":5}}\n" +
+				"                          \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+				"                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}," +
+				"                                                    \"predicate2_referent\":{\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}}\n" +
 				"                  }";
 
 
@@ -537,7 +537,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                          \"nonce\":\"123432421212\",\n" +
 				"                          \"name\":\"proof_req_1\",\n" +
 				"                          \"version\":\"0.1\",\n" +
-				"                          \"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1],\"name\":\"name\"}},\n" +
+				"                          \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
 				"                          \"requested_predicates\":{}\n" +
 				"                  }";
 
@@ -580,8 +580,8 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\",\n" +
-				"                    \"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[1],\"name\":\"name\"}},\n" +
-				"                    \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+				"                    \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+				"                    \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
 				"           }";
 
 		Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).get();

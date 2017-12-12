@@ -67,7 +67,7 @@ async def demo():
             'attr1_referent': {'schema_seq_no': 1, 'name': 'name'}
         },
         'requested_predicates': {
-            'predicate1_referent': {'attr_name': 'age', 'p_type': 'GE', 'value': 18}
+            'predicate1_referent': {'attr_name': 'age', 'p_type': '>=', 'value': 18}
         }
     })
 

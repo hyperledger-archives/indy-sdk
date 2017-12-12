@@ -542,7 +542,8 @@
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
-            "\"requested_attrs\":{\"attr1_referent\":{\"schemas_seq_no\":[2], \"name\":\"name\"}},"
+            "\"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":2}]\
+}},"
             "\"requested_predicates\":{}}";
 
     NSString *claimsJson;
@@ -629,7 +630,8 @@
             "\"name\":\"proof_req_1\","
             "\"version\":\"0.1\","
             "\"requested_attrs\":{"
-                "\"attr1_referent\":{\"schemas_seq_no\":[1], \"name\":\"name\"}},"
+                "\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]\
+}},"
             "\"requested_predicates\":{}"
         "}";
     NSString *claimsJson;
@@ -683,8 +685,7 @@
         "\"version\":\"0.1\","
         "\"requested_attrs\":{"
             "\"attr1_referent\":{"
-                "\"schemas_seq_no\":[1],"
-                "\"name\":\"name\"}},"
+                "\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]\}},"
         "\"requested_predicates\":{}"
     "}";
     NSString *claimsJson;
@@ -740,8 +741,7 @@
             "\"version\":\"0.1\","
             "\"requested_attrs\":{"
                 "\"attr1_referent\":{"
-                    "\"schemas_seq_no\":[1],"
-                    "\"name\":\"name\"}},"
+                    "\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},"
                 "\"requested_predicates\":{}"
         "}";
     NSString *claimsJson;
@@ -797,8 +797,7 @@
             "\"version\":\"0.1\","
             "\"requested_attrs\":{"
                 "\"attr1_referent\":{"
-                    "\"schemas_seq_no\":[1],"
-                    "\"name\":\"name\"}},"
+                    "\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},"
                 "\"requested_predicates\":{}"
             "}";
     NSString *claimsJson;
@@ -850,12 +849,11 @@
             "\"version\":\"0.1\","
             "\"requested_attrs\":{"
                 "\"attr1_referent\":{"
-                    "\"schemas_seq_no\":[1],"
-                    "\"name\":\"name\"}},"
+                    "\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},"
             "\"requested_predicates\":{"
                 "\"predicate1_referent\":{"
                     "\"attr_name\":\"age\","
-                    "\"p_type\":\"GE\","
+                    "\"p_type\":\">=\","
                     "\"value\":18}}"
         "}";
     
@@ -892,12 +890,11 @@
             "\"version\":\"0.1\","
             "\"requested_attrs\":{"
                 "\"attr1_referent\":{"
-                    "\"schemas_seq_no\":[1],"
-                    "\"name\":\"name\"}},"
+                    "\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},"
             "\"requested_predicates\":{"
                 "\"predicate1_referent\":{"
                     "\"attr_name\":\"age\","
-                    "\"p_type\":\"GE\","
+                    "\"p_type\":\">=\","
                     "\"value\":18}}"
             "}";
     
@@ -933,12 +930,11 @@
             "\"version\":\"0.1\","
             "\"requested_attrs\":{"
                 "\"attr1_referent\":{"
-                    "\"schemas_seq_no\":[1],"
-                    "\"name\":\"name\"}},"
+                    "\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},"
             "\"requested_predicates\":{"
                 "\"predicate1_referent\":{"
                     "\"attr_name\":\"age\","
-                    "\"p_type\":\"GE\","
+                    "\"p_type\":\">=\","
                     "\"value\":18}}"
             "}";
     

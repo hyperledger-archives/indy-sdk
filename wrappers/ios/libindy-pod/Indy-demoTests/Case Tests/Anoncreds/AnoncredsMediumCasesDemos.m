@@ -105,8 +105,7 @@
                               "\"version\":\"0.1\","
                               "\"requested_attrs\":{"
                                 "\"attr1_referent\":{"
-                                    "\"schemas_seq_no\":[%@],"
-                                    "\"name\":\"name\"}},"
+                                    "\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":%@}]}},"
                               "\"requested_predicates\":{}"
                               "}", schemaSeqNo];
     NSString *claimsJson;
@@ -151,12 +150,11 @@
                                 "\"version\":\"0.1\","
                                 "\"requested_attrs\":{"
                                     "\"attr1_referent\":{"
-                                        "\"schemas_seq_no\":[%@],"
-                                        "\"name\":\"name\"}},"
+                                        "\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":%@}]}},"
                                "\"requested_predicates\":{"
                                     "\"predicate1_referent\":{"
                                         "\"attr_name\":\"age\","
-                                        "\"p_type\":\"GE\","
+                                        "\"p_type\":\">=\","
                                         "\"value\":18}}"
                                 "}", schemaSeqNo];
     
@@ -287,13 +285,13 @@
                              " \"requested_attrs\":"\
                              "             {\"attr1_referent\":"\
                              "                        {"\
-                             "                          \"schemas_seq_no\":[%@],\"name\":\"name\""\
+                             "                          \"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":%@}]"\
                              "                        }"\
                              "             },"\
                              " \"requested_predicates\":"\
                              "             {"\
                              "              \"predicate1_referent\":"\
-                             "                      {\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}"\
+                             "                      {\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}"\
                              "             }"\
                              "}", schemaSeqNo ];
     
@@ -558,19 +556,19 @@
                              " \"requested_attrs\":"\
                              "             {\"attr1_referent\":"\
                              "                        {"\
-                             "                          \"schemas_seq_no\":[%d],\"name\":\"name\""\
+                             "                          \"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":%d}]"\
                              "                        },"\
                              "              \"attr2_referent\":"\
                              "                        {"\
-                             "                          \"schemas_seq_no\":[%d],\"name\":\"status\""\
+                             "                          \"name\":\"status\",\"restrictions\":[{\"schema_seq_no\":%d}]"\
                              "                        }"\
                              "             },"\
                              " \"requested_predicates\":"\
                              "             {"\
                              "              \"predicate1_referent\":"\
-                             "                      {\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18},"\
+                             "                      {\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18},"\
                              "              \"predicate2_referent\":"\
-                             "                      {\"attr_name\":\"period\",\"p_type\":\"GE\",\"value\":5}"\
+                             "                      {\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}"\
                              "             }"\
                              "}", [gvtSchemaSeqNo intValue], [xyzSchemaSeqNo intValue] ];
     
@@ -901,14 +899,14 @@
                              " \"requested_attrs\":"\
                              "             {\"attr1_referent\":"\
                              "                        {"\
-                             "                          \"schemas_seq_no\":[%ld],\"name\":\"name\""\
+                             "                          \"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":%ld}]"\
                              "                        }},"\
                              " \"requested_predicates\":"\
                              "             {"\
                              "              \"predicate1_referent\":"\
-                             "                      {\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18},"\
+                             "                      {\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18},"\
                              "              \"predicate2_referent\":"\
-                             "                      {\"attr_name\":\"period\",\"p_type\":\"GE\",\"value\":5}"\
+                             "                      {\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}"\
                              "             }"\
                              "}", (long)[gvtSchemaSeqNo integerValue] ];
     
