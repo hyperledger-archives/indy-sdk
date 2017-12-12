@@ -162,7 +162,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
                     sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release $featuresArgs"
 
                     if (stashBuildResults) {
-                        stash includes: 'target/debug/libindy.so,target/debug/libindy.a', name: 'LibindyUbuntuBuildResult'
+                        stash includes: 'target/release/libindy.so,target/release/libindy.a', name: 'LibindyUbuntuBuildResult'
                     }
 
                     /* TODO FIXME restore after xunit will be fixed
@@ -198,19 +198,19 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
             }
         }
 
-        sh "cp libindy/target/debug/libindy.so cli"
+        sh "cp libindy/target/release/libindy.so cli"
         dir('cli') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name} -u 0:0") {
                 sh "cp libindy.so /usr/lib"
 
                 echo "${env_name} Indy Cli Test: Build"
-                sh "RUST_BACKTRACE=1 cargo build"
+                sh "RUST_BACKTRACE=1 cargo build --release"
 
                 echo "${env_name} Indy Cli Test: Run tests"
-                sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
+                sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release"
 
-                if (stashResults) {
-                    stash includes: 'target/debug/indy-cli', name: 'IndyCliUbuntuBuildResult'
+                if (stashBuildResults) {
+                    stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
                 }
             }
         }
@@ -257,7 +257,7 @@ def windowsTesting() {
                             bat "cargo test --release"
                         }
                     }
-                    stash includes: 'target/debug/*.dll', name: 'LibindyWindowsBuildResult'
+                    stash includes: 'target/release/*.dll', name: 'LibindyWindowsBuildResult'
                 }
 
                 dir('cli') {
@@ -514,7 +514,7 @@ def libindyCliDebPublishing(testEnv) {
 
             withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
                 try {
-                    sh "./ci/libindy-cli-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
+                    sh "./ci/indy-cli-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
 
                     if (env.BRANCH_NAME == 'rc') {
                         stash includes: 'debs/*', name: 'libindyCliDebs'
@@ -606,7 +606,7 @@ def publishLibindyCliDebRCtoStable(testEnv, version) {
 
         unstash name: 'libindyCliDebs'
 
-        sh "deb-reversion -v $version debs/libindy-cli_\"$rcFullVersion\"_amd64.deb"
+        sh "deb-reversion -v $version debs/indy-cli_\"$rcFullVersion\"_amd64.deb"
 
         uploadDebianFilesToStable()
     }
