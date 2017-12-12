@@ -9,13 +9,13 @@ use utils::table::print_table;
 
 use std::collections::HashMap;
 
-pub mod Group {
+pub mod group {
     use super::*;
 
     command_group!(CommandGroupMetadata::new("pool", "Pool management commands"));
 }
 
-pub mod CreateCommand {
+pub mod create_command {
     use super::*;
 
     command!(CommandMetadata::build("create", "Create new pool ledger config with specified name")
@@ -25,7 +25,7 @@ pub mod CreateCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("CreateCommand::execute >> params {:?}", params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
         let gen_txn_file = get_opt_str_param("gen_txn_file", params).map_err(error_err!())?
@@ -46,21 +46,20 @@ pub mod CreateCommand {
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
-        trace!("CreateCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
 }
 
-pub mod ConnectCommand {
+pub mod connect_command {
     use super::*;
 
-    command!(CommandMetadata::build("connect", "Connect to pool with specified name. Also disconnect from previously connected.")
+    command_with_cleanup!(CommandMetadata::build("connect", "Connect to pool with specified name. Also disconnect from previously connected.")
                 .add_main_param("name", "The name of pool")
-                .finalize()
-    );
+                .finalize());
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("OpenCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
 
@@ -88,12 +87,28 @@ pub mod ConnectCommand {
                 }
             });
 
-        trace!("CreateCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
+    }
+
+    pub fn cleanup(ctx: &CommandContext) {
+        trace!("cleanup >> ctx {:?}", ctx);
+
+        if let Some((handle, name)) = get_connected_pool(ctx) {
+            match Pool::close(handle) {
+                Ok(()) => {
+                    set_connected_pool(ctx, Some((handle, name.to_owned())));
+                    println_succ!("Pool \"{}\" has been connected", name)
+                }
+                Err(err) => println_err!("Indy SDK error occurred {:?}", err),
+            }
+        }
+
+        trace!("cleanup <<");
     }
 }
 
-pub mod ListCommand {
+pub mod list_command {
     use super::*;
 
     command!(CommandMetadata::build("list", "List existing pool configs.")
@@ -101,7 +116,7 @@ pub mod ListCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("ListCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let res = match Pool::list() {
             Ok(pools) => {
@@ -124,12 +139,12 @@ pub mod ListCommand {
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
-        trace!("ListCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
 }
 
-pub mod DisconnectCommand {
+pub mod disconnect_command {
     use super::*;
 
     command!(CommandMetadata::build("disconnect", "Disconnect from current pool.")
@@ -137,7 +152,7 @@ pub mod DisconnectCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("DisconnectCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let (handle, name) = if let Some(pool) = get_connected_pool(ctx) {
             pool
@@ -153,12 +168,12 @@ pub mod DisconnectCommand {
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
-        trace!("DisconnectCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
 }
 
-pub mod DeleteCommand {
+pub mod delete_command {
     use super::*;
 
     command!(CommandMetadata::build("delete", "Delete pool config with specified name")
@@ -167,7 +182,7 @@ pub mod DeleteCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("DeleteCommand::execute >> params {:?}", params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
 
@@ -182,7 +197,7 @@ pub mod DeleteCommand {
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
-        trace!("DeleteCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
 }

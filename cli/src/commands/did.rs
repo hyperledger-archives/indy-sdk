@@ -12,13 +12,13 @@ use serde_json::Map as JSONMap;
 
 use std::collections::HashMap;
 
-pub mod Group {
+pub mod group {
     use super::*;
 
     command_group!(CommandGroupMetadata::new("did", "Identity management commands"));
 }
 
-pub mod NewCommand {
+pub mod new_command {
     use super::*;
 
     command!(CommandMetadata::build("new", "Create new DID")
@@ -30,7 +30,7 @@ pub mod NewCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("NewCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
@@ -73,12 +73,12 @@ pub mod NewCommand {
             res.map(|_| ())
         };
 
-        trace!("NewCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
 }
 
-pub mod UseCommand {
+pub mod use_command {
     use super::*;
 
     command!(CommandMetadata::build("use", "Use DID")
@@ -86,7 +86,7 @@ pub mod UseCommand {
                 .finalize());
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("UseCommand::execute >> ctx {:?}, params {:?}", ctx, params);
+        trace!("execute >> ctx {:?}, params {:?}", ctx, params);
 
         let did = get_str_param("did", params).map_err(error_err!())?;
 
@@ -102,12 +102,12 @@ pub mod UseCommand {
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
         };
 
-        trace!("UseCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
 }
 
-pub mod RotateKeyCommand {
+pub mod rotate_key_command {
     use super::*;
 
     command!(CommandMetadata::build("rotate-key", "Rotate keys for active did")
@@ -115,7 +115,7 @@ pub mod RotateKeyCommand {
                 .finalize());
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("RotateKeyCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
 
@@ -154,18 +154,18 @@ pub mod RotateKeyCommand {
             Err(_) => return Err(println_err!("Wrong command params")),
         };
 
-        trace!("RotateKeyCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
 }
 
-pub mod ListCommand {
+pub mod list_command {
     use super::*;
 
     command!(CommandMetadata::build("list", "List my DIDs stored in the opened wallet.").finalize());
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("ListCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
@@ -189,7 +189,7 @@ pub mod ListCommand {
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
-        trace!("ListCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
 }

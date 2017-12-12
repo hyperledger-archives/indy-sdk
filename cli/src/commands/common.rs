@@ -1,16 +1,13 @@
 use command_executor::{Command, CommandContext, CommandExecParams, CommandMetadata, CommandResult};
 use commands::get_str_param;
 
-use std::io::Read;
-use std::fs::File;
-
-pub mod AboutCommand {
+pub mod about_command {
     use super::*;
 
     command!(CommandMetadata::build("about", "Show about information").finalize());
 
     fn execute(_ctx: &CommandContext, _params: &CommandExecParams) -> CommandResult {
-        trace!("AboutCommand::execute >> self: params: {:?}", _params);
+        trace!("execute >> _ctx: params: {:?}", _params);
 
         println_succ!("Hyperledger Indy CLI (https://github.com/hyperledger/indy-sdk)");
         println!();
@@ -24,20 +21,22 @@ pub mod AboutCommand {
 
         let res = Ok(());
 
-        trace!("AboutCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
 }
 
-pub mod ShowCommand {
+pub mod show_command {
     use super::*;
+    use std::io::Read;
+    use std::fs::File;
 
     command!(CommandMetadata::build("show", "Print the content of text file")
                             .add_main_param("file", "The path to file to show")
                             .finalize());
 
     fn execute(_ctx: &CommandContext, params: &CommandExecParams) -> CommandResult {
-        trace!("ShowCommand::execute >> params: {:?}", params);
+        trace!("execute >> params: {:?}", params);
 
         let file = get_str_param("file", params).map_err(error_err!())?;
 
@@ -56,12 +55,12 @@ pub mod ShowCommand {
         println!("{}", content);
         let res = Ok(());
 
-        trace!("ShowCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
 }
 
-pub mod PromptCommand {
+pub mod prompt_command {
     use super::*;
 
     command!(CommandMetadata::build("prompt", "Change command prompt")
@@ -69,7 +68,7 @@ pub mod PromptCommand {
                             .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandExecParams) -> CommandResult {
-        trace!("PromptCommand::execute >> ctx: {:?}, params: {:?}", ctx, params);
+        trace!("execute >> ctx: {:?}, params: {:?}", ctx, params);
 
         let prompt = get_str_param("prompt", params).map_err(error_err!())?;
 
@@ -77,24 +76,23 @@ pub mod PromptCommand {
         println_succ!("Command prompt has been set to \"{}\"", prompt);
         let res = Ok(());
 
-        trace!("PromptCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
 }
 
-pub mod ExitCommand {
+pub mod exit_command {
     use super::*;
 
     command!(CommandMetadata::build("exit", "Exit Indy CLI").finalize());
 
     fn execute(ctx: &CommandContext, _params: &CommandExecParams) -> CommandResult {
-        trace!("ExitCommand::execute >> ctx: {:?}, params: {:?}", ctx, _params);
+        trace!("execute >> ctx: {:?}, params: {:?}", ctx, _params);
 
         ctx.set_exit();
-        println_succ!("Goodbye...");
         let res = Ok(());
 
-        trace!("ExitCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
 }
