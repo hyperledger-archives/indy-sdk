@@ -107,13 +107,14 @@ pub fn ensure_opened_wallet_handle(ctx: &CommandContext) -> Result<i32, ()> {
 }
 
 pub fn get_opened_wallet(ctx: &CommandContext) -> Option<(i32, String)> {
-    if let Some(handle) = ctx.get_int_value("OPENED_WALLET_HANDLE") {
-        if let Some(name) = ctx.get_string_value("OPENED_WALLET_NAME") {
-            return Some((handle, name));
-        }
-    }
+    let handle = ctx.get_int_value("OPENED_WALLET_HANDLE");
+    let name = ctx.get_string_value("OPENED_WALLET_NAME");
 
-    None
+    if let (Some(handle), Some(name)) = (handle, name) {
+        Some((handle, name))
+    } else {
+        None
+    }
 }
 
 pub fn set_opened_wallet(ctx: &CommandContext, value: Option<(i32, String)>) {
@@ -130,13 +131,14 @@ pub fn ensure_connected_pool_handle(ctx: &CommandContext) -> Result<i32, ()> {
 }
 
 pub fn get_connected_pool(ctx: &CommandContext) -> Option<(i32, String)> {
-    if let Some(handle) = ctx.get_int_value("CONNECTED_POOL_HANDLE") {
-        if let Some(name) = ctx.get_string_value("CONNECTED_POOL_NAME") {
-            return Some((handle, name));
-        }
-    }
+    let handle = ctx.get_int_value("CONNECTED_POOL_HANDLE");
+    let name = ctx.get_string_value("CONNECTED_POOL_NAME");
 
-    None
+    if let (Some(handle), Some(name)) = (handle, name) {
+        Some((handle, name))
+    } else {
+        None
+    }
 }
 
 pub fn set_connected_pool(ctx: &CommandContext, value: Option<(i32, String)>) {

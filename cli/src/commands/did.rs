@@ -30,7 +30,7 @@ pub mod NewCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("NewCommand::execute >> self {:?} params {:?}", ctx, params);
+        trace!("NewCommand::execute >> ctx {:?} params {:?}", ctx, params);
 
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
