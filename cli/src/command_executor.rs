@@ -187,18 +187,18 @@ pub type CommandCleanup = fn(&CommandContext) -> ();
 
 pub struct Command {
     metadata: CommandMetadata,
-    execute: CommandExecute,
-    cleanup: Option<CommandCleanup>,
+    executor: CommandExecute,
+    cleaner: Option<CommandCleanup>,
 }
 
 impl Command {
     pub fn new(metadata: CommandMetadata,
-               execute: CommandExecute,
-               cleanup: Option<CommandCleanup>) -> Command {
+               executor: CommandExecute,
+               cleaner: Option<CommandCleanup>) -> Command {
         Command {
             metadata,
-            execute,
-            cleanup
+            executor,
+            cleaner,
         }
     }
 
@@ -207,11 +207,13 @@ impl Command {
     }
 
     pub fn execute(&self, ctx: &CommandContext, params: &CommandExecParams) -> CommandResult {
-        self.execute(ctx, params)
+        (self.executor)(ctx, params)
     }
 
     pub fn cleanup(&self, ctx: &CommandContext) {
-        self.cleanup(ctx)
+        if let Some(cleaner) = self.cleaner {
+            (cleaner)(ctx)
+        }
     }
 }
 
@@ -507,6 +509,22 @@ impl CommandExecutor {
     }
 }
 
+impl Drop for CommandExecutor {
+    fn drop(&mut self) {
+        for (_, command) in &self.commands {
+            command.cleanup(&self.ctx);
+        }
+
+        for (_, commands) in &self.grouped_commands {
+            for (_, command) in &commands.1 {
+                command.cleanup(&self.ctx);
+            }
+        }
+
+        println_succ!("Goodbye...");
+    }
+}
+
 pub struct CommandExecutorBuilder {
     commands: HashMap<&'static str, Command>,
     grouped_commands: HashMap<&'static str, (CommandGroup, HashMap<&'static str, Command>)>,
@@ -562,12 +580,12 @@ impl CommandExecutorGroupBuilder {
 mod tests {
     use super::*;
 
-    pub mod TestGroup {
+    pub mod test_group {
         use super::*;
         command_group!(CommandGroupMetadata::new("test_group", "Test group help"));
     }
 
-    pub mod TestCommand {
+    pub mod test_command {
         use super::*;
 
         command!(CommandMetadata::build("test_command", "Test command help")
@@ -577,7 +595,7 @@ mod tests {
                     .finalize());
 
         fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-            println!("Test comamnd params: {:?}", params);
+            println!("Test comamnd params: ctx {:?} params {:?}", ctx, params);
             Ok(())
         }
     }
@@ -585,10 +603,10 @@ mod tests {
     #[test]
     pub fn execute_works() {
         let cmd_executor = CommandExecutor::build()
-            .add_group(TestGroup::new())
-            .add_command(TestCommand::new())
+            .add_group(test_group::new())
+            .add_command(test_command::new())
             .finalize_group()
-            .add_command(TestCommand::new())
+            .add_command(test_command::new())
             .finalize();
         cmd_executor.execute("test_group test_command \"main param\" param1=\"param1 value\" param2=param2-value").unwrap();
     }

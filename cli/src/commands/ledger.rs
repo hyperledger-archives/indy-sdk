@@ -10,13 +10,13 @@ use serde_json::Map as JSONMap;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
-pub mod Group {
+pub mod group {
     use super::*;
 
     command_group!(CommandGroupMetadata::new("ledger", "Ledger management commands"));
 }
 
-pub mod NymCommand {
+pub mod nym_command {
     use super::*;
 
     command!(CommandMetadata::build("nym", "Add NYM to Ledger.")
@@ -28,7 +28,7 @@ pub mod NymCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("SendNymCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
@@ -48,12 +48,12 @@ pub mod NymCommand {
             Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
         };
 
-        trace!("SendNymCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         Ok(())
     }
 }
 
-pub mod GetNymCommand {
+pub mod get_nym_command {
     use super::*;
 
     command!(CommandMetadata::build("get-nym", "Get NYM from Ledger.")
@@ -62,7 +62,7 @@ pub mod GetNymCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("GetNymCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
@@ -85,12 +85,12 @@ pub mod GetNymCommand {
             Err(_) => Err(println_err!("NYM not found"))
         };
 
-        trace!("SendNymCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         Ok(())
     }
 }
 
-pub mod AttribCommand {
+pub mod attrib_command {
     use super::*;
 
     command!(CommandMetadata::build("attrib", "Add Attribute to exists NYM.")
@@ -102,7 +102,7 @@ pub mod AttribCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("SendAttribCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
@@ -123,12 +123,12 @@ pub mod AttribCommand {
             Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
         };
 
-        trace!("SendAttribCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         Ok(())
     }
 }
 
-pub mod GetAttribCommand {
+pub mod get_attrib_command {
     use super::*;
 
     command!(CommandMetadata::build("get-attrib", "Get ATTRIB from Ledger.")
@@ -138,7 +138,7 @@ pub mod GetAttribCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("GetAttribCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
@@ -162,12 +162,12 @@ pub mod GetAttribCommand {
             Err(_) => Err(println_err!("Attribute not found"))
         };
 
-        trace!("GetAttribCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         Ok(())
     }
 }
 
-pub mod SchemaCommand {
+pub mod schema_command {
     use super::*;
 
     command!(CommandMetadata::build("schema", "Add Schema to Ledger.")
@@ -178,7 +178,7 @@ pub mod SchemaCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("SendSchemaCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
@@ -204,12 +204,12 @@ pub mod SchemaCommand {
             Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
         };
 
-        trace!("SendSchemaCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         Ok(())
     }
 }
 
-pub mod GetSchemaCommand {
+pub mod get_schema_command {
     use super::*;
 
     command!(CommandMetadata::build("get-schema", "Get Schema from Ledger.")
@@ -220,7 +220,7 @@ pub mod GetSchemaCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("GetSchemaCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
@@ -249,12 +249,12 @@ pub mod GetSchemaCommand {
             Err(_) => Err(println_err!("Schema not found"))
         };
 
-        trace!("GetSchemaCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         Ok(())
     }
 }
 
-pub mod ClaimDefCommand {
+pub mod claim_def_command {
     use super::*;
 
     command!(CommandMetadata::build("claim-def", "Add claim definition to Ledger.")
@@ -266,7 +266,7 @@ pub mod ClaimDefCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("SendClaimDefCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
@@ -293,12 +293,12 @@ pub mod ClaimDefCommand {
             Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
         };
 
-        trace!("SendClaimDefCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         Ok(())
     }
 }
 
-pub mod GetClaimDefCommand {
+pub mod get_claim_def_command {
     use super::*;
 
     command!(CommandMetadata::build("get-claim-def", "Add claim definition to Ledger.")
@@ -309,7 +309,7 @@ pub mod GetClaimDefCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("GetClaimDefCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
@@ -331,12 +331,12 @@ pub mod GetClaimDefCommand {
             Err(_led) => Err(println_err!("Claim definition not found"))
         };
 
-        trace!("GetClaimDefCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         Ok(())
     }
 }
 
-pub mod NodeCommand {
+pub mod node_command {
     use super::*;
 
     command!(CommandMetadata::build("node", "Add Node to Ledger.")
@@ -352,7 +352,7 @@ pub mod NodeCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("SendNodeCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
@@ -387,12 +387,12 @@ pub mod NodeCommand {
             Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
         };
 
-        trace!("SendNodeCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         Ok(())
     }
 }
 
-pub mod CustomCommand {
+pub mod custom_command {
     use super::*;
 
     command!(CommandMetadata::build("custom", "Send custom transaction to Ledger.")
@@ -402,7 +402,7 @@ pub mod CustomCommand {
     );
 
     fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("SenCustomCommand::execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
 
@@ -425,7 +425,7 @@ pub mod CustomCommand {
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
-        trace!("SenCustomCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         Ok(())
     }
 }
