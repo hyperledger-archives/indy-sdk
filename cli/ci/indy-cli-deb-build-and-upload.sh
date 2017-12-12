@@ -19,7 +19,7 @@ key="$6"
 [ -z $host ] && exit 5
 [ -z $key ] && exit 6
 
-sed -i -E -e 'H;1h;$!d;x' -e "s/libindy-cli ([(,),0-9,.]+)/libindy-cli ($version$suffix)/" debian/changelog
+sed -i -E -e 'H;1h;$!d;x' -e "s/indy-cli ([(,),0-9,.]+)/indy-cli ($version$suffix)/" debian/changelog
 
 dpkg-buildpackage -tc
 
