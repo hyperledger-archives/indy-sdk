@@ -6,12 +6,11 @@ pub mod pool;
 pub mod wallet;
 pub mod ledger;
 
-use command_executor::CommandContext;
+use command_executor::{CommandContext, CommandParams};
 
-use std::collections::HashMap;
 use std;
 
-pub fn get_str_param<'a>(name: &'a str, params: &'a HashMap<&'static str, &str>) -> Result<&'a str, ()> {
+pub fn get_str_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<&'a str, ()> {
     match params.get(name) {
         Some(v) => Ok(*v),
         None => {
@@ -21,11 +20,11 @@ pub fn get_str_param<'a>(name: &'a str, params: &'a HashMap<&'static str, &str>)
     }
 }
 
-pub fn get_opt_str_param<'a>(key: &'a str, params: &'a HashMap<&'static str, &str>) -> Result<Option<&'a str>, ()> {
+pub fn get_opt_str_param<'a>(key: &'a str, params: &'a CommandParams) -> Result<Option<&'a str>, ()> {
     Ok(params.get(key).map(|v| *v))
 }
 
-pub fn get_int_param<T>(name: &str, params: &HashMap<&'static str, &str>) -> Result<T, ()>
+pub fn get_int_param<T>(name: &str, params: &CommandParams) -> Result<T, ()>
     where T: std::str::FromStr, <T as std::str::FromStr>::Err: std::fmt::Display {
     match params.get(name) {
         Some(v) => {
@@ -39,7 +38,7 @@ pub fn get_int_param<T>(name: &str, params: &HashMap<&'static str, &str>) -> Res
     }
 }
 
-pub fn get_opt_int_param<T>(key: &str, params: &HashMap<&'static str, &str>) -> Result<Option<T>, ()>
+pub fn get_opt_int_param<T>(key: &str, params: &CommandParams) -> Result<Option<T>, ()>
     where T: std::str::FromStr, <T as std::str::FromStr>::Err: std::fmt::Display {
     let res = match params.get(key) {
         Some(value) => Some(value.parse::<T>().map_err(|err|
@@ -49,7 +48,7 @@ pub fn get_opt_int_param<T>(key: &str, params: &HashMap<&'static str, &str>) -> 
     Ok(res)
 }
 
-pub fn get_opt_bool_param(key: &str, params: &HashMap<&'static str, &str>) -> Result<Option<bool>, ()> {
+pub fn get_opt_bool_param(key: &str, params: &CommandParams) -> Result<Option<bool>, ()> {
     let res = match params.get(key) {
         Some(value) => Some(value.parse::<bool>().map_err(|err|
             println_err!("Can't parse bool parameter \"{}\": err {}", key, err))?),
@@ -58,21 +57,21 @@ pub fn get_opt_bool_param(key: &str, params: &HashMap<&'static str, &str>) -> Re
     Ok(res)
 }
 
-pub fn get_str_array_param<'a>(name: &'a str, params: &'a HashMap<&'static str, &str>) -> Result<Vec<&'a str>, ()> {
+pub fn get_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Vec<&'a str>, ()> {
     match params.get(name) {
         Some(v) => Ok(v.split(",").collect::<Vec<&'a str>>()),
         None => Err(println_err!("No required \"{}\" parameter present", name))
     }
 }
 
-pub fn get_opt_str_array_param<'a>(name: &'a str, params: &'a HashMap<&'static str, &str>) -> Result<Option<Vec<&'a str>>, ()> {
+pub fn get_opt_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Option<Vec<&'a str>>, ()> {
     match params.get(name) {
         Some(v) => Ok(Some(v.split(",").collect::<Vec<&'a str>>())),
         None => Ok(None)
     }
 }
 
-pub fn get_object_param<'a>(name: &'a str, params: &'a HashMap<&'static str, &str>) -> Result<serde_json::Value, ()> {
+pub fn get_object_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<serde_json::Value, ()> {
     match params.get(name) {
         Some(v) => Ok(serde_json::from_str(*v).map_err(|err|
             println_err!("Can't parse object parameter \"{}\": err {}", name, err))?),

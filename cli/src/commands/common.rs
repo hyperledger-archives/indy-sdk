@@ -1,4 +1,4 @@
-use command_executor::{Command, CommandContext, CommandExecParams, CommandMetadata, CommandResult};
+use command_executor::{Command, CommandContext, CommandParams, CommandMetadata, CommandResult};
 use commands::get_str_param;
 
 pub mod about_command {
@@ -6,7 +6,7 @@ pub mod about_command {
 
     command!(CommandMetadata::build("about", "Show about information").finalize());
 
-    fn execute(_ctx: &CommandContext, _params: &CommandExecParams) -> CommandResult {
+    fn execute(_ctx: &CommandContext, _params: &CommandParams) -> CommandResult {
         trace!("execute >> _ctx: params: {:?}", _params);
 
         println_succ!("Hyperledger Indy CLI (https://github.com/hyperledger/indy-sdk)");
@@ -35,7 +35,7 @@ pub mod show_command {
                             .add_main_param("file", "The path to file to show")
                             .finalize());
 
-    fn execute(_ctx: &CommandContext, params: &CommandExecParams) -> CommandResult {
+    fn execute(_ctx: &CommandContext, params: &CommandParams) -> CommandResult {
         trace!("execute >> params: {:?}", params);
 
         let file = get_str_param("file", params).map_err(error_err!())?;
@@ -67,7 +67,7 @@ pub mod prompt_command {
                             .add_main_param("prompt", "New prompt string")
                             .finalize());
 
-    fn execute(ctx: &CommandContext, params: &CommandExecParams) -> CommandResult {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> CommandResult {
         trace!("execute >> ctx: {:?}, params: {:?}", ctx, params);
 
         let prompt = get_str_param("prompt", params).map_err(error_err!())?;
@@ -86,7 +86,7 @@ pub mod exit_command {
 
     command!(CommandMetadata::build("exit", "Exit Indy CLI").finalize());
 
-    fn execute(ctx: &CommandContext, _params: &CommandExecParams) -> CommandResult {
+    fn execute(ctx: &CommandContext, _params: &CommandParams) -> CommandResult {
         trace!("execute >> ctx: {:?}, params: {:?}", ctx, _params);
 
         ctx.set_exit();

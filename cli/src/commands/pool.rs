@@ -1,13 +1,11 @@
 extern crate serde_json;
 
-use command_executor::{Command, CommandContext, CommandMetadata, CommandGroup, CommandGroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
 
 use libindy::ErrorCode;
 use libindy::pool::Pool;
 use utils::table::print_table;
-
-use std::collections::HashMap;
 
 pub mod group {
     use super::*;
@@ -24,7 +22,7 @@ pub mod create_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
@@ -58,7 +56,7 @@ pub mod connect_command {
                 .add_main_param("name", "The name of pool")
                 .finalize());
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
@@ -115,7 +113,7 @@ pub mod list_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let res = match Pool::list() {
@@ -151,7 +149,7 @@ pub mod disconnect_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let (handle, name) = if let Some(pool) = get_connected_pool(ctx) {
@@ -181,7 +179,7 @@ pub mod delete_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;

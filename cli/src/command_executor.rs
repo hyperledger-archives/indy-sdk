@@ -180,9 +180,9 @@ impl CommandContext {
     }
 }
 
-pub type CommandExecParams<'a> = HashMap<&'static str, &'a str>;
+pub type CommandParams<'a> = HashMap<&'static str, &'a str>;
 pub type CommandResult = Result<(), ()>;
-pub type CommandExecute = fn(&CommandContext, &CommandExecParams) -> CommandResult;
+pub type CommandExecute = fn(&CommandContext, &CommandParams) -> CommandResult;
 pub type CommandCleanup = fn(&CommandContext) -> ();
 
 pub struct Command {
@@ -206,7 +206,7 @@ impl Command {
         &self.metadata
     }
 
-    pub fn execute(&self, ctx: &CommandContext, params: &CommandExecParams) -> CommandResult {
+    pub fn execute(&self, ctx: &CommandContext, params: &CommandParams) -> CommandResult {
         (self.executor)(ctx, params)
     }
 

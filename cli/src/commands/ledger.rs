@@ -1,4 +1,4 @@
-use command_executor::{Command, CommandContext, CommandMetadata, CommandGroup, CommandGroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
 
 use libindy::ErrorCode;
@@ -7,7 +7,7 @@ use libindy::ledger::Ledger;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fmt;
 
 pub mod group {
@@ -27,7 +27,7 @@ pub mod nym_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
@@ -61,7 +61,7 @@ pub mod get_nym_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
@@ -101,7 +101,7 @@ pub mod attrib_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
@@ -137,7 +137,7 @@ pub mod get_attrib_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
@@ -177,7 +177,7 @@ pub mod schema_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
@@ -219,7 +219,7 @@ pub mod get_schema_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
@@ -265,7 +265,7 @@ pub mod claim_def_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
@@ -308,7 +308,7 @@ pub mod get_claim_def_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
@@ -351,7 +351,7 @@ pub mod node_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
@@ -401,7 +401,7 @@ pub mod custom_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
