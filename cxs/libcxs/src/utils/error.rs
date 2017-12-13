@@ -200,6 +200,7 @@ mod tests {
     #[test]
     fn test_error_big_number() {
         assert_eq!(error_message(&BIG_NUMBER_ERROR.code_num), BIG_NUMBER_ERROR.message);
+        assert_eq!(error_message(&INVALID_PROOF_CLAIM_DATA.code_num), INVALID_PROOF_CLAIM_DATA.message);
     }
     #[test]
     fn test_error_claim_data() {

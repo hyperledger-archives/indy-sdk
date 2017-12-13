@@ -107,7 +107,6 @@ impl Proof {
         let schema_seq_no = 1;
         let (command_handle, cb) = CallbackUtils::closure_to_verifier_verify_proof_cb(cb);
 
-
         unsafe {
             let indy_err = indy_verifier_verify_proof(command_handle,
                                                       CString::new(proof_req_json).unwrap().as_ptr(),
@@ -679,7 +678,5 @@ fn test_open_pool() {
         assert!(proof.validate_proof_against_request(&offer).is_ok());
         assert_eq!(proof.validate_proof_indy(proof_req_json, proof_json, schemas_json, claim_defs_json, revoc_regs_json).unwrap(), error::SUCCESS.code_num);
     }
-
-
 
 }
