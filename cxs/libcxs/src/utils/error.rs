@@ -31,6 +31,9 @@ pub static INVALID_MESSAGES: Error = Error{code_num:1020, message:"Error Retriev
 pub static INVALID_ATTRIBUTES_STRUCTURE: Error = Error{code_num:1021, message: "Attributes provided to Claim Offer are not correct, possibly malformed"};
 pub static BIG_NUMBER_ERROR: Error = Error{code_num: 1022, message: "Could not encode string to a big integer."};
 pub static INVALID_PROOF_OFFER: Error = Error{code_num: 1023, message: "Proof offer had invalid format"};
+pub static INVALID_GENESIS_TXN_PATH: Error = Error{code_num: 1024, message: "Must have valid geneis txn file path"};
+pub static CREATE_POOL_CONFIG_PARAMETERS: Error = Error{code_num: 1025, message: "Parameters for creating pool config are incorrect."};
+pub static CREATE_POOL_CONFIG: Error = Error{code_num: 1026, message: "Formattting for Pool Config are incorrect."};
 
 lazy_static! {
     static ref ERROR_MESSAGES: HashMap<u32, &'static str> = {
@@ -59,6 +62,9 @@ lazy_static! {
         insert_message(&mut m, &INVALID_CLAIM_REQUEST);
         insert_message(&mut m, &BIG_NUMBER_ERROR);
         insert_message(&mut m, &INVALID_PROOF_OFFER);
+        insert_message(&mut m, &INVALID_GENESIS_TXN_PATH);
+        insert_message(&mut m, &CREATE_POOL_CONFIG_PARAMETERS);
+        insert_message(&mut m, &CREATE_POOL_CONFIG);
         m
     };
 }
@@ -171,13 +177,13 @@ mod tests {
     fn test_claim_request_incorrect_json_format_error(){
         assert_eq!(error_message(&INVALID_CLAIM_REQUEST.code_num), INVALID_CLAIM_REQUEST.message);
     }
-    
-    fn test_big_number(){
-        assert_eq!(error_message(&BIG_NUMBER_ERROR.code_num), BIG_NUMBER_ERROR.message);
-    }
 
     #[test]
-    fn test_proof_offer_incorrect_json_format_error(){
+    fn test_error_messages(){
         assert_eq!(error_message(&INVALID_PROOF_OFFER.code_num), INVALID_PROOF_OFFER.message);
+        assert_eq!(error_message(&INVALID_GENESIS_TXN_PATH.code_num), INVALID_GENESIS_TXN_PATH.message);
+        assert_eq!(error_message(&CREATE_POOL_CONFIG_PARAMETERS.code_num), CREATE_POOL_CONFIG_PARAMETERS.message);
+        assert_eq!(error_message(&CREATE_POOL_CONFIG.code_num), CREATE_POOL_CONFIG.message);
+        assert_eq!(error_message(&BIG_NUMBER_ERROR.code_num), BIG_NUMBER_ERROR.message);
     }
 }

@@ -16,6 +16,7 @@ pub mod constants;
 pub mod timeout;
 pub mod issuer_claim;
 pub mod openssl;
+pub mod json;
 
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 lazy_static! {

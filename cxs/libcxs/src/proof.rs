@@ -19,6 +19,7 @@ use std::sync::mpsc::channel;
 use self::libc::c_char;
 use std::ffi::CString;
 use utils::timeout::TimeoutUtils;
+use utils::constants::{AGENCY_PROOFS_JSON,LIBINDY_PROOFS_JSON,LIBINDY_PROOFS_JSON_ESCAPED};
 
 lazy_static! {
     static ref PROOF_MAP: Mutex<HashMap<u32, Box<Proof>>> = Default::default();
@@ -94,26 +95,38 @@ impl Proof {
         Ok(error::SUCCESS.code_num)
     }
     
-    fn validate_proof_against_request(&self) -> Result<u32, u32> {
+    fn validate_proof_against_request(&self, offer: &ProofOffer) -> Result<u32, u32> {
         Ok(error::SUCCESS.code_num)
     }
     
-    fn validate_proof_indy(&mut self) -> Result<u32, u32> {
+    fn validate_proof_indy(&mut self, offer: &ProofOffer) -> Result<u32, u32> {
+        //Ok(error::SUCCESS.code_num)
         let (sender, receiver) = channel();
         let cb = Box::new(move |err, valid | {
             sender.send((err, valid)).unwrap();
         });
 
+
+        let proof_req_json = format!(r#"{{
+                                   "nonce":"123432421212",
+                                   "name":"proof_req_1",
+                                   "version":"0.1",
+                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
+                                   "requested_predicates":{{}}
+                                }}"#, 1);
         let (command_handle, cb) = CallbackUtils::closure_to_verifier_verify_proof_cb(cb);
-        let proof_request_json = ""; //requested_attributes
-        let proof_json = "";    // proofs, aggregated_proof, and requested proof
-        let schemas_json = "";
-        let claim_defs_jsons =  "";
-        let revoc_regs_json = "";
+//        let proof_request_json = "{}"; //requested_attributes
+//        let proof_json = "{}";    // proofs, aggregated_proof, and requested proof
+//        let proof_json = format!("{{\"{}\":{},\"{}\":{}}}","proofs",offer.get_proof_as_json().unwrap(), "aggregated_proof", offer.get_aggregated_proof()?);
+//        let proof_json = LIBINDY_PROOFS_JSON;
+        let proof_json = AGENCY_PROOFS_JSON;
+        let schemas_json = "{}";
+        let claim_defs_jsons =  "{}";
+        let revoc_regs_json = "{}";
 
         unsafe {
             let indy_err = indy_verifier_verify_proof(command_handle,
-                                                      CString::new(proof_request_json).unwrap().as_ptr(),
+                                                      CString::new(proof_req_json).unwrap().as_ptr(),
                                                       CString::new(proof_json).unwrap().as_ptr(),
                                                       CString::new(schemas_json).unwrap().as_ptr(),
                                                       CString::new(claim_defs_jsons).unwrap().as_ptr(),
@@ -137,7 +150,7 @@ impl Proof {
     fn set_invalid_proof_state(&mut self, error:i32) -> u32 {
         error!("Error: {}, Proof offer wasn't valid {}", error, self.handle);
         self.proof_state = ProofStateType::ProofInvalid;
-        error::UNKNOWN_ERROR.code_num
+        error::INVALID_PROOF_OFFER.code_num
     }
 
     fn send_proof_request(&mut self, connection_handle: u32) -> Result<u32, u32> {
@@ -261,6 +274,7 @@ impl Proof {
     fn get_state(&self) -> u32 {let state = self.state as u32; state}
 
     fn get_offer_uid(&self) -> String { self.msg_uid.clone() }
+
 }
 
 pub fn create_proof(source_id: Option<String>,
@@ -437,8 +451,9 @@ mod tests {
     extern crate mockito;
     use std::thread;
     use std::time::Duration;
+    use proof_offer::tests::create_default_proof_offer;
     use connection::create_connection;
-
+    static DEFAULT_PROOF_STR: &str = r#"{"source_id":"","handle":486356518,"requested_attrs":"[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]","requested_predicates":"[{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\"}]","msg_uid":"","ref_msg_id":"","requester_did":"","prover_did":"","state":1,"proof_state":0,"tid":0,"mid":0,"name":"Optional","version":"1.0","nonce":"1067639606","proof_offer":null}"#;
     static REQUESTED_ATTRS: &'static str = "[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]";
     static REQUESTED_PREDICATES: &'static str = "[{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\"}]";
 
@@ -449,6 +464,9 @@ mod tests {
         println!("successfully called create_cb")
     }
 
+    fn create_default_proof() -> Proof {
+        serde_json::from_str(DEFAULT_PROOF_STR).unwrap()
+    }
 
     fn set_default_and_enable_test_mode(){
         settings::set_defaults();
@@ -636,26 +654,54 @@ mod tests {
         thread::sleep(Duration::from_millis(500));
     }
 
-    #[derive(Serialize, Deserialize)]
-    struct PoolConfig {
-        pub genesis_txn: String
-    }
+    /*
 
+#[test]
+fn test_open_pool() {
+//        use utils::pool::create_pool_ledger_config;
+//        settings::set_defaults();
+//        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+//        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
+//
+//
+//        let path = pool::create_genesis_txn_file_for_test_pool(settings::CONFIG_POOL_NAME, None, None);
+//        println!("Path Buf: {:?}", path);
+//        // create config
+//        let err = create_pool_ledger_config(Some(&path));
+//        assert_eq!(err, error::SUCCESS.code_num);
+
+    // open pool
+
+    let config = json!(PoolConfig{
+        genesis_txn: path.as_path().to_string_lossy().to_string()
+    }).to_string();
+    println!("config: {:?}", config);
+    let error_code = pool::open_pool_ledger(settings::CONFIG_POOL_CONFIG_NAME, Some(&config));
+    assert_eq!(error_code.unwrap(), 0);
+}
+
+    */
     #[test]
-    fn test_open_pool() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
-
-        let path = pool::create_genesis_txn_file_for_test_pool(settings::CONFIG_POOL_NAME, None, None);
-        println!("Path Buf: {:?}", path);
-
-        let config = json!(PoolConfig{
-            genesis_txn: path.as_path().to_string_lossy().to_string()
-        }).to_string();
-
-        let error_code = pool::open_pool_ledger(settings::CONFIG_POOL_CONFIG_NAME, Some(&config));
-        assert_eq!(error_code.unwrap(), 0);
+    fn test_proof_offer_is_valid() {
+        ::utils::logger::LoggerUtils::init();
+        /*
+        let handle = match create_proof(None,
+                                        REQUESTED_ATTRS.to_owned(),
+                                        REQUESTED_PREDICATES.to_owned(),
+                                        "Optional".to_owned()) {
+            Ok(x) => x,
+            Err(_) => panic!("Proof creation failed"),
+        };
+        let proof_data = to_string(handle).unwrap();
+        println!("proof data: {}", proof_data);
+        release(handle);
+        */
+        let mut proof: Proof = create_default_proof();
+        let offer: ProofOffer = create_default_proof_offer();
+        assert!(proof.validate_proof_against_request(&offer).is_ok());
+        assert_eq!(proof.validate_proof_indy(&offer).unwrap(), error::SUCCESS.code_num);
+        println!("Proof requested attr: {:?}", proof.requested_attrs);
+        println!("Proof Offer - proofs: {:?}", offer.get_proof());
     }
 
 }
