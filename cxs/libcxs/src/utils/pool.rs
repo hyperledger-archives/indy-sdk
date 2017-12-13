@@ -244,7 +244,6 @@ pub fn delete(pool_name: &str) -> Result<(), u32> {
 
 #[cfg(test)]
 mod tests {
-    use settings;
     use std::path::{Path, PathBuf};
     use std::env::home_dir;
     use utils::pool::create_pool_ledger_config;

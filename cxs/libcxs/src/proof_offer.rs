@@ -22,10 +22,11 @@ pub struct ProofOffer{
 
 }
 
-//#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-//pub struct Proofs{
-//
-//}
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct ClaimData{
+    schema_seq_no: u32,
+    issuer_did: String,
+}
 //
 //#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 //pub struct AggregatedProof{
@@ -106,6 +107,37 @@ impl ProofOffer {
             None => Err(error::INVALID_PROOF_OFFER.code_num),
         }
     }
+    fn get_claim_schema_info (&self) -> Result<Vec<ClaimData>, u32> {
+        let proofs = match self.proofs {
+            Some(ref x) => x,
+            None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
+        };
+
+        let mut claims: Vec<ClaimData> = Vec::new();
+        for (attr, vec) in proofs.iter() {
+            claims.push(ClaimData {
+                issuer_did: match vec.get("issuer_did") {
+                    Some(d) => {
+                        match d.as_str() {
+                            Some(n) => n,
+                            None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
+                        }
+                    }
+                    None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
+                }.to_string(),
+                schema_seq_no: match vec.get("schema_seq_no") {
+                    Some(x) => {
+                        match x.as_u64() {
+                            Some(x) => x as u32,
+                            None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
+                        }
+                    }
+                    None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
+                },
+            });
+        }
+        Ok(claims)
+    }
 }
 
 fn create_from_message(s: &str) -> Result<ProofOffer, u32>{
@@ -117,6 +149,8 @@ fn create_from_message(s: &str) -> Result<ProofOffer, u32>{
    }
 }
 
+
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -125,7 +159,7 @@ pub mod tests {
 
     static TEMP_REQUESTER_DID: &'static str = "4reqXeZVm7JZAffAoaNLsb";
     static EXAMPLE_PROOF: &'static str = "{\"msg_type\":\"proof\",\"version\":\"0.1\",\"to_did\":\"BnRXf8yDMUwGyZVDkSENeq\",\"from_did\":\"GxtnGN6ypZYgEqcftSQFnC\",\"proof_request_id\":\"cCanHnpFAD\",\"proofs\":{\"claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b\":{\"proof\":{\"primary_proof\":{\"eq_proof\":{\"revealed_attrs\":{\"state\":\"96473275571522321025213415717206189191162\"},\"a_prime\":\"921....546\",\"e\":\"158....756\",\"v\":\"114....069\",\"m\":{\"address1\":\"111...738\",\"zip\":\"149....066\",\"city\":\"209....294\",\"address2\":\"140....691\"},\"m1\":\"777....518\",\"m2\":\"515....229\"},\"ge_proofs\":[]},\"non_revoc_proof\":null},\"schema_seq_no\":15,\"issuer_did\":\"4fUDR9R7fjwELRvH9JT6HH\"}},\"aggregated_proof\":{\"c_hash\":\"25105671496406009212798488318112715144459298495509265715919744143493847046467\",\"c_list\":[[72,245,38,\"....\",46,195,18]]},\"requested_proof\":{\"revealed_attrs\":{\"attr_key_id\":[\"claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b\",\"UT\",\"96473275571522321025213415717206189191162\"]},\"unrevealed_attrs\":{},\"self_attested_attrs\":{},\"predicates\":{}}}";
-    static MSG_FROM_API: &str = r#"{"msg_type":"proof","version":"0.1","to_did":"BnRXf8yDMUwGyZVDkSENeq","from_did":"GxtnGN6ypZYgEqcftSQFnC","proof_request_id":"cCanHnpFAD","proofs":{"claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"state":"96473275571522321025213415717206189191162"},"a_prime":"921....546","e":"158....756","v":"114....069","m":{"address1":"111...738","zip":"149....066","city":"209....294","address2":"140....691"},"m1":"777....518","m2":"515....229"},"ge_proofs":[]},"non_revoc_proof":null},"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH"}},"aggregated_proof":{"c_hash":"25105671496406009212798488318112715144459298495509265715919744143493847046467","c_list":[[72,245,38,"....",46,195,18]]},"requested_proof":{"revealed_attrs":{"attr_key_id":["claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b","UT","96473275571522321025213415717206189191162"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{}}}"#;
+    static MSG_FROM_API: &str = r#"{"msg_type":"proof","version":"0.1","to_did":"BnRXf8yDMUwGyZVDkSENeq","from_did":"GxtnGN6ypZYgEqcftSQFnC","proof_request_id":"cCanHnpFAD","proofs":{"claim::f33cc7c8-924f-4541-aeff-29a9aed9c46b":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"state":"96473275571522321025213415717206189191162"},"a_prime":"921....546","e":"158....756","v":"114....069","m":{"address1":"111...738","zip":"149....066","city":"209....294","address2":"140....691"},"m1":"777....518","m2":"515....229"},"ge_proofs":[]},"non_revoc_proof":null},"schema_seq_no":14,"issuer_did":"33UDR9R7fjwELRvH9JT6HH"},"claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"state":"96473275571522321025213415717206189191162"},"a_prime":"921....546","e":"158....756","v":"114....069","m":{"address1":"111...738","zip":"149....066","city":"209....294","address2":"140....691"},"m1":"777....518","m2":"515....229"},"ge_proofs":[]},"non_revoc_proof":null},"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH"}},"aggregated_proof":{"c_hash":"25105671496406009212798488318112715144459298495509265715919744143493847046467","c_list":[[72,245,38,"....",46,195,18]]},"requested_proof":{"revealed_attrs":{"attr_key_id":["claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b","UT","96473275571522321025213415717206189191162"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{}}}"#;
     pub fn create_default_proof_offer()-> ProofOffer {
         ProofOffer::from_string(DEFAULT_SERIALIZED_PROOF_OFFER).unwrap()
     }
@@ -183,7 +217,37 @@ pub mod tests {
         assert_eq!(proof_offer.from_did, new_proof_offer.from_did);
         assert!(proof_offer.get_proof_as_json().is_ok());
         let proof_json = proof_offer.get_proof_as_json();
-        println!("{:?}", proof_json);
+        let stuff =  r#"{
+            "proof":{
+                "primary_proof":{
+                    "eq_proof":{
+                        "revealed_attrs":{"state":"96473275571522321025213415717206189191162"},
+                        "a_prime":"921....546",
+                        "e":"158....756",
+                        "v":"114....069",
+                        "m":{
+                            "address1":"111...738",
+                            "zip":"149....066",
+                            "city":"209....294",
+                            "address2":"140....691"
+                        },
+                        "m1":"777....518",
+                        "m2":"515....229"
+                    },
+                    "ge_proofs":[]
+                },
+                "non_revoc_proof":null
+            },
+            "schema_seq_no":15,
+            "issuer_did":"4fUDR9R7fjwELRvH9JT6HH"
+        }"#;
+        let claim_data: ClaimData = serde_json::from_str(stuff).unwrap();
+        assert_eq!(claim_data.issuer_did, "4fUDR9R7fjwELRvH9JT6HH");
+        assert_eq!(proof_offer.get_claim_schema_info().unwrap()[0].issuer_did, "4fUDR9R7fjwELRvH9JT6HH");
+        assert_eq!(proof_offer.get_claim_schema_info().unwrap()[1].issuer_did, "33UDR9R7fjwELRvH9JT6HH");
+        let mut proof_offer_bad: ProofOffer = create_from_message(MSG_FROM_API).unwrap();
+        proof_offer_bad.proofs = None;
+        assert!(proof_offer_bad.get_claim_schema_info().is_err());
 
     }
 

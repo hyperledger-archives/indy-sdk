@@ -34,6 +34,8 @@ pub static INVALID_PROOF_OFFER: Error = Error{code_num: 1023, message: "Proof of
 pub static INVALID_GENESIS_TXN_PATH: Error = Error{code_num: 1024, message: "Must have valid geneis txn file path"};
 pub static CREATE_POOL_CONFIG_PARAMETERS: Error = Error{code_num: 1025, message: "Parameters for creating pool config are incorrect."};
 pub static CREATE_POOL_CONFIG: Error = Error{code_num: 1026, message: "Formattting for Pool Config are incorrect."};
+pub static INVALID_PROOF_CLAIM_DATA: Error = Error{code_num: 1027, message: "The Proof received does not have valid claims listed."};
+
 
 lazy_static! {
     static ref ERROR_MESSAGES: HashMap<u32, &'static str> = {
@@ -65,6 +67,7 @@ lazy_static! {
         insert_message(&mut m, &INVALID_GENESIS_TXN_PATH);
         insert_message(&mut m, &CREATE_POOL_CONFIG_PARAMETERS);
         insert_message(&mut m, &CREATE_POOL_CONFIG);
+        insert_message(&mut m, &INVALID_PROOF_CLAIM_DATA);
         m
     };
 }
@@ -179,11 +182,27 @@ mod tests {
     }
 
     #[test]
-    fn test_error_messages(){
+    fn test_error_invalid_proof_offer() {
         assert_eq!(error_message(&INVALID_PROOF_OFFER.code_num), INVALID_PROOF_OFFER.message);
+    }
+    #[test]
+    fn test_error_genesis() {
         assert_eq!(error_message(&INVALID_GENESIS_TXN_PATH.code_num), INVALID_GENESIS_TXN_PATH.message);
+    }
+    #[test]
+    fn test_error_config() {
         assert_eq!(error_message(&CREATE_POOL_CONFIG_PARAMETERS.code_num), CREATE_POOL_CONFIG_PARAMETERS.message);
+    }
+    #[test]
+    fn test_error_pool_config() {
         assert_eq!(error_message(&CREATE_POOL_CONFIG.code_num), CREATE_POOL_CONFIG.message);
+    }
+    #[test]
+    fn test_error_big_number() {
         assert_eq!(error_message(&BIG_NUMBER_ERROR.code_num), BIG_NUMBER_ERROR.message);
+    }
+    #[test]
+    fn test_error_claim_data() {
+        assert_eq!(error_message(&INVALID_PROOF_CLAIM_DATA.code_num), INVALID_PROOF_CLAIM_DATA.message);
     }
 }
