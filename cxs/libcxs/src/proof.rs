@@ -643,18 +643,15 @@ mod tests {
 
     #[test]
     fn test_open_pool() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
+        let pool_name = "pool_open";
+        let txn_file_path = pool::create_genesis_txn_file_for_test_pool(pool_name, None, None);
+        let pool_config = json!(PoolConfig {
+            genesis_txn: txn_file_path.as_path().to_string_lossy().to_string()
+        });
+        pool::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
 
-        let path = pool::create_genesis_txn_file_for_test_pool(settings::CONFIG_POOL_NAME, None, None);
-        println!("Path Buf: {:?}", path);
-
-        let config = json!(PoolConfig{
-            genesis_txn: path.as_path().to_string_lossy().to_string()
-        }).to_string();
-
-        let error_code = pool::open_pool_ledger(settings::CONFIG_POOL_CONFIG_NAME, Some(&config));
+        PoolUtils::open_pool_ledger(pool_name, None).unwrap();
+        let error_code = pool::open_pool_ledger(settings::CONFIG_POOL_CONFIG_NAME, None);
         assert_eq!(error_code.unwrap(), 0);
     }
 
