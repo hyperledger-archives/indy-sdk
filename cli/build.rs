@@ -4,7 +4,6 @@ use std::path::Path;
 
 fn main() {
     println!("cargo:rustc-link-lib=indy");
-    println!("cargo:rustc-link-lib=zmq-pw");
     println!("cargo:rustc-link-lib=sodium");
 
     let target = env::var("TARGET").unwrap();
@@ -13,6 +12,7 @@ fn main() {
     match target.find("-windows-") {
         Some(..) => {
             println!("cargo:rustc-link-lib=ssleay32");
+            println!("cargo:rustc-link-lib=zmq-pw");
 
             // TODO: FIXME: Provide more reliable dependencies resolving
             let output_dir = env::var("OUT_DIR").unwrap();
