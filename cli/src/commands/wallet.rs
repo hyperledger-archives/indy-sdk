@@ -240,8 +240,8 @@ mod tests {
             let cmd = create_command::new();
             cmd.metadata().help();
             let mut params = CommandParams::new();
-            params.insert("name", "wallet");
-            params.insert("pool_name", "pool");
+            params.insert("name", "wallet".to_owned());
+            params.insert("pool_name", "pool".to_owned());
             cmd.execute(&CommandContext::new(), &params).unwrap();
             TestUtils::cleanup_storage();
         }
@@ -257,7 +257,7 @@ mod tests {
             let cmd = open_command::new();
             let mut params = CommandParams::new();
             cmd.metadata().help();
-            params.insert("name", "wallet");
+            params.insert("name", "wallet".to_owned());
 
             cmd.execute(&CommandContext::new(), &params).unwrap_err(); //open not created wallet
 
@@ -279,15 +279,15 @@ mod tests {
             {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
-                params.insert("name", "wallet");
-                params.insert("pool_name", "pool");
+                params.insert("name", "wallet".to_owned());
+                params.insert("pool_name", "pool".to_owned());
                 cmd.execute(&ctx, &params).unwrap();
             }
 
             {
                 let cmd = open_command::new();
                 let mut params = CommandParams::new();
-                params.insert("name", "wallet");
+                params.insert("name", "wallet".to_owned());
                 cmd.execute(&ctx, &params).unwrap();
             }
 
