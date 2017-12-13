@@ -1,4 +1,4 @@
-use command_executor::{Command, CommandContext, CommandMetadata, CommandGroup, CommandGroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
 use utils::table::print_table;
 use libindy::ErrorCode;
@@ -7,8 +7,6 @@ use libindy::wallet::Wallet;
 use serde_json;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
-
-use std::collections::HashMap;
 
 pub mod group {
     use super::*;
@@ -26,7 +24,7 @@ pub mod create_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let pool_name = get_str_param("pool_name", params).map_err(error_err!())?;
@@ -65,7 +63,7 @@ pub mod open_command {
                             .add_param("freshness_time", true, "Freshness time for entities in the wallet")
                             .finalize());
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
@@ -141,7 +139,7 @@ pub mod list_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let res = match Wallet::list_wallets() {
@@ -177,7 +175,7 @@ pub mod close_command {
 
     command!(CommandMetadata::build("close", "Close opened wallet.").finalize());
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let res = Ok(())
@@ -212,7 +210,7 @@ pub mod delete_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx: {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
@@ -241,7 +239,7 @@ mod tests {
             TestUtils::cleanup_storage();
             let cmd = create_command::new();
             cmd.metadata().help();
-            let mut params = HashMap::new();
+            let mut params = CommandParams::new();
             params.insert("name", "wallet");
             params.insert("pool_name", "pool");
             cmd.execute(&CommandContext::new(), &params).unwrap();
@@ -257,7 +255,7 @@ mod tests {
             TestUtils::cleanup_storage();
 
             let cmd = open_command::new();
-            let mut params = HashMap::new();
+            let mut params = CommandParams::new();
             cmd.metadata().help();
             params.insert("name", "wallet");
 
@@ -280,7 +278,7 @@ mod tests {
 
             {
                 let cmd = create_command::new();
-                let mut params = HashMap::new();
+                let mut params = CommandParams::new();
                 params.insert("name", "wallet");
                 params.insert("pool_name", "pool");
                 cmd.execute(&ctx, &params).unwrap();
@@ -288,14 +286,14 @@ mod tests {
 
             {
                 let cmd = open_command::new();
-                let mut params = HashMap::new();
+                let mut params = CommandParams::new();
                 params.insert("name", "wallet");
                 cmd.execute(&ctx, &params).unwrap();
             }
 
             {
                 let cmd = close_command::new();
-                let params = HashMap::new();
+                let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
 

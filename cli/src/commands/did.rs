@@ -1,4 +1,4 @@
-use command_executor::{Command, CommandContext, CommandMetadata, CommandGroup, CommandGroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
 use utils::table::print_table;
 
@@ -9,8 +9,6 @@ use libindy::ledger::Ledger;
 
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
-
-use std::collections::HashMap;
 
 pub mod group {
     use super::*;
@@ -29,7 +27,7 @@ pub mod new_command {
                 .finalize()
     );
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
@@ -85,7 +83,7 @@ pub mod use_command {
                 .add_main_param("did", "Did stored in wallet")
                 .finalize());
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?}, params {:?}", ctx, params);
 
         let did = get_str_param("did", params).map_err(error_err!())?;
@@ -114,7 +112,7 @@ pub mod rotate_key_command {
                 .add_param("seed", true, "If not provide then a random one will be created")
                 .finalize());
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
@@ -164,7 +162,7 @@ pub mod list_command {
 
     command!(CommandMetadata::build("list", "List my DIDs stored in the opened wallet.").finalize());
 
-    fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
