@@ -112,7 +112,7 @@ pub mod open_command {
             });
 
         trace!("execute << {:?}", res);
-        Ok(())
+        res
     }
 
     pub fn cleanup(ctx: &CommandContext) {
