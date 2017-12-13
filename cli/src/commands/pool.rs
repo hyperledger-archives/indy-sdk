@@ -1,78 +1,29 @@
-use indy_context::IndyContext;
-use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
-use commands::{get_str_param, get_opt_str_param};
+extern crate serde_json;
+
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
+use commands::*;
 
 use libindy::ErrorCode;
 use libindy::pool::Pool;
+use utils::table::print_table;
 
+pub mod group {
+    use super::*;
 
-use std::collections::HashMap;
-use std::rc::Rc;
-
-pub struct Group {
-    metadata: GroupMetadata
+    command_group!(CommandGroupMetadata::new("pool", "Pool management commands"));
 }
 
-impl Group {
-    pub fn new() -> Group {
-        Group {
-            metadata: GroupMetadata::new("pool", "Pool management commands")
-        }
-    }
-}
+pub mod create_command {
+    use super::*;
 
-impl GroupTrait for Group {
-    fn metadata(&self) -> &GroupMetadata {
-        &self.metadata
-    }
-}
-
-#[derive(Debug)]
-pub struct CreateCommand {
-    ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-#[derive(Debug)]
-pub struct ConnectCommand {
-    ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-#[derive(Debug)]
-pub struct ListCommand {
-    ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-#[derive(Debug)]
-pub struct DisconnectCommand {
-    ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-#[derive(Debug)]
-pub struct DeleteCommand {
-    ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-
-impl CreateCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> CreateCommand {
-        CreateCommand {
-            ctx,
-            metadata: CommandMetadata::build("create", "Create new pool ledger config with specified name")
+    command!(CommandMetadata::build("create", "Create new pool ledger config with specified name")
                 .add_main_param("name", "The name of new pool ledger config")
                 .add_param("gen_txn_file", true, "Path to file with genesis transactions")
                 .finalize()
-        }
-    }
-}
+    );
 
-impl Command for CreateCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("CreateCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
         let gen_txn_file = get_opt_str_param("gen_txn_file", params).map_err(error_err!())?
@@ -93,108 +44,115 @@ impl Command for CreateCommand {
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
-        trace!("CreateCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
 }
 
-impl ConnectCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> ConnectCommand {
-        ConnectCommand {
-            ctx,
-            metadata: CommandMetadata::build("connect", "Connect to pool with specified name. Also disconnect from previously connected.")
+pub mod connect_command {
+    use super::*;
+
+    command_with_cleanup!(CommandMetadata::build("connect", "Connect to pool with specified name. Also disconnect from previously connected.")
                 .add_main_param("name", "The name of pool")
-                .finalize()
-        }
-    }
-}
+                .finalize());
 
-impl Command for ConnectCommand {
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
-
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("OpenCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
 
-        //TODO close previously opened pool
-        let res = match Pool::open_pool_ledger(name, None) {
-            Ok(handle) => {
-                self.ctx.set_connected_pool(name, handle);
-                Ok(println_succ!("Pool \"{}\" has been connected", name))
+        let res = Ok(())
+            .and_then(|_| {
+                if let Some((handle, name)) = get_connected_pool(ctx) {
+                    match Pool::close(handle) {
+                        Ok(()) => {
+                            set_connected_pool(ctx, None);
+                            Ok(println_succ!("Pool \"{}\" has been disconnected", name))
+                        }
+                        Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
+                    }
+                } else {
+                    Ok(())
+                }
+            })
+            .and_then(|_| {
+                match Pool::open_pool_ledger(name, None) {
+                    Ok(handle) => {
+                        set_connected_pool(ctx, Some((handle, name.to_owned())));
+                        Ok(println_succ!("Pool \"{}\" has been connected", name))
+                    }
+                    Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                }
+            });
+
+        trace!("execute << {:?}", res);
+        res
+    }
+
+    pub fn cleanup(ctx: &CommandContext) {
+        trace!("cleanup >> ctx {:?}", ctx);
+
+        if let Some((handle, name)) = get_connected_pool(ctx) {
+            match Pool::close(handle) {
+                Ok(()) => {
+                    set_connected_pool(ctx, Some((handle, name.to_owned())));
+                    println_succ!("Pool \"{}\" has been connected", name)
+                }
+                Err(err) => println_err!("Indy SDK error occurred {:?}", err),
             }
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
-        };
-
-        trace!("CreateCommand::execute << {:?}", res);
-        Ok(())
-    }
-}
-
-impl ListCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> ListCommand {
-        ListCommand {
-            ctx,
-            metadata: CommandMetadata::build("list", "List existing pool configs.")
-                .finalize()
         }
+
+        trace!("cleanup <<");
     }
 }
 
-impl Command for ListCommand {
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
+pub mod list_command {
+    use super::*;
 
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("ListCommand::execute >> self {:?} params {:?}", self, params);
+    command!(CommandMetadata::build("list", "List existing pool configs.")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let res = match Pool::list() {
             Ok(pools) => {
-                let pools = pools.replace(",", "\n").replace("]", "").replace("[", "");
-                if pools.trim().len() > 0 {
-                    println_succ!("Existing pools: \n{}", pools.trim());
+                trace!("pools {:?}", pools);
+                let pools: Vec<serde_json::Value> = serde_json::from_str(&pools)
+                    .map_err(|_| println_err!("Wrong data has been received"))?;
+
+                if pools.len() > 0 {
+                    print_table(&pools, &vec![("pool", "Pool")]);
                 } else {
-                    println_succ!("There are no pools");
+                    println_succ!("There are no pool");
                 }
-                if let Some(cur_pool) = self.ctx.get_connected_pool_name() {
+                if let Some((_,cur_pool)) = get_connected_pool(ctx) {
                     println_succ!("Current pool \"{}\"", cur_pool);
                 }
+
                 Ok(())
             }
+            Err(ErrorCode::CommonIOError) => Err(println_succ!("There are no pool")),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
-        trace!("ListCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
 }
 
-impl DisconnectCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> DisconnectCommand {
-        DisconnectCommand {
-            ctx,
-            metadata: CommandMetadata::build("disconnect", "Disconnect from current pool.")
+pub mod disconnect_command {
+    use super::*;
+
+    command!(CommandMetadata::build("disconnect", "Disconnect from current pool.")
                 .finalize()
-        }
-    }
-}
+    );
 
-impl Command for DisconnectCommand {
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("DisconnectCommand::execute >> self {:?} params {:?}", self, params);
-
-        let (name, handle) = if let Some(pool) = self.ctx.get_connected_pool() {
+        let (handle, name) = if let Some(pool) = get_connected_pool(ctx) {
             pool
         } else {
             return Err(println_err!("There is no connected pool now"));
@@ -202,31 +160,27 @@ impl Command for DisconnectCommand {
 
         let res = match Pool::close(handle) {
             Ok(()) => {
-                self.ctx.unset_connected_pool();
+                set_connected_pool(ctx, None);
                 Ok(println_succ!("Pool \"{}\" has been disconnected", name))
             }
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
-        trace!("DisconnectCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
 }
 
-impl DeleteCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> DeleteCommand {
-        DeleteCommand {
-            ctx,
-            metadata: CommandMetadata::build("delete", "Delete pool config with specified name")
+pub mod delete_command {
+    use super::*;
+
+    command!(CommandMetadata::build("delete", "Delete pool config with specified name")
                 .add_main_param("name", "The name of deleted pool config")
                 .finalize()
-        }
-    }
-}
+    );
 
-impl Command for DeleteCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("DeleteCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
 
@@ -241,11 +195,7 @@ impl Command for DeleteCommand {
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
-        trace!("DeleteCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
-    }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
     }
 }

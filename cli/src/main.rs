@@ -1,4 +1,5 @@
 extern crate ansi_term;
+extern crate unescape;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
@@ -10,21 +11,18 @@ extern crate serde;
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
+extern crate prettytable;
 
 #[macro_use]
 mod utils;
-mod application_context;
 mod command_executor;
 #[macro_use]
 mod commands;
-mod indy_context;
 mod libindy;
 
-use application_context::ApplicationContext;
 use command_executor::CommandExecutor;
 
-use commands::{common, did, pool, wallet, ledger};
-use indy_context::IndyContext;
+use commands::{common, did, ledger, pool, wallet};
 
 use linefeed::{Reader, ReadResult};
 use linefeed::complete::PathCompleter;
@@ -37,13 +35,10 @@ use std::rc::Rc;
 fn main() {
     utils::logger::LoggerUtils::init();
 
-    let application_context = Rc::new(ApplicationContext::new());
-    let indy_context = Rc::new(IndyContext::new());
-
-    let command_executor = build_executor(application_context.clone(), indy_context);
+    let command_executor = build_executor();
 
     if env::args().len() == 1 {
-        execute_stdin(command_executor, application_context);
+        execute_stdin(command_executor);
     } else {
         let mut args = env::args();
         args.next(); //skip 0 param
@@ -51,63 +46,61 @@ fn main() {
     }
 }
 
-fn build_executor(application_context: Rc<ApplicationContext>,
-                  indy_context: Rc<IndyContext>) -> CommandExecutor {
+fn build_executor() -> CommandExecutor {
     CommandExecutor::build()
-        .add_command(Box::new(common::AboutCommand::new()))
-        .add_command(Box::new(common::ExitCommand::new(application_context.clone())))
-        .add_command(Box::new(common::PromptCommand::new(application_context.clone())))
-        .add_command(Box::new(common::ShowCommand::new()))
-        .add_group(Box::new(did::Group::new()))
-        .add_command(Box::new(did::NewCommand::new(indy_context.clone())))
-        .add_command(Box::new(did::UseCommand::new(indy_context.clone())))
-        .add_command(Box::new(did::RotateKeyCommand::new(indy_context.clone())))
-        .add_command(Box::new(did::ListCommand::new(indy_context.clone())))
+        .add_command(common::about_command::new())
+        .add_command(common::exit_command::new())
+        .add_command(common::prompt_command::new())
+        .add_command(common::show_command::new())
+        .add_group(did::group::new())
+        .add_command(did::new_command::new())
+        .add_command(did::use_command::new())
+        .add_command(did::rotate_key_command::new())
+        .add_command(did::list_command::new())
         .finalize_group()
-        .add_group(Box::new(pool::Group::new()))
-        .add_command(Box::new(pool::CreateCommand::new(indy_context.clone())))
-        .add_command(Box::new(pool::ConnectCommand::new(indy_context.clone())))
-        .add_command(Box::new(pool::ListCommand::new(indy_context.clone())))
-        .add_command(Box::new(pool::DisconnectCommand::new(indy_context.clone())))
-        .add_command(Box::new(pool::DeleteCommand::new(indy_context.clone())))
+        .add_group(pool::group::new())
+        .add_command(pool::create_command::new())
+        .add_command(pool::connect_command::new())
+        .add_command(pool::list_command::new())
+        .add_command(pool::disconnect_command::new())
+        .add_command(pool::delete_command::new())
         .finalize_group()
-        .add_group(Box::new(wallet::Group::new()))
-        .add_command(Box::new(wallet::CreateCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::OpenCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::ListCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::CloseCommand::new(indy_context.clone())))
-        .add_command(Box::new(wallet::DeleteCommand::new(indy_context.clone())))
+        .add_group(wallet::group::new())
+        .add_command(wallet::create_command::new())
+        .add_command(wallet::open_command::new())
+        .add_command(wallet::list_command::new())
+        .add_command(wallet::close_command::new())
+        .add_command(wallet::delete_command::new())
         .finalize_group()
-        .add_group(Box::new(ledger::Group::new()))
-        .add_command(Box::new(ledger::SendNymCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::GetNymCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::SendAttribCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::GetAttribCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::SendSchemaCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::GetSchemaCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::SendClaimDefCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::GetClaimDefCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::SendNodeCommand::new(indy_context.clone())))
-        .add_command(Box::new(ledger::SenCustomCommand::new(indy_context.clone())))
+        .add_group(ledger::group::new())
+        .add_command(ledger::nym_command::new())
+        .add_command(ledger::get_nym_command::new())
+        .add_command(ledger::attrib_command::new())
+        .add_command(ledger::get_attrib_command::new())
+        .add_command(ledger::schema_command::new())
+        .add_command(ledger::get_schema_command::new())
+        .add_command(ledger::claim_def_command::new())
+        .add_command(ledger::get_claim_def_command::new())
+        .add_command(ledger::node_command::new())
+        .add_command(ledger::custom_command::new())
         .finalize_group()
         .finalize()
 }
 
-fn execute_stdin(command_executor: CommandExecutor,
-                 application_context: Rc<ApplicationContext>) {
+fn execute_stdin(command_executor: CommandExecutor) {
+    #[cfg(target_os = "windows")]
+        ansi_term::enable_ansi_support().is_ok();
+
     match Reader::new("indy-cli") {
-        Ok(reader) => execute_interactive(command_executor, application_context, reader),
+        Ok(reader) => execute_interactive(command_executor, reader),
         Err(_) => execute_batch(command_executor, None),
     }
 }
 
-fn execute_interactive<T>(command_executor: CommandExecutor, application_context: Rc<ApplicationContext>, mut reader: Reader<T>)
+fn execute_interactive<T>(command_executor: CommandExecutor, mut reader: Reader<T>)
     where T: linefeed::Terminal {
-    #[cfg(target_os = "windows")]
-        ansi_term::enable_ansi_support().is_ok();
-
     reader.set_completer(Rc::new(PathCompleter));
-    reader.set_prompt(&application_context.get_prompt());
+    reader.set_prompt(&command_executor.ctx().get_prompt());
 
     while let Ok(ReadResult::Input(line)) = reader.read_line() {
         if line.trim().is_empty() {
@@ -116,9 +109,9 @@ fn execute_interactive<T>(command_executor: CommandExecutor, application_context
 
         command_executor.execute(&line).is_ok();
         reader.add_history(line);
-        reader.set_prompt(&application_context.get_prompt());
+        reader.set_prompt(&command_executor.ctx().get_prompt());
 
-        if application_context.is_exit() {
+        if command_executor.ctx().is_exit() {
             break;
         }
     }

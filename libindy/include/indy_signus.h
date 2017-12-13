@@ -278,6 +278,13 @@ extern "C" {
                                                                       const char *const metadata)
                                              );
 
+    /// Get info about My DID in format: DID, verkey, metadata
+    extern indy_error_t indy_get_my_did_with_meta(indy_handle_t     command_handle,
+                                                  indy_handle_t     wallet_handle,
+                                                  const char *const my_did,
+                                                  void              (*fn)(indy_handle_t xcommand_handle, indy_error_t err, const char *const did_with_meta)
+                                                 );
+
     /// Lists created DIDs with metadata as JSON array with each DID in format: DID, verkey, metadata
     extern indy_error_t indy_list_my_dids_with_meta(indy_handle_t command_handle,
                                                     indy_handle_t wallet_handle,

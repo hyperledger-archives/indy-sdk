@@ -1,8 +1,6 @@
-extern crate serde_json;
-
-use indy_context::IndyContext;
-use command_executor::{Command, CommandMetadata, Group as GroupTrait, GroupMetadata};
+use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
+use utils::table::print_table;
 
 use libindy::ErrorCode;
 
@@ -12,70 +10,27 @@ use libindy::ledger::Ledger;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use std::collections::HashMap;
-use std::rc::Rc;
+pub mod group {
+    use super::*;
 
-pub struct Group {
-    metadata: GroupMetadata
+    command_group!(CommandGroupMetadata::new("did", "Identity management commands"));
 }
 
-impl Group {
-    pub fn new() -> Group {
-        Group {
-            metadata: GroupMetadata::new("did", "Identity management commands")
-        }
-    }
-}
+pub mod new_command {
+    use super::*;
 
-impl GroupTrait for Group {
-    fn metadata(&self) -> &GroupMetadata {
-        &self.metadata
-    }
-}
-
-#[derive(Debug)]
-pub struct NewCommand {
-    ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-#[derive(Debug)]
-pub struct UseCommand {
-    ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-#[derive(Debug)]
-pub struct RotateKeyCommand {
-    ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-#[derive(Debug)]
-pub struct ListCommand {
-    ctx: Rc<IndyContext>,
-    metadata: CommandMetadata,
-}
-
-impl NewCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> NewCommand {
-        NewCommand {
-            ctx,
-            metadata: CommandMetadata::build("new", "Create new DID")
+    command!(CommandMetadata::build("new", "Create new DID")
                 .add_param("did", true, "Known DID for new wallet instance")
                 .add_param("seed", true, "Seed for creating DID key-pair")
                 .add_param("cid", true, "Create DID as CID (default false)")
                 .add_param("metadata", true, "DID metadata")
                 .finalize()
-        }
-    }
-}
+    );
 
-impl Command for NewCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("NewCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let wallet_handle = get_opened_wallet_handle(&self.ctx)?;
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
         let did = get_opt_str_param("did", params).map_err(error_err!())?;
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
@@ -100,7 +55,7 @@ impl Command for NewCommand {
             Ok((did, vk)) => {
                 println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk);
                 Ok(did)
-            },
+            }
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -116,65 +71,55 @@ impl Command for NewCommand {
             res.map(|_| ())
         };
 
-        trace!("NewCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
 }
 
-impl UseCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> UseCommand {
-        UseCommand {
-            ctx,
-            metadata: CommandMetadata::build("use", "Use DID")
+pub mod use_command {
+    use super::*;
+
+    command!(CommandMetadata::build("use", "Use DID")
                 .add_main_param("did", "Did stored in wallet")
-                .finalize()
-        }
-    }
-}
+                .finalize());
 
-impl Command for UseCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("UseCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?}, params {:?}", ctx, params);
 
         let did = get_str_param("did", params).map_err(error_err!())?;
 
-        self.ctx.set_active_did(did);
+        let wallet_handle = ensure_opened_wallet_handle(ctx)?;
 
-        println_succ!("Did \"{}\" has been set as active", did);
+        let res = match Did::get_did_with_meta(wallet_handle, did) {
+            Ok(_) => {
+                set_active_did(ctx, Some(did.to_owned()));
+                Ok(println_succ!("Did \"{}\" has been set as active", did))
+            }
+            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid DID format")),
+            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Requested DID not found")),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
+        };
 
-        trace!("UseCommand::execute << {:?}", ());
-        Ok(())
-    }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
+        trace!("execute << {:?}", res);
+        res
     }
 }
 
-impl RotateKeyCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> RotateKeyCommand {
-        RotateKeyCommand {
-            ctx,
-            metadata: CommandMetadata::build("rotate-key", "Rotate keys for active did")
+pub mod rotate_key_command {
+    use super::*;
+
+    command!(CommandMetadata::build("rotate-key", "Rotate keys for active did")
                 .add_param("seed", true, "If not provide then a random one will be created")
-                .finalize()
-        }
-    }
-}
+                .finalize());
 
-impl Command for RotateKeyCommand {
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("RotateKeyCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
 
-        let did = get_active_did(&self.ctx)?;
-        let pool_handle = get_connected_pool_handle(&self.ctx)?;
-        let wallet_handle = get_opened_wallet_handle(&self.ctx)?;
+        let did = ensure_active_did(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
         let identity_json = {
             let mut json = JSONMap::new();
@@ -207,50 +152,34 @@ impl Command for RotateKeyCommand {
             Err(_) => return Err(println_err!("Wrong command params")),
         };
 
-        trace!("RotateKeyCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
-
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
 }
 
-impl ListCommand {
-    pub fn new(ctx: Rc<IndyContext>) -> ListCommand {
-        ListCommand {
-            ctx,
-            metadata: CommandMetadata::build("list", "List my DIDs stored in the opened wallet.")
-                .finalize()
-        }
-    }
-}
+pub mod list_command {
+    use super::*;
 
-impl Command for ListCommand {
-    fn metadata(&self) -> &CommandMetadata {
-        &self.metadata
-    }
+    command!(CommandMetadata::build("list", "List my DIDs stored in the opened wallet.").finalize());
 
-    fn execute(&self, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
-        trace!("ListCommand::execute >> self {:?} params {:?}", self, params);
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let wallet_handle = get_opened_wallet_handle(&self.ctx)?;
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
         let res = match Did::list_dids_with_meta(wallet_handle) {
             Ok(dids) => {
                 let dids: Vec<serde_json::Value> = serde_json::from_str(&dids)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
                 if dids.len() > 0 {
-                    println_acc!("{0: <24} | {1: <46} | {2}", "did", "verkey", "metadata");
-
-                    for did in dids {
-                        println!("{0: <24} | {1: <46} | {2} ", did["did"].as_str().unwrap_or("-"),
-                                 did["verkey"].as_str().unwrap_or("-"), did["metadata"].as_str().unwrap_or("-"));
-                    }
+                    print_table(&dids,
+                                &vec![("did", "Did"),
+                                      ("verkey", "Verkey"),
+                                      ("metadata", "Metadata")]);
                 } else {
                     println_succ!("There are no dids");
                 }
-                if let Some(cur_did) = self.ctx.get_active_did() {
+                if let Some(cur_did) = get_active_did(ctx) {
                     println_succ!("Current did \"{}\"", cur_did);
                 }
                 Ok(())
@@ -258,7 +187,7 @@ impl Command for ListCommand {
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
-        trace!("ListCommand::execute << {:?}", res);
+        trace!("execute << {:?}", res);
         res
     }
 }
