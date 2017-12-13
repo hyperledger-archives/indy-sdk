@@ -24,8 +24,8 @@ use command_executor::CommandExecutor;
 
 use commands::{common, did, ledger, pool, wallet};
 
-use linefeed::{Reader, ReadResult};
-use linefeed::complete::PathCompleter;
+use linefeed::{Reader, ReadResult, Terminal};
+use linefeed::complete::{Completer, Completion};
 
 use std::env;
 use std::fs::File;
@@ -98,8 +98,9 @@ fn execute_stdin(command_executor: CommandExecutor) {
 }
 
 fn execute_interactive<T>(command_executor: CommandExecutor, mut reader: Reader<T>)
-    where T: linefeed::Terminal {
-    reader.set_completer(Rc::new(PathCompleter));
+    where T: Terminal {
+    let command_executor = Rc::new(command_executor);
+    reader.set_completer(command_executor.clone());
     reader.set_prompt(&command_executor.ctx().get_prompt());
 
     while let Ok(ReadResult::Input(line)) = reader.read_line() {
@@ -147,5 +148,23 @@ fn _iter_batch<T>(command_executor: CommandExecutor, reader: T) where T: std::io
         }
         println!();
         line_num += 1;
+    }
+}
+
+impl<Term: Terminal> Completer<Term> for CommandExecutor {
+    fn complete(&self, word: &str, reader: &Reader<Term>,
+                start: usize, end: usize) -> Option<Vec<Completion>> {
+        Some(self
+            .complete(reader.buffer(),
+                      word,
+                      start,
+                      end)
+            .into_iter()
+            .map(|c| Completion {
+                completion: c.0,
+                display: None,
+                suffix: linefeed::Suffix::Some(c.1),
+            })
+            .collect())
     }
 }
