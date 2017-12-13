@@ -1,94 +1,43 @@
-from indy import agent, ledger, signus, pool, wallet
+from indy import agent, crypto, wallet
 
-import json
-from src.utils import get_pool_genesis_txn_path
 import logging
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+message = '{"reqId":1496822211362017764}'.encode('utf-8')
 
 async def demo():
     logger.info("Agent sample -> started")
+    # 1. Create and open wallets for Alice and Bob
+    await wallet.create_wallet("no pool", "alice_wallet", None, None, None)
+    alice_wallet_handle = await wallet.open_wallet("alice_wallet", None, None)
+    await wallet.create_wallet("no pool", "bob_wallet", None, None, None)
+    bob_wallet_handle = await wallet.open_wallet("bob_wallet", None, None)
 
-    pool_name = 'pool1'
-    listener_wallet_name = 'listener_wallet'
-    sender_wallet_name = 'sender_wallet'
-    seed_trustee1 = "000000000000000000000000Trustee1"
-    endpoint = '127.0.0.1:9700'
-    pool_genesis_txn_path = get_pool_genesis_txn_path(pool_name)
+    # 2. Create keys for Alice and Bob
+    alice_key = await crypto.create_key(alice_wallet_handle, '{}')
+    bob_key = await crypto.create_key(bob_wallet_handle, '{}')
 
-    # 1. Create ledger config from genesis txn file
-    pool_config = json.dumps({"genesis_txn": str(pool_genesis_txn_path)})
-    await pool.create_pool_ledger_config(pool_name, pool_config)
+    # 3. Prepare authenticated message from Alice to Bob
+    encrypted_auth_msg = await agent.prep_msg(alice_wallet_handle, alice_key, bob_key, message)
 
-    # 2. Open pool ledger
-    pool_handle = await pool.open_pool_ledger(pool_name, None)
+    # 4. Parse authenticated message on Bob's side
+    sender_auth, decrypted_auth_msg = await agent.parse_msg(bob_wallet_handle, bob_key, encrypted_auth_msg)
+    assert sender_auth == alice_key
+    assert decrypted_auth_msg == message
 
-    # 3. Create and Open Listener Wallet. Gets wallet handle
-    await wallet.create_wallet(pool_name, listener_wallet_name, None, None, None)
-    listener_wallet_handle = await wallet.open_wallet(listener_wallet_name, None, None)
+    # 5. Prepare anonymous message from Bob to Alice
+    encrypted_anon_msg = await agent.prep_anonymous_msg(alice_key, message)
 
-    # 4. Create and Open Sender Wallet. Gets wallet handle
-    await wallet.create_wallet(pool_name, sender_wallet_name, None, None, None)
-    sender_wallet_handle = await wallet.open_wallet(sender_wallet_name, None, None)
+    # 6. Parse anonymous message on Alice's side
+    sender_anon, decrypted_anon_msg = await agent.parse_msg(alice_wallet_handle, alice_key, encrypted_anon_msg)
+    assert not sender_anon
+    assert decrypted_anon_msg == message
 
-    # 5. Create Listener DID
-    (listener_did, listener_verkey, listener_pk) = await signus.create_and_store_my_did(listener_wallet_handle, "{}")
-
-    # 6. Create Sender DID from Trustee1 seed
-    (sender_did, sender_verkey, sender_pk) = \
-        await signus.create_and_store_my_did(sender_wallet_handle, json.dumps({"seed": seed_trustee1}))
-
-    # 7. Prepare and send NYM transaction
-    nym_txn_req = await ledger.build_nym_request(sender_did, listener_did, listener_verkey, None, None)
-    await ledger.sign_and_submit_request(pool_handle, sender_wallet_handle, sender_did, nym_txn_req)
-
-    # 8. Prepare and send Attrib request
-    raw = json.dumps({
-        "endpoint": {
-            "ha": endpoint,
-            "verkey": listener_pk
-        }
-    })
-
-    attrib_txn_req = await ledger.build_attrib_request(listener_did, listener_did, None, raw, None)
-    await ledger.sign_and_submit_request(pool_handle, listener_wallet_handle, listener_did, attrib_txn_req)
-
-    # 9. Start listener on endpoint
-    listener_handle = await agent.agent_listen(endpoint)
-
-    # 10. Allow listener accept incoming connection for specific DID (listener_did)
-    await agent.agent_add_identity(listener_handle, pool_handle, listener_wallet_handle, listener_did)
-
-    # 11. Initiate connection from sender to listener
-    connection_handle = await agent.agent_connect(pool_handle, sender_wallet_handle, sender_did, listener_did)
-    event = await agent.agent_wait_for_event([listener_handle])  # type: agent.ConnectionEvent
-    inc_con_handle = event.connection_handle
-
-    # 12. Send test message from sender to listener
-    message = 'msg_from_sender_to_listener'
-    await agent.agent_send(connection_handle, message)
-
-    message_event = await agent.agent_wait_for_event([listener_handle, inc_con_handle])  # type: agent.MessageEvent
-    assert message_event.message == message
-
-    # 13. Close connection, listener, wallets, pool
-    await agent.agent_close_listener(listener_handle)
-    await agent.agent_close_connection(connection_handle)
-
-    # 14. Close wallets
-    await wallet.close_wallet(listener_wallet_handle)
-    await wallet.close_wallet(sender_wallet_handle)
-
-    # 15. Close pool
-    await pool.close_pool_ledger(pool_handle)
-
-    #  16. Delete wallets
-    await wallet.delete_wallet(listener_wallet_name, None)
-    await wallet.delete_wallet(sender_wallet_name, None)
-
-    # 17. Delete pool ledger config
-    await pool.delete_pool_ledger_config(pool_name)
+    await wallet.close_wallet(alice_wallet_handle)
+    await wallet.close_wallet(bob_wallet_handle)
+    await wallet.delete_wallet("alice_wallet", None)
+    await wallet.delete_wallet("bob_wallet", None)
 
     logger.info("Agent sample -> completed")

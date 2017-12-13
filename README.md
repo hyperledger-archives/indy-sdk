@@ -28,7 +28,7 @@ us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to
 * [iOS](wrappers/ios/ios-build.md)
 
 ## Binaries
-Builded binaries can be downloaded from https://repo.sovrin.org/:
+Pre-Built binaries can be downloaded from https://repo.sovrin.org/:
 * lib/apt/xenial/{master,stable,rc} - Ubuntu deb packages
 * windows/libindy/{master,stable,rc} - Windows zip-archive with all required DLLs (include libindy itself) and headers
 * windows/libindy/deps/ - Windows zip archive with dependencies (DLLs and headers) to build libindy from sources
@@ -39,5 +39,6 @@ Also Ubundu deb packages can be installed from APT repository (change stable to 
 ```
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
 sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable"
+sudo apt-get update
 sudo apt-get install -y libindy
 ```

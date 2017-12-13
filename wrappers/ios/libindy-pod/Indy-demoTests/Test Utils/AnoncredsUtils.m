@@ -46,7 +46,7 @@
             "\"data\":{"
                 "\"name\":\"gvt\","
                 "\"version\":\"1.0\","
-                "\"keys\":[\"age\",\"sex\",\"height\",\"name\"]}"
+                "\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}"
             "}", seqNo];
 }
 
@@ -78,7 +78,7 @@
             "\"data\":{"
                 "\"name\":\"xyz\","
                 "\"version\":\"1.0\","
-                "\"keys\":[\"status\",\"period\"]}"
+                "\"attr_names\":[\"status\",\"period\"]}"
             "}", schemaSeqNo];
 }
 

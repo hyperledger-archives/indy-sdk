@@ -1,0 +1,15 @@
+Source: indy-cli
+Section: devel
+Priority: optional
+Maintainer: Hyperledger <info@hyperledger.org>
+Standards-Version: 1.0.0
+Vcs-Git: https://github.com/hyperledger/indy-sdk/
+Vcs-Browser: https://github.com/hyperledger/indy-sdk/
+
+Package: indy-cli
+Architecture: amd64
+Depends: libindy
+Suggests: build-essential
+Description: This is the official command line interface for Indy SDK,
+  which provides a distributed-ledger-based foundation for self-sovereign
+  identity.

@@ -1,7 +1,8 @@
+extern crate indy_crypto;
+extern crate rmp_serde;
 extern crate serde;
 extern crate serde_json;
-extern crate rmp_serde;
-extern crate indy_crypto;
+extern crate time;
 
 use std::cmp::Eq;
 use std::collections::HashMap;
@@ -289,11 +290,21 @@ impl PartialEq for HashableValue {
     }
 }
 
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct ResendableRequest {
+    pub request: String,
+    pub start_node: usize,
+    pub next_node: usize,
+    pub next_try_send_time: Option<time::Tm>,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct CommandProcess {
     pub nack_cnt: usize,
     pub replies: HashMap<HashableValue, usize>,
-    pub cmd_ids: Vec<i32>,
+    pub parent_cmd_ids: Vec<i32>,
+    pub resendable_request: Option<ResendableRequest>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -302,6 +313,7 @@ pub enum ZMQLoopAction {
     MessageToProcess(MessageToProcess),
     Terminate(i32),
     Refresh(i32),
+    Timeout,
 }
 
 #[derive(Debug, PartialEq, Eq)]

@@ -39,6 +39,13 @@ pub enum SignusCommand {
         i32, // wallet handle
         String, // their did info json
         Box<Fn(Result<(), IndyError>) + Send>),
+    GetMyDidWithMeta(
+        i32, // wallet handle
+        String, // my did
+        Box<Fn(Result<String, IndyError>) + Send>),
+    ListMyDidsWithMeta(
+        i32, // wallet handle
+        Box<Fn(Result<String, IndyError>) + Send>),
     Sign(
         i32, // wallet handle
         String, // my did
@@ -79,6 +86,10 @@ pub enum SignusCommand {
         Box<Fn(Result<Vec<u8>, IndyError>) + Send>),
     KeyForDid(
         i32, // pool handle
+        i32, // wallet handle
+        String, // did (my or their)
+        Box<Fn(Result<String/*key*/, IndyError>) + Send>),
+    KeyForLocalDid(
         i32, // wallet handle
         String, // did (my or their)
         Box<Fn(Result<String/*key*/, IndyError>) + Send>),
@@ -171,6 +182,14 @@ impl SignusCommandExecutor {
                 info!("StoreTheirDid command received");
                 cb(self.store_their_did(wallet_handle, &identity_json));
             }
+            SignusCommand::GetMyDidWithMeta(wallet_handle, my_did, cb) => {
+                info!("GetMyDidWithMeta command received");
+                cb(self.get_my_did_with_meta(wallet_handle, my_did))
+            }
+            SignusCommand::ListMyDidsWithMeta(wallet_handle, cb) => {
+                info!("ListMyDidsWithMeta command received");
+                cb(self.list_my_dids_with_meta(wallet_handle));
+            }
             SignusCommand::Sign(wallet_handle, did, msg, cb) => {
                 info!("Sign command received");
                 cb(self.sign(wallet_handle, &did, &msg));
@@ -198,6 +217,10 @@ impl SignusCommandExecutor {
             SignusCommand::KeyForDid(pool_handle, wallet_handle, did, cb) => {
                 info!("KeyForDid command received");
                 self.key_for_did(pool_handle, wallet_handle, did, cb);
+            }
+            SignusCommand::KeyForLocalDid(wallet_handle, did, cb) => {
+                info!("KeyForLocalDid command received");
+                cb(self.key_for_local_did(wallet_handle, did));
             }
             SignusCommand::SetEndpointForDid(wallet_handle, did, address, transport_key, cb) => {
                 info!("SetEndpointForDid command received");
@@ -290,6 +313,37 @@ impl SignusCommandExecutor {
         self._wallet_set_their_did(wallet_handle, &their_did)?;
 
         Ok(())
+    }
+
+    fn get_my_did_with_meta(&self, wallet_handle: i32, my_did: String) -> Result<String, IndyError> {
+        self.signus_service.validate_did(&my_did)?;
+        let did = self._wallet_get_my_did(wallet_handle, &my_did)?;
+        let meta: Option<String> = self._wallet_get_did_metadata(wallet_handle, &did.did).ok();
+        Ok(json!({
+            "did": did.did,
+            "verkey": did.verkey,
+            "metadata": meta,
+        }).to_string())
+    }
+
+    fn list_my_dids_with_meta(&self, wallet_handle: i32) -> Result<String, IndyError> {
+        let dids: Vec<::serde_json::Value> = self.wallet_service
+            .list(wallet_handle, "my_did::").map_err(IndyError::from)?
+            .iter().flat_map(|&(_, ref did_json)| {
+            Did::from_json(&did_json).ok()
+        }).map(|did| {
+            let meta: Option<String> = self._wallet_get_did_metadata(wallet_handle, &did.did).ok();
+            json!({
+                "did": did.did,
+                "verkey": did.verkey,
+                "metadata": meta,
+            })
+        }).collect();
+
+        ::serde_json::to_string(&dids)
+            .map_err(|err|
+                WalletError::CommonError(CommonError::InvalidState(format!("Can't serialize DIDs list {}", err))))
+            .map_err(IndyError::from)
     }
 
     fn sign(&self,
@@ -458,6 +512,25 @@ impl SignusCommandExecutor {
 
         let res = their_did.verkey;
         cb(Ok(res))
+    }
+
+    fn key_for_local_did(&self,
+                         wallet_handle: i32,
+                         did: String) -> Result<String, IndyError> {
+        self.signus_service.validate_did(&did)?;
+
+        // Look to my did
+        match self._wallet_get_my_did(wallet_handle, &did) {
+            Ok(my_did) => return Ok(my_did.verkey),
+            Err(IndyError::WalletError(WalletError::NotFound(_))) => {}
+            Err(err) => return Err(err)
+        };
+
+        // look to their did
+        let their_did = self._wallet_get_local_their_did(wallet_handle, &did)?;
+
+        let res = their_did.verkey;
+        Ok(res)
     }
 
     fn set_endpoint_for_did(&self,
@@ -726,6 +799,17 @@ impl SignusCommandExecutor {
 
     fn _wallet_get_their_did(&self, wallet_handle: i32, their_did: &str) -> Result<Did, IndyError> {
         let their_did_json = self.wallet_service.get_not_expired(wallet_handle, &format!("their_did::{}", their_did))?;
+
+        let res = Did::from_json(&their_did_json)
+            .map_err(map_err_trace!())
+            .map_err(|err|
+                CommonError::InvalidState(
+                    format!("Can't deserialize their Did: {}", err.description())))?;
+        Ok(res)
+    }
+
+    fn _wallet_get_local_their_did(&self, wallet_handle: i32, their_did: &str) -> Result<Did, IndyError> {
+        let their_did_json = self.wallet_service.get(wallet_handle, &format!("their_did::{}", their_did))?;
 
         let res = Did::from_json(&their_did_json)
             .map_err(map_err_trace!())

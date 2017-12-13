@@ -696,6 +696,7 @@
     
     // 4. decrypt
     ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:walletHandle
+                                                     poolHandle:-1
                                                           myDid:@"UnknonwDid11111111111"
                                                             did:theirDid
                                                encryptedMessage:[TestUtils encryptedMessage]
@@ -740,6 +741,7 @@
     
     // 4. decrypt
     ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:walletHandle
+                                                     poolHandle:-1
                                                           myDid:myDid
                                                             did:theirDid
                                                encryptedMessage:[TestUtils encryptedMessage]
@@ -792,6 +794,7 @@
 
     // 5. decrypt
     ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:walletHandle
+                                                     poolHandle:-1
                                                           myDid:myDid
                                                             did:theirDid
                                                encryptedMessage:[TestUtils encryptedMessage]
@@ -848,6 +851,7 @@
     NSData *nonce = [NSData dataWithBytes:bytes length:sizeof(bytes)];
     
     ret = [[SignusUtils sharedInstance] decryptWithWalletHandle:walletHandle
+                                                     poolHandle:-1
                                                           myDid:myDid
                                                             did:theirDid
                                                encryptedMessage:[TestUtils encryptedMessage]

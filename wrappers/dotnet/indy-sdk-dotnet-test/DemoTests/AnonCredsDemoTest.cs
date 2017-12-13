@@ -60,7 +60,7 @@ namespace Hyperledger.Indy.Test.DemoTests
                     "                    \"data\": {\n" +
                     "                        \"name\":\"gvt\",\n" +
                     "                        \"version\":\"1.0\",\n" +
-                    "                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+                    "                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
                     "                    }\n" +
                     "                }";
             var issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
@@ -180,7 +180,7 @@ namespace Hyperledger.Indy.Test.DemoTests
                     "                    \"data\": {\n" +
                     "                        \"name\":\"gvt\",\n" +
                     "                        \"version\":\"1.0\",\n" +
-                    "                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+                    "                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
                     "                    }\n" +
                     "                }";
 
@@ -192,7 +192,7 @@ namespace Hyperledger.Indy.Test.DemoTests
                     "                    \"data\": {\n" +
                     "                        \"name\":\"xyz\",\n" +
                     "                        \"version\":\"1.0\",\n" +
-                    "                        \"keys\":[\"status\",\"period\"]\n" +
+                    "                        \"attr_names\":[\"status\",\"period\"]\n" +
                     "                    }\n" +
                     "                }";
 
@@ -333,7 +333,7 @@ namespace Hyperledger.Indy.Test.DemoTests
                     "                    \"data\": {\n" +
                     "                        \"name\":\"gvt\",\n" +
                     "                        \"version\":\"1.0\",\n" +
-                    "                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+                    "                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
                     "                    }\n" +
                     "                }";
 
@@ -345,7 +345,7 @@ namespace Hyperledger.Indy.Test.DemoTests
                     "                    \"data\": {\n" +
                     "                        \"name\":\"xyz\",\n" +
                     "                        \"version\":\"1.0\",\n" +
-                    "                        \"keys\":[\"status\",\"period\"]\n" +
+                    "                        \"attr_names\":[\"status\",\"period\"]\n" +
                     "                    }\n" +
                     "                }";
 
@@ -472,7 +472,7 @@ namespace Hyperledger.Indy.Test.DemoTests
                     "                    \"data\": {\n" +
                     "                        \"name\":\"gvt\",\n" +
                     "                        \"version\":\"1.0\",\n" +
-                    "                        \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+                    "                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
                     "                    }\n" +
                     "                }";
             var issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";

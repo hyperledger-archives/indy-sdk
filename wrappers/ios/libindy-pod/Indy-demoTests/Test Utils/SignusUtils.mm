@@ -351,6 +351,7 @@
 }
 
 - (NSError *)decryptWithWalletHandle:(IndyHandle)walletHandle
+                          poolHandle:(IndyHandle)poolHandle
                                myDid:(NSString *)myDid
                                  did:(NSString *)did
                     encryptedMessage:(NSData *)encryptedMessage
@@ -359,13 +360,13 @@
 {
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
-    
+
     [IndySignus decryptMessage:encryptedMessage
                          myDid:myDid
                            did:did
                          nonce:nonce
                   walletHandle:walletHandle
-                    poolHandle:-1 //TODO FIXME
+                    poolHandle:poolHandle
                     completion:^(NSError *error, NSData *decryptedMsg)
      {
          err = error;

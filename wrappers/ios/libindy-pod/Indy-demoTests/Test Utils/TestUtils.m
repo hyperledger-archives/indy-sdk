@@ -89,6 +89,10 @@
     return @"000000000000000000000000Trustee1";
 }
 
++ (NSString *)trusteeVerkey
+{
+    return @"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL";
+}
 
 + (NSString *)mySeed
 {
@@ -98,16 +102,6 @@
 + (NSString *)endpoint
 {
     return @"127.0.0.1:9700";
-}
-
-+ (NSString *)clientMessage
-{
-    return @"msg_from_client";
-}
-
-+ (NSString *)serverMessage
-{
-    return @"msg_from_server";
 }
 
 + (NSString *)commonMasterSecretName
@@ -133,6 +127,16 @@
 + (NSString *)mySeed2
 {
     return @"00000000000000000000000000000My2";
+}
+
++ (NSString *)myVerkey1
+{
+    return @"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
+}
+
++ (NSString *)invalidBase58Verkey
+{
+    return @"CnEDk___MnmiHXEV1WFgbV___eYnPqs___TdcZaNhFVW";
 }
 
 + (NSString *)someMetadata
