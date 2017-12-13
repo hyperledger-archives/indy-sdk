@@ -180,7 +180,7 @@ impl CommandContext {
     }
 }
 
-pub type CommandParams<'a> = HashMap<&'static str, &'a str>;
+pub type CommandParams = HashMap<&'static str, String>;
 pub type CommandResult = Result<(), ()>;
 pub type CommandExecute = fn(&CommandContext, &CommandParams) -> CommandResult;
 pub type CommandCleanup = fn(&CommandContext) -> ();
@@ -436,8 +436,8 @@ impl CommandExecutor {
         println!();
     }
 
-    fn _parse_params<'a>(command: &CommandMetadata, params: &'a str) -> Result<HashMap<&'static str, &'a str>, String> {
-        let mut res: HashMap<&'static str, &str> = HashMap::new();
+    fn _parse_params(command: &CommandMetadata, params: &str) -> Result<CommandParams, String> {
+        let mut res = CommandParams::new();
         let mut params = params;
 
         // Read main param
@@ -449,7 +449,11 @@ impl CommandExecutor {
                 return Err(format!("No main \"{}\" parameter present", param_metadata.name()));
             }
 
-            res.insert(param_metadata.name(), CommandExecutor::_trim_quotes(param_value));
+            if let Some(param_value) = unescape(CommandExecutor::_trim_quotes(param_value)) {
+                res.insert(param_metadata.name(), param_value);
+            } else {
+                return Err(format!("Invalid escape sequence for \"{}\" parameter present", param_metadata.name()));
+            }
         }
 
         // Read rest params
@@ -468,7 +472,11 @@ impl CommandExecutor {
 
             if let Some(param_metadata) = param_metadata {
                 if let Some(param_value) = param_value {
-                    res.insert(param_metadata.name(), CommandExecutor::_trim_quotes(param_value));
+                    if let Some(param_value) = unescape(CommandExecutor::_trim_quotes(param_value)) {
+                        res.insert(param_metadata.name(), param_value);
+                    } else {
+                        return Err(format!("Invalid escape sequence for \"{}\" parameter present", param_metadata.name()));
+                    }
                 } else {
                     return Err(format!("No value for \"{}\" parameter present", param_name));
                 }
@@ -594,7 +602,7 @@ mod tests {
                     .add_param("param2", true, "Param2 help")
                     .finalize());
 
-        fn execute(ctx: &CommandContext, params: &HashMap<&'static str, &str>) -> Result<(), ()> {
+        fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
             println!("Test comamnd params: ctx {:?} params {:?}", ctx, params);
             Ok(())
         }

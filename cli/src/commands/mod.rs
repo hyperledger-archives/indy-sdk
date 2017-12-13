@@ -12,7 +12,7 @@ use std;
 
 pub fn get_str_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<&'a str, ()> {
     match params.get(name) {
-        Some(v) => Ok(*v),
+        Some(v) => Ok(v.as_str()),
         None => {
             println_err!("No required \"{}\" parameter present", name);
             Err(())
@@ -21,7 +21,7 @@ pub fn get_str_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<&'a
 }
 
 pub fn get_opt_str_param<'a>(key: &'a str, params: &'a CommandParams) -> Result<Option<&'a str>, ()> {
-    Ok(params.get(key).map(|v| *v))
+    Ok(params.get(key).map(|v| v.as_str()))
 }
 
 pub fn get_int_param<T>(name: &str, params: &CommandParams) -> Result<T, ()>
@@ -73,7 +73,7 @@ pub fn get_opt_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> 
 
 pub fn get_object_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<serde_json::Value, ()> {
     match params.get(name) {
-        Some(v) => Ok(serde_json::from_str(*v).map_err(|err|
+        Some(v) => Ok(serde_json::from_str(v).map_err(|err|
             println_err!("Can't parse object parameter \"{}\": err {}", name, err))?),
         None => {
             println_err!("No required \"{}\" parameter present", name);
