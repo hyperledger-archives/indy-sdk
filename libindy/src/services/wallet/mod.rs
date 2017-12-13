@@ -58,6 +58,28 @@ impl JsonEncodable for WalletDescriptor {}
 
 impl<'a> JsonDecodable<'a> for WalletDescriptor {}
 
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct WalletMetadata {
+    name: String,
+    #[serde(rename = "type")]
+    type_: String,
+    associated_pool_name: String,
+}
+
+impl From<WalletDescriptor> for WalletMetadata {
+    fn from(internal: WalletDescriptor) -> Self {
+        WalletMetadata {
+            name: internal.name,
+            type_: internal.xtype,
+            associated_pool_name: internal.pool_name,
+        }
+    }
+}
+
+impl JsonEncodable for WalletMetadata {}
+
+impl<'a> JsonDecodable<'a> for WalletMetadata {}
+
 pub struct WalletService {
     types: RefCell<HashMap<String, Box<WalletType>>>,
     wallets: RefCell<HashMap<i32, Box<Wallet>>>
@@ -105,7 +127,7 @@ impl WalletService {
         let mut wallet_types = self.types.borrow_mut();
 
         if wallet_types.contains_key(xtype) {
-            return Err(WalletError::TypeAlreadyRegistered(xtype.to_string()))
+            return Err(WalletError::TypeAlreadyRegistered(xtype.to_string()));
         }
 
         wallet_types.insert(xtype.to_string(),
@@ -121,12 +143,12 @@ impl WalletService {
 
         let wallet_types = self.types.borrow();
         if !wallet_types.contains_key(xtype) {
-            return Err(WalletError::UnknownType(xtype.to_string()))
+            return Err(WalletError::UnknownType(xtype.to_string()));
         }
 
         let wallet_path = _wallet_path(name);
         if wallet_path.exists() {
-            return Err(WalletError::AlreadyExists(name.to_string()))
+            return Err(WalletError::AlreadyExists(name.to_string()));
         }
         DirBuilder::new()
             .recursive(true)
@@ -232,6 +254,24 @@ impl WalletService {
         Ok(wallet_handle)
     }
 
+    pub fn list_wallets(&self) -> Result<Vec<WalletMetadata>, WalletError> {
+        let mut descriptors = Vec::new();
+        let wallet_home_path = EnvironmentUtils::wallet_home_path();
+
+        for entry in fs::read_dir(wallet_home_path)? {
+            let dir_entry = if let Ok(dir_entry) = entry { dir_entry } else { continue };
+            if let Some(wallet_name) = dir_entry.path().file_name().and_then(|os_str| os_str.to_str()) {
+                let mut descriptor_json = String::new();
+                File::open(_wallet_descriptor_path(wallet_name)).ok()
+                    .and_then(|mut f| f.read_to_string(&mut descriptor_json).ok())
+                    .and_then(|_| WalletDescriptor::from_json(descriptor_json.as_str()).ok())
+                    .map(|descriptor| descriptors.push(descriptor.into()));
+            }
+        }
+
+        Ok(descriptors)
+    }
+
     pub fn close(&self, handle: i32) -> Result<(), WalletError> {
         match self.wallets.borrow_mut().remove(&handle) {
             Some(wallet) => wallet.close(),
@@ -317,7 +357,7 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expied,
+                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -353,7 +393,7 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expied,
+                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -427,7 +467,7 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expied,
+                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -468,7 +508,7 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expied,
+                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -481,6 +521,64 @@ mod tests {
 
         TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
+    }
+
+    #[test]
+    fn wallet_service_list_wallets_works() {
+        TestUtils::cleanup_indy_home();
+        InmemWallet::cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service
+            .register_type(
+                "inmem",
+                InmemWallet::create,
+                InmemWallet::open,
+                InmemWallet::set,
+                InmemWallet::get,
+                InmemWallet::get_not_expired,
+                InmemWallet::list,
+                InmemWallet::close,
+                InmemWallet::delete,
+                InmemWallet::free
+            )
+            .unwrap();
+        let w1_meta = WalletMetadata {
+            name: "w1".to_string(),
+            associated_pool_name: "p1".to_string(),
+            type_: "default".to_string(),
+        };
+        let w2_meta = WalletMetadata {
+            name: "w2".to_string(),
+            associated_pool_name: "p2".to_string(),
+            type_: "inmem".to_string(),
+        };
+        let w3_meta = WalletMetadata {
+            name: "w3".to_string(),
+            associated_pool_name: "p1".to_string(),
+            type_: "default".to_string(),
+        };
+        wallet_service.create(&w1_meta.associated_pool_name,
+                              Some(&w1_meta.type_),
+                              &w1_meta.name,
+                              None, None).unwrap();
+        wallet_service.create(&w2_meta.associated_pool_name,
+                              Some(&w2_meta.type_),
+                              &w2_meta.name,
+                              None, None).unwrap();
+        wallet_service.create(&w3_meta.associated_pool_name,
+                              None,
+                              &w3_meta.name,
+                              None, None).unwrap();
+
+        let wallets = wallet_service.list_wallets().unwrap();
+
+        assert!(wallets.contains(&w1_meta));
+        assert!(wallets.contains(&w2_meta));
+        assert!(wallets.contains(&w3_meta));
+
+        InmemWallet::cleanup();
+        TestUtils::cleanup_indy_home();
     }
 
     #[test]
@@ -509,7 +607,7 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expied,
+                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -554,7 +652,7 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expied,
+                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -619,7 +717,7 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expied,
+                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -650,7 +748,7 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expied,
+                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -741,7 +839,7 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expied,
+                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -774,7 +872,7 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expied,
+                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -836,7 +934,7 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expied,
+                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,
@@ -895,7 +993,7 @@ mod tests {
                 InmemWallet::open,
                 InmemWallet::set,
                 InmemWallet::get,
-                InmemWallet::get_not_expied,
+                InmemWallet::get_not_expired,
                 InmemWallet::list,
                 InmemWallet::close,
                 InmemWallet::delete,

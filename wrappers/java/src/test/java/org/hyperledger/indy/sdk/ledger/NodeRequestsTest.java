@@ -69,15 +69,11 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 	}
 
 	@Test
-	public void testBuildNodeRequestWorksForMissedField() throws Exception {
+	public void testBuildNodeRequestWorksForMissedFields() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String data = "{\"node_ip\":\"10.0.0.100\"," +
-				"\"node_port\":910," +
-				"\"client_ip\":\"10.0.0.100\"," +
-				"\"client_port\":910," +
-				"\"services\":[\"VALIDATOR\"]}";
+		String data = "{ }";
 
 		Ledger.buildNodeRequest(DID, dest, data).get();
 	}
