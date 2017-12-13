@@ -57,7 +57,7 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home):
         'name': 'proof_req_1',
         'version': '0.1',
         'requested_attrs': {
-            'attr1_referent': {'name': 'name','restrictions':[{'schema_seq_no':1}]}
+            'attr1_referent': {'name': 'name'}
         },
         'requested_predicates': {
             'predicate1_referent': {'attr_name': 'age', 'p_type': '>=', 'value': 18}

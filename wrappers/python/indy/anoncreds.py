@@ -552,6 +552,31 @@ async def prover_create_proof(wallet_handle: int,
             "requested_predicate_1_referent": <predicate_info>,
             "requested_predicate_2_referent": <predicate_info>,
         }
+        where attr_info:
+            {
+                "name": attribute name,
+                "restrictions": [
+                    {
+                        "schema_seq_no": int, (Optional)
+                        "issuer_did": string (Optional)
+                    }
+                ]  (Optional) - if specified, claim must be created for one of the given
+                                schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
+            }
+        predicate_info:
+            {
+                "attr_name": attribute name,
+                "p_type": predicate type (Currently >= only)
+                "value": requested value of attribute
+                "restrictions": [
+                    {
+                        "schema_seq_no": int, (Optional)
+                        "issuer_did": string (Optional)
+                    }
+                ]  (Optional) - if specified, claim must be created for one of the given
+                                schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
+            }
+        
     :param requested_claims_json: either a claim or self-attested attribute for each requested attribute
         {
             "requested_attr1_referent": [claim1_referent_in_wallet, true <reveal_attr>],
@@ -652,7 +677,6 @@ async def verifier_verify_proof(proof_request_json: str,
     Verifies a proof (of multiple claim).
     All required schemas, public keys and revocation registries must be provided.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
     :param proof_request_json: initial proof request as sent by the verifier
         {
             "nonce": string,
@@ -662,6 +686,30 @@ async def verifier_verify_proof(proof_request_json: str,
             "requested_predicate_1_referent": <predicate_info>,
             "requested_predicate_2_referent": <predicate_info>,
         }
+        where attr_info:
+            {
+                "name": attribute name,
+                "restrictions": [
+                    {
+                        "schema_seq_no": int, (Optional)
+                        "issuer_did": string (Optional)
+                    }
+                ]  (Optional) - if specified, claim must be created for one of the given
+                                schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
+            }
+        predicate_info:
+            {
+                "attr_name": attribute name,
+                "p_type": predicate type (Currently >= only)
+                "value": requested value of attribute
+                "restrictions": [
+                    {
+                        "schema_seq_no": int, (Optional)
+                        "issuer_did": string (Optional)
+                    }
+                ]  (Optional) - if specified, claim must be created for one of the given
+                                schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
+            }
     :param proof_json: proof json
         For each requested attribute either a proof (with optionally revealed attribute value) or
         self-attested attribute value is provided.

@@ -26,6 +26,8 @@ public class AnoncredsIntegrationTest {
 	String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 	String issuerDid2 = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 	String proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
+	int gvtSchemaSeqNo = 1;
+	int xyzSchemaSeqNo = 2;
 	String claimOfferTemplate = "{\"issuer_did\":\"%s\",\"schema_seq_no\":%d}";
 	String schema = "{\"seqNo\":1,\"data\": {\"name\":\"gvt\",\"version\":\"1.0\",\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}}";
 	String claimRequestTemplate = "{\n" +
@@ -65,26 +67,64 @@ public class AnoncredsIntegrationTest {
 		Wallet.createWallet("default", walletName, "default", null, null).get();
 		wallet = Wallet.openWallet(walletName, null, null).get();
 
-		claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, schema, null, false).get();
+		String claimOffer1 = String.format(claimOfferTemplate, issuerDid, gvtSchemaSeqNo);
+		String claimOffer2 = String.format(claimOfferTemplate, issuerDid, xyzSchemaSeqNo);
+		String claimOffer3 = String.format(claimOfferTemplate, issuerDid2, gvtSchemaSeqNo);
 
-		Anoncreds.proverStoreClaimOffer(wallet, String.format(claimOfferTemplate, issuerDid, 1)).get();
-		Anoncreds.proverStoreClaimOffer(wallet, String.format(claimOfferTemplate, issuerDid, 2)).get();
-		Anoncreds.proverStoreClaimOffer(wallet, String.format(claimOfferTemplate, issuerDid2, 2)).get();
+		Anoncreds.proverStoreClaimOffer(wallet, claimOffer1).get();
+		Anoncreds.proverStoreClaimOffer(wallet, claimOffer2).get();
+		Anoncreds.proverStoreClaimOffer(wallet, claimOffer3).get();
 
 		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
 
-		String claimOffer = String.format("{\"issuer_did\":\"%s\",\"schema_seq_no\":%d}", issuerDid, 1);
+		//Issue GVT claim bu Issuer1
+		claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, schema, null, false).get();
 
-		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", claimOffer, claimDef, masterSecretName).get();
+		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", claimOffer1, claimDef, masterSecretName).get();
 
-		String claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
-				"                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
-				"                 \"height\":[\"175\",\"175\"],\n" +
-				"                 \"age\":[\"28\",\"28\"]\n" +
+		String claim = "{" +
+				"           \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
+				"           \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
+				"           \"height\":[\"175\",\"175\"],\n" +
+				"           \"age\":[\"28\",\"28\"]\n" +
 				"        }";
 
 		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
 		String claimJson = createClaimResult.getClaimJson();
+
+		Anoncreds.proverStoreClaim(wallet, claimJson).get();
+
+		//Issue XYZ claim bu Issuer1
+		String xyz_schema = "{\"seqNo\":2,\"data\": {\"name\":\"gvt\",\"version\":\"1.0\",\"attr_names\":[\"status\",\"period\"]}}";
+		String claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, xyz_schema, null, false).get();
+
+		claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", claimOffer2, claimDef, masterSecretName).get();
+
+		claim = "{" +
+				"   \"status\":[\"partial\",\"51792877103171595686471452153480627530895\"],\n" +
+				"   \"period\":[\"8\",\"8\"]\n" +
+				"}";
+
+		createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
+		claimJson = createClaimResult.getClaimJson();
+
+		Anoncreds.proverStoreClaim(wallet, claimJson).get();
+
+
+		//Issue GVT claim bu Issuer2
+		claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid2, schema, null, false).get();
+
+		claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", claimOffer3, claimDef, masterSecretName).get();
+
+		claim = "{" +
+			"           \"sex\":[\"male\",\"2142657394558967239210949258394838228692050081607692519917028371144233115103\"],\n" +
+			"           \"name\":[\"Alexander\",\"21332817548165488690172217217278169335\"],\n" +
+			"           \"height\":[\"170\",\"170\"],\n" +
+			"           \"age\":[\"28\",\"28\"]\n" +
+			"   }";
+
+		createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
+		claimJson = createClaimResult.getClaimJson();
 
 		Anoncreds.proverStoreClaim(wallet, claimJson).get();
 

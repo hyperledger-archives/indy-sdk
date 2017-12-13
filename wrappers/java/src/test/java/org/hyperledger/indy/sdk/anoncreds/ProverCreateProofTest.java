@@ -13,17 +13,17 @@ import static org.junit.Assert.assertNotNull;
 
 public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
+	String proofRequest = "{\"nonce\":\"123432421212\",\n" +
+			"                                \"name\":\"proof_req_1\",\n" +
+			"                                \"version\":\"0.1\",\n" +
+			"                                \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+			"                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
+			"                              }";
+
 	@Test
 	public void testProverCreateProofWorks() throws Exception {
 
 		initCommonWallet();
-
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"                                \"name\":\"proof_req_1\",\n" +
-				"                                \"version\":\"0.1\",\n" +
-				"                                \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
-				"                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
-				"                              }";
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -90,13 +90,6 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"                                \"name\":\"proof_req_1\",\n" +
-				"                                \"version\":\"0.1\",\n" +
-				"                                \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
-				"                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
-				"                              }";
-
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
@@ -126,13 +119,6 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"                                \"name\":\"proof_req_1\",\n" +
-				"                                \"version\":\"0.1\",\n" +
-				"                                \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
-				"                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
-				"                              }";
-
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
@@ -161,13 +147,6 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 		thrown.expectCause(isA(InvalidStructureException.class));
 
 		initCommonWallet();
-
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"                                \"name\":\"proof_req_1\",\n" +
-				"                                \"version\":\"0.1\",\n" +
-				"                                \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
-				"                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
-				"                              }";
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 

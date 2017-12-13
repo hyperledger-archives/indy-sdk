@@ -286,14 +286,16 @@ fn anoncreds_demo_works() {
 
     let schema_seq_no = 1;
     let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
+    let prover_did = "BzfFCYk";
+
     let schema = format!(r#"{{
-                            "seqNo":{},
-                            "data":{{
-                                "name":"gvt",
-                                "version":"1.0",
-                                "attr_names":["age","sex","height","name"]
-                            }}
-                         }}"#, schema_seq_no);
+                                    "seqNo":{},
+                                    "data":{{
+                                        "name":"gvt",
+                                        "version":"1.0",
+                                        "attr_names":["age","sex","height","name"]
+                                    }}
+                                 }}"#, schema_seq_no);
 
     // 3. Issuer create Claim Definition for Schema
     let err =
@@ -322,8 +324,7 @@ fn anoncreds_demo_works() {
     let err = prover_create_master_secret_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    let prover_did = "BzfFCYk";
-    let claim_offer_json = format!(r#"{{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_seq_no":{}}}"#, schema_seq_no);
+    let claim_offer_json = format!(r#"{{"issuer_did":"{}","schema_seq_no":{}}}"#, issuer_did, schema_seq_no);
 
     // 6. Prover create Claim Request
     let err =
@@ -340,11 +341,11 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     let claim_json = r#"{
-                       "sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"],
-                       "name":["Alex","1139481716457488690172217916278103335"],
-                       "height":["175","175"],
-                       "age":["28","28"]
-                     }"#;
+                               "sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"],
+                               "name":["Alex","1139481716457488690172217916278103335"],
+                               "height":["175","175"],
+                               "age":["28","28"]
+                             }"#;
 
     // 7. Issuer create Claim for Claim Request
     let err =
@@ -371,12 +372,23 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                   "name":"proof_req_1",
-                                   "version":"0.1",
-                                   "requested_attrs":{{"attr1_referent":{{"name":"name","restrictions":[{{"schema_seq_no":{}}}]}}}},
-                                   "requested_predicates":{{"predicate1_referent":{{"attr_name":"age","p_type":">=","value":18}}}}
-                                }}"#, schema_seq_no);
+                                               "nonce":"123432421212",
+                                               "name":"proof_req_1",
+                                               "version":"0.1",
+                                               "requested_attrs":{{
+                                                    "attr1_referent":{{
+                                                        "name":"name",
+                                                        "restrictions":[{{"schema_seq_no":{}, "issuer_did":"{}"}}]
+                                                    }}
+                                               }},
+                                               "requested_predicates":{{
+                                                   "predicate1_referent":{{
+                                                       "attr_name":"age",
+                                                       "p_type":">=",
+                                                       "value":18
+                                                   }}
+                                               }}
+                                           }}"#, schema_seq_no, issuer_did);
 
     // 8. Prover gets Claims for Proof Request
     let err =
@@ -395,10 +407,10 @@ fn anoncreds_demo_works() {
     let claim = claims_for_attr_1[0].clone();
 
     let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_referent":["{}",true]}},
-                                          "requested_predicates":{{"predicate1_referent":"{}"}}
-                                        }}"#, claim.referent, claim.referent);
+                                                    "self_attested_attributes":{{}},
+                                                    "requested_attrs":{{"attr1_referent":["{}",true]}},
+                                                    "requested_predicates":{{"predicate1_referent":"{}"}}
+                                                  }}"#, claim.referent, claim.referent);
 
     let schemas_json = format!(r#"{{"{}":{}}}"#, claim.referent, schema);
     let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.referent, claim_def_json);

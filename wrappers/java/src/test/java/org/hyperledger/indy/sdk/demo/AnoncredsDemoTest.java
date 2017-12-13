@@ -118,14 +118,18 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverStoreClaim(proverWallet, claimJson).get();
 
 		//11. Prover gets Claims for Proof Request
-		String proofRequestJson = "{\n" +
-				"                          \"nonce\":\"123432421212\",\n" +
-				"                          \"name\":\"proof_req_1\",\n" +
-				"                          \"version\":\"0.1\",\n" +
-				"                          \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]},\n" +
-				"                                                \"attr2_referent\":{\"name\":\"sex\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
-				"                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
-				"                  }";
+		String proofRequestJson = "{" +
+				"                           \"nonce\":\"123432421212\",\n" +
+				"                           \"name\":\"proof_req_1\",\n" +
+				"                           \"version\":\"0.1\",\n" +
+				"                           \"requested_attrs\":{" +
+				"                               \"attr1_referent\":{ \"name\":\"name\"},\n" +
+				"                               \"attr2_referent\":{ \"name\":\"sex\"}" +
+				"                           },\n" +
+				"                           \"requested_predicates\":{" +
+				"                               \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}" +
+				"                           }\n" +
+				"                   }";
 
 		String claimsForProofJson = Anoncreds.proverGetClaimsForProofReq(proverWallet, proofRequestJson).get();
 		assertNotNull(claimsForProofJson);
@@ -272,8 +276,8 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                          \"nonce\":\"123432421212\",\n" +
 				"                          \"name\":\"proof_req_1\",\n" +
 				"                          \"version\":\"0.1\",\n" +
-				"                          \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]},\n" +
-				"                                               \"attr2_referent\":{\"name\":\"status\",\"restrictions\":[{\"schema_seq_no\":2}]}},\n" +
+				"                          \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\"},\n" +
+				"                                               \"attr2_referent\":{\"name\":\"status\"}},\n" +
 				"                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}," +
 				"                                                    \"predicate2_referent\":{\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}}\n" +
 				"                  }";
