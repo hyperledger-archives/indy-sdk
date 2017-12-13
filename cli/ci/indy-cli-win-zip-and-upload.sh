@@ -18,7 +18,7 @@ number="$4"
 TEMP_ARCH_DIR=./indy-cli-zip
 mkdir ${TEMP_ARCH_DIR}
 cp ./target/release/*.dll ${TEMP_ARCH_DIR}/
-cp ./target/release/*.exe ${TEMP_ARCH_DIR}/indy-cli.exe
+cp ./target/release/indy-cli.exe ${TEMP_ARCH_DIR}/
 powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('${TEMP_ARCH_DIR}', 'indy-cli_$version.zip'); }"
 rm -rf ${TEMP_ARCH_DIR}
 
