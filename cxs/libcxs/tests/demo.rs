@@ -32,7 +32,7 @@ static CLAIM_DEF_SCHEMA_SEQ_NUM: u32 = 103;
 
 
 
-#[ignore]
+//#[ignore]
 #[test]
 fn test_demo(){
     let serialize_connection_fn = api::connection::cxs_connection_serialize;
@@ -91,7 +91,9 @@ fn test_demo(){
     println!("Connection Handle: {}", connection_handle);
     assert_eq!(err, 0);
     assert!(connection_handle > 0);
-
+    // Insert Claim Def ***************************************************************
+    println!("STORING CLAIM DEF");
+    insert_claim_def();
     // Connect ************************************************************************
     let (sender, receiver) = channel();
     let (command_handle, cb) = closure_to_connect_cb(Box::new(move|err|{sender.send(err).unwrap();}));
@@ -116,6 +118,8 @@ fn test_demo(){
     let target_claim_state = 1;
     let claim_state = wait_for_updated_state(claim_handle, target_claim_state, api::issuer_claim::cxs_issuer_claim_update_state);
     assert_eq!(claim_state, target_claim_state);
+
+
 
     // Send Claim Offer ***************************************************************
     println!("ABOUT TO SEND CLAIM OFFER");

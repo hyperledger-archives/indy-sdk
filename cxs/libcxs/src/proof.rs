@@ -19,8 +19,7 @@ use std::sync::mpsc::channel;
 use self::libc::c_char;
 use std::ffi::CString;
 use utils::timeout::TimeoutUtils;
-use utils::constants::{AGENCY_PROOFS_JSON,LIBINDY_PROOFS_JSON,LIBINDY_PROOFS_JSON_ESCAPED};
-
+use utils::constants::{AGENCY_PROOFS_JSON,LIBINDY_PROOFS_JSON,LIBINDY_PROOFS_JSON_ESCAPED, CLAIM_DEF_JSON};
 lazy_static! {
     static ref PROOF_MAP: Mutex<HashMap<u32, Box<Proof>>> = Default::default();
 }
@@ -107,11 +106,12 @@ impl Proof {
         });
 
 
+        let schema_seq_no = 1;
         let proof_req_json = format!(r#"{{
                                    "nonce":"123432421212",
                                    "name":"proof_req_1",
                                    "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
+                                   "requested_attrs":{{"attr_key_id":{{"schema_seq_no":{},"name":"name"}}}},
                                    "requested_predicates":{{}}
                                 }}"#, 1);
         let (command_handle, cb) = CallbackUtils::closure_to_verifier_verify_proof_cb(cb);
@@ -120,15 +120,24 @@ impl Proof {
 //        let proof_json = format!("{{\"{}\":{},\"{}\":{}}}","proofs",offer.get_proof_as_json().unwrap(), "aggregated_proof", offer.get_aggregated_proof()?);
 //        let proof_json = LIBINDY_PROOFS_JSON;
         let proof_json = AGENCY_PROOFS_JSON;
-        let schemas_json = "{}";
-        let claim_defs_jsons =  "{}";
+        let schema_1 = r#"{"claim::52088de7-7f01-443f-af42-7ea8f4bb2dc6":{"seqNo":1,"data":{"name":"gvt","version":"1.0","attr_names":["age","sex","height","name"]}}}"#;
+//        let schema = r#"{ "name": "gvt", "version": "1.0", "attr_names": {"age", "height", "sex", "name"} }"#;
+        let schemas_json = format!(r#"{{
+                            "seq_no":{},
+                            "data":{{
+                                "name":"gvt",
+                                "version":"1.0",
+                                "attr_names":["age","sex","height","name"]
+                            }}
+                         }}"#, 1);
+        let claim_defs_jsons =  CLAIM_DEF_JSON;
         let revoc_regs_json = "{}";
 
         unsafe {
             let indy_err = indy_verifier_verify_proof(command_handle,
                                                       CString::new(proof_req_json).unwrap().as_ptr(),
                                                       CString::new(proof_json).unwrap().as_ptr(),
-                                                      CString::new(schemas_json).unwrap().as_ptr(),
+                                                      CString::new(schema_1).unwrap().as_ptr(),
                                                       CString::new(claim_defs_jsons).unwrap().as_ptr(),
                                                       CString::new(revoc_regs_json).unwrap().as_ptr(),
                                                       cb);
@@ -702,6 +711,11 @@ fn test_open_pool() {
         assert_eq!(proof.validate_proof_indy(&offer).unwrap(), error::SUCCESS.code_num);
         println!("Proof requested attr: {:?}", proof.requested_attrs);
         println!("Proof Offer - proofs: {:?}", offer.get_proof());
+    }
+
+    #[test]
+    fn test_generate_proof(){
+
     }
 
 }
