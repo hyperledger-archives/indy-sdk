@@ -1243,7 +1243,7 @@ mod tests {
             let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
             recv_soc.bind("inproc://test").unwrap();
             send_soc.connect("inproc://test").unwrap();
-            ps.pools.borrow_mut().insert(pool_id, Pool {
+            ps.open_pools.borrow_mut().insert(pool_id, Pool {
                 name: String::new(),
                 id: pool_id,
                 worker: None,
@@ -1265,7 +1265,7 @@ mod tests {
             let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
             recv_soc.bind("inproc://test").unwrap();
             send_soc.connect("inproc://test").unwrap();
-            ps.pools.borrow_mut().insert(pool_id, Pool {
+            ps.open_pools.borrow_mut().insert(pool_id, Pool {
                 name: String::new(),
                 id: pool_id,
                 worker: None,
@@ -1309,7 +1309,7 @@ mod tests {
                 cmd_sock: recv_cmd_sock,
                 id: pool_id
             };
-            ps.pools.borrow_mut().insert(pool_id, pool);
+            ps.open_pools.borrow_mut().insert(pool_id, pool);
 
             fs::create_dir_all(path.as_path()).unwrap();
             assert!(path.exists());
