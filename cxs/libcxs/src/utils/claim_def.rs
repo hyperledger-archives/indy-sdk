@@ -29,30 +29,30 @@ extern {
 
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
-struct ClaimDef {
-    #[serde(rename = "ref")]
-    schema_seq_no: u32,
-    origin: String,
-    signature_type: String,
-    data: ClaimData,
-}
+//#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
+//struct ClaimDef {
+//    #[serde(rename = "ref")]
+//    schema_seq_no: u32,
+//    origin: String,
+//    signature_type: String,
+//    data: ClaimData,
+//}
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
-struct ClaimData {
-    primary: Option<PrimaryData>,
-    revocation: Option<String>,
-}
-
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
-struct PrimaryData {
-    n: String,
-    s: String,
-    rms: String,
-    r: String,
-    rctxt: String,
-    z: String,
-}
+//#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
+//struct ClaimData {
+//    primary: Option<PrimaryData>,
+//    revocation: Option<String>,
+//}
+//
+//#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
+//struct PrimaryData {
+//    n: String,
+//    s: String,
+//    rms: String,
+//    r: String,
+//    rctxt: String,
+//    z: String,
+//}
 
 pub fn get_claim_def_from_ledger(command_handle: u32,
                                  submitter_did: &str,
@@ -89,7 +89,8 @@ pub fn get_claim_def_from_ledger(command_handle: u32,
 fn send_request_to_ledger(command_handle: u32,
                           claim_def_req: &str) -> Result<String, u32> {
 
-    let pool_handle = pool::open_pool_ledger(&settings::CONFIG_POOL_NAME, None).unwrap();
+//    let pool_handle = pool::open_pool_ledger(&settings::CONFIG_POOL_NAME, None).unwrap();
+    let pool_handle = pool::get_pool_handle();
 
     let (sender, receiver) = channel();
     let cb = Box::new(move |err, valid | {
@@ -148,22 +149,19 @@ fn build_claim_def_request(command_handle: u32,
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use std::path::{Path};
     use super::*;
 
     fn sandbox_pool_setup() {
         let node_txns = vec![
-            r#"{"data":{"alias":"australia","client_ip":"52.64.96.160","client_port":"9702","node_ip":"52.64.96.160","node_port":"9701","services":["VALIDATOR"]},"dest":"UZH61eLH3JokEwjMWQoCMwB3PMD6zRBvG6NCv5yVwXz","identifier":"3U8HUen8WcgpbnEz1etnai","txnId":"c585f1decb986f7ff19b8d03deba346ab8a0494cc1e4d69ad9b8acb0dfbeab6f","type":"0"}"#,
-            r#"{"data":{"alias":"brazil","client_ip":"54.233.203.241","client_port":"9702","node_ip":"54.233.203.241","node_port":"9701","services":["VALIDATOR"]},"dest":"2MHGDD2XpRJohQzsXu4FAANcmdypfNdpcqRbqnhkQsCq","identifier":"G3knUCmDrWd1FJrRryuKTw","txnId":"5c8f52ca28966103ff0aad98160bc8e978c9ca0285a2043a521481d11ed17506","type":"0"}"#,
-            r#"{"data":{"alias":"canada","client_ip":"52.60.207.225","client_port":"9702","node_ip":"52.60.207.225","node_port":"9701","services":["VALIDATOR"]},"dest":"8NZ6tbcPN2NVvf2fVhZWqU11XModNudhbe15JSctCXab","identifier":"22QmMyTEAbaF4VfL7LameE","txnId":"408c7c5887a0f3905767754f424989b0089c14ac502d7f851d11b31ea2d1baa6","type":"0"}"#,
-            r#"{"data":{"alias":"england","client_ip":"52.56.191.9","client_port":"9702","node_ip":"52.56.191.9","node_port":"9701","services":["VALIDATOR"]},"dest":"DNuLANU7f1QvW1esN3Sv9Eap9j14QuLiPeYzf28Nub4W","identifier":"NYh3bcUeSsJJcxBE6TTmEr","txnId":"d56d0ff69b62792a00a361fbf6e02e2a634a7a8da1c3e49d59e71e0f19c27875","type":"0"}"#,
-            r#"{"data":{"alias":"korea","client_ip":"52.79.115.223","client_port":"9702","node_ip":"52.79.115.223","node_port":"9701","services":["VALIDATOR"]},"dest":"HCNuqUoXuK9GXGd2EULPaiMso2pJnxR6fCZpmRYbc7vM","identifier":"U38UHML5A1BQ1mYh7tYXeu","txnId":"76201e78aca720dbaf516d86d9342ad5b5d46f5badecf828eb9edfee8ab48a50","type":"0"}"#,
-            r#"{"data":{"alias":"singapore","client_ip":"13.228.62.7","client_port":"9702","node_ip":"13.228.62.7","node_port":"9701","services":["VALIDATOR"]},"dest":"Dh99uW8jSNRBiRQ4JEMpGmJYvzmF35E6ibnmAAf7tbk8","identifier":"HfXThVwhJB4o1Q1Fjr4yrC","txnId":"51e2a46721d104d9148d85b617833e7745fdbd6795cb0b502a5b6ea31d33378e","type":"0"}"#,
-            r#"{"data":{"alias":"virginia","client_ip":"34.225.215.131","client_port":"9702","node_ip":"34.225.215.131","node_port":"9701","services":["VALIDATOR"]},"dest":"EoGRm7eRADtHJRThMCrBXMUM2FpPRML19tNxDAG8YTP8","identifier":"SPdfHq6rGcySFVjDX4iyCo","txnId":"0a4992ea442b53e3dca861deac09a8d4987004a8483079b12861080ea4aa1b52","type":"0"}"#];
+            r#"{"data":{"alias":"Node1","blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba","client_ip":"34.212.206.9","client_port":9702,"node_ip":"34.212.206.9","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv","identifier":"Th7MpTaRZVRYnPiabds81Y","txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62","type":"0"}"#,
+            r#"{"data":{"alias":"Node2","blskey":"37rAPpXVoxzKhz7d9gkUe52XuXryuLXoM6P6LbWDB7LSbG62Lsb33sfG7zqS8TK1MXwuCHj1FKNzVpsnafmqLG1vXN88rt38mNFs9TENzm4QHdBzsvCuoBnPH7rpYYDo9DZNJePaDvRvqJKByCabubJz3XXKbEeshzpz4Ma5QYpJqjk","client_ip":"34.212.206.9","client_port":9704,"node_ip":"34.212.206.9","node_port":9703,"services":["VALIDATOR"]},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb","identifier":"EbP4aYNeTHL6q385GuVpRV","txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc","type":"0"}"#,
+            r#"{"data":{"alias":"Node3","blskey":"3WFpdbg7C5cnLYZwFZevJqhubkFALBfCBBok15GdrKMUhUjGsk3jV6QKj6MZgEubF7oqCafxNdkm7eswgA4sdKTRc82tLGzZBd6vNqU8dupzup6uYUf32KTHTPQbuUM8Yk4QFXjEf2Usu2TJcNkdgpyeUSX42u5LqdDDpNSWUK5deC5","client_ip":"34.212.206.9","client_port":9706,"node_ip":"34.212.206.9","node_port":9705,"services":["VALIDATOR"]},"dest":"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya","identifier":"4cU41vWW82ArfxJxHkzXPG","txnId":"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4","type":"0"}"#,
+            r#"{"data":{"alias":"Node4","blskey":"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw","client_ip":"34.212.206.9","client_port":9708,"node_ip":"34.212.206.9","node_port":9707,"services":["VALIDATOR"]},"dest":"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA","identifier":"TWwCRQRZ2ZHMJFn9TzLp7W","txnId":"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008","type":"0"}"#];
         let pool_name = settings::CONFIG_POOL_NAME;
         let config_string = format!("{{\"genesis_txn\":\"/tmp/{}.txn\"}}", &pool_name);
-        let nodes_count = 7;
+        let nodes_count = 4;
         let pool_name = settings::CONFIG_POOL_NAME;
         let txn_file_data = node_txns[0..(nodes_count as usize)].join("\n");
         let txn_file_path = "/tmp/pool_name.txn";
@@ -173,7 +171,7 @@ mod tests {
 
     }
 
-    fn open_sandbox_pool() -> u32 {
+    pub fn open_sandbox_pool() -> u32 {
         let pool_name = settings::CONFIG_POOL_NAME;
         sandbox_pool_setup();
         let config = r#"{"refresh_on_open": true}"#;
@@ -206,7 +204,7 @@ mod tests {
     #[test]
     fn test_get_claim_def_by_send_request_to_ledger() {
         settings::set_defaults();
-        sandbox_pool_setup();
+        open_sandbox_pool();
         assert!(init_wallet(&settings::CONFIG_WALLET_NAME).unwrap() > 0);
         let wallet_handle = get_wallet_handle();
         let claim_def_req = build_claim_def_request(0,
@@ -238,7 +236,7 @@ mod tests {
     fn test_get_claim_def() {
         let claim_def_ex = "{\"data\":null,\"identifier\":\"GGBDg1j8bsKmr4h5T9XqYf\",\"origin\":\"4fUDR9R7fjwELRvH9JT6HH\",\"ref\":15,\"reqId\":1513286218510271542,\"seqNo\":null,\"signature_type\":\"CL\",\"type\":\"108\"}";
         settings::set_defaults();
-        sandbox_pool_setup();
+        open_sandbox_pool();
         assert!(init_wallet(&settings::CONFIG_WALLET_NAME).unwrap() > 0);
         let wallet_handle = get_wallet_handle();
         let claim_def = get_claim_def_from_ledger(0,
@@ -247,7 +245,9 @@ mod tests {
                                                   "CL",
                                                   "4fUDR9R7fjwELRvH9JT6HH").unwrap();
 
-        assert!(&claim_def.contains("\"identifier\":\"GGBDg1j8bsKmr4h5T9XqYf\",\"origin\":\"4fUDR9R7fjwELRvH9JT6HH\",\"ref\":15"));
+        assert!(&claim_def.contains("\"ref\":15"));
+        assert!(&claim_def.contains("\"seqNo\":20,\"signature_type\":\"CL\""));
+        assert!(&claim_def.contains("\"type\":\"108\""));
     }
 
 

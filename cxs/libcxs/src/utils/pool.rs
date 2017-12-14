@@ -13,6 +13,7 @@ use std::sync::mpsc::channel;
 use utils::error;
 use utils::json::JsonEncodable;
 
+pub static mut POOL_HANDLE: i32 = 0;
 
 #[derive(Serialize, Deserialize)]
 struct PoolConfig {
@@ -179,6 +180,9 @@ pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<u32, u3
             return Err(error::UNKNOWN_ERROR.code_num);
         }
 
+        unsafe {
+            POOL_HANDLE = pool_handle;
+        }
         Ok(pool_handle as u32)
     }
 }
@@ -240,6 +244,8 @@ pub fn delete(pool_name: &str) -> Result<(), u32> {
     }
     Ok(())
 }
+
+pub fn get_pool_handle() -> i32 { unsafe { POOL_HANDLE } }
 
 #[cfg(test)]
 pub mod tests {

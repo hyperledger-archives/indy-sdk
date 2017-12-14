@@ -18,7 +18,7 @@ use std::sync::mpsc::channel;
 use self::libc::c_char;
 use std::ffi::CString;
 use utils::timeout::TimeoutUtils;
-use utils::constants::{AGENCY_PROOFS_JSON, CLAIM_DEF_JSON};
+use utils::claim_def;
 
 lazy_static! {
     static ref PROOF_MAP: Mutex<HashMap<u32, Box<Proof>>> = Default::default();
@@ -118,6 +118,7 @@ impl Proof {
                                                       CString::new(revoc_regs_json).unwrap().as_ptr(),
                                                       cb);
             if indy_err != 0 {
+                println!("\n\nIndy_Err: {:?}", indy_err);
                 return Err(self.set_invalid_proof_state(indy_err))
             }
         }
@@ -125,6 +126,7 @@ impl Proof {
         let (err, valid) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
 
         if err != 0 || !valid {
+            println!("\n\nErr: {:?}", err);
             return Err(self.set_invalid_proof_state(err))
         }
         info!("Indy validated Proof Offer: {:?}", self.handle);
@@ -643,14 +645,21 @@ mod tests {
     #[test]
     fn test_proof_offer_is_valid() {
         ::utils::logger::LoggerUtils::init();
+        settings::set_defaults();
+        ::utils::claim_def::tests::open_sandbox_pool();
         let proof_req_json = PROOF_REQ_JSON;
         let proof_json = PROOF_JSON;
         let schemas_json = SCHEMAS_JSON;
-        let claim_defs_json = CLAIM_DEFS_JSON;
+//        let claim_defs_json = CLAIM_DEFS_JSON;
+        let claim_defs_json = claim_def::get_claim_def_from_ledger(0,
+                                                                   "GGBDg1j8bsKmr4h5T9XqYf",
+                                                                   15,
+                                                                   "CL",
+                                                                   "4fUDR9R7fjwELRvH9JT6HH").unwrap();
         let revoc_regs_json = REVOC_REGS_JSON;
         let mut proof: Proof = create_default_proof();
         let offer: ProofOffer = create_default_proof_offer();
         assert!(proof.validate_proof_against_request(&offer).is_ok());
-        assert_eq!(proof.validate_proof_indy(proof_req_json, proof_json, schemas_json, claim_defs_json, revoc_regs_json).unwrap(), error::SUCCESS.code_num);
+        assert_eq!(proof.validate_proof_indy(proof_req_json, proof_json, schemas_json, &claim_defs_json, revoc_regs_json).unwrap(), error::SUCCESS.code_num);
     }
 }
