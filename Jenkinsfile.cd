@@ -269,6 +269,9 @@ def windowsTesting() {
                             "INDY_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "RUST_BACKTRACE=1"
                     ]) {
+                        bat "cargo build --release"
+
+                        echo "Windows Indy Cli Test: Build tests"
                         bat "cargo test --release --no-run"
 
                         echo "Windows Indy Cli Test: Run tests"
@@ -281,7 +284,7 @@ def windowsTesting() {
                         }
                     }
 
-                    stash includes: 'target/release/*.exe,target/release/*.dll', name: 'IndyCliWindowsBuildResult'
+                    stash includes: 'target/release/indy-cli.exe,target/release/*.dll', name: 'IndyCliWindowsBuildResult'
                 }
 
                 //TODO wrappers testing

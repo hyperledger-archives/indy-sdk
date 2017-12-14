@@ -15,12 +15,12 @@ number="$4"
 [ -z $type ] && exit 3
 [ -z $number ] && exit 4
 
-mkdir indy-cli-zip
-mkdir indy-cli-zip/lib
-cp ./target/release/*.dll ./indy-cli-zip/lib/
-cp ./target/release/*.exe ./indy-cli-zip/lib/
-powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('indy-zip-cli', 'indy-cli_$version.zip'); }"
-rm -rf ./indy-cli-zip
+TEMP_ARCH_DIR=./indy-cli-zip
+mkdir ${TEMP_ARCH_DIR}
+cp ./target/release/*.dll ${TEMP_ARCH_DIR}/
+cp ./target/release/indy-cli.exe ${TEMP_ARCH_DIR}/
+powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('${TEMP_ARCH_DIR}', 'indy-cli_$version.zip'); }"
+rm -rf ${TEMP_ARCH_DIR}
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
 mkdir /var/repository/repos/windows/indy-cli
