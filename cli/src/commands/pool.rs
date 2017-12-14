@@ -27,7 +27,7 @@ pub mod create_command {
 
         let name = get_str_param("name", params).map_err(error_err!())?;
         let gen_txn_file = get_opt_str_param("gen_txn_file", params).map_err(error_err!())?
-            .unwrap_or("pool_transactions_genesis");
+            .unwrap_or("docker_pool_transactions_genesis");
 
         let config: String = json!({ "genesis_txn": gen_txn_file }).to_string();
 
