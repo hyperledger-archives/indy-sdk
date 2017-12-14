@@ -524,11 +524,12 @@ pub mod tests {
     use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
     use commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
     use commands::did::tests::{new_did, use_did, SEED_TRUSTEE, DID_TRUSTEE};
+    use libindy::ledger::Ledger;
 
     pub const MY1_SEED: &'static str = "00000000000000000000000000000My1";
     pub const DID_MY1: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
     pub const VERKEY_MY1: &'static str = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
-
+    
     mod nym {
         use super::*;
 
@@ -548,6 +549,7 @@ pub mod tests {
                 params.insert("verkey", VERKEY_MY1.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            _ensure_nym_added(&ctx);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -599,6 +601,7 @@ pub mod tests {
                 params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            _ensure_attrib_added(&ctx);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -658,6 +661,7 @@ pub mod tests {
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            _ensure_schema_added(&ctx);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -691,6 +695,7 @@ pub mod tests {
                 params.insert("version", "1.0".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            _ensure_schema_added(&ctx);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -716,6 +721,7 @@ pub mod tests {
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            _ensure_claim_def_added(&ctx);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -877,5 +883,36 @@ pub mod tests {
             params.insert("role", role.to_string());
         }
         cmd.execute(&ctx, &params).unwrap();
+    }
+
+    fn _ensure_nym_added(ctx: &CommandContext) {
+        let request = Ledger::build_get_nym_request(DID_TRUSTEE, DID_MY1).unwrap();
+        let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
+        let response = Ledger::submit_request(pool_handle, &request).unwrap();
+        serde_json::from_str::<Reply<String>>(&response)
+            .and_then(|response| serde_json::from_str::<NymData>(&response.result.data)).unwrap();
+    }
+
+    fn _ensure_attrib_added(ctx: &CommandContext) {
+        let request = Ledger::build_get_attrib_request(DID_MY1, DID_MY1, "endpoint").unwrap();
+        let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
+        let response = Ledger::submit_request(pool_handle, &request).unwrap();
+        serde_json::from_str::<Reply<String>>(&response)
+            .and_then(|response| serde_json::from_str::<AttribData>(&response.result.data)).unwrap();
+    }
+
+    fn _ensure_schema_added(ctx: &CommandContext) {
+        let data = r#"{"name":"gvt", "version":"1.0"}"#;
+        let request = Ledger::build_get_schema_request(DID_TRUSTEE, DID_TRUSTEE, data).unwrap();
+        let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
+        let response = Ledger::submit_request(pool_handle, &request).unwrap();
+        serde_json::from_str::<Reply<SchemaData>>(&response).unwrap();
+    }
+
+    fn _ensure_claim_def_added(ctx: &CommandContext) {
+        let request = Ledger::build_get_claim_def_txn(DID_TRUSTEE, 1, "CL", DID_TRUSTEE).unwrap();
+        let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
+        let response = Ledger::submit_request(pool_handle, &request).unwrap();
+        serde_json::from_str::<Reply<ClaimDefData>>(&response).unwrap();
     }
 }
