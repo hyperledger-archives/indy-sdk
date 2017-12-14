@@ -192,3 +192,152 @@ pub mod list_command {
     }
 }
 
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use libindy::did::Did;
+    use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
+    use commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
+    use commands::ledger::tests::send_nym;
+
+    pub const SEED_TRUSTEE: &'static str = "000000000000000000000000Trustee1";
+    pub const DID_TRUSTEE: &'static str = "V4SGRU86Z58d6TV7PBUe6f";
+    pub const VERKEY_TRUSTEE: &'static str = "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL";
+
+    mod did_new {
+        use super::*;
+
+        #[test]
+        pub fn new_works() {
+            let ctx = CommandContext::new();
+
+            let wallet_handle = create_and_open_wallet(&ctx);
+            {
+                let cmd = new_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let dids = get_dids(wallet_handle);
+            assert_eq!(1, dids.len());
+
+            close_and_delete_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn new_works_for_seed() {
+            let ctx = CommandContext::new();
+
+            let wallet_handle = create_and_open_wallet(&ctx);
+            {
+                let cmd = new_command::new();
+                let mut params = CommandParams::new();
+                params.insert("seed", SEED_TRUSTEE.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let dids = get_dids(wallet_handle);
+            assert_eq!(1, dids.len());
+            assert_eq!(dids[0]["did"].as_str().unwrap(), DID_TRUSTEE);
+            assert_eq!(dids[0]["verkey"].as_str().unwrap(), VERKEY_TRUSTEE);
+
+            close_and_delete_wallet(&ctx);
+        }
+    }
+
+    mod did_use {
+        use super::*;
+
+        #[test]
+        pub fn use_works() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            {
+                let cmd = use_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_TRUSTEE.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            assert_eq!(ensure_active_did(&ctx).unwrap(), DID_TRUSTEE);
+
+            close_and_delete_wallet(&ctx);
+        }
+    }
+
+    mod did_list {
+        use super::*;
+
+        #[test]
+        pub fn list_works() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            {
+                let cmd = list_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+        }
+    }
+
+    mod did_rotate_key {
+        use super::*;
+
+        #[test]
+        pub fn list_works() {
+            let ctx = CommandContext::new();
+
+            let seed_my2: &'static str = "00000000000000000000000000000My2";
+            let did_my2: &'static str = "2PRyVHmkXQnQzJQKxHxnXC";
+            let verkey_my2: &'static str = "kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn";
+
+            let wallet_handle = create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            new_did(&ctx, seed_my2);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym(&ctx, did_my2, verkey_my2, None);
+            use_did(&ctx, did_my2);
+
+            let dids = get_dids(wallet_handle);
+            assert_eq!(dids[0]["verkey"].as_str().unwrap(), verkey_my2);
+            {
+                let cmd = rotate_key_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let dids = get_dids(wallet_handle);
+            assert_ne!(dids[0]["verkey"].as_str().unwrap(), verkey_my2);
+
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+    }
+
+    fn get_dids(wallet_handle: i32) -> Vec<serde_json::Value> {
+        let dids = Did::list_dids_with_meta(wallet_handle).unwrap();
+        serde_json::from_str(&dids).unwrap()
+    }
+
+    pub fn new_did(ctx: &CommandContext, seed: &str) {
+        {
+            let cmd = new_command::new();
+            let mut params = CommandParams::new();
+            params.insert("seed", seed.to_string());
+            cmd.execute(&ctx, &params).unwrap();
+        }
+    }
+
+    pub fn use_did(ctx: &CommandContext, did: &str) {
+        {
+            let cmd = use_command::new();
+            let mut params = CommandParams::new();
+            params.insert("did", did.to_string());
+            cmd.execute(&ctx, &params).unwrap();
+        }
+    }
+}

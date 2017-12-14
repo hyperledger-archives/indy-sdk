@@ -127,7 +127,7 @@ pub mod list_command {
                 } else {
                     println_succ!("There are no pool");
                 }
-                if let Some((_,cur_pool)) = get_connected_pool(ctx) {
+                if let Some((_, cur_pool)) = get_connected_pool(ctx) {
                     println_succ!("Current pool \"{}\"", cur_pool);
                 }
 
@@ -197,5 +197,190 @@ pub mod delete_command {
 
         trace!("execute << {:?}", res);
         res
+    }
+}
+
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use libindy::pool::Pool;
+
+    const POOL: &'static str = "pool";
+
+    mod create {
+        use super::*;
+
+        #[test]
+        pub fn create_works() {
+            let ctx = CommandContext::new();
+
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", POOL.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            let pools = get_pools();
+            assert_eq!(1, pools.len());
+            assert_eq!(pools[0]["pool"].as_str().unwrap(), POOL);
+
+            delete_pool(&ctx)
+        }
+    }
+
+    mod connect {
+        use super::*;
+
+        #[test]
+        pub fn connect_works() {
+            let ctx = CommandContext::new();
+
+            create_pool(&ctx);
+            {
+                let cmd = connect_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", POOL.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            ensure_connected_pool_handle(&ctx).unwrap();
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn connect_works_for_not_created() {
+            let cmd = connect_command::new();
+            let mut params = CommandParams::new();
+            params.insert("name", POOL.to_string());
+            cmd.execute(&CommandContext::new(), &params).unwrap_err();
+        }
+    }
+
+    mod list {
+        use super::*;
+
+        #[test]
+        pub fn list_works() {
+            let ctx = CommandContext::new();
+
+            create_pool(&ctx);
+            {
+                let cmd = list_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            delete_pool(&ctx);
+        }
+    }
+
+    mod disconnect {
+        use super::*;
+
+        #[test]
+        pub fn disconnect_works() {
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            {
+                let cmd = disconnect_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            ensure_connected_pool_handle(&ctx).unwrap_err();
+            delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn disconnect_works_for_not_opened() {
+            let ctx = CommandContext::new();
+
+            create_pool(&ctx);
+            {
+                let cmd = disconnect_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            delete_pool(&ctx);
+        }
+    }
+
+    mod delete {
+        use super::*;
+
+        #[test]
+        pub fn delete_works() {
+            let ctx = CommandContext::new();
+
+            create_pool(&ctx);
+            {
+                let cmd = delete_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", POOL.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let pools = get_pools();
+            assert_eq!(0, pools.len());
+        }
+
+        #[test]
+        pub fn delete_works_for_not_created() {
+            let cmd = delete_command::new();
+            let mut params = CommandParams::new();
+            params.insert("name", POOL.to_string());
+            cmd.execute(&CommandContext::new(), &params).unwrap_err();
+        }
+    }
+
+    pub fn create_pool(ctx: &CommandContext) {
+        let cmd = create_command::new();
+        let mut params = CommandParams::new();
+        params.insert("name", POOL.to_string());
+        cmd.execute(&ctx, &params).unwrap();
+    }
+
+
+    pub fn create_and_connect_pool(ctx: &CommandContext) {
+        {
+            let cmd = create_command::new();
+            let mut params = CommandParams::new();
+            params.insert("name", POOL.to_string());
+            cmd.execute(&ctx, &params).unwrap();
+        }
+
+        {
+            let cmd = connect_command::new();
+            let mut params = CommandParams::new();
+            params.insert("name", POOL.to_string());
+            cmd.execute(&ctx, &params).unwrap();
+        }
+    }
+
+    pub fn delete_pool(ctx: &CommandContext) {
+        let cmd = delete_command::new();
+        let mut params = CommandParams::new();
+        params.insert("name", POOL.to_string());
+        cmd.execute(&ctx, &params).unwrap();
+    }
+
+    pub fn disconnect_and_delete_pool(ctx: &CommandContext) {
+        {
+            let cmd = disconnect_command::new();
+            let params = CommandParams::new();
+            cmd.execute(&ctx, &params).unwrap();
+        }
+
+        {
+            let cmd = delete_command::new();
+            let mut params = CommandParams::new();
+            params.insert("name", POOL.to_string());
+            cmd.execute(&ctx, &params).unwrap();
+        }
+    }
+
+
+    fn get_pools() -> Vec<serde_json::Value> {
+        let pools = Pool::list().unwrap();
+        serde_json::from_str(&pools).unwrap()
     }
 }
