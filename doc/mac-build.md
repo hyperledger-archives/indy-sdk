@@ -20,7 +20,7 @@
    ```
 4. Setup OPENSSL_DIR variable: path to installed openssl library
    ```
-   export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2l
+   export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2n   # this path may change according to version
    ```
 5. Checkout and build the library:
    ```
