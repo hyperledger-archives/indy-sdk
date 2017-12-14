@@ -31,6 +31,13 @@ pub static INVALID_MESSAGES: Error = Error{code_num:1020, message:"Error Retriev
 pub static INVALID_ATTRIBUTES_STRUCTURE: Error = Error{code_num:1021, message: "Attributes provided to Claim Offer are not correct, possibly malformed"};
 pub static BIG_NUMBER_ERROR: Error = Error{code_num: 1022, message: "Could not encode string to a big integer."};
 pub static INVALID_PROOF_OFFER: Error = Error{code_num: 1023, message: "Proof offer had invalid format"};
+pub static INVALID_GENESIS_TXN_PATH: Error = Error{code_num: 1024, message: "Must have valid genesis txn file path"};
+pub static CREATE_POOL_CONFIG_PARAMETERS: Error = Error{code_num: 1025, message: "Parameters for creating pool config are incorrect."};
+pub static CREATE_POOL_CONFIG: Error = Error{code_num: 1026, message: "Formattting for Pool Config are incorrect."};
+pub static INVALID_PROOF_CLAIM_DATA: Error = Error{code_num: 1027, message: "The Proof received does not have valid claims listed."};
+pub static INDY_SUBMIT_REQUEST_ERR: Error = Error{code_num: 1028, message: "Call to indy submit request failed"};
+pub static BUILD_CLAIM_DEF_REQ_ERR: Error = Error{code_num: 1029, message: "Call to indy claim def request failed"};
+
 
 lazy_static! {
     static ref ERROR_MESSAGES: HashMap<u32, &'static str> = {
@@ -59,6 +66,12 @@ lazy_static! {
         insert_message(&mut m, &INVALID_CLAIM_REQUEST);
         insert_message(&mut m, &BIG_NUMBER_ERROR);
         insert_message(&mut m, &INVALID_PROOF_OFFER);
+        insert_message(&mut m, &INVALID_GENESIS_TXN_PATH);
+        insert_message(&mut m, &CREATE_POOL_CONFIG);
+        insert_message(&mut m, &INVALID_PROOF_CLAIM_DATA);
+        insert_message(&mut m, &CREATE_POOL_CONFIG_PARAMETERS);
+        insert_message(&mut m, &INDY_SUBMIT_REQUEST_ERR);
+        insert_message(&mut m, &BUILD_CLAIM_DEF_REQ_ERR);
         m
     };
 }
@@ -171,13 +184,22 @@ mod tests {
     fn test_claim_request_incorrect_json_format_error(){
         assert_eq!(error_message(&INVALID_CLAIM_REQUEST.code_num), INVALID_CLAIM_REQUEST.message);
     }
-    
-    fn test_big_number(){
+
+    #[test]
+    fn test_error_messages(){
+        assert_eq!(error_message(&INVALID_PROOF_OFFER.code_num), INVALID_PROOF_OFFER.message);
+        assert_eq!(error_message(&INVALID_GENESIS_TXN_PATH.code_num), INVALID_GENESIS_TXN_PATH.message);
+        assert_eq!(error_message(&CREATE_POOL_CONFIG_PARAMETERS.code_num), CREATE_POOL_CONFIG_PARAMETERS.message);
+        assert_eq!(error_message(&CREATE_POOL_CONFIG.code_num), CREATE_POOL_CONFIG.message);
         assert_eq!(error_message(&BIG_NUMBER_ERROR.code_num), BIG_NUMBER_ERROR.message);
+        assert_eq!(error_message(&INVALID_PROOF_CLAIM_DATA.code_num), INVALID_PROOF_CLAIM_DATA.message);
+        assert_eq!(error_message(&INDY_SUBMIT_REQUEST_ERR.code_num), INDY_SUBMIT_REQUEST_ERR.message);
+        assert_eq!(error_message(&BUILD_CLAIM_DEF_REQ_ERR.code_num), BUILD_CLAIM_DEF_REQ_ERR.message);
     }
 
     #[test]
     fn test_proof_offer_incorrect_json_format_error(){
         assert_eq!(error_message(&INVALID_PROOF_OFFER.code_num), INVALID_PROOF_OFFER.message);
     }
+
 }
