@@ -186,11 +186,23 @@ mod tests {
     }
 
     #[test]
-    fn test_error_messages(){
+    fn test_error_invalid_proof_offer() {
         assert_eq!(error_message(&INVALID_PROOF_OFFER.code_num), INVALID_PROOF_OFFER.message);
+    }
+    #[test]
+    fn test_error_genesis() {
         assert_eq!(error_message(&INVALID_GENESIS_TXN_PATH.code_num), INVALID_GENESIS_TXN_PATH.message);
+    }
+    #[test]
+    fn test_error_config() {
         assert_eq!(error_message(&CREATE_POOL_CONFIG_PARAMETERS.code_num), CREATE_POOL_CONFIG_PARAMETERS.message);
+    }
+    #[test]
+    fn test_error_pool_config() {
         assert_eq!(error_message(&CREATE_POOL_CONFIG.code_num), CREATE_POOL_CONFIG.message);
+    }
+    #[test]
+    fn test_error_big_number() {
         assert_eq!(error_message(&BIG_NUMBER_ERROR.code_num), BIG_NUMBER_ERROR.message);
         assert_eq!(error_message(&INVALID_PROOF_CLAIM_DATA.code_num), INVALID_PROOF_CLAIM_DATA.message);
         assert_eq!(error_message(&INDY_SUBMIT_REQUEST_ERR.code_num), INDY_SUBMIT_REQUEST_ERR.message);
@@ -202,4 +214,8 @@ mod tests {
         assert_eq!(error_message(&INVALID_PROOF_OFFER.code_num), INVALID_PROOF_OFFER.message);
     }
 
+    #[test]
+    fn test_error_claim_data() {
+        assert_eq!(error_message(&INVALID_PROOF_CLAIM_DATA.code_num), INVALID_PROOF_CLAIM_DATA.message);
+    }
 }

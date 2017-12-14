@@ -32,7 +32,7 @@ static CLAIM_DEF_SCHEMA_SEQ_NUM: u32 = 103;
 
 
 
-//#[ignore]
+#[ignore]
 #[test]
 fn test_demo(){
     let serialize_connection_fn = api::connection::cxs_connection_serialize;
