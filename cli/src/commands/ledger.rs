@@ -7,7 +7,7 @@ use libindy::ledger::Ledger;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::fmt;
 
 pub mod group {
@@ -289,7 +289,7 @@ pub mod claim_def_command {
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
         let res = match res {
-            Ok(_) => Ok(println_succ!("Claim def {{\"origin\":\"{}\", \"schema_seq_no\":{}, \"signature_type\":{}}} has been added to Ledger",
+            Ok(_) => Ok(println_succ!("Claim definition {{\"origin\":\"{}\", \"schema_seq_no\":{}, \"signature_type\":{}}} has been added to Ledger",
                                       submitter_did, xref, signature_type)),
             Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
         };
@@ -328,7 +328,7 @@ pub mod get_claim_def_command {
         }?;
 
         let res = match serde_json::from_str::<Reply<ClaimDefData>>(&response) {
-            Ok(claim_def) => Ok(println_succ!("Following ClaimDef has been received: \"{:?}\"", claim_def.result.data)),
+            Ok(claim_def) => Ok(println_succ!("Following Claim Definition has been received: {}", claim_def.result.data)),
             Err(_led) => Err(println_err!("Claim definition not found"))
         };
 
@@ -518,6 +518,38 @@ pub struct ClaimDefData {
     pub revocation: Option<serde_json::Value>,
 }
 
+impl fmt::Display for ClaimDefData {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, r#"Primary key: {{"n":"{}","s":"{}","rms":"{}","rctxt":"{}","z":"{}","r":{:?}}}"#,
+               self.primary["n"].as_str().unwrap_or(""),
+               self.primary["s"].as_str().unwrap_or(""),
+               self.primary["rms"].as_str().unwrap_or(""),
+               self.primary["rctxt"].as_str().unwrap_or(""),
+               self.primary["z"].as_str().unwrap_or(""),
+               self.primary["r"].as_object().unwrap().iter()
+                   .map(|(key, value)| (key.clone(), value.as_str().unwrap_or("").to_string())).collect::<HashMap<String, String>>())?;
+
+        if let Some(ref revocation) = self.revocation {
+            if revocation.as_object().unwrap().len() > 0 {
+                write!(f, "\n")?;
+                write!(f, r#"Revocation key: {{"g":"{}","g_dash":"{}","h":"{}","h0":"{}","h1":"{}","h2":"{}","htilde":"{}","h_cap":"{}","u":"{}","pk":"{}","y":"{}"}}"#,
+                       revocation["g"].as_str().unwrap_or(""),
+                       revocation["g_dash"].as_str().unwrap_or(""),
+                       revocation["h"].as_str().unwrap_or(""),
+                       revocation["h0"].as_str().unwrap_or(""),
+                       revocation["h1"].as_str().unwrap_or(""),
+                       revocation["h2"].as_str().unwrap_or(""),
+                       revocation["htilde"].as_str().unwrap_or(""),
+                       revocation["h_cap"].as_str().unwrap_or(""),
+                       revocation["u"].as_str().unwrap_or(""),
+                       revocation["pk"].as_str().unwrap_or(""),
+                       revocation["y"].as_str().unwrap_or(""))?;
+            }
+        }
+        write!(f, "")
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -529,7 +561,7 @@ pub mod tests {
     pub const MY1_SEED: &'static str = "00000000000000000000000000000My1";
     pub const DID_MY1: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
     pub const VERKEY_MY1: &'static str = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
-    
+
     mod nym {
         use super::*;
 
