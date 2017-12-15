@@ -24,6 +24,10 @@ extern "C" {
                                                  indy_handle_t handle,
                                                  void          (*cb)(indy_handle_t xcommand_handle, indy_error_t err)
                                                  );
+
+    extern indy_error_t indy_list_pools(indy_handle_t command_handle,
+                                        void          (*fn)(indy_handle_t xcommand_handle, indy_error_t err, const char *const pools)
+                                        );
     
     extern indy_error_t indy_close_pool_ledger(indy_handle_t command_hangle,
                                                indy_handle_t handle,

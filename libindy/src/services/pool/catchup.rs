@@ -209,7 +209,7 @@ impl CatchupHandler {
     }
 
     fn catchup_step(&mut self, catchup: CatchupRep, node_idx: usize) -> Result<CatchupStepResult, PoolError> {
-        let mut process = self.pending_catchup.as_mut()
+        let process = self.pending_catchup.as_mut()
             .ok_or(CommonError::InvalidState("Process non-existing CatchUp".to_string()))?;
         process.pending_reps.push((catchup, node_idx));
 

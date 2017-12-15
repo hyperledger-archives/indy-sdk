@@ -38,7 +38,7 @@ namespace Hyperledger.Indy.Samples
                             "   \"data\": {\n" +
                             "       \"name\":\"gvt\",\n" +
                             "       \"version\":\"1.0\",\n" +
-                            "       \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+                            "       \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
                             "   }\n" +
                             "}";
                     var issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";

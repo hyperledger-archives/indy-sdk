@@ -15,6 +15,7 @@ namespace Hyperledger.Indy.Samples
 
         static async Task ExecuteDemos()
         {
+            await AgentDemo.Execute();
             await AnonCredsDemo.Execute();
             await LedgerDemo.Execute();
             await SignusDemo.Execute();

@@ -121,6 +121,25 @@ pub extern fn indy_refresh_pool_ledger(command_handle: i32,
     result_to_err_code!(result)
 }
 
+/// Lists names of created pool ledgers
+#[no_mangle]
+pub extern fn indy_list_pools(command_handle: i32,
+                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                   pools: *const c_char)>) -> ErrorCode {
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam2);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Pool(PoolCommand::List(
+            Box::new(move |result| {
+                let (err, pools) = result_to_err_code_1!(result, String::new());
+                let pools = CStringUtils::string_to_cstring(pools);
+                cb(command_handle, err, pools.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
 /// Closes opened pool ledger, opened nodes connections and frees allocated resources.
 ///
 /// #Params

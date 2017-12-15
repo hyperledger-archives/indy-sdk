@@ -6,15 +6,10 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_build_node_request_works_for_missed_field_in_data_json():
+async def test_build_node_request_works_for_missed_fields_in_data_json():
     identifier = "identifier"
     destination = "destination"
-    data = {
-        "node_ip": "ip",
-        "node_port": 1,
-        "client_ip": "ip",
-        "client_port": 1
-    }
+    data = { }
 
     with pytest.raises(IndyError) as e:
         await ledger.build_node_request(identifier, destination, json.dumps(data))
