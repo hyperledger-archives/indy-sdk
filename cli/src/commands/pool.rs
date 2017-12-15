@@ -26,8 +26,7 @@ pub mod create_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let name = get_str_param("name", params).map_err(error_err!())?;
-        let gen_txn_file = get_opt_str_param("gen_txn_file", params).map_err(error_err!())?
-            .unwrap_or("docker_pool_transactions_genesis");
+        let gen_txn_file = get_str_param("gen_txn_file", params).map_err(error_err!())?;
 
         let config: String = json!({ "genesis_txn": gen_txn_file }).to_string();
 
@@ -219,6 +218,7 @@ pub mod tests {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", POOL.to_string());
+                params.insert("gen_txn_file", "docker_pool_transactions_genesis".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
 
@@ -336,6 +336,7 @@ pub mod tests {
         let cmd = create_command::new();
         let mut params = CommandParams::new();
         params.insert("name", POOL.to_string());
+        params.insert("gen_txn_file", "docker_pool_transactions_genesis".to_string());
         cmd.execute(&ctx, &params).unwrap();
     }
 
@@ -345,6 +346,7 @@ pub mod tests {
             let cmd = create_command::new();
             let mut params = CommandParams::new();
             params.insert("name", POOL.to_string());
+            params.insert("gen_txn_file", "docker_pool_transactions_genesis".to_string());
             cmd.execute(&ctx, &params).unwrap();
         }
 
