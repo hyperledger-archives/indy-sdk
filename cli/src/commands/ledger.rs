@@ -427,7 +427,7 @@ pub mod custom_command {
         };
 
         trace!("execute << {:?}", res);
-        Ok(())
+        res
     }
 }
 
@@ -555,12 +555,8 @@ pub mod tests {
     use super::*;
     use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
     use commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
-    use commands::did::tests::{new_did, use_did, SEED_TRUSTEE, DID_TRUSTEE};
+    use commands::did::tests::{new_did, use_did, SEED_TRUSTEE, DID_TRUSTEE, SEED_MY1, DID_MY1, VERKEY_MY1, SEED_MY3, DID_MY3};
     use libindy::ledger::Ledger;
-
-    pub const MY1_SEED: &'static str = "00000000000000000000000000000My1";
-    pub const DID_MY1: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
-    pub const VERKEY_MY1: &'static str = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
 
     mod nym {
         use super::*;
@@ -580,6 +576,151 @@ pub mod tests {
                 params.insert("did", DID_MY1.to_string());
                 params.insert("verkey", VERKEY_MY1.to_string());
                 cmd.execute(&ctx, &params).unwrap();
+            }
+            _ensure_nym_added(&ctx);
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn nym_works_for_role() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("verkey", VERKEY_MY1.to_string());
+                params.insert("role", "TRUSTEE".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            _ensure_nym_added(&ctx);
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn nym_works_for_wrong_role() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("verkey", VERKEY_MY1.to_string());
+                params.insert("role", "ROLE".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn nym_works_for_alias() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("verkey", VERKEY_MY1.to_string());
+                params.insert("alias", "alias".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            _ensure_nym_added(&ctx);
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn nym_works_for_no_active_did() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+            {
+                let cmd = nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("verkey", VERKEY_MY1.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn nym_works_for_no_opened_wallet() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+
+            close_and_delete_wallet(&ctx);
+            {
+                let cmd = nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("verkey", VERKEY_MY1.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn nym_works_for_no_connected_pool() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+
+            disconnect_and_delete_pool(&ctx);
+            {
+                let cmd = nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("verkey", VERKEY_MY1.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn nym_works_for_unknown_submitter() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_MY3);
+            use_did(&ctx, DID_MY3);
+            {
+                let cmd = nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("verkey", VERKEY_MY1.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
             }
             _ensure_nym_added(&ctx);
             close_and_delete_wallet(&ctx);
@@ -609,6 +750,46 @@ pub mod tests {
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
+
+        #[test]
+        pub fn get_nym_works_for_unknown_did() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym_my1(&ctx);
+            {
+                let cmd = get_nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY3.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn get_nym_works_for_unknown_submitter() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_MY3);
+            use_did(&ctx, DID_MY3);
+            send_nym_my1(&ctx);
+            {
+                let cmd = get_nym_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY3.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
     }
 
     mod attrib {
@@ -622,7 +803,7 @@ pub mod tests {
             create_and_connect_pool(&ctx);
 
             new_did(&ctx, SEED_TRUSTEE);
-            new_did(&ctx, MY1_SEED);
+            new_did(&ctx, SEED_MY1);
             use_did(&ctx, DID_TRUSTEE);
             send_nym_my1(&ctx);
             use_did(&ctx, DID_MY1);
@@ -634,6 +815,88 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap();
             }
             _ensure_attrib_added(&ctx);
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn attrib_works_for_missed_attribute() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym_my1(&ctx);
+            use_did(&ctx, DID_MY1);
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn attrib_works_for_no_active_did() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn attrib_works_for_unknown_did() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_MY3);
+            use_did(&ctx, DID_MY3);
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY3.to_string());
+                params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn attrib_works_for_invalid_endpoint_format() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym_my1(&ctx);
+            use_did(&ctx, DID_MY1);
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("raw", r#"127.0.0.1:5555"#.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -650,7 +913,7 @@ pub mod tests {
             create_and_connect_pool(&ctx);
 
             new_did(&ctx, SEED_TRUSTEE);
-            new_did(&ctx, MY1_SEED);
+            new_did(&ctx, SEED_MY1);
             use_did(&ctx, DID_TRUSTEE);
             send_nym_my1(&ctx);
             use_did(&ctx, DID_MY1);
@@ -667,6 +930,23 @@ pub mod tests {
                 params.insert("did", DID_MY1.to_string());
                 params.insert("attr", "endpoint".to_string());
                 cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn get_attrib_works_for_no_active_did() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+            {
+                let cmd = get_attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("attr", "endpoint".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
@@ -688,12 +968,70 @@ pub mod tests {
             {
                 let cmd = schema_command::new();
                 let mut params = CommandParams::new();
-                params.insert("name", "schema1".to_string());
+                params.insert("name", "gvt".to_string());
                 params.insert("version", "1.0".to_string());
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             _ensure_schema_added(&ctx);
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn schema_works_for_missed_required_params() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = schema_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", "gvt".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn schema_works_unknown_submitter() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_MY3);
+            use_did(&ctx, DID_MY3);
+            {
+                let cmd = schema_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", "gvt".to_string());
+                params.insert("version", "1.0".to_string());
+                params.insert("attr_names", "name,age".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn schema_works_for_no_active_did() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+            {
+                let cmd = schema_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", "gvt".to_string());
+                params.insert("version", "1.0".to_string());
+                params.insert("attr_names", "name,age".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -731,6 +1069,66 @@ pub mod tests {
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
+
+        #[test]
+        pub fn schema_works_for_unknown_schema() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = get_schema_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_TRUSTEE.to_string());
+                params.insert("name", "unknown_schema_name".to_string());
+                params.insert("version", "1.0".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn schema_works_for_unknown_submitter() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_MY3);
+            use_did(&ctx, DID_MY3);
+            {
+                let cmd = get_schema_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY3.to_string());
+                params.insert("name", "gvt".to_string());
+                params.insert("version", "1.0".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn schema_works_for_no_active_did() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+            {
+                let cmd = get_schema_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_TRUSTEE.to_string());
+                params.insert("name", "gvt".to_string());
+                params.insert("version", "1.0".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
     }
 
     mod claim_def {
@@ -754,6 +1152,64 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap();
             }
             _ensure_claim_def_added(&ctx);
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn claim_def_works_for_missed_required_params() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = claim_def_command::new();
+                let mut params = CommandParams::new();
+                params.insert("schema_no", "1".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn claim_def_works_for_unknown_submitter() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_MY3);
+            use_did(&ctx, DID_MY3);
+            {
+                let cmd = claim_def_command::new();
+                let mut params = CommandParams::new();
+                params.insert("schema_no", "1".to_string());
+                params.insert("signature_type", "CL".to_string());
+                params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn claim_def_works_for_no_active_did() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+            {
+                let cmd = claim_def_command::new();
+                let mut params = CommandParams::new();
+                params.insert("schema_no", "1".to_string());
+                params.insert("signature_type", "CL".to_string());
+                params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -786,6 +1242,45 @@ pub mod tests {
                 params.insert("signature_type", "CL".to_string());
                 params.insert("origin", DID_TRUSTEE.to_string());
                 cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn get_claim_def_works_for_unknown_claim_def() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = get_claim_def_command::new();
+                let mut params = CommandParams::new();
+                params.insert("schema_no", "2".to_string());
+                params.insert("signature_type", "CL".to_string());
+                params.insert("origin", DID_MY3.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn get_claim_def_works_for_no_active_did() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+            {
+                let cmd = get_claim_def_command::new();
+                let mut params = CommandParams::new();
+                params.insert("schema_no", "1".to_string());
+                params.insert("signature_type", "CL".to_string());
+                params.insert("origin", DID_TRUSTEE.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
@@ -832,6 +1327,27 @@ pub mod tests {
     mod custom {
         use super::*;
 
+        pub const TXN: &'static str = r#"{
+                                            "reqId":1513241300414292814,
+                                            "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
+                                            "operation":{
+                                                "type":"105",
+                                                "dest":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL"
+                                            },
+                                            "protocolVersion":1
+                                          }"#;
+
+        pub const TXN_FOR_SIGN: &'static str = r#"{
+                                                    "reqId":1513241300414292814,
+                                                    "identifier":"V4SGRU86Z58d6TV7PBUe6f",
+                                                    "operation":{
+                                                        "type":"1",
+                                                        "dest":"VsKV7grR1BUE29mG2Fm2kX",
+                                                        "verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
+                                                    },
+                                                    "protocolVersion":1
+                                                  }"#;
+
         #[test]
         pub fn custom_works() {
             let ctx = CommandContext::new();
@@ -844,15 +1360,7 @@ pub mod tests {
             {
                 let cmd = custom_command::new();
                 let mut params = CommandParams::new();
-                params.insert("txn", format!(r#"{{
-                                                    "reqId":1513241300414292814,
-                                                    "identifier":"{}",
-                                                    "operation":{{
-                                                        "type":"105",
-                                                        "dest":"{}"
-                                                    }},
-                                                    "protocolVersion":1
-                                                  }}"#, DID_TRUSTEE, DID_TRUSTEE));
+                params.insert("txn", TXN.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);
@@ -872,17 +1380,106 @@ pub mod tests {
                 let cmd = custom_command::new();
                 let mut params = CommandParams::new();
                 params.insert("sign", "true".to_string());
+                params.insert("txn", TXN_FOR_SIGN.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn custom_works_for_missed_txn_field() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = custom_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn custom_works_for_invalid_transaction() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = custom_command::new();
+                let mut params = CommandParams::new();
                 params.insert("txn", format!(r#"{{
                                                     "reqId":1513241300414292814,
                                                     "identifier":"{}",
-                                                    "operation":{{
-                                                        "type":"1",
-                                                        "dest":"{}",
-                                                        "verkey":"{}"
-                                                    }},
                                                     "protocolVersion":1
-                                                  }}"#, DID_TRUSTEE, DID_MY1, VERKEY_MY1));
-                cmd.execute(&ctx, &params).unwrap();
+                                                  }}"#, DID_TRUSTEE));
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn custom_works_for_no_opened_pool() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = custom_command::new();
+                let mut params = CommandParams::new();
+                params.insert("txn", TXN.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+        }
+
+
+        #[test]
+        pub fn custom_works_for_sign_without_active_did() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            {
+                let cmd = custom_command::new();
+                let mut params = CommandParams::new();
+                params.insert("sign", "true".to_string());
+                params.insert("txn", TXN.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn custom_works_for_unknown_submitter_did() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_MY3);
+            use_did(&ctx, DID_MY3);
+            {
+                let cmd = custom_command::new();
+                let mut params = CommandParams::new();
+                params.insert("sign", "true".to_string());
+                params.insert("txn", TXN_FOR_SIGN.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);

@@ -228,6 +228,46 @@ pub mod tests {
 
             delete_pool(&ctx)
         }
+
+        #[test]
+        pub fn create_works_for_twice() {
+            let ctx = CommandContext::new();
+
+            create_pool(&ctx);
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", POOL.to_string());
+                params.insert("gen_txn_file", "docker_pool_transactions_genesis".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            delete_pool(&ctx)
+        }
+
+        #[test]
+        pub fn create_works_for_missed_gen_txn_file() {
+            let ctx = CommandContext::new();
+
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", POOL.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+        }
+
+        #[test]
+        pub fn create_works_for_unknow_txn_file() {
+            let ctx = CommandContext::new();
+
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", POOL.to_string());
+                params.insert("gen_txn_file", "unknow_pool_transactions_genesis".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+        }
     }
 
     mod connect {
@@ -245,6 +285,20 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap();
             }
             ensure_connected_pool_handle(&ctx).unwrap();
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn connect_works_for_twice() {
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            {
+                let cmd = connect_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", POOL.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
             disconnect_and_delete_pool(&ctx);
         }
 
@@ -272,6 +326,17 @@ pub mod tests {
             }
             delete_pool(&ctx);
         }
+
+        #[test]
+        pub fn list_works_for_empty_list() {
+            let ctx = CommandContext::new();
+
+            {
+                let cmd = list_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+        }
     }
 
     mod disconnect {
@@ -296,6 +361,24 @@ pub mod tests {
             let ctx = CommandContext::new();
 
             create_pool(&ctx);
+            {
+                let cmd = disconnect_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn disconnect_works_for_twice() {
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            {
+                let cmd = disconnect_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
             {
                 let cmd = disconnect_command::new();
                 let params = CommandParams::new();
@@ -329,6 +412,21 @@ pub mod tests {
             let mut params = CommandParams::new();
             params.insert("name", POOL.to_string());
             cmd.execute(&CommandContext::new(), &params).unwrap_err();
+        }
+
+
+        #[test]
+        pub fn delete_works_for_connected() {
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            {
+                let cmd = delete_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", POOL.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            disconnect_and_delete_pool(&ctx);
         }
     }
 

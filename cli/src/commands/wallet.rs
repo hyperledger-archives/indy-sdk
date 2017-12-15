@@ -215,6 +215,12 @@ pub mod delete_command {
 
         let name = get_str_param("name", params).map_err(error_err!())?;
 
+        if let Some((_, opened_wallet_name)) = get_opened_wallet(&ctx) { // TODO: Indy-Sdk allows delete opened wallet
+            if name == opened_wallet_name {
+                return Err(println_err!("Wallet {:?} is opened", name));
+            }
+        }
+
         let res = match Wallet::delete_wallet(name) {
             Ok(()) => Ok(println_succ!("Wallet \"{}\" has been deleted", name)),
             Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
@@ -256,6 +262,33 @@ pub mod tests {
 
             delete_wallet(&ctx);
         }
+
+        #[test]
+        pub fn create_works_for_twice() {
+            let ctx = CommandContext::new();
+
+            create_wallet(&ctx);
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("pool_name", POOL.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            delete_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn create_works_for_missed_pool_name() {
+            let ctx = CommandContext::new();
+
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+        }
     }
 
     mod open {
@@ -273,7 +306,21 @@ pub mod tests {
                 cmd.execute(&ctx, &params).unwrap();
             }
             ensure_opened_wallet_handle(&ctx).unwrap();
-            delete_wallet(&ctx);
+            close_and_delete_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn open_works_for_twice() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            {
+                let cmd = open_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                cmd.execute(&ctx, &params).unwrap(); //TODO: we close and open same wallet
+            }
+            close_and_delete_wallet(&ctx);
         }
 
         #[test]
@@ -299,6 +346,16 @@ pub mod tests {
             }
             delete_wallet(&ctx);
         }
+
+        #[test]
+        pub fn list_works_for_empty_list() {
+            let ctx = CommandContext::new();
+            {
+                let cmd = list_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+        }
     }
 
     mod close {
@@ -323,6 +380,23 @@ pub mod tests {
             let ctx = CommandContext::new();
 
             create_wallet(&ctx);
+            {
+                let cmd = close_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            delete_wallet(&ctx);
+        }
+
+        #[test]
+        pub fn close_works_for_twice() {
+            let ctx = CommandContext::new();
+            create_and_open_wallet(&ctx);
+            {
+                let cmd = close_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
             {
                 let cmd = close_command::new();
                 let params = CommandParams::new();
@@ -356,6 +430,20 @@ pub mod tests {
             let mut params = CommandParams::new();
             params.insert("name", WALLET.to_string());
             cmd.execute(&CommandContext::new(), &params).unwrap_err();
+        }
+
+        #[test]
+        pub fn delete_works_for_opened() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            {
+                let cmd = delete_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
         }
     }
 
