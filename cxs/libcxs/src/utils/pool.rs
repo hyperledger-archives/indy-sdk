@@ -180,9 +180,8 @@ pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<u32, u3
             return Err(error::UNKNOWN_ERROR.code_num);
         }
 
-        unsafe {
-            POOL_HANDLE = pool_handle;
-        }
+        POOL_HANDLE = pool_handle;
+
         Ok(pool_handle as u32)
     }
 }
@@ -245,7 +244,14 @@ pub fn delete(pool_name: &str) -> Result<(), u32> {
     Ok(())
 }
 
-pub fn get_pool_handle() -> i32 { unsafe { POOL_HANDLE } }
+pub fn get_pool_handle() -> Result<i32, u32> {
+    unsafe {
+        if POOL_HANDLE == 0 {
+            return Err(error::NO_POOL_OPEN.code_num)
+        }
+        Ok(POOL_HANDLE)
+    }
+}
 
 #[cfg(test)]
 pub mod tests {

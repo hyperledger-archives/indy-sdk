@@ -25,7 +25,7 @@ struct ProofTopic {
 }
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
-struct ProofRequestData{
+pub struct ProofRequestData{
     nonce: String,
     name: String,
     #[serde(rename = "version")]
@@ -171,6 +171,14 @@ impl ProofRequest {
 //            &self.proof_request_data.requested_predicates)?;
         Ok(proof.to_string())
     }
+
+//    pub fn get_proof_request_data(&mut self) -> ProofRequestData {
+//        let attrs = self.proof_request_data.requested_attrs.clone();
+//        let predicates = self.proof_request_data.requested_predicates.clone();
+//        combine_request_attributes(
+//            &self.proof_request_data.name,
+//            &self.proof_request_data.requested_attrs)?;
+//    }
 }
 
 pub fn combine_request_attributes(name: &str, requested_attrs: &str) -> Result<serde_json::Value, u32> {

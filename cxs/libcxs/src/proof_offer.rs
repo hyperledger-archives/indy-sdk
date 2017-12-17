@@ -24,8 +24,9 @@ pub struct ProofOffer{
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct ClaimData{
-    schema_seq_no: u32,
-    issuer_did: String,
+    pub schema_seq_no: u32,
+    pub issuer_did: String,
+    pub claim_uuid: String,
 }
 //
 //#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -107,7 +108,7 @@ impl ProofOffer {
             None => Err(error::INVALID_PROOF_OFFER.code_num),
         }
     }
-    fn get_claim_schema_info (&self) -> Result<Vec<ClaimData>, u32> {
+    pub fn get_claim_schema_info (&self) -> Result<Vec<ClaimData>, u32> {
         let proofs = match self.proofs {
             Some(ref x) => x,
             None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
@@ -134,6 +135,7 @@ impl ProofOffer {
                     }
                     None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
                 },
+                claim_uuid: attr.clone(),
             });
         }
         Ok(claims)
