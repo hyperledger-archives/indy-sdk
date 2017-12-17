@@ -29,7 +29,7 @@ use std::error::Error;
 use std::{fmt, fs, io, thread};
 use std::fmt::Debug;
 use std::io::{BufRead, Write};
-use std::ops::{Add, Sub};
+use std::ops::Sub;
 
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
@@ -39,7 +39,6 @@ use errors::common::CommonError;
 use self::catchup::CatchupHandler;
 use self::transaction_handler::TransactionHandler;
 use self::types::*;
-use services::ledger::constants;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::crypto::box_::CryptoBox;
 use utils::environment::EnvironmentUtils;
@@ -72,9 +71,6 @@ enum PoolWorkerHandler {
     CatchupHandler(CatchupHandler),
     TransactionHandler(TransactionHandler),
 }
-
-const REQUESTS_FOR_STATE_PROOFS: [&'static str; 4] = [constants::GET_NYM, constants::GET_SCHEMA, constants::GET_CLAIM_DEF, constants::GET_ATTR];
-const RESENDABLE_REQUEST_TIMEOUT: i64 = 1;
 
 impl PoolWorkerHandler {
     fn process_msg(&mut self, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
@@ -140,25 +136,6 @@ impl PoolWorkerHandler {
         match self {
             &mut PoolWorkerHandler::CatchupHandler(_) => {}
             &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.process_timeout(),
-        }
-    }
-}
-
-impl CommandProcess {
-    //TODO return err or bool for more complex handling
-    fn try_send_to_next_node_if_exists(&mut self, nodes: &Vec<RemoteNode>) {
-        if let Some(ref mut resend) = self.resendable_request {
-            resend.next_try_send_time = Some(time::now_utc().add(Duration::seconds(RESENDABLE_REQUEST_TIMEOUT)));
-            trace!("try_send_to_next_node_if_exists schedule next sending to {:?}", resend.next_try_send_time);
-            while resend.next_node != resend.start_node {
-                let cur_node = resend.next_node;
-                resend.next_node = (cur_node + 1) % nodes.len();
-                match nodes[cur_node].send_str(&resend.request) {
-                    Ok(()) => return,
-                    Err(err) => warn!("Can't send request to the next node, skip it ({})", err),
-                }
-            }
-            resend.next_try_send_time = None;
         }
     }
 }
@@ -696,58 +673,6 @@ impl PoolService {
 }
 
 #[cfg(test)]
-mod mocks {
-    use super::*;
-
-    use std::cell::RefCell;
-
-    pub struct PoolService {
-        create_results: RefCell<Vec<Result<(), PoolError>>>,
-        delete_results: RefCell<Vec<Result<(), PoolError>>>,
-        open_results: RefCell<Vec<Result<i32, PoolError>>>,
-        close_results: RefCell<Vec<Result<(), PoolError>>>,
-        refresh_results: RefCell<Vec<Result<(), PoolError>>>
-    }
-
-    impl PoolService {
-        pub fn new() -> PoolService {
-            PoolService {
-                create_results: RefCell::new(Vec::new()),
-                delete_results: RefCell::new(Vec::new()),
-                open_results: RefCell::new(Vec::new()),
-                close_results: RefCell::new(Vec::new()),
-                refresh_results: RefCell::new(Vec::new())
-            }
-        }
-
-        pub fn create(&self, name: &str, config: &str) -> Result<(), PoolError> {
-            //self.create_results.pop().unwrap()
-            unimplemented!()
-        }
-
-        pub fn delete(&self, name: &str) -> Result<(), PoolError> {
-            //self.delete_results.pop().unwrap()
-            unimplemented!()
-        }
-
-        pub fn open(&self, name: &str, config: &str) -> Result<i32, PoolError> {
-            //self.open_results.pop().unwrap()
-            unimplemented!()
-        }
-
-        pub fn close(&self, handle: i32) -> Result<(), PoolError> {
-            //self.close_results.pop().unwrap()
-            unimplemented!()
-        }
-
-        pub fn refresh(&self, handle: i32) -> Result<(), PoolError> {
-            //self.refresh_results.pop().unwrap()
-            unimplemented!()
-        }
-    }
-}
-
-#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -1032,8 +957,6 @@ mod tests {
         assert_eq!(PoolWorker::get_f(6), 1);
         assert_eq!(PoolWorker::get_f(7), 2);
     }
-
-
 
     #[test]
     fn catchup_handler_start_catchup_works() {

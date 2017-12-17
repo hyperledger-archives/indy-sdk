@@ -19,7 +19,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::ops::Add;
 
-use super::{state_proof, REQUESTS_FOR_STATE_PROOFS, RESENDABLE_REQUEST_TIMEOUT};
+use super::state_proof;
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use errors::pool::PoolError;
@@ -28,6 +28,9 @@ use super::types::*;
 use services::ledger::constants;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use self::indy_crypto::bls::Generator;
+
+const REQUESTS_FOR_STATE_PROOFS: [&'static str; 4] = [constants::GET_NYM, constants::GET_SCHEMA, constants::GET_CLAIM_DEF, constants::GET_ATTR];
+const RESENDABLE_REQUEST_TIMEOUT: i64 = 1;
 
 pub struct TransactionHandler {
     gen: Generator,
@@ -474,6 +477,25 @@ impl Default for TransactionHandler {
             pending_commands: HashMap::new(),
             f: 0,
             nodes: Vec::new(),
+        }
+    }
+}
+
+impl CommandProcess {
+    //TODO return err or bool for more complex handling
+    fn try_send_to_next_node_if_exists(&mut self, nodes: &Vec<RemoteNode>) {
+        if let Some(ref mut resend) = self.resendable_request {
+            resend.next_try_send_time = Some(time::now_utc().add(Duration::seconds(RESENDABLE_REQUEST_TIMEOUT)));
+            trace!("try_send_to_next_node_if_exists schedule next sending to {:?}", resend.next_try_send_time);
+            while resend.next_node != resend.start_node {
+                let cur_node = resend.next_node;
+                resend.next_node = (cur_node + 1) % nodes.len();
+                match nodes[cur_node].send_str(&resend.request) {
+                    Ok(()) => return,
+                    Err(err) => warn!("Can't send request to the next node, skip it ({})", err),
+                }
+            }
+            resend.next_try_send_time = None;
         }
     }
 }
