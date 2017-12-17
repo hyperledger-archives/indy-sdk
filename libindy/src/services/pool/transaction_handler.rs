@@ -31,6 +31,7 @@ use self::indy_crypto::bls::Generator;
 
 const REQUESTS_FOR_STATE_PROOFS: [&'static str; 4] = [constants::GET_NYM, constants::GET_SCHEMA, constants::GET_CLAIM_DEF, constants::GET_ATTR];
 const RESENDABLE_REQUEST_TIMEOUT: i64 = 1;
+const REQUEST_TIMEOUT: i64 = 100;
 
 pub struct TransactionHandler {
     gen: Generator,
@@ -186,6 +187,7 @@ impl TransactionHandler {
             nack_cnt: 0,
             replies: HashMap::new(),
             resendable_request: None,
+            full_cmd_timeout: Some(time::now_utc().add(Duration::seconds(REQUEST_TIMEOUT))),
         };
 
         if REQUESTS_FOR_STATE_PROOFS.contains(&req_json["operation"]["type"].as_str().unwrap_or("")) {
@@ -217,14 +219,7 @@ impl TransactionHandler {
             }
             Err(err) => {
                 for (_, pending_cmd) in &self.pending_commands {
-                    let pending_cmd: &CommandProcess = pending_cmd;
-                    for cmd_id in &pending_cmd.parent_cmd_ids {
-                        CommandExecutor::instance()
-                            .send(Command::Ledger(LedgerCommand::SubmitAck(
-                                cmd_id.clone(), Err(PoolError::Terminate))))
-                            .map_err(|err|
-                                CommonError::InvalidState("Can't send ACK cmd".to_string()))?;
-                    }
+                    pending_cmd.terminate_parent_cmds(false)?
                 }
                 Ok(())
             }
@@ -447,17 +442,33 @@ impl TransactionHandler {
 
     pub fn get_upcoming_timeout(&self) -> Option<time::Tm> {
         self.pending_commands.iter().fold(None, |acc, (_, ref cur)| {
-            let cur_tm: Option<Tm> = cur.resendable_request.as_ref()
+            let resend_tm: Option<Tm> = cur.resendable_request.as_ref()
                 .and_then(|resend: &ResendableRequest| resend.next_try_send_time);
-            match (acc, cur_tm) {
-                (None, cur_tm) => cur_tm,
-                (Some(acc), None) => Some(acc),
-                (Some(acc), Some(cur_tm)) => Some(acc.min(cur_tm)),
-            }
+            let full_tm = cur.full_cmd_timeout;
+            let tms = [resend_tm, full_tm, acc];
+            tms.iter().fold(None, |acc, cur| {
+                match (acc, *cur) {
+                    (None, cur) => cur,
+                    (Some(acc), None) => Some(acc),
+                    (Some(acc), Some(cur)) => Some(acc.min(cur)),
+                }
+            })
         })
     }
 
     pub fn process_timeout(&mut self) {
+        let timeout_cmds: Vec<u64> = self.pending_commands.iter()
+            .filter(|&(_, cur)| match cur.full_cmd_timeout {
+                Some(tm) => tm <= time::now_utc(),
+                None => false
+            })
+            .map(|(k, cmd)| {
+                cmd.terminate_parent_cmds(true).map_err(map_err_trace!()).ok();
+                *k
+            }).collect();
+        for cmd in timeout_cmds {
+            self.pending_commands.remove(&cmd);
+        }
         for (_, pc) in &mut self.pending_commands {
             let is_timeout = pc.resendable_request.as_ref()
                 .and_then(|resend| resend.next_try_send_time)
@@ -498,11 +509,23 @@ impl CommandProcess {
             resend.next_try_send_time = None;
         }
     }
+
+    fn terminate_parent_cmds(&self, is_timeout: bool) -> Result<(), CommonError> {
+        for cmd_id in &self.parent_cmd_ids {
+            CommandExecutor::instance()
+                .send(Command::Ledger(LedgerCommand::SubmitAck(
+                    *cmd_id,
+                    Err(if is_timeout { PoolError::Timeout } else { PoolError::Terminate }))))
+                .map_err(|err| CommonError::InvalidState("Can't send ACK cmd".to_string()))?;
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ops::Sub;
 
     #[test]
     fn transaction_handler_process_reply_works() {
@@ -513,6 +536,7 @@ mod tests {
             replies: HashMap::new(),
             nack_cnt: 0,
             resendable_request: None,
+            full_cmd_timeout: None,
         };
         let json = json!({"value":1});
         pc.replies.insert(HashableValue { inner: json.clone() }, 1);
@@ -534,6 +558,7 @@ mod tests {
             replies: HashMap::new(),
             nack_cnt: 0,
             resendable_request: None,
+            full_cmd_timeout: None,
         };
         let json1 = json!({"value":1});
         let json2 = json!({"value":2});
@@ -557,6 +582,7 @@ mod tests {
         let cmd = format!("{{\"reqId\": {}}}", req_id);
 
         th.try_send_request(&cmd, cmd_id).unwrap();
+        let expected_timeout = time::now_utc().add(Duration::seconds(REQUEST_TIMEOUT));
 
         assert_eq!(th.pending_commands.len(), 1);
         let pending_cmd = th.pending_commands.get(&req_id).unwrap();
@@ -565,7 +591,11 @@ mod tests {
             replies: HashMap::new(),
             parent_cmd_ids: vec!(cmd_id),
             resendable_request: None,
+            full_cmd_timeout: pending_cmd.full_cmd_timeout, //just copy for eq check other fields
         };
         assert_eq!(pending_cmd, &exp_command_process);
+        let diff: Duration = expected_timeout.sub(pending_cmd.full_cmd_timeout.unwrap());
+        assert!(diff <= Duration::milliseconds(1));
+        assert!(diff >= Duration::zero());
     }
 }

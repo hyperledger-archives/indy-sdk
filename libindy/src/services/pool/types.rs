@@ -305,6 +305,7 @@ pub struct CommandProcess {
     pub replies: HashMap<HashableValue, usize>,
     pub parent_cmd_ids: Vec<i32>,
     pub resendable_request: Option<ResendableRequest>,
+    pub full_cmd_timeout: Option<time::Tm>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
