@@ -43,7 +43,7 @@
                                      schemaSeqNo:(NSNumber *)schemaSeqNo
                                      maxClaimNum:(NSNumber *)maxClaimNum
                                     walletHandle:(IndyHandle)walletHandle
-                                      completion:(void (^)(NSError *error, NSString *revocRegJSON, NSString *revocRegUUID)) completion
+                                      completion:(void (^)(NSError *error, NSString *revocRegJSON)) completion
 {
     indy_error_t ret;
     
@@ -54,13 +54,13 @@
                                                  [issuerDID UTF8String],
                                                  [schemaSeqNo intValue],
                                                  [maxClaimNum intValue],
-                                                 IndyWrapperCommon4PCallback);
+                                                 IndyWrapperCommon3PSCallback);
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
         
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError: ret], nil, nil);
+            completion([NSError errorFromIndyError: ret], nil);
         });
     }
 }

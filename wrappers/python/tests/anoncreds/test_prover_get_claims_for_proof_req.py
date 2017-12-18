@@ -14,8 +14,7 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr(wallet_ha
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
-            "attr1_uuid": {
-                "schema_seq_no": schema_seq_no,
+            "attr1_referent": {
                 "name": "name"
             }
         },
@@ -27,7 +26,141 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr(wallet_ha
 
     assert len(claims['attrs']) == 1
     assert len(claims['predicates']) == 0
-    assert len(claims['attrs']['attr1_uuid']) == 1
+    assert len(claims['attrs']['attr1_referent']) == 2
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_schema(wallet_handle,
+                                                                                           prepopulated_wallet,
+                                                                                           schema_seq_no):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {
+            "attr1_referent": {
+                "name": "name",
+                "restrictions": [{"schema_seq_no": schema_seq_no}]
+            }
+        },
+        "requested_predicates": {}
+    }
+
+    claims = json.loads(
+        await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 1
+    assert len(claims['predicates']) == 0
+    assert len(claims['attrs']['attr1_referent']) == 2
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_issuer(wallet_handle,
+                                                                                           prepopulated_wallet,
+                                                                                           issuer_did):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {
+            "attr1_referent": {
+                "name": "name",
+                "restrictions": [{"issuer_did": issuer_did}]
+            }
+        },
+        "requested_predicates": {}
+    }
+
+    claims = json.loads(
+        await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 1
+    assert len(claims['predicates']) == 0
+    assert len(claims['attrs']['attr1_referent']) == 1
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_issuer_schema(wallet_handle,
+                                                                                                  prepopulated_wallet,
+                                                                                                  schema_seq_no,
+                                                                                                  issuer_did):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {
+            "attr1_referent": {
+                "name": "name",
+                "restrictions": [{"issuer_did": issuer_did, "schema_seq_no": schema_seq_no}]
+            }
+        },
+        "requested_predicates": {}
+    }
+
+    claims = json.loads(
+        await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 1
+    assert len(claims['predicates']) == 0
+    assert len(claims['attrs']['attr1_referent']) == 1
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_multiple_schemas(wallet_handle,
+                                                                                            prepopulated_wallet,
+                                                                                            schema_seq_no,
+                                                                                            schema_seq_no_2):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {
+            "attr1_referent": {
+                "name": "name",
+                "restrictions": [{"schema_seq_no": schema_seq_no}, {"schema_seq_no": schema_seq_no_2}]
+            }
+        },
+        "requested_predicates": {}
+    }
+
+    claims = json.loads(
+        await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 1
+    assert len(claims['predicates']) == 0
+    assert len(claims['attrs']['attr1_referent']) == 2
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_schema_or_specific_issuer(
+        wallet_handle,
+        prepopulated_wallet,
+        schema_seq_no,
+        issuer_did):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {
+            "attr1_referent": {
+                "name": "name",
+                "restrictions": [{"issuer_did": issuer_did }, {"schema_seq_no": schema_seq_no}]
+            }
+        },
+        "requested_predicates": {}
+    }
+
+    claims = json.loads(
+        await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 1
+    assert len(claims['predicates']) == 0
+    assert len(claims['attrs']['attr1_referent']) == 2
 
 
 # noinspection PyUnusedLocal
@@ -39,8 +172,7 @@ async def test_prover_get_claims_for_proof_req_works_for_not_found_attribute(wal
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
-            "attr1_uuid": {
-                "schema_seq_no": schema_seq_no,
+            "attr1_referent": {
                 "name": "some_attr"
             }
         },
@@ -52,22 +184,48 @@ async def test_prover_get_claims_for_proof_req_works_for_not_found_attribute(wal
 
     assert len(claims['attrs']) == 1
     assert len(claims['predicates']) == 0
-    assert len(claims['attrs']['attr1_uuid']) == 0
+    assert len(claims['attrs']['attr1_referent']) == 0
 
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_prover_get_claims_for_proof_req_works_for_satisfy_predicate(wallet_handle, prepopulated_wallet):
+async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_other_schema_issuer_pair(wallet_handle,
+                                                                                                    prepopulated_wallet,
+                                                                                                    issuer_did):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {
+            "attr1_referent": {
+                "name": "name",
+                "restrictions": [{"issuer_did": issuer_did, "schema_seq_no": 10}]
+            }
+        },
+        "requested_predicates": {}
+    }
+
+    claims = json.loads(
+        await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 1
+    assert len(claims['predicates']) == 0
+    assert len(claims['attrs']['attr1_referent']) == 0
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_predicate(wallet_handle, prepopulated_wallet):
     proof_req = {
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {},
         "requested_predicates": {
-            "predicate1_uuid":
+            "predicate1_referent":
                 {
                     "attr_name": "age",
-                    "p_type": "GE",
+                    "p_type": ">=",
                     "value": 18
                 }
         }
@@ -78,10 +236,145 @@ async def test_prover_get_claims_for_proof_req_works_for_satisfy_predicate(walle
 
     assert len(claims['attrs']) == 0
     assert len(claims['predicates']) == 1
-    assert len(claims['predicates']['predicate1_uuid']) == 1
+    assert len(claims['predicates']['predicate1_referent']) == 2
 
 
 # noinspection PyUnusedLocal
+@pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_predicate_for_specific_schema(wallet_handle, schema_seq_no,
+                                                                                       prepopulated_wallet):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {},
+        "requested_predicates": {
+            "predicate1_referent":
+                {
+                    "attr_name": "age",
+                    "p_type": ">=",
+                    "value": 18,
+                    "restrictions": [{"schema_seq_no": schema_seq_no}]
+                }
+        }
+    }
+
+    claims = json.loads(await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 0
+    assert len(claims['predicates']) == 1
+    assert len(claims['predicates']['predicate1_referent']) == 2
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_predicate_for_specific_issuer(wallet_handle, issuer_did,
+                                                                                       prepopulated_wallet):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {},
+        "requested_predicates": {
+            "predicate1_referent":
+                {
+                    "attr_name": "age",
+                    "p_type": ">=",
+                    "value": 18,
+                    "restrictions": [{"issuer_did": issuer_did}]
+                }
+        }
+    }
+
+    claims = json.loads(await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 0
+    assert len(claims['predicates']) == 1
+    assert len(claims['predicates']['predicate1_referent']) == 1
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_predicate_for_specific_schema_issuer_pair(wallet_handle,
+                                                                                                   schema_seq_no,
+                                                                                                   issuer_did,
+                                                                                                   prepopulated_wallet):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {},
+        "requested_predicates": {
+            "predicate1_referent":
+                {
+                    "attr_name": "age",
+                    "p_type": ">=",
+                    "value": 18,
+                    "restrictions": [{"schema_seq_no": schema_seq_no, "issuer_did": issuer_did}]
+                }
+        }
+    }
+
+    claims = json.loads(await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 0
+    assert len(claims['predicates']) == 1
+    assert len(claims['predicates']['predicate1_referent']) == 1
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_predicate_for_multiple_schemas(wallet_handle, schema_seq_no,
+                                                                                        schema_seq_no_2,
+                                                                                        prepopulated_wallet):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {},
+        "requested_predicates": {
+            "predicate1_referent":
+                {
+                    "attr_name": "age",
+                    "p_type": ">=",
+                    "value": 18,
+                    "restrictions": [{"schema_seq_no": schema_seq_no}, {"schema_seq_no": schema_seq_no_2}]
+                }
+        }
+    }
+
+    claims = json.loads(await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 0
+    assert len(claims['predicates']) == 1
+    assert len(claims['predicates']['predicate1_referent']) == 2
+
+
+@pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_not_found_predicate_attribute(wallet_handle,
+                                                                                       prepopulated_wallet):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {},
+        "requested_predicates": {
+            "predicate1_referent":
+                {
+                    "attr_name": "some_attr",
+                    "p_type": ">=",
+                    "value": 58
+                }
+        }
+    }
+
+    claims = json.loads(await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 0
+    assert len(claims['predicates']) == 1
+    assert len(claims['predicates']['predicate1_referent']) == 0
+
+
 @pytest.mark.asyncio
 async def test_prover_get_claims_for_proof_req_works_for_not_satisfy_predicate(wallet_handle, prepopulated_wallet):
     proof_req = {
@@ -90,10 +383,10 @@ async def test_prover_get_claims_for_proof_req_works_for_not_satisfy_predicate(w
         "version": "0.1",
         "requested_attrs": {},
         "requested_predicates": {
-            "predicate1_uuid":
+            "predicate1_referent":
                 {
                     "attr_name": "age",
-                    "p_type": "GE",
+                    "p_type": ">=",
                     "value": 58
                 }
         }
@@ -104,7 +397,7 @@ async def test_prover_get_claims_for_proof_req_works_for_not_satisfy_predicate(w
 
     assert len(claims['attrs']) == 0
     assert len(claims['predicates']) == 1
-    assert len(claims['predicates']['predicate1_uuid']) == 0
+    assert len(claims['predicates']['predicate1_referent']) == 0
 
 
 # noinspection PyUnusedLocal
@@ -117,12 +410,12 @@ async def test_prover_get_claims_for_proof_req_works_for_multiply_attribute_and_
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
-            "attr1_uuid": {"schema_seq_no": schema_seq_no, "name": "name"},
-            "attr2_uuid": {"schema_seq_no": schema_seq_no, "name": "sex"}
+            "attr1_referent": {"name": "name"},
+            "attr2_referent": {"name": "sex"}
         },
         "requested_predicates": {
-            "predicate1_uuid": {"attr_name": "age", "p_type": "GE", "value": 18},
-            "predicate2_uuid": {"attr_name": "height", "p_type": "GE", "value": 160}
+            "predicate1_referent": {"attr_name": "age", "p_type": ">=", "value": 18},
+            "predicate2_referent": {"attr_name": "height", "p_type": ">=", "value": 160}
         }
     }
 
@@ -131,10 +424,10 @@ async def test_prover_get_claims_for_proof_req_works_for_multiply_attribute_and_
 
     assert len(claims['attrs']) == 2
     assert len(claims['predicates']) == 2
-    assert len(claims['attrs']['attr1_uuid']) == 1
-    assert len(claims['attrs']['attr2_uuid']) == 1
-    assert len(claims['predicates']['predicate1_uuid']) == 1
-    assert len(claims['predicates']['predicate2_uuid']) == 1
+    assert len(claims['attrs']['attr1_referent']) == 2
+    assert len(claims['attrs']['attr2_referent']) == 2
+    assert len(claims['predicates']['predicate1_referent']) == 2
+    assert len(claims['predicates']['predicate2_referent']) == 2
 
 
 # noinspection PyUnusedLocal
@@ -147,10 +440,10 @@ async def test_prover_get_claims_for_proof_req_works_for_invalid_wallet_handle(w
         "version": "0.1",
         "requested_attrs": {},
         "requested_predicates": {
-            "predicate1_uuid":
+            "predicate1_referent":
                 {
                     "attr_name": "age",
-                    "p_type": "GE",
+                    "p_type": ">=",
                     "value": 58
                 }
         }

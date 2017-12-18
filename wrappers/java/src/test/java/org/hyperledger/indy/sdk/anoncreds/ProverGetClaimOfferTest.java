@@ -46,15 +46,15 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		String filter = String.format("{\"schema_seq_no\":%d}", 2);
+		String filter = String.format("{\"schema_seq_no\":%d}", gvtSchemaSeqNo);
 
 		String claimOffers = Anoncreds.proverGetClaimOffers(wallet, filter).get();
 		JSONArray claimOffersArray = new JSONArray(claimOffers);
 
 		assertEquals(2, claimOffersArray.length());
 
-		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, 2)));
-		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid2, 2)));
+		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, gvtSchemaSeqNo)));
+		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid2, gvtSchemaSeqNo)));
 	}
 
 	@Test
@@ -62,14 +62,14 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		String filter = String.format("{\"issuer_did\":\"%s\",\"schema_seq_no\":%d}", issuerDid, 1);
+		String filter = String.format("{\"issuer_did\":\"%s\",\"schema_seq_no\":%d}", issuerDid, gvtSchemaSeqNo);
 
 		String claimOffers = Anoncreds.proverGetClaimOffers(wallet, filter).get();
 		JSONArray claimOffersArray = new JSONArray(claimOffers);
 
 		assertEquals(1, claimOffersArray.length());
 
-		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, 1)));
+		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, gvtSchemaSeqNo)));
 	}
 
 	@Test
@@ -93,7 +93,7 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String filter = String.format("{\"schema_seq_no\":\"%d\"}", 1);
+		String filter = String.format("{\"schema_seq_no\":\"%d\"}", gvtSchemaSeqNo);
 
 		Anoncreds.proverGetClaimOffers(wallet, filter).get();
 	}
@@ -109,9 +109,9 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		Wallet.createWallet(poolName, walletName, type, null, null).get();
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 
-		String claimOffer = String.format(claimOfferTemplate, issuerDid, 1);
-		String claimOffer2 = String.format(claimOfferTemplate, issuerDid, 2);
-		String claimOffer3 = String.format(claimOfferTemplate, issuerDid2, 2);
+		String claimOffer = String.format(claimOfferTemplate, issuerDid, gvtSchemaSeqNo);
+		String claimOffer2 = String.format(claimOfferTemplate, issuerDid, xyzSchemaSeqNo);
+		String claimOffer3 = String.format(claimOfferTemplate, issuerDid2, gvtSchemaSeqNo);
 
 		Anoncreds.proverStoreClaimOffer(wallet, claimOffer).get();
 		Anoncreds.proverStoreClaimOffer(wallet, claimOffer2).get();

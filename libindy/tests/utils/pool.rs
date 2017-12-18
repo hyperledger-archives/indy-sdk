@@ -1,4 +1,5 @@
 extern crate time;
+extern crate indy_crypto;
 
 use indy::api::ErrorCode;
 use indy::api::pool::{indy_create_pool_ledger_config, indy_delete_pool_ledger_config};
@@ -8,9 +9,8 @@ use indy::api::ledger::indy_submit_request;
 
 use utils::callback::CallbackUtils;
 use utils::environment::EnvironmentUtils;
-use utils::json::JsonEncodable;
 use utils::timeout::TimeoutUtils;
-
+use self::indy_crypto::utils::json::JsonEncodable;
 
 use std::fs;
 use std::ffi::CString;

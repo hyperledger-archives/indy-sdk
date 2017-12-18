@@ -1,4 +1,5 @@
-use utils::json::{JsonDecodable, JsonEncodable};
+extern crate indy_crypto;
+
 use errors::common::CommonError;
 use errors::wallet::WalletError;
 use errors::indy::IndyError;
@@ -20,6 +21,7 @@ use std::collections::HashMap;
 use utils::sequence::SequenceUtils;
 
 use super::utils::check_wallet_and_pool_handles_consistency;
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 pub enum SignusCommand {
     CreateAndStoreMyDid(
