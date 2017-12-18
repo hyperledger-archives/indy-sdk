@@ -10,6 +10,7 @@ use utils::error;
 use settings;
 use proof_offer::{ ProofOffer, ClaimData };
 use messages;
+use messages::proof_messages::{ ProofRequest };
 use messages::GeneralMessage;
 use messages::MessageResponseCode::{ MessageAccepted };
 use connection;
@@ -36,7 +37,7 @@ extern {
                                                       valid: bool)>) -> i32;
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Proof {
     source_id: String,
     handle: u32,
@@ -55,18 +56,6 @@ struct Proof {
     nonce: String,
     proof_offer: Option<ProofOffer>,
     proof_request: Option<ProofRequest>,
-}
-
-
-//PROOF_REQ_JSON: &str = r#"{ "nonce":"123432421212", "name":"proof_req_1", "version":"0.1", "requested_attrs":{"sdf":{"schema_seq_no":15,"name":"state"}},"requested_predicates":{}}"#;
-
-#[derive(Serialize, Deserialize, Debug)]
-struct ProofRequest {
-    nonce: String,
-    name: String,
-    version: String,
-    requested_attrs: String,
-    requested_predicates: String,
 }
 
 impl Proof {
@@ -138,7 +127,12 @@ impl Proof {
     }
 
     fn build_proof_req_json(&mut self) -> Result<String, u32> {
-        Ok(PROOF_REQ_JSON.to_string())
+        match self.proof_request {
+            Some(ref mut x) => {
+                x.get_proof_request_data()
+            },
+            None => Err(error::INVALID_PROOF_OFFER.code_num)
+        }
     }
 
     fn proof_validation(&mut self) -> Result<u32, u32> {
@@ -150,12 +144,10 @@ impl Proof {
         if claim_data.len() == 0 {
             return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
         }
-
         let claim_def_msg = self.build_claim_defs_json(&claim_data)?;
         let proof_json = self.build_proof_json(&claim_data)?;
         let schemas_json = self.build_schemas_json(&claim_data)?;
         let proof_req_json = self.build_proof_req_json()?;
-
         Ok(self.validate_proof_indy(&proof_req_json, &proof_json, &schemas_json, &claim_def_msg, REVOC_REGS_JSON)?)
     }
 
@@ -173,7 +165,8 @@ impl Proof {
         self.prover_did = connection::get_pw_did(connection_handle)?;
         self.requester_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT).unwrap();
         let data_version = ".1";
-        let proof_request = messages::proof_request()
+        let mut proof_obj = messages::proof_request();
+        let proof_request = proof_obj
             .type_version(&self.version)
             .prover_did(&self.prover_did)
             .requester_did(&self.requester_did)
@@ -186,11 +179,7 @@ impl Proof {
 //            .requested_predicates(&self.requested_predicates)
             .serialize_message()?;
 
-        self.proof_request = match serde_json::from_str(&proof_request) {
-            Ok(x) => Some(x),
-            Err(_) => return Err(error::INVALID_JSON.code_num),
-        };
-
+        self.proof_request = Some(proof_obj);
         match messages::send_message().to(&self.prover_did).msg_type("proofReq").edge_agent_payload(&proof_request).send() {
             Ok(response) => {
                 self.msg_uid = get_offer_details(&response)?;
@@ -204,12 +193,12 @@ impl Proof {
         }
     }
 
-    fn get_proof_offer(&self) -> Result<String, u32> {
+    fn get_proof(&self) -> Result<String, u32> {
         let proof_offer = match self.proof_offer {
             Some(ref x) => x,
             None => return Err(error::INVALID_PROOF_OFFER.code_num),
         };
-        proof_offer.get_attrs()
+        proof_offer.get_proof_attributes()
     }
 
     fn check_for_proof_offer(&mut self, msg_uid: &str) {
@@ -253,10 +242,6 @@ impl Proof {
                 };
                 return
             }
-            // Todo: build proof offer object and set it in proof
-            // Todo: Get claim def form the ledger
-            // Todo: Get schema from the ledger
-            // Todo: check/compare against request && Validate proof with lib-indy
         }
     }
 
@@ -461,9 +446,9 @@ fn get_matching_messages<'a>(msg_uid:&'a str, to_did: &'a str) -> Result<Vec<ser
     }
 }
 
-pub fn get_proof_offer(handle: u32) -> Result<String,u32> {
+pub fn get_proof(handle: u32) -> Result<String,u32> {
     match PROOF_MAP.lock().unwrap().get(&handle) {
-        Some(proof) => Ok(proof.get_proof_offer()?),
+        Some(proof) => Ok(proof.get_proof()?),
         None => Err(error::INVALID_PROOF_OFFER.code_num),
     }
 }
@@ -631,7 +616,7 @@ mod tests {
         };
         assert!(is_valid_handle(handle));
 
-        match get_proof_offer(handle) {
+        match get_proof(handle) {
             Ok(x) => {
                 warn!("Should have failed with no proof");
                 assert_eq!(0, 1)
@@ -684,60 +669,76 @@ mod tests {
         thread::sleep(Duration::from_millis(500));
     }
 
-    #[test]
-    fn test_proof_offer_is_valid() {
-        ::utils::logger::LoggerUtils::init();
-        settings::set_defaults();
-        ::utils::claim_def::tests::open_sandbox_pool();
-        let proof_req_json = PROOF_REQ_JSON;
-        let proof_json = PROOF_JSON;
-        let schemas_json = SCHEMAS_JSON;
-//        let claim_defs_json = CLAIM_DEFS_JSON;
-        let mut claim_defs_json = ClaimDef::create()
-            .retrieve_claim_def("GGBDg1j8bsKmr4h5T9XqYf",
-                                15,
-                                "CL",
-                                "4fUDR9R7fjwELRvH9JT6HH").unwrap();
-        println!("CLAIM STR: {:?}", claim_defs_json);
-        let json_claim_def: serde_json::Value = serde_json::from_str(&claim_defs_json).unwrap();
-        claim_defs_json = json!({"claim::e5fec91f-d03d-4513-813c-ab6db5715d55":json_claim_def}).to_string();
-        let revoc_regs_json = REVOC_REGS_JSON;
-        let mut proof: Proof = create_default_proof();
-        let offer: ProofOffer = create_default_proof_offer();
-        assert!(proof.validate_proof_against_request(&offer).is_ok());
-//        assert_eq!(proof.validate_proof_indy(proof_req_json, proof_json, schemas_json, claim_defs_json, revoc_regs_json).unwrap(), error::SUCCESS.code_num);
-        assert_eq!(proof.validate_proof_indy(proof_req_json, proof_json, schemas_json, &claim_defs_json, revoc_regs_json).unwrap(), error::SUCCESS.code_num);
-    }
-
-    #[test]
-    fn test_validate_proof() {
-        settings::set_defaults();
-        ::utils::claim_def::tests::open_sandbox_pool();
-
-        let proof_msg = r#"{"msg_type":"proof","version":"0.1","to_did":"BnRXf8yDMUwGyZVDkSENeq","from_did":"GxtnGN6ypZYgEqcftSQFnC","proof_request_id":"cCanHnpFAD","proofs":{"claim::e5fec91f-d03d-4513-813c-ab6db5715d55":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"state":"96473275571522321025213415717206189191162"},"a_prime":"22605045280481376895214546474258256134055560453004805058368015338423404000586901936329279496160366852115900235316791489357953785379851822281248296428005020302405076144264617943389810572564188437603815231794326272302243703078443007359698858400857606408856314183672828086906560155576666631125808137726233827430076624897399072853872527464581329767287002222137559918765406079546649258389065217669558333867707240780369514832185660287640444094973804045885379406641474693993903268791773620198293469768106363470543892730424494655747935463337367735239405840517696064464669905860189004121807576749786474060694597244797343224031","e":"70192089123105616042684481760592174224585053817450673797400202710878562748001698340846985261463026529360990669802293480312441048965520897","v":"1148619141217957986496757711054111791862691178309410923416837802801708689012670430650138736456223586898110113348220116209094530854607083005898964558239710027534227973983322542548800291320747321452329327824406430787211689678096549398458892087551551587767498991043777397791000822007896620414888602588897806008609113730393639807814070738699614969916095861363383223421727858670289337712185089527052065958362840287749622133424503902085247641830693297082507827948006947829401008622239294382186995101394791468192083810475776455445579931271665980788474331866572497866962452476638881287668931141052552771328556458489781734943404258692308937784221642452132005267809852656378394530342203469943982066011466088478895643800295937901139711103301249691253510784029114718919483272055970725860849610885050165709968510696738864528287788491998027072378656038991754015693216663830793243584350961586874315757599094357535856429087122365865868729","m":{"address2":"11774234640096848605908744857306447015748098256395922562149769943967941106193320512788344020652220849708117081570187385467979956319507248530701654682748372348387275979419669108338","city":"4853213962270369118453000522408430296589146124488849630769837449684434138367659379663124155088827069418193027370932024893343033367076071757003149452226758383807126385017161888440","address1":"12970590675851114145396120869959510754345567924518524026685086869487243290925032320159287997675756075512889990901552679591155319959039145119122576164798225386578339739435869622811","zip":"8333721522340131864419931745588776943042067606218561135102011966361165456174036379901390244538991611895455576519950813910672825465382312504250936740379785802177629077591444977329"},"m1":"92853615502250003546205004470333326341901175168428906399291824325990659330595200000112546157141090642053863739870044907457400076448073272490169488870502566172795456430489790324815765612798273406119873266684053517977802902202155082987833343670942161987285661291655743810590661447300059024966135828466539810035","m2":"14442362430453309930284822850357071315613831915865367971974791350454381198894252834180803515368579729220423713315556807632571621646127926114010380486713602821529657583905131582938"},"ge_proofs":[]},"non_revoc_proof":null},"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH"}},"aggregated_proof":{"c_hash":"68430476900085482958838239880418115228681348197588159723604944078288347793331","c_list":[[179,17,2,242,194,227,92,203,28,32,255,113,112,20,5,243,9,111,220,111,21,210,116,12,167,119,253,181,37,40,143,215,140,42,179,97,75,229,96,94,54,248,206,3,48,14,61,219,160,122,139,227,166,183,37,43,197,200,28,220,217,10,65,42,6,195,124,44,164,65,114,206,51,231,254,156,170,141,21,153,50,251,237,65,147,97,243,17,157,116,213,201,80,119,106,70,88,60,55,36,33,160,135,106,60,212,191,235,116,57,78,177,61,86,44,226,205,100,134,118,93,6,26,58,220,66,232,166,202,62,90,174,231,207,19,239,233,223,70,191,199,100,157,62,139,176,28,184,9,70,116,199,142,237,198,183,12,32,53,84,207,202,77,56,97,177,154,169,223,201,212,163,212,101,184,255,215,167,16,163,136,44,25,123,49,15,229,41,149,133,159,86,106,208,234,73,207,154,194,162,141,63,159,145,94,47,174,51,225,91,243,2,221,202,59,11,212,243,197,208,116,42,242,131,221,137,16,169,203,215,239,78,254,150,42,169,202,132,172,106,179,130,178,130,147,24,173,213,151,251,242,44,54,47,208,223]]},"requested_proof":{"revealed_attrs":{"sdf":["claim::e5fec91f-d03d-4513-813c-ab6db5715d55","UT","96473275571522321025213415717206189191162"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{}}}"#;
-        let new_handle = 1;
-        let mut proof = Box::new(Proof {
-            handle: new_handle,
-            source_id: "12".to_string(),
-            msg_uid: String::from("1234"),
-            ref_msg_id: String::new(),
-            requested_attrs: String::from("[]"),
-            requested_predicates:String::from("[]"),
-            requester_did: String::new(),
-            prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
-            state: CxsStateType::CxsStateOfferSent,
-            proof_state: ProofStateType::ProofUndefined,
-            tid: 0,
-            mid: 0,
-            name:String::new(),
-            version: String::from("1.0"),
-            nonce: generate_nonce().to_string(),
-            proof_offer: None,
-            proof_request: None,
-        });
-
-        proof.proof_offer = Some(ProofOffer::from_str(&proof_msg).unwrap());
-        proof.proof_validation().unwrap();
-        println!("Proof Offer: {:?}", proof.proof_offer);
-    }
+//    #[test]
+//    fn test_proof_offer_is_valid() {
+//        ::utils::logger::LoggerUtils::init();
+//        settings::set_defaults();
+//        ::utils::claim_def::tests::open_sandbox_pool();
+//        let proof_req_json = PROOF_REQ_JSON;
+//        let proof_json = PROOF_JSON;
+//        let schemas_json = SCHEMAS_JSON;
+////        let claim_defs_json = CLAIM_DEFS_JSON;
+//        let mut claim_defs_json = ClaimDef::create()
+//            .retrieve_claim_def("GGBDg1j8bsKmr4h5T9XqYf",
+//                                15,
+//                                "CL",
+//                                "4fUDR9R7fjwELRvH9JT6HH").unwrap();
+//        println!("CLAIM STR: {:?}", claim_defs_json);
+//        let json_claim_def: serde_json::Value = serde_json::from_str(&claim_defs_json).unwrap();
+//        claim_defs_json = json!({"claim::e5fec91f-d03d-4513-813c-ab6db5715d55":json_claim_def}).to_string();
+//        let revoc_regs_json = REVOC_REGS_JSON;
+//        let mut proof: Proof = create_default_proof();
+//        let offer: ProofOffer = create_default_proof_offer();
+//        assert!(proof.validate_proof_against_request(&offer).is_ok());
+////        assert_eq!(proof.validate_proof_indy(proof_req_json, proof_json, schemas_json, claim_defs_json, revoc_regs_json).unwrap(), error::SUCCESS.code_num);
+//        assert_eq!(proof.validate_proof_indy(proof_req_json, proof_json, schemas_json, &claim_defs_json, revoc_regs_json).unwrap(), error::SUCCESS.code_num);
+//    }
+//
+//    #[test]
+//    fn test_validate_proof() {
+//        settings::set_defaults();
+//        ::utils::claim_def::tests::open_sandbox_pool();
+//
+//        let proof_msg = r#"{"msg_type":"proof","version":"0.1","to_did":"BnRXf8yDMUwGyZVDkSENeq","from_did":"GxtnGN6ypZYgEqcftSQFnC","proof_request_id":"cCanHnpFAD","proofs":{"claim::e5fec91f-d03d-4513-813c-ab6db5715d55":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"state":"96473275571522321025213415717206189191162"},"a_prime":"22605045280481376895214546474258256134055560453004805058368015338423404000586901936329279496160366852115900235316791489357953785379851822281248296428005020302405076144264617943389810572564188437603815231794326272302243703078443007359698858400857606408856314183672828086906560155576666631125808137726233827430076624897399072853872527464581329767287002222137559918765406079546649258389065217669558333867707240780369514832185660287640444094973804045885379406641474693993903268791773620198293469768106363470543892730424494655747935463337367735239405840517696064464669905860189004121807576749786474060694597244797343224031","e":"70192089123105616042684481760592174224585053817450673797400202710878562748001698340846985261463026529360990669802293480312441048965520897","v":"1148619141217957986496757711054111791862691178309410923416837802801708689012670430650138736456223586898110113348220116209094530854607083005898964558239710027534227973983322542548800291320747321452329327824406430787211689678096549398458892087551551587767498991043777397791000822007896620414888602588897806008609113730393639807814070738699614969916095861363383223421727858670289337712185089527052065958362840287749622133424503902085247641830693297082507827948006947829401008622239294382186995101394791468192083810475776455445579931271665980788474331866572497866962452476638881287668931141052552771328556458489781734943404258692308937784221642452132005267809852656378394530342203469943982066011466088478895643800295937901139711103301249691253510784029114718919483272055970725860849610885050165709968510696738864528287788491998027072378656038991754015693216663830793243584350961586874315757599094357535856429087122365865868729","m":{"address2":"11774234640096848605908744857306447015748098256395922562149769943967941106193320512788344020652220849708117081570187385467979956319507248530701654682748372348387275979419669108338","city":"4853213962270369118453000522408430296589146124488849630769837449684434138367659379663124155088827069418193027370932024893343033367076071757003149452226758383807126385017161888440","address1":"12970590675851114145396120869959510754345567924518524026685086869487243290925032320159287997675756075512889990901552679591155319959039145119122576164798225386578339739435869622811","zip":"8333721522340131864419931745588776943042067606218561135102011966361165456174036379901390244538991611895455576519950813910672825465382312504250936740379785802177629077591444977329"},"m1":"92853615502250003546205004470333326341901175168428906399291824325990659330595200000112546157141090642053863739870044907457400076448073272490169488870502566172795456430489790324815765612798273406119873266684053517977802902202155082987833343670942161987285661291655743810590661447300059024966135828466539810035","m2":"14442362430453309930284822850357071315613831915865367971974791350454381198894252834180803515368579729220423713315556807632571621646127926114010380486713602821529657583905131582938"},"ge_proofs":[]},"non_revoc_proof":null},"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH"}},"aggregated_proof":{"c_hash":"68430476900085482958838239880418115228681348197588159723604944078288347793331","c_list":[[179,17,2,242,194,227,92,203,28,32,255,113,112,20,5,243,9,111,220,111,21,210,116,12,167,119,253,181,37,40,143,215,140,42,179,97,75,229,96,94,54,248,206,3,48,14,61,219,160,122,139,227,166,183,37,43,197,200,28,220,217,10,65,42,6,195,124,44,164,65,114,206,51,231,254,156,170,141,21,153,50,251,237,65,147,97,243,17,157,116,213,201,80,119,106,70,88,60,55,36,33,160,135,106,60,212,191,235,116,57,78,177,61,86,44,226,205,100,134,118,93,6,26,58,220,66,232,166,202,62,90,174,231,207,19,239,233,223,70,191,199,100,157,62,139,176,28,184,9,70,116,199,142,237,198,183,12,32,53,84,207,202,77,56,97,177,154,169,223,201,212,163,212,101,184,255,215,167,16,163,136,44,25,123,49,15,229,41,149,133,159,86,106,208,234,73,207,154,194,162,141,63,159,145,94,47,174,51,225,91,243,2,221,202,59,11,212,243,197,208,116,42,242,131,221,137,16,169,203,215,239,78,254,150,42,169,202,132,172,106,179,130,178,130,147,24,173,213,151,251,242,44,54,47,208,223]]},"requested_proof":{"revealed_attrs":{"sdf":["claim::e5fec91f-d03d-4513-813c-ab6db5715d55","UT","96473275571522321025213415717206189191162"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{}}}"#;
+//        let new_handle = 1;
+//        let proof_req = messages::proof_request()
+//            .type_version("0.1")
+//            .prover_did("BnRXf8yDMUwGyZVDkSENeq")
+//            .requester_did("GxtnGN6ypZYgEqcftSQFnC")
+//            .tid(1)
+//            .mid(9)
+//            .nonce("123")
+//            .proof_name("proof_req_1")
+//            .proof_data_version(".01")
+//            .requested_attrs(REQUESTED_ATTRS).clone();
+//
+//        let mut proof = Box::new(Proof {
+//            handle: new_handle,
+//            source_id: "12".to_string(),
+//            msg_uid: String::from("1234"),
+//            ref_msg_id: String::new(),
+//            requested_attrs: String::from("[]"),
+//            requested_predicates:String::from("[]"),
+//            requester_did: String::new(),
+//            prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
+//            state: CxsStateType::CxsStateOfferSent,
+//            proof_state: ProofStateType::ProofUndefined,
+//            tid: 0,
+//            mid: 0,
+//            name:String::new(),
+//            version: String::from("1.0"),
+//            nonce: generate_nonce().to_string(),
+//            proof_offer: Some(ProofOffer::from_str(&proof_msg).unwrap()),
+//            proof_request: Some(proof_req.clone()),
+//        });
+//
+//        {
+//            let mut m = PROOF_MAP.lock().unwrap();
+//            info!("inserting handle {} into proof table", new_handle);
+//            m.insert(new_handle, proof.clone());
+//        }
+////        proof.proof_validation().unwrap();
+//        let proof_json = get_proof(new_handle).unwrap();
+//        println!("{}", proof_json);
+//    }
 }

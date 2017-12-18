@@ -11,20 +11,20 @@ static REQUESTED_ATTRS: &str = "requested_attrs";
 static REQUESTED_PREDICATES: &str = "requested_predicates";
 static DEFAULT_ATTR: &str = "ATTR";
 
-#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
 struct ProofType {
     name: String,
     #[serde(rename = "version")]
     type_version: String,
 }
 
-#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
 struct ProofTopic {
     mid: u32,
     tid: u32,
 }
 
-#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
 pub struct ProofRequestData{
     nonce: String,
     name: String,
@@ -35,7 +35,7 @@ pub struct ProofRequestData{
     requested_predicates: String,
 }
 
-#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
 pub struct ProofRequest{
     prover_did: String,
     requester_did: String,
@@ -172,13 +172,15 @@ impl ProofRequest {
         Ok(proof.to_string())
     }
 
-//    pub fn get_proof_request_data(&mut self) -> ProofRequestData {
-//        let attrs = self.proof_request_data.requested_attrs.clone();
-//        let predicates = self.proof_request_data.requested_predicates.clone();
-//        combine_request_attributes(
-//            &self.proof_request_data.name,
-//            &self.proof_request_data.requested_attrs)?;
-//    }
+    pub fn get_proof_request_data(&mut self) -> Result<String, u32> {
+        let attrs = self.proof_request_data.requested_attrs.clone();
+        let predicates = self.proof_request_data.requested_predicates.clone();
+        let mut proof_data = json!(self)[PROOF_DATA].clone();
+        proof_data[REQUESTED_ATTRS] = combine_request_attributes(
+            &self.proof_request_data.name,
+            &self.proof_request_data.requested_attrs)?;
+        Ok(proof_data.to_string())
+    }
 }
 
 pub fn combine_request_attributes(name: &str, requested_attrs: &str) -> Result<serde_json::Value, u32> {

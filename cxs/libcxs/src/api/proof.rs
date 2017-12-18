@@ -263,7 +263,7 @@ pub extern fn cxs_proof_get_proof_offer(command_handle: u32,
     }
 
     thread::spawn(move|| {
-        match proof::get_proof_offer(proof_handle) {
+        match proof::get_proof(proof_handle) {
             Ok(x) => {
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());

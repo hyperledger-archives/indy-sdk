@@ -27,18 +27,105 @@ pub struct ClaimData{
     pub schema_seq_no: u32,
     pub issuer_did: String,
     pub claim_uuid: String,
+    pub revealed_attrs: Vec<Attr>,
 }
-//
-//#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-//pub struct AggregatedProof{
-//
-//}
-//
-//#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-//pub struct RequestedProof{
-//    revealed_attrs: serde_json::Map<String, Vec<serde_json::Value>>,
-//
-//}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct Attr {
+    name: String,
+    value: String,
+    revealed: bool,
+}
+
+impl Attr {
+    pub fn new() -> Attr {
+        Attr{
+            name: String::new(),
+            value: String::new(),
+            revealed: false,
+        }
+    }
+}
+
+impl ClaimData {
+    pub fn new() -> ClaimData {
+        ClaimData{
+            schema_seq_no: 0,
+            issuer_did: String::new(),
+            claim_uuid: String::new(),
+            revealed_attrs: Vec::new(),
+        }
+    }
+
+    pub fn set_values(&mut self, claim_uuid:&str, claim_data:serde_json::Value) -> Result<(), u32> {
+        self.issuer_did = self.get_issuer_did(&claim_data)?;
+        self.schema_seq_no = self.get_schema_no(&claim_data)?;
+        self.revealed_attrs = self.get_revealed_attrs(&claim_data)?;
+        self.claim_uuid = String::from(claim_uuid);
+        Ok(())
+    }
+
+    pub fn get_issuer_did(&mut self, claim_data:&serde_json::Value) -> Result<String, u32> {
+        match claim_data.get("issuer_did") {
+            Some(d) => {
+                match d.as_str() {
+                    Some(n) => Ok(n.to_string()),
+                    None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
+                }
+            }
+            None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
+        }
+    }
+
+    pub fn get_schema_no(&mut self, claim_data:&serde_json::Value) -> Result<u32, u32> {
+        match claim_data.get("schema_seq_no") {
+            Some(x) => {
+                match x.as_u64() {
+                    Some(x) => Ok(x as u32),
+                    None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
+                }
+            }
+            None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
+        }
+    }
+
+    pub fn get_revealed_attrs(&mut self, claim_data:&serde_json::Value) -> Result<Vec<Attr>, u32> {
+        let revealed_attrs = match claim_data.get("proof") {
+            Some(x) => {
+                match x.get("primary_proof") {
+                    Some(x) => {
+                        match x.get("eq_proof") {
+                            Some(x) => {
+                                match x.get("revealed_attrs") {
+                                    Some(x) => x.to_owned(),
+                                    None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num),
+                                }
+                            },
+                            None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num),
+                        }
+                    }
+                    None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num),
+                }
+            },
+            None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
+        };
+        let attrs_obj = match revealed_attrs.as_object() {
+            Some(x) => x,
+            None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
+        };
+        let mut attrs: Vec<Attr> = Vec::new();
+        for (key, value) in attrs_obj.iter() {
+            attrs.push(
+                Attr{
+                    name: key.to_string(),
+                    value: value.to_string(),
+                    revealed: true,
+                }
+            )
+        }
+        Ok(attrs)
+    }
+}
 
 impl ProofOffer {
     pub fn new(did: &str) -> ProofOffer {
@@ -80,11 +167,56 @@ impl ProofOffer {
         }
     }
 
-    pub fn get_attrs(&self) -> Result<String, u32> {
-        warn!("Invalid json for proof offer");
-        Err(error::INVALID_JSON.code_num)
+    pub fn get_proof_attributes(&self) -> Result<String, u32> {
+        let mut all_attrs = self.get_claim_schema_info()?;
+        self.get_req_attrs(&mut all_attrs)?;
+        match serde_json::to_string(&all_attrs) {
+            Ok(x) => Ok(x),
+            Err(_) => Err(error::INVALID_JSON.code_num),
+        }
     }
 
+    pub fn get_req_attrs(&self, mut claim_info: &mut Vec<ClaimData>) -> Result<(), u32> {
+        let req_proofs = match self.requested_proof {
+            Some(ref x) => {
+                match x.get("revealed_attrs") {
+                    Some(x) => {
+                        match x.as_object() {
+                            Some(x) => x,
+                            None => return Err(error::INVALID_PROOF_OFFER.code_num),
+                        }
+                    },
+                    None => return Err(error::INVALID_PROOF_OFFER.code_num),
+                }
+
+            },
+            None => return Err(error::INVALID_PROOF_OFFER.code_num)
+        };
+
+        self.set_attr_value(req_proofs, &mut claim_info);
+        Ok(())
+    }
+
+    pub fn set_attr_value(&self,
+                          req_proofs: &serde_json::Map<String, Value>,
+                          mut claim_info: &mut Vec<ClaimData>) -> Result<(), u32> {
+        for claim_data in claim_info.iter_mut() {
+            for attr in claim_data.revealed_attrs.iter_mut() {
+                for (attr_key, mut val) in req_proofs.iter() {
+                    if serde_json::to_string(&val[2]).unwrap() == attr.value {
+                        attr.value = match serde_json::from_value(val[1].clone()) {
+                            Ok(x) => x,
+                            Err(_) => return Err(error::INVALID_JSON.code_num),
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+
+    }
+
+//    claim_data.
     pub fn get_proof(&self) -> Option<serde_json::Map<String, Value>>{
         self.proofs.to_owned()
     }
@@ -113,30 +245,11 @@ impl ProofOffer {
             Some(ref x) => x,
             None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
         };
-
         let mut claims: Vec<ClaimData> = Vec::new();
-        for (attr, vec) in proofs.iter() {
-            claims.push(ClaimData {
-                issuer_did: match vec.get("issuer_did") {
-                    Some(d) => {
-                        match d.as_str() {
-                            Some(n) => n,
-                            None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
-                        }
-                    }
-                    None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
-                }.to_string(),
-                schema_seq_no: match vec.get("schema_seq_no") {
-                    Some(x) => {
-                        match x.as_u64() {
-                            Some(x) => x as u32,
-                            None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
-                        }
-                    }
-                    None => return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
-                },
-                claim_uuid: attr.clone(),
-            });
+        for (claim_uuid, claim) in proofs.iter() {
+            let mut claim_data = ClaimData::new();
+            claim_data.set_values(&claim_uuid, claim.clone())?;
+            claims.push(claim_data);
         }
         Ok(claims)
     }
@@ -150,8 +263,6 @@ fn create_from_message(s: &str) -> Result<ProofOffer, u32>{
            Err(error::INVALID_PROOF_OFFER.code_num)},
    }
 }
-
-
 
 #[cfg(test)]
 pub mod tests {
@@ -243,10 +354,16 @@ pub mod tests {
             "schema_seq_no":15,
             "issuer_did":"4fUDR9R7fjwELRvH9JT6HH"
         }"#;
-        let claim_data: ClaimData = serde_json::from_str(stuff).unwrap();
+        let claim_data: ClaimData = ClaimData {
+            issuer_did: "4fUDR9R7fjwELRvH9JT6HH".to_string(),
+            schema_seq_no: 15,
+            claim_uuid: "claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b".to_string(),
+            revealed_attrs: Vec::new(),
+        };
         assert_eq!(claim_data.issuer_did, "4fUDR9R7fjwELRvH9JT6HH");
         assert_eq!(proof_offer.get_claim_schema_info().unwrap()[0].issuer_did, "4fUDR9R7fjwELRvH9JT6HH");
         assert_eq!(proof_offer.get_claim_schema_info().unwrap()[1].issuer_did, "33UDR9R7fjwELRvH9JT6HH");
+        proof_offer.get_proof_attributes().unwrap();
         let mut proof_offer_bad: ProofOffer = create_from_message(MSG_FROM_API).unwrap();
         proof_offer_bad.proofs = None;
         assert!(proof_offer_bad.get_claim_schema_info().is_err());

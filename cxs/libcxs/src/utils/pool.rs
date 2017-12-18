@@ -321,22 +321,22 @@ pub mod tests {
         assert_eq!(create_pool_ledger_config(&pools[2], None), Err(error::INVALID_GENESIS_TXN_PATH.code_num));
     }
 
-    #[test]
-    fn test_open_pool() {
-        let pool1 = "Pool1".to_string();
-        let pool2 = "Pool2".to_string();
-        let pool3 = "Pool3".to_string();
-        let pools = [pool1, pool2, pool3];
-        clean_pools(&pools);
-        let config = r#"{"refresh_on_open": true}"#;
-        let path = create_genesis_txn_file_for_test_pool(&pools[0], None, None);
-        let config_string = format!("{{\"genesis_txn\":\"/tmp/{}.txn\"}}", &pools[0]);
-        assert_eq!(pool_config_json(&path),config_string);
-        assert_eq!(create_pool_ledger_config(&pools[0], Some(&path)),Ok(error::SUCCESS.code_num));
-        assert_eq!(create_pool_ledger_config(&pools[1], Some(&path)),Ok(error::SUCCESS.code_num));
-        assert_eq!(create_pool_ledger_config(&pools[2], Some(&path)), Ok(error::SUCCESS.code_num));
-
-        let pool_handle = open_pool_ledger(&pools[0], Some(config)).unwrap();
-        assert_ne!(pool_handle, 0);
-    }
+//    #[test]
+//    fn test_open_pool() {
+//        let pool1 = "Pool1".to_string();
+//        let pool2 = "Pool2".to_string();
+//        let pool3 = "Pool3".to_string();
+//        let pools = [pool1, pool2, pool3];
+//        clean_pools(&pools);
+//        let config = r#"{"refresh_on_open": true}"#;
+//        let path = create_genesis_txn_file_for_test_pool(&pools[0], None, None);
+//        let config_string = format!("{{\"genesis_txn\":\"/tmp/{}.txn\"}}", &pools[0]);
+//        assert_eq!(pool_config_json(&path),config_string);
+//        assert_eq!(create_pool_ledger_config(&pools[0], Some(&path)),Ok(error::SUCCESS.code_num));
+//        assert_eq!(create_pool_ledger_config(&pools[1], Some(&path)),Ok(error::SUCCESS.code_num));
+//        assert_eq!(create_pool_ledger_config(&pools[2], Some(&path)), Ok(error::SUCCESS.code_num));
+//
+//        let pool_handle = open_pool_ledger(&pools[0], Some(config)).unwrap();
+//        assert_ne!(pool_handle, 0);
+//    }
 }
