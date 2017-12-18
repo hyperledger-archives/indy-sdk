@@ -124,7 +124,9 @@ impl Proof {
     }
 
     fn build_schemas_json(&mut self, claim_data:&Vec<ClaimData>) -> Result<String, u32> {
-        Ok(SCHEMAS_JSON.to_string())
+        //get schema #
+        let schema_obj = LedgerSchema::new_from_ledger(15)?;
+        Ok(schema_obj.to_string())
     }
 
     fn build_proof_req_json(&mut self) -> Result<String, u32> {

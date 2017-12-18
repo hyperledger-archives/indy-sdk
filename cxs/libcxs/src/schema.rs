@@ -56,7 +56,7 @@ pub struct LedgerSchema {
     data: Option<SchemaTransaction>
 }
 
-trait Schema: ToString {
+pub trait Schema: ToString {
 
 }
 
@@ -87,7 +87,7 @@ impl fmt::Display for LedgerSchema {
 
 
 impl LedgerSchema {
-    fn new_from_ledger(sequence_num: i32) -> Result<LedgerSchema, u32>
+    pub fn new_from_ledger(sequence_num: i32) -> Result<LedgerSchema, u32>
     {
         let txn = LedgerSchema::retrieve_from_ledger(sequence_num)?;
         let data: SchemaTransaction = match LedgerSchema::process_ledger_txn(txn){
@@ -342,7 +342,7 @@ mod tests {
     fn test_from_ledger_without_pool(){
         let test = LedgerSchema::new_from_ledger(15);
         assert!(test.is_err());
-        assert_eq!(301, test.unwrap_err())
+        assert_eq!(error::NO_POOL_OPEN.code_num, test.unwrap_err())
     }
 
     #[ignore]
