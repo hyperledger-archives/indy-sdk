@@ -1,5 +1,6 @@
 extern crate time;
 extern crate serde_json;
+extern crate indy_crypto;
 
 pub mod merkletree;
 pub mod types;
@@ -23,10 +24,10 @@ use self::types::{
     GetTxnOperation
 };
 use errors::common::CommonError;
-use utils::json::JsonDecodable;
 use utils::crypto::base58::Base58;
 use serde_json::Value;
 use services::ledger::constants::NYM;
+use self::indy_crypto::utils::json::JsonDecodable;
 
 trait LedgerSerializer {
     fn serialize(&self) -> String;

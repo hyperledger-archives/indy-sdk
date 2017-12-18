@@ -589,7 +589,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <code>
         /// [
         ///     {
-        ///         "claim_uuid": string,
+        ///         "referent": string,
         ///         "attrs": [{"attr_name" : "attr_value"}, ...],
         ///         "schema_seq_no": string,
         ///         "issuer_did": string,
@@ -634,29 +634,29 @@ namespace Hyperledger.Indy.AnonCredsApi
         ///     "name": string,
         ///     "version": string,
         ///     "nonce": string,
-        ///     "requested_attr1_uuid": &lt;attr_info&gt;,
-        ///     "requested_attr2_uuid": &lt;attr_info&gt;,
-        ///     "requested_attr3_uuid": &lt;attr_info&gt;,
-        ///     "requested_predicate_1_uuid": &lt;predicate_info&gt;,
-        ///     "requested_predicate_2_uuid": &lt;predicate_info&gt;,
+        ///     "requested_attr1_referent": &lt;attr_info&gt;,
+        ///     "requested_attr2_referent": &lt;attr_info&gt;,
+        ///     "requested_attr3_referent": &lt;attr_info&gt;,
+        ///     "requested_predicate_1_referent": &lt;predicate_info&gt;,
+        ///     "requested_predicate_2_referent": &lt;predicate_info&gt;,
         /// }
         /// </code>
         /// The method will return a JSON string with claims matching the given proof request in the following format:
         /// <code>
         /// {
-        ///     "requested_attr1_uuid": [claim1, claim2],
-        ///     "requested_attr2_uuid": [],
-        ///     "requested_attr3_uuid": [claim3],
-        ///     "requested_predicate_1_uuid": [claim1, claim3],
-        ///     "requested_predicate_2_uuid": [claim2],
+        ///     "requested_attr1_referent": [claim1, claim2],
+        ///     "requested_attr2_referent": [],
+        ///     "requested_attr3_referent": [claim3],
+        ///     "requested_predicate_1_referent": [claim1, claim3],
+        ///     "requested_predicate_2_referent": [claim2],
         /// }
         /// </code>
-        /// Each claim in the result consists of a uuid (<c>claim_uuid</c>), human-readable attributes as 
+        /// Each claim in the result consists of a uuid (<c>referent</c>), human-readable attributes as
         /// a key-value map (<c>attrs</c>), a schema sequence number (<c>schema_seq_no</c>) an issuer DID
         /// (<c>issuer_did</c>) and a revocation registry sequence number (<c>revoc_reg_seq_no</c>):
         /// <code>
         /// {
-        ///     "claim_uuid": string,
+        ///     "referent": string,
         ///     "attrs": [{"attr_name" : "attr_value"}],
         ///     "schema_seq_no": string,
         ///     "issuer_did": string,
@@ -707,11 +707,11 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <code>
         ///  {
         ///     "nonce": string,
-        ///     "requested_attr1_uuid": &lt;attr_info&gt;,
-        ///     "requested_attr2_uuid": &lt;attr_info&gt;,
-        ///     "requested_attr3_uuid": &lt;attr_info&gt;,
-        ///     "requested_predicate_1_uuid": &lt;predicate_info&gt;,
-        ///     "requested_predicate_2_uuid": &lt;predicate_info&gt;,
+        ///     "requested_attr1_referent": &lt;attr_info&gt;,
+        ///     "requested_attr2_referent": &lt;attr_info&gt;,
+        ///     "requested_attr3_referent": &lt;attr_info&gt;,
+        ///     "requested_predicate_1_referent": &lt;predicate_info&gt;,
+        ///     "requested_predicate_2_referent": &lt;predicate_info&gt;,
         /// }
         /// </code>
         /// </para>
@@ -720,12 +720,12 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// self-attested attribute for each attribute requested in the proof request.  E.g.:
         /// <code>
         /// {
-        ///     "requested_attr1_uuid": [claim1_uuid_in_wallet, true &lt;reveal_attr&gt;],
-        ///     "requested_attr2_uuid": [self_attested_attribute],
-        ///     "requested_attr3_uuid": [claim2_seq_no_in_wallet, false]
-        ///     "requested_attr4_uuid": [claim2_seq_no_in_wallet, true]
-        ///     "requested_predicate_1_uuid": [claim2_seq_no_in_wallet],
-        ///     "requested_predicate_2_uuid": [claim3_seq_no_in_wallet],
+        ///     "requested_attr1_referent": [claim1_referent_in_wallet, true &lt;reveal_attr&gt;],
+        ///     "requested_attr2_referent": [self_attested_attribute],
+        ///     "requested_attr3_referent": [claim2_seq_no_in_wallet, false]
+        ///     "requested_attr4_referent": [claim2_seq_no_in_wallet, true]
+        ///     "requested_predicate_1_referent": [claim2_seq_no_in_wallet],
+        ///     "requested_predicate_2_referent": [claim3_seq_no_in_wallet],
         /// }
         /// </code>
         /// </para>
@@ -734,9 +734,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// in the proof request.  E.g.:
         /// <code>
         /// {
-        ///     "claim1_uuid_in_wallet": &lt;schema1&gt;,
-        ///     "claim2_uuid_in_wallet": &lt;schema2&gt;,
-        ///     "claim3_uuid_in_wallet": &lt;schema3&gt;,
+        ///     "claim1_referent_in_wallet": &lt;schema1&gt;,
+        ///     "claim2_referent_in_wallet": &lt;schema2&gt;,
+        ///     "claim3_referent_in_wallet": &lt;schema3&gt;,
         /// }
         /// </code>
         /// </para>
@@ -749,9 +749,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// participating in the proof request. E.g.:
         /// <code>
         /// {
-        ///     "claim1_uuid_in_wallet": &lt;claim_def1&gt;,
-        ///     "claim2_uuid_in_wallet": &lt;claim_def2&gt;,
-        ///     "claim3_uuid_in_wallet": &lt;claim_def3&gt;,
+        ///     "claim1_referent_in_wallet": &lt;claim_def1&gt;,
+        ///     "claim2_referent_in_wallet": &lt;claim_def2&gt;,
+        ///     "claim3_referent_in_wallet": &lt;claim_def3&gt;,
         /// }
         /// </code>
         /// </para>
@@ -760,9 +760,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// participating in the proof request.  E.g.:
         /// <code>
         /// {
-        ///     "claim1_uuid_in_wallet": &lt;revoc_reg1&gt;,
-        ///     "claim2_uuid_in_wallet": &lt;revoc_reg2&gt;,
-        ///     "claim3_uuid_in_wallet": &lt;revoc_reg3&gt;,
+        ///     "claim1_referent_in_wallet": &lt;revoc_reg1&gt;,
+        ///     "claim2_referent_in_wallet": &lt;revoc_reg2&gt;,
+        ///     "claim3_referent_in_wallet": &lt;revoc_reg3&gt;,
         /// }
         /// </code>
         /// </para>
@@ -774,17 +774,17 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <code>
         /// {
         ///     "requested": {
-        ///         "requested_attr1_id": [claim_proof1_uuid, revealed_attr1, revealed_attr1_as_int],
+        ///         "requested_attr1_id": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
         ///         "requested_attr2_id": [self_attested_attribute],
-        ///         "requested_attr3_id": [claim_proof2_uuid]
-        ///         "requested_attr4_id": [claim_proof2_uuid, revealed_attr4, revealed_attr4_as_int],
-        ///         "requested_predicate_1_uuid": [claim_proof2_uuid],
-        ///         "requested_predicate_2_uuid": [claim_proof3_uuid],
+        ///         "requested_attr3_id": [claim_proof2_referent]
+        ///         "requested_attr4_id": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
+        ///         "requested_predicate_1_referent": [claim_proof2_referent],
+        ///         "requested_predicate_2_referent": [claim_proof3_referent],
         ///         }
         ///     "claim_proofs": {
-        ///         "claim_proof1_uuid": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no],
-        ///         "claim_proof2_uuid": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no],
-        ///         "claim_proof3_uuid": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no]
+        ///         "claim_proof1_referent": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no],
+        ///         "claim_proof2_referent": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no],
+        ///         "claim_proof3_referent": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no]
         ///     },
         ///     "aggregated_proof": &lt;aggregated_proof&gt;
         /// }
@@ -842,11 +842,11 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <code>
         /// {
         ///     "nonce": string,
-        ///     "requested_attr1_uuid": &lt;attr_info&gt;,
-        ///     "requested_attr2_uuid": &lt;attr_info&gt;,
-        ///     "requested_attr3_uuid": &lt;attr_info&gt;,
-        ///     "requested_predicate_1_uuid": &lt;predicate_info&gt;,
-        ///     "requested_predicate_2_uuid": &lt;predicate_info&gt;,
+        ///     "requested_attr1_referent": &lt;attr_info&gt;,
+        ///     "requested_attr2_referent": &lt;attr_info&gt;,
+        ///     "requested_attr3_referent": &lt;attr_info&gt;,
+        ///     "requested_predicate_1_referent": &lt;predicate_info&gt;,
+        ///     "requested_predicate_2_referent": &lt;predicate_info&gt;,
         /// }
         /// </code>
         /// </para>
@@ -859,17 +859,17 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <code>
         /// {
         ///     "requested": {
-        ///         "requested_attr1_id": [claim_proof1_uuid, revealed_attr1, revealed_attr1_as_int],
+        ///         "requested_attr1_id": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
         ///         "requested_attr2_id": [self_attested_attribute],
-        ///         "requested_attr3_id": [claim_proof2_uuid]
-        ///         "requested_attr4_id": [claim_proof2_uuid, revealed_attr4, revealed_attr4_as_int],
-        ///         "requested_predicate_1_uuid": [claim_proof2_uuid],
-        ///         "requested_predicate_2_uuid": [claim_proof3_uuid],
+        ///         "requested_attr3_id": [claim_proof2_referent]
+        ///         "requested_attr4_id": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
+        ///         "requested_predicate_1_referent": [claim_proof2_referent],
+        ///         "requested_predicate_2_referent": [claim_proof3_referent],
         ///     },
         ///     "claim_proofs": {
-        ///         "claim_proof1_uuid": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no],
-        ///         "claim_proof2_uuid": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no],
-        ///         "claim_proof3_uuid": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no]
+        ///         "claim_proof1_referent": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no],
+        ///         "claim_proof2_referent": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no],
+        ///         "claim_proof3_referent": [&lt;claim_proof&gt;, issuer_did, schema_seq_no, revoc_reg_seq_no]
         ///     },
         ///     "aggregated_proof": &lt;aggregated_proof&gt;
         /// }
@@ -880,9 +880,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// participating in the proof.
         /// <code>
         /// {
-        ///     "claim_proof1_uuid": &lt;schema&gt;,
-        ///     "claim_proof2_uuid": &lt;schema&gt;,
-        ///     "claim_proof3_uuid": &lt;schema&gt;
+        ///     "claim_proof1_referent": &lt;schema&gt;,
+        ///     "claim_proof2_referent": &lt;schema&gt;,
+        ///     "claim_proof3_referent": &lt;schema&gt;
         /// }
         /// </code>
         /// </para> 
@@ -891,9 +891,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// definitions participating in the proof.
         /// <code>
         /// {
-        ///     "claim_proof1_uuid": &lt;claim_def&gt;,
-        ///     "claim_proof2_uuid": &lt;claim_def&gt;,
-        ///     "claim_proof3_uuid": &lt;claim_def&gt;
+        ///     "claim_proof1_referent": &lt;claim_def&gt;,
+        ///     "claim_proof2_referent": &lt;claim_def&gt;,
+        ///     "claim_proof3_referent": &lt;claim_def&gt;
         /// }
         /// </code>
         /// </para>
@@ -902,9 +902,9 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// registries participating in the proof.
         /// <code>
         /// {
-        ///     "claim_proof1_uuid": &lt;revoc_reg&gt;,
-        ///     "claim_proof2_uuid": &lt;revoc_reg&gt;,
-        ///     "claim_proof3_uuid": &lt;revoc_reg&gt;
+        ///     "claim_proof1_referent": &lt;revoc_reg&gt;,
+        ///     "claim_proof2_referent": &lt;revoc_reg&gt;,
+        ///     "claim_proof3_referent": &lt;revoc_reg&gt;
         /// }
         /// </code>
         /// </para>

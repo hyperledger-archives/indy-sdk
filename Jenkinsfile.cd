@@ -239,6 +239,7 @@ def windowsTesting() {
                     echo "Windows Libindy Test: Build"
                     withEnv([
                             "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "INDY_CRYPTO_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "MILAGRO_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "ZMQPW_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "SODIUM_LIB_DIR=$WORKSPACE\\libindy\\prebuilt",
@@ -307,7 +308,7 @@ def windowsTesting() {
 def ubuntuTesting() {
     node('ubuntu') {
         stage('Ubuntu Test') {
-            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", true, "pool_network", true)
+            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", false, "pool_network", true)
         }
     }
 }

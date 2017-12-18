@@ -1,4 +1,5 @@
-use utils::json::{JsonDecodable, JsonEncodable};
+extern crate indy_crypto;
+
 use errors::common::CommonError;
 use errors::indy::IndyError;
 use services::signus::types::{KeyInfo, Key};
@@ -8,6 +9,8 @@ use services::signus::SignusService;
 use std::error::Error;
 use std::rc::Rc;
 use std::str;
+
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 pub enum CryptoCommand {
     CryptoSign(

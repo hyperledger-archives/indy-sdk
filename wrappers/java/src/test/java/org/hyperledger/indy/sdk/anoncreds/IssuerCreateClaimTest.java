@@ -31,10 +31,10 @@ public class IssuerCreateClaimTest extends AnoncredsIntegrationTest {
 
 		JSONObject claimObj = new JSONObject(claimJson);
 
-		JSONObject primaryClaim = claimObj.getJSONObject("signature").getJSONObject("primary_claim");
+		JSONObject primaryClaim = claimObj.getJSONObject("signature").getJSONObject("p_claim");
 
 		assertTrue(primaryClaim.getString("a").length() > 0);
-		assertTrue(primaryClaim.getString("m2").length() > 0);
+		assertTrue(primaryClaim.getString("m_2").length() > 0);
 		assertTrue(primaryClaim.getString("e").length() > 0);
 		assertTrue(primaryClaim.getString("v").length() > 0);
 	}

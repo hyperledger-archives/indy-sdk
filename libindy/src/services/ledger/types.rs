@@ -1,20 +1,11 @@
 extern crate serde_json;
+extern crate indy_crypto;
 
-use services::anoncreds::types::{PublicKey, RevocationPublicKey};
-use utils::json::{JsonEncodable, JsonDecodable};
-use services::ledger::constants::{
-    NODE,
-    NYM,
-    ATTRIB,
-    SCHEMA,
-    GET_ATTR,
-    GET_DDO,
-    GET_NYM,
-    GET_SCHEMA,
-    CLAIM_DEF,
-    GET_CLAIM_DEF,
-    GET_TXN
-};
+use services::ledger::constants::*;
+
+use self::indy_crypto::cl::*;
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+
 
 #[derive(Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -254,16 +245,16 @@ impl JsonEncodable for ClaimDefOperation {}
 
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct ClaimDefOperationData {
-    pub primary: PublicKey,
+    pub primary: IssuerPrimaryPublicKey,
     #[serde(serialize_with = "empty_map_instead_of_null")] //FIXME
-    pub revocation: Option<RevocationPublicKey>
+    pub revocation: Option<IssuerRevocationPublicKey>
 }
 
 impl ClaimDefOperationData {
-    pub fn new(primary: PublicKey, revocation: Option<RevocationPublicKey>) -> ClaimDefOperationData {
+    pub fn new(primary: IssuerPrimaryPublicKey, revocation: Option<IssuerRevocationPublicKey>) -> ClaimDefOperationData {
         ClaimDefOperationData {
-            primary: primary,
-            revocation: revocation
+            primary,
+            revocation
         }
     }
 }
@@ -274,7 +265,7 @@ extern crate serde;
 use self::serde::Serializer;
 use self::serde::ser::SerializeMap;
 
-fn empty_map_instead_of_null<S>(x: &Option<RevocationPublicKey>, s: S) -> Result<S::Ok, S::Error>
+fn empty_map_instead_of_null<S>(x: &Option<IssuerRevocationPublicKey>, s: S) -> Result<S::Ok, S::Error>
     where S: Serializer {
     if let &Some(ref x) = x {
         s.serialize_some(&x)
