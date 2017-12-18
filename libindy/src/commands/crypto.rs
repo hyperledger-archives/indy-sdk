@@ -1,3 +1,4 @@
+extern crate indy_crypto;
 extern crate serde_json;
 
 use utils::json::{JsonDecodable, JsonEncodable};
@@ -11,6 +12,7 @@ use std::error::Error;
 use std::rc::Rc;
 use std::str;
 
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use base64;
 
 pub enum CryptoCommand {

@@ -1,4 +1,5 @@
 extern crate serde_json;
+extern crate indy_crypto;
 
 use self::serde_json::Value;
 
@@ -13,7 +14,6 @@ use services::crypto::types::{Did, Key};
 use services::wallet::WalletService;
 use services::ledger::LedgerService;
 
-use utils::json::JsonDecodable;
 
 use super::utils::check_wallet_and_pool_handles_consistency;
 
@@ -25,6 +25,7 @@ use std::rc::Rc;
 use utils::crypto::base58::Base58;
 
 use utils::crypto::signature_serializer::serialize_signature;
+use self::indy_crypto::utils::json::{JsonDecodable};
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(

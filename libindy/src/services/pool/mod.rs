@@ -45,10 +45,11 @@ use services::ledger::constants;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::crypto::box_::CryptoBox;
 use utils::environment::EnvironmentUtils;
-use utils::json::{JsonDecodable, JsonEncodable};
 use utils::sequence::SequenceUtils;
 use self::indy_crypto::bls::{Generator, VerKey};
 use std::path::PathBuf;
+
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 pub struct PoolService {
     pools: RefCell<HashMap<i32, Pool>>,

@@ -21,13 +21,13 @@ public class IssuerRevokeClaimTest extends AnoncredsIntegrationTest
                                    "\"nonce\":\"123432421212\"," +
                                    "\"name\":\"proof_req_1\"," +
                                    "\"version\":\"0.1\"," +
-                                   "\"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"}}," +
+                                   "\"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}}," +
                                    "\"requested_predicates\":{}" +
                                 "}";    
     
     private final String requestedClaimsJsonTemplate = "{" +
                                                   "\"self_attested_attributes\":{}," +
-                                                  "\"requested_attrs\":{\"attr1_uuid\":[\"%s\", true]}," +
+                                                  "\"requested_attrs\":{\"attr1_referent\":[\"%s\", true]}," +
                                                   "\"requested_predicates\":{}" +
                                                 "}";
     private String claimDefJson;
@@ -99,8 +99,8 @@ public class IssuerRevokeClaimTest extends AnoncredsIntegrationTest
         //10. Prover gets Claims for Proof Request
         String claimsJson =  Anoncreds.proverGetClaimsForProofReq(issuerWallet, proofReqJson).get();
         JSONObject claims = new JSONObject(claimsJson);
-        JSONArray claimsForAttr1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid"); 
-        String claimUuid = claimsForAttr1.getJSONObject(0).getString("claim_uuid");
+        JSONArray claimsForAttr1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
+        String claimUuid = claimsForAttr1.getJSONObject(0).getString("referent");
 
         //11. Prover create Proof
         String requestedClaimsJson = String.format(requestedClaimsJsonTemplate, claimUuid);
@@ -124,8 +124,8 @@ public class IssuerRevokeClaimTest extends AnoncredsIntegrationTest
         //9. Prover gets Claims for Proof Request
         String claimsJson =  Anoncreds.proverGetClaimsForProofReq(issuerWallet, proofReqJson).get();
         JSONObject claims = new JSONObject(claimsJson);
-        JSONArray claimsForAttr1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid"); 
-        String claimUuid = claimsForAttr1.getJSONObject(0).getString("claim_uuid");
+        JSONArray claimsForAttr1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
+        String claimUuid = claimsForAttr1.getJSONObject(0).getString("referent");
 
         //10. Prover create Proof
         String requestedClaimsJson = String.format(requestedClaimsJsonTemplate, claimUuid);

@@ -1,6 +1,6 @@
 extern crate serde_json;
+extern crate indy_crypto;
 
-use utils::json::{JsonDecodable, JsonEncodable};
 use errors::common::CommonError;
 use errors::indy::IndyError;
 use errors::wallet::WalletError;
@@ -9,6 +9,8 @@ use services::wallet::WalletService;
 use std::error::Error;
 use std::rc::Rc;
 use std::str;
+
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 pub enum PairwiseCommand {
     PairwiseExists(

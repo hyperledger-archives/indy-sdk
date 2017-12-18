@@ -16,13 +16,13 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                                        "\"nonce\":\"123432421212\"," +
                                        "\"name\":\"proof_req_1\"," +
                                        "\"version\":\"0.1\"," +
-                                       "\"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"}}," +
+                                       "\"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}}," +
                                        "\"requested_predicates\":{}" +
                                     "}";    
         
         private const string _requestedClaimsJsonTemplate = "{{" +
                                                       "\"self_attested_attributes\":{{}}," +
-                                                      "\"requested_attrs\":{{\"attr1_uuid\":[\"{0}\", true]}}," +
+                                                      "\"requested_attrs\":{{\"attr1_referent\":[\"{0}\", true]}}," +
                                                       "\"requested_predicates\":{{}}" +
                                                     "}}";
         private string _claimDefJson;
@@ -94,9 +94,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             //10. Prover gets Claims for Proof Request
             var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_issuerWallet, _proofReqJson);
             var claims = JObject.Parse(claimsJson);
-            var claimsForAttr1 = claims["attrs"]["attr1_uuid"];
+            var claimsForAttr1 = claims["attrs"]["attr1_referent"];
             var claim = claimsForAttr1[0];
-            var claimUuid = claim.Value<string>("claim_uuid");
+            var claimUuid = claim.Value<string>("referent");
 
             //11. Prover create Proof
             var requestedClaimsJson = string.Format(_requestedClaimsJsonTemplate, claimUuid);
@@ -123,9 +123,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             //9. Prover gets Claims for Proof Request
             var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(_issuerWallet, _proofReqJson);
             var claims = JObject.Parse(claimsJson);
-            var claimsForAttr1 = claims["attrs"]["attr1_uuid"];
+            var claimsForAttr1 = claims["attrs"]["attr1_referent"];
             var claim = claimsForAttr1[0];
-            var claimUuid = claim.Value<string>("claim_uuid");
+            var claimUuid = claim.Value<string>("referent");
 
             //10. Prover create Proof
             var requestedClaimsJson = string.Format(_requestedClaimsJsonTemplate, claimUuid);

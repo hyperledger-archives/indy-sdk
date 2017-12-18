@@ -34,7 +34,7 @@ use utils::callback::CallbackUtils;
 use std::ptr::null;
 use std::sync::mpsc::channel;
 use std::ffi::CString;
-use utils::types::ProofClaimsJson;
+use utils::types::ClaimsForProofRequest;
 
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;
@@ -132,14 +132,16 @@ fn anoncreds_demo_works() {
 
     let schema_seq_no = 1;
     let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
+    let prover_did = "BzfFCYk";
+
     let schema = format!(r#"{{
-                            "seqNo":{},
-                            "data":{{
-                                "name":"gvt",
-                                "version":"1.0",
-                                "attr_names":["age","sex","height","name"]
-                            }}
-                         }}"#, schema_seq_no);
+                                    "seqNo":{},
+                                    "data":{{
+                                        "name":"gvt",
+                                        "version":"1.0",
+                                        "attr_names":["age","sex","height","name"]
+                                    }}
+                                 }}"#, schema_seq_no);
 
     // 3. Issuer create Claim Definition for Schema
     let err =
@@ -153,7 +155,6 @@ fn anoncreds_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claim_def_json) = issuer_create_claim_definition_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("claim_def_json {:?}", claim_def_json);
     assert_eq!(ErrorCode::Success, err);
 
     let master_secret_name = "master_secret";
@@ -169,8 +170,7 @@ fn anoncreds_demo_works() {
     let err = prover_create_master_secret_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    let prover_did = "BzfFCYk";
-    let claim_offer_json = format!(r#"{{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_seq_no":{}}}"#, schema_seq_no);
+    let claim_offer_json = format!(r#"{{"issuer_did":"{}","schema_seq_no":{}}}"#, issuer_did, schema_seq_no);
 
     // 6. Prover create Claim Request
     let err =
@@ -184,15 +184,14 @@ fn anoncreds_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claim_req_json) = prover_create_claim_req_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    info!("claim_req_json {:?}", claim_req_json);
     assert_eq!(ErrorCode::Success, err);
 
     let claim_json = r#"{
-                       "sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"],
-                       "name":["Alex","1139481716457488690172217916278103335"],
-                       "height":["175","175"],
-                       "age":["28","28"]
-                     }"#;
+                               "sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"],
+                               "name":["Alex","1139481716457488690172217916278103335"],
+                               "height":["175","175"],
+                               "age":["28","28"]
+                             }"#;
 
     // 7. Issuer create Claim for Claim Request
     let err =
@@ -204,9 +203,7 @@ fn anoncreds_demo_works() {
                                  issuer_create_claim_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, revoc_reg_update_json, xclaim_json) = issuer_create_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    info!("xclaim_json {:?}", xclaim_json);
-    info!("revoc_reg_update_json {:?}", revoc_reg_update_json);
+    let (err, _, xclaim_json) = issuer_create_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 7. Prover process and store Claim
@@ -221,12 +218,23 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                   "name":"proof_req_1",
-                                   "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
-                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
-                                }}"#, schema_seq_no);
+                                               "nonce":"123432421212",
+                                               "name":"proof_req_1",
+                                               "version":"0.1",
+                                               "requested_attrs":{{
+                                                    "attr1_referent":{{
+                                                        "name":"name",
+                                                        "restrictions":[{{"schema_seq_no":{}, "issuer_did":"{}"}}]
+                                                    }}
+                                               }},
+                                               "requested_predicates":{{
+                                                   "predicate1_referent":{{
+                                                       "attr_name":"age",
+                                                       "p_type":">=",
+                                                       "value":18
+                                                   }}
+                                               }}
+                                           }}"#, schema_seq_no, issuer_did);
 
     // 8. Prover gets Claims for Proof Request
     let err =
@@ -237,22 +245,21 @@ fn anoncreds_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claims_json) = prover_get_claims_for_proof_req_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    info!("claims_json {:?}", claims_json);
     assert_eq!(ErrorCode::Success, err);
-    let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-    let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
+    let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+    let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
     assert_eq!(1, claims_for_attr_1.len());
 
     let claim = claims_for_attr_1[0].clone();
 
     let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_uuid":["{}",true]}},
-                                          "requested_predicates":{{"predicate1_uuid":"{}"}}
-                                        }}"#, claim.claim_uuid, claim.claim_uuid);
+                                                    "self_attested_attributes":{{}},
+                                                    "requested_attrs":{{"attr1_referent":["{}",true]}},
+                                                    "requested_predicates":{{"predicate1_referent":"{}"}}
+                                                  }}"#, claim.referent, claim.referent);
 
-    let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
-    let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
+    let schemas_json = format!(r#"{{"{}":{}}}"#, claim.referent, schema);
+    let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.referent, claim_def_json);
     let revoc_regs_jsons = "{}";
 
     // 9. Prover create Proof for Proof Request
@@ -269,7 +276,6 @@ fn anoncreds_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, proof_json) = prover_create_proof_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    info!("proof_json {:?}", proof_json);
     assert_eq!(ErrorCode::Success, err);
 
     // 10. Verifier verify proof
