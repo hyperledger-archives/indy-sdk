@@ -66,7 +66,7 @@ impl Pool {
             return Err(err);
         }
 
-        let (err, pool_handle) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+        let (err, pool_handle) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);

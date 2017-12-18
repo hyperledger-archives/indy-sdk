@@ -456,7 +456,7 @@ impl TransactionHandler {
         })
     }
 
-    pub fn process_timeout(&mut self) {
+    pub fn process_timeout(&mut self) -> Result<(), PoolError> {
         let timeout_cmds: Vec<u64> = self.pending_commands.iter()
             .filter(|&(_, cur)| match cur.full_cmd_timeout {
                 Some(tm) => tm <= time::now_utc(),
@@ -469,6 +469,7 @@ impl TransactionHandler {
         for cmd in timeout_cmds {
             self.pending_commands.remove(&cmd);
         }
+
         for (_, pc) in &mut self.pending_commands {
             let is_timeout = pc.resendable_request.as_ref()
                 .and_then(|resend| resend.next_try_send_time)
@@ -478,6 +479,8 @@ impl TransactionHandler {
                 pc.try_send_to_next_node_if_exists(&self.nodes);
             }
         }
+
+        Ok(())
     }
 }
 
@@ -591,7 +594,7 @@ mod tests {
             replies: HashMap::new(),
             parent_cmd_ids: vec!(cmd_id),
             resendable_request: None,
-            full_cmd_timeout: pending_cmd.full_cmd_timeout, //just copy for eq check other fields
+            full_cmd_timeout: pending_cmd.full_cmd_timeout /* just copy for eq check other fields*/,
         };
         assert_eq!(pending_cmd, &exp_command_process);
         let diff: Duration = expected_timeout.sub(pending_cmd.full_cmd_timeout.unwrap());

@@ -29,7 +29,7 @@ use std::error::Error;
 use std::{fmt, fs, io, thread};
 use std::fmt::Debug;
 use std::io::{BufRead, Write};
-use std::ops::Sub;
+use std::ops::{Add, Sub};
 
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
@@ -127,14 +127,14 @@ impl PoolWorkerHandler {
 
     fn get_upcoming_timeout(&self) -> Option<Tm> {
         match self {
-            &PoolWorkerHandler::CatchupHandler(_) => None,
+            &PoolWorkerHandler::CatchupHandler(ref ch) => ch.get_upcoming_timeout(),
             &PoolWorkerHandler::TransactionHandler(ref ch) => ch.get_upcoming_timeout(),
         }
     }
 
-    fn process_timeout(&mut self) {
+    fn process_timeout(&mut self) -> Result<(), PoolError> {
         match self {
-            &mut PoolWorkerHandler::CatchupHandler(_) => {}
+            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.process_timeout(),
             &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.process_timeout(),
         }
     }
@@ -206,6 +206,7 @@ impl PoolWorker {
             initiate_cmd_id: refresh_cmd_id.unwrap_or(self.open_cmd_id),
             is_refresh: refresh_cmd_id.is_some(),
             pool_id: self.pool_id,
+            timeout: time::now_utc().add(Duration::seconds(catchup::CATCHUP_ROUND_TIMEOUT)),
             ..Default::default()
         };
         self.handler = PoolWorkerHandler::CatchupHandler(catchup_handler);
@@ -274,7 +275,7 @@ impl PoolWorker {
                     })?;
                 }
                 &ZMQLoopAction::Timeout => {
-                    self.handler.process_timeout();
+                    self.handler.process_timeout()?;
                 }
             }
         }
