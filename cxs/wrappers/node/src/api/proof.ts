@@ -26,6 +26,13 @@ export interface IProofData {
   name: string
 }
 
+export interface IProofResponse {
+  issuerDid: string,
+  schemaSeqNo: number,
+  claim_uuid: string,
+  revealed_attrs: [{name: string, value: string, revealed: boolean}]
+}
+
 /**
  * @description This represents one attribute expected for user to prove.
  * A list of these attributes will be composed of all requirements for user to prove.
@@ -175,6 +182,30 @@ export class Proof extends CXSBase {
       await this.updateState()
     } catch (err) {
       throw new CXSInternalError(`cxs_proof_send_request -> ${err}`)
+    }
+  }
+
+  async getProof (connection: Connection): Promise<IProofResponse> {
+    try {
+      const proof = await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().cxs_proof_get_proof_offer(0, this.handle, connection.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback('void', ['uint32', 'uint32'], (xcommandHandle, err, proofData) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve(proofData)
+          })
+        )
+      await this.updateState()
+      return JSON.parse(proof)
+    } catch (err) {
+      throw new CXSInternalError(`cxs_proof_get_proof_offer -> ${err}`)
     }
   }
 }

@@ -240,7 +240,7 @@ pub mod tests {
     #[test]
     fn test_wallet() {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        let wallet_name = String::from("wallet1");
+        let wallet_name = String::from("walletUnique");
         assert!(init_wallet(&wallet_name).unwrap() > 0);
         assert_eq!(error::UNKNOWN_ERROR.code_num, init_wallet(&String::from("")).unwrap_err());
 

@@ -8,6 +8,7 @@ use connection;
 use std::thread;
 use std::ptr;
 use api::CxsStatus;
+use api::{ CxsStateType };
 
 /// Create a new Proof object that requests a proof for an enterprise
 ///
@@ -225,8 +226,59 @@ pub extern fn cxs_proof_send_request(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_proof_get_proof_offer(proof_handle: u32, response_data: *mut c_char) -> u32 { error::SUCCESS.code_num }
+/// Get Proof offer
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Proof handle that was provided during creation. Used to identify proof object
+///
+/// connection_handle: Connection handle that identifies pairwise connection
+///
+/// cb: Callback that provides Proof attributes and error status of sending the claim
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn cxs_proof_get_proof_offer(command_handle: u32,
+                                        proof_handle: u32,
+                                        connection_handle: u32,
+                                        cb: Option<extern fn(xcommand_handle: u32, err: u32, response_data: *const c_char)>) -> u32 {
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    if !proof::is_valid_handle(proof_handle) {
+        return error::INVALID_PROOF_HANDLE.code_num;
+    }
+
+    if !connection::is_valid_handle(connection_handle) {
+        return error::INVALID_CONNECTION_HANDLE.code_num;
+    }
+
+    //update the state to see if proof has come
+    proof::update_state(proof_handle);
+
+    if proof::get_state(proof_handle) != CxsStateType::CxsStateRequestReceived as u32 {
+        info!("No proof offer available for: {}", proof_handle);
+        return error::NOT_READY.code_num;
+    }
+
+    thread::spawn(move|| {
+        match proof::get_proof(proof_handle) {
+            Ok(x) => {
+                let msg = CStringUtils::string_to_cstring(x);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            },
+            Err(x) => {
+                warn!("could not process proof offer {}", proof_handle);
+                cb(command_handle, x, ptr::null_mut());
+            },
+        };
+    });
+
+    error::SUCCESS.code_num
+}
+
+
 #[allow(unused_variables)]
 pub extern fn cxs_proof_validate_response(proof_handle: u32, response_data: *const c_char) -> u32 { error::SUCCESS.code_num }
 #[allow(unused_variables, unused_mut)]
@@ -268,6 +320,15 @@ mod tests {
         println!("successfully called serialize_cb: {}", proof_string);
     }
 
+    extern "C" fn get_proof_cb(handle: u32, err: u32, proof_string: *const c_char) {
+        assert_eq!(err, 0);
+        if proof_string.is_null() {
+            panic!("proof_string is null");
+        }
+        check_useful_c_str!(proof_string, ());
+        println!("successfully called get_proof_cb: {}", proof_string);
+    }
+
     extern "C" fn create_and_serialize_cb(command_handle: u32, err: u32, proof_handle: u32) {
         assert_eq!(err, 0);
         assert!(proof_handle > 0);
@@ -280,7 +341,7 @@ mod tests {
         assert_eq!(err, 0);
         assert!(proof_handle > 0);
         println!("successfully called deserialize_cb");
-        let original = "{\"source_id\":\"source id\",\"handle\":1,\"requested_attrs\":\"{\\\"attrs\\\":[{\\\"name\\\":\\\"person name\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"address_1\\\"},{\\\"schema_seq_no\\\":2,\\\"issuer_did\\\":\\\"ISSUER_DID2\\\",\\\"name\\\":\\\"address_2\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"city\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"state\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"zip\\\"}]}\",\"requested_predicates\":\"{\\\"attr_name\\\":\\\"age\\\",\\\"p_type\\\":\\\"GE\\\",\\\"value\\\":18,\\\"schema_seq_no\\\":1,\\\"issuer_did\\\":\\\"DID1\\\"}\",\"msg_uid\":\"\",\"requester_did\":\"234\",\"prover_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"state\":1,\"tid\":33,\"mid\":22,\"name\":\"Name Data\",\"version\":\"1.0\",\"nonce\":\"123456\"}";
+        let original = "{\"source_id\":\"source id\",\"handle\":1,\"requested_attrs\":\"{\\\"attrs\\\":[{\\\"name\\\":\\\"person name\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"address_1\\\"},{\\\"schema_seq_no\\\":2,\\\"issuer_did\\\":\\\"ISSUER_DID2\\\",\\\"name\\\":\\\"address_2\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"city\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"state\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"zip\\\"}]}\",\"requested_predicates\":\"{\\\"attr_name\\\":\\\"age\\\",\\\"p_type\\\":\\\"GE\\\",\\\"value\\\":18,\\\"schema_seq_no\\\":1,\\\"issuer_did\\\":\\\"DID1\\\"}\",\"msg_uid\":\"\",\"ref_msg_id\":\"\",\"requester_did\":\"234\",\"prover_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"state\":1,\"proof_state\":0,\"tid\":33,\"mid\":22,\"name\":\"Name Data\",\"version\":\"1.0\",\"nonce\":\"123456\",\"proof_offer\":null,\"proof_request\":null}";
         let new = proof::to_string(proof_handle).unwrap();
         assert_eq!(original,new);
     }
@@ -341,7 +402,7 @@ mod tests {
     #[test]
     fn test_cxs_proof_deserialize_succeeds() {
         set_default_and_enable_test_mode();
-        let original = "{\"nonce\":\"123456\",\"version\":\"1.0\",\"handle\":1,\"mid\":22,\"msg_uid\":\"\",\"name\":\"Name Data\",\"prover_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"requested_attrs\":\"{\\\"attrs\\\":[{\\\"name\\\":\\\"person name\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"address_1\\\"},{\\\"schema_seq_no\\\":2,\\\"issuer_did\\\":\\\"ISSUER_DID2\\\",\\\"name\\\":\\\"address_2\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"city\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"state\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"zip\\\"}]}\",\"requested_predicates\":\"{\\\"attr_name\\\":\\\"age\\\",\\\"p_type\\\":\\\"GE\\\",\\\"value\\\":18,\\\"schema_seq_no\\\":1,\\\"issuer_did\\\":\\\"DID1\\\"}\",\"requester_did\":\"234\",\"source_id\":\"source id\",\"state\":1,\"tid\":33}";
+        let original = "{\"nonce\":\"123456\",\"version\":\"1.0\",\"handle\":1,\"mid\":22,\"msg_uid\":\"\",\"ref_msg_id\":\"\",\"name\":\"Name Data\",\"prover_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"requested_attrs\":\"{\\\"attrs\\\":[{\\\"name\\\":\\\"person name\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"address_1\\\"},{\\\"schema_seq_no\\\":2,\\\"issuer_did\\\":\\\"ISSUER_DID2\\\",\\\"name\\\":\\\"address_2\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"city\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"state\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"zip\\\"}]}\",\"requested_predicates\":\"{\\\"attr_name\\\":\\\"age\\\",\\\"p_type\\\":\\\"GE\\\",\\\"value\\\":18,\\\"schema_seq_no\\\":1,\\\"issuer_did\\\":\\\"DID1\\\"}\",\"requester_did\":\"234\",\"source_id\":\"source id\",\"state\":1,\"proof_state\":0,\"tid\":33,\"proof_offer\":null,\"proof_request\":null}";
         cxs_proof_deserialize(0,CString::new(original).unwrap().into_raw(), Some(deserialize_cb));
         thread::sleep(Duration::from_millis(200));
     }
@@ -390,6 +451,27 @@ mod tests {
         thread::sleep(Duration::from_millis(1000));
         assert_eq!(proof::get_state(handle),CxsStateType::CxsStateOfferSent as u32);
         _m.assert();
+    }
+
+    #[test]
+    fn test_get_proof_offer_fails_with_not_ready_with_no_offer() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let handle = match create_proof(None,
+                                        REQUESTED_ATTRS.to_owned(),
+                                        REQUESTED_PREDICATES.to_owned(),
+                                        "Name".to_owned()) {
+            Ok(x) => x,
+            Err(_) => panic!("Proof creation failed"),
+        };
+        assert!(handle > 0);
+        let connection_handle = connection::create_connection("test_send_proof_request".to_owned());
+        connection::set_pw_did(connection_handle, "XXFh7yBzrpJQmNyZzgoTqB");
+
+        thread::sleep(Duration::from_millis(300));
+        let rc = cxs_proof_get_proof_offer(0, handle, connection_handle, Some(get_proof_cb));
+        assert_eq!(rc, error::NOT_READY.code_num);
+        thread::sleep(Duration::from_millis(300));
     }
 
 }
