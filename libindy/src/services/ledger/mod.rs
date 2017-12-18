@@ -169,6 +169,11 @@ impl LedgerService {
 
         let data = NodeOperationData::from_json(&data)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {}", err.to_string())))?;
+        if data.node_ip.is_none() && data.node_port.is_none()
+            && data.client_ip.is_none() && data.client_port.is_none()
+            && data.alias.is_none() && data.services.is_none() && data.blskey.is_none() {
+            return Err(CommonError::InvalidStructure("Invalid data json: all fields missed at once".to_string()));
+        }
         let operation = NodeOperation::new(dest.to_string(), data);
         Request::build_request(identifier.to_string(), operation)
             .map_err(|err| CommonError::InvalidState(format!("Invalid node request json: {}", err.to_string())))
@@ -384,8 +389,12 @@ mod tests {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
         let dest = "dest";
-        let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1}"#;
 
+        let data = r#"{ }"#;
+        let node_request = ledger_service.build_node_request(identifier, dest, data);
+        assert!(node_request.is_err());
+
+        let data = r#"{ "unexpected_param": 1 }"#;
         let node_request = ledger_service.build_node_request(identifier, dest, data);
         assert!(node_request.is_err());
     }

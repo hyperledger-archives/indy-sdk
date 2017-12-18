@@ -51,7 +51,7 @@ impl WalletUtils {
             Some(InmemWallet::open),
             Some(InmemWallet::set),
             Some(InmemWallet::get),
-            Some(InmemWallet::get_not_expied),
+            Some(InmemWallet::get_not_expired),
             Some(InmemWallet::list),
             Some(InmemWallet::close),
             Some(InmemWallet::delete),

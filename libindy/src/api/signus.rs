@@ -457,6 +457,51 @@ pub extern fn indy_get_did_metadata(command_handle: i32,
     result_to_err_code!(result)
 }
 
+/// Get info about My DID in format: DID, verkey, metadata
+#[no_mangle]
+pub extern fn indy_get_my_did_with_meta(command_handle: i32,
+                                        wallet_handle: i32,
+                                        my_did: *const c_char,
+                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                             did_with_meta: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(my_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::GetMyDidWithMeta(
+            wallet_handle,
+            my_did,
+            Box::new(move |result| {
+                let (err, did_with_meta) = result_to_err_code_1!(result, String::new());
+                let did_with_meta = CStringUtils::string_to_cstring(did_with_meta);
+                cb(command_handle, err, did_with_meta.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+/// Lists created DIDs with metadata as JSON array with each DID in format: DID, verkey, metadata
+#[no_mangle]
+pub extern fn indy_list_my_dids_with_meta(command_handle: i32,
+                                          wallet_handle: i32,
+                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                               dids: *const c_char)>) -> ErrorCode {
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Signus(SignusCommand::ListMyDidsWithMeta(
+            wallet_handle,
+            Box::new(move |result| {
+                let (err, dids) = result_to_err_code_1!(result, String::new());
+                let dids = CStringUtils::string_to_cstring(dids);
+                cb(command_handle, err, dids.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
 /// Signs a message by a signing key associated with my DID. The DID with a signing key
 /// must be already created and stored in a secured wallet (see create_and_store_my_identity)
 ///

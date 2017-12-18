@@ -1287,8 +1287,8 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        fn indy_build_node_request_works_for_missed_field_in_data_json() {
-            let data = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1}"#;
+        fn indy_build_node_request_works_for_missed_fields_in_data_json() {
+            let data = r#"{ }"#;
             let res = LedgerUtils::build_node_request(IDENTIFIER, DEST, data);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
