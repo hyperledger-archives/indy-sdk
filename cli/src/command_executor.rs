@@ -295,6 +295,99 @@ impl CommandExecutor {
         &self.ctx
     }
 
+    pub fn complete(&self, line: &str, word: &str, _start: usize, _end: usize) -> Vec<(String, char)> {
+        let mut completes: Vec<(String, char)> = vec![];
+
+        let (cmd, params) = CommandExecutor::_split_first_word(line);
+
+        if let Some(ref command) = self.commands.get(cmd) {
+            // Complete command params
+
+            if "help".starts_with(word) {
+                completes.push(("help".to_owned(), ' '));
+            }
+
+            if let Some(main_param) = command.metadata().main_param() {
+                if main_param.name().starts_with(word) {
+                    completes.push((main_param.name().to_owned(), '='));
+                }
+            }
+
+            let param_names: Vec<(String, char)> = command
+                .metadata()
+                .params()
+                .iter()
+                .filter(|param| param.name().starts_with(word))
+                .map(|param| (param.name().to_owned(), '='))
+                .collect();
+
+            completes.extend(param_names);
+        } else if let Some(&(ref _group, ref commands)) = self.grouped_commands.get(cmd) {
+            let (cmd, _) = CommandExecutor::_split_first_word(params);
+
+            if let Some(ref command) = commands.get(cmd) {
+                // Complete command params
+
+                if "help".starts_with(word) {
+                    completes.push(("help".to_owned(), ' '));
+                }
+
+                if let Some(main_param) = command.metadata().main_param() {
+                    if main_param.name().starts_with(word) {
+                        completes.push((main_param.name().to_owned(), '='));
+                    }
+                }
+
+                let param_names: Vec<(String, char)> = command
+                    .metadata()
+                    .params()
+                    .iter()
+                    .filter(|param| param.name().starts_with(word))
+                    .map(|param| (param.name().to_owned(), '='))
+                    .collect();
+
+                completes.extend(param_names);
+            } else {
+                // Complete group commands
+
+                if "help".starts_with(word) {
+                    completes.push(("help".to_owned(), ' '));
+                }
+
+                let command_names: Vec<(String, char)> = commands
+                    .iter()
+                    .filter(|name_meta| name_meta.0.starts_with(word))
+                    .map(|name_meta| ((*name_meta.0).to_owned(), ' '))
+                    .collect();
+
+                completes.extend(command_names);
+            }
+        } else {
+            // Complete top level commands and groups
+
+            if "help".starts_with(word) {
+                completes.push(("help".to_owned(), ' '));
+            }
+
+            let command_names: Vec<(String, char)> = self.commands
+                .iter()
+                .filter(|name_meta| name_meta.0.starts_with(word))
+                .map(|name_meta| ((*name_meta.0).to_owned(), ' '))
+                .collect();
+
+            let group_names: Vec<(String, char)> = self.grouped_commands
+                .iter()
+                .filter(|name_meta| name_meta.0.starts_with(word))
+                .map(|name_meta| ((*name_meta.0).to_owned(), ' '))
+                .collect();
+
+            completes.extend(command_names);
+            completes.extend(group_names);
+        }
+
+        completes
+    }
+
     fn _execute_group_command(&self, group: &CommandGroup, commands: &HashMap<&'static str, Command>, line: &str) -> Result<(), ()> {
         let (cmd, params) = CommandExecutor::_split_first_word(line);
 
