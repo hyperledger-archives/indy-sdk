@@ -579,13 +579,16 @@ impl CommandExecutor {
             let mut split = param.splitn(2, '=');
             let param_name = split.next().unwrap();
             let param_value = split.next();
+
+            if res.contains_key(param_name) {
+                return Err(format!("\"{}\" parameter presented multiple times", param_name));
+            }
+
             let param_metadata = command.params().iter().find(|p| p.name() == param_name);
 
             if let Some(param_metadata) = param_metadata {
                 if let Some(param_value) = param_value {
-                    if res.contains_key(param_metadata.name()) {
-                        return Err(format!("\"{}\" parameter presented multiple times", param_metadata.name()));
-                    } else if let Some(param_value) = unescape(CommandExecutor::_trim_quotes(param_value)) {
+                    if let Some(param_value) = unescape(CommandExecutor::_trim_quotes(param_value)) {
                         res.insert(param_metadata.name(), param_value);
                     } else {
                         return Err(format!("Invalid escape sequence for \"{}\" parameter present", param_metadata.name()));
