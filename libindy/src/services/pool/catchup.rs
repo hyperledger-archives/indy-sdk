@@ -287,7 +287,7 @@ impl CatchupHandler {
         let cmd = if self.is_refresh {
             PoolCommand::RefreshAck(self.initiate_cmd_id, status)
         } else {
-            PoolCommand::OpenAck(self.initiate_cmd_id, status.map(|()| self.pool_id))
+            PoolCommand::OpenAck(self.initiate_cmd_id, self.pool_id, status)
         };
         CommandExecutor::instance()
             .send(Command::Pool(cmd))

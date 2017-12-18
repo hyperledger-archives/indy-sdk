@@ -49,7 +49,8 @@ use std::path::PathBuf;
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 pub struct PoolService {
-    pools: RefCell<HashMap<i32, Pool>>,
+    pending_pools: RefCell<HashMap<i32, Pool>>,
+    open_pools: RefCell<HashMap<i32, Pool>>,
 }
 
 struct Pool {
@@ -553,7 +554,8 @@ impl RemoteNode {
 impl PoolService {
     pub fn new() -> PoolService {
         PoolService {
-            pools: RefCell::new(HashMap::new()),
+            pending_pools: RefCell::new(HashMap::new()),
+            open_pools: RefCell::new(HashMap::new()),
         }
     }
 
@@ -603,7 +605,7 @@ impl PoolService {
     }
 
     pub fn delete(&self, name: &str) -> Result<(), PoolError> {
-        for pool in self.pools.try_borrow().map_err(CommonError::from)?.values() {
+        for pool in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
             if pool.name.eq(name) {
                 return Err(PoolError::CommonError(CommonError::InvalidState("Can't delete pool config - pool is open now".to_string())));
             }
@@ -613,7 +615,7 @@ impl PoolService {
     }
 
     pub fn open(&self, name: &str, config: Option<&str>) -> Result<i32, PoolError> {
-        for pool in self.pools.try_borrow().map_err(CommonError::from)?.values() {
+        for pool in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
             if name.eq(pool.name.as_str()) {
                 //TODO change error
                 return Err(PoolError::InvalidHandle("Pool with same name already opened".to_string()));
@@ -624,13 +626,23 @@ impl PoolService {
         let new_pool = Pool::new(name, cmd_id)?;
         //FIXME process config: check None (use default), transfer to Pool instance
 
-        self.pools.try_borrow_mut().map_err(CommonError::from)?.insert(new_pool.id, new_pool);
+        self.pending_pools.try_borrow_mut().map_err(CommonError::from)?.insert(new_pool.id, new_pool);
         return Ok(cmd_id);
+    }
+
+    pub fn add_open_pool(&self, pool_id: i32) -> Result<i32, PoolError> {
+        let pool = self.pending_pools.try_borrow_mut().map_err(CommonError::from)?
+            .remove(&pool_id)
+            .ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", pool_id)))?;
+
+        self.open_pools.try_borrow_mut().map_err(CommonError::from)?.insert(pool_id, pool);
+
+        Ok(pool_id)
     }
 
     pub fn send_tx(&self, handle: i32, json: &str) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        self.pools.try_borrow().map_err(CommonError::from)?
+        self.open_pools.try_borrow().map_err(CommonError::from)?
             .get(&handle).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?
             .send_tx(cmd_id, json)?;
         Ok(cmd_id)
@@ -638,7 +650,7 @@ impl PoolService {
 
     pub fn close(&self, handle: i32) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        self.pools.try_borrow_mut().map_err(CommonError::from)?
+        self.open_pools.try_borrow_mut().map_err(CommonError::from)?
             .remove(&handle).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?
             .close(cmd_id)
             .map(|()| cmd_id)
@@ -646,7 +658,7 @@ impl PoolService {
 
     pub fn refresh(&self, handle: i32) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        self.pools.try_borrow_mut().map_err(CommonError::from)?
+        self.open_pools.try_borrow_mut().map_err(CommonError::from)?
             .get(&handle).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?
             .refresh(cmd_id)
             .map(|()| cmd_id)
@@ -668,7 +680,7 @@ impl PoolService {
     }
 
     pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
-        self.pools.try_borrow().map_err(CommonError::from)?.get(&handle).map_or(
+        self.open_pools.try_borrow().map_err(CommonError::from)?.get(&handle).map_or(
             Err(PoolError::InvalidHandle(format!("Pool doesn't exists for handle {}", handle))),
             |pool: &Pool| Ok(pool.name.clone()))
     }
@@ -707,7 +719,7 @@ mod tests {
             let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
             recv_soc.bind("inproc://test").unwrap();
             send_soc.connect("inproc://test").unwrap();
-            ps.pools.borrow_mut().insert(pool_id, Pool {
+            ps.open_pools.borrow_mut().insert(pool_id, Pool {
                 name: String::new(),
                 id: pool_id,
                 worker: None,
@@ -729,7 +741,7 @@ mod tests {
             let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
             recv_soc.bind("inproc://test").unwrap();
             send_soc.connect("inproc://test").unwrap();
-            ps.pools.borrow_mut().insert(pool_id, Pool {
+            ps.open_pools.borrow_mut().insert(pool_id, Pool {
                 name: String::new(),
                 id: pool_id,
                 worker: None,
@@ -773,7 +785,7 @@ mod tests {
                 cmd_sock: recv_cmd_sock,
                 id: pool_id
             };
-            ps.pools.borrow_mut().insert(pool_id, pool);
+            ps.open_pools.borrow_mut().insert(pool_id, pool);
 
             fs::create_dir_all(path.as_path()).unwrap();
             assert!(path.exists());

@@ -55,6 +55,8 @@ def windowsTesting() {
                 }
 
                 dir('cli') {
+                    bat "sed -i -e \"s/10\\.0\\.0\\.2/${INDY_SDK_SERVER_IP}/g\" docker_pool_transactions_genesis"
+
                     bat "copy $WORKSPACE\\libindy\\target\\debug\\indy.dll $WORKSPACE\\libindy\\prebuilt\\lib"
                     bat "copy $WORKSPACE\\libindy\\target\\debug\\indy.lib $WORKSPACE\\libindy\\prebuilt\\lib"
 

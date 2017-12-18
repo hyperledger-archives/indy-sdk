@@ -1,7 +1,5 @@
 use super::{ErrorCode, IndyHandle};
 
-use utils::timeout::TimeoutUtils;
-
 use libc::c_char;
 use std::ffi::CString;
 use std::sync::mpsc::channel;
@@ -13,11 +11,7 @@ impl Did {
     pub fn new(wallet_handle: IndyHandle, my_did_json: &str) -> Result<(String, String), ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, did, verkey| {
-            sender.send((err, did, verkey)).unwrap();
-        });
-
-        let (command_handle, cb) = Did::closure_to_create_and_store_my_did_cb(cb);
+        let (command_handle, cb) =  super::callbacks::_closure_to_cb_ec_string_string(sender);
 
         let my_did_json = CString::new(my_did_json).unwrap();
 
@@ -28,27 +22,13 @@ impl Did {
                                          cb)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, my_did, my_verkey) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok((my_did, my_verkey))
+        super::results::result_to_string_string(err, receiver)
     }
 
     pub fn replace_keys_start(wallet_handle: i32, did: &str, identity_json: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, verkey| {
-            sender.send((err, verkey)).unwrap();
-        });
-
-        let (command_handle, cb) = Did::closure_to_replace_keys_start_cb(cb);
+        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
 
         let did = CString::new(did).unwrap();
         let identity_json = CString::new(identity_json).unwrap();
@@ -61,27 +41,13 @@ impl Did {
                                     cb)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, my_verkey) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(my_verkey)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn replace_keys_apply(wallet_handle: i32, did: &str) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err| {
-            sender.send((err)).unwrap();
-        });
-
-        let (command_handle, cb) = Did::closure_to_replace_keys_apply_cb(cb);
+        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec(sender);
 
         let did = CString::new(did).unwrap();
 
@@ -92,25 +58,13 @@ impl Did {
                                     cb)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let err = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(())
+        super::results::result_to_empty(err, receiver)
     }
 
     pub fn set_metadata(wallet_handle: i32, did: &str, metadata: &str) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
-        let cb = Box::new(move |err| {
-            sender.send((err)).unwrap();
-        });
-        let (command_handle, callback) = Did::closure_to_store_did_metadata_cb(cb);
+
+        let (command_handle, callback) = super::callbacks::_closure_to_cb_ec(sender);
 
         let did = CString::new(did).unwrap();
         let metadata = CString::new(metadata).unwrap();
@@ -123,24 +77,13 @@ impl Did {
                                   callback)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-        let err = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-        Ok(())
+        super::results::result_to_empty(err, receiver)
     }
 
     pub fn get_did_with_meta(wallet_handle: i32, did: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, verkey| {
-            sender.send((err, verkey)).unwrap();
-        });
-
-        let (command_handle, cb) = Did::closure_to_get_did_with_meta_cb(cb);
+        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
 
         let did = CString::new(did).unwrap();
 
@@ -151,83 +94,17 @@ impl Did {
                                       cb)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, did_with_meta) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(did_with_meta)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn list_dids_with_meta(wallet_handle: i32) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, dids| {
-            sender.send((err, dids)).unwrap();
-        });
+        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
 
-        let (command_handle, cb) = Did::closure_to_list_dids_with_meta(cb);
+        let err = unsafe { indy_list_my_dids_with_meta(command_handle, wallet_handle, cb) };
 
-        let err = unsafe {
-            indy_list_my_dids_with_meta(command_handle, wallet_handle, cb)
-        };
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, dids) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(dids)
-    }
-
-    pub fn closure_to_create_and_store_my_did_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
-                                                                                                            Option<extern fn(command_handle: i32,
-                                                                                                                             err: ErrorCode,
-                                                                                                                             did: *const c_char,
-                                                                                                                             verkey: *const c_char)>) {
-        super::callbacks::_closure_to_cb_ec_string_string(closure)
-    }
-
-    pub fn closure_to_replace_keys_start_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
-                                                                                               Option<extern fn(command_handle: i32,
-                                                                                                                err: ErrorCode,
-                                                                                                                verkey: *const c_char)>) {
-        super::callbacks::_closure_to_cb_ec_string(closure)
-    }
-
-    pub fn closure_to_replace_keys_apply_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32, Option<extern fn(command_handle: i32,
-                                                                                                             err: ErrorCode)>) {
-        super::callbacks::_closure_to_cb_ec(closure)
-    }
-
-    pub fn closure_to_store_did_metadata_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
-                                                                                       Option<extern fn(command_handle: i32,
-                                                                                                        err: ErrorCode)>) {
-        super::callbacks::_closure_to_cb_ec(closure)
-    }
-
-    pub fn closure_to_get_did_with_meta_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
-                                                                                              Option<extern fn(command_handle: i32,
-                                                                                                               err: ErrorCode,
-                                                                                                               did_with_meta: *const c_char)>) {
-        super::callbacks::_closure_to_cb_ec_string(closure)
-    }
-
-    fn closure_to_list_dids_with_meta(closure: Box<FnMut(ErrorCode, String) + Send>)
-                                      -> (i32,
-                                          Option<extern fn(command_handle: i32, err: ErrorCode,
-                                                           dids: *const c_char)>) {
-        super::callbacks::_closure_to_cb_ec_string(closure)
+        super::results::result_to_string(err, receiver)
     }
 }
 
