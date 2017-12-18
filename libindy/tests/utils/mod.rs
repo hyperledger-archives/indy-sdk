@@ -7,7 +7,7 @@ pub mod environment;
 
 pub mod pool;
 pub mod crypto;
-pub mod signus;
+pub mod did;
 pub mod wallet;
 pub mod ledger;
 pub mod anoncreds;
@@ -22,7 +22,6 @@ pub mod test;
 
 #[path = "../../src/utils/timeout.rs"]
 pub mod timeout;
-pub mod agent;
 
 #[path = "../../src/utils/sequence.rs"]
 pub mod sequence;

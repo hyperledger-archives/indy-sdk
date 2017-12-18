@@ -1,12 +1,11 @@
 extern crate libc;
 
-pub mod agent;
 pub mod anoncreds;
 pub mod crypto;
 pub mod ledger;
 pub mod pairwise;
 pub mod pool;
-pub mod signus;
+pub mod did;
 pub mod wallet;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -122,7 +121,7 @@ pub enum ErrorCode
 
     AnoncredsClaimRevoked = 406,
 
-    // Signus errors
+    // Crypto errors
     // Unknown format of DID entity keys
-    SignusUnknownCryptoError = 500
+    CryptoUnknownCryptoError = 500
 }

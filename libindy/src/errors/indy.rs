@@ -2,7 +2,7 @@ use errors::anoncreds::AnoncredsError;
 use errors::common::CommonError;
 use errors::ledger::LedgerError;
 use errors::pool::PoolError;
-use errors::signus::SignusError;
+use errors::crypto::CryptoError;
 use errors::wallet::WalletError;
 
 use api::ErrorCode;
@@ -17,7 +17,7 @@ pub enum IndyError {
     CommonError(CommonError),
     LedgerError(LedgerError),
     PoolError(PoolError),
-    SignusError(SignusError),
+    CryptoError(CryptoError),
     WalletError(WalletError),
 }
 
@@ -28,7 +28,7 @@ impl fmt::Display for IndyError {
             IndyError::CommonError(ref err) => err.fmt(f),
             IndyError::LedgerError(ref err) => err.fmt(f),
             IndyError::PoolError(ref err) => err.fmt(f),
-            IndyError::SignusError(ref err) => err.fmt(f),
+            IndyError::CryptoError(ref err) => err.fmt(f),
             IndyError::WalletError(ref err) => err.fmt(f)
         }
     }
@@ -41,7 +41,7 @@ impl error::Error for IndyError {
             IndyError::CommonError(ref err) => err.description(),
             IndyError::LedgerError(ref err) => err.description(),
             IndyError::PoolError(ref err) => err.description(),
-            IndyError::SignusError(ref err) => err.description(),
+            IndyError::CryptoError(ref err) => err.description(),
             IndyError::WalletError(ref err) => err.description()
         }
     }
@@ -52,7 +52,7 @@ impl error::Error for IndyError {
             IndyError::CommonError(ref err) => Some(err),
             IndyError::LedgerError(ref err) => Some(err),
             IndyError::PoolError(ref err) => Some(err),
-            IndyError::SignusError(ref err) => Some(err),
+            IndyError::CryptoError(ref err) => Some(err),
             IndyError::WalletError(ref err) => Some(err)
         }
     }
@@ -66,7 +66,7 @@ impl ToErrorCode for IndyError {
             IndyError::CommonError(ref err) => err.to_error_code(),
             IndyError::LedgerError(ref err) => err.to_error_code(),
             IndyError::PoolError(ref err) => err.to_error_code(),
-            IndyError::SignusError(ref err) => err.to_error_code(),
+            IndyError::CryptoError(ref err) => err.to_error_code(),
             IndyError::WalletError(ref err) => err.to_error_code()
         }
     }
@@ -102,8 +102,8 @@ impl From<LedgerError> for IndyError {
     }
 }
 
-impl From<SignusError> for IndyError {
-    fn from(err: SignusError) -> IndyError {
-        IndyError::SignusError(err)
+impl From<CryptoError> for IndyError {
+    fn from(err: CryptoError) -> IndyError {
+        IndyError::CryptoError(err)
     }
 }

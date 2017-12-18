@@ -112,9 +112,9 @@ typedef enum
 
     AnoncredsClaimRevoked = 406,
 
-    // Signus errors
+    // Crypto errors
     // Unknown format of DID entity keys
-    SignusUnknownCryptoError = 500
+    CryptoUnknownCryptoError = 500
 
 } indy_error_t;
 

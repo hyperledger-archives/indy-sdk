@@ -2,7 +2,7 @@ package org.hyperledger.indy.sdk;
 
 import org.hyperledger.indy.sdk.crypto.CryptoJSONParameters;
 import org.hyperledger.indy.sdk.pool.Pool;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
+import org.hyperledger.indy.sdk.did.DidJSONParameters;
 import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
 import org.hyperledger.indy.sdk.wallet.InMemWalletType;
@@ -48,10 +48,10 @@ public class IndyIntegrationTest {
 
 
 	protected static final String TRUSTEE_IDENTITY_JSON =
-			new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null).toJson();
+			new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null).toJson();
 
 	protected static final String MY1_IDENTITY_JSON =
-			new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, null, null).toJson();
+			new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, null, null).toJson();
 
 	protected static final String MY1_IDENTITY_KEY_JSON =
 			new CryptoJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();

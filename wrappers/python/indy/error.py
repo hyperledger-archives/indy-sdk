@@ -111,7 +111,7 @@ class ErrorCode(IntEnum):
 
     # Signus errors
     # Unknown format of DID entity keys
-    SignusUnknownCryptoError = 500
+    CryptoUnknownCryptoError = 500
 
 
 class IndyError(Exception):
