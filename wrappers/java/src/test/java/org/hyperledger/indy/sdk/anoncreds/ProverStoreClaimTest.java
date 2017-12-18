@@ -48,12 +48,12 @@ public class ProverStoreClaimTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		String claimJson = String.format("{\"claim\":{\"sex\":[\"male\",\"1\"],\"age\":[\"28\",\"28\"],\"name\":[\"Alex\",\"1\"],\"height\":[\"175\",\"175\"]},\n" +
+		String claimJson = String.format("{\"values\":{\"sex\":[\"male\",\"1\"],\"age\":[\"28\",\"28\"],\"name\":[\"Alex\",\"1\"],\"height\":[\"175\",\"175\"]},\n" +
 				"                          \"issuer_did\":\"%s\",\n" +
-				"                          \"revoc_reg_seq_no\":null,\n" +
+				"                          \"rev_reg_seq_no\":null,\n" +
 				"                          \"schema_seq_no\":2,\n" +
-				"                          \"signature\":{\"primary_claim\":{\"m2\":\"1\",\"a\":\"1\",\"e\":\"2\",\"v\":\"3\"}," +
-				"                          \"non_revocation_claim\":null}}", issuerDid2);
+				"                          \"signature\":{\"p_claim\":{\"m_2\":\"1\",\"a\":\"1\",\"e\":\"2\",\"v\":\"3\"}," +
+				"                          \"r_claim\":null}}", issuerDid2);
 
 		Anoncreds.proverStoreClaim(wallet, claimJson).get();
 	}

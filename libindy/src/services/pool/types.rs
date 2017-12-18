@@ -14,7 +14,7 @@ use utils::crypto::verkey_builder::build_full_verkey;
 use self::indy_crypto::bls;
 
 use services::ledger::merkletree::merkletree::MerkleTree;
-use utils::json::{JsonDecodable, JsonEncodable};
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -208,11 +208,11 @@ pub enum Message {
 }
 
 impl Message {
-    pub fn from_raw_str(str: &str) -> Result<Message, serde_json::Error> {
+    pub fn from_raw_str(str: &str) -> Result<Message, CommonError> {
         match str {
             "po" => Ok(Message::Pong),
             "pi" => Ok(Message::Ping),
-            _ => Message::from_json(str),
+            _ => Message::from_json(str).map_err(CommonError::from),
         }
     }
 }

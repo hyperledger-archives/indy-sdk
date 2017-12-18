@@ -1,12 +1,12 @@
 extern crate rusqlcipher;
 extern crate time;
+extern crate indy_crypto;
 
 use super::{Wallet, WalletType};
 
 use errors::common::CommonError;
 use errors::wallet::WalletError;
 use utils::environment::EnvironmentUtils;
-use utils::json::JsonDecodable;
 
 use self::rusqlcipher::Connection;
 use self::time::Timespec;
@@ -15,6 +15,9 @@ use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
 use std::ops::Sub;
+
+
+use self::indy_crypto::utils::json::{JsonDecodable};
 
 #[derive(Deserialize)]
 struct DefaultWalletRuntimeConfig {

@@ -11,6 +11,8 @@ extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
 
+extern crate openssl;
+
 // Note that to use macroses from util inside of other modules it must me loaded first!
 #[allow(dead_code)] /* FIXME */
 #[macro_use]

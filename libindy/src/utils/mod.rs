@@ -1,7 +1,5 @@
 pub mod environment;
 
-pub mod json;
-
 #[macro_use]
 pub mod cstring;
 

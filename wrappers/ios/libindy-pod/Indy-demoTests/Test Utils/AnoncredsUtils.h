@@ -30,10 +30,10 @@
  
  @param proofClaims Dictionary with format:
  {
- "requested_attr1_uuid": [claim1, claim2],
- "requested_attr2_uuid": [],
- "requested_attr3_uuid": [claim3],
- "requested_predicate_1_uuid": [claim1, claim3],
+ "requested_attr1_referent": [claim1, claim2],
+ "requested_attr2_referent": [],
+ "requested_attr3_referent": [claim3],
+ "requested_predicate_1_referent": [claim1, claim3],
  }
  @return Array of unique claims
  */

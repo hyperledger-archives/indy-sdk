@@ -118,36 +118,40 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverStoreClaim(proverWallet, claimJson).get();
 
 		//11. Prover gets Claims for Proof Request
-		String proofRequestJson = "{\n" +
-				"                          \"nonce\":\"123432421212\",\n" +
-				"                          \"name\":\"proof_req_1\",\n" +
-				"                          \"version\":\"0.1\",\n" +
-				"                          \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"},\n" +
-				"                                                \"attr2_uuid\":{\"schema_seq_no\":1,\"name\":\"sex\"}},\n" +
-				"                          \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
-				"                  }";
+		String proofRequestJson = "{" +
+				"                           \"nonce\":\"123432421212\",\n" +
+				"                           \"name\":\"proof_req_1\",\n" +
+				"                           \"version\":\"0.1\",\n" +
+				"                           \"requested_attrs\":{" +
+				"                               \"attr1_referent\":{ \"name\":\"name\"},\n" +
+				"                               \"attr2_referent\":{ \"name\":\"sex\"}" +
+				"                           },\n" +
+				"                           \"requested_predicates\":{" +
+				"                               \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}" +
+				"                           }\n" +
+				"                   }";
 
 		String claimsForProofJson = Anoncreds.proverGetClaimsForProofReq(proverWallet, proofRequestJson).get();
 		assertNotNull(claimsForProofJson);
 
 		JSONObject claimsForProof = new JSONObject(claimsForProofJson);
-		JSONArray claimsForAttribute1 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_uuid");
-		JSONArray claimsForAttribute2 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_uuid");
-		JSONArray claimsForPredicate = claimsForProof.getJSONObject("predicates").getJSONArray("predicate1_uuid");
+		JSONArray claimsForAttribute1 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
+		JSONArray claimsForAttribute2 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
+		JSONArray claimsForPredicate = claimsForProof.getJSONObject("predicates").getJSONArray("predicate1_referent");
 
 		assertEquals(claimsForAttribute1.length(), 1);
 		assertEquals(claimsForAttribute2.length(), 1);
 		assertEquals(claimsForPredicate.length(), 1);
 
-		String claimUuid = claimsForAttribute1.getJSONObject(0).getString("claim_uuid");
+		String claimUuid = claimsForAttribute1.getJSONObject(0).getString("referent");
 
 		//12. Prover create Proof
 		String selfAttestedValue = "yes";
 		String requestedClaimsJson = String.format("{\n" +
 				"                                          \"self_attested_attributes\":{\"self1\":\"%s\"},\n" +
-				"                                          \"requested_attrs\":{\"attr1_uuid\":[\"%s\", true],\n" +
-				"                                                               \"attr2_uuid\":[\"%s\", false]},\n" +
-				"                                          \"requested_predicates\":{\"predicate1_uuid\":\"%s\"}\n" +
+				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true],\n" +
+				"                                                               \"attr2_referent\":[\"%s\", false]},\n" +
+				"                                          \"requested_predicates\":{\"predicate1_referent\":\"%s\"}\n" +
 				"                                        }", selfAttestedValue, claimUuid, claimUuid, claimUuid);
 
 		String schemasJson = String.format("{\"%s\":%s}", claimUuid, schemaJson);
@@ -163,9 +167,9 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//13. Verifier verify Proof
 		assertEquals("Alex",
-				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr1_uuid").getString(1));
+				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr1_referent").getString(1));
 
-		assertNotNull(proof.getJSONObject("requested_proof").getJSONObject("unrevealed_attrs").getString("attr2_uuid"));
+		assertNotNull(proof.getJSONObject("requested_proof").getJSONObject("unrevealed_attrs").getString("attr2_referent"));
 
 		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("self1"));
 
@@ -272,10 +276,10 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                          \"nonce\":\"123432421212\",\n" +
 				"                          \"name\":\"proof_req_1\",\n" +
 				"                          \"version\":\"0.1\",\n" +
-				"                          \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"},\n" +
-				"                                               \"attr2_uuid\":{\"schema_seq_no\":2,\"name\":\"status\"}},\n" +
-				"                          \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}," +
-				"                                                    \"predicate2_uuid\":{\"attr_name\":\"period\",\"p_type\":\"GE\",\"value\":5}}\n" +
+				"                          \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\"},\n" +
+				"                                               \"attr2_referent\":{\"name\":\"status\"}},\n" +
+				"                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}," +
+				"                                                    \"predicate2_referent\":{\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}}\n" +
 				"                  }";
 
 
@@ -283,28 +287,28 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		assertNotNull(claimsForProofJson);
 
 		JSONObject claimsForProof = new JSONObject(claimsForProofJson);
-		JSONArray claimsForAttribute1 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_uuid");
-		JSONArray claimsForAttribute2 = claimsForProof.getJSONObject("attrs").getJSONArray("attr2_uuid");
-		JSONArray claimsForPredicate1 = claimsForProof.getJSONObject("predicates").getJSONArray("predicate1_uuid");
-		JSONArray claimsForPredicate2 = claimsForProof.getJSONObject("predicates").getJSONArray("predicate2_uuid");
+		JSONArray claimsForAttribute1 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
+		JSONArray claimsForAttribute2 = claimsForProof.getJSONObject("attrs").getJSONArray("attr2_referent");
+		JSONArray claimsForPredicate1 = claimsForProof.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		JSONArray claimsForPredicate2 = claimsForProof.getJSONObject("predicates").getJSONArray("predicate2_referent");
 
 		assertEquals(claimsForAttribute1.length(), 1);
 		assertEquals(claimsForAttribute2.length(), 1);
 		assertEquals(claimsForPredicate1.length(), 1);
 		assertEquals(claimsForPredicate2.length(), 1);
 
-		String claimUuidForAttr1 = claimsForAttribute1.getJSONObject(0).getString("claim_uuid");
-		String claimUuidForAttr2 = claimsForAttribute2.getJSONObject(0).getString("claim_uuid");
-		String claimUuidForPredicate1 = claimsForPredicate1.getJSONObject(0).getString("claim_uuid");
-		String claimUuidForPredicate2 = claimsForPredicate2.getJSONObject(0).getString("claim_uuid");
+		String claimUuidForAttr1 = claimsForAttribute1.getJSONObject(0).getString("referent");
+		String claimUuidForAttr2 = claimsForAttribute2.getJSONObject(0).getString("referent");
+		String claimUuidForPredicate1 = claimsForPredicate1.getJSONObject(0).getString("referent");
+		String claimUuidForPredicate2 = claimsForPredicate2.getJSONObject(0).getString("referent");
 
 		//15. Prover create Proof
 		String requestedClaimsJson = String.format("{\n" +
 				"                                          \"self_attested_attributes\":{},\n" +
-				"                                          \"requested_attrs\":{\"attr1_uuid\":[\"%s\", true],\n" +
-				"                                                               \"attr2_uuid\":[\"%s\", true]},\n" +
-				"                                          \"requested_predicates\":{\"predicate1_uuid\":\"%s\"," +
-				"                                                                    \"predicate2_uuid\":\"%s\"}\n" +
+				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true],\n" +
+				"                                                               \"attr2_referent\":[\"%s\", true]},\n" +
+				"                                          \"requested_predicates\":{\"predicate1_referent\":\"%s\"," +
+				"                                                                    \"predicate2_referent\":\"%s\"}\n" +
 				"                                        }", claimUuidForAttr1, claimUuidForAttr2, claimUuidForPredicate1, claimUuidForPredicate2);
 
 		String schemasJson = String.format("{\"%s\":%s, \"%s\":%s}", claimUuidForAttr1, gvtSchemaJson, claimUuidForAttr2, xyzSchemaJson);
@@ -320,10 +324,10 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//16. Verifier verify Proof
 		assertEquals("Alex",
-				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr1_uuid").getString(1));
+				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr1_referent").getString(1));
 
 		assertEquals("partial",
-				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr2_uuid").getString(1));
+				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr2_referent").getString(1));
 
 		Boolean valid = Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).get();
 		assertTrue(valid);
@@ -425,9 +429,9 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                          \"nonce\":\"123432421212\",\n" +
 				"                          \"name\":\"proof_req_1\",\n" +
 				"                          \"version\":\"0.1\",\n" +
-				"                          \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"}},\n" +
-				"                          \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}," +
-				"                                                    \"predicate2_uuid\":{\"attr_name\":\"period\",\"p_type\":\"GE\",\"value\":5}}\n" +
+				"                          \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+				"                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}," +
+				"                                                    \"predicate2_referent\":{\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}}\n" +
 				"                  }";
 
 
@@ -435,24 +439,24 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		assertNotNull(claimsForProofJson);
 
 		JSONObject claimsForProof = new JSONObject(claimsForProofJson);
-		JSONArray claimsForAttribute1 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_uuid");
-		JSONArray claimsForPredicate1 = claimsForProof.getJSONObject("predicates").getJSONArray("predicate1_uuid");
-		JSONArray claimsForPredicate2 = claimsForProof.getJSONObject("predicates").getJSONArray("predicate2_uuid");
+		JSONArray claimsForAttribute1 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
+		JSONArray claimsForPredicate1 = claimsForProof.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		JSONArray claimsForPredicate2 = claimsForProof.getJSONObject("predicates").getJSONArray("predicate2_referent");
 
 		assertEquals(claimsForAttribute1.length(), 1);
 		assertEquals(claimsForPredicate1.length(), 1);
 		assertEquals(claimsForPredicate2.length(), 1);
 
-		String claimUuidForAttr1 = claimsForAttribute1.getJSONObject(0).getString("claim_uuid");
-		String claimUuidForPredicate1 = claimsForPredicate1.getJSONObject(0).getString("claim_uuid");
-		String claimUuidForPredicate2 = claimsForPredicate2.getJSONObject(0).getString("claim_uuid");
+		String claimUuidForAttr1 = claimsForAttribute1.getJSONObject(0).getString("referent");
+		String claimUuidForPredicate1 = claimsForPredicate1.getJSONObject(0).getString("referent");
+		String claimUuidForPredicate2 = claimsForPredicate2.getJSONObject(0).getString("referent");
 
 		//14. Prover create Proof
 		String requestedClaimsJson = String.format("{\n" +
 				"                                          \"self_attested_attributes\":{},\n" +
-				"                                          \"requested_attrs\":{\"attr1_uuid\":[\"%s\", true]},\n" +
-				"                                          \"requested_predicates\":{\"predicate1_uuid\":\"%s\"," +
-				"                                                                    \"predicate2_uuid\":\"%s\"}\n" +
+				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true]},\n" +
+				"                                          \"requested_predicates\":{\"predicate1_referent\":\"%s\"," +
+				"                                                                    \"predicate2_referent\":\"%s\"}\n" +
 				"                                        }", claimUuidForAttr1, claimUuidForPredicate1, claimUuidForPredicate2);
 
 		String schemasJson = String.format("{\"%s\":%s, \"%s\":%s}", claimUuidForAttr1, gvtSchemaJson, claimUuidForPredicate2, xyzSchemaJson);
@@ -468,7 +472,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//15. Verifier verify Proof
 		assertEquals("Alex",
-				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr1_uuid").getString(1));
+				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr1_referent").getString(1));
 
 		Boolean valid = Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).get();
 		assertTrue(valid);
@@ -537,7 +541,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                          \"nonce\":\"123432421212\",\n" +
 				"                          \"name\":\"proof_req_1\",\n" +
 				"                          \"version\":\"0.1\",\n" +
-				"                          \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"}},\n" +
+				"                          \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
 				"                          \"requested_predicates\":{}\n" +
 				"                  }";
 
@@ -545,17 +549,17 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		assertNotNull(claimsForProofJson);
 
 		JSONObject claimsForProof = new JSONObject(claimsForProofJson);
-		JSONArray claimsForAttribute1 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_uuid");
+		JSONArray claimsForAttribute1 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
 
 		assertEquals(claimsForAttribute1.length(), 1);
 
-		String claimUuid = claimsForAttribute1.getJSONObject(0).getString("claim_uuid");
+		String claimUuid = claimsForAttribute1.getJSONObject(0).getString("referent");
 
 		//9. Prover create Proof
 		String selfAttestedValue = "yes";
 		String requestedClaimsJson = String.format("{\n" +
 				"                                          \"self_attested_attributes\":{\"self1\":\"%s\"},\n" +
-				"                                          \"requested_attrs\":{\"attr1_uuid\":[\"%s\", true]},\n" +
+				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true]},\n" +
 				"                                          \"requested_predicates\":{}\n" +
 				"                                        }", selfAttestedValue, claimUuid);
 
@@ -572,7 +576,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//10. Verifier verify Proof
 		assertEquals("Alex",
-				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr1_uuid").getString(1));
+				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr1_referent").getString(1));
 
 		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("self1"));
 
@@ -580,8 +584,8 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"nonce\":\"123432421212\",\n" +
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\",\n" +
-				"                    \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"}},\n" +
-				"                    \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+				"                    \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+				"                    \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
 				"           }";
 
 		Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).get();
