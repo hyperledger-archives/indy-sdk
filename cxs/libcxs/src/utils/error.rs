@@ -38,6 +38,7 @@ pub static INVALID_PROOF_CLAIM_DATA: Error = Error{code_num: 1027, message: "The
 pub static INDY_SUBMIT_REQUEST_ERR: Error = Error{code_num: 1028, message: "Call to indy submit request failed"};
 pub static BUILD_CLAIM_DEF_REQ_ERR: Error = Error{code_num: 1029, message: "Call to indy claim def request failed"};
 pub static NO_POOL_OPEN: Error = Error{code_num: 1030, message: "No Pool open. Can't return handle."};
+pub static INVALID_SCHEMA: Error = Error{code_num: 1031, message: "Schema was invalid or corrupt"};
 
 
 lazy_static! {
@@ -74,6 +75,7 @@ lazy_static! {
         insert_message(&mut m, &INDY_SUBMIT_REQUEST_ERR);
         insert_message(&mut m, &BUILD_CLAIM_DEF_REQ_ERR);
         insert_message(&mut m, &NO_POOL_OPEN);
+        insert_message(&mut m, &INVALID_SCHEMA);
         m
     };
 }
@@ -220,5 +222,9 @@ mod tests {
     #[test]
     fn test_error_claim_data() {
         assert_eq!(error_message(&INVALID_PROOF_CLAIM_DATA.code_num), INVALID_PROOF_CLAIM_DATA.message);
+    }
+    #[test]
+    fn test_error_invalid_schema() {
+        assert_eq!(error_message(&INVALID_SCHEMA.code_num), INVALID_SCHEMA.message);
     }
 }
