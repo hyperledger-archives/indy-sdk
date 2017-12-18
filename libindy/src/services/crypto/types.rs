@@ -1,4 +1,5 @@
-use utils::json::{JsonEncodable, JsonDecodable};
+extern crate indy_crypto;
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 #[derive(Serialize, Deserialize)]
 pub struct KeyInfo {

@@ -1,4 +1,6 @@
-use utils::json::{JsonDecodable, JsonEncodable};
+extern crate indy_crypto;
+
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use errors::common::CommonError;
 use errors::wallet::WalletError;
 use errors::indy::IndyError;
