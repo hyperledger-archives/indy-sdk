@@ -11,7 +11,8 @@ use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
 use std::sync::mpsc::channel;
 use utils::pool::get_pool_handle;
-
+use std::string::ToString;
+use std::fmt;
 
 extern {
 
@@ -49,14 +50,41 @@ struct SchemaData {
     attr_names: Vec<String>
 }
 
+#[derive(Debug)]
 struct LedgerSchema {
     sequence_num: i32,
     data: Option<SchemaTransaction>
 }
 
-trait Schema {
+trait Schema: ToString {
 
 }
+
+impl Schema for LedgerSchema {
+
+}
+
+impl fmt::Display for LedgerSchema {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        let data = &self.data;
+        if data.is_some() {
+            match serde_json::to_string(data){
+                Ok(s) => {
+                    write!(f, "{}", s)
+                },
+                Err(e) => {
+                    error!("{}: {:?}",error::INVALID_SCHEMA.message, e);
+                    write!(f, "null")
+                }
+
+            }
+        }
+        else {
+            write!(f, "null")
+        }
+    }
+}
+
 
 impl LedgerSchema {
     fn new_from_ledger(sequence_num: i32) -> Result<LedgerSchema, u32>
@@ -77,20 +105,33 @@ impl LedgerSchema {
     {
         let txn_struct: Value = match serde_json::from_str(txn.as_str()) {
             Ok(stc) => stc,
-            Err(e) => return Err(1)
+            Err(e) => {
+                error!("{}: {:?}","Parse from json error", e);
+                return Err(error::INVALID_JSON.code_num)
+            }
         };
         let result = match txn_struct.get("result"){
             Some(result) => result,
-            None => return Err(2)
+            None => {
+                error!("{}","'result' not found in json");
+                return Err(error::INVALID_JSON.code_num)
+            }
         };
         match result.get("data") {
             Some(d) => {
-                print!("{}",serde_json::to_string(d).unwrap());
-                match serde_json::from_value(d.clone()) {
+                let schema: SchemaTransaction = match serde_json::from_value(d.clone()) {
                     Ok(parsed) => parsed,
-                    Err(e) => Err(4)
-            }},
-            None => Err(5)
+                    Err(e) => {
+                        error!("{}: {:?}","Parse from value error", e);
+                        return Err(error::INVALID_JSON.code_num)
+                    }
+                };
+                Ok(schema)
+            },
+            None => {
+                error!("{}","'data' not found in json");
+                Err(error::INVALID_JSON.code_num)
+            }
         }
     }
 
@@ -112,14 +153,14 @@ impl LedgerSchema {
                                                CString::new(txn.as_str()).unwrap().as_ptr(),
                                                cb);
             if indy_err != 0 {
-                return Err(error::UNKNOWN_ERROR.code_num)
+                return Err(indy_err as u32)
             }
         }
 
         let (err, txn) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
 
         if err != 0 {
-            return Err(error::UNKNOWN_ERROR.code_num)
+            return Err(err as u32)
         }
 
         Ok(txn)
@@ -159,7 +200,7 @@ mod tests {
     use std::path::Path;
     use std::str::FromStr;
 
-static  EXAMPLE: &str = r#"{
+    static  EXAMPLE: &str = r#"{
     "seqNo": 15,
     "dest": "4fUDR9R7fjwELRvH9JT6HH",
     "identifier":"4fUDR9R7fjwELRvH9JT6HH",
@@ -204,52 +245,7 @@ static  EXAMPLE: &str = r#"{
   "txnTime":1510246647,
   "type":"101"
 }"#;
-
-static  EXAMPLE_OPTIONAL: &str = r#"{
-}"#;
-
-    #[ignore]
-    #[test]
-    fn test_schema_transaction(){
-        let data: SchemaTransaction = serde_json::from_str(EXAMPLE).unwrap();
-
-        assert_eq!(15, data.sequence_num.unwrap());
-        assert_eq!("4fUDR9R7fjwELRvH9JT6HH", data.sponsor.unwrap().as_str());
-        assert_eq!(1510246647, data.txn_timestamp.unwrap());
-        assert_eq!("107", data.txn_type.unwrap().as_str());
-
-
-        let data: SchemaTransaction = serde_json::from_str(DIRTY_EXAMPLE).unwrap();
-
-        println!("{:?}", data);
-
-        assert_eq!(15, data.sequence_num.unwrap());
-        assert_eq!("4fUDR9R7fjwELRvH9JT6HH", data.sponsor.unwrap().as_str());
-        assert_eq!(1510246647, data.txn_timestamp.unwrap());
-        assert_eq!("107", data.txn_type.unwrap().as_str());
-
-
-    }
-
-    #[test]
-    fn test_optional_schema_data(){
-        let data: SchemaTransaction = serde_json::from_str(EXAMPLE_OPTIONAL).unwrap();
-
-        assert!(data.sequence_num.is_none());
-        assert!(data.sponsor.is_none());
-    }
-
-    #[test]
-    fn test_txn_build(){
-        let test = LedgerSchema::build_get_txn(15).unwrap();
-        let txn: Value = serde_json::from_str(test.as_str()).unwrap();
-        assert_eq!(15, txn.get("operation").unwrap().get("data").unwrap().as_i64().unwrap());
-    }
-
-    #[ignore]
-    #[test]
-    fn test_process_ledger_txn(){
-        let sample = r#"
+    static LEDGER_SAMPLE: &str = r#"
         {
           "result":{
             "data":{
@@ -285,18 +281,76 @@ static  EXAMPLE_OPTIONAL: &str = r#"{
           "op":"REPLY"
         }
         "#;
-        let test = LedgerSchema::process_ledger_txn(String::from_str(sample).unwrap()).unwrap();
 
-        println!("{}", serde_json::to_string(&test).unwrap());
-        eprintln!("****************************");
-        eprintln!("{}", serde_json::to_string(&test).unwrap());
+    static  EXAMPLE_OPTIONAL: &str = r#"{
+}"#;
+
+
+    #[test]
+    fn test_schema_transaction(){
+        let data: SchemaTransaction = serde_json::from_str(EXAMPLE).unwrap();
+
+        assert_eq!(15, data.sequence_num.unwrap());
+        assert_eq!("4fUDR9R7fjwELRvH9JT6HH", data.sponsor.unwrap().as_str());
+        assert_eq!(1510246647, data.txn_timestamp.unwrap());
+        assert_eq!("107", data.txn_type.unwrap().as_str());
+
+
+        let data: SchemaTransaction = serde_json::from_str(DIRTY_EXAMPLE).unwrap();
+
+        println!("{:?}", data);
+
+        assert_eq!(15, data.sequence_num.unwrap());
+        assert_eq!("4fUDR9R7fjwELRvH9JT6HH", data.sponsor.unwrap().as_str());
+        assert_eq!(1510246647, data.txn_timestamp.unwrap());
+        assert_eq!("101", data.txn_type.unwrap().as_str());
+
     }
 
     #[test]
-    fn retrieve_from_ledger(){
+    fn test_optional_schema_data(){
+        let data: SchemaTransaction = serde_json::from_str(EXAMPLE_OPTIONAL).unwrap();
+
+        assert!(data.sequence_num.is_none());
+        assert!(data.sponsor.is_none());
+    }
+
+    #[test]
+    fn test_txn_build(){
+        let test = LedgerSchema::build_get_txn(15).unwrap();
+        let txn: Value = serde_json::from_str(test.as_str()).unwrap();
+        assert_eq!(15, txn.get("operation").unwrap().get("data").unwrap().as_i64().unwrap());
+    }
+
+    #[test]
+    fn test_process_ledger_txn(){
+        ::utils::logger::LoggerUtils::init();
+        let test = LedgerSchema::process_ledger_txn(String::from_str(LEDGER_SAMPLE).unwrap()).unwrap();
+    }
+
+    #[test]
+    fn test_to_string(){
+        ::utils::logger::LoggerUtils::init();
+        let test = LedgerSchema::process_ledger_txn(String::from_str(LEDGER_SAMPLE).unwrap()).unwrap();
+
+        let schema = LedgerSchema {sequence_num:15, data:Some(test)};
+
+        println!("{}", schema.to_string())
+    }
+
+    #[test]
+    fn test_from_ledger_without_pool(){
+        let test = LedgerSchema::new_from_ledger(15);
+        assert!(test.is_err());
+        assert_eq!(301, test.unwrap_err())
+    }
+
+    #[ignore]
+    #[test]
+    fn from_ledger(){
         open_sandbox_pool();
-        let test = LedgerSchema::retrieve_from_ledger(15).unwrap();
-        print!("{}", test);
+        let test: LedgerSchema = LedgerSchema::new_from_ledger(15).unwrap();
+        print!("{}", test.to_string());
     }
 
     fn sandbox_pool_setup() {
