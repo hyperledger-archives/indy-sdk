@@ -300,34 +300,14 @@ impl CommandExecutor {
 
         let (cmd, params) = CommandExecutor::_split_first_word(line);
 
-        if let Some(ref command) = self.commands.get(cmd) {
+        if cmd == "help" {
+            // Top level help, no completion
+        } else if let Some(ref command) = self.commands.get(cmd) {
             // Complete command params
 
-            if "help".starts_with(word) {
-                completes.push(("help".to_owned(), ' '));
-            }
-
-            if let Some(main_param) = command.metadata().main_param() {
-                if main_param.name().starts_with(word) {
-                    completes.push((main_param.name().to_owned(), '='));
-                }
-            }
-
-            let param_names: Vec<(String, char)> = command
-                .metadata()
-                .params()
-                .iter()
-                .filter(|param| param.name().starts_with(word))
-                .map(|param| (param.name().to_owned(), '='))
-                .collect();
-
-            completes.extend(param_names);
-        } else if let Some(&(ref _group, ref commands)) = self.grouped_commands.get(cmd) {
-            let (cmd, _) = CommandExecutor::_split_first_word(params);
-
-            if let Some(ref command) = commands.get(cmd) {
-                // Complete command params
-
+            if CommandExecutor::_split_first_word(params).0 == "help" {
+                // Command help, no completion
+            } else {
                 if "help".starts_with(word) {
                     completes.push(("help".to_owned(), ' '));
                 }
@@ -347,6 +327,38 @@ impl CommandExecutor {
                     .collect();
 
                 completes.extend(param_names);
+            }
+        } else if let Some(&(ref _group, ref commands)) = self.grouped_commands.get(cmd) {
+            let (cmd, params) = CommandExecutor::_split_first_word(params);
+
+            if cmd == "help" {
+                // Group help, no completion
+            } else if let Some(ref command) = commands.get(cmd) {
+                // Complete command params
+
+                if CommandExecutor::_split_first_word(params).0 == "help" {
+                    // Command help, no completion
+                } else {
+                    if "help".starts_with(word) {
+                        completes.push(("help".to_owned(), ' '));
+                    }
+
+                    if let Some(main_param) = command.metadata().main_param() {
+                        if main_param.name().starts_with(word) {
+                            completes.push((main_param.name().to_owned(), '='));
+                        }
+                    }
+
+                    let param_names: Vec<(String, char)> = command
+                        .metadata()
+                        .params()
+                        .iter()
+                        .filter(|param| param.name().starts_with(word))
+                        .map(|param| (param.name().to_owned(), '='))
+                        .collect();
+
+                    completes.extend(param_names);
+                }
             } else {
                 // Complete group commands
 
@@ -535,8 +547,14 @@ impl CommandExecutor {
 
         // Read main param
         if let Some(param_metadata) = command.main_param() {
-            let (param_value, tail) = CommandExecutor::_split_first_word(params);
+            let (mut param_value, tail) = CommandExecutor::_split_first_word(params);
             params = tail;
+
+            // Check for full param format
+            let mut split = param_value.splitn(2, '=');
+            if split.next().unwrap_or("") == param_metadata.name() {
+                param_value = split.next().unwrap_or("")
+            }
 
             if param_value.is_empty() {
                 return Err(format!("No main \"{}\" parameter present", param_metadata.name()));
@@ -565,7 +583,9 @@ impl CommandExecutor {
 
             if let Some(param_metadata) = param_metadata {
                 if let Some(param_value) = param_value {
-                    if let Some(param_value) = unescape(CommandExecutor::_trim_quotes(param_value)) {
+                    if res.contains_key(param_metadata.name()) {
+                        return Err(format!("\"{}\" parameter presented multiple times", param_metadata.name()));
+                    } else if let Some(param_value) = unescape(CommandExecutor::_trim_quotes(param_value)) {
                         res.insert(param_metadata.name(), param_value);
                     } else {
                         return Err(format!("Invalid escape sequence for \"{}\" parameter present", param_metadata.name()));
