@@ -51,7 +51,7 @@ struct SchemaData {
 }
 
 #[derive(Debug)]
-struct LedgerSchema {
+pub struct LedgerSchema {
     sequence_num: i32,
     data: Option<SchemaTransaction>
 }
@@ -138,7 +138,7 @@ impl LedgerSchema {
     fn retrieve_from_ledger(sequence_num: i32) -> Result<String, u32>
     {
         let txn = LedgerSchema::build_get_txn(sequence_num)?;
-        let pool_handle = get_pool_handle();
+        let pool_handle = get_pool_handle()?;
 
         let (sender, receiver) = channel();
 

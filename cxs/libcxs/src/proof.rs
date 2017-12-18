@@ -21,6 +21,7 @@ use std::ffi::CString;
 use utils::timeout::TimeoutUtils;
 use utils::claim_def::{ClaimDef};
 use utils::constants::{ PROOF_REQ_JSON, PROOF_JSON, SCHEMAS_JSON, CLAIM_DEFS_JSON, REVOC_REGS_JSON};
+use schema::LedgerSchema;
 
 lazy_static! {
     static ref PROOF_MAP: Mutex<HashMap<u32, Box<Proof>>> = Default::default();
