@@ -96,6 +96,9 @@ typedef enum
     // Attempt to create pool ledger config with name used for another existing pool
     PoolLedgerConfigAlreadyExistsError = 306,
 
+    // Timeout for action
+    PoolLedgerTimeout = 307,
+
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 
