@@ -1,0 +1,47 @@
+@startuml CLI components
+
+class ParamMetadata {
+    +is_optional() -> bool
+    +name() -> &str
+    +help() -> &str
+}
+
+class CommandMetadata {
+    +name() -> &str
+    +help() -> &str
+    +main_param()-> Option<<&ParamMetadata>>
+    +params() -> &[ParamMetadata]
+}
+ParamMetadata --* CommandMetadata
+
+class Command {    
+    +metadata() -> &CommandMetadata
+    +execute(ctx: &CommandContext, params: &CommandParams)
+    +cleanup(ctx: &CommandContext)
+}
+CommandMetadata --* Command
+
+class EntryPoint {
+    +main()
+    -execReadline()
+    -execBatch()
+}
+
+class CommandExecutor {    
+    +addCommand(command: &Command)
+    +execute(line: &str)
+    +complete(line: &str, position: usize)
+}
+EntryPoint --* CommandExecutor
+EntryPoint --* Command
+
+class CommandContext {
+    +set_cmd_prompt()
+    +set_progress()
+    +exit()
+}
+CommandExecutor --* CommandContext
+
+Command ..> CommandContext
+
+@enduml
