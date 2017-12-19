@@ -280,14 +280,14 @@ ledger custom [txn=]<txn-json-value> [sign=<true|false>]
 
 ## Examples
 
-##### Create pool configuration and connect to pool
+#### Create pool configuration and connect to pool
 ```
 indy> pool create sandbox gen_txn_file=/etc/sovrin/sandbox.txn
 indy> pool connect sandbox
 pool(sandbox):indy> pool list
 ```
 
-##### Create and open wallet
+#### Create and open wallet
 ```
 sandbox|indy> wallet create alice_wallet pool_name=sandbox
 sandbox|indy> wallet open alice_wallet
