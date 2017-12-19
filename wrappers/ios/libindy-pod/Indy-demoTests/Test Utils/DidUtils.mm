@@ -1,25 +1,25 @@
 //
-//  SignusUtils.m
+//  DidUtils.m
 //  Indy-demo
 //
 //  Created by Anastasia Tarasova on 02.06.17.
 //  Copyright © 2017 Kirill Neznamov. All rights reserved.
 //
 
-#import "SignusUtils.h"
+#import "DidUtils.h"
 #import <Indy/Indy.h>
 #import "TestUtils.h"
 #import "WalletUtils.h"
 
-@implementation SignusUtils
+@implementation DidUtils
 
-+ (SignusUtils *)sharedInstance
++ (DidUtils *)sharedInstance
 {
-    static SignusUtils *instance = nil;
+    static DidUtils *instance = nil;
     static dispatch_once_t dispatch_once_block;
     
     dispatch_once(&dispatch_once_block, ^{
-        instance = [SignusUtils new];
+        instance = [DidUtils new];
     });
     
     return instance;
@@ -64,30 +64,6 @@
     return @"00000000000000000000000000000My1";
 }
 
-- (NSError *)signWithWalletHandle:(IndyHandle)walletHandle
-                         theirDid:(NSString *)theirDid
-                          message:(NSData *)message
-                     outSignature:(NSData **)signature
-{
-    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    __block NSError *err = nil;
-
-    [IndySignus signMessage:message
-                        did:theirDid
-               walletHandle:walletHandle
-                 completion:^(NSError *error, NSData *blockSignature)
-     {
-         err = error;
-         if (signature) { *signature = blockSignature; }
-         [completionExpectation fulfill];
-     }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
-    
-    return err;
-}
-
-
 - (NSError *)createMyDidWithWalletHandle:(IndyHandle)walletHandle
                                myDidJson:(NSString *)myDidJson
                                 outMyDid:(NSString **)myDid
@@ -99,7 +75,7 @@
     __block NSString *did = nil;
     __block NSString *verKey = nil;
 
-    [IndySignus createAndStoreMyDid:myDidJson
+    [IndyDid createAndStoreMyDid:myDidJson
                        walletHandle:walletHandle
                          completion:^(NSError *error, NSString *blockDid, NSString *blockVerKey)
     {
@@ -131,7 +107,7 @@
     
     NSString *myDidJson = (seed) ? [NSString stringWithFormat:@"{\"seed\":\"%@\"}", seed] : @"{}";
     
-    [IndySignus createAndStoreMyDid:myDidJson
+    [IndyDid createAndStoreMyDid:myDidJson
                        walletHandle:walletHandle
                          completion:^(NSError *error, NSString *blockDid, NSString *blockVerKey)
            {
@@ -158,7 +134,7 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     
-    [IndySignus storeTheirDid:identityJson
+    [IndyDid storeTheirDid:identityJson
                  walletHandle:walletHandle
                    completion:^(NSError *error)
      {
@@ -184,7 +160,7 @@
                                    "\"verkey\":\"%@\","
                                    "\"endpoint\":\"\%@\"}", theirDid, theirVerkey, endpoint];
     
-    [IndySignus storeTheirDid:theirIdentityJson
+    [IndyDid storeTheirDid:theirIdentityJson
                  walletHandle:walletHandle
                    completion:^(NSError *error)
     {
@@ -206,7 +182,7 @@
     __block NSError *err = nil;
     __block NSString *verkey;
     
-    [IndySignus replaceKeysStartForDid:did
+    [IndyDid replaceKeysStartForDid:did
                           identityJson:identityJson
                           walletHandle:walletHandle
                             completion: ^(NSError *error, NSString *blockVerkey)
@@ -229,7 +205,7 @@
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     __block NSError *err = nil;
     
-    [IndySignus replaceKeysApplyForDid:did
+    [IndyDid replaceKeysApplyForDid:did
                           walletHandle:walletHandle
                             completion:^(NSError *error)
      {
@@ -293,91 +269,5 @@
 
     return ret;
 }
-
-- (NSError *)verifyWithWalletHandle:(IndyHandle)walletHandle
-                         poolHandle:(IndyHandle)poolHandle
-                                did:(NSString *)did
-                            message:(NSData *)message
-                          signature:(NSData *)signature
-                        outVerified:(BOOL *)verified
-{
-    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    __block NSError *err = nil;
-    
-    [IndySignus verifySignature:signature
-                     forMessage:message
-                            did:did
-                   walletHandle:walletHandle
-                     poolHandle:poolHandle
-                     completion:^(NSError *error, BOOL valid)
-     {
-         err = error;
-         if (verified) { *verified = valid; }
-         [completionExpectation fulfill];
-     }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
-    
-    return err;
-}
-
-- (NSError *)encryptWithWalletHandle:(IndyHandle)walletHandle
-                          poolHandle:(IndyHandle)poolHandle
-                               myDid:(NSString *)myDid
-                                 did:(NSString *)did
-                             message:(NSData *)message
-                 outEncryptedMessage:(NSData **)encryptedMessage
-                            outNonce:(NSData **)nonce
-{
-    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    __block NSError *err = nil;
-    
-    [IndySignus encryptMessage:message
-                         myDid:myDid
-                           did:did
-                  walletHandle:walletHandle
-                          pool:poolHandle
-                    completion:^(NSError *error, NSData *encryptedMsg, NSData *closureNonce)
-     {
-         err = error;
-         if (encryptedMessage) { *encryptedMessage = encryptedMsg; }
-         if (nonce) { *nonce = closureNonce; }
-         [completionExpectation fulfill];
-     }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
-    
-    return err;
-}
-
-- (NSError *)decryptWithWalletHandle:(IndyHandle)walletHandle
-                          poolHandle:(IndyHandle)poolHandle
-                               myDid:(NSString *)myDid
-                                 did:(NSString *)did
-                    encryptedMessage:(NSData *)encryptedMessage
-                               nonce:(NSData *)nonce
-                 outDecryptedMessage:(NSData **)decryptedMessage
-{
-    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
-    __block NSError *err = nil;
-
-    [IndySignus decryptMessage:encryptedMessage
-                         myDid:myDid
-                           did:did
-                         nonce:nonce
-                  walletHandle:walletHandle
-                    poolHandle:poolHandle
-                    completion:^(NSError *error, NSData *decryptedMsg)
-     {
-         err = error;
-         if (decryptedMessage) { *decryptedMessage = decryptedMsg; }
-         [completionExpectation fulfill];
-     }];
-    
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
-    
-    return err;
-}
-
 
 @end

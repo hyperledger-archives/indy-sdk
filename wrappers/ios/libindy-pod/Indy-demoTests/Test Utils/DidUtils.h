@@ -1,5 +1,5 @@
 //
-//  SignusUtils.h
+//  DidUtils.h
 //  Indy-demo
 //
 //  Created by Anastasia Tarasova on 02.06.17.
@@ -10,16 +10,11 @@
 #import <XCTest/XCTest.h>
 #import <Indy/Indy.h>
 
-@interface SignusUtils : XCTestCase
+@interface DidUtils : XCTestCase
 
-+ (SignusUtils *)sharedInstance;
++ (DidUtils *)sharedInstance;
 
 // MARK: - Instance methods
-
-- (NSError *)signWithWalletHandle:(IndyHandle)walletHandle
-                         theirDid:(NSString *)theirDid
-                          message:(NSData *)message
-                     outSignature:(NSData **)signature;
 
 - (NSError *)createMyDidWithWalletHandle:(IndyHandle)walletHandle
                                myDidJson:(NSString *)myDidJson
@@ -52,27 +47,4 @@
                   walletHandle:(IndyHandle)walletHandle
                     poolHandle:(IndyHandle)poolHandle
                    outMyVerKey:(NSString **)myVerKey;
-
-- (NSError *)verifyWithWalletHandle:(IndyHandle)walletHandle
-                         poolHandle:(IndyHandle)poolHandle
-                                did:(NSString *)did
-                            message:(NSData *)message
-                          signature:(NSData *)signature
-                        outVerified:(BOOL *)verified;
-
-- (NSError *)encryptWithWalletHandle:(IndyHandle)walletHandle
-                          poolHandle:(IndyHandle)poolHandle
-                               myDid:(NSString *)myDid
-                                 did:(NSString *)did
-                             message:(NSData *)message
-                 outEncryptedMessage:(NSData **)encryptedMessage
-                            outNonce:(NSData **)nonce;
-
-- (NSError *)decryptWithWalletHandle:(IndyHandle)walletHandle
-                          poolHandle:(IndyHandle)poolHandle
-                               myDid:(NSString *)myDid
-                                 did:(NSString *)did
-                    encryptedMessage:(NSData *)encryptedMessage
-                               nonce:(NSData *)nonce
-                 outDecryptedMessage:(NSData **)decryptedMessage;
 @end

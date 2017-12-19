@@ -1,5 +1,5 @@
 //
-//  IndySignus.h
+//  IndyDid.h
 //  libindy
 //
 
@@ -7,7 +7,7 @@
 #import <Foundation/Foundation.h>
 #import "IndyTypes.h"
 
-@interface IndySignus : NSObject
+@interface IndyDid : NSObject
 
 /**
  Creates keys (signing and encryption keys) for a new
@@ -115,104 +115,5 @@
 + (void)getMetadataForDid:(NSString *)did
              walletHandle:(IndyHandle)walletHandle
                completion:(void (^)(NSError *error, NSString *metadata))completion;
-
-/**
- Signs a message by a signing key associated with my DID.  
- 
- The DID with a signing key
- must be already created and stored in a secured wallet (see create_and_store_my_identity)
- 
- @param message Message to be signed as NSData
- @param did Signing DID
- @param walletHandle Wallet handler (created by IndyWallet::OpenWalletWithName).
- @param completion Callback that takes command result as parameter. Returns a signature string.
- */
-+ (void)signMessage:(NSData*)message
-                did:(NSString *)did
-       walletHandle:(IndyHandle)walletHandle
-         completion:(void (^)(NSError *error,
-                              NSData *signature)) completion;
-
-/**
- Verify a signature created by a key associated with a DID.  
- 
- If a secure wallet doesn't contain a verkey associated with the given DID,
- then verkey is read from the Ledger.
- Otherwise either an existing verkey from wallet is used (see wallet_store_their_identity),
- or it checks the Ledger (according to freshness settings set during initialization)
- whether verkey is still the same and updates verkey for the DID if needed.
- 
- @param signature Signature to be verified.
- @param did DID that signed the message.
- @param message Message that was signed by did.
- @param walletHandle Wallet handler (created by IndyWallet::OpenWalletWithName).
- @param poolHandle Pool handle.
- @param completion Callback that takes command result as parameter. Returns flag valid: true - if signature is valid, false - otherwise
- */
-+ (void)verifySignature:(NSData *)signature
-             forMessage:(NSData *)message
-                    did:(NSString *)did
-           walletHandle:(IndyHandle)walletHandle
-             poolHandle:(IndyHandle)poolHandle
-             completion:(void (^)(NSError *error,
-                                  BOOL valid)) completion;
-
-/**
- Encrypts a message by a public key associated with a DID.
- If a secure wallet doesn't contain a public key associated with the given DID,
- then the public key is read from the Ledger.  
- 
- Otherwise either an existing public key from wallet is used (see wallet_store_their_identity),
- or it checks the Ledger (according to freshness settings set during initialization)
- whether public key is still the same and updates public key for the DID if needed.
-
- @param walletHandle Wallet handler (created by IndyWallet::OpenWalletWithName).
- @param poolHandle Pool handle.
- @param myDid Encrypting DID
- @param did Encrypting DID
- @param message Message that is to be encrypted.
- @param completion Callback that takes command result as parameter. Returns an encrypted message and nonce.
- */
-+ (void)encryptMessage:(NSData *)message
-                 myDid:(NSString *)myDid
-                   did:(NSString *)did
-          walletHandle:(IndyHandle)walletHandle
-                  pool:(IndyHandle)poolHandle
-            completion:(void (^)(NSError *error,
-                                 NSData *encryptedMsg,
-                                 NSData *nonce)) completion;
-
-/**
- Decrypts a message encrypted by a public key associated with my DID.
- The DID with a secret key must be already created and
- stored in a secured wallet (see wallet_create_and_store_my_identity)
-
- 
- @param encryptedMessage Message that is to be decrypted.
- @param myDid DID
- @param did DID that signed the message
- @param nonce Nonce
- @param walletHandle Wallet handler (created by IndyWallet::OpenWalletWithName).
- @param completion Callback that takes command result as parameter. Returns decrypted message.
-*/
-+ (void)decryptMessage:(NSData *)encryptedMessage
-                 myDid:(NSString *)myDid
-                   did:(NSString *)did
-                 nonce:(NSData *)nonce
-          walletHandle:(IndyHandle)walletHandle
-            poolHandle:(IndyHandle)poolHandle
-            completion:(void (^)(NSError *error,
-                                 NSData *decryptedMessage)) completion;
-
-+ (void)encryptMessageSealed:(NSData *)message
-                         did:(NSString *)did
-                walletHandle:(IndyHandle)walletHandle
-                        pool:(IndyHandle)poolHandle
-                  completion:(void (^)(NSError *error, NSData *encryptedMsg))completion;
-
-+ (void)decryptMessageSealed:(NSData *)encryptedMessage
-                         did:(NSString *)did
-                walletHandle:(IndyHandle)walletHandle
-                  completion:(void (^)(NSError *error, NSData *decryptedMessage))completion;
 
 @end

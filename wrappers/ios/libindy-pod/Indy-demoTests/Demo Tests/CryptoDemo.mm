@@ -1,5 +1,5 @@
 //
-//  SignusDemo.m
+//  CryptoDemo.m
 //  Indy-demo
 //
 
@@ -7,11 +7,11 @@
 #import "PoolUtils.h"
 #import "TestUtils.h"
 
-@interface SignusDemo : XCTestCase
+@interface CryptoDemo : XCTestCase
 
 @end
 
-@implementation SignusDemo
+@implementation CryptoDemo
 
 - (void)setUp
 {
@@ -25,7 +25,7 @@
     [super tearDown];
 }
 
-- (void)testSignusDemo
+- (void)testCryptoDemo
 {
     [TestUtils cleanupStorage];
 
@@ -75,7 +75,7 @@
     NSString *myDid = nil;
     NSString *myVerkey = nil;
 
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:myWalletHandle
+    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:myWalletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
                                                         outMyVerkey:&myVerkey];
@@ -88,7 +88,7 @@
     NSString *theirDid = nil;
     NSString *theirVerkey = nil;
 
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:theirWalletHandle
+    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:theirWalletHandle
                                                           myDidJson:theirDidJson
                                                            outMyDid:&theirDid
                                                         outMyVerkey:&theirVerkey];
@@ -101,7 +101,7 @@
                                                                 }", theirDid, theirVerkey];
 
 
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:myWalletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:myWalletHandle
                                                          identityJson:theirIdentityJson];
     XCTAssertEqual(ret.code, Success, @"createAndStoreMyDid() failed!");
     
@@ -118,7 +118,7 @@
     
     NSData *signature = nil;
     
-    ret = [[SignusUtils sharedInstance] signWithWalletHandle:theirWalletHandle theirDid:theirDid message:message outSignature:&signature];
+    ret = [[CryptoUtils sharedInstance] signMessage:message key:theirVerkey walletHandle:theirWalletHandle outSignature:&signature];
     XCTAssertEqual(ret.code, Success, @"sign() failed!");
     
     // 9. I Verify message
@@ -127,12 +127,8 @@
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
 
     BOOL verified = false;
-    ret = [[SignusUtils sharedInstance] verifyWithWalletHandle:myWalletHandle
-                                                    poolHandle:poolHandle
-                                                           did:theirDid
-                                                       message:message
-                                                     signature:signature
-                                                   outVerified:&verified];
+    ret = [[CryptoUtils sharedInstance] verifySignature:signature forMessage:message key:theirVerkey outIsValid:&verified];
+
     XCTAssertEqual(ret.code, Success, @"verifySignature() failed!");
     XCTAssertEqual(YES, verified, "verifySignature() signature is not valid");
     
@@ -140,7 +136,7 @@
 }
 
 
-- (void)testSignusDemoForKeychainWallet
+- (void)testCryptoDemoForKeychainWallet
 {
     [TestUtils cleanupStorage];
     [[IndyWallet sharedInstance] cleanupIndyKeychainWallet];
@@ -193,7 +189,7 @@
     NSString *myDid = nil;
     NSString *myVerkey = nil;
 
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:myWalletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:myWalletHandle
                                                                        seed:nil
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:&myVerkey];
@@ -204,7 +200,7 @@
     NSString *theirDid = nil;
     NSString *theirVerkey = nil;
 
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:theirWalletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:theirWalletHandle
                                                                        seed:nil
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
@@ -216,9 +212,9 @@
                                    \"verkey\":\"%@\"\
                                    }", theirDid, theirVerkey];
     
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:myWalletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:myWalletHandle
                                                          identityJson:theirIdentityJson];
-    XCTAssertEqual(ret.code, Success, @"IndySignus::storeTheirDid() failed!");
+    XCTAssertEqual(ret.code, Success, @"IndyDid::storeTheirDid() failed!");
     
     // 8. Their Sign message
     
@@ -232,18 +228,15 @@
     NSData *message = [messageJson dataUsingEncoding:NSUTF8StringEncoding];
     
     NSData *signature = nil;
-    ret = [[SignusUtils sharedInstance] signWithWalletHandle:theirWalletHandle
-                                                    theirDid:theirDid
-                                                     message:message
-                                                outSignature:&signature];
+    ret = [[CryptoUtils sharedInstance] signMessage:message key:theirVerkey walletHandle:theirWalletHandle outSignature:&signature];
+
     XCTAssertEqual(ret.code, Success, @"sign() failed!");
     
     // 9. I Verify message
     IndyHandle poolHandle = 1;
     
     BOOL verified = false;
-    ret = [[SignusUtils sharedInstance] verifyWithWalletHandle:myWalletHandle
-                                                    poolHandle:poolHandle did:theirDid message:message signature:signature outVerified:&verified];
+    ret = [[CryptoUtils sharedInstance] verifySignature:signature forMessage:message key:theirVerkey outIsValid:&verified];
     XCTAssertEqual(ret.code, Success, @"verifySignature() failed!");
     XCTAssertEqual(YES, verified, "verifySignature() signature is not valid");
     
