@@ -117,7 +117,7 @@ typedef enum
 
     // Crypto errors
     // Unknown format of DID entity keys
-    CryptoUnknownCryptoError = 500
+    UnknownCryptoTypeError = 500
 
 } indy_error_t;
 

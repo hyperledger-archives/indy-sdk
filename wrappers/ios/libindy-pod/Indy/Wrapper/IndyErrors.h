@@ -112,5 +112,5 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     
     // Crypto errors
     // Unknown format of DID entity keys
-    CryptoUnknownCryptoError = 500
+    UnknownCryptoTypeError = 500
 };

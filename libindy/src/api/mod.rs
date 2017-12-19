@@ -126,5 +126,5 @@ pub enum ErrorCode
 
     // Crypto errors
     // Unknown format of DID entity keys
-    CryptoUnknownCryptoError = 500
+    UnknownCryptoTypeError = 500
 }

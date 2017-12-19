@@ -211,7 +211,7 @@ public enum ErrorCode {
 	/**
 	 * Unknown format of DID entity keys
 	 */
-	CryptoUnknownCryptoError(500);
+	UnknownCryptoTypeError(500);
 
 	private int value;
 	private static Map<Integer, ErrorCode> map = new HashMap<Integer, ErrorCode>();

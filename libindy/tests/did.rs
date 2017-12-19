@@ -924,7 +924,7 @@ mod high_cases {
             let verkey = VERKEY.to_owned() + ":crypto_type";
             let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, DID, verkey);
             let res = DidUtils::store_their_did(wallet_handle, &identity_json);
-            assert_eq!(ErrorCode::CryptoUnknownCryptoError, res.unwrap_err());
+            assert_eq!(ErrorCode::UnknownCryptoTypeError, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 

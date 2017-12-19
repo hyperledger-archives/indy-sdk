@@ -43,7 +43,7 @@ impl error::Error for CryptoError {
 impl ToErrorCode for CryptoError {
     fn to_error_code(&self) -> ErrorCode {
         match *self {
-            CryptoError::UnknownCryptoError(ref description) => ErrorCode::CryptoUnknownCryptoError,
+            CryptoError::UnknownCryptoError(ref description) => ErrorCode::UnknownCryptoTypeError,
             CryptoError::CommonError(ref err) => err.to_error_code()
         }
     }

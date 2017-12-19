@@ -49,7 +49,7 @@
                                                           myDidJson:didJson
                                                            outMyDid:nil
                                                         outMyVerkey:nil];
-    XCTAssertEqual(ret.code, CryptoUnknownCryptoError, @"DidUtils::createMyDidWithWalletHandle() returned wrong error");
+    XCTAssertEqual(ret.code, UnknownCryptoTypeError, @"DidUtils::createMyDidWithWalletHandle() returned wrong error");
   
     [TestUtils cleanupStorage];
 }
@@ -218,7 +218,7 @@
                                                   identityJson:@"{\"crypto_type\":\"type\"}"
                                                   walletHandle:walletHandle
                                                    outMyVerKey:nil];
-    XCTAssertEqual(ret.code, CryptoUnknownCryptoError, @"DidUtils:replaceKeysStartForDid returned wrong error code");
+    XCTAssertEqual(ret.code, UnknownCryptoTypeError, @"DidUtils:replaceKeysStartForDid returned wrong error code");
     
     [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
     

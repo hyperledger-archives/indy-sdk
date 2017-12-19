@@ -54,7 +54,7 @@ async def test_create_my_did_works_for_invalid_seed(wallet_handle):
 async def test_create_my_did_works_for_invalid_crypto_type(wallet_handle):
     with pytest.raises(IndyError) as e:
         await did.create_and_store_my_did(wallet_handle, json.dumps({'crypto_type': 'crypto_type'}))
-    assert ErrorCode.CryptoUnknownCryptoError == e.value.error_code
+    assert ErrorCode.UnknownCryptoTypeError == e.value.error_code
 
 
 @pytest.mark.asyncio

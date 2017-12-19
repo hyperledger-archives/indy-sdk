@@ -112,9 +112,9 @@ class ErrorCode(IntEnum):
 
     AnoncredsProofRejected = 405,
 
-    # Signus errors
+    # Crypto errors
     # Unknown format of DID entity keys
-    CryptoUnknownCryptoError = 500
+    UnknownCryptoTypeError = 500
 
 
 class IndyError(Exception):

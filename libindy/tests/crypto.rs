@@ -292,7 +292,7 @@ mod high_cases {
         fn indy_crypto_verify_works_for_verkey_with_invalid_crypto_type() {
             let verkey = VERKEY_MY1.to_owned() + ":unknown_crypto";
             let res = CryptoUtils::verify(&verkey, MESSAGE.as_bytes(), SIGNATURE);
-            assert_eq!(ErrorCode::CryptoUnknownCryptoError, res.unwrap_err());
+            assert_eq!(ErrorCode::UnknownCryptoTypeError, res.unwrap_err());
         }
 
 
