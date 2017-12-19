@@ -1,18 +1,23 @@
 extern crate rmp_serde;
+extern crate time;
 
 use std::cmp;
 use std::collections::HashMap;
+use std::ops::Add;
 
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
 use errors::common::CommonError;
 use errors::pool::PoolError;
+use self::time::Duration;
 use super::{
     MerkleTree,
     RemoteNode,
 };
 use super::rust_base58::{FromBase58, ToBase58};
 use super::types::*;
+
+pub const CATCHUP_ROUND_TIMEOUT: i64 = 50;
 
 enum CatchupStepResult {
     Finished,
@@ -38,6 +43,7 @@ pub struct CatchupHandler {
     pub initiate_cmd_id: i32,
     pub is_refresh: bool,
     pub pending_catchup: Option<CatchUpProcess>,
+    pub timeout: time::Tm,
     pub pool_id: i32,
     pub nodes_votes: Vec<Option<(String, usize)>>,
 }
@@ -57,6 +63,7 @@ impl Default for CatchupHandler {
             is_refresh: false,
             pool_id: 0,
             nodes_votes: Vec::new(),
+            timeout: time::now_utc(),
         }
     }
 }
@@ -170,7 +177,9 @@ impl CatchupHandler {
         self.pending_catchup = Some(CatchUpProcess {
             merkle_tree: self.merkle_tree.clone(),
             pending_reps: Vec::new(),
+            resp_not_received_node_idx: (0..self.nodes.len()).collect(),
         });
+        self.timeout = time::now_utc().add(Duration::seconds(CATCHUP_ROUND_TIMEOUT));
 
         let portion = (cnt_to_catchup + node_cnt - 1) / node_cnt; //TODO check standard round up div
         let mut catchup_req = CatchupReq {
@@ -180,6 +189,7 @@ impl CatchupHandler {
             catchupTill: self.target_mt_size,
         };
         for node in &self.nodes {
+            //TODO do not perform duplicate requests, update resp_not_received_node_idx
             if node.is_blacklisted {
                 continue;
             }
@@ -212,6 +222,7 @@ impl CatchupHandler {
         let process = self.pending_catchup.as_mut()
             .ok_or(CommonError::InvalidState("Process non-existing CatchUp".to_string()))?;
         process.pending_reps.push((catchup, node_idx));
+        process.resp_not_received_node_idx.remove(&node_idx);
 
         while !process.pending_reps.is_empty() {
             let index = process.pending_reps.get_min_index()?;
@@ -276,12 +287,27 @@ impl CatchupHandler {
         let cmd = if self.is_refresh {
             PoolCommand::RefreshAck(self.initiate_cmd_id, status)
         } else {
-            PoolCommand::OpenAck(self.initiate_cmd_id, status.map(|()| self.pool_id))
+            PoolCommand::OpenAck(self.initiate_cmd_id, self.pool_id, status)
         };
         CommandExecutor::instance()
             .send(Command::Pool(cmd))
             .map_err(|err|
                 PoolError::CommonError(
                     CommonError::InvalidState("Can't send ACK cmd".to_string())))
+    }
+
+    pub fn get_upcoming_timeout(&self) -> Option<time::Tm> {
+        Some(self.timeout)
+    }
+
+    pub fn process_timeout(&mut self) -> Result<(), PoolError> {
+        let pc = if let Some(pc) = self.pending_catchup.take() { pc } else {
+            return Err(PoolError::Timeout);
+        };
+        warn!("Fail to continue catch-up response(s) not received from nodes with idx {:?}. Node will be blacklisted and catchup will be restarted", pc.resp_not_received_node_idx);
+        pc.resp_not_received_node_idx.iter()
+            .for_each(|idx| self.nodes[*idx].is_blacklisted = true);
+        // TODO may be send ledger status again and re-obtain target MerkleTree params
+        self.start_catchup()
     }
 }

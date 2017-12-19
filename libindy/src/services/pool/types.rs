@@ -5,7 +5,7 @@ extern crate serde_json;
 extern crate time;
 
 use std::cmp::Eq;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use super::zmq;
 use errors::common::CommonError;
@@ -250,6 +250,7 @@ pub struct RemoteNode {
 pub struct CatchUpProcess {
     pub merkle_tree: MerkleTree,
     pub pending_reps: Vec<(CatchupRep, usize)>,
+    pub resp_not_received_node_idx: HashSet<usize>,
 }
 
 pub trait MinValue {
@@ -305,6 +306,7 @@ pub struct CommandProcess {
     pub replies: HashMap<HashableValue, usize>,
     pub parent_cmd_ids: Vec<i32>,
     pub resendable_request: Option<ResendableRequest>,
+    pub full_cmd_timeout: Option<time::Tm>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
