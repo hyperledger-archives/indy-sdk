@@ -1,0 +1,29 @@
+{
+  "name": "milagro",
+  "version": "3.0.0",
+  "summary": "ZeroMQ is a high-performance asynchronous messaging library aimed at use in scalable distributed or concurrent applications.",
+  "description": "AMCL - Apache Milagro Crypto Library.\n AMCL is a standards compliant C cryptographic library with no external dependencies, specifically designed to support the Internet of Things (IoT).\n",
+  "homepage": "https://github.com/miracl/milagro-crypto-c",
+  "license": {
+    "type": "Apache License 2.0",
+    "file": "LICENSE"
+  },
+  "authors": {
+    "Michael Scott": "mike.scott@miracl.com"
+  },
+  "platforms": {
+    "ios": "6.0",
+    "osx": "10.7"
+  },
+  "source": {
+    "http": "https://repo.sovrin.org/ios/libindy/stable/milagro/3.0.0/milagro-crypto-c-3.0.0-ios.tar.gz"
+  },
+  "source_files": [
+    "src/*.{h,hpp,c,cc,cpp}",
+    "include/*.h"
+  ],
+  "public_header_files": "include/*.h",
+  "libraries": "stdc++",
+  "requires_arc": false,
+  "prepare_command": ""
+}
