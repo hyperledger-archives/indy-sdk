@@ -89,13 +89,13 @@ impl CryptoCommandExecutor {
                 info!("GetKeyMetadata command received");
                 cb(self.get_key_metadata(wallet_handle, verkey));
             }
-            CryptoCommand::CryptoSign(wallet_handle, sender_vk, msg, cb) => {
+            CryptoCommand::CryptoSign(wallet_handle, my_vk, msg, cb) => {
                 info!("CryptoSign command received");
-                cb(self.crypto_sign(wallet_handle, &sender_vk, &msg));
+                cb(self.crypto_sign(wallet_handle, &my_vk, &msg));
             }
-            CryptoCommand::CryptoVerify(recipient_vk, msg, signature, cb) => {
+            CryptoCommand::CryptoVerify(their_vk, msg, signature, cb) => {
                 info!("CryptoVerify command received");
-                cb(self.crypto_verify(recipient_vk, msg, signature));
+                cb(self.crypto_verify(their_vk, msg, signature));
             }
             CryptoCommand::AuthenticatedEncrypt(wallet_handle, my_vk, their_vk, msg, cb) => {
                 info!("AuthenticatedEncrypt command received");
@@ -117,6 +117,8 @@ impl CryptoCommandExecutor {
     }
 
     fn create_key(&self, wallet_handle: i32, key_info_json: String) -> Result<String, IndyError> {
+        info!("create_key >>> wallet_handle: {:?}, key_info_json: {:?}", wallet_handle, key_info_json);
+
         let key_info = KeyInfo::from_json(&key_info_json)
             .map_err(map_err_trace!())
             .map_err(|err|
@@ -127,28 +129,41 @@ impl CryptoCommandExecutor {
         self._wallet_set_key(wallet_handle, &key)?;
 
         let res = key.verkey;
+
+        info!("create_key <<< res: {:?}", res);
+
         Ok(res)
     }
 
     fn crypto_sign(&self,
                    wallet_handle: i32,
-                   sender_vk: &str,
+                   my_vk: &str,
                    msg: &[u8]) -> Result<Vec<u8>, IndyError> {
-        self.crypto_service.validate_key(sender_vk)?;
+        info!("crypto_sign >>> wallet_handle: {:?}, sender_vk: {:?}, msg: {:?}", wallet_handle, my_vk, msg);
 
-        let key = self._wallet_get_key(wallet_handle, &sender_vk)?;
+        self.crypto_service.validate_key(my_vk)?;
+
+        let key = self._wallet_get_key(wallet_handle, &my_vk)?;
 
         let res = self.crypto_service.sign(&key, msg)?;
+
+        info!("crypto_sign <<< res: {:?}", res);
+
         Ok(res)
     }
 
     fn crypto_verify(&self,
-                     recipient_vk: String,
+                     their_vk: String,
                      msg: Vec<u8>,
                      signature: Vec<u8>) -> Result<bool, IndyError> {
-        self.crypto_service.validate_key(&recipient_vk)?;
+        info!("crypto_verify >>> their_vk: {:?}, msg: {:?}, signature: {:?}", their_vk, msg, signature);
 
-        let res = self.crypto_service.verify(&recipient_vk, &msg, &signature)?;
+        self.crypto_service.validate_key(&their_vk)?;
+
+        let res = self.crypto_service.verify(&their_vk, &msg, &signature)?;
+
+        info!("crypto_verify <<< res: {:?}", res);
+
         Ok(res)
     }
 
@@ -157,6 +172,8 @@ impl CryptoCommandExecutor {
                              my_vk: String,
                              their_vk: String,
                              msg: Vec<u8>) -> Result<Vec<u8>, IndyError> {
+        info!("authenticated_encrypt >>> wallet_handle: {:?}, my_vk: {:?}, their_vk: {:?}, msg: {:?}", wallet_handle, my_vk, their_vk, msg);
+
         let sender_key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", my_vk))?;
 
         let sender_key = Key::from_json(&sender_key_json)
@@ -164,7 +181,7 @@ impl CryptoCommandExecutor {
 
         let (msg, nonce) = self.crypto_service.encrypt(&sender_key, &their_vk, msg.as_slice())?;
 
-        let msg = AuthenticatedEncryptedMessage {
+        let msg = Message {
             msg: base64::encode(msg.as_slice()),
             sender: my_vk.to_string(),
             nonce: base64::encode(nonce.as_slice())
@@ -173,16 +190,19 @@ impl CryptoCommandExecutor {
         let msg = msg.to_json()
             .map_err(|e| CommonError::InvalidState(format!("Can't serialize AuthenticatedEncryptedMessage: {:?}", e)))?;
 
-        let res = self.crypto_service.encrypt_sealed(&their_vk, msg.as_bytes())
-            .map_err(IndyError::CryptoError);
+        let res = self.crypto_service.encrypt_sealed(&their_vk, msg.as_bytes())?;
 
-        res
+        info!("authenticated_encrypt <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn authenticated_decrypt(&self,
                              wallet_handle: i32,
                              my_vk: String,
                              msg: Vec<u8>) -> Result<(String, Vec<u8>), IndyError> {
+        info!("authenticated_decrypt >>> wallet_handle: {:?}, my_vk: {:?}, msg: {:?}", wallet_handle, my_vk, msg);
+
         let my_key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", my_vk))?;
 
         let my_key = Key::from_json(&my_key_json)
@@ -190,7 +210,7 @@ impl CryptoCommandExecutor {
 
         let decrypted_msg = self.crypto_service.decrypt_sealed(&my_key, &msg)?;
 
-        let parsed_msg: AuthenticatedEncryptedMessage = serde_json::from_slice(decrypted_msg.as_slice())
+        let parsed_msg: Message = serde_json::from_slice(decrypted_msg.as_slice())
             .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize AuthenticatedEncryptedMessage: {:?}", err)))?;
 
         let doc: Vec<u8> = base64::decode(&parsed_msg.msg)
@@ -200,68 +220,87 @@ impl CryptoCommandExecutor {
             .map_err(|err| CommonError::InvalidStructure(format!("Can't decode nonce from base64 {}", err)))?;
 
         let decrypted_msg = self.crypto_service.decrypt(&my_key, &parsed_msg.sender, &doc, &nonce)?;
-        Ok((parsed_msg.sender.clone(), decrypted_msg))
+
+        let res = (parsed_msg.sender.clone(), decrypted_msg);
+
+        info!("authenticated_decrypt <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn anonymous_encrypt(&self,
                          their_vk: String,
                          msg: Vec<u8>) -> Result<Vec<u8>, IndyError> {
-        let msg = AnonymousEncryptedMessage { msg: base64::encode(&msg) };
-        let msg = msg.to_json()
-            .map_err(|e| CommonError::InvalidState(format!("Can't serialize AnonymousEncryptedMessage: {:?}", e)))?;
+        info!("anonymous_encrypt >>> their_vk: {:?}, msg: {:?}", their_vk, msg);
 
-        let res = self.crypto_service.encrypt_sealed(&their_vk, msg.as_bytes())
-            .map_err(IndyError::from);
+        let res = self.crypto_service.encrypt_sealed(&their_vk, &msg)?;;
 
-        res
+        info!("anonymous_encrypt <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn anonymous_decrypt(&self,
                          wallet_handle: i32,
                          my_vk: String,
                          encrypted_msg: Vec<u8>) -> Result<Vec<u8>, IndyError> {
+        info!("anonymous_decrypt >>> wallet_handle: {:?}, my_vk: {:?}, encrypted_msg: {:?}", wallet_handle, my_vk, encrypted_msg);
+
         let my_key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", my_vk))?;
 
         let my_key = Key::from_json(&my_key_json)
             .map_err(|err| IndyError::CommonError(CommonError::InvalidState(format!("Invalid Key json: {:?}", err))))?;
 
-        let decrypted_msg = self.crypto_service.decrypt_sealed(&my_key, &encrypted_msg)?;
+        let res = self.crypto_service.decrypt_sealed(&my_key, &encrypted_msg)?;
 
-        let parsed_msg: AnonymousEncryptedMessage = serde_json::from_slice(decrypted_msg.as_slice())
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't determine internal msg format: {:?}", err)))?;
+        info!("anonymous_decrypt <<< res: {:?}", res);
 
-        let res = Ok(base64::decode(&parsed_msg.msg)
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't decode internal msg filed from base64 {}", err)))?);
-
-        res
+        Ok(res)
     }
 
     fn set_key_metadata(&self, wallet_handle: i32, verkey: String, metadata: String) -> Result<(), IndyError> {
+        info!("set_key_metadata >>> wallet_handle: {:?}, verkey: {:?}, metadata: {:?}", wallet_handle, verkey, metadata);
+
         self.crypto_service.validate_key(&verkey)?;
-        self._wallet_set_key_metadata(wallet_handle, &verkey, &metadata)?;
-        Ok(())
+        let res = self._wallet_set_key_metadata(wallet_handle, &verkey, &metadata)?;
+
+        info!("set_key_metadata <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn get_key_metadata(&self,
                         wallet_handle: i32,
                         verkey: String) -> Result<String, IndyError> {
+        info!("get_key_metadata >>> wallet_handle: {:?}, verkey: {:?}", wallet_handle, verkey);
+
         self.crypto_service.validate_key(&verkey)?;
         let res = self._wallet_get_key_metadata(wallet_handle, &verkey)?;
+
+        info!("get_key_metadata <<< res: {:?}", res);
+
         Ok(res)
     }
 
     fn _wallet_set_key(&self, wallet_handle: i32, key: &Key) -> Result<(), IndyError> {
+        info!("_wallet_set_key >>> wallet_handle: {:?}, key: {:?}", wallet_handle, key);
+
         let key_json = Key::to_json(&key)
             .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::InvalidState(
                     format!("Can't serialize Key: {}", err.description())))?;
 
-        self.wallet_service.set(wallet_handle, &format!("key::{}", key.verkey), &key_json)?;
-        Ok(())
+        let res = self.wallet_service.set(wallet_handle, &format!("key::{}", key.verkey), &key_json)?;
+
+        info!("_wallet_set_key <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn _wallet_get_key(&self, wallet_handle: i32, key: &str) -> Result<Key, IndyError> {
+        info!("_wallet_get_key >>> wallet_handle: {:?}, key: {:?}", wallet_handle, key);
+
         let key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", key))?;
 
         let res = Key::from_json(&key_json)
@@ -269,38 +308,41 @@ impl CryptoCommandExecutor {
             .map_err(|err|
                 CommonError::InvalidState(
                     format!("Can't deserialize Key: {}", err.description())))?;
+
+        info!("_wallet_get_key <<< res: {:?}", res);
+
         Ok(res)
     }
 
     fn _wallet_set_key_metadata(&self, wallet_handle: i32, verkey: &str, metadata: &str) -> Result<(), IndyError> {
-        self.wallet_service.set(wallet_handle, &format!("key::{}::metadata", verkey), metadata)?;
-        Ok(())
+        info!("_wallet_set_key_metadata >>> wallet_handle: {:?}, verkey: {:?}, metadata: {:?}", wallet_handle, verkey, metadata);
+
+        let res = self.wallet_service.set(wallet_handle, &format!("key::{}::metadata", verkey), metadata)?;
+
+        info!("_wallet_set_key_metadata <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn _wallet_get_key_metadata(&self, wallet_handle: i32, verkey: &str) -> Result<String, IndyError> {
+        info!("_wallet_get_key_metadata >>> wallet_handle: {:?}, verkey: {:?}", wallet_handle, verkey);
+
         let res = self.wallet_service.get(wallet_handle, &format!("key::{}::metadata", verkey))?;
+
+        info!("_wallet_get_key_metadata <<< res: {:?}", res);
+
         Ok(res)
     }
 }
 
 
 #[derive(Serialize, Deserialize)]
-struct AuthenticatedEncryptedMessage {
+struct Message {
     msg: String,
     sender: String,
     nonce: String
 }
 
-impl JsonEncodable for AuthenticatedEncryptedMessage {}
+impl JsonEncodable for Message {}
 
-impl<'a> JsonDecodable<'a> for AuthenticatedEncryptedMessage {}
-
-
-#[derive(Serialize, Deserialize)]
-struct AnonymousEncryptedMessage {
-    msg: String
-}
-
-impl JsonEncodable for AnonymousEncryptedMessage {}
-
-impl<'a> JsonDecodable<'a> for AnonymousEncryptedMessage {}
+impl<'a> JsonDecodable<'a> for Message {}

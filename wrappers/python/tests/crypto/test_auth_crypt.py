@@ -10,20 +10,20 @@ from indy.error import ErrorCode
 
 @pytest.mark.asyncio
 async def test_auth_crypt_works_for_created_key(wallet_handle, seed_my1, verkey_my2, message):
-    my_verkey = await did.create_key(wallet_handle, json.dumps({'seed': seed_my1}))
-    await crypto.auth_crypt(wallet_handle, my_verkey, verkey_my2, message)
+    verkey = await did.create_key(wallet_handle, json.dumps({'seed': seed_my1}))
+    await crypto.auth_crypt(wallet_handle, verkey, verkey_my2, message)
 
 
 @pytest.mark.asyncio
 async def test_auth_crypt_works_for_created_did(wallet_handle, seed_my1, verkey_my2, message):
-    (_, my_verkey) = await did.create_and_store_my_did(wallet_handle, json.dumps({'seed': seed_my1}))
-    await crypto.auth_crypt(wallet_handle, my_verkey, verkey_my2, message)
+    (_, verkey) = await did.create_and_store_my_did(wallet_handle, json.dumps({'seed': seed_my1}))
+    await crypto.auth_crypt(wallet_handle, verkey, verkey_my2, message)
 
 
 @pytest.mark.asyncio
 async def test_auth_crypt_works_for_created_did_as_cid(wallet_handle, seed_my1, verkey_my2, message):
-    (_, my_verkey) = await did.create_and_store_my_did(wallet_handle, json.dumps({'seed': seed_my1, 'cid': True}))
-    await crypto.auth_crypt(wallet_handle, my_verkey, verkey_my2, message)
+    (_, verkey) = await did.create_and_store_my_did(wallet_handle, json.dumps({'seed': seed_my1, 'cid': True}))
+    await crypto.auth_crypt(wallet_handle, verkey, verkey_my2, message)
 
 
 @pytest.mark.asyncio
