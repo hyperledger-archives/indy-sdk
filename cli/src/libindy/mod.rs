@@ -3,6 +3,7 @@ pub mod pool;
 pub mod wallet;
 pub mod ledger;
 mod callbacks;
+mod results;
 
 pub type IndyHandle = i32;
 
@@ -103,6 +104,9 @@ pub enum ErrorCode
 
     // Attempt to create pool ledger config with name used for another existing pool
     PoolLedgerConfigAlreadyExistsError = 306,
+
+    // Timeout for action
+    PoolLedgerTimeout = 307,
 
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
