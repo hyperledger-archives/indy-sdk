@@ -19,7 +19,8 @@ pub enum PoolCommand {
          Option<String>, // config
          Box<Fn(Result<i32, IndyError>) + Send>),
     OpenAck(i32, // cmd id
-            Result<i32 /* pool handle */, PoolError>),
+            i32, // pool handle
+            Result<() /* pool handle */, PoolError>),
     List(Box<Fn(Result<String, IndyError>) + Send>),
     Close(i32, // pool handle
           Box<Fn(Result<(), IndyError>) + Send>),
@@ -63,12 +64,18 @@ impl PoolCommandExecutor {
                 info!(target: "pool_command_executor", "Open command received");
                 self.open(&name, config.as_ref().map(String::as_str), cb);
             }
-            PoolCommand::OpenAck(handle, result) => {
-                info!("OpenAck handle {:?}, result {:?}", handle, result);
+            PoolCommand::OpenAck(handle, pool_id, result) => {
+                info!("OpenAck handle {:?}, pool_id {:?}, result {:?}", handle, pool_id, result);
                 match self.open_callbacks.try_borrow_mut() {
                     Ok(mut cbs) => {
                         match cbs.remove(&handle) {
-                            Some(cb) => cb(result.map_err(IndyError::from)),
+                            Some(cb) => {
+                                cb(result
+                                    .and_then(|_|
+                                        self.pool_service.add_open_pool(pool_id)
+                                            .map_err(PoolError::from))
+                                    .map_err(IndyError::from))
+                            }
                             None => {
                                 error!("Can't process PoolCommand::OpenAck for handle {} with result {:?} - appropriate callback not found!",
                                        handle, result);

@@ -15,6 +15,7 @@ pub enum PoolError {
     InvalidHandle(String),
     Rejected(String),
     Terminate,
+    Timeout,
     AlreadyExists(String),
     CommonError(CommonError)
 }
@@ -26,6 +27,7 @@ impl fmt::Display for PoolError {
             PoolError::InvalidHandle(ref description) => write!(f, "Invalid Handle: {}", description),
             PoolError::Rejected(ref description) => write!(f, "Rejected by pool: {}", description),
             PoolError::Terminate => write!(f, "Pool work terminated"),
+            PoolError::Timeout => write!(f, "Timeout"),
             PoolError::AlreadyExists(ref description) => write!(f, "Pool ledger config already exists {}", description),
             PoolError::CommonError(ref err) => err.fmt(f)
         }
@@ -39,6 +41,7 @@ impl error::Error for PoolError {
             PoolError::Rejected(ref description) |
             PoolError::InvalidHandle(ref description) => description,
             PoolError::Terminate => "Pool work terminated",
+            PoolError::Timeout => "Timeout",
             PoolError::AlreadyExists(ref description) => description,
             PoolError::CommonError(ref err) => err.description()
         }
@@ -49,7 +52,7 @@ impl error::Error for PoolError {
             PoolError::NotCreated(ref description) |
             PoolError::Rejected(ref description) |
             PoolError::InvalidHandle(ref description) => None,
-            PoolError::Terminate => None,
+            PoolError::Terminate | PoolError::Timeout => None,
             PoolError::AlreadyExists(ref description) => None,
             PoolError::CommonError(ref err) => Some(err)
         }
@@ -82,6 +85,7 @@ impl ToErrorCode for PoolError {
             PoolError::InvalidHandle(ref description) => ErrorCode::PoolLedgerInvalidPoolHandle,
             PoolError::Rejected(ref description) => ErrorCode::LedgerInvalidTransaction,
             PoolError::Terminate => ErrorCode::PoolLedgerTerminated,
+            PoolError::Timeout => ErrorCode::PoolLedgerTimeout,
             PoolError::AlreadyExists(ref description) => ErrorCode::PoolLedgerConfigAlreadyExistsError,
             PoolError::CommonError(ref err) => err.to_error_code()
         }

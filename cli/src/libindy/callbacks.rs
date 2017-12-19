@@ -7,13 +7,18 @@ use libc::c_char;
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::sync::Mutex;
+use std::sync::mpsc::Sender;
 
-pub fn _closure_to_cb_ec(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
-                                                                    Option<extern fn(command_handle: i32,
-                                                                                     err: ErrorCode)>) {
+pub fn _closure_to_cb_ec(sender: Sender<ErrorCode>) -> (i32,
+                                                        Option<extern fn(command_handle: i32,
+                                                                         err: ErrorCode)>) {
     lazy_static! {
         static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
     }
+
+    let closure = Box::new(move |err| {
+        sender.send(err).unwrap();
+    });
 
     extern "C" fn _callback(command_handle: i32, err: ErrorCode) {
         let mut callbacks = CALLBACKS.lock().unwrap();
@@ -28,13 +33,16 @@ pub fn _closure_to_cb_ec(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
     (command_handle, Some(_callback))
 }
 
-pub fn _closure_to_cb_ec_i32(closure: Box<FnMut(ErrorCode, i32) + Send>)
-                             -> (i32,
-                                 Option<extern fn(command_handle: i32, err: ErrorCode,
-                                                  c_i32: i32)>) {
+pub fn _closure_to_cb_ec_i32(sender: Sender<(ErrorCode, i32)>) -> (i32,
+                                                                   Option<extern fn(command_handle: i32, err: ErrorCode,
+                                                                                    c_i32: i32)>) {
     lazy_static! {
         static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, i32) + Send>>> = Default::default();
     }
+
+    let closure = Box::new(move |err, val| {
+        sender.send((err, val)).unwrap();
+    });
 
     extern "C" fn _callback(command_handle: i32, err: ErrorCode, c_i32: i32) {
         let mut callbacks = CALLBACKS.lock().unwrap();
@@ -49,13 +57,17 @@ pub fn _closure_to_cb_ec_i32(closure: Box<FnMut(ErrorCode, i32) + Send>)
     (command_handle, Some(_callback))
 }
 
-pub fn _closure_to_cb_ec_string(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
-                                                                                   Option<extern fn(command_handle: i32,
-                                                                                                    err: ErrorCode,
-                                                                                                    c_str: *const c_char)>) {
+pub fn _closure_to_cb_ec_string(sender: Sender<(ErrorCode, String)>) -> (i32,
+                                                                         Option<extern fn(command_handle: i32,
+                                                                                          err: ErrorCode,
+                                                                                          c_str: *const c_char)>) {
     lazy_static! {
         static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
     }
+
+    let closure = Box::new(move |err, val| {
+        sender.send((err, val)).unwrap();
+    });
 
     extern "C" fn _callback(command_handle: i32, err: ErrorCode, c_str: *const c_char) {
         let mut callbacks = CALLBACKS.lock().unwrap();
@@ -71,14 +83,18 @@ pub fn _closure_to_cb_ec_string(closure: Box<FnMut(ErrorCode, String) + Send>) -
     (command_handle, Some(_callback))
 }
 
-pub fn _closure_to_cb_ec_string_string(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
-                                                                                                  Option<extern fn(command_handle: i32,
-                                                                                                                   err: ErrorCode,
-                                                                                                                   str1: *const c_char,
-                                                                                                                   str2: *const c_char)>) {
+pub fn _closure_to_cb_ec_string_string(sender: Sender<(ErrorCode, String, String)>) -> (i32,
+                                                                                        Option<extern fn(command_handle: i32,
+                                                                                                         err: ErrorCode,
+                                                                                                         str1: *const c_char,
+                                                                                                         str2: *const c_char)>) {
     lazy_static! {
             static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
-        }
+    }
+
+    let closure = Box::new(move |err, val1, val2| {
+        sender.send((err, val1, val2)).unwrap();
+    });
 
     extern "C" fn _callback(command_handle: i32, err: ErrorCode, str1: *const c_char, str2: *const c_char) {
         let mut callbacks = CALLBACKS.lock().unwrap();
