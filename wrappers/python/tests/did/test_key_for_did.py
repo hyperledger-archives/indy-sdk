@@ -10,8 +10,8 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_key_for_did_works_for_my_did(wallet_handle, identity_trustee1):
-    (did, verkey) = identity_trustee1
-    received_key = await did.key_for_did(-1, wallet_handle, did)
+    (_did, verkey) = identity_trustee1
+    received_key = await did.key_for_did(-1, wallet_handle, _did)
     assert verkey == received_key
 
 
@@ -53,8 +53,8 @@ async def test_key_for_did_works_for_invalid_pool_handle(pool_handle, wallet_han
 
 @pytest.mark.asyncio
 async def test_key_for_did_works_for_invalid_wallet_handle(wallet_handle, identity_trustee1):
-    (did, _) = identity_trustee1
+    (_did, _) = identity_trustee1
     with pytest.raises(IndyError) as e:
         invalid_wallet_handle = wallet_handle + 1
-        await did.key_for_did(-1, invalid_wallet_handle, did)
+        await did.key_for_did(-1, invalid_wallet_handle, _did)
     assert ErrorCode.WalletInvalidHandle == e.value.error_code
