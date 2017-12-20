@@ -33,7 +33,7 @@
 
     expectedResult[@"operation"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"type"] = @"109";
-    expectedResult[@"operation"][@"name"] = @"upgrade-2";
+    expectedResult[@"operation"][@"name"] = @"upgrade-ios";
     expectedResult[@"operation"][@"version"] = @"2.0.0";
     expectedResult[@"operation"][@"action"] = @"start";
     expectedResult[@"operation"][@"sha256"] = @"f284b";
@@ -43,7 +43,7 @@
 
     NSString *poolUpgradeRequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildPoolUpgradeRequestWithSubmitterDid:identifier
-                                                                               name:@"upgrade-2"
+                                                                               name:@"upgrade-ios"
                                                                                version:@"2.0.0"
                                                                                action:@"start"
                                                                                sha256:@"f284b"
@@ -73,7 +73,7 @@
 
     expectedResult[@"operation"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"type"] = @"109";
-    expectedResult[@"operation"][@"name"] = @"upgrade-2";
+    expectedResult[@"operation"][@"name"] = @"upgrade-ios";
     expectedResult[@"operation"][@"version"] = @"2.0.0";
     expectedResult[@"operation"][@"action"] = @"cancel";
     expectedResult[@"operation"][@"sha256"] = @"f284b";
@@ -82,7 +82,7 @@
 
     NSString *poolUpgradeRequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildPoolUpgradeRequestWithSubmitterDid:identifier
-                                                                                    name:@"upgrade-2"
+                                                                                    name:@"upgrade-ios"
                                                                                  version:@"2.0.0"
                                                                                   action:@"cancel"
                                                                                   sha256:@"f284b"
@@ -141,7 +141,7 @@
             "               \"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\":\"2020-01-25T15:49:05.258870+00:00\"}";
     NSString *poolUpgradeRequestJson;
     ret = [[LedgerUtils sharedInstance] buildPoolUpgradeRequestWithSubmitterDid:trusteeDid
-                                                                                    name:@"upgrade-2"
+                                                                                    name:@"upgrade-ios"
                                                                                  version:@"2.0.0"
                                                                                   action:@"start"
                                                                                   sha256:@"f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398"
@@ -169,7 +169,7 @@
     // 6. Build pool upgrade request
     NSString *poolUpgradeCancelRequestJson = nil;
     ret = [[LedgerUtils sharedInstance] buildPoolUpgradeRequestWithSubmitterDid:trusteeDid
-                                                                           name:@"upgrade-2"
+                                                                           name:@"upgrade-ios"
                                                                         version:@"2.0.0"
                                                                          action:@"cancel"
                                                                          sha256:@"1c3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398"

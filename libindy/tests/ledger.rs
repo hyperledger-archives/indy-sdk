@@ -877,9 +877,9 @@ mod high_cases {
         fn indy_build_pool_upgrade_request_works_for_start_action() {
             TestUtils::cleanup_storage();
 
-            let expected_result = r#""operation":{"type":"109","name":"upgrade-2","version":"2.0.0","action":"start","sha256":"f284b","schedule":{},"reinstall":false,"force":false"#;
+            let expected_result = r#""operation":{"type":"109","name":"upgrade-libindy","version":"2.0.0","action":"start","sha256":"f284b","schedule":{},"reinstall":false,"force":false"#;
             let request = LedgerUtils::build_pool_upgrade_request(DID_TRUSTEE,
-                                                                  "upgrade-2",
+                                                                  "upgrade-libindy",
                                                                   "2.0.0",
                                                                   "start",
                                                                   "f284b",
@@ -898,9 +898,9 @@ mod high_cases {
         fn indy_build_pool_upgrade_request_works_for_cancel_action() {
             TestUtils::cleanup_storage();
 
-            let expected_result = r#""type":"109","name":"upgrade-2","version":"2.0.0","action":"cancel","sha256":"f284b","reinstall":false,"force":false"#;
+            let expected_result = r#""type":"109","name":"upgrade-libindy","version":"2.0.0","action":"cancel","sha256":"f284b","reinstall":false,"force":false"#;
             let request = LedgerUtils::build_pool_upgrade_request(DID_TRUSTEE,
-                                                                  "upgrade-2",
+                                                                  "upgrade-libindy",
                                                                   "2.0.0",
                                                                   "cancel",
                                                                   "f284b",
@@ -931,7 +931,7 @@ mod high_cases {
 
             //start
             let request = LedgerUtils::build_pool_upgrade_request(&trustee_did,
-                                                                  "upgrade-2",
+                                                                  "upgrade-libindy",
                                                                   "2.0.0",
                                                                   "start",
                                                                   "f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398",
@@ -944,7 +944,7 @@ mod high_cases {
 
             //cancel
             let request = LedgerUtils::build_pool_upgrade_request(&trustee_did,
-                                                                  "upgrade-2",
+                                                                  "upgrade-libindy",
                                                                   "2.0.0",
                                                                   "cancel",
                                                                   "ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398",

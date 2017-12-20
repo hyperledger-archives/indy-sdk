@@ -286,11 +286,11 @@ async def test_pool_config_request_works(pool_handle, wallet_handle, identity_tr
 
     request = await ledger.build_pool_config_request(did_trustee, False, False)
     response = json.loads(await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request))
-    assert response['result']['writes']
+    assert not response['result']['writes']
 
     request = await ledger.build_pool_config_request(did_trustee, True, False)
     response = json.loads(await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request))
-    assert not response['result']['writes']
+    assert response['result']['writes']
 
 
 @pytest.mark.asyncio
@@ -304,12 +304,12 @@ async def test_pool_upgrade_requests_works(pool_handle, wallet_handle, identity_
         "4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA": "2020-01-25T15:49:05.258870+00:00"
     }
 
-    request = await ledger.build_pool_upgrade_request(did_trustee, 'upgrade-2', '2.0.0', 'start',
+    request = await ledger.build_pool_upgrade_request(did_trustee, 'upgrade-python', '2.0.0', 'start',
                                                       'f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398',
                                                       None, json.dumps(schedule), None, False, False)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request)
 
-    request = await ledger.build_pool_upgrade_request(did_trustee, 'upgrade-2', '2.0.0', 'cancel',
+    request = await ledger.build_pool_upgrade_request(did_trustee, 'upgrade-python', '2.0.0', 'cancel',
                                                       'ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398',
                                                       None, None, None, False, False)
     json.loads(await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request))

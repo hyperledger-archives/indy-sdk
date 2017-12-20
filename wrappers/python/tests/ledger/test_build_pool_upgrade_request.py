@@ -12,7 +12,7 @@ async def test_build_pool_upgrade_request_work_for_start_action():
         "identifier": identifier,
         "operation": {
             "type": "109",
-            "name": "upgrade-2",
+            "name": "upgrade-python",
             "version": "2.0.0",
             "action": "start",
             "sha256": "abc12345",
@@ -23,7 +23,7 @@ async def test_build_pool_upgrade_request_work_for_start_action():
     }
 
     request = json.loads(
-        await ledger.build_pool_upgrade_request(identifier, 'upgrade-2', '2.0.0', 'start', 'abc12345',
+        await ledger.build_pool_upgrade_request(identifier, 'upgrade-python', '2.0.0', 'start', 'abc12345',
                                                 None, '{}', None, False, False))
     assert expected_response.items() <= request.items()
 
@@ -36,7 +36,7 @@ async def test_build_pool_upgrade_request_work_for_cancel_action():
         "identifier": identifier,
         "operation": {
             "type": "109",
-            "name": "upgrade-2",
+            "name": "upgrade-python",
             "version": "2.0.0",
             "action": "cancel",
             "sha256": "abc12345",
@@ -46,6 +46,6 @@ async def test_build_pool_upgrade_request_work_for_cancel_action():
     }
 
     request = json.loads(
-        await ledger.build_pool_upgrade_request(identifier, 'upgrade-2', '2.0.0', 'cancel', 'abc12345',
+        await ledger.build_pool_upgrade_request(identifier, 'upgrade-python', '2.0.0', 'cancel', 'abc12345',
                                                 None, None, None, False, False))
     assert expected_response.items() <= request.items()

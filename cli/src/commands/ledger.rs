@@ -1453,7 +1453,7 @@ pub mod tests {
             {
                 let cmd = pool_upgrade_command::new();
                 let mut params = CommandParams::new();
-                params.insert("name", "upgrade-2".to_string());
+                params.insert("name", "upgrade-indy-cli".to_string());
                 params.insert("version", "2.0.0".to_string());
                 params.insert("action", "start".to_string());
                 params.insert("sha256", "f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398".to_string());
@@ -1464,7 +1464,7 @@ pub mod tests {
             {
                 let cmd = pool_upgrade_command::new();
                 let mut params = CommandParams::new();
-                params.insert("name", "upgrade-2".to_string());
+                params.insert("name", "upgrade-indy-cli".to_string());
                 params.insert("version", "2.0.0".to_string());
                 params.insert("action", "cancel".to_string());
                 params.insert("sha256", "ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398".to_string());

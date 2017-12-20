@@ -13,7 +13,7 @@ public class PoolUpgradeRequestTest extends IndyIntegrationTestWithPoolAndSingle
 	public void testBuildPoolUpgradeRequestWorksForStartAction() throws Exception {
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{\"type\":\"109\"," +
-				"\"name\":\"upgrade-2\"," +
+				"\"name\":\"upgrade-java\"," +
 				"\"version\":\"2.0.0\"," +
 				"\"action\":\"start\"," +
 				"\"sha256\":\"f284b\"," +
@@ -21,7 +21,7 @@ public class PoolUpgradeRequestTest extends IndyIntegrationTestWithPoolAndSingle
 				"\"reinstall\":false," +
 				"\"force\":false}", DID);
 
-		String request = Ledger.buildPoolUpgradeRequest(DID, "upgrade-2", "2.0.0", "start", "f284b", - 1,
+		String request = Ledger.buildPoolUpgradeRequest(DID, "upgrade-java", "2.0.0", "start", "f284b", - 1,
 				"{}", null, false, false).get();
 
 		assertTrue(request.contains(expectedResult));
@@ -31,14 +31,14 @@ public class PoolUpgradeRequestTest extends IndyIntegrationTestWithPoolAndSingle
 	public void testBuildPoolUpgradeRequestWorksForCancelAction() throws Exception {
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{\"type\":\"109\"," +
-				"\"name\":\"upgrade-2\"," +
+				"\"name\":\"upgrade-java\"," +
 				"\"version\":\"2.0.0\"," +
 				"\"action\":\"cancel\"," +
 				"\"sha256\":\"f284b\"," +
 				"\"reinstall\":false," +
 				"\"force\":false}", DID);
 
-		String request = Ledger.buildPoolUpgradeRequest(DID, "upgrade-2", "2.0.0", "cancel", "f284b", - 1,
+		String request = Ledger.buildPoolUpgradeRequest(DID, "upgrade-java", "2.0.0", "cancel", "f284b", - 1,
 				null, null, false, false).get();
 
 		assertTrue(request.contains(expectedResult));
@@ -54,12 +54,12 @@ public class PoolUpgradeRequestTest extends IndyIntegrationTestWithPoolAndSingle
 				"                   \"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\":\"2020-01-25T13:49:05.258870+00:00\",\n" +
 				"                   \"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\":\"2020-01-25T14:49:05.258870+00:00\",\n" +
 				"                   \"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\":\"2020-01-25T15:49:05.258870+00:00\"}";
-		String request = Ledger.buildPoolUpgradeRequest(did, "upgrade-2", "2.0.0", "start",
+		String request = Ledger.buildPoolUpgradeRequest(did, "upgrade-java", "2.0.0", "start",
 				"f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398", - 1, schedule, null, false, false).get();
 		Ledger.signAndSubmitRequest(pool, wallet, did, request).get();
 
 		//cancel
-		request = Ledger.buildPoolUpgradeRequest(did, "upgrade-2", "2.0.0", "cancel",
+		request = Ledger.buildPoolUpgradeRequest(did, "upgrade-java", "2.0.0", "cancel",
 				"ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398", - 1, null, null, false, false).get();
 		Ledger.signAndSubmitRequest(pool, wallet, did, request).get();
 	}
