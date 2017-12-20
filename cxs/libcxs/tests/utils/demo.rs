@@ -258,3 +258,71 @@ pub fn closure_to_send_claim_object(closure: Box<FnMut(u32) + Send>) -> (u32, Op
 
     (command_handle, Some(callback))
 }
+
+#[allow(dead_code)]
+pub fn send_proof_request(proof_handle: u32, connection_handle: u32) -> u32 {
+    let (sender, receiver) = channel();
+    let cb = Box::new(move|err|{sender.send(err).unwrap();});
+    let (command_handle, cb) = closure_to_send_claim_object(cb);
+    let rc = api::proof::cxs_proof_send_request(command_handle, proof_handle, connection_handle, cb);
+    assert_eq!(rc,0);
+    receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap()
+
+}
+#[allow(dead_code)]
+pub fn create_proof_request(source_id: &str, requested_attrs: &str) -> (u32, u32){
+    let requested_attrs = CString::new(requested_attrs).unwrap();
+    let source_id_cstring = CString::new(source_id).unwrap();
+    let (sender, receiver) = channel();
+    let cb = Box::new(move|err, claim_handle|{sender.send((err, claim_handle)).unwrap();});
+    let (command_handle, cb) = closure_to_create_claim(cb);
+    let predicates_cstring = CString::new("[]").unwrap();
+    let proof_name_cstring = CString::new("proof name").unwrap();
+    let rc = api::proof::cxs_proof_create(command_handle,
+                                      source_id_cstring.as_ptr(),
+                                 requested_attrs.as_ptr(),
+                              predicates_cstring.as_ptr(),
+                                         proof_name_cstring.as_ptr(),
+                                                        cb);
+    assert_eq!(rc, 0);
+    receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap()
+}
+
+
+#[allow(dead_code)]
+pub fn get_proof(proof_handle: u32, connection_handle: u32) -> u32 {
+    fn closure_to_get_proof(closure: Box<FnMut(u32) + Send>) ->
+    (u32, Option<extern fn( command_handle: u32, err: u32 , proof_string: *const c_char)>) {
+        lazy_static! { static ref CALLBACK_GET_PROOF: Mutex<HashMap<u32,
+                                        Box<FnMut(u32) + Send>>> = Default::default(); }
+
+        extern "C" fn callback(command_handle: u32, err: u32, proof_str: *const c_char) {
+            let mut callbacks = CALLBACK_GET_PROOF.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            assert_eq!(err, 0);
+            if proof_str.is_null() {
+                panic!("proof_str is empty");
+            }
+            check_useful_c_str!(proof_str, ());
+            println!("successfully called get_proof_cb: {}", proof_str);
+            cb(err)
+        }
+
+        let mut callbacks = CALLBACK_GET_PROOF.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as u32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(callback))
+    }
+    let (sender, receiver) = channel();
+    let cb = Box::new(move |err|{sender.send(err).unwrap();});
+    let (command_handle, cb) = closure_to_get_proof(cb);
+    let rc = api::proof::cxs_get_proof(command_handle,
+               proof_handle,
+               connection_handle,
+                cb);
+
+    assert_eq!(rc, 0);
+    receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap()
+
+}

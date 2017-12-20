@@ -5,7 +5,7 @@ pub mod create_key;
 pub mod invite;
 pub mod validation;
 pub mod message;
-pub mod proof_messages;
+pub mod proofs;
 
 use settings;
 use utils::crypto;
@@ -15,7 +15,7 @@ use self::rmp_serde::encode;
 use self::create_key::CreateKeyMsg;
 use self::invite::{SendInvite, UpdateProfileData};
 use self::message::{GetMessages, SendMessage};
-use self::proof_messages::{ProofRequest};
+use self::proofs::proof_request::{ProofRequest};
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
 pub enum MessageType {

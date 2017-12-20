@@ -8,9 +8,9 @@ use rand::Rng;
 use api::{ CxsStateType, ProofStateType };
 use utils::error;
 use settings;
-use proof_offer::{ ProofOffer, ClaimData };
+use messages::proofs::proof_message::{ProofMessage, ClaimData };
 use messages;
-use messages::proof_messages::{ ProofRequest };
+use messages::proofs::proof_request::{ ProofRequest };
 use messages::GeneralMessage;
 use messages::MessageResponseCode::{ MessageAccepted };
 use connection;
@@ -20,7 +20,7 @@ use self::libc::c_char;
 use std::ffi::CString;
 use utils::timeout::TimeoutUtils;
 use utils::claim_def::{ClaimDef};
-use utils::constants::{ PROOF_REQ_JSON, PROOF_JSON, SCHEMAS_JSON, CLAIM_DEFS_JSON, REVOC_REGS_JSON};
+use utils::constants::{REVOC_REGS_JSON};
 use schema::LedgerSchema;
 
 lazy_static! {
@@ -50,12 +50,10 @@ struct Proof {
     prover_did: String,
     state: CxsStateType,
     proof_state: ProofStateType,
-    tid: u32,
-    mid: u32,
     name: String,
     version: String,
     nonce: String,
-    proof_offer: Option<ProofOffer>,
+    proof: Option<ProofMessage>,
     proof_request: Option<ProofRequest>,
 }
 
@@ -66,7 +64,7 @@ impl Proof {
         Ok(error::SUCCESS.code_num)
     }
     
-    fn validate_proof_against_request(&self, offer: &ProofOffer) -> Result<u32, u32> {
+    fn validate_proof_against_request(&self, proof: &Proof) -> Result<u32, u32> {
         Ok(error::SUCCESS.code_num)
     }
     
@@ -96,9 +94,11 @@ impl Proof {
 
         let (err, valid) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
 
-        if err != 0 || !valid {
-            println!("\n\nVALID: {:?}", valid);
+        if err != 0 {
             return Err(self.set_invalid_proof_state(err))
+        } else if !valid {
+            warn!("indy returned false when validating proof");
+            return Err(error::INVALID_PROOF_OFFER.code_num)
         }
         info!("Indy validated Proof: {:?}", self.handle);
         self.proof_state = ProofStateType::ProofValidated;
@@ -120,13 +120,21 @@ impl Proof {
     }
 
     fn build_proof_json(&mut self, claim_data:&Vec<ClaimData>) -> Result<String, u32> {
-        Ok(PROOF_JSON.to_string())
+        match self.proof {
+            Some(ref x) => x.to_string(),
+            None => Err(error::INVALID_PROOF_OFFER.code_num),
+        }
     }
 
     fn build_schemas_json(&mut self, claim_data:&Vec<ClaimData>) -> Result<String, u32> {
         //get schema #
-        let schema_obj = LedgerSchema::new_from_ledger(15)?;
-        Ok(schema_obj.to_string())
+        let schema_obj = LedgerSchema::new_from_ledger(claim_data[0].schema_seq_no as i32)?;
+//        Ok(schema_obj.to_string())
+        let data = match schema_obj.data {
+            Some(x) => x,
+            None => return Err(error::INVALID_PROOF_OFFER.code_num)
+        };
+        Ok(json!({claim_data[0].claim_uuid.clone():data}).to_string())
     }
 
     fn build_proof_req_json(&mut self) -> Result<String, u32> {
@@ -139,7 +147,7 @@ impl Proof {
     }
 
     fn proof_validation(&mut self) -> Result<u32, u32> {
-        let claim_data = match self.proof_offer {
+        let claim_data = match self.proof {
             Some(ref x) => x.get_claim_schema_info()?,
             None => return Err(error::INVALID_PROOF_OFFER.code_num),
         };
@@ -167,7 +175,7 @@ impl Proof {
         }
         self.prover_did = connection::get_pw_did(connection_handle)?;
         self.requester_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT).unwrap();
-        let data_version = ".1";
+        let data_version = "0.1";
         let mut proof_obj = messages::proof_request();
         let proof_request = proof_obj
             .type_version(&self.version)
@@ -185,7 +193,7 @@ impl Proof {
         self.proof_request = Some(proof_obj);
         match messages::send_message().to(&self.prover_did).msg_type("proofReq").edge_agent_payload(&proof_request).send() {
             Ok(response) => {
-                self.msg_uid = get_offer_details(&response)?;
+                self.msg_uid = get_proof_details(&response)?;
                 self.state = CxsStateType::CxsStateOfferSent;
                 return Ok(error::SUCCESS.code_num)
             },
@@ -197,14 +205,14 @@ impl Proof {
     }
 
     fn get_proof(&self) -> Result<String, u32> {
-        let proof_offer = match self.proof_offer {
+        let proof = match self.proof {
             Some(ref x) => x,
             None => return Err(error::INVALID_PROOF_OFFER.code_num),
         };
-        proof_offer.get_proof_attributes()
+        proof.get_proof_attributes()
     }
 
-    fn check_for_proof_offer(&mut self, msg_uid: &str) {
+    fn check_for_proof(&mut self, msg_uid: &str) {
         info!("Checking for outstanding proofOffer for {} with uid: {}", self.handle, msg_uid);
         let msgs = match get_matching_messages(msg_uid, &self.prover_did) {
             Ok(x) => x,
@@ -216,16 +224,16 @@ impl Proof {
 
         for msg in msgs {
             if msg["typ"] == String::from("proof") {
-                self.state = CxsStateType::CxsStateRequestReceived;
+                self.state = CxsStateType::CxsStateAccepted;
                 let payload = match msg["edgeAgentPayload"].as_str() {
                     Some(x) => x,
                     None => {
-                        warn!("proof offer has no edge agent payload");
+                        warn!("proof has no edge agent payload");
                         return
                     }
                 };
 
-                self.proof_offer = match ProofOffer::from_str(&payload) {
+                self.proof = match ProofMessage::from_str(&payload) {
                     Ok(x) => Some(x),
                     Err(_) => {
                         warn!("invalid claim request for proof {}", self.handle);
@@ -274,7 +282,7 @@ impl Proof {
                     }
                 };
                 self.ref_msg_id = ref_msg_id.to_owned();
-                self.check_for_proof_offer(ref_msg_id);
+                self.check_for_proof(ref_msg_id);
                 return
             }
         }
@@ -288,7 +296,7 @@ impl Proof {
 
     fn get_state(&self) -> u32 {let state = self.state as u32; state}
 
-    fn get_offer_uid(&self) -> String { self.msg_uid.clone() }
+    fn get_proof_uuid(&self) -> String { self.msg_uid.clone() }
 
 }
 
@@ -312,12 +320,10 @@ pub fn create_proof(source_id: Option<String>,
         prover_did: String::new(),
         state: CxsStateType::CxsStateNone,
         proof_state: ProofStateType::ProofUndefined,
-        tid: 0,
-        mid: 0,
         name,
         version: String::from("1.0"),
         nonce: generate_nonce().to_string(),
-        proof_offer: None,
+        proof: None,
         proof_request: None,
     });
 
@@ -396,7 +402,7 @@ pub fn send_proof_request(handle: u32, connection_handle: u32) -> Result<u32,u32
     }
 }
 
-fn get_offer_details(response: &str) -> Result<String, u32> {
+fn get_proof_details(response: &str) -> Result<String, u32> {
     if settings::test_agency_mode_enabled() {return Ok("test_mode_response".to_owned());}
     match serde_json::from_str(response) {
         Ok(json) => {
@@ -417,9 +423,9 @@ fn get_offer_details(response: &str) -> Result<String, u32> {
     }
 }
 
-pub fn get_offer_uid(handle: u32) -> Result<String,u32> {
+pub fn get_proof_uuid(handle: u32) -> Result<String,u32> {
     match PROOF_MAP.lock().unwrap().get(&handle) {
-        Some(proof) => Ok(proof.get_offer_uid()),
+        Some(proof) => Ok(proof.get_proof_uuid()),
         None => Err(error::INVALID_PROOF_HANDLE.code_num),
     }
 }
@@ -467,9 +473,9 @@ mod tests {
     extern crate mockito;
     use std::thread;
     use std::time::Duration;
-    use proof_offer::tests::create_default_proof_offer;
+    use messages::proofs::proof_message::tests::create_default_proof;
     use connection::create_connection;
-    static DEFAULT_PROOF_STR: &str = r#"{"source_id":"","handle":486356518,"requested_attrs":"[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]","requested_predicates":"[{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\"}]","msg_uid":"","ref_msg_id":"","requester_did":"","prover_did":"","state":1,"proof_state":0,"tid":0,"mid":0,"name":"Optional","version":"1.0","nonce":"1067639606","proof_offer":null}"#;
+    static DEFAULT_PROOF_STR: &str = r#"{"source_id":"","handle":486356518,"requested_attrs":"[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]","requested_predicates":"[{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\"}]","msg_uid":"","ref_msg_id":"","requester_did":"","prover_did":"","state":1,"proof_state":0,"name":"Optional","version":"1.0","nonce":"1067639606","proof":null}"#;
     static REQUESTED_ATTRS: &'static str = "[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]";
     static REQUESTED_PREDICATES: &'static str = "[{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\"}]";
     use utils::constants::{ PROOF_REQ_JSON, PROOF_JSON, SCHEMAS_JSON, CLAIM_DEFS_JSON, REVOC_REGS_JSON};
@@ -481,7 +487,7 @@ mod tests {
         println!("successfully called create_cb")
     }
 
-    fn create_default_proof() -> Proof {
+    fn create_default_proof_requester() -> Proof {
         serde_json::from_str(DEFAULT_PROOF_STR).unwrap()
     }
 
@@ -577,7 +583,7 @@ mod tests {
         assert_eq!(send_proof_request(handle, connection_handle).unwrap(), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(500));
         assert_eq!(get_state(handle), CxsStateType::CxsStateOfferSent as u32);
-        assert_eq!(get_offer_uid(handle).unwrap(), "6a9u7Jt");
+        assert_eq!(get_proof_uuid(handle).unwrap(), "6a9u7Jt");
         _m.assert();
     }
 
@@ -608,7 +614,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_proof_offer_fails_with_no_proof_offer() {
+    fn test_get_proof_fails_with_no_proof() {
         set_default_and_enable_test_mode();
         let handle = match create_proof(Some("1".to_string()),
                                         REQUESTED_ATTRS.to_owned(),
@@ -630,7 +636,7 @@ mod tests {
     }
 
     #[test]
-    fn test_update_state_with_pending_proof_offer() {
+    fn test_update_state_with_pending_proof() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
@@ -656,24 +662,22 @@ mod tests {
             prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
             state: CxsStateType::CxsStateOfferSent,
             proof_state: ProofStateType::ProofUndefined,
-            tid: 0,
-            mid: 0,
             name:String::new(),
             version: String::from("1.0"),
             nonce: generate_nonce().to_string(),
-            proof_offer: None,
+            proof: None,
             proof_request: None,
         });
 
 
         proof.update_state();
         _m.assert();
-        assert_eq!(proof.get_state(), CxsStateType::CxsStateRequestReceived as u32);
+        assert_eq!(proof.get_state(), CxsStateType::CxsStateAccepted as u32);
         thread::sleep(Duration::from_millis(500));
     }
 
 //    #[test]
-//    fn test_proof_offer_is_valid() {
+//    fn test_proof_is_valid() {
 //        ::utils::logger::LoggerUtils::init();
 //        settings::set_defaults();
 //        ::utils::claim_def::tests::open_sandbox_pool();
@@ -690,8 +694,8 @@ mod tests {
 //        let json_claim_def: serde_json::Value = serde_json::from_str(&claim_defs_json).unwrap();
 //        claim_defs_json = json!({"claim::e5fec91f-d03d-4513-813c-ab6db5715d55":json_claim_def}).to_string();
 //        let revoc_regs_json = REVOC_REGS_JSON;
-//        let mut proof: Proof = create_default_proof();
-//        let offer: ProofOffer = create_default_proof_offer();
+//        let mut proof: Proof = create_default_proof_requester();
+//        let offer: Proof = create_default_proof();
 //        assert!(proof.validate_proof_against_request(&offer).is_ok());
 ////        assert_eq!(proof.validate_proof_indy(proof_req_json, proof_json, schemas_json, claim_defs_json, revoc_regs_json).unwrap(), error::SUCCESS.code_num);
 //        assert_eq!(proof.validate_proof_indy(proof_req_json, proof_json, schemas_json, &claim_defs_json, revoc_regs_json).unwrap(), error::SUCCESS.code_num);
@@ -726,12 +730,10 @@ mod tests {
 //            prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
 //            state: CxsStateType::CxsStateOfferSent,
 //            proof_state: ProofStateType::ProofUndefined,
-//            tid: 0,
-//            mid: 0,
 //            name:String::new(),
 //            version: String::from("1.0"),
 //            nonce: generate_nonce().to_string(),
-//            proof_offer: Some(ProofOffer::from_str(&proof_msg).unwrap()),
+//            proof: Some(ProofMessage::from_str(&proof_msg).unwrap()),
 //            proof_request: Some(proof_req.clone()),
 //        });
 //

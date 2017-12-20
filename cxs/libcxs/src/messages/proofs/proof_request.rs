@@ -31,13 +31,14 @@ pub struct ProofRequestData{
     #[serde(rename = "version")]
     data_version: String,
     requested_attrs: String,
-    #[serde(skip_serializing, default)]
     requested_predicates: String,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
 pub struct ProofRequest{
+    #[serde(skip_serializing, default)]
     prover_did: String,
+    #[serde(skip_serializing, default)]
     requester_did: String,
     #[serde(rename = "@type")]
     type_header: ProofType,
@@ -166,9 +167,8 @@ impl ProofRequest {
         proof[PROOF_DATA][REQUESTED_ATTRS] = combine_request_attributes(
             &self.proof_request_data.name,
             &self.proof_request_data.requested_attrs)?;
-//        proof[PROOF_DATA][REQUESTED_PREDICATES] =combine_request_attributes(
-//            &self.proof_request_data.name,
-//            &self.proof_request_data.requested_predicates)?;
+        //Todo: need to actually add Proof Predicates
+        proof[PROOF_DATA][REQUESTED_PREDICATES] = json!({});
         Ok(proof.to_string())
     }
 
@@ -179,6 +179,7 @@ impl ProofRequest {
         proof_data[REQUESTED_ATTRS] = combine_request_attributes(
             &self.proof_request_data.name,
             &self.proof_request_data.requested_attrs)?;
+        proof_data[REQUESTED_PREDICATES] = json!({});
         Ok(proof_data.to_string())
     }
 }
@@ -290,9 +291,8 @@ mod tests {
                         "name": "zip",
                     },
                 },
+                "requested_predicates": {},
             },
-            "prover_did": "",
-            "requester_did": "",
         });
         assert_eq!(request.serialize_message().unwrap(), proof_request_test.to_string());
     }

@@ -30,7 +30,7 @@ extern {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct SchemaTransaction {
+pub struct SchemaTransaction {
     #[serde(rename = "seqNo")]
     sequence_num: Option<usize>,
     #[serde(rename = "identifier")]
@@ -50,10 +50,10 @@ struct SchemaData {
     attr_names: Vec<String>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LedgerSchema {
     sequence_num: i32,
-    data: Option<SchemaTransaction>
+    pub data: Option<SchemaTransaction>
 }
 
 pub trait Schema: ToString {
@@ -106,14 +106,14 @@ impl LedgerSchema {
         let txn_struct: Value = match serde_json::from_str(txn.as_str()) {
             Ok(stc) => stc,
             Err(e) => {
-                error!("{}: {:?}","Parse from json error", e);
+                warn!("{}: {:?}","Parse from json error", e);
                 return Err(error::INVALID_JSON.code_num)
             }
         };
         let result = match txn_struct.get("result"){
             Some(result) => result,
             None => {
-                error!("{}","'result' not found in json");
+                warn!("{}","'result' not found in json");
                 return Err(error::INVALID_JSON.code_num)
             }
         };
@@ -122,14 +122,14 @@ impl LedgerSchema {
                 let schema: SchemaTransaction = match serde_json::from_value(d.clone()) {
                     Ok(parsed) => parsed,
                     Err(e) => {
-                        error!("{}: {:?}","Parse from value error", e);
+                        warn!("{}: {:?}","Parse from value error", e);
                         return Err(error::INVALID_JSON.code_num)
                     }
                 };
                 Ok(schema)
             },
             None => {
-                error!("{}","'data' not found in json");
+                warn!("{}","'data' not found in json");
                 Err(error::INVALID_JSON.code_num)
             }
         }
