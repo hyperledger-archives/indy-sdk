@@ -15,6 +15,7 @@ pub mod about_command {
         println_succ!("which provides a distributed-ledger-based foundation for");
         println_succ!("self-sovereign identity (https://sovrin.org/).");
         println!();
+        println_succ!("Version: {}", env!("CARGO_PKG_VERSION"));
         println_succ!("Apache License Version 2.0");
         println_succ!("Copyright 2017 Sovrin Foundation");
         println!();
