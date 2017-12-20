@@ -38,7 +38,7 @@ Pre-Built binaries can be downloaded from https://repo.sovrin.org/:
 * ios/libindy/stable/ - Pods for iOS
 * rhel/libindy/{master,stable,rc} - RHEL rpms
 
-Also Ubundu deb packages can be installed from APT repository (change stable to `master` or `rc` if needed):
+On Ubundu it is recommended to install packages with APT (change stable to `master` or `rc` if needed):
 ```
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
 sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable"
