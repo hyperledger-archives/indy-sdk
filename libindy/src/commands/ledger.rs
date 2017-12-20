@@ -233,8 +233,8 @@ impl LedgerCommandExecutor {
 
         let mut request: Value = serde_json::from_str(request_json)
             .map_err(|err|
-                IndyError::CryptoError(CryptoError::CommonError(
-                    CommonError::InvalidStructure(format!("Message is invalid json: {}", err.description())))))?;
+                CryptoError::CommonError(
+                    CommonError::InvalidStructure(format!("Message is invalid json: {}", err.description()))))?;
 
         if !request.is_object() {
             return Err(IndyError::CryptoError(CryptoError::CommonError(
@@ -246,8 +246,8 @@ impl LedgerCommandExecutor {
         request["signature"] = Value::String(Base58::encode(&signature));
         let signed_request: String = serde_json::to_string(&request)
             .map_err(|err|
-                IndyError::CryptoError(CryptoError::CommonError(
-                    CommonError::InvalidState(format!("Can't serialize message after signing: {}", err.description())))))?;
+                CryptoError::CommonError(
+                    CommonError::InvalidState(format!("Can't serialize message after signing: {}", err.description()))))?;
 
         Ok(signed_request)
     }

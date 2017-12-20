@@ -1,10 +1,11 @@
 extern crate indy_crypto;
 extern crate serde_json;
+extern crate time;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use errors::common::CommonError;
 use errors::indy::IndyError;
-use services::crypto::types::{KeyInfo, Key};
+use services::crypto::types::{KeyInfo, Key, ComboBox};
 use services::wallet::WalletService;
 use services::crypto::CryptoService;
 
@@ -174,21 +175,14 @@ impl CryptoCommandExecutor {
                              msg: Vec<u8>) -> Result<Vec<u8>, IndyError> {
         info!("authenticated_encrypt >>> wallet_handle: {:?}, my_vk: {:?}, their_vk: {:?}, msg: {:?}", wallet_handle, my_vk, their_vk, msg);
 
-        let sender_key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", my_vk))?;
+        self.crypto_service.validate_key(&my_vk)?;
+        self.crypto_service.validate_key(&their_vk)?;
 
-        let sender_key = Key::from_json(&sender_key_json)
-            .map_err(|err| CommonError::InvalidState(format!("Can't deserialize Key: {:?}", err)))?;
+        let my_key = CryptoCommandExecutor::_wallet_get_key(&self, wallet_handle, &my_vk)?;
 
-        let (msg, nonce) = self.crypto_service.encrypt(&sender_key, &their_vk, msg.as_slice())?;
-
-        let msg = Message {
-            msg: base64::encode(msg.as_slice()),
-            sender: my_vk.to_string(),
-            nonce: base64::encode(nonce.as_slice())
-        };
-
+        let msg = self.crypto_service.create_combo_box(&my_key, &their_vk, msg.as_slice())?;
         let msg = msg.to_json()
-            .map_err(|e| CommonError::InvalidState(format!("Can't serialize AuthenticatedEncryptedMessage: {:?}", e)))?;
+            .map_err(|e| CommonError::InvalidState(format!("Can't serialize ComboBox: {:?}", e)))?;
 
         let res = self.crypto_service.encrypt_sealed(&their_vk, msg.as_bytes())?;
 
@@ -203,15 +197,14 @@ impl CryptoCommandExecutor {
                              msg: Vec<u8>) -> Result<(String, Vec<u8>), IndyError> {
         info!("authenticated_decrypt >>> wallet_handle: {:?}, my_vk: {:?}, msg: {:?}", wallet_handle, my_vk, msg);
 
-        let my_key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", my_vk))?;
+        self.crypto_service.validate_key(&my_vk)?;
 
-        let my_key = Key::from_json(&my_key_json)
-            .map_err(|err| IndyError::CommonError(CommonError::InvalidState(format!("Can't deserialize Key: {:?}", err))))?;
+        let my_key = CryptoCommandExecutor::_wallet_get_key(&self, wallet_handle, &my_vk)?;
 
         let decrypted_msg = self.crypto_service.decrypt_sealed(&my_key, &msg)?;
 
-        let parsed_msg: Message = serde_json::from_slice(decrypted_msg.as_slice())
-            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize AuthenticatedEncryptedMessage: {:?}", err)))?;
+        let parsed_msg: ComboBox = serde_json::from_slice(decrypted_msg.as_slice())
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize ComboBox: {:?}", err)))?;
 
         let doc: Vec<u8> = base64::decode(&parsed_msg.msg)
             .map_err(|err| CommonError::InvalidStructure(format!("Can't decode internal msg filed from base64 {}", err)))?;
@@ -233,7 +226,10 @@ impl CryptoCommandExecutor {
                          msg: Vec<u8>) -> Result<Vec<u8>, IndyError> {
         info!("anonymous_encrypt >>> their_vk: {:?}, msg: {:?}", their_vk, msg);
 
-        let res = self.crypto_service.encrypt_sealed(&their_vk, &msg)?;;
+        self.crypto_service.validate_key(&their_vk)?;
+
+        let res = self.crypto_service.encrypt_sealed(&their_vk, &msg)?;
+        ;
 
         info!("anonymous_encrypt <<< res: {:?}", res);
 
@@ -246,10 +242,9 @@ impl CryptoCommandExecutor {
                          encrypted_msg: Vec<u8>) -> Result<Vec<u8>, IndyError> {
         info!("anonymous_decrypt >>> wallet_handle: {:?}, my_vk: {:?}, encrypted_msg: {:?}", wallet_handle, my_vk, encrypted_msg);
 
-        let my_key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", my_vk))?;
+        self.crypto_service.validate_key(&my_vk)?;
 
-        let my_key = Key::from_json(&my_key_json)
-            .map_err(|err| IndyError::CommonError(CommonError::InvalidState(format!("Invalid Key json: {:?}", err))))?;
+        let my_key = CryptoCommandExecutor::_wallet_get_key(&self, wallet_handle, &my_vk)?;
 
         let res = self.crypto_service.decrypt_sealed(&my_key, &encrypted_msg)?;
 
@@ -334,15 +329,3 @@ impl CryptoCommandExecutor {
         Ok(res)
     }
 }
-
-
-#[derive(Serialize, Deserialize)]
-struct Message {
-    msg: String,
-    sender: String,
-    nonce: String
-}
-
-impl JsonEncodable for Message {}
-
-impl<'a> JsonDecodable<'a> for Message {}

@@ -95,7 +95,7 @@ extern "C" {
                                                                      indy_error_t  err)
                                                );
 
-/// Saves their DID for a pairwise connection in a secured Wallet,
+   /// Saves their DID for a pairwise connection in a secured Wallet,
    /// so that it can be used to verify transaction.
    ///
    /// #Params

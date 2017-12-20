@@ -1,4 +1,5 @@
 extern crate indy_crypto;
+
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 #[derive(Serialize, Deserialize)]
@@ -100,3 +101,14 @@ impl Did {
 impl JsonEncodable for Did {}
 
 impl<'a> JsonDecodable<'a> for Did {}
+
+#[derive(Serialize, Deserialize)]
+pub struct ComboBox {
+    pub msg: String,
+    pub sender: String,
+    pub nonce: String
+}
+
+impl JsonEncodable for ComboBox {}
+
+impl<'a> JsonDecodable<'a> for ComboBox {}

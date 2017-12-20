@@ -186,7 +186,7 @@ extern "C" {
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// an encrypted message and nonce
+    /// an encrypted message
     ///
     /// #Errors
     /// Common*
@@ -229,7 +229,7 @@ extern "C" {
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// decrypted message
+    /// sender verkey and decrypted message
     ///
     /// #Errors
     /// Common*

@@ -1,6 +1,8 @@
 mod ed25519;
 pub mod types;
 
+use base64;
+
 use self::ed25519::ED25519CryptoType;
 use self::types::*;
 
@@ -157,6 +159,16 @@ impl CryptoService {
         let their_vk = Base58::decode(&their_vk)?;
 
         Ok(crypto_type.verify(&their_vk, msg, signature)?)
+    }
+
+    pub fn create_combo_box(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<ComboBox, CryptoError> {
+        let (msg, nonce) = self.encrypt(my_key, their_vk, doc)?;
+
+        Ok(ComboBox {
+            msg: base64::encode(msg.as_slice()),
+            sender: my_key.verkey.to_string(),
+            nonce: base64::encode(nonce.as_slice())
+        })
     }
 
     pub fn encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
