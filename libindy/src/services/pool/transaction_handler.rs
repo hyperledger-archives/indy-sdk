@@ -598,7 +598,7 @@ mod tests {
         };
         assert_eq!(pending_cmd, &exp_command_process);
         let diff: Duration = expected_timeout.sub(pending_cmd.full_cmd_timeout.unwrap());
-        assert!(diff <= Duration::milliseconds(1));
+        assert!(diff <= Duration::milliseconds(10));
         assert!(diff >= Duration::zero());
     }
 }
