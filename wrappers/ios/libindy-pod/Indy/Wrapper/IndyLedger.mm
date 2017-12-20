@@ -375,4 +375,70 @@
     }
 }
 
+// MARK: - Pool config request
+
++ (void)buildPoolConfigRequestWithSubmitterDid:(NSString *)submitterDid
+                                        writes:(BOOL)writes
+                                         force:(BOOL)force
+                                    completion:(void (^)(NSError *error, NSString *requestJSON)) completion
+{
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_pool_config_request(handle,
+                                     [submitterDid UTF8String],
+                                     (indy_bool_t) writes,
+                                     (indy_bool_t) force,
+                                     IndyWrapperCommon3PSCallback);
+    if( ret != Success )
+    {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
+    }
+}
+
+// MARK: - Pool upgrade request
+
++ (void)buildPoolUpgradeRequestWithSubmitterDid:(NSString *)submitterDid
+                                           name:(NSString *)name
+                                        version:(NSString *)version
+                                         action:(NSString *)action
+                                         sha256:(NSString *)sha256
+                                        timeout:(NSNumber *)timeout
+                                       schedule:(NSString *)schedule
+                                  justification:(NSString *)justification
+                                      reinstall:(BOOL)reinstall
+                                          force:(BOOL)force
+                                     completion:(void (^)(NSError *error, NSString *requestJSON)) completion
+{
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_build_pool_upgrade_request(handle,
+                                     [submitterDid UTF8String],
+                                     [name UTF8String],
+                                     [version UTF8String],
+                                     [action UTF8String],
+                                     [sha256 UTF8String],
+                                     [timeout intValue],
+                                     [schedule UTF8String],
+                                     [justification UTF8String],
+                                     (indy_bool_t) reinstall,
+                                     (indy_bool_t) force,
+                                     IndyWrapperCommon3PSCallback);
+    if( ret != Success )
+    {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError: ret], nil);
+        });
+    }
+}
+
 @end

@@ -55,6 +55,8 @@
 		5DB57B781F712A5200EB4C90 /* NSString+Validation.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B4F1F712A5200EB4C90 /* NSString+Validation.m */; };
 		5DFBC3FD1F715AD1003DFC5D /* AgentHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DFBC3FC1F715AD1003DFC5D /* AgentHighCases.m */; };
 		80DCB08582AE3D8C572032E5 /* libPods-Indy-demoTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D78D0155F3E8AF26D9FBE34 /* libPods-Indy-demoTests.a */; };
+		ADF5F072D66857F8E8F5EF89 /* LedgerPoolConfigRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FC55674BDCE214933132 /* LedgerPoolConfigRequest.mm */; };
+		ADF5FEFC9E28F7FBBC11828B /* LedgerPoolUpgradeRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FF3A492118F1F40C2D4C /* LedgerPoolUpgradeRequest.mm */; };
 		C1BA94778E40060E56814C61 /* libPods-Indy-demo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 49682051B863F7784F1A8CAE /* libPods-Indy-demo.a */; };
 /* End PBXBuildFile section */
 
@@ -163,6 +165,8 @@
 		5DFBC3FC1F715AD1003DFC5D /* AgentHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AgentHighCases.m; sourceTree = "<group>"; };
 		7BCBA93D72AE3588DDAD9D49 /* Pods-Indy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-Indy-demoTests/Pods-Indy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
 		8301CE9D60BE235EB8E50A72 /* libPods-libindy-demoTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demoTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		ADF5FC55674BDCE214933132 /* LedgerPoolConfigRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerPoolConfigRequest.mm; sourceTree = "<group>"; };
+		ADF5FF3A492118F1F40C2D4C /* LedgerPoolUpgradeRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerPoolUpgradeRequest.mm; sourceTree = "<group>"; };
 		B87BB39216A2B13E57165BF9 /* libPods-libindy-demo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-libindy-demo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DACC1FF866C0BAFAF74DC73B /* Pods-libindy-demo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demo/Pods-libindy-demo.debug.xcconfig"; sourceTree = "<group>"; };
 		ED81D70B4C1CD531B86E9E9F /* Pods-libindy-demoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-libindy-demoTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-libindy-demoTests/Pods-libindy-demoTests.release.xcconfig"; sourceTree = "<group>"; };
@@ -299,6 +303,8 @@
 				5DB57B221F712A5200EB4C90 /* LedgerNodeRequest.mm */,
 				5DB57B231F712A5200EB4C90 /* LedgerNymRequest.mm */,
 				5DB57B241F712A5200EB4C90 /* LedgerSchemaRequest.mm */,
+				ADF5FC55674BDCE214933132 /* LedgerPoolConfigRequest.mm */,
+				ADF5FF3A492118F1F40C2D4C /* LedgerPoolUpgradeRequest.mm */,
 			);
 			path = Ledger;
 			sourceTree = "<group>";
@@ -536,7 +542,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [[ $? != 0 ]] ; then\n    cat << EOM\nerror: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\nEOM\n    exit 1\nfi\n";
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
 		4ECEDA57C66CAE3DB4FAEFE3 /* [CP] Copy Pods Resources */ = {
@@ -584,7 +590,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [[ $? != 0 ]] ; then\n    cat << EOM\nerror: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\nEOM\n    exit 1\nfi\n";
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
 		B01B1FF1729B4A65C01EC15D /* [CP] Embed Pods Frameworks */ = {
@@ -671,6 +677,8 @@
 				5DB57B591F712A5200EB4C90 /* AnoncredsHighCases.m in Sources */,
 				109A3722C0C40A992FE7826B /* CryptoHighCases.mm in Sources */,
 				109A32E000D96FD088BFFFB1 /* CryptoUtils.mm in Sources */,
+				ADF5F072D66857F8E8F5EF89 /* LedgerPoolConfigRequest.mm in Sources */,
+				ADF5FEFC9E28F7FBBC11828B /* LedgerPoolUpgradeRequest.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -809,13 +817,7 @@
 				INFOPLIST_FILE = "Indy-demo/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				"LIBRARY_SEARCH_PATHS[arch=*]" = (
-					"$(inherited)",
-					"\"$PODS_CONFIGURATION_BUILD_DIR/CoreBitcoin\"",
-					"\"$PODS_CONFIGURATION_BUILD_DIR/ISO8601DateFormatter\"",
-					"$(inherited)",
-					"\"${PODS_ROOT}/OpenSSL-Universal/lib-ios\"",
-				);
+				"LIBRARY_SEARCH_PATHS[arch=*]" = "$(inherited) \"$PODS_CONFIGURATION_BUILD_DIR/CoreBitcoin\" \"$PODS_CONFIGURATION_BUILD_DIR/ISO8601DateFormatter\" $(inherited) \"${PODS_ROOT}/OpenSSL-Universal/lib-ios\"";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",

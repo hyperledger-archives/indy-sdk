@@ -396,6 +396,7 @@ extern "C" {
     /// Common*
 
     extern indy_error_t indy_build_pool_config_request(indy_handle_t command_handle,
+                                                       const char *  submitter_did,
                                                        indy_bool_t    writes,
                                                        indy_bool_t    force,
 
