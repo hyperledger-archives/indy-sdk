@@ -211,7 +211,7 @@ export class Proof extends CXSBase {
       await this.updateState()
       return JSON.parse(proof)
     } catch (err) {
-      throw new CXSInternalError(`cxs_proof_get_proof_offer -> ${err}`)
+      throw new CXSInternalError(`cxs_get_proof -> ${err}`)
     }
   }
 }
