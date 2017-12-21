@@ -21,6 +21,10 @@ pub mod create_command {
                 .add_main_param("name", "The name of new wallet")
                 .add_param("pool_name", false, "The name of associated Indy pool")
                 .add_param("key", true, "Auth key for the wallet")
+                .add_param("freshness_time", true, "Validity time of the values stored in the wallet")
+                .add_example("wallet create wallet1 pool_name=pool1")
+                .add_example("wallet create name=wallet1 pool_name=pool1 key=AAAAB3NzaC1yc2EA")
+                .add_example("wallet create name=wallet1 pool_name=pool1 freshness_time=1000")
                 .finalize()
     );
 
@@ -30,15 +34,19 @@ pub mod create_command {
         let pool_name = get_str_param("pool_name", params).map_err(error_err!())?;
         let name = get_str_param("name", params).map_err(error_err!())?;
         let key = get_opt_str_param("key", params).map_err(error_err!())?;
+        let freshness_time = get_opt_number_param::<i64>("freshness_time", params).map_err(error_err!())?;
 
-        let config: Option<String> = key.map(|key| json!({ "key": key }).to_string());
+        let config: Option<String> = key.map(|freshness_time| json!({ "freshness_time": freshness_time }).to_string());
+        let credentials: Option<String> = key.map(|key| json!({ "key": key }).to_string());
 
         trace!("Wallet::create_wallet try: name {}, pool_name {}, config {:?}", name, pool_name, config);
 
         let res = Wallet::create_wallet(pool_name,
                                         name,
                                         None,
-                                        config.as_ref().map(String::as_str));
+                                        config.as_ref().map(String::as_str),
+                                        credentials.as_ref().map(String::as_str),
+        );
 
         trace!("Wallet::create_wallet return: {:?}", res);
 
@@ -61,6 +69,9 @@ pub mod open_command {
                             .add_param("key", true, "Auth key for the wallet")
                             .add_param("rekey", true, "New auth key for the wallet (will replace previous one).")
                             .add_param("freshness_time", true, "Freshness time for entities in the wallet")
+                            .add_example("wallet open wallet1")
+                            .add_example("wallet open name=wallet1 key=AAAAB3NzaC1yc2EA rekey=BBBAB3NzaC1AS4AC")
+                            .add_example("wallet open name=wallet1 freshness_time=1000")
                             .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
@@ -71,12 +82,13 @@ pub mod open_command {
         let rekey = get_opt_str_param("rekey", params).map_err(error_err!())?;
         let freshness_time = get_opt_number_param::<i64>("freshness_time", params).map_err(error_err!())?;
 
-        let config = {
+        let config: Option<String> = freshness_time.map(|freshness_time| json!({ "freshness_time": freshness_time }).to_string());
+
+        let credentials = {
             let mut json = JSONMap::new();
 
             update_json_map_opt_key!(json, "key", key);
             update_json_map_opt_key!(json, "rekey", rekey);
-            update_json_map_opt_key!(json, "freshness_time", freshness_time);
 
             if !json.is_empty() {
                 Some(JSONValue::from(json).to_string())
@@ -100,7 +112,7 @@ pub mod open_command {
                 }
             })
             .and_then(|_| {
-                match Wallet::open_wallet(name, config.as_ref().map(String::as_str)) {
+                match Wallet::open_wallet(name, config.as_ref().map(String::as_str), credentials.as_ref().map(String::as_str)) {
                     Ok(handle) => {
                         set_opened_wallet(ctx, Some((handle, name.to_owned())));
                         Ok(println_succ!("Wallet \"{}\" has been opened", name))
@@ -136,6 +148,7 @@ pub mod list_command {
     use super::*;
 
     command!(CommandMetadata::build("list", "List existing wallets.")
+                .add_example("wallet list")
                 .finalize()
     );
 
@@ -173,7 +186,9 @@ pub mod list_command {
 pub mod close_command {
     use super::*;
 
-    command!(CommandMetadata::build("close", "Close opened wallet.").finalize());
+    command!(CommandMetadata::build("close", "Close opened wallet.")
+                    .add_example("wallet close")
+                    .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
@@ -207,6 +222,7 @@ pub mod delete_command {
 
     command!(CommandMetadata::build("delete", "Delete wallet with specified name")
                 .add_main_param("name", "The name of deleted wallet")
+                .add_example("wallet delete wallet1")
                 .finalize()
     );
 
@@ -215,7 +231,8 @@ pub mod delete_command {
 
         let name = get_str_param("name", params).map_err(error_err!())?;
 
-        if let Some((_, opened_wallet_name)) = get_opened_wallet(&ctx) { // TODO: Indy-Sdk allows delete opened wallet
+        if let Some((_, opened_wallet_name)) = get_opened_wallet(&ctx) {
+            // TODO: Indy-Sdk allows delete opened wallet
             if name == opened_wallet_name {
                 return Err(println_err!("Wallet {:?} is opened", name));
             }

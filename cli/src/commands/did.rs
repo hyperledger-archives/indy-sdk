@@ -24,6 +24,11 @@ pub mod new_command {
                 .add_param("seed", true, "Seed for creating DID key-pair")
                 .add_param("cid", true, "Create DID as CID (default false)")
                 .add_param("metadata", true, "DID metadata")
+                .add_example("did new")
+                .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX")
+                .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX seed=00000000000000000000000000000My1")
+                .add_example("did new seed=00000000000000000000000000000My1 cid=true")
+                .add_example("did new seed=00000000000000000000000000000My1 cid=true metadata=did_metadata")
                 .finalize()
     );
 
@@ -81,6 +86,7 @@ pub mod use_command {
 
     command!(CommandMetadata::build("use", "Use DID")
                 .add_main_param("did", "Did stored in wallet")
+                .add_example("did use VsKV7grR1BUE29mG2Fm2kX")
                 .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
@@ -110,6 +116,8 @@ pub mod rotate_key_command {
 
     command!(CommandMetadata::build("rotate-key", "Rotate keys for active did")
                 .add_param("seed", true, "If not provide then a random one will be created")
+                .add_example("did rotate-key")
+                .add_example("did rotate-key seed=00000000000000000000000000000My2")
                 .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
@@ -160,7 +168,8 @@ pub mod rotate_key_command {
 pub mod list_command {
     use super::*;
 
-    command!(CommandMetadata::build("list", "List my DIDs stored in the opened wallet.").finalize());
+    command!(CommandMetadata::build("list", "List my DIDs stored in the opened wallet.")
+                .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
