@@ -187,9 +187,9 @@ async def build_nym_request(submitter_did: str,
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_target_did = c_char_p(target_did.encode('utf-8'))
-    c_ver_key = c_char_p(ver_key.encode('utf-8')) if ver_key is not None else None
-    c_alias = c_char_p(alias.encode('utf-8')) if alias is not None else None
-    c_role = c_char_p(role.encode('utf-8')) if role is not None else None
+    c_ver_key = c_char_p(ver_key.encode('utf-8')) if ver_key else None
+    c_alias = c_char_p(alias.encode('utf-8')) if alias else None
+    c_role = c_char_p(role.encode('utf-8')) if role else None
 
     request_json = await do_call('indy_build_nym_request',
                                  c_submitter_did,
@@ -214,7 +214,7 @@ async def build_attrib_request(submitter_did: str,
 
     :param submitter_did: Id of Identity stored in secured Wallet.
     :param target_did: Id of Identity stored in secured Wallet.
-    :param hash: Hash of attribute data
+    :param xhash: Hash of attribute data
     :param raw: represented as json, where key is attribute name and value is it's value
     :param enc: Encrypted attribute data
     :return: Request result as json.
@@ -234,9 +234,9 @@ async def build_attrib_request(submitter_did: str,
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_target_did = c_char_p(target_did.encode('utf-8'))
-    c_hash = c_char_p(xhash.encode('utf-8')) if xhash is not None else None
-    c_raw = c_char_p(raw.encode('utf-8')) if raw is not None else None
-    c_enc = c_char_p(enc.encode('utf-8')) if enc is not None else None
+    c_hash = c_char_p(xhash.encode('utf-8')) if xhash else None
+    c_raw = c_char_p(raw.encode('utf-8')) if raw else None
+    c_enc = c_char_p(enc.encode('utf-8')) if enc else None
 
     request_json = await do_call('indy_build_attrib_request',
                                  c_submitter_did,
@@ -539,4 +539,105 @@ async def build_get_txn_request(submitter_did: str,
 
     res = request_json.decode()
     logger.debug("build_get_txn_request: <<< res: %r", res)
+    return res
+
+
+async def build_pool_config_request(submitter_did: str,
+                                    writes: bool,
+                                    force: bool) -> str:
+    """
+    Builds a POOL_CONFIG request.
+
+    :param submitter_did: Id of Identity stored in secured Wallet.
+    :param writes:
+    :param force:
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_pool_config_request: >>> submitter_did: %r, writes: %r, force: %r",
+                 submitter_did,
+                 writes,
+                 force)
+
+    if not hasattr(build_pool_config_request, "cb"):
+        logger.debug("build_pool_config_request: Creating callback")
+        build_pool_config_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_writes = c_bool(writes)
+    c_force = c_bool(force)
+
+    request_json = await do_call('indy_build_pool_config_request',
+                                 c_submitter_did,
+                                 c_writes,
+                                 c_force,
+                                 build_pool_config_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_pool_config_request: <<< res: %r", res)
+    return res
+
+
+async def build_pool_upgrade_request(submitter_did: str,
+                                     name: str,
+                                     version: str,
+                                     action: str,
+                                     _sha256: str,
+                                     _timeout: Optional[int],
+                                     schedule: Optional[str],
+                                     justification: Optional[str],
+                                     reinstall: bool,
+                                     force: bool) -> str:
+    """
+    Builds a POOL_UPGRADE request.
+
+    :param submitter_did: Id of Identity stored in secured Wallet.
+    :param name:
+    :param version:
+    :param action:
+    :param _sha256:
+    :param _timeout:
+    :param schedule:
+    :param justification:
+    :param reinstall:
+    :param force:
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_pool_upgrade_request: >>> submitter_did: %r, name: %r, version: %r, action: %r, _sha256: %r, "
+                 "timeout: %r, schedule: %r, justification: %r, reinstall: %r, force: %r",
+                 submitter_did, name, version, action, _sha256, _timeout, schedule, justification, reinstall, force)
+
+    if not hasattr(build_pool_upgrade_request, "cb"):
+        logger.debug("build_pool_upgrade_request: Creating callback")
+        build_pool_upgrade_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_name = c_char_p(name.encode('utf-8'))
+    c_version = c_char_p(version.encode('utf-8'))
+    c_action = c_char_p(action.encode('utf-8'))
+    c_sha256 = c_char_p(_sha256.encode('utf-8'))
+    c_timeout = c_int32(_timeout) if _timeout else c_int32(-1)
+    c_schedule = c_char_p(schedule.encode('utf-8')) if schedule else None
+    c_justification = c_char_p(justification.encode('utf-8')) if justification else None
+    c_reinstall = c_bool(reinstall)
+    c_force = c_bool(force)
+
+    request_json = await do_call('indy_build_pool_upgrade_request',
+                                 c_submitter_did,
+                                 c_name,
+                                 c_version,
+                                 c_action,
+                                 c_sha256,
+                                 c_timeout,
+                                 c_schedule,
+                                 c_justification,
+                                 c_reinstall,
+                                 c_force,
+                                 build_pool_upgrade_request.cb)
+
+    res = request_json.decode()
+    logger.debug("build_pool_upgrade_request: <<< res: %r", res)
     return res

@@ -113,7 +113,6 @@ pub mod attrib_command {
         let raw = get_opt_str_param("raw", params).map_err(error_err!())?;
         let enc = get_opt_str_param("enc", params).map_err(error_err!())?;
 
-
         let res = Ledger::build_attrib_request(&submitter_did, target_did, hash, raw, enc)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
@@ -361,9 +360,9 @@ pub mod node_command {
 
         let target_did = get_str_param("target", params).map_err(error_err!())?;
         let node_ip = get_opt_str_param("node_ip", params).map_err(error_err!())?;
-        let node_port = get_opt_int_param::<i32>("node_port", params).map_err(error_err!())?;
+        let node_port = get_opt_number_param::<i32>("node_port", params).map_err(error_err!())?;
         let client_ip = get_opt_str_param("client_ip", params).map_err(error_err!())?;
-        let client_port = get_opt_int_param::<i32>("client_port", params).map_err(error_err!())?;
+        let client_port = get_opt_number_param::<i32>("client_port", params).map_err(error_err!())?;
         let alias = get_opt_str_param("alias", params).map_err(error_err!())?;
         let blskey = get_opt_str_param("blskey", params).map_err(error_err!())?;
         let services = get_opt_str_array_param("services", params).map_err(error_err!())?;
@@ -385,6 +384,87 @@ pub mod node_command {
 
         let res = match res {
             Ok(_) => Ok(println_succ!("Node \"{}\" has been added to Ledger", node_data)),
+            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+pub mod pool_config_command {
+    use super::*;
+
+    command!(CommandMetadata::build("pool_config", "Sends write configuration to pool.")
+                .add_param("writes", false, "Accept write transactions")
+                .add_param("force", true, "")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let submitter_did = ensure_active_did(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+
+        let writes = get_bool_param("writes", params).map_err(error_err!())?;
+        let force = get_opt_bool_param("force", params).map_err(error_err!())?.unwrap_or(false);
+
+        let res = Ledger::indy_build_pool_config_request(&submitter_did, writes, force)
+            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
+
+        let res = match res {
+            Ok(_) => Ok(println_succ!("Pool configuration {{\"writes\":\"{}\"}} has been set.", writes)),
+            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+pub mod pool_upgrade_command {
+    use super::*;
+
+    command!(CommandMetadata::build("pool_upgrade", "Sends instructions to nodes to update themselves.")
+                .add_param("name", false, "")
+                .add_param("version", false, "")
+                .add_param("action", false, "Either start or cancel")
+                .add_param("sha256", false, "")
+                .add_param("timeout", true, "")
+                .add_param("schedule", true, "")
+                .add_param("justification", true, "")
+                .add_param("reinstall", true, "")
+                .add_param("force", true, "")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let submitter_did = ensure_active_did(&ctx)?;
+        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+
+        let name = get_str_param("name", params).map_err(error_err!())?;
+        let version = get_str_param("version", params).map_err(error_err!())?;
+        let action = get_str_param("action", params).map_err(error_err!())?;
+        let sha256 = get_str_param("sha256", params).map_err(error_err!())?;
+        let timeout = get_opt_number_param::<u32>("timeout", params).map_err(error_err!())?;
+        let schedule = get_opt_str_param("schedule", params).map_err(error_err!())?;
+        let justification = get_opt_str_param("justification", params).map_err(error_err!())?;
+        let reinstall = get_opt_bool_param("reinstall", params).map_err(error_err!())?.unwrap_or(false);
+        let force = get_opt_bool_param("force", params).map_err(error_err!())?.unwrap_or(false);
+
+        let res = Ledger::indy_build_pool_upgrade_request(&submitter_did, name, version, action, sha256,
+                                                          timeout, schedule, justification, reinstall, force)
+            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
+
+        let res = match res {
+            Ok(_) => Ok(println_succ!("Pool upgrade instruction {{\"name\":\"{}\", \"version\":\"{}\", \"action\":\"{}\",\
+             \"sha256\":\"{}\", \"timeout\":{:?}, \"schedule\":{:?}, \"justification\":{:?}, \"reinstall\":{}, \"force\":{}}} has been sent.",
+              name, version, action, sha256, timeout, schedule, justification, reinstall, force)),
             Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
         };
 
@@ -1317,6 +1397,77 @@ pub mod tests {
                 params.insert("alias", "Node5".to_string());
                 params.insert("blskey", "2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw".to_string());
                 params.insert("services", "VALIDATOR".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+    }
+
+    mod pool_config {
+        use super::*;
+
+        #[test]
+        pub fn pool_config_works() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = pool_config_command::new();
+                let mut params = CommandParams::new();
+                params.insert("writes", "false".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            {
+                let cmd = pool_config_command::new();
+                let mut params = CommandParams::new();
+                params.insert("writes", "true".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+    }
+
+    mod pool_upgrade {
+        use super::*;
+
+        #[test]
+        pub fn pool_upgrade_works() {
+            let schedule = r#"{"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"2020-01-25T12:49:05.258870+00:00",
+                                    "8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb":"2020-01-25T13:49:05.258870+00:00",
+                                    "DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya":"2020-01-25T14:49:05.258870+00:00",
+                                    "4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA":"2020-01-25T15:49:05.258870+00:00"}"#;
+
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = pool_upgrade_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", "upgrade-indy-cli".to_string());
+                params.insert("version", "2.0.0".to_string());
+                params.insert("action", "start".to_string());
+                params.insert("sha256", "f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398".to_string());
+                params.insert("schedule", schedule.to_string());
+                params.insert("force", "true".to_string()); // because node_works test added fifth Node
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            {
+                let cmd = pool_upgrade_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", "upgrade-indy-cli".to_string());
+                params.insert("version", "2.0.0".to_string());
+                params.insert("action", "cancel".to_string());
+                params.insert("sha256", "ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);
