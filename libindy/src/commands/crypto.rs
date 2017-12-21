@@ -1,6 +1,4 @@
 extern crate indy_crypto;
-extern crate serde_json;
-extern crate time;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use errors::common::CommonError;
@@ -181,10 +179,11 @@ impl CryptoCommandExecutor {
         let my_key = CryptoCommandExecutor::_wallet_get_key(&self, wallet_handle, &my_vk)?;
 
         let msg = self.crypto_service.create_combo_box(&my_key, &their_vk, msg.as_slice())?;
-        let msg = msg.to_json()
+
+        let msg = msg.to_msg_pack()
             .map_err(|e| CommonError::InvalidState(format!("Can't serialize ComboBox: {:?}", e)))?;
 
-        let res = self.crypto_service.encrypt_sealed(&their_vk, msg.as_bytes())?;
+        let res = self.crypto_service.encrypt_sealed(&their_vk, &msg)?;
 
         info!("authenticated_encrypt <<< res: {:?}", res);
 
@@ -203,7 +202,7 @@ impl CryptoCommandExecutor {
 
         let decrypted_msg = self.crypto_service.decrypt_sealed(&my_key, &msg)?;
 
-        let parsed_msg: ComboBox = serde_json::from_slice(decrypted_msg.as_slice())
+        let parsed_msg = ComboBox::from_msg_pack(decrypted_msg.as_slice())
             .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize ComboBox: {:?}", err)))?;
 
         let doc: Vec<u8> = base64::decode(&parsed_msg.msg)
@@ -229,7 +228,6 @@ impl CryptoCommandExecutor {
         self.crypto_service.validate_key(&their_vk)?;
 
         let res = self.crypto_service.encrypt_sealed(&their_vk, &msg)?;
-        ;
 
         info!("anonymous_encrypt <<< res: {:?}", res);
 

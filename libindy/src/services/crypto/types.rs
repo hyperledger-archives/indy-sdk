@@ -1,4 +1,5 @@
 extern crate indy_crypto;
+extern crate rmp_serde;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
@@ -109,6 +110,12 @@ pub struct ComboBox {
     pub nonce: String
 }
 
-impl JsonEncodable for ComboBox {}
+impl ComboBox {
+    pub fn to_msg_pack(&self) -> Result<Vec<u8>, rmp_serde::encode::Error> {
+        rmp_serde::encode::to_vec_named(self)
+    }
 
-impl<'a> JsonDecodable<'a> for ComboBox {}
+    pub fn from_msg_pack(bytes: &[u8]) -> Result<ComboBox, rmp_serde::decode::Error> {
+        rmp_serde::decode::from_slice(bytes)
+    }
+}
