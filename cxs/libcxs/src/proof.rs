@@ -69,7 +69,7 @@ impl Proof {
     }
     
     fn validate_proof_indy(&mut self, proof_req_json: &str, proof_json: &str, schemas_json: &str, claim_defs_json: &str, revoc_regs_json: &str) -> Result<u32, u32> {
-        //Ok(error::SUCCESS.code_num)
+        self.proof_state = ProofStateType::ProofUndefined;
         let (sender, receiver) = channel();
         let cb = Box::new(move |err, valid | {
             sender.send((err, valid)).unwrap();
@@ -244,8 +244,10 @@ impl Proof {
 
                 match self.proof_validation() {
                     Ok(x) => {
-                        info!("Proof format was validated for proof {}", self.handle);
-                        self.proof_state = ProofStateType::ProofValidated;
+                        if self.proof_state != ProofStateType::ProofInvalid {
+                            info!("Proof format was validated for proof {}", self.handle);
+                            self.proof_state = ProofStateType::ProofValidated;
+                        }
                     }
                     Err(x) => {
                         info!("Proof {} had invalid format with err {}", self.handle, x);
