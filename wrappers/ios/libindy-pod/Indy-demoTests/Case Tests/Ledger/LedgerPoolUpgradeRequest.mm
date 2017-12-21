@@ -135,13 +135,18 @@
 
     // start
     // 4. Build pool upgrade request
-    NSString *schedule = @"{\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\":\"2020-01-25T12:49:05.258870+00:00\",\n"
-            "               \"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\":\"2020-01-25T13:49:05.258870+00:00\",\n"
-            "               \"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\":\"2020-01-25T14:49:05.258870+00:00\",\n"
-            "               \"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\":\"2020-01-25T15:49:05.258870+00:00\"}";
+    int nextYear = [[[NSCalendar currentCalendar]
+            components:NSCalendarUnitYear fromDate:[NSDate date]]
+            year] + 1;
+
+    NSString *schedule = [NSString stringWithFormat:@"{\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\":\"%d-01-25T12:49:05.258870+00:00\",\n"
+                                                     " \"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\":\"%d-01-25T13:49:05.258870+00:00\",\n"
+                                                     " \"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\":\"%d-01-25T14:49:05.258870+00:00\",\n"
+                                                     " \"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\":\"%d-01-25T15:49:05.258870+00:00\"}",
+                                                     nextYear, nextYear, nextYear, nextYear ];
     NSString *poolUpgradeRequestJson;
     ret = [[LedgerUtils sharedInstance] buildPoolUpgradeRequestWithSubmitterDid:trusteeDid
-                                                                                    name:@"upgrade-ios"
+                                                                                    name:@"upgrade-ios-1"
                                                                                  version:@"2.0.0"
                                                                                   action:@"start"
                                                                                   sha256:@"f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398"
@@ -169,7 +174,7 @@
     // 6. Build pool upgrade request
     NSString *poolUpgradeCancelRequestJson = nil;
     ret = [[LedgerUtils sharedInstance] buildPoolUpgradeRequestWithSubmitterDid:trusteeDid
-                                                                           name:@"upgrade-ios"
+                                                                           name:@"upgrade-ios-1"
                                                                         version:@"2.0.0"
                                                                          action:@"cancel"
                                                                          sha256:@"1c3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398"

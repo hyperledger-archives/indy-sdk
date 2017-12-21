@@ -5,6 +5,8 @@ import org.hyperledger.indy.sdk.signus.Signus;
 import org.hyperledger.indy.sdk.signus.SignusResults;
 import org.junit.Test;
 
+import java.util.Calendar;
+
 import static org.junit.Assert.assertTrue;
 
 public class PoolUpgradeRequestTest extends IndyIntegrationTestWithPoolAndSingleWallet {
@@ -46,14 +48,17 @@ public class PoolUpgradeRequestTest extends IndyIntegrationTestWithPoolAndSingle
 
 	@Test
 	public void testPoolUpgradeRequestWorks() throws Exception {
+		int nextYear = Calendar.getInstance().get(Calendar.YEAR) + 1;
+
 		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();
 
 		//start
-		String schedule = "{\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\":\"2020-01-25T12:49:05.258870+00:00\",\n" +
-				"                   \"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\":\"2020-01-25T13:49:05.258870+00:00\",\n" +
-				"                   \"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\":\"2020-01-25T14:49:05.258870+00:00\",\n" +
-				"                   \"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\":\"2020-01-25T15:49:05.258870+00:00\"}";
+		String schedule = String.format("{\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\":\"%s-01-25T12:49:05.258870+00:00\",\n" +
+						"                   \"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\":\"%s-01-25T13:49:05.258870+00:00\",\n" +
+						"                   \"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\":\"%s-01-25T14:49:05.258870+00:00\",\n" +
+						"                   \"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\":\"%s-01-25T15:49:05.258870+00:00\"}",
+				nextYear, nextYear, nextYear, nextYear);
 		String request = Ledger.buildPoolUpgradeRequest(did, "upgrade-java", "2.0.0", "start",
 				"f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398", - 1, schedule, null, false, false).get();
 		Ledger.signAndSubmitRequest(pool, wallet, did, request).get();

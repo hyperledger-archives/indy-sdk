@@ -1,4 +1,5 @@
 import json
+import datetime
 
 import pytest
 
@@ -296,12 +297,13 @@ async def test_pool_config_request_works(pool_handle, wallet_handle, identity_tr
 @pytest.mark.asyncio
 async def test_pool_upgrade_requests_works(pool_handle, wallet_handle, identity_trustee1):
     (did_trustee, _) = identity_trustee1
+    next_year = datetime.datetime.now().year + 1
 
     schedule = {
-        "Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv": "2020-01-25T12:49:05.258870+00:00",
-        "8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb": "2020-01-25T13:49:05.258870+00:00",
-        "DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya": "2020-01-25T14:49:05.258870+00:00",
-        "4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA": "2020-01-25T15:49:05.258870+00:00"
+        "Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv": str(next_year) + "-01-25T12:49:05.258870+00:00",
+        "8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb": str(next_year) + "-01-25T13:49:05.258870+00:00",
+        "DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya": str(next_year) + "-01-25T14:49:05.258870+00:00",
+        "4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA": str(next_year) + "-01-25T15:49:05.258870+00:00"
     }
 
     request = await ledger.build_pool_upgrade_request(did_trustee, 'upgrade-python', '2.0.0', 'start',

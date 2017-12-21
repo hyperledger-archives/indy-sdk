@@ -1,4 +1,5 @@
 extern crate indy;
+extern crate time;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
 use indy::api as api;
@@ -914,10 +915,16 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
 
-        const SCHEDULE: &'static str = r#"{"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"2020-01-25T12:49:05.258870+00:00",
-                                           "8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb":"2020-01-25T13:49:05.258870+00:00",
-                                           "DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya":"2020-01-25T14:49:05.258870+00:00",
-                                           "4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA":"2020-01-25T15:49:05.258870+00:00"}"#;
+        lazy_static! {
+            static ref SCHEDULE: String = {
+                let next_year = time::now().tm_year + 1900 + 1;
+                format!(r#"{{"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"{}-01-25T12:49:05.258870+00:00",
+                             "8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb":"{}-01-25T13:49:05.258870+00:00",
+                             "DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya":"{}-01-25T14:49:05.258870+00:00",
+                             "4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA":"{}-01-25T15:49:05.258870+00:00"}}"#,
+                             next_year, next_year, next_year, next_year)
+            };
+        }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
@@ -936,7 +943,7 @@ mod high_cases {
                                                                   "start",
                                                                   "f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398",
                                                                   None,
-                                                                  Some(SCHEDULE),
+                                                                  Some(&SCHEDULE),
                                                                   None,
                                                                   false,
                                                                   false).unwrap();
