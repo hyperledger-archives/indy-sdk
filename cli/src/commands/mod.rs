@@ -38,7 +38,7 @@ pub fn get_int_param<T>(name: &str, params: &CommandParams) -> Result<T, ()>
     }
 }
 
-pub fn get_opt_int_param<T>(key: &str, params: &CommandParams) -> Result<Option<T>, ()>
+pub fn get_opt_number_param<T>(key: &str, params: &CommandParams) -> Result<Option<T>, ()>
     where T: std::str::FromStr, <T as std::str::FromStr>::Err: std::fmt::Display {
     let res = match params.get(key) {
         Some(value) => Some(value.parse::<T>().map_err(|err|
@@ -48,13 +48,23 @@ pub fn get_opt_int_param<T>(key: &str, params: &CommandParams) -> Result<Option<
     Ok(res)
 }
 
-pub fn get_opt_bool_param(key: &str, params: &CommandParams) -> Result<Option<bool>, ()> {
-    let res = match params.get(key) {
-        Some(value) => Some(value.parse::<bool>().map_err(|err|
+pub fn get_bool_param(key: &str, params: &CommandParams) -> Result<bool, ()> {
+    match params.get(key) {
+        Some(value) => Ok(value.parse::<bool>().map_err(|err|
             println_err!("Can't parse bool parameter \"{}\": err {}", key, err))?),
-        None => None
-    };
-    Ok(res)
+        None => {
+            println_err!("No required \"{}\" parameter present", key);
+            Err(())
+        }
+    }
+}
+
+pub fn get_opt_bool_param(key: &str, params: &CommandParams) -> Result<Option<bool>, ()> {
+    match params.get(key) {
+        Some(value) => Ok(Some(value.parse::<bool>().map_err(|err|
+            println_err!("Can't parse bool parameter \"{}\": err {}", key, err))?)),
+        None => Ok(None)
+    }
 }
 
 pub fn get_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Vec<&'a str>, ()> {

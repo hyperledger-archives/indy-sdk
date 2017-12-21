@@ -25,7 +25,7 @@ use std::rc::Rc;
 use utils::crypto::base58::Base58;
 
 use utils::crypto::signature_serializer::serialize_signature;
-use self::indy_crypto::utils::json::{JsonDecodable};
+use self::indy_crypto::utils::json::JsonDecodable;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
@@ -103,6 +103,23 @@ pub enum LedgerCommand {
     BuildGetTxnRequest(
         String, // submitter did
         i32, // data
+        Box<Fn(Result<String, IndyError>) + Send>),
+    BuildPoolConfigRequest(
+        String, // submitter did
+        bool, // writes
+        bool, // force
+        Box<Fn(Result<String, IndyError>) + Send>),
+    BuildPoolUpgradeRequest(
+        String, // submitter did
+        String, // name
+        String, // version
+        String, // action
+        String, // sha256
+        Option<u32>, // timeout
+        Option<String>, // schedule
+        Option<String>, // justification
+        bool, // reinstall
+        bool, // force
         Box<Fn(Result<String, IndyError>) + Send>)
 }
 
@@ -200,6 +217,17 @@ impl LedgerCommandExecutor {
             LedgerCommand::BuildGetTxnRequest(submitter_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetTxnRequest command received");
                 self.build_get_txn_request(&submitter_did, data, cb);
+            }
+            LedgerCommand::BuildPoolConfigRequest(submitter_did, writes, force, cb) => {
+                info!(target: "ledger_command_executor", "BuildPoolConfigRequest command received");
+                self.build_pool_config_request(&submitter_did, writes, force, cb);
+            }
+            LedgerCommand::BuildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb) => {
+                info!(target: "ledger_command_executor", "BuildPoolUpgradeRequest command received");
+                self.build_pool_upgrade_request(&submitter_did, &name, &version, &action, &sha256, timeout,
+                                                schedule.as_ref().map(String::as_str),
+                                                justification.as_ref().map(String::as_str),
+                                                reinstall, force, cb);
             }
         };
     }
@@ -393,5 +421,30 @@ impl LedgerCommandExecutor {
         cb(self.ledger_service.build_get_txn_request(submitter_did,
                                                      data
         ).map_err(|err| IndyError::CommonError(err)))
+    }
+
+    fn build_pool_config_request(&self,
+                                 submitter_did: &str,
+                                 writes: bool,
+                                 force: bool,
+                                 cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        cb(self.ledger_service.build_pool_config(submitter_did, writes, force)
+            .map_err(|err| IndyError::CommonError(err)))
+    }
+
+    fn build_pool_upgrade_request(&self,
+                                  submitter_did: &str,
+                                  name: &str,
+                                  version: &str,
+                                  action: &str,
+                                  sha256: &str,
+                                  timeout: Option<u32>,
+                                  schedule: Option<&str>,
+                                  justification: Option<&str>,
+                                  reinstall: bool,
+                                  force: bool,
+                                  cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        cb(self.ledger_service.build_pool_upgrade(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force)
+            .map_err(|err| IndyError::CommonError(err)))
     }
 }

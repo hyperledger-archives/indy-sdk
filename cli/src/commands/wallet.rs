@@ -69,7 +69,7 @@ pub mod open_command {
         let name = get_str_param("name", params).map_err(error_err!())?;
         let key = get_opt_str_param("key", params).map_err(error_err!())?;
         let rekey = get_opt_str_param("rekey", params).map_err(error_err!())?;
-        let freshness_time = get_opt_int_param::<i64>("freshness_time", params).map_err(error_err!())?;
+        let freshness_time = get_opt_number_param::<i64>("freshness_time", params).map_err(error_err!())?;
 
         let config = {
             let mut json = JSONMap::new();

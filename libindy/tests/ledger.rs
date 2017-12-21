@@ -1,4 +1,5 @@
 extern crate indy;
+extern crate time;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
 use indy::api as api;
@@ -795,6 +796,170 @@ mod high_cases {
             let get_txn_response = LedgerUtils::submit_request(pool_handle, &get_txn_request).unwrap();
             let get_txn_response: Reply<GetTxnResult> = serde_json::from_str(&get_txn_response).unwrap();
             assert!(get_txn_response.result.data.is_none());
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod pool_config {
+        use super::*;
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_pool_config_request_works() {
+            TestUtils::cleanup_storage();
+
+            let expected_result = r#""operation":{"type":"111","writes":true,"force":false"#;
+            let request = LedgerUtils::build_pool_config_request(DID_TRUSTEE, true, false).unwrap();
+            assert!(request.contains(expected_result));
+
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_pool_config_request_works() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (trustee_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+
+            let request = LedgerUtils::build_pool_config_request(&trustee_did, true, false).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_pool_config_request_works_for_disabling_writing() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (trustee_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+
+            // set Ledger as readonly
+            let request = LedgerUtils::build_pool_config_request(&trustee_did, false, false).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
+
+            // try send schema request
+            let schema_request = LedgerUtils::build_schema_request(&trustee_did, SCHEMA_DATA).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &schema_request).unwrap_err();
+
+            // return Ledger to the previous state
+            let request = LedgerUtils::build_pool_config_request(&trustee_did, true, false).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod pool_upgrade {
+        use super::*;
+
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_pool_upgrade_request_works_for_start_action() {
+            TestUtils::cleanup_storage();
+
+            let expected_result = r#""operation":{"type":"109","name":"upgrade-libindy","version":"2.0.0","action":"start","sha256":"f284b","schedule":{},"reinstall":false,"force":false"#;
+            let request = LedgerUtils::build_pool_upgrade_request(DID_TRUSTEE,
+                                                                  "upgrade-libindy",
+                                                                  "2.0.0",
+                                                                  "start",
+                                                                  "f284b",
+                                                                  None,
+                                                                  Some("{}"),
+                                                                  None,
+                                                                  false,
+                                                                  false).unwrap();
+            assert!(request.contains(expected_result));
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_pool_upgrade_request_works_for_cancel_action() {
+            TestUtils::cleanup_storage();
+
+            let expected_result = r#""type":"109","name":"upgrade-libindy","version":"2.0.0","action":"cancel","sha256":"f284b","reinstall":false,"force":false"#;
+            let request = LedgerUtils::build_pool_upgrade_request(DID_TRUSTEE,
+                                                                  "upgrade-libindy",
+                                                                  "2.0.0",
+                                                                  "cancel",
+                                                                  "f284b",
+                                                                  None,
+                                                                  None,
+                                                                  None,
+                                                                  false,
+                                                                  false).unwrap();
+            assert!(request.contains(expected_result));
+
+            TestUtils::cleanup_storage();
+        }
+
+        lazy_static! {
+            static ref SCHEDULE: String = {
+                let next_year = time::now().tm_year + 1900 + 1;
+                format!(r#"{{"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"{}-01-25T12:49:05.258870+00:00",
+                             "8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb":"{}-01-25T13:49:05.258870+00:00",
+                             "DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya":"{}-01-25T14:49:05.258870+00:00",
+                             "4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA":"{}-01-25T15:49:05.258870+00:00"}}"#,
+                             next_year, next_year, next_year, next_year)
+            };
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_pool_upgrade_request_works_for_start_cancel_works() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (trustee_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+
+            //start
+            let request = LedgerUtils::build_pool_upgrade_request(&trustee_did,
+                                                                  "upgrade-libindy",
+                                                                  "2.0.0",
+                                                                  "start",
+                                                                  "f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398",
+                                                                  None,
+                                                                  Some(&SCHEDULE),
+                                                                  None,
+                                                                  false,
+                                                                  false).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
+
+            //cancel
+            let request = LedgerUtils::build_pool_upgrade_request(&trustee_did,
+                                                                  "upgrade-libindy",
+                                                                  "2.0.0",
+                                                                  "cancel",
+                                                                  "ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398",
+                                                                  None,
+                                                                  None,
+                                                                  Some("Upgrade is not required"),
+                                                                  false,
+                                                                  false).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
