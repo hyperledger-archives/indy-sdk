@@ -1,9 +1,10 @@
 const assert = require('chai').assert
 const cxs = require('../dist/index')
 const { stubInitCXS } = require('./helpers')
-const { Connection, Proof, StateType, Error } = cxs
+const { Connection, Proof, StateType, Error, ProofState } = cxs
 
 const ATTR = [{issuerDid: '8XFh8yBzrpJQmNyZzgoTqB', schemaSeqNo: 1, name: 'test'}]
+const PROOF_MSG = '{"version":"0.1","to_did":"BnRXf8yDMUwGyZVDkSENeq","from_did":"GxtnGN6ypZYgEqcftSQFnC","proof_request_id":"cCanHnpFAD","proofs":{"claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"state":"96473275571522321025213415717206189191162"},"a_prime":"921....546","e":"158....756","v":"114....069","m":{"address2":"140....691","city":"209....294","address1":"111...738","zip":"149....066"},"m1":"777....518","m2":"515....229"},"ge_proofs":[]},"non_revoc_proof":null},"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH"}},"aggregated_proof":{"c_hash":"25105671496406009212798488318112715144459298495509265715919744143493847046467","c_list":[[72,245,38,"....",46,195,18]]},"requested_proof":{"revealed_attrs":{"attr_key_id":["claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b","UT","96473275571522321025213415717206189191162"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{}}}'
 
 describe('A Proof', function () {
   this.timeout(30000)
@@ -110,5 +111,26 @@ describe('A Proof', function () {
     } catch (err) {
       assert.equal(err.toString(), 'Error: cxs_proof_send_request -> 1017')
     }
+  })
+
+  it('get proof has an invalid proof state with incorrect proof', async () => {
+    let connection = await Connection.create({ id: '234' })
+    await connection.connect()
+    const sourceId = 'SerializeDeserialize'
+    const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
+    let jsonProof = await proof.serialize()
+    // console.log(jsonProof)
+    jsonProof.proof = JSON.parse(PROOF_MSG)
+    jsonProof.state = StateType.Accepted
+    jsonProof.proof_state = ProofState.Invalid
+    jsonProof.handle = 8223
+    const proof2 = await Proof.deserialize(jsonProof)
+    await proof2.updateState()
+    let proofData = await proof2.getProof(connection)
+    assert.equal(proof2.getProofState(), ProofState.Invalid)
+    const attrs = '[{"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH","claim_uuid":"claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b","name":"state","value":"UT","type":"revealed"}]'
+    const expectedData = {proofAttrs: attrs, proofState: ProofState.Invalid}
+    assert.equal(JSON.stringify(proofData.proofAttrs), expectedData.proofAttrs)
+    assert.equal(proofData.proofState, expectedData.proofState)
   })
 })

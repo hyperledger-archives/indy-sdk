@@ -24,10 +24,13 @@ export interface IProofData {
   prover_did: string
   state: StateType
   name: string
+  proof_state: ProofState
+  proof: any
 }
 
 export interface IProofResponses {
   proofAttrs: IProofResponseAttr[],
+  proofState: ProofState,
 }
 
 export interface IProofResponseAttr {
@@ -36,7 +39,7 @@ export interface IProofResponseAttr {
   claim_uuid: string,
   name: string,
   value: string,
-  attr_type: string,
+  type: string,
 }
 
 /**
@@ -48,6 +51,12 @@ export interface IProofAttr {
   issuerDid?: string,
   schemaSeqNo?: number,
   name: string,
+}
+
+export enum ProofState {
+  Undefined = 0,
+  Verified = 1,
+  Invalid = 2
 }
 
 // export interface IProofPredicate {
@@ -68,6 +77,7 @@ export class Proof extends CXSBase {
   protected _deserializeFn = rustAPI().cxs_proof_deserialize
   private _requestedAttributes: IProofAttr[]
   private _name: string
+  private _proofState: number
 
   constructor (sourceId) {
     super(sourceId)
@@ -200,18 +210,27 @@ export class Proof extends CXSBase {
               reject(rc)
             }
           },
-          (resolve, reject) => Callback('void', ['uint32', 'uint32'], (xcommandHandle, err, proofData) => {
+          (resolve, reject) => Callback('void', ['uint32', 'uint32', 'uint32', 'string'],
+          (xcommandHandle, err, proofState, proofData) => {
             if (err) {
               reject(err)
               return
             }
+            this._setProofState(proofState)
             resolve(proofData)
           })
         )
-      await this.updateState()
-      return JSON.parse(proof)
+      return {proofAttrs: JSON.parse(proof), proofState: this.getProofState()}
     } catch (err) {
       throw new CXSInternalError(`cxs_get_proof -> ${err}`)
     }
+  }
+
+  getProofState (): number {
+    return this._proofState
+  }
+
+  _setProofState (state: number) {
+    this._proofState = state
   }
 }
