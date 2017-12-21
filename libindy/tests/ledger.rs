@@ -828,7 +828,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let (trustee_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
             let request = LedgerUtils::build_pool_config_request(&trustee_did, true, false).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
@@ -847,7 +847,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let (trustee_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
             // set Ledger as readonly
             let request = LedgerUtils::build_pool_config_request(&trustee_did, false, false).unwrap();
@@ -933,7 +933,7 @@ mod high_cases {
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let (trustee_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
             //start
             let request = LedgerUtils::build_pool_upgrade_request(&trustee_did,
