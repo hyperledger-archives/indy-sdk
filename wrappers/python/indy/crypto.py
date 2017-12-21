@@ -208,9 +208,6 @@ async def auth_crypt(wallet_handle: int,
     That shared secret key can be used to verify that the encrypted message was not tampered with,
     before eventually decrypting it.
 
-    Recipient only needs Sender's public key, the nonce and the ciphertext to peform decryption.
-    The nonce doesn't have to be confidential.
-
     Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     for specific DID.
 
@@ -219,7 +216,7 @@ async def auth_crypt(wallet_handle: int,
     indy_create_and_store_my_did
     :param their_vk: id (verkey) of their key
     :param msg: a message to be signed
-    :return: an encrypted message and nonce
+    :return: an encrypted message
     """
 
     logger = logging.getLogger(__name__)
@@ -265,9 +262,6 @@ async def auth_decrypt(wallet_handle: int,
     That shared secret key can be used to verify that the encrypted message was not tampered with,
     before eventually decrypting it.
 
-    Recipient only needs Sender's public key, the nonce and the ciphertext to peform decryption.
-    Еhe nonce doesn't have to be confidential.
-
     Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     for specific DID.
 
@@ -275,7 +269,7 @@ async def auth_decrypt(wallet_handle: int,
     :param my_vk: id (verkey) of my key. The key must be created by calling indy_create_key or
     indy_create_and_store_my_did
     :param encrypted_msg: encrypted message
-    :return: decrypted message
+    :return: sender verkey and decrypted message
     """
 
     logger = logging.getLogger(__name__)
@@ -324,7 +318,7 @@ async def anon_crypt(their_vk: str,
 
     :param their_vk: id (verkey) of their key
     :param msg: a message to be signed
-    :return: an encrypted message and nonce
+    :return: an encrypted message
     """
 
     logger = logging.getLogger(__name__)

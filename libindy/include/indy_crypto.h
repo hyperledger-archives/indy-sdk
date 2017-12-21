@@ -170,9 +170,6 @@ extern "C" {
     /// That shared secret key can be used to verify that the encrypted message was not tampered with,
     /// before eventually decrypting it.
     ///
-    /// Recipient only needs Sender's public key, the nonce and the ciphertext to peform decryption.
-    /// The nonce doesn't have to be confidential.
-    ///
     /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     /// for specific DID.
     ///
@@ -213,9 +210,6 @@ extern "C" {
     /// Using Sender's public key and his secret key, Recipient can compute the exact same shared secret key.
     /// That shared secret key can be used to verify that the encrypted message was not tampered with,
     /// before eventually decrypting it.
-    ///
-    /// Recipient only needs Sender's public key, the nonce and the ciphertext to peform decryption.
-    /// The nonce doesn't have to be confidential.
     ///
     /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     /// for specific DID.

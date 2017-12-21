@@ -248,9 +248,6 @@ pub  extern fn indy_crypto_verify(command_handle: i32,
 /// That shared secret key can be used to verify that the encrypted message was not tampered with,
 /// before eventually decrypting it.
 ///
-/// Recipient only needs Sender's public key, the nonce and the ciphertext to peform decryption.
-/// The nonce doesn't have to be confidential.
-///
 /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
 /// for specific DID.
 ///
@@ -264,7 +261,7 @@ pub  extern fn indy_crypto_verify(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// an encrypted message and nonce
+/// an encrypted message
 ///
 /// #Errors
 /// Common*
@@ -311,9 +308,6 @@ pub  extern fn indy_crypto_auth_crypt(command_handle: i32,
 /// That shared secret key can be used to verify that the encrypted message was not tampered with,
 /// before eventually decrypting it.
 ///
-/// Recipient only needs Sender's public key, the nonce and the ciphertext to peform decryption.
-/// The nonce doesn't have to be confidential.
-///
 /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
 /// for specific DID.
 ///
@@ -326,8 +320,7 @@ pub  extern fn indy_crypto_auth_crypt(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// signer verkey
-/// decrypted message
+/// sender verkey and decrypted message
 ///
 /// #Errors
 /// Common*
