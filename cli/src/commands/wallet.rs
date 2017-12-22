@@ -148,7 +148,6 @@ pub mod list_command {
     use super::*;
 
     command!(CommandMetadata::build("list", "List existing wallets.")
-                .add_example("wallet list")
                 .finalize()
     );
 
@@ -187,7 +186,6 @@ pub mod close_command {
     use super::*;
 
     command!(CommandMetadata::build("close", "Close opened wallet.")
-                    .add_example("wallet close")
                     .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {

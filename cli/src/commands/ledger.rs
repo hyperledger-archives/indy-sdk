@@ -361,7 +361,7 @@ pub mod node_command {
                 .add_param("services", true, "Node type [VALIDATOR, OBSERVER]")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR blskey=2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR")
-                .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.2 node_port=9710 client_ip=127.0.0.2 client_port=9713")
+                .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y alias=Node5 services=VALIDATOR")
                 .finalize()
     );
 
@@ -410,8 +410,8 @@ pub mod pool_config_command {
     use super::*;
 
     command!(CommandMetadata::build("pool-config", "Sends write configuration to pool.")
-                .add_param("writes", false, "Accept write transactions")
-                .add_param("force", true, "Force apply configuration")
+                .add_param("writes", false, "Accept write transactions.")
+                .add_param("force", true, "Forced configuration applying without reaching pool consensus.")
                 .add_example("ledger pool-config writes=true")
                 .add_example("ledger pool-config writes=true force=true")
 
@@ -445,15 +445,15 @@ pub mod pool_upgrade_command {
     use super::*;
 
     command!(CommandMetadata::build("pool-upgrade", "Sends instructions to nodes to update themselves.")
-                .add_param("name", false, "Upgrade name")
-                .add_param("version", false, "Upgrade version")
-                .add_param("action", false, "Upgrade type. Either start or cancel")
-                .add_param("sha256", false, "Unique hex identifier")
-                .add_param("timeout", true, "Timeout")
+                .add_param("name", false, "Unique upgrade name.")
+                .add_param("version", false, "Target upgrade version.")
+                .add_param("action", false, "Upgrade type. Either start or cancel.")
+                .add_param("sha256", false, "Unique hex identifier.")
+                .add_param("timeout", true, "Timeout.")
                 .add_param("schedule", true, "Node upgrade schedule.")
-                .add_param("justification", true, "Comment")
-                .add_param("reinstall", true, "Apply upgrade with same version and role")
-                .add_param("force", true, "Force apply upgrade")
+                .add_param("justification", true, "Comment.")
+                .add_param("reinstall", true, "Same version reinstallation.")
+                .add_param("force", true, "Forced upgrade applying without reaching pool consensus")
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=start sha256=f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398 schedule={"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"2020-01-25T12:49:05.258870+00:00"}"#)
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=cancel sha256=ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398"#)
                 .finalize()

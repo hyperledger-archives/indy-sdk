@@ -160,6 +160,12 @@ impl LedgerService {
             && data.services.is_none() && data.blskey.is_none() {
             return Err(CommonError::InvalidStructure("Invalid data json: all fields missed at once".to_string()));
         }
+
+        if (data.node_ip.is_some() || data.node_port.is_some() || data.client_ip.is_some() || data.client_port.is_some()) &&
+            (data.node_ip.is_none() || data.node_port.is_none() || data.client_ip.is_none() || data.client_port.is_none()) {
+            return Err(CommonError::InvalidStructure("Invalid data json: Fields node_ip, node_port, client_ip, client_port must be specified together".to_string()));
+        }
+
         let operation = NodeOperation::new(dest.to_string(), data);
         Request::build_request(identifier.to_string(), operation)
             .map_err(|err| CommonError::InvalidState(format!("Invalid node request json: {:?}", err)))
