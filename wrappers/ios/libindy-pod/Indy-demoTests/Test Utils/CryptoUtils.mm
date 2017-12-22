@@ -113,20 +113,18 @@
     return err;
 }
 
-- (NSError *)cryptoBox:(NSData *)message
+- (NSError *)authCrypt:(NSData *)message
                  myKey:(NSString *)myKey
               theirKey:(NSString *)theirKey
           walletHandle:(IndyHandle)walletHandle
           outEncrypted:(NSData **)outEncrypted
-              outNonce:(NSData **)outNonce
 {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
 
-    [IndyCrypto cryptoBox:message myKey:myKey theirKey:theirKey walletHandle:walletHandle completion:^(NSError *error, NSData *encrypted, NSData *nonce) {
+    [IndyCrypto authCrypt:message myKey:myKey theirKey:theirKey walletHandle:walletHandle completion:^(NSError *error, NSData *encrypted) {
         err = error;
         if (outEncrypted) *outEncrypted = encrypted;
-        if (outNonce) *outNonce = nonce;
         [completionExpectation fulfill];
     }];
 
@@ -135,19 +133,18 @@
     return err;
 }
 
-- (NSError *)cryptoBoxOpen:(IndyHandle)walletHandle
-                     myKey:(NSString *)myKey
-                  theirKey:(NSString *)theirKey
-          encryptedMessage:(NSData *)encryptedMessage
-                     nonce:(NSData *)nonce
-       outDecryptedMessage:(NSData **)decryptedMessage
-{
+- (NSError *)authDecrypt:(NSData *)encryptedMessage
+        myKey:(NSString *)myKey
+            walletHandle:(IndyHandle)walletHandle
+             outTheirKey:(NSString **)outTheirKey
+     outDecryptedMessage:(NSData **)outDecryptedMessage {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
 
-    [IndyCrypto cryptoBoxOpen:encryptedMessage myKey:myKey theirKey:theirKey nonce:nonce walletHandle:walletHandle completion:^(NSError *error, NSData *decryptedMsg) {
+    [IndyCrypto authDecrypt:encryptedMessage myKey:myKey walletHandle:walletHandle completion:^(NSError *error, NSString *theirKey, NSData *decryptedMsg) {
         err = error;
-        if (decryptedMessage) {*decryptedMessage = decryptedMsg;}
+        if (outTheirKey) *outTheirKey = theirKey;
+        if (outDecryptedMessage) {*outDecryptedMessage = decryptedMsg;}
         [completionExpectation fulfill];
     }];
 
@@ -156,14 +153,14 @@
     return err;
 }
 
-- (NSError *)cryptoBoxSeal:(NSData *)message
+- (NSError *)anonCrypt:(NSData *)message
                   theirKey:(NSString *)theirKey
               outEncrypted:(NSData **)outEncrypted
 {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
 
-    [IndyCrypto cryptoBoxSeal:message theirKey:theirKey completion:^(NSError *error, NSData *encrypted) {
+    [IndyCrypto anonCrypt:message theirKey:theirKey completion:^(NSError *error, NSData *encrypted) {
         err = error;
         if (outEncrypted) *outEncrypted = encrypted;
         [completionExpectation fulfill];
@@ -174,7 +171,7 @@
     return err;
 }
 
-- (NSError *)cryptoBoxSealOpen:(NSData *)encryptedMessage
+- (NSError *)anonDecrypt:(NSData *)encryptedMessage
                          myKey:(NSString *)myKey
                   walletHandle:(IndyHandle)walletHandle
            outDecryptedMessage:(NSData **)decryptedMessage
@@ -182,7 +179,7 @@
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
 
-    [IndyCrypto cryptoBoxSealOpen:encryptedMessage myKey:myKey walletHandle:walletHandle completion:^(NSError *error, NSData *decryptedMsg) {
+    [IndyCrypto anonDecrypt:encryptedMessage myKey:myKey walletHandle:walletHandle completion:^(NSError *error, NSData *decryptedMsg) {
         err = error;
         if (decryptedMessage) {*decryptedMessage = decryptedMsg;}
         [completionExpectation fulfill];

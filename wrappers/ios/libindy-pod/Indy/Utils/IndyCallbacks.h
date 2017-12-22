@@ -88,6 +88,11 @@ extern void IndyWrapperCommon6PDataCallback(indy_handle_t xcommand_handle,
             forHandle:(indy_handle_t)handle
               ifError:(indy_error_t)ret;
 
+
+- (void)completeStringAndData:(void (^)(NSError *, NSString *, NSData *))completion
+            forHandle:(indy_handle_t)handle
+              ifError:(indy_error_t)ret;
+
 + (IndyCallbacks*) sharedInstance;
 
 @end

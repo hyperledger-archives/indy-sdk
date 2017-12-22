@@ -60,28 +60,28 @@
     // 2. create and store my did
     
     NSString *myDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed1]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
     
     // 3. create and store their did
     
     NSString *theirDid;
     NSString *theirVerkey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed2]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
  
     // 4. Store their identity json
     
     NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
                                                          identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
     
     // 5. create pairwise
     ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
@@ -110,28 +110,28 @@
     // 2. create and store my did
     
     NSString *myDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed1]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
     
     // 3. create and store their did
     
     NSString *theirDid;
     NSString *theirVerkey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed2]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
     
     // 4. Store their identity json
     
     NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
                                                          identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
     
     // 5. create pairwise
     ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
@@ -161,18 +161,18 @@
     
     NSString *theirDid;
     NSString *theirVerkey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed2]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
     
     // 3. Store their identity json
     
     NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
                                                          identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
     
     // 4. create pairwise
     ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
@@ -201,11 +201,11 @@
     // 2. create and store my did
     
     NSString *myDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed1]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
     
     // 3. create pairwise
     ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:[TestUtils unknownDid]
@@ -234,28 +234,28 @@
     // 2. create and store my did
     
     NSString *myDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed1]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
     
     // 3. create and store their did
     
     NSString *theirDid;
     NSString *theirVerkey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed2]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
     
     // 4. Store their identity json
     
     NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
                                                          identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
     
     // 5. create pairwise
     IndyHandle invalidWalletHandle = walletHandle + 1;
@@ -287,28 +287,28 @@
     // 2. create and store my did
     
     NSString *myDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed1]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
     
     // 3. create and store their did
     
     NSString *theirDid;
     NSString *theirVerkey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed2]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
     
     // 4. Store their identity json
     
     NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
                                                          identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
     
     // 5. create pairwise
     ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
@@ -383,28 +383,28 @@
     // 2. create and store my did
     
     NSString *myDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed1]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
     
     // 3. create and store their did
     
     NSString *theirDid;
     NSString *theirVerkey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed2]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
     
     // 4. Store their identity json
     
     NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
                                                          identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
     
     // 5. create pairwise
     ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
@@ -443,28 +443,28 @@
     // 2. create and store my did
     
     NSString *myDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed1]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
     
     // 3. create and store their did
     
     NSString *theirDid;
     NSString *theirVerkey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed2]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
     
     // 4. Store their identity json
     
     NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
                                                          identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
     
     // 5. create pairwise
     ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
@@ -502,28 +502,28 @@
     // 2. create and store my did
     
     NSString *myDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed1]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
     
     // 3. create and store their did
     
     NSString *theirDid;
     NSString *theirVerkey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed2]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
     
     // 4. Store their identity json
     
     NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
                                                          identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
     
     // 5. Check if pairwise exists
     BOOL exists = false ;
@@ -553,28 +553,28 @@
     // 2. create and store my did
     
     NSString *myDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed1]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
     
     // 3. create and store their did
     
     NSString *theirDid;
     NSString *theirVerkey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed2]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
     
     // 4. Store their identity json
     
     NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
                                                          identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
     
     // 5. create pairwise
     ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
@@ -615,28 +615,28 @@
     // 2. create and store my did
     
     NSString *myDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed1]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
     
     // 3. create and store their did
     
     NSString *theirDid;
     NSString *theirVerkey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed2]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
     
     // 4. Store their identity json
     
     NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
                                                          identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
     
     // 5. create pairwise
     ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
@@ -683,28 +683,28 @@
     // 2. create and store my did
     
     NSString *myDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed1]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
     
     // 3. create and store their did
     
     NSString *theirDid;
     NSString *theirVerkey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed2]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
     
     // 4. Store their identity json
     
     NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
                                                          identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
     
     // 5. get pairwise
     
@@ -734,28 +734,28 @@
     // 2. create and store my did
     
     NSString *myDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed1]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
     
     // 3. create and store their did
     
     NSString *theirDid;
     NSString *theirVerkey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed2]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
     
     // 4. Store their identity json
     
     NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
                                                          identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
     
     // 5. create pairwise
     ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
@@ -795,28 +795,28 @@
     // 2. create and store my did
     
     NSString *myDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed1]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
     
     // 3. create and store their did
     
     NSString *theirDid;
     NSString *theirVerkey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed2]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
     
     // 4. Store their identity json
     
     NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
                                                          identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
     
     // 5. create pairwise
     ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid
@@ -887,28 +887,28 @@
     // 2. create and store my did
     
     NSString *myDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed1]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
     
     // 3. create and store their did
     
     NSString *theirDid;
     NSString *theirVerkey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed2]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
     
     // 4. Store their identity json
     
     NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
                                                          identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
     
     // 5. Set pairwise metadata
     
@@ -937,28 +937,28 @@
     // 2. create and store my did
     
     NSString *myDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed1]
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create myDid!");
     
     // 3. create and store their did
     
     NSString *theirDid;
     NSString *theirVerkey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:[TestUtils mySeed2]
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::createAndStoreMyDidWithWalletHandle() failed to create theirDid!");
     
     // 4. Store their identity json
     
     NSString *identityJson = [NSString stringWithFormat:@"{\"did\":\"%@\", \"verkey\":\"%@\"}", theirDid, theirVerkey];
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:walletHandle
                                                          identityJson:identityJson];
-    XCTAssertEqual( ret.code, Success, @"SignusUtils::storeTheirDidWithWalletHandle() failed!");
+    XCTAssertEqual( ret.code, Success, @"DidUtils::storeTheirDidWithWalletHandle() failed!");
     
     // 5. create pairwise
     ret = [[PairwiseUtils sharedInstance] createPairwiseForTheirDid:theirDid

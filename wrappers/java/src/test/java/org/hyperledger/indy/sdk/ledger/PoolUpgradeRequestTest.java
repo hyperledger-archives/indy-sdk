@@ -1,8 +1,8 @@
 package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
-import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusResults;
+import org.hyperledger.indy.sdk.did.Did;
+import org.hyperledger.indy.sdk.did.DidResults;
 import org.junit.Test;
 
 import java.util.Calendar;
@@ -50,7 +50,7 @@ public class PoolUpgradeRequestTest extends IndyIntegrationTestWithPoolAndSingle
 	public void testPoolUpgradeRequestWorks() throws Exception {
 		int nextYear = Calendar.getInstance().get(Calendar.YEAR) + 1;
 
-		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();
 
 		//start

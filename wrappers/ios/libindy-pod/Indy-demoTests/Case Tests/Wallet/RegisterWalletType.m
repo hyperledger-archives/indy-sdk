@@ -11,7 +11,7 @@
 #import "TestUtils.h"
 #import <Indy/Indy.h>
 #import "WalletUtils.h"
-#import "SignusUtils.h"
+#import "DidUtils.h"
 #import "LedgerUtils.h"
 #import "AnoncredsUtils.h"
 #import "NSDictionary+JSON.h"
@@ -72,20 +72,20 @@
     
     NSString *listenerDid;
     NSString *listenerVerKey;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:listenerWallet
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:listenerWallet
                                                                        seed:nil
                                                                    outMyDid:&listenerDid
                                                                 outMyVerkey:&listenerVerKey];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed listener did");
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDid() failed listener did");
     
     // 5. obtain trustee did
     
     NSString *trusteeDid;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:trusteeWallet
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:trusteeWallet
                                                                        seed:[TestUtils trusteeSeed]
                                                                    outMyDid:&trusteeDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed trustee did");
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDid() failed trustee did");
     
 //    NSString *senderDid = [NSString stringWithString:trusteeDid];
 //    IndyHandle senderWallet = trusteeWallet;
@@ -132,13 +132,13 @@
 //    NSString *listenerNewVerKey;
 //    NSString *listenerNewPubKey;
 //    
-//    ret = [[SignusUtils sharedInstance] replaceKeysForDid:listenerDid
+//    ret = [[DidUtils sharedInstance] replaceKeysForDid:listenerDid
 //                                             identityJson:@"{}"
 //                                             walletHandle:listenerWallet
 //                                               poolHandle:poolHandle
 //                                              outMyVerKey:&listenerNewVerKey
 //                                                  outMyPk:&listenerNewPubKey];
-//    XCTAssertEqual(ret.code, Success, @"SignusUtils::replaceKeysForDid() failed");
+//    XCTAssertEqual(ret.code, Success, @"DidUtils::replaceKeysForDid() failed");
 //    
 //    
 //    
