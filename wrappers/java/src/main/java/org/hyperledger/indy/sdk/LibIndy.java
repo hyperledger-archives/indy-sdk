@@ -52,19 +52,15 @@ public abstract class LibIndy {
 		public int indy_build_get_claim_def_txn(int command_handle, String submitter_did, int xref, String signature_type, String origin, Callback cb);
 		public int indy_build_node_request(int command_handle, String submitter_did, String target_did, String data, Callback cb);
 		public int indy_build_get_txn_request(int command_handle, String submitter_did, int data, Callback cb);
+		public int indy_build_pool_config_request(int command_handle, String submitter_did, boolean writes, boolean force, Callback cb);
+		public int indy_build_pool_upgrade_request(int command_handle, String submitter_did, String name, String version, String action, String sha256, int timeout, String schedule, String justification, boolean reinstall, boolean force, Callback cb);
 
-		// signus.rs
+		// did.rs
 
 		public int indy_create_and_store_my_did(int command_handle, int wallet_handle, String did_json, Callback cb);
 		public int indy_replace_keys_start(int command_handle, int wallet_handle, String did, String identity_json, Callback cb);
 		public int indy_replace_keys_apply(int command_handle, int wallet_handle, String did, Callback cb);
 		public int indy_store_their_did(int command_handle, int wallet_handle, String identity_json, Callback cb);
-		public int indy_sign(int command_handle, int wallet_handle, String did, byte[] message_raw, int message_len, Callback cb);
-		public int indy_verify_signature(int command_handle, int wallet_handle, int pool_handle, String did, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
-		public int indy_encrypt(int command_handle, int wallet_handle, int pool_handle, String my_did, String did, byte[] message_raw, int message_len, Callback cb);
-		public int indy_decrypt(int command_handle, int wallet_handle, int pool_handle, String myDid, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, Callback cb);
-		public int indy_encrypt_sealed(int command_handle, int wallet_handle, int pool_handle, String did, byte[] message_raw, int message_len, Callback cb);
-		public int indy_decrypt_sealed(int command_handle, int wallet_handle, String did, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
 		public int indy_key_for_did(int command_handle, int pool_handle, int wallet_handle, String did, Callback cb);
         public int indy_key_for_local_did(int command_handle, int wallet_handle, String did, Callback cb);
 		public int indy_set_endpoint_for_did(int command_handle, int wallet_handle, String did, String address, String transportKey, Callback cb);
@@ -72,17 +68,17 @@ public abstract class LibIndy {
 		public int indy_set_did_metadata(int command_handle, int wallet_handle, String did, String metadata, Callback cb);
 		public int indy_get_did_metadata(int command_handle, int wallet_handle, String did, Callback cb);
 
-		// signus.rs
+		// crypto.rs
 
 		public int indy_create_key(int command_handle, int wallet_handle, String key_json, Callback cb);
 		public int indy_set_key_metadata(int command_handle, int wallet_handle, String verkey, String metadata, Callback cb);
 		public int indy_get_key_metadata(int command_handle, int wallet_handle, String verkey, Callback cb);
 		public int indy_crypto_sign(int command_handle, int wallet_handle, String my_vk, byte[] message_raw, int message_len, Callback cb);
 		public int indy_crypto_verify(int command_handle, String their_vk, byte[] message_raw, int message_len, byte[] signature_raw, int signature_len, Callback cb);
-		public int indy_crypto_box(int command_handle, int wallet_handle, String my_vk, String their_vk, byte[] message_raw, int message_len, Callback cb);
-		public int indy_crypto_box_open(int command_handle, int wallet_handle, String my_vk, String their_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, byte[] nonce_raw, int nonce_len, Callback cb);
-		public int indy_crypto_box_seal(int command_handle, String their_vk, byte[] message_raw, int message_len, Callback cb);
-		public int indy_crypto_box_seal_open(int command_handle, int wallet_handle, String my_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
+		public int indy_crypto_auth_crypt(int command_handle, int wallet_handle, String my_vk, String their_vk, byte[] message_raw, int message_len, Callback cb);
+		public int indy_crypto_auth_decrypt(int command_handle, int wallet_handle, String my_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
+		public int indy_crypto_anon_crypt(int command_handle, String their_vk, byte[] message_raw, int message_len, Callback cb);
+		public int indy_crypto_anon_decrypt(int command_handle, int wallet_handle, String my_vk, byte[] encrypted_msg_raw, int encrypted_msg_len, Callback cb);
 
 		// anoncreds.rs
 
@@ -99,11 +95,6 @@ public abstract class LibIndy {
 		public int indy_prover_get_claims_for_proof_req(int command_handle, int wallet_handle, String proof_request_json, Callback cb);
 		public int indy_prover_create_proof(int command_handle, int wallet_handle, String proof_req_json, String requested_claims_json, String schemas_json, String master_secret_name, String claim_defs_json, String revoc_regs_json, Callback cb);
 		public int indy_verifier_verify_proof(int command_handle, String proof_request_json, String proof_json, String schemas_json, String claim_defs_jsons, String revoc_regs_json, Callback cb);
-
-		// agent.rs
-		public int indy_prep_msg(int command_handle, int wallet_handle, String sender_vk, String recipient_vk, byte[] msg_data, int msg_len, Callback cb);
-		public int indy_prep_anonymous_msg(int command_handle, String recipient_vk, byte[] msg_data, int msg_len, Callback cb);
-		public int indy_parse_msg(int command_handle, int wallet_handle, String recipient_vk, byte[] encrypted_msg, int encrypted_len, Callback cb);
 
 		// pairwise.rs
 

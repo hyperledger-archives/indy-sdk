@@ -1,20 +1,13 @@
 extern crate serde_json;
+extern crate indy_crypto;
 
-use services::anoncreds::types::{PublicKey, RevocationPublicKey};
-use utils::json::{JsonEncodable, JsonDecodable};
-use services::ledger::constants::{
-    NODE,
-    NYM,
-    ATTRIB,
-    SCHEMA,
-    GET_ATTR,
-    GET_DDO,
-    GET_NYM,
-    GET_SCHEMA,
-    CLAIM_DEF,
-    GET_CLAIM_DEF,
-    GET_TXN
-};
+use services::ledger::constants::*;
+
+use self::indy_crypto::cl::*;
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+
+use std::collections::HashMap;
+
 
 #[derive(Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -83,7 +76,7 @@ impl GetNymOperation {
     pub fn new(dest: String) -> GetNymOperation {
         GetNymOperation {
             _type: GET_NYM.to_string(),
-            dest: dest
+            dest
         }
     }
 }
@@ -254,16 +247,16 @@ impl JsonEncodable for ClaimDefOperation {}
 
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct ClaimDefOperationData {
-    pub primary: PublicKey,
+    pub primary: IssuerPrimaryPublicKey,
     #[serde(serialize_with = "empty_map_instead_of_null")] //FIXME
-    pub revocation: Option<RevocationPublicKey>
+    pub revocation: Option<IssuerRevocationPublicKey>
 }
 
 impl ClaimDefOperationData {
-    pub fn new(primary: PublicKey, revocation: Option<RevocationPublicKey>) -> ClaimDefOperationData {
+    pub fn new(primary: IssuerPrimaryPublicKey, revocation: Option<IssuerRevocationPublicKey>) -> ClaimDefOperationData {
         ClaimDefOperationData {
-            primary: primary,
-            revocation: revocation
+            primary,
+            revocation
         }
     }
 }
@@ -274,7 +267,7 @@ extern crate serde;
 use self::serde::Serializer;
 use self::serde::ser::SerializeMap;
 
-fn empty_map_instead_of_null<S>(x: &Option<RevocationPublicKey>, s: S) -> Result<S::Ok, S::Error>
+fn empty_map_instead_of_null<S>(x: &Option<IssuerRevocationPublicKey>, s: S) -> Result<S::Ok, S::Error>
     where S: Serializer {
     if let &Some(ref x) = x {
         s.serialize_some(&x)
@@ -339,27 +332,20 @@ pub enum Services {
 
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct NodeOperationData {
-    pub node_ip: String,
-    pub node_port: i32,
-    pub client_ip: String,
-    pub client_port: i32,
-    pub alias: String,
-    pub services: Vec<Services>,
-    pub blskey: String
-}
-
-impl NodeOperationData {
-    pub fn new(node_ip: String, node_port: i32, client_ip: String, client_port: i32, alias: String, services: Vec<Services>, blskey: String) -> NodeOperationData {
-        NodeOperationData {
-            node_ip: node_ip,
-            node_port: node_port,
-            client_ip: client_ip,
-            client_port: client_port,
-            alias: alias,
-            services: services,
-            blskey: blskey
-        }
-    }
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub node_ip: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub node_port: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_ip: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_port: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alias: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub services: Option<Vec<Services>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blskey: Option<String>
 }
 
 impl JsonEncodable for NodeOperationData {}
@@ -466,8 +452,8 @@ pub struct Endpoint {
 impl Endpoint {
     pub fn new(ha: String, verkey: String) -> Endpoint {
         Endpoint {
-            ha: ha,
-            verkey: verkey
+            ha,
+            verkey
         }
     }
 }
@@ -476,3 +462,61 @@ impl JsonEncodable for Endpoint {}
 
 impl<'a> JsonDecodable<'a> for Endpoint {}
 
+#[derive(Serialize, PartialEq, Debug)]
+pub struct PoolConfigOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub writes: bool,
+    pub force: bool
+}
+
+impl PoolConfigOperation {
+    pub fn new(writes: bool, force: bool) -> PoolConfigOperation {
+        PoolConfigOperation {
+            _type: POOL_CONFIG.to_string(),
+            writes,
+            force
+        }
+    }
+}
+
+impl JsonEncodable for PoolConfigOperation {}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct PoolUpgradeOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub name: String,
+    pub version: String,
+    pub action: String,
+    //start, cancel
+    pub sha256: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timeout: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub schedule: Option<HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub justification: Option<String>,
+    pub reinstall: bool,
+    pub force: bool
+}
+
+impl PoolUpgradeOperation {
+    pub fn new(name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<HashMap<String, String>>,
+               justification: Option<&str>, reinstall: bool, force: bool) -> PoolUpgradeOperation {
+        PoolUpgradeOperation {
+            _type: POOL_UPGRADE.to_string(),
+            name: name.to_string(),
+            version: version.to_string(),
+            action: action.to_string(),
+            sha256: sha256.to_string(),
+            timeout,
+            schedule,
+            justification: justification.map(String::from),
+            reinstall,
+            force
+        }
+    }
+}
+
+impl JsonEncodable for PoolUpgradeOperation {}

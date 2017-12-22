@@ -159,8 +159,15 @@ public enum ErrorCode {
 	 */
 	LedgerSecurityError(305),
 
-	// Attempt to create pool ledger config with name used for another existing pool
+	/**
+	 * Attempt to create pool ledger config with name used for another existing pool
+	 */
 	PoolLedgerConfigAlreadyExistsError(306),
+
+	/**
+	 * Timeout for action
+	 */
+	PoolLedgerTimeout(307),
 
 	// Crypto errors
 
@@ -199,12 +206,12 @@ public enum ErrorCode {
 	 */
 	AnoncredsClaimRevoked(406),
 
-	// Signus errors
+	// Crypto errors
 	
 	/**
 	 * Unknown format of DID entity keys
 	 */
-	SignusUnknownCryptoError(500);
+	UnknownCryptoTypeError(500);
 
 	private int value;
 	private static Map<Integer, ErrorCode> map = new HashMap<Integer, ErrorCode>();

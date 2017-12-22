@@ -92,6 +92,9 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     
     // Attempt to create pool ledger config with name used for another existing pool
     PoolLedgerConfigAlreadyExistsError = 306,
+
+    // Timeout for action
+    PoolLedgerTimeout = 307,
     
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
@@ -107,7 +110,7 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     
     AnoncredsProofRejected = 405,
     
-    // Signus errors
+    // Crypto errors
     // Unknown format of DID entity keys
-    SignusUnknownCryptoError = 500
+    UnknownCryptoTypeError = 500
 };

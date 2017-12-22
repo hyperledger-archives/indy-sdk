@@ -8,7 +8,6 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
-#[macro_use]
 extern crate log;
 
 #[macro_use]
@@ -324,10 +323,24 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_invalid_name() {
             TestUtils::cleanup_storage();
-            let pool_name = "open_pool_ledger_works_for_invalid_name";
 
-            let res = PoolUtils::open_pool_ledger(pool_name, None);
+            let res = PoolUtils::open_pool_ledger(POOL, None);
             assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTerminated);//TODO change it on IOError
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn open_pool_ledger_works_after_error() {
+            TestUtils::cleanup_storage();
+
+            let res = PoolUtils::open_pool_ledger(POOL, None);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTerminated);//TODO change it on IOError
+
+            let pool_handle =  PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }

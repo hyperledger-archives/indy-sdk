@@ -1,12 +1,11 @@
 extern crate libc;
 
-pub mod agent;
 pub mod anoncreds;
 pub mod crypto;
 pub mod ledger;
 pub mod pairwise;
 pub mod pool;
-pub mod signus;
+pub mod did;
 pub mod wallet;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -106,6 +105,9 @@ pub enum ErrorCode
     // Attempt to create pool ledger config with name used for another existing pool
     PoolLedgerConfigAlreadyExistsError = 306,
 
+    // Timeout for action
+    PoolLedgerTimeout = 307,
+
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 
@@ -122,7 +124,7 @@ pub enum ErrorCode
 
     AnoncredsClaimRevoked = 406,
 
-    // Signus errors
+    // Crypto errors
     // Unknown format of DID entity keys
-    SignusUnknownCryptoError = 500
+    UnknownCryptoTypeError = 500
 }

@@ -20,7 +20,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 		JSONArray claimsArray = new JSONArray(claims);
 
-		assertEquals(1, claimsArray.length());
+		assertEquals(3, claimsArray.length());
 	}
 
 	@Test
@@ -34,7 +34,21 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 		JSONArray claimsArray = new JSONArray(claims);
 
-		assertEquals(1, claimsArray.length());
+		assertEquals(2, claimsArray.length());
+	}
+
+	@Test
+	public void testProverGetClaimsWorksForFilterBySchema() throws Exception {
+
+		initCommonWallet();
+
+		String filter = String.format("{\"schema_seq_no\":%d}", gvtSchemaSeqNo);
+
+		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
+
+		JSONArray claimsArray = new JSONArray(claims);
+
+		assertEquals(2, claimsArray.length());
 	}
 
 	@Test
@@ -42,7 +56,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		String filter = String.format("{\"issuer_did\":\"%s\", \"schema_seq_no\":%d}", issuerDid, 1);
+		String filter = String.format("{\"issuer_did\":\"%s\", \"schema_seq_no\":%d}", issuerDid, gvtSchemaSeqNo);
 
 		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
 

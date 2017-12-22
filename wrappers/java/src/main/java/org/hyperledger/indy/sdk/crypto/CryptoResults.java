@@ -37,4 +37,28 @@ public final class CryptoResults {
 		 */
 		public byte[] getNonce() { return this.nonce; }
 	}
+
+	/**
+	 * Result from calling authDecrypt.
+	 */
+	public static class AuthDecryptResult extends IndyJava.Result {
+
+		private String theirVk;
+		private byte[] decryptedMessage;
+		AuthDecryptResult(String theirVk, byte[] encryptedMessage) { this.theirVk = theirVk; this.decryptedMessage = encryptedMessage; }
+
+		/**
+		 * Gets the encrypted message.
+		 *
+		 * @return The encrypted message.
+		 */
+		public byte[] getDecryptedMessage() { return this.decryptedMessage; }
+
+		/**
+		 * Gets their verkey.
+		 *
+		 * @return The verkey.
+		 */
+		public String getVerkey() { return this.theirVk; }
+	}
 }

@@ -5,7 +5,7 @@ extern crate serde_json;
 extern crate time;
 
 use std::cmp::Eq;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use super::zmq;
 use errors::common::CommonError;
@@ -14,7 +14,7 @@ use utils::crypto::verkey_builder::build_full_verkey;
 use self::indy_crypto::bls;
 
 use services::ledger::merkletree::merkletree::MerkleTree;
-use utils::json::{JsonDecodable, JsonEncodable};
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -208,11 +208,11 @@ pub enum Message {
 }
 
 impl Message {
-    pub fn from_raw_str(str: &str) -> Result<Message, serde_json::Error> {
+    pub fn from_raw_str(str: &str) -> Result<Message, CommonError> {
         match str {
             "po" => Ok(Message::Pong),
             "pi" => Ok(Message::Ping),
-            _ => Message::from_json(str),
+            _ => Message::from_json(str).map_err(CommonError::from),
         }
     }
 }
@@ -250,6 +250,7 @@ pub struct RemoteNode {
 pub struct CatchUpProcess {
     pub merkle_tree: MerkleTree,
     pub pending_reps: Vec<(CatchupRep, usize)>,
+    pub resp_not_received_node_idx: HashSet<usize>,
 }
 
 pub trait MinValue {
@@ -305,6 +306,7 @@ pub struct CommandProcess {
     pub replies: HashMap<HashableValue, usize>,
     pub parent_cmd_ids: Vec<i32>,
     pub resendable_request: Option<ResendableRequest>,
+    pub full_cmd_timeout: Option<time::Tm>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
