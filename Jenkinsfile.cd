@@ -2,6 +2,16 @@
 
 @Library('SovrinHelpers') _
 
+properties([
+    [$class: 'BuildDiscarderProperty', strategy: [
+        $class: 'LogRotator',
+        artifactDaysToKeepStr: '28',
+        artifactNumToKeepStr: '',
+        daysToKeepStr: '28',
+        numToKeepStr: ''
+    ]]
+]);
+
 try {
     testing()
     publishing()
