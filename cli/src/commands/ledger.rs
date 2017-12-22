@@ -352,11 +352,11 @@ pub mod node_command {
 
     command!(CommandMetadata::build("node", "Add Node to Ledger.")
                 .add_param("target", false, "DID of new identity")
+                .add_param("alias", false, "Node alias")
                 .add_param("node_ip", true, "Node Ip")
                 .add_param("node_port", true, "Node port")
                 .add_param("client_ip", true, "Client Ip")
                 .add_param("client_port", true, "Client port")
-                .add_param("alias", false, "Node alias")
                 .add_param("blskey", true, "Node BLS key")
                 .add_param("services", true, "Node type [VALIDATOR, OBSERVER]")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR blskey=2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw")
@@ -414,7 +414,6 @@ pub mod pool_config_command {
                 .add_param("force", true, "Forced configuration applying without reaching pool consensus.")
                 .add_example("ledger pool-config writes=true")
                 .add_example("ledger pool-config writes=true force=true")
-
                 .finalize()
     );
 
