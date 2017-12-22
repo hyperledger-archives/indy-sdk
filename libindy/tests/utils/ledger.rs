@@ -1,22 +1,7 @@
 extern crate time;
 
 use indy::api::ErrorCode;
-use indy::api::ledger::{
-    indy_sign_and_submit_request,
-    indy_submit_request,
-    indy_sign_request,
-    indy_build_get_ddo_request,
-    indy_build_attrib_request,
-    indy_build_get_attrib_request,
-    indy_build_get_nym_request,
-    indy_build_schema_request,
-    indy_build_get_schema_request,
-    indy_build_claim_def_txn,
-    indy_build_get_claim_def_txn,
-    indy_build_node_request,
-    indy_build_nym_request,
-    indy_build_get_txn_request
-};
+use indy::api::ledger::*;
 
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
@@ -42,11 +27,11 @@ impl LedgerUtils {
 
         let err =
             indy_sign_and_submit_request(command_handle,
-                                           pool_handle,
-                                           wallet_handle,
-                                           submitter_did.as_ptr(),
-                                           request_json.as_ptr(),
-                                           cb);
+                                         pool_handle,
+                                         wallet_handle,
+                                         submitter_did.as_ptr(),
+                                         request_json.as_ptr(),
+                                         cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -137,9 +122,9 @@ impl LedgerUtils {
 
         let err =
             indy_build_get_ddo_request(command_handle,
-                                         submitter_did.as_ptr(),
-                                         target_did.as_ptr(),
-                                         cb);
+                                       submitter_did.as_ptr(),
+                                       target_did.as_ptr(),
+                                       cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -172,12 +157,12 @@ impl LedgerUtils {
         let role_str = role.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let err =
             indy_build_nym_request(command_handle,
-                                     submitter_did.as_ptr(),
-                                     target_did.as_ptr(),
-                                     if verkey.is_some() { verkey_str.as_ptr() } else { null() },
-                                     if data.is_some() { data_str.as_ptr() } else { null() },
-                                     if role.is_some() { role_str.as_ptr() } else { null() },
-                                     cb);
+                                   submitter_did.as_ptr(),
+                                   target_did.as_ptr(),
+                                   if verkey.is_some() { verkey_str.as_ptr() } else { null() },
+                                   if data.is_some() { data_str.as_ptr() } else { null() },
+                                   if role.is_some() { role_str.as_ptr() } else { null() },
+                                   cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -210,12 +195,12 @@ impl LedgerUtils {
 
         let err =
             indy_build_attrib_request(command_handle,
-                                        submitter_did.as_ptr(),
-                                        target_did.as_ptr(),
-                                        if hash.is_some() { hash_str.as_ptr() } else { null() },
-                                        if raw.is_some() { raw_str.as_ptr() } else { null() },
-                                        if enc.is_some() { enc_str.as_ptr() } else { null() },
-                                        cb);
+                                      submitter_did.as_ptr(),
+                                      target_did.as_ptr(),
+                                      if hash.is_some() { hash_str.as_ptr() } else { null() },
+                                      if raw.is_some() { raw_str.as_ptr() } else { null() },
+                                      if enc.is_some() { enc_str.as_ptr() } else { null() },
+                                      cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -245,10 +230,10 @@ impl LedgerUtils {
 
         let err =
             indy_build_get_attrib_request(command_handle,
-                                            submitter_did.as_ptr(),
-                                            target_did.as_ptr(),
-                                            data.as_ptr(),
-                                            cb);
+                                          submitter_did.as_ptr(),
+                                          target_did.as_ptr(),
+                                          data.as_ptr(),
+                                          cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -277,9 +262,9 @@ impl LedgerUtils {
 
         let err =
             indy_build_get_nym_request(command_handle,
-                                         submitter_did.as_ptr(),
-                                         target_did.as_ptr(),
-                                         cb);
+                                       submitter_did.as_ptr(),
+                                       target_did.as_ptr(),
+                                       cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -308,9 +293,9 @@ impl LedgerUtils {
 
         let err =
             indy_build_schema_request(command_handle,
-                                        submitter_did.as_ptr(),
-                                        data.as_ptr(),
-                                        cb);
+                                      submitter_did.as_ptr(),
+                                      data.as_ptr(),
+                                      cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -340,10 +325,10 @@ impl LedgerUtils {
 
         let err =
             indy_build_get_schema_request(command_handle,
-                                            submitter_did.as_ptr(),
-                                            dest.as_ptr(),
-                                            data.as_ptr(),
-                                            cb);
+                                          submitter_did.as_ptr(),
+                                          dest.as_ptr(),
+                                          data.as_ptr(),
+                                          cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -373,11 +358,11 @@ impl LedgerUtils {
 
         let err =
             indy_build_claim_def_txn(command_handle,
-                                       submitter_did.as_ptr(),
-                                       xref,
-                                       signature_type.as_ptr(),
-                                       data.as_ptr(),
-                                       cb);
+                                     submitter_did.as_ptr(),
+                                     xref,
+                                     signature_type.as_ptr(),
+                                     data.as_ptr(),
+                                     cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -407,11 +392,11 @@ impl LedgerUtils {
 
         let err =
             indy_build_get_claim_def_txn(command_handle,
-                                           submitter_did.as_ptr(),
-                                           xref,
-                                           signature_type.as_ptr(),
-                                           origin.as_ptr(),
-                                           cb);
+                                         submitter_did.as_ptr(),
+                                         xref,
+                                         signature_type.as_ptr(),
+                                         origin.as_ptr(),
+                                         cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -441,10 +426,10 @@ impl LedgerUtils {
 
         let err =
             indy_build_node_request(command_handle,
-                                      submitter_did.as_ptr(),
-                                      target_did.as_ptr(),
-                                      data.as_ptr(),
-                                      cb);
+                                    submitter_did.as_ptr(),
+                                    target_did.as_ptr(),
+                                    data.as_ptr(),
+                                    cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -472,9 +457,87 @@ impl LedgerUtils {
 
         let err =
             indy_build_get_txn_request(command_handle,
-                                         submitter_did.as_ptr(),
-                                         data,
-                                         cb);
+                                       submitter_did.as_ptr(),
+                                       data,
+                                       cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, request_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(request_json)
+    }
+
+    pub fn build_pool_config_request(submitter_did: &str, writes: bool, force: bool) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, request_json| {
+            sender.send((err, request_json)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_build_request_cb(cb);
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+
+        let err =
+            indy_build_pool_config_request(command_handle,
+                                           submitter_did.as_ptr(),
+                                           writes,
+                                           force,
+                                           cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, request_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(request_json)
+    }
+
+    pub fn build_pool_upgrade_request(submitter_did: &str, name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
+                                      justification: Option<&str>, reinstall: bool, force: bool) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, request_json| {
+            sender.send((err, request_json)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_build_request_cb(cb);
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let name = CString::new(name).unwrap();
+        let version = CString::new(version).unwrap();
+        let action = CString::new(action).unwrap();
+        let sha256 = CString::new(sha256).unwrap();
+        let timeout = timeout.map(|t| t as i32).unwrap_or(-1);
+
+        let schedule_str = schedule.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let justification_str = justification.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+
+        let err =
+            indy_build_pool_upgrade_request(command_handle,
+                                            submitter_did.as_ptr(),
+                                            name.as_ptr(),
+                                            version.as_ptr(),
+                                            action.as_ptr(),
+                                            sha256.as_ptr(),
+                                            timeout,
+                                            if schedule.is_some() { schedule_str.as_ptr() } else { null() },
+                                            if justification.is_some() { justification_str.as_ptr() } else { null() },
+                                            reinstall,
+                                            force,
+                                            cb);
 
         if err != ErrorCode::Success {
             return Err(err);

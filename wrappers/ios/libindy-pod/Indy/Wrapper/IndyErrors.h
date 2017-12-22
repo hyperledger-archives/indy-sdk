@@ -110,7 +110,7 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     
     AnoncredsProofRejected = 405,
     
-    // Signus errors
+    // Crypto errors
     // Unknown format of DID entity keys
-    SignusUnknownCryptoError = 500
+    UnknownCryptoTypeError = 500
 };

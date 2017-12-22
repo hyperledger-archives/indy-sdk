@@ -87,57 +87,50 @@
     [[IndyCallbacks sharedInstance] completeBool:completion forHandle:handle ifError:ret];
 }
 
-+ (void)cryptoBox:(NSData *)message
++ (void)authCrypt:(NSData *)message
             myKey:(NSString *)myKey
          theirKey:(NSString *)theirKey
      walletHandle:(IndyHandle)walletHandle
-       completion:(void (^)(NSError *error, NSData *encryptedMsg, NSData *nonce))completion
+        completion:(void (^)(NSError *error, NSData *encyptedMsg))completion
 {
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
     uint32_t messageLen = (uint32_t) [message length];
     uint8_t *messageRaw = (uint8_t *) [message bytes];
 
-    indy_error_t ret = indy_crypto_box(handle,
+    indy_error_t ret = indy_crypto_auth_crypt(handle,
             walletHandle,
             [myKey UTF8String],
             [theirKey UTF8String],
             messageRaw,
             messageLen,
-            IndyWrapperCommon6PDataCallback);
+            IndyWrapperCommon4PDataCallback);
 
-    [[IndyCallbacks sharedInstance] complete2Data:completion forHandle:handle ifError:ret];
+    [[IndyCallbacks sharedInstance] completeData:completion forHandle:handle ifError:ret];
 }
 
-+ (void)cryptoBoxOpen:(NSData *)encryptedMessage
-                myKey:(NSString *)myKey
-             theirKey:(NSString *)theirKey
-                nonce:(NSData *)nonce
-         walletHandle:(IndyHandle)walletHandle
-           completion:(void (^)(NSError *error, NSData *decryptedMessage))completion
++ (void)authDecrypt:(NSData *)encryptedMessage
+        myKey:(NSString *)myKey
+        walletHandle:(IndyHandle)walletHandle
+           completion:(void (^)(NSError *error, NSString *theirKey, NSData *decryptedMessage))completion
 {
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
     uint32_t messageLen = (uint32_t) [encryptedMessage length];
     uint8_t *messageRaw = (uint8_t *) [encryptedMessage bytes];
-    uint32_t nonceLen = (uint32_t) [nonce length];
-    uint8_t *nonceRaw = (uint8_t *) [nonce bytes];
 
-    indy_error_t ret = indy_crypto_box_open(handle,
+    indy_error_t ret = indy_crypto_auth_decrypt(handle,
             walletHandle,
             [myKey UTF8String],
-            [theirKey UTF8String],
             messageRaw,
             messageLen,
-            nonceRaw,
-            nonceLen,
-            IndyWrapperCommon4PDataCallback);
+            IndyWrapperCommon5PSDataCallback);
 
-    [[IndyCallbacks sharedInstance] completeData:completion forHandle:handle ifError:ret];
+    [[IndyCallbacks sharedInstance] completeStringAndData:completion forHandle:handle ifError:ret];
 }
 
-+ (void)cryptoBoxSeal:(NSData *)message
++ (void)anonCrypt:(NSData *)message
              theirKey:(NSString *)theirKey
            completion:(void (^)(NSError *error, NSData *encryptedMsg))completion
 {
@@ -146,7 +139,7 @@
     uint32_t messageLen = (uint32_t) [message length];
     uint8_t *messageRaw = (uint8_t *) [message bytes];
 
-    indy_error_t ret = indy_crypto_box_seal(handle,
+    indy_error_t ret = indy_crypto_anon_crypt(handle,
             [theirKey UTF8String],
             messageRaw,
             messageLen,
@@ -155,7 +148,7 @@
     [[IndyCallbacks sharedInstance] completeData:completion forHandle:handle ifError:ret];
 }
 
-+ (void)cryptoBoxSealOpen:(NSData *)encryptedMessage
++ (void)anonDecrypt:(NSData *)encryptedMessage
                     myKey:(NSString *)myKey
              walletHandle:(IndyHandle)walletHandle
                completion:(void (^)(NSError *error, NSData *decryptedMessage))completion
@@ -166,7 +159,7 @@
     uint32_t messageLen = (uint32_t) [encryptedMessage length];
     uint8_t *messageRaw = (uint8_t *) [encryptedMessage bytes];
 
-    indy_error_t ret = indy_crypto_box_seal_open(handle,
+    indy_error_t ret = indy_crypto_anon_decrypt(handle,
             walletHandle,
             [myKey UTF8String],
             messageRaw,
