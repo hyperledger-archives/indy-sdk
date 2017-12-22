@@ -206,12 +206,12 @@ public enum ErrorCode {
 	 */
 	AnoncredsClaimRevoked(406),
 
-	// Signus errors
+	// Crypto errors
 	
 	/**
 	 * Unknown format of DID entity keys
 	 */
-	SignusUnknownCryptoError(500);
+	UnknownCryptoTypeError(500);
 
 	private int value;
 	private static Map<Integer, ErrorCode> map = new HashMap<Integer, ErrorCode>();

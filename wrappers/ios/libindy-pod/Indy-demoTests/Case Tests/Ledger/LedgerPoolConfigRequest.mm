@@ -2,7 +2,7 @@
 #import "PoolUtils.h"
 #import "TestUtils.h"
 #import "WalletUtils.h"
-#import "SignusUtils.h"
+#import "DidUtils.h"
 #import "LedgerUtils.h"
 #import "AnoncredsUtils.h"
 #import <Indy/Indy.h>
@@ -75,11 +75,11 @@
     // 3. Obtain trustee did
 
     NSString *trusteeDid = nil;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:@"000000000000000000000000Trustee1"
                                                                    outMyDid:&trusteeDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed for trustee");
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDid() failed for trustee");
     NSLog(@"trusteeDid: %@", trusteeDid);
 
     // set Ledger as readonly

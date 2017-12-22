@@ -5,12 +5,12 @@ use self::serde_json::Value;
 
 use errors::common::CommonError;
 use errors::pool::PoolError;
-use errors::signus::SignusError;
+use errors::crypto::CryptoError;
 use errors::indy::IndyError;
 
 use services::pool::PoolService;
-use services::signus::SignusService;
-use services::signus::types::{Did, Key};
+use services::crypto::CryptoService;
+use services::crypto::types::{Did, Key};
 use services::wallet::WalletService;
 use services::ledger::LedgerService;
 
@@ -125,7 +125,7 @@ pub enum LedgerCommand {
 
 pub struct LedgerCommandExecutor {
     pool_service: Rc<PoolService>,
-    signus_service: Rc<SignusService>,
+    crypto_service: Rc<CryptoService>,
     wallet_service: Rc<WalletService>,
     ledger_service: Rc<LedgerService>,
 
@@ -134,14 +134,14 @@ pub struct LedgerCommandExecutor {
 
 impl LedgerCommandExecutor {
     pub fn new(pool_service: Rc<PoolService>,
-               signus_service: Rc<SignusService>,
+               crypto_service: Rc<CryptoService>,
                wallet_service: Rc<WalletService>,
                ledger_service: Rc<LedgerService>) -> LedgerCommandExecutor {
         LedgerCommandExecutor {
-            pool_service: pool_service,
-            signus_service: signus_service,
-            wallet_service: wallet_service,
-            ledger_service: ledger_service,
+            pool_service,
+            crypto_service,
+            wallet_service,
+            ledger_service,
             send_callbacks: RefCell::new(HashMap::new()),
         }
     }
@@ -261,21 +261,21 @@ impl LedgerCommandExecutor {
 
         let mut request: Value = serde_json::from_str(request_json)
             .map_err(|err|
-                IndyError::SignusError(SignusError::CommonError(
-                    CommonError::InvalidStructure(format!("Message is invalid json: {}", err.description())))))?;
+                CryptoError::CommonError(
+                    CommonError::InvalidStructure(format!("Message is invalid json: {}", err.description()))))?;
 
         if !request.is_object() {
-            return Err(IndyError::SignusError(SignusError::CommonError(
+            return Err(IndyError::CryptoError(CryptoError::CommonError(
                 CommonError::InvalidStructure(format!("Message is invalid json: {}", request)))));
         }
         let serialized_request = serialize_signature(request.clone())?;
-        let signature = self.signus_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
+        let signature = self.crypto_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
 
         request["signature"] = Value::String(Base58::encode(&signature));
         let signed_request: String = serde_json::to_string(&request)
             .map_err(|err|
-                IndyError::SignusError(SignusError::CommonError(
-                    CommonError::InvalidState(format!("Can't serialize message after signing: {}", err.description())))))?;
+                CryptoError::CommonError(
+                    CommonError::InvalidState(format!("Can't serialize message after signing: {}", err.description()))))?;
 
         Ok(signed_request)
     }
