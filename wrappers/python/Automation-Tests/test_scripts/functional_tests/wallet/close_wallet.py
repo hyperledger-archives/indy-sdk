@@ -7,9 +7,9 @@ Implementing test case CloseWallet with valid value.
 """
 from indy import wallet, signus
 from indy.error import ErrorCode
-from libraries.test_scenario_base import TestScenarioBase
-from libraries.utils import perform, perform_with_expected_code
-from libraries import common
+from utilities.test_scenario_base import TestScenarioBase
+from utilities.utils import perform, perform_with_expected_code
+from utilities import common
 
 
 class CloseWallet(TestScenarioBase):

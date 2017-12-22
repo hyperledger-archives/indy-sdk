@@ -5,10 +5,10 @@ Created on Dec 08, 2017
 Implementing test case open_wallet with valid value.
 """
 from indy.error import IndyError
-from libraries.test_scenario_base import TestScenarioBase
-from libraries.utils import perform
-from libraries import common
-from libraries.result import Status
+from utilities.test_scenario_base import TestScenarioBase
+from utilities.utils import perform
+from utilities import common
+from utilities.result import Status
 
 
 class OpenWallet(TestScenarioBase):

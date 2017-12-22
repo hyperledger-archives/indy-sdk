@@ -1,18 +1,18 @@
 """
-Created on Dec 12, 2017
+Created on Dec 15, 2017
 
 @author: nhan.nguyen
 
-Containing a base class for signus testing.
+Containing a base class for anoncreds testing.
 """
 
 from utilities import common
 from utilities.test_scenario_base import TestScenarioBase
 
 
-class SignusTestBase(TestScenarioBase):
+class AnoncredsTestBase(TestScenarioBase):
     def __init__(self):
-        if self.__class__ is not SignusTestBase:
+        if self.__class__ is not AnoncredsTestBase:
             super().__init__()
 
     async def execute_precondition_steps(self):
@@ -23,5 +23,5 @@ class SignusTestBase(TestScenarioBase):
                                              self.wallet_handle)
 
     def execute_scenario(self, time_out=None):
-        if self.__class__ is not SignusTestBase:
+        if self.__class__ is not AnoncredsTestBase:
             super().execute_scenario(time_out)

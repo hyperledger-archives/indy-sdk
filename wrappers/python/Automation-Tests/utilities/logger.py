@@ -12,8 +12,8 @@ import time
 import errno
 import logging
 import io
-from libraries.result import Status
-from libraries import utils
+from utilities.result import Status
+from utilities import utils
 
 
 class Logger:

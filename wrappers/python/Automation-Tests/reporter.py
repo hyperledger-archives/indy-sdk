@@ -267,6 +267,7 @@ class HTMLReporter:
         passed = 0
         failed = 0
         total = 0
+        list_json.sort()
 
         for js in list_json:
             with open(js) as json_file:

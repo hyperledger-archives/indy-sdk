@@ -5,10 +5,10 @@ Created on Dec 12, 2017
 """
 
 import base58
-from indy import signus
 
-from libraries import utils
-from libraries import common
+from indy import signus
+from utilities import utils
+from utilities import common
 from test_scripts.functional_tests.signus.signus_test_base\
     import SignusTestBase
 

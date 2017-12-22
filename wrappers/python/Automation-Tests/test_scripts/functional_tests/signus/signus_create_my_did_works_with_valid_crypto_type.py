@@ -7,9 +7,8 @@ Created on Dec 12, 2017
 import json
 
 from indy import signus
-
-from libraries import utils
-from libraries import common, constant
+from utilities import utils
+from utilities import common, constant
 from test_scripts.functional_tests.signus.signus_test_base\
     import SignusTestBase
 

@@ -11,8 +11,8 @@ import os
 import shutil
 from indy import wallet, pool, ledger
 from indy.error import IndyError
-from libraries import constant
-from libraries import utils
+from utilities import constant
+from utilities import utils
 
 
 async def prepare_pool_and_wallet(pool_name, wallet_name,

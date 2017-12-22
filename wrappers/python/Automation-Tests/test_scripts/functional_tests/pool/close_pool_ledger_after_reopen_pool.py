@@ -5,8 +5,8 @@ Created on Dec 8, 2017
 """
 
 from indy import pool
-from libraries import utils
-from libraries import common, constant
+from utilities import utils
+from utilities import common, constant
 from test_scripts.functional_tests.pool.pool_test_base import PoolTestBase
 
 

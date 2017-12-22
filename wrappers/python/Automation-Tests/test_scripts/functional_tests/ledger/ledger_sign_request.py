@@ -9,10 +9,10 @@ import json
 
 from indy import signus, ledger
 
-from libraries import common, constant
-from libraries.result import Status
-from libraries.test_scenario_base import TestScenarioBase
-from libraries.utils import perform
+from utilities import common, constant
+from utilities.result import Status
+from utilities.test_scenario_base import TestScenarioBase
+from utilities.utils import perform
 
 
 class SignRequest(TestScenarioBase):
@@ -63,11 +63,14 @@ class SignRequest(TestScenarioBase):
         if actual_signature == expected_signature:
             self.steps.get_last_step().set_status(Status.PASSED)
         else:
-            self.steps.get_last_step().set_status(Status.FAILED)
-            self.steps.get_last_step().set_message(
-                "Failed. Expected signature is [%s] "
-                "but actual signature is [%s]"
-                % (expected_signature, actual_signature))
+            message = ("Failed. Expected signature is [%s] "
+                       "but actual signature is [%s]"
+                       % (expected_signature, actual_signature))
+            self.steps.get_last_step().set_status(Status.FAILED, message)
+#             self.steps.get_last_step().set_message(
+#                 "Failed. Expected signature is [%s] "
+#                 "but actual signature is [%s]"
+#                 % (expected_signature, actual_signature))
 
 
 if __name__ == '__main__':

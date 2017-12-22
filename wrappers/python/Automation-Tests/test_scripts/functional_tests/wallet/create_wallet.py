@@ -7,11 +7,11 @@ Implementing test case create_wallet with valid value.
 import os
 from indy import wallet
 from indy.error import IndyError
-from libraries.constant import Color
-from libraries import common, constant
-from libraries.utils import perform
-from libraries.result import Status
-from libraries.test_scenario_base import TestScenarioBase
+from utilities.constant import Color
+from utilities import common, constant
+from utilities.utils import perform
+from utilities.result import Status
+from utilities.test_scenario_base import TestScenarioBase
 
 
 class CreateWallet(TestScenarioBase):

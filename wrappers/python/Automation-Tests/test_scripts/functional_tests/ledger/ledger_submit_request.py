@@ -5,15 +5,14 @@ Created on Dec 11, 2017
 
 Implementing test case SubmitRequest with valid value.
 """
+
 import json
 
 from indy import signus, ledger
-
-from libraries import common, constant
-from libraries.constant import JsonTemplate
-from libraries.result import Status
-from libraries.test_scenario_base import TestScenarioBase
-from libraries.utils import perform
+from utilities import common, constant
+from utilities.result import Status
+from utilities.test_scenario_base import TestScenarioBase
+from utilities.utils import perform
 
 
 class SubmitRequest(TestScenarioBase):
@@ -45,9 +44,9 @@ class SubmitRequest(TestScenarioBase):
 
         # 3. Prepare the request.
         self.steps.add_step("sign the message")
-        message = JsonTemplate.message.format(1496822211362017764,
-                                              submitter_did, "1", target_did,
-                                              target_verkey)
+        message = constant.message.format(1496822211362017764,
+                                          submitter_did, "1", target_did,
+                                          target_verkey)
         response = await perform(self.steps, ledger.sign_request,
                                  self.wallet_handle, submitter_did, message)
 
@@ -55,16 +54,15 @@ class SubmitRequest(TestScenarioBase):
         signed_msg = json.loads(response)
         signature = signed_msg['signature']
         type_request = "105"
-        request_json = JsonTemplate.submit_request.format(1491566332010860,
-                                                          submitter_did,
-                                                          type_request,
-                                                          target_did,
-                                                          signature)
+        request_json = constant.submit_request.format(1491566332010860,
+                                                      submitter_did,
+                                                      type_request,
+                                                      target_did, signature)
         data = ""
         expected_response = json.loads(
-            JsonTemplate.submit_response.format(1491566332010860,
-                                                submitter_did, target_did,
-                                                data, type_request, "REPLY"))
+            constant.submit_response.format(1491566332010860,
+                                            submitter_did, target_did,
+                                            data, type_request, "REPLY"))
 
         # 4. Submit request
         response = json.loads(

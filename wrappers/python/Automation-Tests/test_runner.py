@@ -14,8 +14,8 @@ import inspect
 import importlib
 import multiprocessing
 import argparse
-from libraries import utils, constant
-from libraries.test_scenario_base import TestScenarioBase
+from utilities import utils, constant
+from utilities.test_scenario_base import TestScenarioBase
 
 
 class TestRunner:
