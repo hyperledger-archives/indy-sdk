@@ -1,8 +1,8 @@
 package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
-import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusResults;
+import org.hyperledger.indy.sdk.did.Did;
+import org.hyperledger.indy.sdk.did.DidResults;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -25,7 +25,7 @@ public class PoolConfigRequestTest extends IndyIntegrationTestWithPoolAndSingleW
 
 	@Test
 	public void testPoolConfigRequestWorks() throws Exception {
-		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();
 
 		String request = Ledger.buildPoolConfigRequest(did, false, false).get();
