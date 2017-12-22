@@ -54,6 +54,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(common::show_command::new())
         .add_group(did::group::new())
         .add_command(did::new_command::new())
+        .add_command(did::import_command::new())
         .add_command(did::use_command::new())
         .add_command(did::rotate_key_command::new())
         .add_command(did::list_command::new())
