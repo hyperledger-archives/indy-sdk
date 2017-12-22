@@ -157,7 +157,7 @@ impl LedgerService {
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {:?}", err)))?;
         if data.node_ip.is_none() && data.node_port.is_none()
             && data.client_ip.is_none() && data.client_port.is_none()
-            && data.alias.is_none() && data.services.is_none() && data.blskey.is_none() {
+            && data.services.is_none() && data.blskey.is_none() {
             return Err(CommonError::InvalidStructure("Invalid data json: all fields missed at once".to_string()));
         }
         let operation = NodeOperation::new(dest.to_string(), data);

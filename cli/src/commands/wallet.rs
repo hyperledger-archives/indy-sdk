@@ -36,7 +36,7 @@ pub mod create_command {
         let key = get_opt_str_param("key", params).map_err(error_err!())?;
         let freshness_time = get_opt_number_param::<i64>("freshness_time", params).map_err(error_err!())?;
 
-        let config: Option<String> = key.map(|freshness_time| json!({ "freshness_time": freshness_time }).to_string());
+        let config: Option<String> = freshness_time.map(|freshness_time| json!({ "freshness_time": freshness_time }).to_string());
         let credentials: Option<String> = key.map(|key| json!({ "key": key }).to_string());
 
         trace!("Wallet::create_wallet try: name {}, pool_name {}, config {:?}", name, pool_name, config);

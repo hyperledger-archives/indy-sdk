@@ -411,7 +411,7 @@ pub mod pool_config_command {
 
     command!(CommandMetadata::build("pool-config", "Sends write configuration to pool.")
                 .add_param("writes", false, "Accept write transactions")
-                .add_param("force", true, "")
+                .add_param("force", true, "Force apply configuration")
                 .add_example("ledger pool-config writes=true")
                 .add_example("ledger pool-config writes=true force=true")
 
@@ -445,15 +445,15 @@ pub mod pool_upgrade_command {
     use super::*;
 
     command!(CommandMetadata::build("pool-upgrade", "Sends instructions to nodes to update themselves.")
-                .add_param("name", false, "")
-                .add_param("version", false, "")
-                .add_param("action", false, "Either start or cancel")
-                .add_param("sha256", false, "")
-                .add_param("timeout", true, "")
-                .add_param("schedule", true, "")
-                .add_param("justification", true, "")
-                .add_param("reinstall", true, "")
-                .add_param("force", true, "")
+                .add_param("name", false, "Upgrade name")
+                .add_param("version", false, "Upgrade version")
+                .add_param("action", false, "Upgrade type. Either start or cancel")
+                .add_param("sha256", false, "Unique hex identifier")
+                .add_param("timeout", true, "Timeout")
+                .add_param("schedule", true, "Node upgrade schedule.")
+                .add_param("justification", true, "Comment")
+                .add_param("reinstall", true, "Apply upgrade with same version and role")
+                .add_param("force", true, "Force apply upgrade")
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=start sha256=f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398 schedule={"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"2020-01-25T12:49:05.258870+00:00"}"#)
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=cancel sha256=ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398"#)
                 .finalize()
