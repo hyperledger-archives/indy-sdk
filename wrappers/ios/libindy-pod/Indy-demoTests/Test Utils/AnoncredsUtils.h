@@ -55,7 +55,6 @@
 - (NSError *)proverCreateAndStoreClaimReqWithDef:(NSString *)claimDefJSON
                                        proverDid:(NSString *)proverDid
                                   claimOfferJson:(NSString *)claimOfferJSON
-                                      revRegJSON:(NSString *)revRegJSON
                                 masterSecretName:(NSString *)name
                              walletHandle:(IndyHandle)walletHandle
                           outClaimReqJson:(NSString **)outJson;
@@ -75,7 +74,8 @@
                                             claimDefJson:(NSString **)claimDefJson;
 
 - (NSError *)proverStoreClaimWithWalletHandle:(IndyHandle)walletHandle
-                                   claimsJson:(NSString *)str;
+                                   claimsJson:(NSString *)str
+                                   revRegJSON:(NSString *)revRegJSON;
 
 - (NSError *)proverGetClaimsForProofReqWithWalletHandle:(IndyHandle)walletHandle
                                        proofRequestJson:(NSString *)str

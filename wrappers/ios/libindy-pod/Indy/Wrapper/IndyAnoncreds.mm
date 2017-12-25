@@ -194,7 +194,6 @@
 + (void)proverCreateAndStoreClaimReqWithClaimDef:(NSString *)claimDefJSON
                                        proverDID:(NSString *)proverDID
                                   claimOfferJSON:(NSString *)claimOfferJSON
-                                      revRegJSON:(NSString *)revRegJSON
                                 masterSecretName:(NSString *)masterSecretName
                                     walletHandle:(IndyHandle)walletHandle
                                       completion:(void (^)(NSError *error, NSString *claimReqJSON)) completion
@@ -208,7 +207,6 @@
                                                  [proverDID UTF8String],
                                                  [claimOfferJSON UTF8String],
                                                  [claimDefJSON UTF8String],
-                                                 [revRegJSON UTF8String],
                                                  [masterSecretName UTF8String],
                                                  IndyWrapperCommon3PSCallback
                                                  );
@@ -224,6 +222,7 @@
 }
 
 + (void)proverStoreClaim:(NSString *)claimsJson
+              revRegJSON:(NSString *)revRegJSON
             walletHandle:(IndyHandle)walletHandle
               completion:(void (^)(NSError *error)) completion
 {
@@ -234,8 +233,9 @@
     ret = indy_prover_store_claim(handle,
                                   walletHandle,
                                   [claimsJson UTF8String],
+                                  [revRegJSON UTF8String],
                                   IndyWrapperCommon2PCallback
-                                  );
+                                );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];

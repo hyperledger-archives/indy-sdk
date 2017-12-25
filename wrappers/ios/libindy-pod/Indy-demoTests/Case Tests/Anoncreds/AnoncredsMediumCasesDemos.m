@@ -75,7 +75,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOfferJson
-                                                             revRegJSON:nil
                                                        masterSecretName:masterSecretName
                                                            walletHandle:walletHandle
                                                         outClaimReqJson:&claimRequest];
@@ -96,7 +95,8 @@
     
     // 6. Prover store received Claim
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
-                                                                 claimsJson:xClaimJson];
+                                                                 claimsJson:xClaimJson
+                                                                 revRegJSON:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaimWithWalletHandle failed");
     
     // 7. Prover gets Claims for Proof Request
@@ -247,7 +247,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJSON
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOfferJson
-                                                             revRegJSON:nil
                                                        masterSecretName:masterSecretName
                                                            walletHandle:proverWalletHandle
                                                         outClaimReqJson:&claimReq];
@@ -274,7 +273,8 @@
     // 9. Prover store received Claim
     
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:proverWalletHandle
-                                                                 claimsJson: xclaimJson];
+                                                                 claimsJson: xclaimJson
+                                                                 revRegJSON:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaim() failed");
     
     
@@ -488,7 +488,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:gvtClaimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
-                                                             revRegJSON:nil
                                                        masterSecretName:masterSecretName1
                                                            walletHandle:proverWalletHandle
                                                         outClaimReqJson:&gvtClaimReq];
@@ -509,7 +508,8 @@
     //13. Prover store received GVT Claim
     
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:proverWalletHandle
-                                                                 claimsJson:gvtClaimJson];
+                                                                 claimsJson:gvtClaimJson
+                                                                 revRegJSON:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaim() failed");
     
     //14. Prover create Claim Request for xyz claim offer
@@ -519,7 +519,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:xyzClaimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
-                                                             revRegJSON:nil
                                                        masterSecretName:masterSecretName1
                                                            walletHandle:proverWalletHandle
                                                         outClaimReqJson:&xyzClaimReq];
@@ -540,7 +539,8 @@
     // 16. Prover store received XYZ Claim
     
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:proverWalletHandle
-                                                                 claimsJson:xyzClaimJson];
+                                                                 claimsJson:xyzClaimJson
+                                                                 revRegJSON:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaim() failed on step 16");
     
     // 17. Prover gets Claims for Proof Request
@@ -759,7 +759,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:gvtClaimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:issuerGVTClaimOfferJson
-                                                             revRegJSON:nil
                                                        masterSecretName:masterSecretName
                                                            walletHandle:proverWalletHandle
                                                         outClaimReqJson:&gvtClaimReq];
@@ -782,7 +781,8 @@
     //11. Prover store received GVT Claim
     
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:proverWalletHandle
-                                                                 claimsJson:gvtClaimJson];
+                                                                 claimsJson:gvtClaimJson
+                                                                 revRegJSON:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaim() failed");
     
     //12. Prover create Claim Request for xyz claim offer
@@ -792,7 +792,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:xyzClaimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:issuerXYZClaimOfferJson
-                                                             revRegJSON:nil
                                                        masterSecretName:masterSecretName
                                                            walletHandle:proverWalletHandle
                                                         outClaimReqJson:&xyzClaimReq];
@@ -813,7 +812,8 @@
     //14. Prover store received XYZ Claim
     
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:proverWalletHandle
-                                                                 claimsJson:xyzClaimJson];
+                                                                 claimsJson:xyzClaimJson
+                                                                 revRegJSON:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaim() failed");
     
     //15. Prover gets Claims for Proof Request

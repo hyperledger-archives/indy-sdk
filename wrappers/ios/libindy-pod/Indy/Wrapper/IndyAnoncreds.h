@@ -209,14 +209,12 @@
  @param proverDID DID of the prover
  @param claimOfferJSON Claim offer as a json containing information about the issuer and a claim.
  @param masterSecretName Name of the master secret stored in the wallet
- @param revRegJSON Revocation registry json associated with issuer_DID and schema_seq_no in the claim_offer.
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter. Returns Claim request json.
  */
 + (void)proverCreateAndStoreClaimReqWithClaimDef:(NSString *)claimDefJSON
                                        proverDID:(NSString *)proverDID
                                   claimOfferJSON:(NSString *)claimOfferJSON
-                                     revRegJSON:(NSString *)revRegJSON
                                 masterSecretName:(NSString *)masterSecretName
                                     walletHandle:(IndyHandle)walletHandle
                                       completion:(void (^)(NSError *error, NSString *claimReqJSON)) completion;
@@ -243,11 +241,13 @@
  
  @param claimsJson Claim json. See example above.
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param revRegJSON Revocation registry json associated with issuer_DID and schema_seq_no in the claim_offer.
  @param completion Callback that takes command result as parameter.
  */
 + (void)proverStoreClaim:(NSString *)claimsJson
-            walletHandle:(IndyHandle)walletHandle
-              completion:(void (^)(NSError *error)) completion;
+        revRegJSON:(NSString *)revRegJSON
+        walletHandle:(IndyHandle)walletHandle
+        completion:(void (^)(NSError *error)) completion;
 
 /**
  Gets human readable claims according to the filter.  

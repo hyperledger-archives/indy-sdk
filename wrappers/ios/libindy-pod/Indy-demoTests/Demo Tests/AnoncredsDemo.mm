@@ -103,7 +103,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:[NSDictionary toString:claimDef]
                                                               proverDid:proverDiD
                                                          claimOfferJson:claimOfferJSON
-                                                                    revRegJSON:nil
                                                        masterSecretName:masterSecretName
                                                            walletHandle:walletHandle
                                                         outClaimReqJson:&claimReqJSON];
@@ -131,7 +130,8 @@
     
     // 8. Prover process and store Claim
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
-                                                                 claimsJson:xClaimJSON];
+                                                                 claimsJson:xClaimJSON
+                                                                 revRegJSON:nil];
     XCTAssertEqual( ret.code, Success, @"proverStoreClaim() failed!");
     
     // 9. Prover gets Claims for Proof Request
@@ -295,7 +295,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:[NSDictionary toString:claimDef]
                                                               proverDid:proverDiD
                                                          claimOfferJson:claimOfferJSON
-                                                             revRegJSON:nil
                                                        masterSecretName:masterSecretName
                                                            walletHandle:walletHandle
                                                         outClaimReqJson:&claimReqJSON];
@@ -321,7 +320,8 @@
     
     // 8. Prover process and store Claim
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
-                                                                 claimsJson:xClaimJSON];
+                                                                 claimsJson:xClaimJSON
+                                                                 revRegJSON:nil];
     XCTAssertEqual( ret.code, Success, @"proverStoreClaim() failed!");
     
     // 9. Prover gets Claims for Proof Request

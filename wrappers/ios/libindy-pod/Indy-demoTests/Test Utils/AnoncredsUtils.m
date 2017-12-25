@@ -305,7 +305,6 @@
 - (NSError *)proverCreateAndStoreClaimReqWithDef:(NSString *)claimDefJSON
                                        proverDid:(NSString *)proverDid
                                   claimOfferJson:(NSString *)claimOfferJSON
-                                      revRegJSON:(NSString *)revRegJSON
                                 masterSecretName:(NSString *)name
                                     walletHandle:(IndyHandle)walletHandle
                                  outClaimReqJson:(NSString **)outJson
@@ -319,7 +318,6 @@
     [IndyAnoncreds proverCreateAndStoreClaimReqWithClaimDef:claimDefJSON
                                                   proverDID:proverDid
                                              claimOfferJSON:claimOfferJSON
-                                                 revRegJSON:revRegJSON
                                            masterSecretName:name
                                                walletHandle:walletHandle
                                                  completion:^(NSError* error, NSString* claimReqJSON)
@@ -339,11 +337,13 @@
 
 - (NSError *) proverStoreClaimWithWalletHandle:(IndyHandle)walletHandle
                                     claimsJson:(NSString *)claimsJson
+                                    revRegJSON:(NSString *)revRegJSON
 {
     __block NSError *err = nil;
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     [IndyAnoncreds proverStoreClaim:claimsJson
+                         revRegJSON:revRegJSON
                        walletHandle:walletHandle
                          completion:^(NSError *error)
      {
@@ -553,7 +553,6 @@
     ret = [self proverCreateAndStoreClaimReqWithDef:tempClaimDefJson
                                    proverDid:@"HEJ9gvWX64wW7UD"
                               claimOfferJson:claimOfferJson1
-                                         revRegJSON:nil
                             masterSecretName:[TestUtils commonMasterSecretName]
                                 walletHandle:tempWalletHandle
                              outClaimReqJson:&claimRequest];
@@ -578,7 +577,8 @@
     
     // 7. Store claim
     ret = [self proverStoreClaimWithWalletHandle:tempWalletHandle
-                                      claimsJson:xClaimJson];
+                                      claimsJson:xClaimJson
+                                      revRegJSON:nil];
     XCTAssertEqual(ret.code, Success, @"proverStoreClaimWithWalletHandle failed");
     
     if (walletHandle){ *walletHandle = tempWalletHandle;}

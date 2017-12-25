@@ -255,7 +255,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                                          claimOfferJson:claimOfferJson
-                                                             revRegJSON:nil
                                                        masterSecretName:[TestUtils commonMasterSecretName]
                                                            walletHandle:walletHandle
                                                         outClaimReqJson:nil];
@@ -287,7 +286,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                                          claimOfferJson:claimOfferJson
-                                                             revRegJSON:nil
                                                        masterSecretName:[TestUtils commonMasterSecretName]
                                                            walletHandle:walletHandle
                                                         outClaimReqJson:nil];
@@ -312,7 +310,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                                          claimOfferJson:claimOfferJson
-                                                             revRegJSON:nil
                                                        masterSecretName:@"invalid_master_secret_name"
                                                            walletHandle:walletHandle
                                                         outClaimReqJson:nil];
@@ -415,7 +412,8 @@
                                     "\"v\":\"3\"},"
                            "\"r_claim\":null}}", @"issueddid", [[AnoncredsUtils sharedInstance] getXyzSchemaKey]];
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
-                                                                 claimsJson:claimJson];
+                                                                 claimsJson:claimJson
+                                                                 revRegJSON:nil];
     XCTAssertEqual(ret.code, WalletNotFoundError, @"AnoncredsUtils::proverStoreClaimWithWalletHandle returned wrong code");
 }
 
@@ -437,7 +435,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
                                                          claimOfferJson:claimOfferJson
-                                                             revRegJSON:nil
                                                        masterSecretName:@"common_master_secter_name"
                                                            walletHandle:walletHandle
                                                         outClaimReqJson:nil];
@@ -455,7 +452,8 @@
             "\"schema_key\":%@}", [[AnoncredsUtils sharedInstance] getGvtSchemaKey]];
     
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
-                                                                 claimsJson:claimJson];
+                                                                 claimsJson:claimJson
+                                                                 revRegJSON:nil];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverStoreClaimWithWalletHandle returned wrong code");
 }
 

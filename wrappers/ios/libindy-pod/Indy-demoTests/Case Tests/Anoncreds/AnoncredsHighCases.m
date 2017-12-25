@@ -396,7 +396,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDef
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
-                                                             revRegJSON:nil
                                                        masterSecretName:[TestUtils commonMasterSecretName]
                                                            walletHandle:walletHandle
                                                         outClaimReqJson:&claimRequestJson];
@@ -433,7 +432,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDef
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
-                                                             revRegJSON:nil
                                                        masterSecretName:[TestUtils commonMasterSecretName]
                                                            walletHandle:invalidWalletHandle
                                                         outClaimReqJson:&claimRequestJson];
@@ -466,7 +464,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDef
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
-                                                             revRegJSON:nil
                                                        masterSecretName:[TestUtils commonMasterSecretName]
                                                            walletHandle:walletHandle
                                                         outClaimReqJson:&claimRequestJson];
@@ -598,7 +595,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOfferJson
-                                                             revRegJSON:nil
                                                        masterSecretName:[TestUtils commonMasterSecretName]
                                                            walletHandle:walletHandle
                                                         outClaimReqJson:&claimRequest];
@@ -620,7 +616,8 @@
     
     // 5. store claim
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
-                                                                 claimsJson:xClaimJson];
+                                                                 claimsJson:xClaimJson
+                                                                 revRegJSON:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaimWithWalletHandle failed");
 }
 
@@ -647,7 +644,6 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOfferJson
-                                                             revRegJSON:nil
                                                        masterSecretName:[TestUtils commonMasterSecretName]
                                                            walletHandle:walletHandle
                                                         outClaimReqJson:&claimRequest];
@@ -671,7 +667,8 @@
     // 5. store claim
     IndyHandle invalidWalletHandle = walletHandle + 1;
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:invalidWalletHandle
-                                                                 claimsJson:xClaimJson];
+                                                                 claimsJson:xClaimJson
+                                                                 revRegJSON:nil];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverStoreClaimWithWalletHandle failed");
 }
 
