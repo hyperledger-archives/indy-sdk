@@ -14,10 +14,7 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 	public void testProverCreateAndStoreClaimReqWorks() throws Exception {
 
 		initCommonWallet();
-
-		String claimOffer = String.format(claimOfferTemplate, issuerDid, 1);
-
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, gvtClaimOffer, claimDef, null, masterSecretName).get();
 	}
 
 	@Test
@@ -28,22 +25,9 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String claimOffer = String.format(claimOfferTemplate, "acWziYqKpYi6ov5FcYDi1e3", 1);
+		String claimOffer = String.format(claimOfferTemplate, issuerDid + "a", 1);
 
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
-	}
-
-	@Test
-	public void testProverCreateAndStoreClaimReqWorksForClaimDefDoesNotCorrespondToClaimOfferDifferentSchema() throws Exception {
-
-		initCommonWallet();
-
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidStructureException.class));
-
-		String claimOffer = String.format(claimOfferTemplate, issuerDid, 2);
-
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, null, masterSecretName).get();
 	}
 
 	@Test
@@ -56,7 +40,7 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 
 		String claimOffer = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
 
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, null, masterSecretName).get();
 	}
 
 	@Test
@@ -67,8 +51,6 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		String claimOffer = String.format(claimOfferTemplate, issuerDid, 1);
-
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, "other_master_secret").get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, gvtClaimOffer, claimDef, null, masterSecretName + "a").get();
 	}
 }

@@ -322,6 +322,7 @@ async def prover_create_and_store_claim_req(wallet_handle: int,
                                             prover_did: str,
                                             claim_offer_json: str,
                                             claim_def_json: str,
+                                            rev_reg_json: Optional[str],
                                             master_secret_name: str) -> str:
     """
     Creates a clam request json for the given claim offer and stores it in a secure wallet.
@@ -340,6 +341,7 @@ async def prover_create_and_store_claim_req(wallet_handle: int,
             "schema_seq_no": string
         }
     :param claim_def_json: claim definition json associated with issuer_did and schema_seq_no in the claim_offer
+    :param rev_reg_json: revocation registry json
     :param master_secret_name: the name of the master secret stored in the wallet
     :return: Claim request json.
         {
@@ -351,11 +353,12 @@ async def prover_create_and_store_claim_req(wallet_handle: int,
 
     logger = logging.getLogger(__name__)
     logger.debug("prover_create_and_store_claim_req: >>> wallet_handle: %r, prover_did: %r, claim_offer_json: %r,"
-                 " claim_def_json: %r, master_secret_name: %r",
+                 " claim_def_json: %r, rev_reg_json: %r, master_secret_name: %r",
                  wallet_handle,
                  prover_did,
                  claim_offer_json,
                  claim_def_json,
+                 rev_reg_json,
                  master_secret_name)
 
     if not hasattr(prover_create_and_store_claim_req, "cb"):
@@ -366,6 +369,7 @@ async def prover_create_and_store_claim_req(wallet_handle: int,
     c_prover_did = c_char_p(prover_did.encode('utf-8'))
     c_claim_offer_json = c_char_p(claim_offer_json.encode('utf-8'))
     c_claim_def_json = c_char_p(claim_def_json.encode('utf-8'))
+    c_rev_reg_json = c_char_p(rev_reg_json.encode('utf-8')) if rev_reg_json else None
     c_master_secret_name = c_char_p(master_secret_name.encode('utf-8'))
 
     claim_req_json = await do_call('indy_prover_create_and_store_claim_req',
@@ -373,6 +377,7 @@ async def prover_create_and_store_claim_req(wallet_handle: int,
                                    c_prover_did,
                                    c_claim_offer_json,
                                    c_claim_def_json,
+                                   c_rev_reg_json,
                                    c_master_secret_name,
                                    prover_create_and_store_claim_req.cb)
 

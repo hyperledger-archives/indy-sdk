@@ -20,7 +20,7 @@ extern "C" {
     extern indy_error_t indy_issuer_create_and_store_revoc_reg(indy_handle_t command_handle,
                                                                indy_handle_t wallet_handle,
                                                                const char *  issuer_did,
-                                                               indy_i32_t    schema_seq_no,
+                                                               const char *  schema_json,
                                                                indy_u32_t    max_claim_num,
 
                                                                void           (*cb)(indy_handle_t xcommand_handle,
@@ -44,7 +44,7 @@ extern "C" {
     extern indy_error_t indy_issuer_revoke_claim(indy_handle_t command_handle,
                                                  indy_handle_t wallet_handle,
                                                  const char *  issuer_did,
-                                                 indy_i32_t    schema_seq_no,
+                                                 const char *  schema_json,
                                                  indy_u32_t    user_revoc_index,
 
                                                  void           (*cb)(indy_handle_t xcommand_handle,
@@ -84,6 +84,7 @@ extern "C" {
                                                                const char *  prover_did,
                                                                const char *  claim_offer_json,
                                                                const char *  claim_def_json,
+                                                               const char *  rev_reg_json,
                                                                const char *  master_secret_name,
 
                                                                void           (*cb)(indy_handle_t xcommand_handle,

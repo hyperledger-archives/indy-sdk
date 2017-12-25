@@ -32,7 +32,7 @@ impl Prover {
         let claim_request = ClaimRequest {
             prover_did: prover_did.to_owned(),
             issuer_did: claim_offer.issuer_did.clone(),
-            schema_seq_no: claim_offer.schema_seq_no,
+            schema_key: claim_offer.schema_key.clone(),
             blinded_ms
         };
 
@@ -145,7 +145,7 @@ impl Prover {
                                                 revocation_registry.map(|rev_reg| &rev_reg.data).clone())?;
 
             identifiers.insert(Identifier {
-                schema_seq_no: claim.schema_seq_no,
+                schema_key: claim.schema_key.clone(),
                 issuer_did: claim.issuer_did.clone(),
                 rev_reg_seq_no: claim.rev_reg_seq_no.clone()
             });
@@ -193,8 +193,8 @@ impl Prover {
 
         let mut res = true;
 
-        if let Some(schema_seq_no) = restriction.schema_seq_no {
-            res = res && claim.schema_seq_no == schema_seq_no;
+        if let Some(ref schema_key) = restriction.schema_key {
+            res = res && claim.schema_key == schema_key.clone();
         }
 
         if let Some(issuer_did) = restriction.issuer_did.clone() {

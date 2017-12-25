@@ -14,7 +14,7 @@ async def test_prover_store_claim_works(wallet_handle, prepopulated_wallet, prov
     await prover_create_master_secret(wallet_handle, master_secret_name_1)
 
     claim_req = await prover_create_and_store_claim_req(wallet_handle, prover_did,
-                                                        claim_offer_issuer_1_schema_1_json, claim_def_json,
+                                                        claim_offer_issuer_1_schema_1_json, claim_def_json, None,
                                                         master_secret_name_1)
 
     (_, claim_json) = await issuer_create_claim(wallet_handle, claim_req, gvt_claim_json, -1)
@@ -33,7 +33,7 @@ async def test_prover_store_claim_works_for_invalid_wallet_handle(wallet_handle,
     await prover_create_master_secret(wallet_handle, master_secret_name_2)
 
     claim_req = await prover_create_and_store_claim_req(wallet_handle, prover_did,
-                                                        claim_offer_issuer_1_schema_1_json, claim_def_json,
+                                                        claim_offer_issuer_1_schema_1_json, claim_def_json, None,
                                                         master_secret_name_2)
 
     (_, claim_json) = await issuer_create_claim(wallet_handle, claim_req, gvt_claim_json, -1)

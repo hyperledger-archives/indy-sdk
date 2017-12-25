@@ -289,7 +289,7 @@ public class Anoncreds extends IndyJava.API {
 	 * 
 	 * @param wallet The wallet.
 	 * @param issuerDid	The DID of the issuer.
-	 * @param schemaSeqNo The sequence number of the schema to use.
+	 * @param schemaJson The schema to use.
 	 * @param maxClaimNum The maximum claim numbber.
 	 * @return A future resolving to a JSON string containing the revocation registry.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -297,12 +297,13 @@ public class Anoncreds extends IndyJava.API {
 	public static CompletableFuture<String> issuerCreateAndStoreRevocReg(
 			Wallet wallet,
 			String issuerDid,
-			int schemaSeqNo, 
+			String schemaJson,
 			int maxClaimNum) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNullOrWhiteSpace(issuerDid, "issuerDid");		
-		
+		ParamGuard.notNullOrWhiteSpace(issuerDid, "issuerDid");
+		ParamGuard.notNull(schemaJson, "schemaJson");
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -312,7 +313,7 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle, 
 				walletHandle, 
 				issuerDid,
-				schemaSeqNo,
+				schemaJson,
 				maxClaimNum,
 				issuerCreateAndStoreRevocRegCb);
 
@@ -364,7 +365,7 @@ public class Anoncreds extends IndyJava.API {
 	 * 
 	 * @param wallet A wallet.
 	 * @param issuerDid	The DID of the issuer.
-	 * @param schemaSeqNo The sequence number of the schema to use.
+	 * @param schemaJson The schema to use.
 	 * @param userRevocIndex index of the user in the revocation registry
 	 * @return A future resolving to a revocation registry update json with a revoked claim
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -372,12 +373,13 @@ public class Anoncreds extends IndyJava.API {
 	public static CompletableFuture<String> issuerRevokeClaim(
 			Wallet wallet,
 			String issuerDid,
-			int schemaSeqNo,
+			String schemaJson,
 			int userRevocIndex) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNullOrWhiteSpace(issuerDid, "issuerDid");		
-		
+		ParamGuard.notNullOrWhiteSpace(issuerDid, "issuerDid");
+		ParamGuard.notNull(schemaJson, "schemaJson");
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -387,7 +389,7 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle, 
 				walletHandle,
 				issuerDid,
-				schemaSeqNo,
+				schemaJson,
 				userRevocIndex,
 				issuerRevokeClaimCb);
 
@@ -496,6 +498,7 @@ public class Anoncreds extends IndyJava.API {
 	 * @param proverDid The DID of the prover.
 	 * @param claimOfferJson claim offer as a json containing information about the issuer and a claim
 	 * @param claimDefJson claim definition json associated with issuer_did and schema_seq_no in the claim_offer
+	 * @param revRegJson revocation registry associated with issuer_did and schema_key in the claim_offer
 	 * @param masterSecretName the name of the master secret stored in the wallet
 	 * @return A future that resolves to a claim request json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -505,13 +508,14 @@ public class Anoncreds extends IndyJava.API {
 			String proverDid,
 			String claimOfferJson,
 			String claimDefJson,
+			String revRegJson,
 			String masterSecretName) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
 		ParamGuard.notNullOrWhiteSpace(proverDid, "proverDid");		
 		ParamGuard.notNullOrWhiteSpace(claimOfferJson, "claimOfferJson");		
 		ParamGuard.notNullOrWhiteSpace(claimDefJson, "claimDefJson");		
-		ParamGuard.notNullOrWhiteSpace(masterSecretName, "masterSecretName");		
+		ParamGuard.notNullOrWhiteSpace(masterSecretName, "masterSecretName");
 		
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -524,6 +528,7 @@ public class Anoncreds extends IndyJava.API {
 				proverDid,
 				claimOfferJson,
 				claimDefJson,
+				revRegJson,
 				masterSecretName,
 				proverCreateAndStoreClaimReqCb);
 

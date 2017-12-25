@@ -42,7 +42,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		String filter = String.format("{\"schema_seq_no\":%d}", gvtSchemaSeqNo);
+		String filter = String.format("{\"schema_key\":%s}", gvtSchemaKey);
 
 		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
 
@@ -56,7 +56,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		String filter = String.format("{\"issuer_did\":\"%s\", \"schema_seq_no\":%d}", issuerDid, gvtSchemaSeqNo);
+		String filter = String.format("{\"issuer_did\":\"%s\", \"schema_key\":%s}", issuerDid, gvtSchemaKey);
 
 		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
 
@@ -70,7 +70,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		String filter = String.format("{\"schema_seq_no\":%d}", 10);
+		String filter = String.format("{\"issuer_did\":\"%s\"}", issuerDid + "a");
 
 		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
 
@@ -87,7 +87,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String filter = String.format("{\"schema_seq_no\":\"%d\"}", 1);
+		String filter = "{\"schema_key\":\"gvt\"}";
 
 		Anoncreds.proverGetClaims(wallet, filter).get();
 	}

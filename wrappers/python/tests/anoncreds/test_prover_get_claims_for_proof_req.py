@@ -7,8 +7,7 @@ import pytest
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_prover_get_claims_for_proof_req_works_for_revealed_attr(wallet_handle, prepopulated_wallet,
-                                                                       schema_seq_no):
+async def test_prover_get_claims_for_proof_req_works_for_revealed_attr(wallet_handle, prepopulated_wallet):
     proof_req = {
         "nonce": "123432421212",
         "name": "proof_req_1",
@@ -33,7 +32,7 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr(wallet_ha
 @pytest.mark.asyncio
 async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_schema(wallet_handle,
                                                                                            prepopulated_wallet,
-                                                                                           schema_seq_no):
+                                                                                           schema_key):
     proof_req = {
         "nonce": "123432421212",
         "name": "proof_req_1",
@@ -41,7 +40,7 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_speci
         "requested_attrs": {
             "attr1_referent": {
                 "name": "name",
-                "restrictions": [{"schema_seq_no": schema_seq_no}]
+                "restrictions": [{"schema_key": schema_key}]
             }
         },
         "requested_predicates": {}
@@ -85,7 +84,7 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_speci
 @pytest.mark.asyncio
 async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_issuer_schema(wallet_handle,
                                                                                                   prepopulated_wallet,
-                                                                                                  schema_seq_no,
+                                                                                                  schema_key,
                                                                                                   issuer_did):
     proof_req = {
         "nonce": "123432421212",
@@ -94,7 +93,7 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_speci
         "requested_attrs": {
             "attr1_referent": {
                 "name": "name",
-                "restrictions": [{"issuer_did": issuer_did, "schema_seq_no": schema_seq_no}]
+                "restrictions": [{"issuer_did": issuer_did, "schema_key": schema_key}]
             }
         },
         "requested_predicates": {}
@@ -112,8 +111,8 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_speci
 @pytest.mark.asyncio
 async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_multiple_schemas(wallet_handle,
                                                                                             prepopulated_wallet,
-                                                                                            schema_seq_no,
-                                                                                            schema_seq_no_2):
+                                                                                            schema_key,
+                                                                                            xyz_schema_key):
     proof_req = {
         "nonce": "123432421212",
         "name": "proof_req_1",
@@ -121,7 +120,7 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_multi
         "requested_attrs": {
             "attr1_referent": {
                 "name": "name",
-                "restrictions": [{"schema_seq_no": schema_seq_no}, {"schema_seq_no": schema_seq_no_2}]
+                "restrictions": [{"schema_key": schema_key}, {"schema_key": xyz_schema_key}]
             }
         },
         "requested_predicates": {}
@@ -138,10 +137,7 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_multi
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
 async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_schema_or_specific_issuer(
-        wallet_handle,
-        prepopulated_wallet,
-        schema_seq_no,
-        issuer_did):
+        wallet_handle, prepopulated_wallet, schema_key, issuer_did):
     proof_req = {
         "nonce": "123432421212",
         "name": "proof_req_1",
@@ -149,7 +145,7 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_speci
         "requested_attrs": {
             "attr1_referent": {
                 "name": "name",
-                "restrictions": [{"issuer_did": issuer_did }, {"schema_seq_no": schema_seq_no}]
+                "restrictions": [{"issuer_did": issuer_did}, {"schema_key": schema_key}]
             }
         },
         "requested_predicates": {}
@@ -165,8 +161,7 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_speci
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_prover_get_claims_for_proof_req_works_for_not_found_attribute(wallet_handle, prepopulated_wallet,
-                                                                             schema_seq_no):
+async def test_prover_get_claims_for_proof_req_works_for_not_found_attribute(wallet_handle, prepopulated_wallet):
     proof_req = {
         "nonce": "123432421212",
         "name": "proof_req_1",
@@ -191,7 +186,8 @@ async def test_prover_get_claims_for_proof_req_works_for_not_found_attribute(wal
 @pytest.mark.asyncio
 async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_other_schema_issuer_pair(wallet_handle,
                                                                                                     prepopulated_wallet,
-                                                                                                    issuer_did):
+                                                                                                    issuer_did,
+                                                                                                    xyz_schema_key):
     proof_req = {
         "nonce": "123432421212",
         "name": "proof_req_1",
@@ -199,7 +195,7 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_other
         "requested_attrs": {
             "attr1_referent": {
                 "name": "name",
-                "restrictions": [{"issuer_did": issuer_did, "schema_seq_no": 10}]
+                "restrictions": [{"issuer_did": issuer_did, "schema_key": xyz_schema_key}]
             }
         },
         "requested_predicates": {}
@@ -241,7 +237,7 @@ async def test_prover_get_claims_for_proof_req_works_for_predicate(wallet_handle
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_prover_get_claims_for_proof_req_works_for_predicate_for_specific_schema(wallet_handle, schema_seq_no,
+async def test_prover_get_claims_for_proof_req_works_for_predicate_for_specific_schema(wallet_handle, schema_key,
                                                                                        prepopulated_wallet):
     proof_req = {
         "nonce": "123432421212",
@@ -254,7 +250,7 @@ async def test_prover_get_claims_for_proof_req_works_for_predicate_for_specific_
                     "attr_name": "age",
                     "p_type": ">=",
                     "value": 18,
-                    "restrictions": [{"schema_seq_no": schema_seq_no}]
+                    "restrictions": [{"schema_key": schema_key}]
                 }
         }
     }
@@ -296,7 +292,7 @@ async def test_prover_get_claims_for_proof_req_works_for_predicate_for_specific_
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
 async def test_prover_get_claims_for_proof_req_works_for_predicate_for_specific_schema_issuer_pair(wallet_handle,
-                                                                                                   schema_seq_no,
+                                                                                                   schema_key,
                                                                                                    issuer_did,
                                                                                                    prepopulated_wallet):
     proof_req = {
@@ -310,7 +306,7 @@ async def test_prover_get_claims_for_proof_req_works_for_predicate_for_specific_
                     "attr_name": "age",
                     "p_type": ">=",
                     "value": 18,
-                    "restrictions": [{"schema_seq_no": schema_seq_no, "issuer_did": issuer_did}]
+                    "restrictions": [{"schema_key": schema_key, "issuer_did": issuer_did}]
                 }
         }
     }
@@ -324,8 +320,8 @@ async def test_prover_get_claims_for_proof_req_works_for_predicate_for_specific_
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_prover_get_claims_for_proof_req_works_for_predicate_for_multiple_schemas(wallet_handle, schema_seq_no,
-                                                                                        schema_seq_no_2,
+async def test_prover_get_claims_for_proof_req_works_for_predicate_for_multiple_schemas(wallet_handle, schema_key,
+                                                                                        xyz_schema_key,
                                                                                         prepopulated_wallet):
     proof_req = {
         "nonce": "123432421212",
@@ -338,7 +334,7 @@ async def test_prover_get_claims_for_proof_req_works_for_predicate_for_multiple_
                     "attr_name": "age",
                     "p_type": ">=",
                     "value": 18,
-                    "restrictions": [{"schema_seq_no": schema_seq_no}, {"schema_seq_no": schema_seq_no_2}]
+                    "restrictions": [{"schema_key": schema_key}, {"schema_key": xyz_schema_key}]
                 }
         }
     }
@@ -403,8 +399,7 @@ async def test_prover_get_claims_for_proof_req_works_for_not_satisfy_predicate(w
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
 async def test_prover_get_claims_for_proof_req_works_for_multiply_attribute_and_predicates(wallet_handle,
-                                                                                           prepopulated_wallet,
-                                                                                           schema_seq_no):
+                                                                                           prepopulated_wallet):
     proof_req = {
         "nonce": "123432421212",
         "name": "proof_req_1",
@@ -432,8 +427,7 @@ async def test_prover_get_claims_for_proof_req_works_for_multiply_attribute_and_
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_prover_get_claims_for_proof_req_works_for_invalid_wallet_handle(wallet_handle,
-                                                                               prepopulated_wallet):
+async def test_prover_get_claims_for_proof_req_works_for_invalid_wallet_handle(wallet_handle, prepopulated_wallet):
     proof_req = {
         "nonce": "123432421212",
         "name": "proof_req_1",

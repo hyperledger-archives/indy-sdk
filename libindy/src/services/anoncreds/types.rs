@@ -19,7 +19,7 @@ impl<'a> JsonDecodable<'a> for AttributeInfo {}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimOffer {
     pub issuer_did: String,
-    pub schema_seq_no: i32
+    pub schema_key: SchemaKey
 }
 
 impl JsonEncodable for ClaimOffer {}
@@ -29,7 +29,7 @@ impl<'a> JsonDecodable<'a> for ClaimOffer {}
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
 pub struct Filter {
     pub issuer_did: Option<String>,
-    pub schema_seq_no: Option<i32>
+    pub schema_key: Option<SchemaKey>
 }
 
 impl<'a> JsonDecodable<'a> for Filter {}
@@ -38,7 +38,7 @@ impl<'a> JsonDecodable<'a> for Filter {}
 pub struct ClaimInfo {
     pub referent: String,
     pub attrs: HashMap<String, String>,
-    pub schema_seq_no: i32,
+    pub schema_key: SchemaKey,
     pub issuer_did: String,
     pub revoc_reg_seq_no: Option<i32>
 }
@@ -47,7 +47,7 @@ pub struct ClaimInfo {
 pub struct ClaimRequest {
     pub prover_did: String,
     pub issuer_did: String,
-    pub schema_seq_no: i32,
+    pub schema_key: SchemaKey,
     pub blinded_ms: BlindedMasterSecret
 }
 
@@ -107,7 +107,7 @@ impl<'a> JsonDecodable<'a> for ClaimDefinitionData {}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Claim {
     pub values: HashMap<String, Vec<String>>,
-    pub schema_seq_no: i32,
+    pub schema_key: SchemaKey,
     pub signature: ClaimSignature,
     pub issuer_did: String,
     pub rev_reg_seq_no: Option<i32>,
@@ -151,7 +151,7 @@ impl<'a> JsonDecodable<'a> for ProofRequest {}
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct Identifier {
     pub issuer_did: String,
-    pub schema_seq_no: i32,
+    pub schema_key: SchemaKey,
     pub rev_reg_seq_no: Option<i32>
 }
 
@@ -204,6 +204,7 @@ pub struct RequestedProof {
 pub struct Schema {
     #[serde(rename = "seqNo")]
     pub seq_no: i32,
+    pub identifier: String,
     pub data: SchemaData
 }
 
@@ -217,3 +218,15 @@ pub struct SchemaData {
 impl JsonEncodable for Schema {}
 
 impl<'a> JsonDecodable<'a> for Schema {}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
+pub struct SchemaKey {
+    pub name: String,
+    pub version: String,
+    pub did: String
+}
+
+impl JsonEncodable for SchemaKey {}
+
+impl<'a> JsonDecodable<'a> for SchemaKey {}
+

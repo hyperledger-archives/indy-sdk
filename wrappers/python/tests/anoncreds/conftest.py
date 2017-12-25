@@ -102,13 +102,41 @@ def master_secret_name_2():
     return "common_master_secret_name_2"
 
 
-def claim_offer(issuer_did, schema_seq_no):
-    return {"issuer_did": issuer_did, "schema_seq_no": schema_seq_no}
+@pytest.fixture(scope="module")
+def schema_key(issuer_did):
+    return {
+        'name': 'gvt',
+        'version': '1.0',
+        'did': issuer_did
+    }
 
 
 @pytest.fixture(scope="module")
-def claim_offer_issuer_1_schema_1(issuer_did, schema_seq_no):
-    return claim_offer(issuer_did, schema_seq_no)
+def schema_key_json(schema_key):
+    return json.dumps(schema_key)
+
+
+@pytest.fixture(scope="module")
+def xyz_schema_key(issuer_did):
+    return {
+        'name': 'xyz',
+        'version': '1.0',
+        'did': issuer_did
+    }
+
+
+@pytest.fixture(scope="module")
+def schema_key_json(schema_key):
+    return json.dumps(schema_key)
+
+
+def claim_offer(issuer_did, schema_key):
+    return {"issuer_did": issuer_did, "schema_key": schema_key}
+
+
+@pytest.fixture(scope="module")
+def claim_offer_issuer_1_schema_1(issuer_did, schema_key):
+    return claim_offer(issuer_did, schema_key)
 
 
 @pytest.fixture(scope="module")
@@ -117,8 +145,8 @@ def claim_offer_issuer_1_schema_1_json(claim_offer_issuer_1_schema_1):
 
 
 @pytest.fixture(scope="module")
-def claim_offer_issuer_1_schema_2(issuer_did, schema_seq_no_2):
-    return claim_offer(issuer_did, schema_seq_no_2)
+def claim_offer_issuer_1_schema_2(issuer_did, xyz_schema_key):
+    return claim_offer(issuer_did, xyz_schema_key)
 
 
 @pytest.fixture(scope="module")
@@ -127,8 +155,8 @@ def claim_offer_issuer_1_schema_2_json(claim_offer_issuer_1_schema_2):
 
 
 @pytest.fixture(scope="module")
-def claim_offer_issuer_2_schema_1(issuer_did_2, schema_seq_no):
-    return claim_offer(issuer_did_2, schema_seq_no)
+def claim_offer_issuer_2_schema_1(issuer_did_2, schema_key):
+    return claim_offer(issuer_did_2, schema_key)
 
 
 @pytest.fixture(scope="module")
@@ -137,8 +165,8 @@ def claim_offer_issuer_2_schema_1_json(claim_offer_issuer_2_schema_1):
 
 
 @pytest.fixture(scope="module")
-def claim_offer_prover_2(prover_did, schema_seq_no_2):
-    return claim_offer(prover_did, schema_seq_no_2)
+def claim_offer_prover_2(prover_did, xyz_schema_key):
+    return claim_offer(prover_did, xyz_schema_key)
 
 
 @pytest.fixture(scope="module")
@@ -147,9 +175,10 @@ def claim_offer_prover_2_json(claim_offer_prover_2):
 
 
 @pytest.fixture(scope="module")
-def gvt_schema(schema_seq_no: int):
+def gvt_schema(schema_seq_no: int, issuer_did: str):
     return {
         "seqNo": schema_seq_no,
+        "identifier": issuer_did,
         "data": {
             "name": "gvt",
             "version": "1.0",
@@ -159,9 +188,10 @@ def gvt_schema(schema_seq_no: int):
 
 
 @pytest.fixture(scope="module")
-def xyz_schema(schema_seq_no: int):
+def xyz_schema(schema_seq_no: int, issuer_did: str):
     return {
         "seqNo": 2,
+        "identifier": issuer_did,
         "data": {
             "name": "xyz",
             "version": "1.0",
@@ -224,7 +254,7 @@ def xyz_claim_json(xyz_claim):
 
 
 @pytest.fixture(scope="module")
-def claim_req(issuer_did, schema_seq_no):
+def claim_req(issuer_did, schema_key):
     return {"blinded_ms": {"u": "541727375645293327107242131390489410830131768916446771173223218236303087346206273292"
                                 "275918450941006362568297619591573147842939390451766213271549909084590728218268187187"
                                 "396963232997879281735355290245565403237095788507069932942349664408266908992668726827"
@@ -235,7 +265,7 @@ def claim_req(issuer_did, schema_seq_no):
                                 "792968543317468164175921100038",
                            "ur": None},
             "prover_did": "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
-            "issuer_did": issuer_did, "schema_seq_no": schema_seq_no}
+            "issuer_did": issuer_did, "schema_key": schema_key}
 
 
 @pytest.fixture(scope="module")
@@ -249,7 +279,7 @@ def predicate_value():
 
 
 @pytest.fixture(scope="module")
-def proof_req(predicate_value):
+def proof_req(predicate_value, schema_key):
     return {
         "nonce": "123432421212",
         "name": "proof_req_1",
@@ -258,7 +288,7 @@ def proof_req(predicate_value):
             "attr1_referent":
                 {
                     "name": "name",
-                    "restrictions": [{"schema_seq_no": 1}]
+                    "restrictions": [{"schema_key": schema_key}]
                 }
         },
         "requested_predicates": {
@@ -322,7 +352,7 @@ async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, g
         wallet_handle, issuer_did, gvt_schema_json, None, False)
 
     claim_req = await anoncreds.prover_create_and_store_claim_req(
-        wallet_handle, prover_did, claim_offer_issuer_1_schema_1_json, claim_def_json, master_secret_name)
+        wallet_handle, prover_did, claim_offer_issuer_1_schema_1_json, claim_def_json, None, master_secret_name)
 
     (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req, gvt_claim_json, -1)
 
@@ -333,7 +363,7 @@ async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, g
         wallet_handle, issuer_did, xyz_schema_json, None, False)
 
     claim_req = await anoncreds.prover_create_and_store_claim_req(
-        wallet_handle, prover_did, claim_offer_issuer_1_schema_2_json, claim_def_json_2, master_secret_name)
+        wallet_handle, prover_did, claim_offer_issuer_1_schema_2_json, claim_def_json_2, None, master_secret_name)
 
     (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req, xyz_claim_json, -1)
 
@@ -344,7 +374,7 @@ async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, g
         wallet_handle, issuer_did_2, gvt_schema_json, None, False)
 
     claim_req = await anoncreds.prover_create_and_store_claim_req(
-        wallet_handle, prover_did, claim_offer_issuer_2_schema_1_json, claim_def_json_3, master_secret_name)
+        wallet_handle, prover_did, claim_offer_issuer_2_schema_1_json, claim_def_json_3, None, master_secret_name)
 
     (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req, gvt_2_claim_json, -1)
 

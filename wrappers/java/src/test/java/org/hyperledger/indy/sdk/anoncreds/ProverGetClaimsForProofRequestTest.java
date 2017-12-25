@@ -203,11 +203,11 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_attrs\":{" +
 				"                   \"attr1_referent\":{" +
 				"                       \"name\":\"name\"," +
-				"                       \"restrictions\":[{\"schema_seq_no\":%d}]" +
+				"                       \"restrictions\":[{\"schema_key\":%s}]" +
 				"                   }" +
 				"               }," +
 				"              \"requested_predicates\":{}" +
-				"          }", gvtSchemaSeqNo);
+				"          }", gvtSchemaKey);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -229,11 +229,11 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_attrs\":{" +
 				"                   \"attr1_referent\":{" +
 				"                       \"name\":\"name\"," +
-				"                       \"restrictions\":[{\"schema_seq_no\":%d}, {\"schema_seq_no\":%d}]" +
+				"                       \"restrictions\":[{\"schema_key\":%s}, {\"schema_key\":%s}]" +
 				"                   }" +
 				"               }," +
 				"              \"requested_predicates\":{}" +
-				"          }", gvtSchemaSeqNo, xyzSchemaSeqNo);
+				"          }", gvtSchemaKey, xyzSchemaKey);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -255,11 +255,11 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_attrs\":{" +
 				"                   \"attr1_referent\":{" +
 				"                       \"name\":\"name\"," +
-				"                       \"restrictions\":[{\"schema_seq_no\":%d, \"issuer_did\":\"%s\"}]" +
+				"                       \"restrictions\":[{\"schema_key\":%s, \"issuer_did\":\"%s\"}]" +
 				"                   }" +
 				"               }," +
 				"              \"requested_predicates\":{}" +
-				"          }", gvtSchemaSeqNo, issuerDid);
+				"          }", gvtSchemaKey, issuerDid);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -281,11 +281,11 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_attrs\":{" +
 				"                   \"attr1_referent\":{" +
 				"                       \"name\":\"name\"," +
-				"                       \"restrictions\":[{\"schema_seq_no\":%d}, {\"issuer_did\":\"%s\"}]" +
+				"                       \"restrictions\":[{\"schema_key\":%s}, {\"issuer_did\":\"%s\"}]" +
 				"                   }" +
 				"               }," +
 				"              \"requested_predicates\":{}" +
-				"          }", gvtSchemaSeqNo, issuerDid);
+				"          }", gvtSchemaKey, issuerDid);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -334,10 +334,10 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
 				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
-				"                       \"restrictions\":[{\"schema_seq_no\":%d}]" +
+				"                       \"restrictions\":[{\"schema_key\":%s}]" +
 				"                   }" +
 				"              }" +
-				"          }", gvtSchemaSeqNo);
+				"          }", gvtSchemaKey);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -360,10 +360,10 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
 				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
-				"                       \"restrictions\":[{\"schema_seq_no\":%d}, {\"schema_seq_no\":%d}]" +
+				"                       \"restrictions\":[{\"schema_key\":%s}, {\"schema_key\":%s}]" +
 				"                   }" +
 				"              }" +
-				"          }", gvtSchemaSeqNo, xyzSchemaSeqNo);
+				"          }", gvtSchemaKey, xyzSchemaKey);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -386,10 +386,10 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
 				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
-				"                       \"restrictions\":[{\"schema_seq_no\":%d, \"issuer_did\":\"%s\"}]" +
+				"                       \"restrictions\":[{\"schema_key\":%s, \"issuer_did\":\"%s\"}]" +
 				"                   }" +
 				"              }" +
-				"          }", gvtSchemaSeqNo, issuerDid);
+				"          }", gvtSchemaKey, issuerDid);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -412,10 +412,10 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
 				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
-				"                       \"restrictions\":[{\"schema_seq_no\":%d}, {\"issuer_did\":\"%s\"}]" +
+				"                       \"restrictions\":[{\"schema_key\":%s}, {\"issuer_did\":\"%s\"}]" +
 				"                   }" +
 				"              }" +
-				"          }", gvtSchemaSeqNo, issuerDid);
+				"          }", gvtSchemaKey, issuerDid);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
