@@ -43,7 +43,7 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home):
     })
 
     claim_req_json = await anoncreds.prover_create_and_store_claim_req(wallet_handle, 'BzfFCYk', claim_offer_json,
-                                                                       claim_def_json, None, 'master_secret')
+                                                                       claim_def_json, 'master_secret')
 
     # 5. Issuer create Claim for Claim Request
     claim_json = json.dumps({
@@ -56,7 +56,7 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home):
     (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req_json, claim_json, -1)
 
     # 6. Prover process and store Claim
-    await anoncreds.prover_store_claim(wallet_handle, claim_json)
+    await anoncreds.prover_store_claim(wallet_handle, claim_json, None)
 
     # 7. Prover gets Claims for Proof Request
     proof_req_json = json.dumps({

@@ -105,7 +105,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String claimOfferJson = claimOfferObject.toString();
 
 		//8. Prover create ClaimReq
-		String claimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, claimOfferJson, claimDef, null, masterSecret).get();
+		String claimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, claimOfferJson, claimDef, masterSecret).get();
 		assertNotNull(claimReq);
 
 		//9. Issuer create Claim
@@ -114,7 +114,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String claimJson = createClaimResult.getClaimJson();
 
 		//10. Prover store Claim
-		Anoncreds.proverStoreClaim(proverWallet, claimJson).get();
+		Anoncreds.proverStoreClaim(proverWallet, claimJson, null).get();
 
 		//11. Prover gets Claims for Proof Request
 		String proofRequestJson = "{" +
@@ -202,24 +202,24 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverStoreClaimOffer(proverWallet, xyzClaimOffer).get();
 
 		//7. Prover create ClaimReq for GVT Claim Offer
-		String gvtClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, gvtClaimOffer, gvtClaimDef, null, masterSecret).get();
+		String gvtClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, gvtClaimOffer, gvtClaimDef, masterSecret).get();
 
 		//8. Issuer create Claim
 		AnoncredsResults.IssuerCreateClaimResult gvtCreateClaimResult = Anoncreds.issuerCreateClaim(issuerGvtWallet, gvtClaimReq, gvtClaimValuesJson, - 1).get();
 		String gvtClaimJson = gvtCreateClaimResult.getClaimJson();
 
 		//10. Prover store Claim
-		Anoncreds.proverStoreClaim(proverWallet, gvtClaimJson).get();
+		Anoncreds.proverStoreClaim(proverWallet, gvtClaimJson, null).get();
 
 		//11. Prover create ClaimReq for GVT Claim Offer
-		String xyzClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, null, masterSecret).get();
+		String xyzClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, masterSecret).get();
 
 		//12. Issuer create Claim
 		AnoncredsResults.IssuerCreateClaimResult xyzCreateClaimResult = Anoncreds.issuerCreateClaim(issuerXyzWallet, xyzClaimReq, xyzClaimValuesJson, - 1).get();
 		String xyzClaimJson = xyzCreateClaimResult.getClaimJson();
 
 		//13. Prover store Claim
-		Anoncreds.proverStoreClaim(proverWallet, xyzClaimJson).get();
+		Anoncreds.proverStoreClaim(proverWallet, xyzClaimJson, null).get();
 
 		//14. Prover gets Claims for Proof Request
 		String proofRequestJson = "{" +
@@ -311,24 +311,24 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverStoreClaimOffer(proverWallet, xyzClaimOffer).get();
 
 		//7. Prover create ClaimReq for GVT Claim Offer
-		String gvtClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, gvtClaimOffer, gvtClaimDef, null, masterSecret).get();
+		String gvtClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, gvtClaimOffer, gvtClaimDef, masterSecret).get();
 
 		//8. Issuer create Claim
 		AnoncredsResults.IssuerCreateClaimResult gvtCreateClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, gvtClaimReq, gvtClaimValuesJson, - 1).get();
 		String gvtClaimJson = gvtCreateClaimResult.getClaimJson();
 
 		//9. Prover store Claim
-		Anoncreds.proverStoreClaim(proverWallet, gvtClaimJson).get();
+		Anoncreds.proverStoreClaim(proverWallet, gvtClaimJson, null).get();
 
 		//10. Prover create ClaimReq for GVT Claim Offer
-		String xyzClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, null, masterSecret).get();
+		String xyzClaimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, xyzClaimOffer, xyzClaimDef, masterSecret).get();
 
 		//11. Issuer create Claim
 		AnoncredsResults.IssuerCreateClaimResult xyzCreateClaimResult = Anoncreds.issuerCreateClaim(issuerWallet, xyzClaimReq, xyzClaimValuesJson, - 1).get();
 		String xyzClaimJson = xyzCreateClaimResult.getClaimJson();
 
 		//12. Prover store Claim
-		Anoncreds.proverStoreClaim(proverWallet, xyzClaimJson).get();
+		Anoncreds.proverStoreClaim(proverWallet, xyzClaimJson, null).get();
 
 		//13. Prover gets Claims for Proof Request
 		String proofRequestJson = String.format("{" +
@@ -404,7 +404,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverStoreClaimOffer(proverWallet, claimOfferJson).get();
 
 		//4. Prover create ClaimReq
-		String claimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, claimOfferJson, claimDef, null, masterSecret).get();
+		String claimReq = Anoncreds.proverCreateAndStoreClaimReq(proverWallet, proverDid, claimOfferJson, claimDef, masterSecret).get();
 		assertNotNull(claimReq);
 
 		//5. Issuer create Claim
@@ -413,7 +413,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String claimJson = createClaimResult.getClaimJson();
 
 		//6. Prover store Claim
-		Anoncreds.proverStoreClaim(proverWallet, claimJson).get();
+		Anoncreds.proverStoreClaim(proverWallet, claimJson, null).get();
 
 		//8. Prover gets Claims for Proof Request
 		String proofRequestJson = String.format("{" +

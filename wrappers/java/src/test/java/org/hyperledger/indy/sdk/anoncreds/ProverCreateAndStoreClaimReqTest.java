@@ -14,7 +14,7 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 	public void testProverCreateAndStoreClaimReqWorks() throws Exception {
 
 		initCommonWallet();
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, gvtClaimOffer, claimDef, null, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, gvtClaimOffer, claimDef, masterSecretName).get();
 	}
 
 	@Test
@@ -27,7 +27,7 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 
 		String claimOffer = String.format(claimOfferTemplate, issuerDid + "a", 1);
 
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, null, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
 	}
 
 	@Test
@@ -40,7 +40,7 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 
 		String claimOffer = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
 
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, null, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
 	}
 
 	@Test
@@ -51,6 +51,6 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, gvtClaimOffer, claimDef, null, masterSecretName + "a").get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, gvtClaimOffer, claimDef, masterSecretName + "a").get();
 	}
 }

@@ -84,7 +84,6 @@ extern "C" {
                                                                const char *  prover_did,
                                                                const char *  claim_offer_json,
                                                                const char *  claim_def_json,
-                                                               const char *  rev_reg_json,
                                                                const char *  master_secret_name,
 
                                                                void           (*cb)(indy_handle_t xcommand_handle,
@@ -97,6 +96,7 @@ extern "C" {
     extern indy_error_t indy_prover_store_claim(indy_handle_t command_handle,
                                                 indy_handle_t wallet_handle,
                                                 const char *  claims_json,
+                                                const char *  rev_reg_json,
 
                                                 void           (*cb)(indy_handle_t xcommand_handle,
                                                                      indy_error_t  err)

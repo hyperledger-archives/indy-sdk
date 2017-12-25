@@ -62,7 +62,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
 		String claimOffer = String.format(CLAIM_OFFER_TEMPLATE, DID, gvtSchemaKey);
 
-		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, DID_MY1, claimOffer, claimDef, null, masterSecretName).get();
+		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, DID_MY1, claimOffer, claimDef, masterSecretName).get();
 
 		String claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
 				"                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
@@ -73,7 +73,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
 		String claimJson = createClaimResult.getClaimJson();
 
-		Anoncreds.proverStoreClaim(wallet, claimJson).get();
+		Anoncreds.proverStoreClaim(wallet, claimJson, null).get();
 
 		String claims = Anoncreds.proverGetClaims(wallet, String.format("{\"issuer_did\":\"%s\"}", DID)).get();
 

@@ -383,7 +383,6 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 ///            "schema_key" : {name: string, version: string, did: string}
 ///        }
 /// claim_def_json: claim definition json associated with issuer_did and schema_seq_no in the claim_offer
-/// rev_reg_json: revocation registry json
 /// master_secret_name: the name of the master secret stored in the wallet
 /// cb: Callback that takes command result as parameter.
 ///
@@ -406,7 +405,6 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
                                                      prover_did: *const c_char,
                                                      claim_offer_json: *const c_char,
                                                      claim_def_json: *const c_char,
-                                                     rev_reg_json: *const c_char,
                                                      master_secret_name: *const c_char,
                                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                           claim_req_json: *const c_char
@@ -414,9 +412,8 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
     check_useful_c_str!(prover_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(claim_offer_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(claim_def_json, ErrorCode::CommonInvalidParam5);
-    check_useful_opt_c_str!(rev_reg_json, ErrorCode::CommonInvalidParam6);
-    check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam7);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
+    check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::CreateAndStoreClaimRequest(
@@ -424,7 +421,6 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
             prover_did,
             claim_offer_json,
             claim_def_json,
-            rev_reg_json,
             master_secret_name,
             Box::new(move |result| {
                 let (err, claim_req_json) = result_to_err_code_1!(result, String::new());
@@ -454,6 +450,7 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
 ///         "revoc_reg_seq_no", int
 ///         "issuer_did", string
 ///     }
+/// rev_reg_json: revocation registry json
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -467,16 +464,19 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
 pub extern fn indy_prover_store_claim(command_handle: i32,
                                       wallet_handle: i32,
                                       claims_json: *const c_char,
+                                      rev_reg_json: *const c_char,
                                       cb: Option<extern fn(
                                           xcommand_handle: i32, err: ErrorCode
                                       )>) -> ErrorCode {
     check_useful_c_str!(claims_json, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(rev_reg_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::StoreClaim(
             wallet_handle,
             claims_json,
+            rev_reg_json,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
                 cb(command_handle, err)

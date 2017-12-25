@@ -13,7 +13,6 @@ async def test_prover_create_and_store_claim_req_works(wallet_handle, prepopulat
     claim_req = json.loads(await prover_create_and_store_claim_req(wallet_handle, prover_did,
                                                                    claim_offer_issuer_1_schema_1_json,
                                                                    claim_def_json,
-                                                                   None,
                                                                    master_secret_name))
     assert claim_req['schema_key'] == schema_key
     assert claim_req['issuer_did'] == issuer_did
@@ -32,7 +31,6 @@ async def test_prover_create_and_store_claim_req_works_for_invalid_wallet(wallet
         await prover_create_and_store_claim_req(invalid_wallet_handle, prover_did,
                                                 claim_offer_issuer_1_schema_1_json,
                                                 claim_def_json,
-                                                None,
                                                 master_secret_name)
 
     assert ErrorCode.WalletInvalidHandle == e.value.error_code
@@ -47,7 +45,6 @@ async def test_prover_create_and_store_claim_req_works_for_claim_def_does_not_co
         await prover_create_and_store_claim_req(wallet_handle, prover_did,
                                                 claim_offer_issuer_2_schema_1_json,
                                                 claim_def_json,
-                                                None,
                                                 master_secret_name)
 
     assert ErrorCode.CommonInvalidStructure == e.value.error_code

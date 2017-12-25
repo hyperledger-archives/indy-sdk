@@ -151,7 +151,7 @@ impl AnoncredsUtils {
     }
 
     pub fn prover_create_and_store_claim_req(wallet_handle: i32, prover_did: &str, claim_offer_json: &str,
-                                             claim_def_json: &str, rev_reg_json: Option<&str>, master_secret_name: &str) -> Result<String, ErrorCode> {
+                                             claim_def_json: &str, master_secret_name: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, claim_req_json| {
@@ -163,7 +163,6 @@ impl AnoncredsUtils {
         let prover_did = CString::new(prover_did).unwrap();
         let claim_offer_json = CString::new(claim_offer_json).unwrap();
         let claim_def_json = CString::new(claim_def_json).unwrap();
-        let rev_reg_json_str = rev_reg_json.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let master_secret_name = CString::new(master_secret_name).unwrap();
 
         let err = indy_prover_create_and_store_claim_req(command_handle,
@@ -171,7 +170,6 @@ impl AnoncredsUtils {
                                                          prover_did.as_ptr(),
                                                          claim_offer_json.as_ptr(),
                                                          claim_def_json.as_ptr(),
-                                                         if rev_reg_json.is_some() { rev_reg_json_str.as_ptr() } else { null() },
                                                          master_secret_name.as_ptr(),
                                                          cb);
 
@@ -220,7 +218,7 @@ impl AnoncredsUtils {
         Ok((revoc_reg_update_json, claim_json))
     }
 
-    pub fn prover_store_claim(wallet_handle: i32, claim_json: &str) -> Result<(), ErrorCode> {
+    pub fn prover_store_claim(wallet_handle: i32, claim_json: &str, rev_reg_json: Option<&str>) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err| {
@@ -230,10 +228,12 @@ impl AnoncredsUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_prover_store_claim_cb(cb);
 
         let claim_json = CString::new(claim_json).unwrap();
+        let rev_reg_json_str = rev_reg_json.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = indy_prover_store_claim(command_handle,
                                           wallet_handle,
                                           claim_json.as_ptr(),
+                                          if rev_reg_json.is_some() { rev_reg_json_str.as_ptr() } else { null() },
                                           cb);
 
         if err != ErrorCode::Success {
@@ -514,6 +514,14 @@ impl AnoncredsUtils {
                 issuer_did, schema_key.name, schema_key.version, schema_key.did)
     }
 
+    pub fn gvt_claim_offer() -> String {
+        AnoncredsUtils::get_claim_offer(ISSUER_DID, &AnoncredsUtils::gvt_schema_key())
+    }
+
+    pub fn xyz_claim_offer() -> String {
+        AnoncredsUtils::get_claim_offer(ISSUER_DID, &AnoncredsUtils::xyz_schema_key())
+    }
+
     pub fn gvt_claim_values_json() -> &'static str {
         r#"{
                "sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"],
@@ -594,7 +602,7 @@ impl AnoncredsUtils {
         }}"#, ISSUER_DID, gvt_schema_key_json)
     }
 
-    pub fn proof_request() -> &'static str {
+    pub fn proof_request_attr_and_predicate() -> &'static str {
         r#"{
               "nonce":"123432421212",
               "name":"proof_req_1",
@@ -609,6 +617,20 @@ impl AnoncredsUtils {
                       "attr_name":"age","p_type":">=","value":18
                   }
               }
+         }"#
+    }
+
+    pub fn proof_request_attr() -> &'static str {
+        r#"{
+              "nonce":"123432421212",
+              "name":"proof_req_1",
+              "version":"0.1",
+              "requested_attrs":{
+                  "attr1_referent":{
+                      "name":"name"
+                  }
+              },
+              "requested_predicates":{}
          }"#
     }
 
@@ -711,7 +733,6 @@ impl AnoncredsUtils {
                                                                                   DID_MY1,
                                                                                   &gvt_claim_offer,
                                                                                   CLAIM_DEF_JSON,
-                                                                                  None,
                                                                                   COMMON_MASTER_SECRET).unwrap();
                 let claim_json = AnoncredsUtils::gvt_claim_values_json();
 
@@ -719,7 +740,7 @@ impl AnoncredsUtils {
                 let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &claim_req, &claim_json, None).unwrap();
 
                 //7. Store Claim
-                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &xclaim_json).unwrap();
+                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &xclaim_json, None).unwrap();
 
                 // Issue XYZ Claim
                 //8. Create XYZ ClaimDefinition
@@ -731,7 +752,6 @@ impl AnoncredsUtils {
                                                                                   DID_MY1,
                                                                                   &xyz_claim_offer,
                                                                                   &claim_def_json,
-                                                                                  None,
                                                                                   COMMON_MASTER_SECRET).unwrap();
                 let claim_json = AnoncredsUtils::xyz_claim_values_json();
 
@@ -739,7 +759,7 @@ impl AnoncredsUtils {
                 let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &claim_req, &claim_json, None).unwrap();
 
                 //11. Store Claim
-                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &xclaim_json).unwrap();
+                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &xclaim_json, None).unwrap();
 
                 // Issue GVT Claim by other Issuer
                 //12. Create XYZ ClaimDefinition
@@ -751,7 +771,6 @@ impl AnoncredsUtils {
                                                                                   DID_MY1,
                                                                                   &mnt_claim_offer,
                                                                                   &claim_def_json,
-                                                                                  None,
                                                                                   COMMON_MASTER_SECRET).unwrap();
                 let claim_json = AnoncredsUtils::gvt2_claim_values_json();
 
@@ -759,7 +778,7 @@ impl AnoncredsUtils {
                 let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &claim_req, &claim_json, None).unwrap();
 
                 //15. Store Claim
-                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &xclaim_json).unwrap();
+                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &xclaim_json, None).unwrap();
             });
 
             (WALLET_HANDLE, CLAIM_DEF_JSON)

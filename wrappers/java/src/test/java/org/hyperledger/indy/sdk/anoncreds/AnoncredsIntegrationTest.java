@@ -117,27 +117,27 @@ public class AnoncredsIntegrationTest {
 		//Issue GVT claim by Issuer1
 		claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, gvtSchemaJson, null, false).get();
 
-		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, gvtClaimOffer, claimDef, null, masterSecretName).get();
+		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, gvtClaimOffer, claimDef, masterSecretName).get();
 
 		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, gvtClaimValuesJson, - 1).get();
 		String claimJson = createClaimResult.getClaimJson();
 
-		Anoncreds.proverStoreClaim(wallet, claimJson).get();
+		Anoncreds.proverStoreClaim(wallet, claimJson, null).get();
 
 		//Issue XYZ claim bu Issuer1
 		String claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, xyzSchemaJson, null, false).get();
 
-		claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, xyzClaimOffer, claimDef, null, masterSecretName).get();
+		claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, xyzClaimOffer, claimDef, masterSecretName).get();
 
 		createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, xyzClaimValuesJson, - 1).get();
 		claimJson = createClaimResult.getClaimJson();
 
-		Anoncreds.proverStoreClaim(wallet, claimJson).get();
+		Anoncreds.proverStoreClaim(wallet, claimJson, null).get();
 
 		//Issue GVT claim bu Issuer2
 		claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid2, gvtSchemaJson, null, false).get();
 
-		claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer3, claimDef, null, masterSecretName).get();
+		claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer3, claimDef, masterSecretName).get();
 
 		String claim = "{" +
 				"           \"sex\":[\"male\",\"2142657394558967239210949258394838228692050081607692519917028371144233115103\"],\n" +
@@ -149,7 +149,7 @@ public class AnoncredsIntegrationTest {
 		createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
 		claimJson = createClaimResult.getClaimJson();
 
-		Anoncreds.proverStoreClaim(wallet, claimJson).get();
+		Anoncreds.proverStoreClaim(wallet, claimJson, null).get();
 
 		walletOpened = true;
 	}

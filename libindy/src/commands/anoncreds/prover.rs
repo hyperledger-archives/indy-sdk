@@ -34,12 +34,12 @@ pub enum ProverCommand {
         String, // prover did
         String, // claim offer json
         String, // claim def json
-        Option<String>, // revocation registry json
         String, // master secret name
         Box<Fn(Result<String, IndyError>) + Send>),
     StoreClaim(
         i32, // wallet handle
         String, // claims json
+        Option<String>, // revocation registry json
         Box<Fn(Result<(), IndyError>) + Send>),
     GetClaims(
         i32, // wallet handle
@@ -89,14 +89,14 @@ impl ProverCommandExecutor {
                 cb(self.create_master_secret(wallet_handle, &master_secret_name));
             }
             ProverCommand::CreateAndStoreClaimRequest(wallet_handle, prover_did, claim_offer_json,
-                                                      claim_def_json, rev_reg_json, master_secret_name, cb) => {
+                                                      claim_def_json, master_secret_name, cb) => {
                 info!(target: "prover_command_executor", "CreateAndStoreClaimRequest command received");
                 cb(self.create_and_store_claim_request(wallet_handle, &prover_did, &claim_offer_json,
-                                                       &claim_def_json, rev_reg_json.as_ref().map(String::as_str), &master_secret_name));
+                                                       &claim_def_json, &master_secret_name));
             }
-            ProverCommand::StoreClaim(wallet_handle, claims_json, cb) => {
+            ProverCommand::StoreClaim(wallet_handle, claims_json, rev_reg_json, cb) => {
                 info!(target: "prover_command_executor", "StoreClaim command received");
-                cb(self.store_claim(wallet_handle, &claims_json));
+                cb(self.store_claim(wallet_handle, &claims_json, rev_reg_json.as_ref().map(String::as_str)));
             }
             ProverCommand::GetClaims(wallet_handle, filter_json, cb) => {
                 info!(target: "prover_command_executor", "GetClaims command received");
@@ -191,7 +191,6 @@ impl ProverCommandExecutor {
                                       prover_did: &str,
                                       claim_offer_json: &str,
                                       claim_def_json: &str,
-                                      rev_reg_json: Option<&str>,
                                       master_secret_name: &str) -> Result<String, IndyError> {
         info!("create_and_store_claim_request >>> wallet_handle: {:?}, prover_did: {:?}, claim_offer_json: {:?}, claim_def_json: {:?}, \
                master_secret_name: {:?}", wallet_handle, prover_did, claim_offer_json, claim_def_json, master_secret_name);
@@ -228,29 +227,25 @@ impl ProverCommandExecutor {
 
         self.wallet_service.set(wallet_handle, &format!("claim_definition::{}", id), &claim_def_json)?;
 
-        if let Some(rev_reg_json) = rev_reg_json {
-            self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", id), &rev_reg_json)?;
-        }
-
         info!("create_and_store_claim_request <<< claim_request_json: {:?}", claim_request_json);
 
         Ok(claim_request_json)
     }
 
-    fn store_claim(&self, wallet_handle: i32, claim_json: &str) -> Result<(), IndyError> {
-        info!("store_claim >>> wallet_handle: {:?}, claim_json: {:?}", wallet_handle, claim_json);
+    fn store_claim(&self, wallet_handle: i32, claim_json: &str, rev_reg_json: Option<&str>) -> Result<(), IndyError> {
+        info!("store_claim >>> wallet_handle: {:?}, claim_json: {:?}, rev_reg_json: {:?}", wallet_handle, claim_json, rev_reg_json);
 
         let mut claim: Claim = Claim::from_json(&claim_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannon deserialize claim: {:?}", err)))?;
 
         let id = get_composite_id(&claim.issuer_did, &claim.schema_key);
 
-        let rev_reg_pub = match self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", id)) {
-            Ok(rev_reg_pub_json) =>
+        let rev_reg_pub = match rev_reg_json {
+            Some(rev_reg_pub_json) =>
                 Some(RevocationRegistry::from_json(&rev_reg_pub_json)
                     .map_err(|err| CommonError::InvalidState(format!("Cannon deserialize revocation registry: {:?}", err)))?
                     .data),
-            Err(_) => None
+            None => None
         };
 
         let master_secret_blinding_data_json = self.wallet_service.get(wallet_handle, &format!("master_secret_blinding_data::{}", &id))?;
@@ -271,6 +266,10 @@ impl ProverCommandExecutor {
 
         let referent = Uuid::new_v4().to_string();
         self.wallet_service.set(wallet_handle, &format!("claim::{}", &referent), &claim_json)?;
+
+        if let Some(rev_reg_json) = rev_reg_json {
+            self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", id), &rev_reg_json)?;
+        }
 
         info!("store_claim <<<");
 

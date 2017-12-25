@@ -352,32 +352,32 @@ async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, g
         wallet_handle, issuer_did, gvt_schema_json, None, False)
 
     claim_req = await anoncreds.prover_create_and_store_claim_req(
-        wallet_handle, prover_did, claim_offer_issuer_1_schema_1_json, claim_def_json, None, master_secret_name)
+        wallet_handle, prover_did, claim_offer_issuer_1_schema_1_json, claim_def_json, master_secret_name)
 
     (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req, gvt_claim_json, -1)
 
-    await anoncreds.prover_store_claim(wallet_handle, claim_json)
+    await anoncreds.prover_store_claim(wallet_handle, claim_json, None)
 
     # Create XYZ Claim by Issuer1
     claim_def_json_2 = await anoncreds.issuer_create_and_store_claim_def(
         wallet_handle, issuer_did, xyz_schema_json, None, False)
 
     claim_req = await anoncreds.prover_create_and_store_claim_req(
-        wallet_handle, prover_did, claim_offer_issuer_1_schema_2_json, claim_def_json_2, None, master_secret_name)
+        wallet_handle, prover_did, claim_offer_issuer_1_schema_2_json, claim_def_json_2, master_secret_name)
 
     (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req, xyz_claim_json, -1)
 
-    await anoncreds.prover_store_claim(wallet_handle, claim_json)
+    await anoncreds.prover_store_claim(wallet_handle, claim_json, None)
 
     # Create GVT Claim by Issuer2
     claim_def_json_3 = await anoncreds.issuer_create_and_store_claim_def(
         wallet_handle, issuer_did_2, gvt_schema_json, None, False)
 
     claim_req = await anoncreds.prover_create_and_store_claim_req(
-        wallet_handle, prover_did, claim_offer_issuer_2_schema_1_json, claim_def_json_3, None, master_secret_name)
+        wallet_handle, prover_did, claim_offer_issuer_2_schema_1_json, claim_def_json_3, master_secret_name)
 
     (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req, gvt_2_claim_json, -1)
 
-    await anoncreds.prover_store_claim(wallet_handle, claim_json)
+    await anoncreds.prover_store_claim(wallet_handle, claim_json, None)
 
     return claim_def_json,

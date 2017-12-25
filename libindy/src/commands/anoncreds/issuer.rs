@@ -11,6 +11,7 @@ use services::anoncreds::types::*;
 use services::anoncreds::helpers::get_composite_id;
 use std::rc::Rc;
 use std::collections::HashMap;
+use utils::crypto::base58::Base58;
 use self::indy_crypto::cl::*;
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
@@ -90,6 +91,9 @@ impl IssuerCommandExecutor {
         info!("create_and_store_claim_definition >>> wallet_handle: {:?}, issuer_did: {:?}, schema_json: {:?}, \
                        signature_type: {:?}, create_non_revoc: {:?}", wallet_handle, issuer_did, schema_json, signature_type, create_non_revoc);
 
+        Base58::decode(&issuer_did)
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid issuer did: {:?}", err)))?;
+
         let schema: Schema = Schema::from_json(schema_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid schema json: {}", err.to_string())))?;
 
@@ -119,6 +123,9 @@ impl IssuerCommandExecutor {
                                             max_claim_num: u32) -> Result<String, IndyError> {
         info!("create_and_store_revocation_registry >>> wallet_handle: {:?}, issuer_did: {:?}, schema_json: {:?}, max_claim_num: {:?}",
               wallet_handle, issuer_did, schema_json, max_claim_num);
+
+        Base58::decode(&issuer_did)
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid issuer did: {:?}", err)))?;
 
         let schema: Schema = Schema::from_json(schema_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid schema json: {}", err.to_string())))?;

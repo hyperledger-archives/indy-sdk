@@ -331,7 +331,6 @@ fn anoncreds_demo_works() {
                                                CString::new(prover_did).unwrap().as_ptr(),
                                                CString::new(claim_offer_json).unwrap().as_ptr(),
                                                CString::new(claim_def_json.clone()).unwrap().as_ptr(),
-                                               null(),
                                                CString::new(master_secret_name).unwrap().as_ptr(),
                                                prover_create_claim_req_callback);
 
@@ -364,6 +363,7 @@ fn anoncreds_demo_works() {
         indy_prover_store_claim(prover_store_claim_command_handle,
                                 wallet_handle,
                                 CString::new(xclaim_json).unwrap().as_ptr(),
+                                null(),
                                 prover_store_claim_callback);
 
     assert_eq!(ErrorCode::Success, err);
