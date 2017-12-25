@@ -40,7 +40,7 @@
 }
 
 + (void)issuerCreateAndStoreRevocRegForIssuerDid:(NSString *)issuerDID
-                                     schemaSeqNo:(NSNumber *)schemaSeqNo
+                                      schemaJSON:(NSString *)schemaJSON
                                      maxClaimNum:(NSNumber *)maxClaimNum
                                     walletHandle:(IndyHandle)walletHandle
                                       completion:(void (^)(NSError *error, NSString *revocRegJSON)) completion
@@ -52,7 +52,7 @@
     ret = indy_issuer_create_and_store_revoc_reg(handle,
                                                  walletHandle,
                                                  [issuerDID UTF8String],
-                                                 [schemaSeqNo intValue],
+                                                 [schemaJSON UTF8String],
                                                  [maxClaimNum intValue],
                                                  IndyWrapperCommon3PSCallback);
     if( ret != Success )
@@ -93,7 +93,7 @@
 }
 
 + (void)issuerRevokeClaimForIssuerDID:(NSString *)issuerDID
-                          schemaSeqNo:(NSNumber *)schemaSeqNo
+                           schemaJSON:(NSString *)schemaJSON
                        userRevocIndex:(NSNumber *)userRevocIndex
                          walletHandle:(IndyHandle)walletHandle
                            completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) completion
@@ -105,7 +105,7 @@
     ret = indy_issuer_revoke_claim(handle,
                                    walletHandle,
                                    [issuerDID UTF8String],
-                                   schemaSeqNo ? [schemaSeqNo intValue] : -1,
+                                   [schemaJSON UTF8String],
                                    userRevocIndex ? [userRevocIndex intValue] : -1,
                                    IndyWrapperCommon3PSCallback);
     
@@ -194,6 +194,7 @@
 + (void)proverCreateAndStoreClaimReqWithClaimDef:(NSString *)claimDefJSON
                                        proverDID:(NSString *)proverDID
                                   claimOfferJSON:(NSString *)claimOfferJSON
+                                      revRegJSON:(NSString *)revRegJSON
                                 masterSecretName:(NSString *)masterSecretName
                                     walletHandle:(IndyHandle)walletHandle
                                       completion:(void (^)(NSError *error, NSString *claimReqJSON)) completion
@@ -207,6 +208,7 @@
                                                  [proverDID UTF8String],
                                                  [claimOfferJSON UTF8String],
                                                  [claimDefJSON UTF8String],
+                                                 [revRegJSON UTF8String],
                                                  [masterSecretName UTF8String],
                                                  IndyWrapperCommon3PSCallback
                                                  );

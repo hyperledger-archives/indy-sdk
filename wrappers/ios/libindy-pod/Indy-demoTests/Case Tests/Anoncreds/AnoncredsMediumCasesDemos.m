@@ -69,12 +69,13 @@
     //4. Prover create Claim Request
     NSString *proverDid = @"BzfFCYk";
     NSString *claimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[TestUtils issuerDid]
-                                                                      schemaSeqNo:schemaSeqNo];
+            schemaKey:[[AnoncredsUtils sharedInstance] getGvtSchemaKey]];
     NSString *claimRequest;
     
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOfferJson
+                                                             revRegJSON:nil
                                                        masterSecretName:masterSecretName
                                                            walletHandle:walletHandle
                                                         outClaimReqJson:&claimRequest];
@@ -105,9 +106,9 @@
                               "\"version\":\"0.1\","
                               "\"requested_attrs\":{"
                                 "\"attr1_referent\":{"
-                                    "\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":%@}]}},"
+                                    "\"name\":\"name\",\"restrictions\":[{\"schema_key\":%@}]}},"
                               "\"requested_predicates\":{}"
-                              "}", schemaSeqNo];
+                              "}", [[AnoncredsUtils sharedInstance] getGvtSchemaKey]];
     NSString *claimsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
                                                                                       proofRequestJson:proofReqJson
@@ -150,13 +151,13 @@
                                 "\"version\":\"0.1\","
                                 "\"requested_attrs\":{"
                                     "\"attr1_referent\":{"
-                                        "\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":%@}]}},"
+                                        "\"name\":\"name\",\"restrictions\":[{\"schema_key\":%@}]}},"
                                "\"requested_predicates\":{"
                                     "\"predicate1_referent\":{"
                                         "\"attr_name\":\"age\","
                                         "\"p_type\":\">=\","
                                         "\"value\":18}}"
-                                "}", schemaSeqNo];
+                                "}", [[AnoncredsUtils sharedInstance] getGvtSchemaKey]];
     
     BOOL isVerified = false;
     ret = [[AnoncredsUtils sharedInstance] verifierVerifyProof:proofReqJson
@@ -213,9 +214,8 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed");
     
     //5. Prover store Claim Offer received from Issuer
-    
     NSString *claimOfferJson = [[ AnoncredsUtils sharedInstance] getClaimOfferJson: [TestUtils issuerDid]
-                                                                       schemaSeqNo:schemaSeqNo];
+            schemaKey:[[AnoncredsUtils sharedInstance] getGvtSchemaKey]];
     
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer: proverWalletHandle
                                                   claimOfferJson: claimOfferJson ];
@@ -247,6 +247,7 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJSON
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOfferJson
+                                                             revRegJSON:nil
                                                        masterSecretName:masterSecretName
                                                            walletHandle:proverWalletHandle
                                                         outClaimReqJson:&claimReq];
@@ -285,7 +286,7 @@
                              " \"requested_attrs\":"\
                              "             {\"attr1_referent\":"\
                              "                        {"\
-                             "                          \"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":%@}]"\
+                             "                          \"name\":\"name\",\"restrictions\":[{\"schema_key\":%@}]"\
                              "                        }"\
                              "             },"\
                              " \"requested_predicates\":"\
@@ -293,7 +294,7 @@
                              "              \"predicate1_referent\":"\
                              "                      {\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}"\
                              "             }"\
-                             "}", schemaSeqNo ];
+                             "}", [[AnoncredsUtils sharedInstance] getGvtSchemaKey]];
     
     NSString *claimsJson = nil;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:proverWalletHandle
@@ -402,8 +403,8 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateClaimDefinifionWithWalletHandle() failed");
     NSLog(@"gvtSchena: %@", gvtSchema);
     
-    [schemas setValue: gvtSchema forKey: [gvtSchemaSeqNo stringValue]];
-    [claimDefs setValue: gvtClaimDefJson forKey: [TestUtils issuerDid]];
+    [schemas setValue: gvtSchema forKey: @"gvt"];
+    [claimDefs setValue: gvtClaimDefJson forKey:@"gvt"];
     
     //5. Issuer1 create claim definition by xyz schema
     
@@ -419,8 +420,8 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::createClaimDefinitionAndSetLink() failed");
     NSLog(@"xyzClaimDefJson: %@", xyzClaimDefJson);
     
-    schemas[[xyzSchemaSeqNo stringValue]] = xyzSchema;
-    claimDefs[issuer2Did] = xyzClaimDefJson;
+    schemas[@"xyz"] = xyzSchema;
+    claimDefs[@"xyz"] = xyzClaimDefJson;
     
     //6. Prover create Master Secret for Issuer1
     
@@ -428,17 +429,10 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:masterSecretName1
                                                             walletHandle:proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed for issuer 1");
-    
-    //7. Prover create Master Secret for Issuer2
-    NSString* masterSecretName2 = @"prover_master_secret_issuer_2";
-    
-    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:masterSecretName2
-                                                            walletHandle:proverWalletHandle];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed for issuer 2");
-    
+
     //8. Prover store Claim Offer received from Issuer1
     NSString* issuer1ClaimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:[TestUtils issuerDid]
-                                                                             schemaSeqNo:gvtSchemaSeqNo];
+                                                                             schemaKey:[[AnoncredsUtils sharedInstance] getGvtSchemaKey]];
     
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:proverWalletHandle
                                                   claimOfferJson:issuer1ClaimOfferJson];
@@ -446,7 +440,7 @@
     
     //9. Prover store Claim Offer received from Issuer2
     NSString* issuer2ClaimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuer2Did
-                                                                             schemaSeqNo:xyzSchemaSeqNo];
+                                                                             schemaKey:[[AnoncredsUtils sharedInstance] getXyzSchemaKey]];
     
     
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:proverWalletHandle
@@ -494,6 +488,7 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:gvtClaimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
+                                                             revRegJSON:nil
                                                        masterSecretName:masterSecretName1
                                                            walletHandle:proverWalletHandle
                                                         outClaimReqJson:&gvtClaimReq];
@@ -524,6 +519,7 @@
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:xyzClaimDefJson
                                                               proverDid:proverDid
                                                          claimOfferJson:claimOffer
+                                                             revRegJSON:nil
                                                        masterSecretName:masterSecretName1
                                                            walletHandle:proverWalletHandle
                                                         outClaimReqJson:&xyzClaimReq];
@@ -556,11 +552,11 @@
                              " \"requested_attrs\":"\
                              "             {\"attr1_referent\":"\
                              "                        {"\
-                             "                          \"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":%d}]"\
+                             "                          \"name\":\"name\",\"restrictions\":[{\"schema_key\":%@}]"\
                              "                        },"\
                              "              \"attr2_referent\":"\
                              "                        {"\
-                             "                          \"name\":\"status\",\"restrictions\":[{\"schema_seq_no\":%d}]"\
+                             "                          \"name\":\"status\",\"restrictions\":[{\"schema_key\":%@}]"\
                              "                        }"\
                              "             },"\
                              " \"requested_predicates\":"\
@@ -570,7 +566,7 @@
                              "              \"predicate2_referent\":"\
                              "                      {\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}"\
                              "             }"\
-                             "}", [gvtSchemaSeqNo intValue], [xyzSchemaSeqNo intValue] ];
+                             "}", [[AnoncredsUtils sharedInstance] getGvtSchemaKey], [[AnoncredsUtils sharedInstance] getXyzSchemaKey]];
     
     NSString *claimsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:proverWalletHandle
@@ -624,51 +620,19 @@
     NSDictionary *uniqueClaim2 = uniqueClaims[1];
     XCTAssertNotNil(uniqueClaim1, @"uniqueClaim1 = nil");
     XCTAssertNotNil(uniqueClaim2, @"uniqueClaim1 = nil");
-    
-    // Configure schemasJson
-    // get claim's uuids
-    NSString *unique_claim_1_UUID = uniqueClaim1[@"referent"];
-    NSString *unique_claim_2_UUID = uniqueClaim2[@"referent"];
-    XCTAssertNotNil(unique_claim_1_UUID, @"unique_claim_1_UUID = nil");
-    XCTAssertNotNil(unique_claim_1_UUID, @"unique_claim_2_UUID = nil");
-    
-    // get issuer dids
-    NSString *unique_claim_1_issuer_did = uniqueClaim1[@"issuer_did"];
-    NSString *unique_claim_2_issuer_did = uniqueClaim2[@"issuer_did"];
-    XCTAssertNotNil(unique_claim_1_issuer_did, @"unique_claim_1_issuer_did = nil");
-    XCTAssertNotNil(unique_claim_2_issuer_did, @"unique_claim_2_issuer_did = nil");
-    
-    // get schema indexes from claims
-    NSInteger unique_claim_1_schema_index = [uniqueClaim1[@"schema_seq_no"] integerValue];
-    NSInteger unique_claim_2_schema_index = [uniqueClaim2[@"schema_seq_no"] integerValue];
-    XCTAssertNotNil(unique_claim_1_UUID, @"unique_claim_1_schema_index = nil");
-    XCTAssertNotNil(unique_claim_1_UUID, @"unique_claim_2_schema_index = nil");
-    
-    
-    // get schemas
-    NSString *schemaForUniqueClaim1 = schemas[[NSString stringWithFormat:@"%ld", (long)unique_claim_1_schema_index]];
-    NSString *schemaForUniqueClaim2 = schemas[[NSString stringWithFormat:@"%ld", (long)unique_claim_2_schema_index]];
-    XCTAssertNotNil(schemaForUniqueClaim1, @"schemaForUniqueClaim1 = nil");
-    XCTAssertNotNil(schemaForUniqueClaim2, @"schemaForUniqueClaim2 = nil");
-    
+
     NSString *schemasJson = [ NSString stringWithFormat:@"{"\
                              " \"%@\": %@, "\
                              " \"%@\": %@}",
-                             unique_claim_1_UUID, schemaForUniqueClaim1,
-                             unique_claim_2_UUID, schemaForUniqueClaim2];
+                    uniqueClaim1[@"referent"], schemas[uniqueClaim1[@"schema_key"][@"name"]],
+                    uniqueClaim2[@"referent"], schemas[uniqueClaim2[@"schema_key"][@"name"]]];
     
     // Configure claimDefsJson
-    
-    // get claim defines
-    NSString *claimDefForUniqueClaim1 = claimDefs[unique_claim_1_issuer_did];
-    NSString *claimDefForUniqueClaim2 = claimDefs[unique_claim_2_issuer_did];
-    XCTAssertNotNil(claimDefForUniqueClaim1, @"claimDefForUniqueClaim1 = nil");
-    XCTAssertNotNil(claimDefForUniqueClaim2, @"claimDefForUniqueClaim2 = nil");
-    
+
     NSString *claimDefsJson = [ NSString stringWithFormat:@"{"\
                                " \"%@\": %@, \"%@\": %@}",
-                               unique_claim_1_UUID, claimDefForUniqueClaim1,
-                               unique_claim_2_UUID, claimDefForUniqueClaim2];
+                    uniqueClaim1[@"referent"], claimDefs[uniqueClaim1[@"schema_key"][@"name"]],
+                    uniqueClaim2[@"referent"], claimDefs[uniqueClaim2[@"schema_key"][@"name"]]];
     
     NSString *revocRegsJson = @"{}";
     
@@ -726,13 +690,12 @@
                                                                  handle: &proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
     
-    NSMutableDictionary* schemas = [ NSMutableDictionary new]; //[Int: String]
+    NSMutableDictionary* schemas = [ NSMutableDictionary new]; //[String: String]
     NSMutableDictionary* claimDefs = [ NSMutableDictionary new];
     
     //3. Issuer create claim definition by gvt schema
     
     NSNumber* gvtSchemaSeqNo = @1;
-    
     NSString* gvtSchema = [[ AnoncredsUtils sharedInstance] getGvtSchemaJson: gvtSchemaSeqNo];
     NSString* gvtClaimDefJson = nil;
     
@@ -744,10 +707,8 @@
                                                                           claimDefJson:&gvtClaimDefJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::createClaimDefinitionAndSetLink() failed on step 3");
     
-    [schemas setValue: gvtSchema forKey: [gvtSchemaSeqNo stringValue]];
-    NSString *key = [[AnoncredsUtils sharedInstance] getClaimDefIdForIssuerDid:issuerDid
-                                                                   schemaSeqNo:gvtSchemaSeqNo];
-    [claimDefs setValue: gvtClaimDefJson forKey: key];
+    [schemas setValue: gvtSchema forKey:@"gvt"];
+    [claimDefs setValue: gvtClaimDefJson forKey: @"gvt"];
     
     //4. Issuer create claim definition by xyz schema
     
@@ -763,10 +724,8 @@
                                                                           claimDefJson:&xyzClaimDefJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateClaimDefinifionWithWalletHandle() failed on step 4 for xyzSchema.");
     
-    [schemas setValue:xyzSchema forKey:[xyzSchemaSeqNo stringValue]];
-    key = [[AnoncredsUtils sharedInstance] getClaimDefIdForIssuerDid:issuerDid
-                                                         schemaSeqNo:xyzSchemaSeqNo];
-    [claimDefs setValue: xyzClaimDefJson forKey:key];
+    [schemas setValue:xyzSchema forKey:@"xyz"];
+    [claimDefs setValue: xyzClaimDefJson forKey:@"xyz"];
     
     //5. Prover create Master Secret for Issuer
     
@@ -778,7 +737,7 @@
     //6. Prover store GVT Claim Offer received from Issuer
     
     NSString* issuerGVTClaimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuerDid
-                                                                               schemaSeqNo:gvtSchemaSeqNo];
+                                                                               schemaKey:[[AnoncredsUtils sharedInstance] getGvtSchemaKey]];
     
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:proverWalletHandle
                                                   claimOfferJson:issuerGVTClaimOfferJson];
@@ -787,53 +746,20 @@
     //7. Prover store XYZ Claim Offer received from Issuer
     
     NSString* issuerXYZClaimOfferJson = [[AnoncredsUtils sharedInstance] getClaimOfferJson:issuerDid
-                                                                               schemaSeqNo:xyzSchemaSeqNo];
+                                                                               schemaKey:[[AnoncredsUtils sharedInstance] getXyzSchemaKey]];
     
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:proverWalletHandle
                                                   claimOfferJson:issuerXYZClaimOfferJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils:: proverStoreClaimOffer() failed on step 7");
-    
-    //8. Prover get Claim Offers
-    
-    NSString* filterJson = [NSString stringWithFormat:@"{"\
-                            " \"issuer_did\": \"%@\" "\
-                            " }", issuerDid];
-    NSString* claimOffsersJson = nil;
-    
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimOffers:proverWalletHandle
-                                                     filterJson:filterJson
-                                             outClaimOffersJSON:&claimOffsersJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils:: proverGetClaimOffers() failed");
-    
-    NSArray *claimOffers = (NSArray *)[NSDictionary fromString: claimOffsersJson];
-    
-    XCTAssertTrue(claimOffers, @"claimOffers == nil");
-    XCTAssertEqual([claimOffers count], 2, @"[claimOffers count] != 2");
-    
-    NSDictionary *claimOffer1 = [claimOffers objectAtIndex: 0];
-    NSDictionary *claimOffer2 = [claimOffers objectAtIndex: 1];
-    
-    XCTAssertTrue(claimOffer1, @"claimOffer1 == nil");
-    XCTAssertTrue(claimOffer2, @"claimOffer2 == nil");
-    
-    NSString* claimOffer1Json = [NSDictionary toString: claimOffer1];
-    NSString* claimOffer2Json = [NSDictionary toString: claimOffer2];
-    
-    XCTAssertTrue(claimOffer1Json, @"claimOffer1Json == nil");
-    XCTAssertTrue(claimOffer2Json, @"claimOffer2Json == nil");
-    
+
     //9. Prover create Claim Request for gvt claim offer
-    
-    NSNumber* claimOffer1_schemaSeqNo = claimOffer1[@"schema_seq_no"];
-    NSNumber* claimOffer2_schemaSeqNo = claimOffer2[@"schema_seq_no"];
-    
-    NSString* claimOffer = [claimOffer1_schemaSeqNo isEqual: gvtSchemaSeqNo] ? claimOffer1Json : claimOffer2Json;
-    
+
     NSString* gvtClaimReq = nil;
     
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:gvtClaimDefJson
                                                               proverDid:proverDid
-                                                         claimOfferJson:claimOffer
+                                                         claimOfferJson:issuerGVTClaimOfferJson
+                                                             revRegJSON:nil
                                                        masterSecretName:masterSecretName
                                                            walletHandle:proverWalletHandle
                                                         outClaimReqJson:&gvtClaimReq];
@@ -861,12 +787,12 @@
     
     //12. Prover create Claim Request for xyz claim offer
     
-    claimOffer = [claimOffer2_schemaSeqNo isEqual: xyzSchemaSeqNo] ? claimOffer2Json : claimOffer1Json;
     NSString* xyzClaimReq = nil;
     
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:xyzClaimDefJson
                                                               proverDid:proverDid
-                                                         claimOfferJson:claimOffer
+                                                         claimOfferJson:issuerXYZClaimOfferJson
+                                                             revRegJSON:nil
                                                        masterSecretName:masterSecretName
                                                            walletHandle:proverWalletHandle
                                                         outClaimReqJson:&xyzClaimReq];
@@ -899,7 +825,7 @@
                              " \"requested_attrs\":"\
                              "             {\"attr1_referent\":"\
                              "                        {"\
-                             "                          \"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":%ld}]"\
+                             "                          \"name\":\"name\",\"restrictions\":[{\"schema_key\":%@}]"\
                              "                        }},"\
                              " \"requested_predicates\":"\
                              "             {"\
@@ -908,7 +834,7 @@
                              "              \"predicate2_referent\":"\
                              "                      {\"attr_name\":\"period\",\"p_type\":\">=\",\"value\":5}"\
                              "             }"\
-                             "}", (long)[gvtSchemaSeqNo integerValue] ];
+                             "}", [[AnoncredsUtils sharedInstance] getGvtSchemaKey]];
     
     NSString *claimsJson = nil;
     
@@ -947,54 +873,28 @@
                                      "  \"requested_predicates\":{\"predicate1_referent\":\"%@\","\
                                      "                            \"predicate2_referent\":\"%@\"}"\
                                      "}", claim_attr_1_UUID, claim_predicate_1_UUID, claim_predicate_2_UUID ];
-    
+
     NSArray *uniqueClaims = [[AnoncredsUtils sharedInstance] getUniqueClaimsFrom:claims];
-    XCTAssertTrue(uniqueClaims, @"AnoncredsUtils::getUniqueClaimsFrom: failed");
-    
+    XCTAssertNotNil(uniqueClaims, @"AnoncredsUtils::getUniqueClaimsFrom: failed");
+
     // obtain unique claims
     NSDictionary *uniqueClaim1 = uniqueClaims[0];
     NSDictionary *uniqueClaim2 = uniqueClaims[1];
-    XCTAssertTrue(uniqueClaim1, @"uniqueClaim1 = nil");
-    XCTAssertTrue(uniqueClaim2, @"uniqueClaim1 = nil");
-    
-    // Configure schemasJson
-    // get claim's uuids
-    NSString *unique_claim_1_UUID = uniqueClaim1[@"referent"];
-    NSString *unique_claim_2_UUID = uniqueClaim2[@"referent"];
-    XCTAssertTrue(unique_claim_1_UUID, @"unique_claim_1_UUID = nil");
-    XCTAssertTrue(unique_claim_1_UUID, @"unique_claim_2_UUID = nil");
-    
-    // get schema indexes from claims
-    NSInteger unique_claim_1_schema_index = [uniqueClaim1[@"schema_seq_no"] integerValue];
-    NSInteger unique_claim_2_schema_index = [uniqueClaim2[@"schema_seq_no"] integerValue];
-    XCTAssertTrue(unique_claim_1_UUID, @"unique_claim_1_schema_index = nil");
-    XCTAssertTrue(unique_claim_1_UUID, @"unique_claim_2_schema_index = nil");
+    XCTAssertNotNil(uniqueClaim1, @"uniqueClaim1 = nil");
+    XCTAssertNotNil(uniqueClaim2, @"uniqueClaim1 = nil");
 
-    // get schemas
-    NSString *schemaForUniqueClaim1 = schemas[[NSString stringWithFormat:@"%ld", (long)unique_claim_1_schema_index]];
-    NSString *schemaForUniqueClaim2 = schemas[[NSString stringWithFormat:@"%ld", (long)unique_claim_2_schema_index]];
-    XCTAssertTrue(schemaForUniqueClaim1, @"schemaForUniqueClaim1 = nil");
-    XCTAssertTrue(schemaForUniqueClaim2, @"schemaForUniqueClaim2 = nil");
-    
+    // Configure schemasJson
     NSString *schemasJson = [ NSString stringWithFormat:@"{"\
                              " \"%@\": %@, "\
                              " \"%@\": %@}",
-                             unique_claim_1_UUID, schemaForUniqueClaim1,
-                             unique_claim_2_UUID, schemaForUniqueClaim2];
-    
-    // -------- Configure claimDefsJson -------------------------
-    
-    
-    // get claim def ids
-    NSString *claimDefId1 = [[AnoncredsUtils sharedInstance] getClaimDefIdForIssuerDid:uniqueClaim1[@"issuer_did"]
-                                                                           schemaSeqNo:uniqueClaim1[@"schema_seq_no"]];
-    NSString *claimDefId2 = [[AnoncredsUtils sharedInstance] getClaimDefIdForIssuerDid:uniqueClaim2[@"issuer_did"]
-                                                                           schemaSeqNo:uniqueClaim2[@"schema_seq_no"]];
-    
+                    uniqueClaim1[@"referent"], schemas[uniqueClaim1[@"schema_key"][@"name"]],
+                    uniqueClaim2[@"referent"], schemas[uniqueClaim2[@"schema_key"][@"name"]]];
+
+    // Configure claimDefsJson
     NSString *claimDefsJson = [ NSString stringWithFormat:@"{"\
                                " \"%@\": %@, \"%@\": %@}",
-                               unique_claim_1_UUID, claimDefs[claimDefId1],
-                               unique_claim_2_UUID, claimDefs[claimDefId2]];
+                    uniqueClaim1[@"referent"], claimDefs[uniqueClaim1[@"schema_key"][@"name"]],
+                    uniqueClaim2[@"referent"], claimDefs[uniqueClaim2[@"schema_key"][@"name"]]];
     
     NSString *revocRegsJson = @"{}";
     NSString *proofJson;
