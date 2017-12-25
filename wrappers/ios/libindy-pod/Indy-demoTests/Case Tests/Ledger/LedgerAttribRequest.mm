@@ -10,7 +10,7 @@
 #import "PoolUtils.h"
 #import "TestUtils.h"
 #import "WalletUtils.h"
-#import "SignusUtils.h"
+#import "DidUtils.h"
 #import "LedgerUtils.h"
 #import "AnoncredsUtils.h"
 #import <Indy/Indy.h>
@@ -54,11 +54,11 @@
     
     // 3. Obtain my did
     NSString *myDid = nil;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:nil
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
     // 4. Build attrib request
@@ -72,7 +72,7 @@
                                                                       hash:nil
                                                                        raw:raw
                                                                        enc:nil resultJson:&attribRequest];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::buildAttribRequestWithSubmitterDid() failed");
+    XCTAssertEqual(ret.code, Success, @"DidUtils::buildAttribRequestWithSubmitterDid() failed");
     XCTAssertNotNil(attribRequest, @"attribRequest is nil!");
     
     // 6. Send request
@@ -113,11 +113,11 @@
                            "\"seed\":\"00000000000000000000000000000My2\"" \
                            "}"];
     
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
                                                         outMyVerkey:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
     // 4. Build get attrib request
@@ -170,11 +170,11 @@
                            "\"cid\":true"\
                            "}"];
     
-    ret = [[SignusUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
                                                           myDidJson:myDidJson
                                                            outMyDid:&myDid
                                                         outMyVerkey:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createMyDidWithWalletHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
     // 4. Build get attrib request

@@ -39,6 +39,7 @@ pub struct CommandMetadata {
     help: &'static str,
     main_param: Option<ParamMetadata>,
     params: Vec<ParamMetadata>,
+    examples: Vec<&'static str>
 }
 
 impl CommandMetadata {
@@ -48,6 +49,7 @@ impl CommandMetadata {
             help,
             main_param: None,
             params: Vec::new(),
+            examples: Vec::new(),
         }
     }
 
@@ -66,6 +68,8 @@ impl CommandMetadata {
     pub fn params(&self) -> &[ParamMetadata] {
         self.params.as_slice()
     }
+
+    pub fn examples(&self) -> &[&'static str] { self.examples.as_slice() }
 }
 
 pub struct CommandMetadataBuilder {
@@ -73,6 +77,7 @@ pub struct CommandMetadataBuilder {
     name: &'static str,
     main_param: Option<ParamMetadata>,
     params: Vec<ParamMetadata>,
+    examples: Vec<&'static str>
 }
 
 impl CommandMetadataBuilder {
@@ -91,12 +96,19 @@ impl CommandMetadataBuilder {
         self
     }
 
+    pub fn add_example(mut self,
+                       example: &'static str) -> CommandMetadataBuilder {
+        self.examples.push(example);
+        self
+    }
+
     pub fn finalize(self) -> CommandMetadata {
         CommandMetadata {
             name: self.name,
             help: self.help,
             main_param: self.main_param,
             params: self.params,
+            examples: self.examples,
         }
     }
 }
@@ -499,7 +511,6 @@ impl CommandExecutor {
         }
 
         println!();
-        println!();
         println_acc!("Usage:");
 
         if let Some(group) = group {
@@ -521,21 +532,33 @@ impl CommandExecutor {
         }
 
         println!();
-        println!();
-        println_acc!("Parameters are:");
 
-        if let Some(ref main_param) = command.metadata().main_param() {
-            println!("\t{} - {}", main_param.name(), main_param.help())
-        }
+        if command.metadata().main_param().is_some() || command.metadata().params().len() > 0 {
+            println!();
+            println_acc!("Parameters are:");
 
-        for param in command.metadata().params() {
-            print!("\t{} - ", param.name());
-
-            if param.is_optional() {
-                print!("(optional) ")
+            if let Some(ref main_param) = command.metadata().main_param() {
+                println!("\t{} - {}", main_param.name(), main_param.help())
             }
 
-            println!("{}", param.help());
+            for param in command.metadata().params() {
+                print!("\t{} - ", param.name());
+
+                if param.is_optional() {
+                    print!("(optional) ")
+                }
+
+                println!("{}", param.help());
+            }
+        }
+
+        if command.metadata().examples().len() > 0 {
+            println!();
+            println_acc!("Examples:");
+
+            for example in command.metadata().examples() {
+                println!("\t{}", example);
+            }
         }
 
         println!();

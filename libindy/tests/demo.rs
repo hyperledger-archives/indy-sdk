@@ -20,7 +20,6 @@ use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
 
 use indy::api::ErrorCode;
-use indy::api::agent::*;
 use indy::api::anoncreds::*;
 use indy::api::crypto::*;
 #[cfg(feature = "local_nodes_pool")]
@@ -28,7 +27,7 @@ use indy::api::ledger::*;
 #[cfg(feature = "local_nodes_pool")]
 use indy::api::pool::*;
 use indy::api::wallet::*;
-use indy::api::signus::*;
+use indy::api::did::*;
 
 use utils::callback::CallbackUtils;
 
@@ -39,156 +38,6 @@ use utils::types::ClaimsForProofRequest;
 
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;
-
-#[test]
-fn agent_demo_works() {
-    TestUtils::cleanup_storage();
-
-    let (alice_create_wallet_sender, alice_create_wallet_receiver) = channel();
-    let (alice_open_wallet_sender, alice_open_wallet_receiver) = channel();
-    let (bob_create_wallet_sender, bob_create_wallet_receiver) = channel();
-    let (bob_open_wallet_sender, bob_open_wallet_receiver) = channel();
-    let (alice_create_key_sender, alice_create_key_receiver) = channel();
-    let (bob_create_key_sender, bob_create_key_receiver) = channel();
-    let (prep_msg_sender, prep_msg_receiver) = channel();
-    let (auth_msg_parse_sender, auth_msg_parse_receiver) = channel();
-    let (prep_anon_msg_sender, prep_anon_msg_receiver) = channel();
-    let (anon_msg_parse_sender, anon_msg_parse_receiver) = channel();
-
-    let alice_create_wallet_cb = Box::new(move |err| {
-        alice_create_wallet_sender.send(err).unwrap();
-    });
-    let alice_open_wallet_cb = Box::new(move |err, handle| {
-        alice_open_wallet_sender.send((err, handle)).unwrap();
-    });
-    let bob_create_wallet_cb = Box::new(move |err| {
-        bob_create_wallet_sender.send(err).unwrap();
-    });
-    let bob_open_wallet_cb = Box::new(move |err, handle| {
-        bob_open_wallet_sender.send((err, handle)).unwrap();
-    });
-    let alice_create_key_cb = Box::new(move |err, verkey| {
-        alice_create_key_sender.send((err, verkey)).unwrap();
-    });
-    let bob_create_key_cb = Box::new(move |err, verkey| {
-        bob_create_key_sender.send((err, verkey)).unwrap();
-    });
-    let prep_msg_cb = Box::new(move |err, encrypted| {
-        prep_msg_sender.send((err, encrypted)).unwrap();
-    });
-    let auth_msg_parse_cb = Box::new(move |err, sender_vk, decrypted| {
-        auth_msg_parse_sender.send((err, sender_vk, decrypted)).unwrap();
-    });
-    let prep_anon_msg_cb = Box::new(move |err, encrypted| {
-        prep_anon_msg_sender.send((err, encrypted)).unwrap();
-    });
-    let anon_msg_parse_cb = Box::new(move |err, sender_vk, decrypted| {
-        anon_msg_parse_sender.send((err, sender_vk, decrypted)).unwrap();
-    });
-
-    let (alice_create_wallet_command_handle, alice_create_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(alice_create_wallet_cb);
-    let (alice_open_wallet_command_handle, alice_open_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(alice_open_wallet_cb);
-    let (bob_create_wallet_command_handle, bob_create_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(bob_create_wallet_cb);
-    let (bob_open_wallet_command_handle, bob_open_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(bob_open_wallet_cb);
-    let (alice_create_key_command_handle, alice_create_key_callback) = CallbackUtils::closure_to_create_key_cb(alice_create_key_cb);
-    let (bob_create_key_command_handle, bob_create_key_callback) = CallbackUtils::closure_to_create_key_cb(bob_create_key_cb);
-    let (prep_msg_handle, prep_msg_callback) = CallbackUtils::closure_to_prep_msg_cb(prep_msg_cb);
-    let (auth_msg_parse_handle, auth_msg_parse_callback) = CallbackUtils::closure_to_parse_msg_cb(auth_msg_parse_cb);
-    let (prep_anon_msg_handle, prep_anon_msg_callback) = CallbackUtils::closure_to_prep_msg_cb(prep_anon_msg_cb);
-    let (anon_msg_parse_handle, anon_msg_parse_callback) = CallbackUtils::closure_to_parse_msg_cb(anon_msg_parse_cb);
-
-    let empty_json = CString::new("{}").unwrap();
-    let alice_wallet_name = CString::new("alice_wallet").unwrap();
-    let bob_wallet_name = CString::new("bob_wallet").unwrap();
-    let pool_name = CString::new("no pool").unwrap();
-    let msg_auth = "message for auth";
-    let msg_anon = "message for anon";
-
-    // 1. Create and open wallets for Alice and Bob
-    let err = indy_create_wallet(alice_create_wallet_command_handle,
-                                 pool_name.as_ptr(),
-                                 alice_wallet_name.as_ptr(),
-                                 null(), null(), null(),
-                                 alice_create_wallet_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let err = alice_create_wallet_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-    let err = indy_open_wallet(alice_open_wallet_command_handle,
-                               alice_wallet_name.as_ptr(),
-                               null(), null(),
-                               alice_open_wallet_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, alice_wallet_handle) = alice_open_wallet_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-
-    let err = indy_create_wallet(bob_create_wallet_command_handle,
-                                 pool_name.as_ptr(),
-                                 bob_wallet_name.as_ptr(),
-                                 null(), null(), null(),
-                                 bob_create_wallet_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let err = bob_create_wallet_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-    let err = indy_open_wallet(bob_open_wallet_command_handle,
-                               bob_wallet_name.as_ptr(),
-                               null(), null(),
-                               bob_open_wallet_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, bob_wallet_handle) = bob_open_wallet_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-
-    // 2. Create keys for Alice and Bob
-    let err = indy_create_key(alice_create_key_command_handle, alice_wallet_handle, empty_json.as_ptr(), alice_create_key_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, alice_vk) = alice_create_key_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-    let err = indy_create_key(bob_create_key_command_handle, bob_wallet_handle, empty_json.as_ptr(), bob_create_key_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, bob_vk) = bob_create_key_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-    let alice_vk_c_str = CString::new(alice_vk.clone()).unwrap();
-    let bob_vk_c_str = CString::new(bob_vk).unwrap();
-
-    // 3. Prepare authenticated message from Alice to Bob
-    let err = indy_prep_msg(prep_msg_handle,
-                            alice_wallet_handle,
-                            alice_vk_c_str.as_ptr(),
-                            bob_vk_c_str.as_ptr(),
-                            msg_auth.as_ptr(), msg_auth.len() as u32,
-                            prep_msg_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, encrypted_auth): (ErrorCode, Vec<u8>) = prep_msg_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-
-    // 4. Parse authenticated message on Bob's side
-    let err = indy_parse_msg(auth_msg_parse_handle, bob_wallet_handle, bob_vk_c_str.as_ptr(),
-                             encrypted_auth.as_ptr(), encrypted_auth.len() as u32,
-                             auth_msg_parse_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, sender_vk_auth, decrypted_auth) = auth_msg_parse_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-    assert_eq!(sender_vk_auth, Some(alice_vk));
-    assert_eq!(decrypted_auth.as_slice(), msg_auth.as_bytes());
-
-    // 5. Prepare anonymous message from Bob to Alice
-    let err = indy_prep_anonymous_msg(prep_anon_msg_handle, alice_vk_c_str.as_ptr(),
-                                      msg_anon.as_ptr(), msg_anon.len() as u32, prep_anon_msg_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, encrypted): (ErrorCode, Vec<u8>) = prep_anon_msg_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-
-    // 6. Parse anonymous message on Alice's side
-    let err = indy_parse_msg(anon_msg_parse_handle, alice_wallet_handle, alice_vk_c_str.as_ptr(),
-                             encrypted.as_ptr(), encrypted.len() as u32,
-                             anon_msg_parse_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, sender_vk_anon, decrypted_anon) = anon_msg_parse_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-    assert!(sender_vk_anon.is_none());
-    assert_eq!(decrypted_anon.as_slice(), msg_anon.as_bytes());
-
-    TestUtils::cleanup_storage();
-}
 
 #[test]
 fn anoncreds_demo_works() {
@@ -755,7 +604,7 @@ fn ledger_demo_works() {
 }
 
 #[test]
-fn signus_demo_works() {
+fn crypto_demo_works() {
     TestUtils::cleanup_storage();
 
     let (create_sender, create_receiver) = channel();
@@ -944,12 +793,12 @@ fn signus_demo_works() {
     let message_len = message.len() as u32;
 
     let err =
-        indy_sign(sign_command_handle,
-                  their_wallet_handle,
-                  CString::new(their_did.clone()).unwrap().as_ptr(),
-                  message_ptr,
-                  message_len,
-                  sign_callback);
+        indy_crypto_sign(sign_command_handle,
+                         their_wallet_handle,
+                         CString::new(their_verkey.clone()).unwrap().as_ptr(),
+                         message_ptr,
+                         message_len,
+                         sign_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, signature) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -957,15 +806,13 @@ fn signus_demo_works() {
 
     // 11. I Verify message
     let err =
-        indy_verify_signature(verify_command_handle,
-                              my_wallet_handle,
-                              pool_handle,
-                              CString::new(their_did).unwrap().as_ptr(),
-                              message_ptr,
-                              message_len,
-                              signature.as_ptr() as *const u8,
-                              signature.len() as u32,
-                              verify_callback);
+        indy_crypto_verify(verify_command_handle,
+                           CString::new(their_verkey).unwrap().as_ptr(),
+                           message_ptr,
+                           message_len,
+                           signature.as_ptr() as *const u8,
+                           signature.len() as u32,
+                           verify_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, valid) = verify_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();

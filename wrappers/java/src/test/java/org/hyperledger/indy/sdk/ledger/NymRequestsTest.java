@@ -2,9 +2,9 @@ package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
-import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
-import org.hyperledger.indy.sdk.signus.SignusResults;
+import org.hyperledger.indy.sdk.did.Did;
+import org.hyperledger.indy.sdk.did.DidJSONParameters;
+import org.hyperledger.indy.sdk.did.DidResults;
 import org.json.JSONObject;
 import org.junit.*;
 
@@ -67,7 +67,7 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
 
-		SignusResults.CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(wallet, "{}").get();
+		DidResults.CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, "{}").get();
 		String did = result.getDid();
 
 		String nymRequest = Ledger.buildNymRequest(did, did, null, null, null).get();
@@ -76,10 +76,10 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 	@Test
 	public void testSendNymRequestsWorksForOnlyRequiredFields() throws Exception {
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
-		SignusResults.CreateAndStoreMyDidResult myDidResult = Signus.createAndStoreMyDid(wallet, "{}").get();
+		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
 		String myDid = myDidResult.getDid();
 
 		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, null, null, null).get();
@@ -89,10 +89,10 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 	@Test
 	public void testSendNymRequestsWorksForOptionalFields() throws Exception {
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
-		SignusResults.CreateAndStoreMyDidResult myDidResult = Signus.createAndStoreMyDid(wallet, "{}").get();
+		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
 		String myDid = myDidResult.getDid();
 		String myVerkey = myDidResult.getVerkey();
 
@@ -103,7 +103,7 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 	@Test
 	public void testGetNymRequestWorks() throws Exception {
-		SignusResults.CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		DidResults.CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = result.getDid();
 
 		String getNymRequest = Ledger.buildGetNymRequest(did, did).get();
@@ -118,16 +118,16 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
 
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
-		SignusResults.CreateAndStoreMyDidResult myDidResult = Signus.createAndStoreMyDid(wallet, "{}").get();
+		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
 		String myDid = myDidResult.getDid();
 
 		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, null, null, null).get();
 		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
 
-		SignusResults.CreateAndStoreMyDidResult myDidResult2 = Signus.createAndStoreMyDid(wallet, "{}").get();
+		DidResults.CreateAndStoreMyDidResult myDidResult2 = Did.createAndStoreMyDid(wallet, "{}").get();
 		String myDid2 = myDidResult2.getDid();
 
 		String nymRequest2 = Ledger.buildNymRequest(myDid, myDid2, null, null, null).get();
@@ -140,12 +140,12 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
 
 		String identityJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee9", null, null).toJson();
+				new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, "000000000000000000000000Trustee9", null, null).toJson();
 
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, identityJson).get();
+		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, identityJson).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
-		SignusResults.CreateAndStoreMyDidResult myDidResult = Signus.createAndStoreMyDid(wallet, "{}").get();
+		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
 		String myDid = myDidResult.getDid();
 
 		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, null, null, null).get();
@@ -154,10 +154,10 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 	@Test
 	public void testNymRequestsWorks() throws Exception {
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
-		SignusResults.CreateAndStoreMyDidResult myDidResult = Signus.createAndStoreMyDid(wallet, "{}").get();
+		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
 		String myDid = myDidResult.getDid();
 		String myVerkey = myDidResult.getVerkey();
 

@@ -1,5 +1,5 @@
 from indy import IndyError
-from indy import crypto, signus
+from indy import crypto, did
 from indy.error import ErrorCode
 
 import pytest
@@ -26,6 +26,6 @@ async def test_crypto_sign_works_for_unknown_signer(wallet_handle, message, verk
 @pytest.mark.asyncio
 async def test_crypto_sign_works_for_invalid_handle(wallet_handle, message):
     with pytest.raises(IndyError) as e:
-        key = await signus.create_key(wallet_handle, "{}")
+        key = await did.create_key(wallet_handle, "{}")
         await crypto.crypto_sign(wallet_handle + 1, key, message)
     assert ErrorCode.WalletInvalidHandle == e.value.error_code

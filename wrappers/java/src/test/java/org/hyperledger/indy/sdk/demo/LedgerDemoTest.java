@@ -1,12 +1,12 @@
 package org.hyperledger.indy.sdk.demo;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
+import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters;
-import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
-import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
+import org.hyperledger.indy.sdk.did.DidJSONParameters;
+import org.hyperledger.indy.sdk.did.DidResults.CreateAndStoreMyDidResult;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONObject;
@@ -42,16 +42,16 @@ public class LedgerDemoTest extends IndyIntegrationTest {
 		Wallet trusteeWallet = Wallet.openWallet("theirWallet", null, null).get();
 
 		// 4. Create My Did
-		CreateAndStoreMyDidResult createMyDidResult = Signus.createAndStoreMyDid(myWallet, "{}").get();
+		CreateAndStoreMyDidResult createMyDidResult = Did.createAndStoreMyDid(myWallet, "{}").get();
 		assertNotNull(createMyDidResult);
 		String myDid = createMyDidResult.getDid();
 		String myVerkey = createMyDidResult.getVerkey();
 
 		// 5. Create Did from Trustee1 seed
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter theirDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
+		DidJSONParameters.CreateAndStoreMyDidJSONParameter theirDidJson =
+				new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
-		CreateAndStoreMyDidResult createTheirDidResult = Signus.createAndStoreMyDid(trusteeWallet, theirDidJson.toJson()).get();
+		CreateAndStoreMyDidResult createTheirDidResult = Did.createAndStoreMyDid(trusteeWallet, theirDidJson.toJson()).get();
 		assertNotNull(createTheirDidResult);
 		String trusteeDid = createTheirDidResult.getDid();
 

@@ -23,10 +23,10 @@ pub struct Request<T: serde::Serialize> {
 impl<T: serde::Serialize> Request<T> {
     fn new(req_id: u64, identifier: String, operation: T, protocol_version: u64) -> Request<T> {
         Request {
-            req_id: req_id,
-            identifier: identifier,
-            operation: operation,
-            protocol_version: protocol_version,
+            req_id,
+            identifier,
+            operation,
+            protocol_version,
             signature: None
         }
     }
@@ -55,10 +55,10 @@ impl NymOperation {
                alias: Option<String>, role: Option<String>) -> NymOperation {
         NymOperation {
             _type: NYM.to_string(),
-            dest: dest,
-            verkey: verkey,
-            alias: alias,
-            role: role
+            dest,
+            verkey,
+            alias,
+            role
         }
     }
 }
@@ -101,10 +101,10 @@ impl AttribOperation {
                enc: Option<String>) -> AttribOperation {
         AttribOperation {
             _type: ATTRIB.to_string(),
-            dest: dest,
-            hash: hash,
-            raw: raw,
-            enc: enc,
+            dest,
+            hash,
+            raw,
+            enc,
         }
     }
 }
@@ -124,8 +124,8 @@ impl GetAttribOperation {
     pub fn new(dest: String, raw: String) -> GetAttribOperation {
         GetAttribOperation {
             _type: GET_ATTR.to_string(),
-            dest: dest,
-            raw: raw
+            dest,
+            raw
         }
     }
 }
@@ -142,7 +142,7 @@ pub struct SchemaOperation {
 impl SchemaOperation {
     pub fn new(data: SchemaOperationData) -> SchemaOperation {
         SchemaOperation {
-            data: data,
+            data,
             _type: SCHEMA.to_string()
         }
     }
@@ -160,8 +160,8 @@ pub struct SchemaOperationData {
 impl SchemaOperationData {
     pub fn new(name: String, version: String, keys: Vec<String>) -> SchemaOperationData {
         SchemaOperationData {
-            name: name,
-            version: version,
+            name,
+            version,
             attr_names: keys
         }
     }
@@ -183,8 +183,8 @@ impl GetSchemaOperation {
     pub fn new(dest: String, data: GetSchemaOperationData) -> GetSchemaOperation {
         GetSchemaOperation {
             _type: GET_SCHEMA.to_string(),
-            dest: dest,
-            data: data
+            dest,
+            data
         }
     }
 }
@@ -212,8 +212,8 @@ pub struct GetSchemaOperationData {
 impl GetSchemaOperationData {
     pub fn new(name: String, version: String) -> GetSchemaOperationData {
         GetSchemaOperationData {
-            name: name,
-            version: version
+            name,
+            version
         }
     }
 }
@@ -235,9 +235,9 @@ pub struct ClaimDefOperation {
 impl ClaimDefOperation {
     pub fn new(_ref: i32, signature_type: String, data: ClaimDefOperationData) -> ClaimDefOperation {
         ClaimDefOperation {
-            _ref: _ref,
-            signature_type: signature_type,
-            data: data,
+            _ref,
+            signature_type,
+            data,
             _type: CLAIM_DEF.to_string()
         }
     }
@@ -295,9 +295,9 @@ impl GetClaimDefOperation {
     pub fn new(_ref: i32, signature_type: String, origin: String) -> GetClaimDefOperation {
         GetClaimDefOperation {
             _type: GET_CLAIM_DEF.to_string(),
-            _ref: _ref,
-            signature_type: signature_type,
-            origin: origin
+            _ref,
+            signature_type,
+            origin
         }
     }
 }
@@ -316,8 +316,8 @@ impl NodeOperation {
     pub fn new(dest: String, data: NodeOperationData) -> NodeOperation {
         NodeOperation {
             _type: NODE.to_string(),
-            dest: dest,
-            data: data
+            dest,
+            data
         }
     }
 }
@@ -340,8 +340,7 @@ pub struct NodeOperationData {
     pub client_ip: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client_port: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub alias: Option<String>,
+    pub alias: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub services: Option<Vec<Services>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -363,7 +362,7 @@ impl GetDdoOperation {
     pub fn new(dest: String) -> GetDdoOperation {
         GetDdoOperation {
             _type: GET_DDO.to_string(),
-            dest: dest
+            dest
         }
     }
 }
@@ -381,7 +380,7 @@ impl GetTxnOperation {
     pub fn new(data: i32) -> GetTxnOperation {
         GetTxnOperation {
             _type: GET_TXN.to_string(),
-            data: data
+            data
         }
     }
 }
