@@ -11,11 +11,13 @@
 
 + (AnoncredsUtils *)sharedInstance;
 
+- (NSString *)getGvtSchemaKey;
 - (NSString *)getGvtSchemaJson:(NSNumber *)seqNo;
 
 - (NSString *)getClaimOfferJson:(NSString *)issuerDid
-                    schemaSeqNo:(NSNumber *)schemaSeqNo;
+                    schemaKey:(NSString *)schemaKey;
 
+- (NSString *)getXyzSchemaKey;
 - (NSString *)getGvtClaimJson;
 - (NSString *)getXyzSchemaJson:(NSNumber *)schemaSeqNo;
 - (NSString *)getXyzClaimJson;
@@ -51,9 +53,10 @@
                outClaimOffersJSON:(NSString **)outJson;
 
 - (NSError *)proverCreateAndStoreClaimReqWithDef:(NSString *)claimDefJSON
-                                proverDid:(NSString *)proverDid
-                           claimOfferJson:(NSString *)claimOfferJSON
-                         masterSecretName:(NSString *)name
+                                       proverDid:(NSString *)proverDid
+                                  claimOfferJson:(NSString *)claimOfferJSON
+                                      revRegJSON:(NSString *)revRegJSON
+                                masterSecretName:(NSString *)name
                              walletHandle:(IndyHandle)walletHandle
                           outClaimReqJson:(NSString **)outJson;
 

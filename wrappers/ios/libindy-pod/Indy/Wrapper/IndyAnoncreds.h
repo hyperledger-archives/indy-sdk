@@ -40,7 +40,7 @@
  @param completion Callback that takes command result as parameter. Returns revoc registry json and unique number identifying the revocation registry in the wallet.
  */
 + (void)issuerCreateAndStoreRevocRegForIssuerDid:(NSString *)issuerDID
-                                     schemaSeqNo:(NSNumber *)schemaSeqNo
+                                     schemaJSON:(NSString *)schemaJSON
                                      maxClaimNum:(NSNumber *)maxClaimNum
                                     walletHandle:(IndyHandle)walletHandle
                                       completion:(void (^)(NSError *error, NSString *revocRegJSON)) completion;
@@ -108,7 +108,7 @@
  @param completion Callback that takes command result as parameter. Returns revocation registry update json with a revoked claim.
  */
 + (void)issuerRevokeClaimForIssuerDID:(NSString *)issuerDID
-                          schemaSeqNo:(NSNumber *)schemaSeqNo
+                           schemaJSON:(NSString *)schemaJSON
                        userRevocIndex:(NSNumber *)userRevocIndex
                          walletHandle:(IndyHandle)walletHandle
                            completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) completion;
@@ -209,12 +209,14 @@
  @param proverDID DID of the prover
  @param claimOfferJSON Claim offer as a json containing information about the issuer and a claim.
  @param masterSecretName Name of the master secret stored in the wallet
+ @param revRegJSON Revocation registry json associated with issuer_DID and schema_seq_no in the claim_offer.
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter. Returns Claim request json.
  */
 + (void)proverCreateAndStoreClaimReqWithClaimDef:(NSString *)claimDefJSON
                                        proverDID:(NSString *)proverDID
                                   claimOfferJSON:(NSString *)claimOfferJSON
+                                     revRegJSON:(NSString *)revRegJSON
                                 masterSecretName:(NSString *)masterSecretName
                                     walletHandle:(IndyHandle)walletHandle
                                       completion:(void (^)(NSError *error, NSString *claimReqJSON)) completion;
