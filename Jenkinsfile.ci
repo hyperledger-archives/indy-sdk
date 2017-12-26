@@ -126,7 +126,7 @@ def iosTesting() {
 
                 echo "iOS Test: Running pool"
                 sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
-                sh "docker run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+                sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 
                 dir('libindy') {
                     echo 'iOS Test: build libindy pod'
@@ -135,7 +135,7 @@ def iosTesting() {
 
                 dir('wrappers/ios/libindy-pod') {
                     echo "iOS Test: Installing dependencies (pods)"
-                    sh "pod install"
+                    sh "pod install --repo-update"
                 }
 
                 // FIXME replace this hack (manually rewrite installed pod)

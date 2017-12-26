@@ -86,7 +86,7 @@
     NSString *myDid = nil;
     NSString *myVerkey = nil;
 
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:myWalletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:myWalletHandle
                                                                        seed:nil
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:&myVerkey];
@@ -96,7 +96,7 @@
     NSString *theirDid = nil;
     NSString *theirVerkey = nil;
 
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:theirWalletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:theirWalletHandle
                                                                        seed:@"000000000000000000000000Trustee1"
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
@@ -108,9 +108,9 @@
                                                                 \"verkey\":\"%@\"\
                                    }", theirDid, theirVerkey];
     
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:myWalletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:myWalletHandle
                                                          identityJson:theirIdentityJson];
-    XCTAssertEqual(ret.code, Success, @"IndySignus::storeTheirDid() failed!");
+    XCTAssertEqual(ret.code, Success, @"IndyDid::storeTheirDid() failed!");
     
     // 10. Prepare NYM transaction
     // removing signature field does not help
@@ -228,7 +228,7 @@
     NSString *myDid = nil;
     NSString *myVerkey = nil;
 
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:myWalletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:myWalletHandle
                                                                        seed:nil
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:&myVerkey];
@@ -239,7 +239,7 @@
     NSString *theirDid = nil;
     NSString *theirVerkey = nil;
 
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:theirWalletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:theirWalletHandle
                                                                        seed:@"000000000000000000000000Trustee1"
                                                                    outMyDid:&theirDid
                                                                 outMyVerkey:&theirVerkey];
@@ -252,7 +252,7 @@
                                    }", theirDid, theirVerkey];
     
    
-    ret = [[SignusUtils sharedInstance] storeTheirDidWithWalletHandle:myWalletHandle
+    ret = [[DidUtils sharedInstance] storeTheirDidWithWalletHandle:myWalletHandle
                                                          identityJson:theirIdentityJson];
     XCTAssertEqual(ret.code, Success, @"storeTheirDidWithWalletHandle() failed!");
     

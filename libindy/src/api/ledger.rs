@@ -565,7 +565,6 @@ pub extern fn indy_build_node_request(command_handle: i32,
     result_to_err_code!(result)
 }
 
-
 /// Builds a GET_TXN request.
 ///
 /// #Params
@@ -592,6 +591,113 @@ pub extern fn indy_build_get_txn_request(command_handle: i32,
         .send(Command::Ledger(LedgerCommand::BuildGetTxnRequest(
             submitter_did,
             data,
+            Box::new(move |result| {
+                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let request_json = CStringUtils::string_to_cstring(request_json);
+                cb(command_handle, err, request_json.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+/// Builds a POOL_CONFIG request.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: Id of Identity stored in secured Wallet.
+/// writes:
+/// force:
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_pool_config_request(command_handle: i32,
+                                             submitter_did: *const c_char,
+                                             writes: bool,
+                                             force: bool,
+                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                  request_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildPoolConfigRequest(
+            submitter_did,
+            writes,
+            force,
+            Box::new(move |result| {
+                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let request_json = CStringUtils::string_to_cstring(request_json);
+                cb(command_handle, err, request_json.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+/// Builds a POOL_UPGRADE request.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter_did: Id of Identity stored in secured Wallet.
+/// name:
+/// action: Either start or cancel
+/// sha256:
+/// timeout:
+/// schedule:
+/// justification:
+/// reinstall:
+/// force:
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_pool_upgrade_request(command_handle: i32,
+                                              submitter_did: *const c_char,
+                                              name: *const c_char,
+                                              version: *const c_char,
+                                              action: *const c_char,
+                                              sha256: *const c_char,
+                                              timeout: i32,
+                                              schedule: *const c_char,
+                                              justification: *const c_char,
+                                              reinstall: bool,
+                                              force: bool,
+                                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                   request_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(name, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(action, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(sha256, ErrorCode::CommonInvalidParam6);
+    check_useful_opt_c_str!(schedule, ErrorCode::CommonInvalidParam8);
+    check_useful_opt_c_str!(justification, ErrorCode::CommonInvalidParam9);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam12);
+
+    let timeout = if timeout != -1 { Some(timeout as u32) } else { None };
+
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildPoolUpgradeRequest(
+            submitter_did,
+            name,
+            version,
+            action,
+            sha256,
+            timeout,
+            schedule,
+            justification,
+            reinstall,
+            force,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);

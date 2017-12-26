@@ -124,7 +124,7 @@ public class IndyException extends Exception {
 				return new ProofRejectedException();
 			case AnoncredsClaimRevoked:
 				return new ClaimRevokedException();
-			case SignusUnknownCryptoError:
+			case UnknownCryptoTypeError:
 				return new UnknownCryptoException();
 			default:
 				String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
