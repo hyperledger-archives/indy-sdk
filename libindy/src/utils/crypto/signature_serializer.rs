@@ -9,7 +9,7 @@ use utils::crypto::hash::Hash;
 
 pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
     match v {
-        Value::Bool(value) => Ok(if value {"True".to_string()} else { "False".to_string() }),
+        Value::Bool(value) => Ok(if value { "True".to_string() } else { "False".to_string() }),
         Value::Number(value) => Ok(value.to_string()),
         Value::String(value) => Ok(value),
         Value::Array(array) => {
@@ -22,13 +22,13 @@ pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
                 }
             }
             Ok(result)
-        },
+        }
         Value::Object(map) => {
             let mut result = "".to_string();
             let length = map.len();
             for (index, key) in map.keys().enumerate() {
                 let mut value = map[key].clone();
-                if key == "raw" {
+                if key == "raw" || key == "hash" || key == "enc" {
                     let mut ctx = Hash::new_context()?;
                     ctx.update(&value.as_str().ok_or(CommonError::InvalidState("Cannot update hash context".to_string()))?.as_bytes())?;
                     value = Value::String(ctx.finish2()?.as_ref().to_hex());
@@ -39,7 +39,7 @@ pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
                 }
             }
             Ok(result)
-        },
+        }
         _ => Ok("".to_string())
     }
 }

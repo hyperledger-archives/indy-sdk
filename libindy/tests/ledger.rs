@@ -10,7 +10,9 @@ extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
 extern crate log;
-
+extern crate openssl;
+extern crate hex;
+extern crate sodiumoxide;
 #[macro_use]
 mod utils;
 
@@ -30,12 +32,14 @@ use utils::anoncreds::AnoncredsUtils;
 use utils::types::*;
 use utils::constants::*;
 
+use self::openssl::hash::{hash2, MessageDigest, Hasher, DigestBytes};
+use self::hex::ToHex;
+use self::sodiumoxide::crypto::secretbox;
 
 pub const MESSAGE: &'static str = r#"{"reqId":1495034346617224651}"#;
 pub const GET_SCHEMA_DATA: &'static str = r#"{"name":"name","version":"1.0"}"#;
 pub const ATTRIB_RAW_DATA: &'static str = r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#;
 pub const NODE_DATA: &'static str = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1, "alias":"some", "services": ["VALIDATOR"], "blskey": "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}"#;
-
 
 mod high_cases {
     use super::*;
@@ -476,7 +480,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_attrib_requests_works() {
+        fn indy_attrib_requests_works_for_raw() {
             TestUtils::cleanup_storage();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
@@ -489,6 +493,73 @@ mod high_cases {
                                                                    None,
                                                                    Some(ATTRIB_RAW_DATA),
                                                                    None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
+
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(&trustee_did, &trustee_did, "endpoint").unwrap();
+            let get_attrib_response = PoolUtils::send_request(pool_handle, &get_attrib_request).unwrap();
+
+            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
+            assert!(get_attrib_response.result.data.is_some());
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[ignore]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_attrib_requests_works_for_hash_value() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+
+            let mut ctx = Hasher::new(MessageDigest::sha256()).unwrap();
+            ctx.update(&ATTRIB_RAW_DATA.as_bytes()).unwrap();
+            let hashed_attr = ctx.finish2().unwrap().as_ref().to_hex();
+
+            let attrib_request = LedgerUtils::build_attrib_request(&trustee_did,
+                                                                   &trustee_did,
+                                                                   Some(&hashed_attr),
+                                                                   None,
+                                                                   None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
+
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(&trustee_did, &trustee_did, "endpoint").unwrap();
+            let get_attrib_response = PoolUtils::send_request(pool_handle, &get_attrib_request).unwrap();
+
+            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
+            assert!(get_attrib_response.result.data.is_some());
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_attrib_requests_works_for_encrypted_value() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+
+//            let key = secretbox::gen_key();
+//            let nonce = secretbox::gen_nonce();
+//            let mut ciphertext = secretbox::seal(&ATTRIB_RAW_DATA.as_bytes(), &nonce, &key).to_hex();
+
+            let attrib_request = LedgerUtils::build_attrib_request(&trustee_did,
+                                                                   &trustee_did,
+                                                                   None,
+                                                                   None,
+                                                                   Some("V4SGRU86Z58d6TV7")).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
 
             let get_attrib_request = LedgerUtils::build_get_attrib_request(&trustee_did, &trustee_did, "endpoint").unwrap();
