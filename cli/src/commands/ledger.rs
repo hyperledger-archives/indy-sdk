@@ -22,12 +22,11 @@ pub mod nym_command {
     command!(CommandMetadata::build("nym", "Add NYM to Ledger.")
                 .add_param("did", false, "DID of new identity")
                 .add_param("verkey", true, "Verification key of new identity")
-                .add_param("alias", true, "Alias of new identity")
                 .add_param("role", true, "Role of new identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, TGB")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
-                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa alias=some_alias")
-                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX alias=some_alias role=TRUSTEE")
+                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
+                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=TRUSTEE")
                 .finalize()
     );
 
@@ -40,15 +39,14 @@ pub mod nym_command {
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let verkey = get_opt_str_param("verkey", params).map_err(error_err!())?;
-        let alias = get_opt_str_param("alias", params).map_err(error_err!())?;
         let role = get_opt_str_param("role", params).map_err(error_err!())?;
 
-        let res = Ledger::build_nym_request(&submitter_did, target_did, verkey, alias, role)
+        let res = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
         let res = match res {
-            Ok(_) => Ok(println_succ!("NYM {{\"did\":\"{}\", \"verkey\":\"{:?}\", \"alias\":\"{:?}\", \"role\":\"{:?}\"}} has been added to Ledger",
-                                      target_did, verkey, alias, role)),
+            Ok(_) => Ok(println_succ!("NYM {{\"did\":\"{}\", \"verkey\":\"{:?}\", \"role\":\"{:?}\"}} has been added to Ledger",
+                                      target_did, verkey, role)),
             Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
         };
 
@@ -564,17 +562,22 @@ pub struct NymData {
     pub identifier: Option<String>,
     pub dest: String,
     pub role: Option<String>,
-    pub alias: Option<String>,
     pub verkey: Option<String>
 }
 
 impl fmt::Display for NymData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "\nsubmitter:{} | did:{} | role:{} | alias:{} | verkey:{}",
+        let role = match self.role.as_ref().map(String::as_str) {
+            Some("0") => "TRUSTEE",
+            Some("2") => "STEWARD",
+            Some("100") => "TGB",
+            Some("101") => "TRUST_ANCHOR",
+            _ => "null"
+        };
+
+        write!(f, "\nsubmitter:{} | did:{} | verkey:{} | role:{} ",
                self.identifier.clone().unwrap_or("null".to_string()), self.dest,
-               self.role.clone().unwrap_or("null".to_string()),
-               self.alias.clone().unwrap_or("null".to_string()),
-               self.verkey.clone().unwrap_or("null".to_string()))
+               self.verkey.clone().unwrap_or("null".to_string()), role)
     }
 }
 
@@ -721,28 +724,6 @@ pub mod tests {
                 params.insert("role", "ROLE".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
-            close_and_delete_wallet(&ctx);
-            disconnect_and_delete_pool(&ctx);
-        }
-
-        #[test]
-        pub fn nym_works_for_alias() {
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
-            create_and_connect_pool(&ctx);
-
-            new_did(&ctx, SEED_TRUSTEE);
-            use_did(&ctx, DID_TRUSTEE);
-            {
-                let cmd = nym_command::new();
-                let mut params = CommandParams::new();
-                params.insert("did", DID_MY1.to_string());
-                params.insert("verkey", VERKEY_MY1.to_string());
-                params.insert("alias", "alias".to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            _ensure_nym_added(&ctx);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
