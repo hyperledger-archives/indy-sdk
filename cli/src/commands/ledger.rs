@@ -252,7 +252,7 @@ pub mod get_schema_command {
         }?;
 
         let res = match serde_json::from_str::<Reply<SchemaData>>(&response) {
-            Ok(schema) => Ok(println_succ!("Following Schema has been received: \"{}\"", schema.result.data)),
+            Ok(schema) => Ok(println_succ!("Following Schema has been received: {}", schema)),
             Err(_) => Err(println_err!("Schema not found"))
         };
 
@@ -296,7 +296,7 @@ pub mod claim_def_command {
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
         let res = match res {
-            Ok(_) => Ok(println_succ!("Claim definition {{\"origin\":\"{}\", \"schema_seq_no\":{}, \"signature_type\":{}}} has been added to Ledger",
+            Ok(_) => Ok(println_succ!("Claim definition {{\"identifier\":\"{}\", \"schema_seq_no\":{}, \"signature_type\":{}}} has been added to Ledger",
                                       submitter_did, xref, signature_type)),
             Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
         };
@@ -554,7 +554,10 @@ pub struct Reply<T> {
 
 #[derive(Deserialize, Debug)]
 pub struct ReplyResult<T> {
-    pub data: T
+    pub data: T,
+    #[serde(rename = "seqNo")]
+    pub seq_no: u64,
+    pub identifier: String
 }
 
 #[derive(Deserialize, Debug)]
@@ -604,14 +607,13 @@ pub struct Endpoint {
 pub struct SchemaData {
     pub attr_names: HashSet<String>,
     pub name: String,
-    pub origin: Option<String>,
     pub version: String
 }
 
-impl fmt::Display for SchemaData {
+impl fmt::Display for Reply<SchemaData> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "\nname:{} | version:{} | attr_names:{:?} | origin:{}",
-               self.name, self.version, self.attr_names, self.origin.clone().unwrap_or("null".to_string()))
+        write!(f, "\nname:{} | version:{} | attr_names:{:?} | origin:{:?} | seq_no:{:?}",
+               self.result.data.name, self.result.data.version, self.result.data.attr_names, self.result.identifier, self.result.seq_no)
     }
 }
 
