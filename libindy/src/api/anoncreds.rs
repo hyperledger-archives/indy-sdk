@@ -13,7 +13,6 @@ use self::libc::c_char;
 
 /// Create keys (both primary and revocation) for the given schema and signature type (currently only CL signature type is supported).
 /// Store the keys together with signature type and schema in a secure wallet as a claim definition.
-/// The claim definition in the wallet is identifying by a returned unique key.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
@@ -26,7 +25,6 @@ use self::libc::c_char;
 ///
 /// #Returns
 /// claim definition json containing information about signature type, schema and issuer's public key.
-/// Unique number identifying the public key in the wallet
 ///
 /// #Errors
 /// Common*
@@ -65,7 +63,7 @@ pub extern fn indy_issuer_create_and_store_claim_def(command_handle: i32,
 }
 
 /// Create a new revocation registry for the given claim definition.
-/// Stores it in a secure wallet identifying by the returned key.
+/// Stores it in a secure wallet.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
@@ -76,8 +74,7 @@ pub extern fn indy_issuer_create_and_store_claim_def(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Revoc registry json
-/// Unique number identifying the revocation registry in the wallet
+/// Revocation registry json
 ///
 /// #Errors
 /// Common*
@@ -114,7 +111,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Signs a given claim for the given user by a given key (claim ef).
+/// Signs a given claim values for the given user by a given key (claim def).
 /// The corresponding claim definition and revocation registry must be already created
 /// an stored into the wallet.
 ///
@@ -122,13 +119,14 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// claim_req_json: a claim request with a blinded secret
-///     from the user (returned by prover_create_and_store_claim_req).
-///     Also contains schema_seq_no and issuer_did
+/// from the user (returned by prover_create_and_store_claim_req).
+/// Also contains schema_seq_no and issuer_did
 ///     Example:
 ///     {
 ///      "blinded_ms" : <blinded_master_secret>,
 ///      "schema_key" : {name: string, version: string, did: string},
 ///      "issuer_did" : string
+///      "prover_did" : string
 ///     }
 /// claim_values_json: a claim containing attribute values for each of requested attribute names.
 ///     Example:
@@ -144,7 +142,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// Claim json containing signed claim values, issuer_did, schema_key, and revoc_reg_seq_no
 /// used for issuance
 ///     {
-///         "claim": <see claim_values_json above>,
+///         "values": <see claim_values_json above>,
 ///         "signature": <signature>,
 ///         "revoc_reg_seq_no": int,
 ///         "issuer_did", string,
@@ -188,7 +186,7 @@ pub extern fn indy_issuer_create_claim(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Revokes a user identified by a revoc_id in a given revoc-registry.
+/// Revokes a user identified by a user_revoc_index in a given revoc-registry.
 /// The corresponding claim definition and revocation registry must be already
 /// created an stored into the wallet.
 ///
@@ -286,8 +284,8 @@ pub extern fn indy_prover_store_claim_offer(command_handle: i32,
 /// filter_json: optional filter to get claim offers for specific Issuer, claim_def or schema only only
 ///     Each of the filters is optional and can be combines
 ///        {
-///            "issuer_did": string,
-///            "schema_key" : {name: string, version: string, did: string}
+///            "issuer_did": string, (Optional)
+///            "schema_key" : {name: string, version: string, did: string}  (Optional)
 ///        }
 ///
 /// #Returns
@@ -367,9 +365,8 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 
 /// Creates a clam request json for the given claim offer and stores it in a secure wallet.
 /// The claim offer contains the information about Issuer (DID, schema_seq_no),
-/// and the schema (schema_seq_no).
-/// The method gets public key and schema from the ledger, stores them in a wallet,
-/// and creates a blinded master secret for a master secret identified by a provided name.
+/// and the schema (schema_key).
+/// The method creates a blinded master secret for a master secret identified by a provided name.
 /// The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
 /// The blinded master secret is a part of the claim request.
 ///
@@ -392,7 +389,7 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 ///      "blinded_ms" : <blinded_master_secret>,
 ///      "schema_key" : {name: string, version: string, did: string},
 ///      "issuer_did" : string,
-///      "prover_did": string
+///      "prover_did" : string
 ///     }
 ///
 /// #Errors
@@ -434,7 +431,7 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
 
 /// Updates the claim by a master secret and stores in a secure wallet.
 /// The claim contains the information about
-/// schema_seq_no, issuer_did, revoc_reg_seq_no (see issuer_create_claim).
+/// schema_key, issuer_did, revoc_reg_seq_no (see issuer_create_claim).
 /// Seq_no is a sequence number of the corresponding transaction in the ledger.
 /// The method loads a blinded secret for this key from the wallet,
 /// updates the claim and stores it in a wallet.
@@ -560,11 +557,11 @@ pub extern fn indy_prover_get_claims(command_handle: i32,
 ///         "name": attribute name,
 ///         "restrictions": [
 ///             {
-///                 "schema_seq_no": int, (Optional)
+///                 "schema_key": {name, version, did}, (Optional)
 ///                 "issuer_did": string (Optional)
 ///             }
 ///         ]  (Optional) - if specified, claim must be created for one of the given
-///                         schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
+///                         schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
 ///     }
 /// predicate_info:
 ///     {
@@ -573,15 +570,15 @@ pub extern fn indy_prover_get_claims(command_handle: i32,
 ///         "value": requested value of attribute
 ///         "restrictions": [
 ///             {
-///                 "schema_seq_no": int, (Optional)
+///                 "schema_key": {name, version, did}, (Optional)
 ///                 "issuer_did": string (Optional)
 ///             }
 ///         ]  (Optional) - if specified, claim must be created for one of the given
-///                         schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
+///                         schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
 ///     }
 /// #Returns
 /// json with claims for the given pool request.
-/// Claim consists of referent, human-readable attributes (key-value map), schema_seq_no, issuer_did and revoc_reg_seq_no.
+/// Claim consists of referent, human-readable attributes (key-value map), schema_key, issuer_did and revoc_reg_seq_no.
 ///     {
 ///         "requested_attr1_referent": [claim1, claim2],
 ///         "requested_attr2_referent": [],
@@ -682,7 +679,7 @@ pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
 ///         "name": attribute name,
 ///         "restrictions": [
 ///             {
-///                 "schema_seq_no": int, (Optional)
+///                 "schema_key": {name, version, did}, (Optional)
 ///                 "issuer_did": string (Optional)
 ///             }
 ///         ]  (Optional)
@@ -694,7 +691,7 @@ pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
 ///         "value": requested value of attribute
 ///         "restrictions": [
 ///             {
-///                 "schema_seq_no": int, (Optional)
+///                 "schema_key": {name, version, did}, (Optional)
 ///                 "issuer_did": string (Optional)
 ///             }
 ///         ]  (Optional)
