@@ -120,7 +120,7 @@ pub mod import_command {
                                 Ok((did, vk)) =>
                                     println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk),
                                 Err(err) =>
-                                    warn!("Indy SDK error occured {:?} while importing DID {}", err, did)
+                                    println_warn!("Indy SDK error occured {:?} while importing DID {}", err, did)
                             }
                         }
                         Ok(())

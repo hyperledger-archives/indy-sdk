@@ -27,3 +27,17 @@ CLI supports 2 execution modes:
 
 ### Getting help
 The most simple way is just start cli by `indy-cli` command and put `help` command. Also you can look to [Indy CLI Design](../doc/cli-design.md) doc that contains the list of commands and architecture overview.
+
+### Migration
+1. User will export his DIDs from old indy CLI by using new script. The result of this export is file in specified below format.
+    * Run  
+    ```
+    indy_export_dids [-e <env name>] -w <wallet name> [-f <path to the result file>]
+    ```
+2. Import generated file into libindy wallet by using Indy CLI
+    * Run Indy CLI
+    * Open new target wallet (create if needed) in CLI
+    * Run 
+    ```
+    did import <path to the file>
+    ```
