@@ -34,6 +34,7 @@ pub mod show_command {
 
     command!(CommandMetadata::build("show", "Print the content of text file")
                             .add_main_param("file", "The path to file to show")
+                            .add_example("show /home/file.txt")
                             .finalize());
 
     fn execute(_ctx: &CommandContext, params: &CommandParams) -> CommandResult {
@@ -66,6 +67,7 @@ pub mod prompt_command {
 
     command!(CommandMetadata::build("prompt", "Change command prompt")
                             .add_main_param("prompt", "New prompt string")
+                            .add_example("prompt new-prompt")
                             .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> CommandResult {

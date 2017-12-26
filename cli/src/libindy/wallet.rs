@@ -8,7 +8,7 @@ use std::sync::mpsc::channel;
 pub struct Wallet {}
 
 impl Wallet {
-    pub fn create_wallet(pool_name: &str, wallet_name: &str, xtype: Option<&str>, config: Option<&str>) -> Result<(), ErrorCode> {
+    pub fn create_wallet(pool_name: &str, wallet_name: &str, xtype: Option<&str>, config: Option<&str>, credentials: Option<&str>) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
         let (command_handle, cb) = super::callbacks::_closure_to_cb_ec(sender);
@@ -17,6 +17,7 @@ impl Wallet {
         let wallet_name = CString::new(wallet_name).unwrap();
         let xtype_str = xtype.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
             indy_create_wallet(command_handle,
@@ -24,26 +25,27 @@ impl Wallet {
                                wallet_name.as_ptr(),
                                if xtype.is_some() { xtype_str.as_ptr() } else { null() },
                                if config.is_some() { config_str.as_ptr() } else { null() },
-                               null(),
+                               if credentials.is_some() { credentials_str.as_ptr() } else { null() },
                                cb)
         };
 
         super::results::result_to_empty(err, receiver)
     }
 
-    pub fn open_wallet(wallet_name: &str, config: Option<&str>) -> Result<i32, ErrorCode> {
+    pub fn open_wallet(wallet_name: &str, config: Option<&str>, credentials: Option<&str>) -> Result<i32, ErrorCode> {
         let (sender, receiver) = channel();
 
         let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_i32(sender);
 
         let wallet_name = CString::new(wallet_name).unwrap();
         let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let credentials_str = credentials.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
             indy_open_wallet(command_handle,
                              wallet_name.as_ptr(),
                              if config.is_some() { config_str.as_ptr() } else { null() },
-                             null(),
+                             if credentials.is_some() { credentials_str.as_ptr() } else { null() },
                              cb)
         };
 

@@ -22,8 +22,11 @@ pub mod nym_command {
     command!(CommandMetadata::build("nym", "Add NYM to Ledger.")
                 .add_param("did", false, "DID of new identity")
                 .add_param("verkey", true, "Verification key of new identity")
-                .add_param("alias", true, "Alias of new identity")
                 .add_param("role", true, "Role of new identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, TGB")
+                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX")
+                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
+                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
+                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=TRUSTEE")
                 .finalize()
     );
 
@@ -36,15 +39,14 @@ pub mod nym_command {
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let verkey = get_opt_str_param("verkey", params).map_err(error_err!())?;
-        let alias = get_opt_str_param("alias", params).map_err(error_err!())?;
         let role = get_opt_str_param("role", params).map_err(error_err!())?;
 
-        let res = Ledger::build_nym_request(&submitter_did, target_did, verkey, alias, role)
+        let res = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
         let res = match res {
-            Ok(_) => Ok(println_succ!("NYM {{\"did\":\"{}\", \"verkey\":\"{:?}\", \"alias\":\"{:?}\", \"role\":\"{:?}\"}} has been added to Ledger",
-                                      target_did, verkey, alias, role)),
+            Ok(_) => Ok(println_succ!("NYM {{\"did\":\"{}\", \"verkey\":\"{:?}\", \"role\":\"{:?}\"}} has been added to Ledger",
+                                      target_did, verkey, role)),
             Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
         };
 
@@ -58,6 +60,7 @@ pub mod get_nym_command {
 
     command!(CommandMetadata::build("get-nym", "Get NYM from Ledger.")
                 .add_param("did", false, "DID of identity presented in Ledger")
+                .add_example("ledger get-nym did=VsKV7grR1BUE29mG2Fm2kX")
                 .finalize()
     );
 
@@ -98,6 +101,7 @@ pub mod attrib_command {
                 .add_param("hash", true, "Hash of attribute data")
                 .add_param("raw", true, "JSON representation of attribute data")
                 .add_param("enc", true, "Encrypted attribute data")
+                .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX raw={"endpoint":{"ha":"127.0.0.1:5555"}}"#)
                 .finalize()
     );
 
@@ -134,6 +138,7 @@ pub mod get_attrib_command {
     command!(CommandMetadata::build("get-attrib", "Get ATTRIB from Ledger.")
                 .add_param("did", false, "DID of identity presented in Ledger")
                 .add_param("attr", false, "Name of attribute")
+                .add_example("ledger get-attrib did=VsKV7grR1BUE29mG2Fm2kX attr=endpoint")
                 .finalize()
     );
 
@@ -174,6 +179,7 @@ pub mod schema_command {
                 .add_param("name", false, "Schema name")
                 .add_param("version", false, "Schema version")
                 .add_param("attr_names", false, "Schema attributes split by comma")
+                .add_example("ledger schema name=gvt version=1.0 attr_names=name,age")
                 .finalize()
     );
 
@@ -216,6 +222,7 @@ pub mod get_schema_command {
                 .add_param("did", false, "DID of identity presented in Ledger")
                 .add_param("name", false, "Schema name")
                 .add_param("version", false, "Schema version")
+                .add_example("ledger get-schema did=VsKV7grR1BUE29mG2Fm2kX name=gvt version=1.0")
                 .finalize()
     );
 
@@ -245,7 +252,7 @@ pub mod get_schema_command {
         }?;
 
         let res = match serde_json::from_str::<Reply<SchemaData>>(&response) {
-            Ok(schema) => Ok(println_succ!("Following Schema has been received: \"{}\"", schema.result.data)),
+            Ok(schema) => Ok(println_succ!("Following Schema has been received: {}", schema)),
             Err(_) => Err(println_err!("Schema not found"))
         };
 
@@ -262,6 +269,7 @@ pub mod claim_def_command {
                 .add_param("signature_type", false, "Signature type (only CL supported now)")
                 .add_param("primary", false, "Primary key in json format")
                 .add_param("revocation", true, "Revocation key in json format")
+                .add_example(r#"ledger claim-def schema_no=1 signature_type=CL primary={"n":"1","s":"2","rms":"3","r":{"age":"4","name":"5"},"rctxt":"6","z":"7"}"#)
                 .finalize()
     );
 
@@ -288,7 +296,7 @@ pub mod claim_def_command {
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
         let res = match res {
-            Ok(_) => Ok(println_succ!("Claim definition {{\"origin\":\"{}\", \"schema_seq_no\":{}, \"signature_type\":{}}} has been added to Ledger",
+            Ok(_) => Ok(println_succ!("Claim definition {{\"identifier\":\"{}\", \"schema_seq_no\":{}, \"signature_type\":{}}} has been added to Ledger",
                                       submitter_did, xref, signature_type)),
             Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
         };
@@ -305,6 +313,7 @@ pub mod get_claim_def_command {
                 .add_param("schema_no", false, "Sequence number of schema")
                 .add_param("signature_type", false, "Signature type (only CL supported now)")
                 .add_param("origin", false, "Claim definition owner DID")
+                .add_example("ledger get-claim-def schema_no=1 signature_type=CL origin=VsKV7grR1BUE29mG2Fm2kX")
                 .finalize()
     );
 
@@ -341,13 +350,16 @@ pub mod node_command {
 
     command!(CommandMetadata::build("node", "Add Node to Ledger.")
                 .add_param("target", false, "DID of new identity")
-                .add_param("node_ip", false, "Node Ip")
-                .add_param("node_port", false, "Node port")
-                .add_param("client_ip", false, "Client Ip")
-                .add_param("client_port", false, "Client port")
                 .add_param("alias", false, "Node alias")
-                .add_param("blskey", false, "Node BLS key")
+                .add_param("node_ip", true, "Node Ip")
+                .add_param("node_port", true, "Node port")
+                .add_param("client_ip", true, "Client Ip")
+                .add_param("client_port", true, "Client port")
+                .add_param("blskey", true, "Node BLS key")
                 .add_param("services", true, "Node type [VALIDATOR, OBSERVER]")
+                .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR blskey=2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw")
+                .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR")
+                .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y alias=Node5 services=VALIDATOR")
                 .finalize()
     );
 
@@ -395,9 +407,11 @@ pub mod node_command {
 pub mod pool_config_command {
     use super::*;
 
-    command!(CommandMetadata::build("pool_config", "Sends write configuration to pool.")
-                .add_param("writes", false, "Accept write transactions")
-                .add_param("force", true, "")
+    command!(CommandMetadata::build("pool-config", "Sends write configuration to pool.")
+                .add_param("writes", false, "Accept write transactions.")
+                .add_param("force", true, "Forced configuration applying without reaching pool consensus.")
+                .add_example("ledger pool-config writes=true")
+                .add_example("ledger pool-config writes=true force=true")
                 .finalize()
     );
 
@@ -427,16 +441,18 @@ pub mod pool_config_command {
 pub mod pool_upgrade_command {
     use super::*;
 
-    command!(CommandMetadata::build("pool_upgrade", "Sends instructions to nodes to update themselves.")
-                .add_param("name", false, "")
-                .add_param("version", false, "")
-                .add_param("action", false, "Either start or cancel")
-                .add_param("sha256", false, "")
-                .add_param("timeout", true, "")
-                .add_param("schedule", true, "")
-                .add_param("justification", true, "")
-                .add_param("reinstall", true, "")
-                .add_param("force", true, "")
+    command!(CommandMetadata::build("pool-upgrade", "Sends instructions to nodes to update themselves.")
+                .add_param("name", false, "Unique upgrade name.")
+                .add_param("version", false, "Target upgrade version.")
+                .add_param("action", false, "Upgrade type. Either start or cancel.")
+                .add_param("sha256", false, "Unique hex identifier.")
+                .add_param("timeout", true, "Timeout.")
+                .add_param("schedule", true, "Node upgrade schedule.")
+                .add_param("justification", true, "Comment.")
+                .add_param("reinstall", true, "Same version reinstallation.")
+                .add_param("force", true, "Forced upgrade applying without reaching pool consensus")
+                .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=start sha256=f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398 schedule={"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"2020-01-25T12:49:05.258870+00:00"}"#)
+                .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=cancel sha256=ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398"#)
                 .finalize()
     );
 
@@ -479,6 +495,8 @@ pub mod custom_command {
     command!(CommandMetadata::build("custom", "Send custom transaction to Ledger.")
                 .add_main_param("txn", "Transaction json")
                 .add_param("sign", true, "Is signature required")
+                .add_example(r#"ledger custom {"reqId":1,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"105","dest":"V4SGRU86Z58d6TV7PBUe6f"},"protocolVersion":1}"#)
+                .add_example(r#"ledger custom {"reqId":2,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"1","dest":"VsKV7grR1BUE29mG2Fm2kX"},"protocolVersion":1} sign=true"#)
                 .finalize()
     );
 
@@ -536,7 +554,10 @@ pub struct Reply<T> {
 
 #[derive(Deserialize, Debug)]
 pub struct ReplyResult<T> {
-    pub data: T
+    pub data: T,
+    #[serde(rename = "seqNo")]
+    pub seq_no: u64,
+    pub identifier: String
 }
 
 #[derive(Deserialize, Debug)]
@@ -544,17 +565,22 @@ pub struct NymData {
     pub identifier: Option<String>,
     pub dest: String,
     pub role: Option<String>,
-    pub alias: Option<String>,
     pub verkey: Option<String>
 }
 
 impl fmt::Display for NymData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "\nsubmitter:{} | did:{} | role:{} | alias:{} | verkey:{}",
+        let role = match self.role.as_ref().map(String::as_str) {
+            Some("0") => "TRUSTEE",
+            Some("2") => "STEWARD",
+            Some("100") => "TGB",
+            Some("101") => "TRUST_ANCHOR",
+            _ => "null"
+        };
+
+        write!(f, "\nsubmitter:{} | did:{} | verkey:{} | role:{} ",
                self.identifier.clone().unwrap_or("null".to_string()), self.dest,
-               self.role.clone().unwrap_or("null".to_string()),
-               self.alias.clone().unwrap_or("null".to_string()),
-               self.verkey.clone().unwrap_or("null".to_string()))
+               self.verkey.clone().unwrap_or("null".to_string()), role)
     }
 }
 
@@ -581,14 +607,13 @@ pub struct Endpoint {
 pub struct SchemaData {
     pub attr_names: HashSet<String>,
     pub name: String,
-    pub origin: Option<String>,
     pub version: String
 }
 
-impl fmt::Display for SchemaData {
+impl fmt::Display for Reply<SchemaData> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "\nname:{} | version:{} | attr_names:{:?} | origin:{}",
-               self.name, self.version, self.attr_names, self.origin.clone().unwrap_or("null".to_string()))
+        write!(f, "\nname:{} | version:{} | attr_names:{:?} | origin:{:?} | seq_no:{:?}",
+               self.result.data.name, self.result.data.version, self.result.data.attr_names, self.result.identifier, self.result.seq_no)
     }
 }
 
@@ -701,28 +726,6 @@ pub mod tests {
                 params.insert("role", "ROLE".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
-            close_and_delete_wallet(&ctx);
-            disconnect_and_delete_pool(&ctx);
-        }
-
-        #[test]
-        pub fn nym_works_for_alias() {
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
-            create_and_connect_pool(&ctx);
-
-            new_did(&ctx, SEED_TRUSTEE);
-            use_did(&ctx, DID_TRUSTEE);
-            {
-                let cmd = nym_command::new();
-                let mut params = CommandParams::new();
-                params.insert("did", DID_MY1.to_string());
-                params.insert("verkey", VERKEY_MY1.to_string());
-                params.insert("alias", "alias".to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            _ensure_nym_added(&ctx);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
