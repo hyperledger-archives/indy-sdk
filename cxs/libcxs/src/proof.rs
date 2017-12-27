@@ -160,6 +160,10 @@ impl Proof {
         let proof_json = self.build_proof_json(&claim_data)?;
         let schemas_json = self.build_schemas_json(&claim_data)?;
         let proof_req_json = self.build_proof_req_json()?;
+        info!("*******\n{}\n********", claim_def_msg);
+        info!("*******\n{}\n********", proof_json);
+        info!("*******\n{}\n********", schemas_json);
+        info!("*******\n{}\n********", proof_req_json);
         Ok(self.validate_proof_indy(&proof_req_json, &proof_json, &schemas_json, &claim_def_msg, REVOC_REGS_JSON)?)
     }
 
