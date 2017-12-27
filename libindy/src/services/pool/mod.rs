@@ -375,9 +375,12 @@ impl PoolWorker {
 
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
-            let line: String = line.map_err(map_err_trace!())?;
-            let genesis_txn: SJsonValue = serde_json::from_str(line.as_str()).unwrap(); /* FIXME resolve unwrap */
-            let bytes = rmp_serde::encode::to_vec_named(&genesis_txn).unwrap(); /* FIXME resolve unwrap */
+            let line: String = line.map_err(map_err_trace!())?.trim().to_string();
+            if line.is_empty() { continue };
+            let genesis_txn: SJsonValue = serde_json::from_str(line.as_str())
+                .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
+            let bytes = rmp_serde::encode::to_vec_named(&genesis_txn)
+                .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
             mt.append(bytes).map_err(map_err_trace!())?;
         }
         Ok(mt)
