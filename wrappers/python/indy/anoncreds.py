@@ -496,7 +496,7 @@ async def prover_get_claims_for_proof_req(wallet_handle: int,
         }
         where attr_info:
             {
-                "name": attribute name,
+                "name": attribute name, (case insensitive and ignore spaces)
                 "restrictions": [
                     {
                         "schema_key": {name: string (Optional), version: string (Optional), did: string (Optional)}, (Optional)
@@ -507,7 +507,7 @@ async def prover_get_claims_for_proof_req(wallet_handle: int,
             }
         predicate_info:
             {
-                "attr_name": attribute name,
+                "attr_name": attribute name, (case insensitive and ignore spaces)
                 "p_type": predicate type (Currently >= only)
                 "value": requested value of attribute
                 "restrictions": [
@@ -586,7 +586,7 @@ async def prover_create_proof(wallet_handle: int,
         }
         where attr_info:
             {
-                "name": attribute name,
+                "name": attribute name, (case insensitive and ignore spaces)
                 "restrictions": [
                     {
                         "schema_key": {name: string (Optional), version: string (Optional), did: string (Optional)}, (Optional)
@@ -597,7 +597,7 @@ async def prover_create_proof(wallet_handle: int,
             }
         predicate_info:
             {
-                "attr_name": attribute name,
+                "attr_name": attribute name, (case insensitive and ignore spaces)
                 "p_type": predicate type (Currently >= only)
                 "value": requested value of attribute
                 "restrictions": [

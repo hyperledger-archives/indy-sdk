@@ -554,7 +554,7 @@ pub extern fn indy_prover_get_claims(command_handle: i32,
 ///
 /// where attr_info:
 ///     {
-///         "name": attribute name,
+///         "name": attribute name, (case insensitive and ignore spaces)
 ///         "restrictions": [
 ///             {
 ///                 "schema_key" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)
@@ -565,7 +565,7 @@ pub extern fn indy_prover_get_claims(command_handle: i32,
 ///     }
 /// predicate_info:
 ///     {
-///         "attr_name": attribute name,
+///         "attr_name": attribute name, (case insensitive and ignore spaces)
 ///         "p_type": predicate type (Currently >= only)
 ///         "value": requested value of attribute
 ///         "restrictions": [
@@ -676,7 +676,7 @@ pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
 ///
 /// where attr_info:
 ///     {
-///         "name": attribute name,
+///         "name": attribute name, (case insensitive and ignore spaces)
 ///         "restrictions": [
 ///             {
 ///                 "schema_key": {name (Optional), version (Optional), did (Optional)}, (Optional)
@@ -686,7 +686,7 @@ pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
 ///     }
 /// predicate_info:
 ///     {
-///         "attr_name": attribute name,
+///         "attr_name": attribute name, (case insensitive and ignore spaces)
 ///         "p_type": predicate type (Currently >= only)
 ///         "value": requested value of attribute
 ///         "restrictions": [

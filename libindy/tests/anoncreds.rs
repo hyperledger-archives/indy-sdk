@@ -128,7 +128,7 @@ mod high_cases {
         }
 
         #[test]
-        fn prover_get_claim_offers_works_for_filter_by_part_of_schema() {
+        fn prover_get_claim_offers_works_for_filter_by_schema_name() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"schema_key":{"name":"gvt"}}"#).unwrap();
@@ -137,6 +137,30 @@ mod high_cases {
             assert_eq!(claim_offers.len(), 2);
             assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
             assert!(claim_offers.contains(&ClaimOffer { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+        }
+
+        #[test]
+        fn prover_get_claim_offers_works_for_filter_by_schema_version() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"schema_key":{"version":"1.0"}}"#).unwrap();
+            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+
+            assert_eq!(claim_offers.len(), 3);
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
+        }
+
+        #[test]
+        fn prover_get_claim_offers_works_for_filter_by_schema_did() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, &format!(r#"{{"schema_key":{{"did":"{}"}}}}"#, ISSUER_DID)).unwrap();
+            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+
+            assert_eq!(claim_offers.len(), 1);
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
         }
 
         #[test]
@@ -378,9 +402,8 @@ mod high_cases {
             assert_eq!(claims[1].schema_key, AnoncredsUtils::gvt_schema_key());
         }
 
-
         #[test]
-        fn prover_get_claims_works_for_filter_by_part_of_schema() {
+        fn prover_get_claims_works_for_filter_by_schema_name() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{"schema_key":{"name":"gvt"}}"#).unwrap();
@@ -389,6 +412,27 @@ mod high_cases {
             assert_eq!(claims.len(), 2);
             assert_eq!(claims[0].schema_key, AnoncredsUtils::gvt_schema_key());
             assert_eq!(claims[1].schema_key, AnoncredsUtils::gvt_schema_key());
+        }
+
+        #[test]
+        fn prover_get_claims_works_for_filter_by_schema_version() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{"schema_key":{"version":"1.0"}}"#).unwrap();
+            let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
+
+            assert_eq!(claims.len(), 3);
+        }
+
+        #[test]
+        fn prover_get_claims_works_for_filter_by_schema_did() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let claims = AnoncredsUtils::prover_get_claims(wallet_handle, &format!(r#"{{"schema_key":{{"did":"{}"}}}}"#, ISSUER_DID)).unwrap();
+            let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
+
+            assert_eq!(claims.len(), 1);
+            assert_eq!(claims[0].schema_key, AnoncredsUtils::xyz_schema_key());
         }
 
         #[test]
@@ -598,7 +642,7 @@ mod high_cases {
         }
 
         #[test]
-        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_part_of_schema() {
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_schema_name() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
@@ -613,6 +657,58 @@ mod high_cases {
                                 },
                                 "requested_predicates":{}
                              }"#;
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_schema_version() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = r#"{
+                                "nonce":"123432421212",
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "requested_attrs":{
+                                    "attr1_referent":{
+                                        "name":"name",
+                                        "restrictions":[{"schema_key":{"version":"1.0"}}]
+                                    }
+                                },
+                                "requested_predicates":{}
+                             }"#;
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_schema_did() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                            "nonce":"123432421212",
+                                            "name":"proof_req_1",
+                                            "version":"0.1",
+                                            "requested_attrs":{{
+                                                "attr1_referent":{{
+                                                    "name":"name",
+                                                    "restrictions":[{{"schema_key":{{"did":"{}"}}}}]
+                                                }}
+                                            }},
+                                            "requested_predicates":{{}}
+                                        }}"#, DID_TRUSTEE);
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 

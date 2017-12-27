@@ -465,7 +465,7 @@ impl AnoncredsUtils {
         SchemaKey {
             name: "xyz".to_string(),
             version: "1.0".to_string(),
-            did: DID_TRUSTEE.to_string()
+            did: ISSUER_DID.to_string()
         }
     }
 
@@ -496,7 +496,7 @@ impl AnoncredsUtils {
     pub fn xyz_schema() -> Schema {
         Schema {
             seq_no: 1,
-            identifier: DID_TRUSTEE.to_string(),
+            identifier: ISSUER_DID.to_string(),
             data: SchemaData {
                 name: "xyz".to_string(),
                 version: "1.0".to_string(),
