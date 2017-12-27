@@ -120,7 +120,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// command_handle: command handle to map callback to user context.
 /// claim_req_json: a claim request with a blinded secret
 /// from the user (returned by prover_create_and_store_claim_req).
-/// Also contains schema_seq_no and issuer_did
+/// Also contains schema_key and issuer_did
 ///     Example:
 ///     {
 ///      "blinded_ms" : <blinded_master_secret>,
@@ -720,7 +720,7 @@ pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
 ///             },
 ///             "aggregated_proof": <aggregated_proof>
 ///         }
-///         "identifiers": [{issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}]
+///         "identifiers": {"claim_proof1_referent":{issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}}
 ///     }
 ///
 /// #Errors
@@ -802,7 +802,7 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
 ///             },
 ///             "aggregated_proof": <aggregated_proof>
 ///         }
-///         "identifiers": [{issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}]
+///         "identifiers": {"claim_proof1_referent":{issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}}
 ///     }
 /// schemas_jsons: all schema jsons participating in the proof
 ///         {

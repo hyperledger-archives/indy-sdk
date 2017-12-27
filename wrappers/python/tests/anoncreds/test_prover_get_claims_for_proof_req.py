@@ -30,6 +30,54 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr(wallet_ha
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_in_upper_case(wallet_handle,
+                                                                                     prepopulated_wallet):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {
+            "attr1_referent": {
+                "name": "NAME"
+            }
+        },
+        "requested_predicates": {}
+    }
+
+    claims = json.loads(
+        await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 1
+    assert len(claims['predicates']) == 0
+    assert len(claims['attrs']['attr1_referent']) == 2
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_contains_spaces(wallet_handle,
+                                                                                       prepopulated_wallet):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {
+            "attr1_referent": {
+                "name": " name "
+            }
+        },
+        "requested_predicates": {}
+    }
+
+    claims = json.loads(
+        await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 1
+    assert len(claims['predicates']) == 0
+    assert len(claims['attrs']['attr1_referent']) == 2
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
 async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_schema(wallet_handle,
                                                                                            prepopulated_wallet,
                                                                                            schema_key):
@@ -221,6 +269,60 @@ async def test_prover_get_claims_for_proof_req_works_for_predicate(wallet_handle
             "predicate1_referent":
                 {
                     "attr_name": "age",
+                    "p_type": ">=",
+                    "value": 18
+                }
+        }
+    }
+
+    claims = json.loads(
+        await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 0
+    assert len(claims['predicates']) == 1
+    assert len(claims['predicates']['predicate1_referent']) == 2
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_predicate_attr_in_upper_case(wallet_handle,
+                                                                                      prepopulated_wallet):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {},
+        "requested_predicates": {
+            "predicate1_referent":
+                {
+                    "attr_name": "AGE",
+                    "p_type": ">=",
+                    "value": 18
+                }
+        }
+    }
+
+    claims = json.loads(
+        await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 0
+    assert len(claims['predicates']) == 1
+    assert len(claims['predicates']['predicate1_referent']) == 2
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_predicate_attr_contains_spaces(wallet_handle,
+                                                                                        prepopulated_wallet):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {},
+        "requested_predicates": {
+            "predicate1_referent":
+                {
+                    "attr_name": " age ",
                     "p_type": ">=",
                     "value": 18
                 }

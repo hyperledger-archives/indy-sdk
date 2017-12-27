@@ -163,7 +163,7 @@ impl<'a> JsonDecodable<'a> for Identifier {}
 pub struct FullProof {
     pub proof: Proof,
     pub requested_proof: RequestedProof,
-    pub identifiers: HashSet<Identifier>
+    pub identifiers: HashMap<String, Identifier>
 }
 
 impl JsonEncodable for FullProof {}

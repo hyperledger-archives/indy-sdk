@@ -657,7 +657,7 @@ impl AnoncredsUtils {
                 "self_attested_attrs":{},
                 "predicates":{"predicate1_referent":"claim::58479554-187f-40d9-b0a5-a95cfb0338c3"}
             },
-            "identifiers":[{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_key":{"name":"gvt","version":"1.0","did":"NcYxiDXkpYi6ov5FcYDi1e"}}]
+            "identifiers":{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_key":{"name":"gvt","version":"1.0","did":"NcYxiDXkpYi6ov5FcYDi1e"}}}
         }"#
     }
 

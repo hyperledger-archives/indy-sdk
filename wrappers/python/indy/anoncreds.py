@@ -112,7 +112,7 @@ async def issuer_create_claim(wallet_handle: int,
     :param wallet_handle: wallet handler (created by open_wallet).
     :param claim_req_json: a claim request with a blinded secret
         from the user (returned by prover_create_and_store_claim_req).
-        Also contains schema_seq_no and issuer_did
+        Also contains schema_key and issuer_did
         Example:
         {
             "blinded_ms" : <blinded_master_secret>,
@@ -129,13 +129,13 @@ async def issuer_create_claim(wallet_handle: int,
     :param user_revoc_index: index of a new user in the revocation registry
      (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
     :return: Revocation registry update json with a newly issued claim
-        Claim json containing issued claim, issuer_did, and schema_seq_no
+        Claim json containing issued claim, issuer_did, and schema_key
         used for issuance
         {
             "values": <see claim_json above>,
             "signature": <signature>,
             "issuer_did", string,
-            "schema_seq_no", string,
+            "schema_key", {name, version, did},
             "revoc_reg_seq_no": int,
         }
     """
@@ -328,7 +328,7 @@ async def prover_create_and_store_claim_req(wallet_handle: int,
     """
     Creates a clam request json for the given claim offer and stores it in a secure wallet.
     The claim offer contains the information about Issuer (DID, schema_seq_no),
-    and the schema (schema_seq_no).
+    and the schema (schema_key).
     The method gets public key and schema from the ledger, stores them in a wallet,
     and creates a blinded master secret for a master secret identified by a provided name.
     The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
@@ -495,7 +495,7 @@ async def prover_get_claims_for_proof_req(wallet_handle: int,
             "requested_predicate_2_referent": <predicate_info>,
         }
     :return: json with claims for the given pool request.
-        Claim consists of uuid, human-readable attributes (key-value map), schema_seq_no, issuer_did and revoc_reg_seq_no.
+        Claim consists of uuid, human-readable attributes (key-value map), schema_key, issuer_did and revoc_reg_seq_no.
             {
                 "requested_attr1_referent": [claim1, claim2],
                 "requested_attr2_referent": [],
@@ -636,7 +636,7 @@ async def prover_create_proof(wallet_handle: int,
                 },
                 "aggregated_proof": <aggregated_proof>
             }
-            "identifiers": [{issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}]
+            "identifiers": {"claim_proof1_referent": {issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}}
         }
     """
 
@@ -743,7 +743,7 @@ async def verifier_verify_proof(proof_request_json: str,
                     },
                     "aggregated_proof": <aggregated_proof>
                 }
-                "identifiers": [{issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}]
+                "identifiers": {"claim_proof1_referent": {issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}}
             }
     :param schemas_json: all schema jsons participating in the proof
         {

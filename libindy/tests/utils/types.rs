@@ -223,7 +223,7 @@ pub struct Claim {
 pub struct FullProof {
     pub proof: Proof,
     pub requested_proof: RequestedProof,
-    pub identifiers: HashSet<Identifier>
+    pub identifiers: HashMap<String, Identifier>
 }
 
 #[derive(Debug, Serialize, Deserialize)]

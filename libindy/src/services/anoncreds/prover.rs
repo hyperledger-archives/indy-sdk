@@ -3,7 +3,7 @@ extern crate indy_crypto;
 use errors::common::CommonError;
 use errors::anoncreds::AnoncredsError;
 use services::anoncreds::types::*;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use services::anoncreds::types::{ClaimInfo, RequestedClaims, ProofRequest, PredicateInfo, Identifier};
 
 use self::indy_crypto::cl::*;
@@ -68,7 +68,7 @@ impl Prover {
             let mut claims_for_attribute: Vec<ClaimInfo> = Vec::new();
 
             for claim in claims {
-                let mut satisfy = claim.attrs.contains_key(&requested_attr.name);
+                let mut satisfy = Prover::_claim_value_for_attribute(&claim.attrs, &requested_attr.name).is_some();
 
                 satisfy = satisfy && Prover::_claim_satisfy_restrictions(claim, &requested_attr.restrictions);
 
@@ -82,8 +82,8 @@ impl Prover {
             let mut claims_for_predicate: Vec<ClaimInfo> = Vec::new();
 
             for claim in claims {
-                let mut satisfy = match claim.attrs.get(&requested_predicate.attr_name) {
-                    Some(attribute_value) => Prover::_attribute_satisfy_predicate(&requested_predicate, attribute_value)?,
+                let mut satisfy = match Prover::_claim_value_for_attribute(&claim.attrs, &requested_predicate.attr_name) {
+                    Some(attribute_value) => Prover::_attribute_satisfy_predicate(&requested_predicate, &attribute_value)?,
                     None => false
                 };
 
@@ -95,14 +95,13 @@ impl Prover {
             found_predicates.insert(predicate_id.clone(), claims_for_predicate);
         }
 
-        let claims_for_proof_requerst = ClaimsForProofRequest {
+        let claims_for_proof_request = ClaimsForProofRequest {
             attrs: found_attributes,
             predicates: found_predicates
         };
 
-
-        info!("get_claims_for_proof_req <<< claims_for_proof_requerst: {:?}", claims_for_proof_requerst);
-        Ok(claims_for_proof_requerst)
+        info!("get_claims_for_proof_req <<< claims_for_proof_requerst: {:?}", claims_for_proof_request);
+        Ok(claims_for_proof_request)
     }
 
     pub fn create_proof(&self,
@@ -118,7 +117,7 @@ impl Prover {
 
         let mut proof_builder = CryptoProver::new_proof_builder()?;
 
-        let mut identifiers: HashSet<Identifier> = HashSet::new();
+        let mut identifiers: HashMap<String, Identifier> = HashMap::new();
 
         for (referent, claim) in claims {
             let schema = schemas.get(referent.as_str())
@@ -144,7 +143,7 @@ impl Prover {
                                                 &issuer_pub_key,
                                                 revocation_registry.map(|rev_reg| &rev_reg.data).clone())?;
 
-            identifiers.insert(Identifier {
+            identifiers.insert(referent.to_string(), Identifier {
                 schema_key: claim.schema_key.clone(),
                 issuer_did: claim.issuer_did.clone(),
                 rev_reg_seq_no: claim.rev_reg_seq_no.clone()
@@ -172,6 +171,17 @@ impl Prover {
         info!("create_proof <<< full_proof: {:?}", full_proof);
 
         Ok(full_proof)
+    }
+
+    fn _claim_value_for_attribute(claim_attrs: &HashMap<String, String>, requested_attr: &str) -> Option<String> {
+        let _attr_common_view = |attr: &str|
+            attr.replace(" ", "").to_lowercase();
+
+        let requested_attr = _attr_common_view(&requested_attr);
+
+        claim_attrs.iter()
+            .find(|&(ref key, ref value)| _attr_common_view(key) == requested_attr)
+            .map(|(_, value)| value.to_string())
     }
 
     fn _claim_satisfy_restrictions(claim: &ClaimInfo, restrictions: &Option<Vec<Filter>>) -> bool {
@@ -212,7 +222,7 @@ impl Prover {
         let res = match predicate.p_type.as_str() {
             ">=" => Ok({
                 let attribute_value = attribute_value.parse::<i32>()
-                    .map_err(|err| CommonError::InvalidStructure(format!("Ivalid format of predicate attribute: {}", attribute_value)))?;
+                    .map_err(|err| CommonError::InvalidStructure(format!("Invalid format of predicate attribute: {}", attribute_value)))?;
                 attribute_value >= predicate.value
             }),
             _ => return Err(CommonError::InvalidStructure(format!("Invalid predicate type: {:?}", predicate.p_type)))

@@ -149,14 +149,16 @@ async def test_verifier_verify_proof_works_for_correct_proof(proof_req, claim_de
         "requested_proof": {
             "revealed_attrs": {
                 "attr1_referent": ["claim::277478db-bf57-42c3-8530-b1b13cfe0bfd", "Alex",
-                               "1139481716457488690172217916278103335"]
+                                   "1139481716457488690172217916278103335"]
             }, "unrevealed_attrs": {},
             "self_attested_attrs": {},
             "predicates": {
                 "predicate1_referent": "claim::277478db-bf57-42c3-8530-b1b13cfe0bfd"
             }
         },
-        "identifiers": [{"issuer_did": "NcYxiDXkpYi6ov5FcYDi1e", "schema_key": schema_key}]
+        "identifiers":
+            {"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd": {"issuer_did": "NcYxiDXkpYi6ov5FcYDi1e",
+                                                             "schema_key": schema_key}}
     }
 
     valid = await verifier_verify_proof(json.dumps(proof_req), json.dumps(proof),
@@ -312,14 +314,15 @@ async def test_verifier_verify_proof_works_for_proof_does_not_correspond_to_requ
         "requested_proof": {
             "revealed_attrs": {
                 "attr1_referent": ["claim::277478db-bf57-42c3-8530-b1b13cfe0bfd", "Alex",
-                               "1139481716457488690172217916278103335"]
+                                   "1139481716457488690172217916278103335"]
             }, "unrevealed_attrs": {},
             "self_attested_attrs": {},
             "predicates": {
                 "predicate1_referent": "claim::277478db-bf57-42c3-8530-b1b13cfe0bfd"
             }
         },
-        "identifiers": [{"issuer_did": "NcYxiDXkpYi6ov5FcYDi1e", "schema_key": schema_key}]
+        "identifiers": {"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":
+                            {"issuer_did": "NcYxiDXkpYi6ov5FcYDi1e", "schema_key": schema_key}}
     }
 
     with pytest.raises(IndyError) as e:
@@ -401,14 +404,15 @@ async def test_verifier_verify_proof_works_for_wrong_proof(proof_req, claim_def,
         "requested_proof": {
             "revealed_attrs": {
                 "attr1_referent": ["claim::277478db-bf57-42c3-8530-b1b13cfe0bfd", "Alex",
-                               "1139481716457488690172217916278103335"]
+                                   "1139481716457488690172217916278103335"]
             }, "unrevealed_attrs": {},
             "self_attested_attrs": {},
             "predicates": {
                 "predicate1_referent": "claim::277478db-bf57-42c3-8530-b1b13cfe0bfd"
             }
         },
-        "identifiers": [{"issuer_did": "NcYxiDXkpYi6ov5FcYDi1e", "schema_key": schema_key}]
+        "identifiers": {"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":
+                            {"issuer_did": "NcYxiDXkpYi6ov5FcYDi1e", "schema_key": schema_key}}
     }
 
     valid = await verifier_verify_proof(json.dumps(proof_req), json.dumps(proof),
