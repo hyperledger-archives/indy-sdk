@@ -1,5 +1,7 @@
 extern crate rust_base58;
+extern crate openssl;
 
+use self::openssl::bn::{ BigNum };
 use self::rust_base58::{FromBase58};
 use utils::error;
 use url::Url;
@@ -25,9 +27,15 @@ pub fn validate_verkey(verkey: &str) -> Result<String, u32> {
 }
 
 pub fn validate_nonce(nonce: &str) -> Result<String, u32> {
-    //todo: find out what needs to be validated for nonce
-    let check_nonce = String::from(nonce);
-    Ok(check_nonce)
+    match BigNum::from_dec_str(nonce) {
+        Ok(x) => {
+            if x.num_bits() > 80 {
+                return Err(error::INVALID_NONCE.code_num)
+            }
+            Ok(nonce.to_string())
+        },
+        Err(_) => Err(error::INVALID_NONCE.code_num),
+    }
 }
 
 pub fn validate_key_delegate(delegate: &str) -> Result<String, u32> {

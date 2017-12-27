@@ -1,7 +1,9 @@
 extern crate rand;
 extern crate serde_json;
 extern crate libc;
+extern crate openssl;
 
+use self::openssl::bn::{ BigNum, BigNumRef };
 use std::sync::Mutex;
 use std::collections::HashMap;
 use rand::Rng;
@@ -20,7 +22,7 @@ use self::libc::c_char;
 use std::ffi::CString;
 use utils::timeout::TimeoutUtils;
 use utils::claim_def::{ClaimDef};
-use utils::constants::{REVOC_REGS_JSON};
+use utils::constants::{REVOC_REGS_JSON, LARGE_NONCE};
 use schema::LedgerSchema;
 
 lazy_static! {
@@ -331,7 +333,7 @@ pub fn create_proof(source_id: Option<String>,
         proof_state: ProofStateType::ProofUndefined,
         name,
         version: String::from("1.0"),
-        nonce: generate_nonce().to_string(),
+        nonce: generate_nonce()?,
         proof: None,
         proof_request: None,
     });
@@ -476,8 +478,21 @@ pub fn get_proof(handle: u32) -> Result<String,u32> {
     }
 }
 
-pub fn generate_nonce() -> u32 {
-    rand::random()
+pub fn generate_nonce() -> Result<String, u32> {
+    let mut bn = match BigNum::new() {
+        Ok(x) => x,
+        Err(_) => return Err(error::BIG_NUMBER_ERROR.code_num)
+    };
+
+    match BigNumRef::rand(&mut bn, LARGE_NONCE as i32, openssl::bn::MSB_MAYBE_ZERO, false){
+        Ok(x) => x,
+        Err(_) => return Err(error::BIG_NUMBER_ERROR.code_num)
+
+    };
+    match bn.to_dec_str() {
+        Ok(x) => Ok(x.to_string()),
+        Err(_) => return Err(error::BIG_NUMBER_ERROR.code_num)
+    }
 }
 
 #[cfg(test)]
@@ -487,7 +502,6 @@ mod tests {
     extern crate mockito;
     use std::thread;
     use std::time::Duration;
-    use messages::proofs::proof_message::tests::create_default_proof;
     use connection::create_connection;
     static DEFAULT_PROOF_STR: &str = r#"{"source_id":"","handle":486356518,"requested_attrs":"[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]","requested_predicates":"[{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\"}]","msg_uid":"","ref_msg_id":"","requester_did":"","prover_did":"","state":1,"proof_state":0,"name":"Optional","version":"1.0","nonce":"1067639606","proof":null}"#;
     static REQUESTED_ATTRS: &'static str = "[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]";
@@ -519,6 +533,12 @@ mod tests {
             Ok(x) => assert!(x > 0),
             Err(_) => assert_eq!(0, 1),
         }
+    }
+
+    #[test]
+    fn test_nonce() {
+        let nonce = generate_nonce().unwrap();
+        assert!(BigNum::from_dec_str(&nonce).unwrap().num_bits() < 81)
     }
 
     #[test]
@@ -676,7 +696,7 @@ mod tests {
             proof_state: ProofStateType::ProofUndefined,
             name:String::new(),
             version: String::from("1.0"),
-            nonce: generate_nonce().to_string(),
+            nonce: generate_nonce().unwrap(),
             proof: None,
             proof_request: None,
         });
@@ -788,7 +808,7 @@ mod tests {
             proof_state: ProofStateType::ProofInvalid,
             name:String::new(),
             version: String::from("1.0"),
-            nonce: generate_nonce().to_string(),
+            nonce: generate_nonce().unwrap(),
             proof: Some(ProofMessage::from_str(&proof_msg).unwrap()),
             proof_request: None,
         });
