@@ -314,6 +314,32 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	}
 
 	@Test
+	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeByPartOfSchema() throws Exception {
+
+		initCommonWallet();
+
+		String proofRequest = "{" +
+				"               \"nonce\":\"123432421212\"," +
+				"               \"name\":\"proof_req_1\"," +
+				"               \"version\":\"0.1\"," +
+				"               \"requested_attrs\":{" +
+				"                    \"attr1_referent\":{" +
+				"                        \"name\":\"name\"," +
+				"                        \"restrictions\":[{\"schema_key\":{\"name\":\"gvt\"}}]" +
+				"                    }" +
+				"                }," +
+				"               \"requested_predicates\":{}" +
+				"             }";
+
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+
+		JSONObject claims = new JSONObject(claimsJson);
+
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, claimsForAttribute1.length());
+	}
+
+	@Test
 	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeByMultipleSchemas() throws Exception {
 
 		initCommonWallet();

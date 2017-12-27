@@ -257,7 +257,7 @@ async def prover_get_claim_offers(wallet_handle: int,
         Each of the filters is optional and can be combines
             {
                 "issuer_did": string,  (Optional)
-                "schema_key": {name: string, version: string, did: string}  (Optional)
+                "schema_key": {name: string (Optional), version: string (Optional), did: string (Optional)}  (Optional)
             }
     :return: A json with a list of claim offers for the filter.
         {
@@ -443,7 +443,7 @@ async def prover_get_claims(wallet_handle: int,
     :param filter_json: filter for claims
         {
             "issuer_did": string, (Optional)
-            "schema_key": {name: string, version: string, did: string} (Optional)
+            "schema_key": {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)
         }
     :return: claims json
         [{
@@ -494,6 +494,30 @@ async def prover_get_claims_for_proof_req(wallet_handle: int,
             "requested_predicate_1_referent": <predicate_info>,
             "requested_predicate_2_referent": <predicate_info>,
         }
+        where attr_info:
+            {
+                "name": attribute name,
+                "restrictions": [
+                    {
+                        "schema_key": {name: string (Optional), version: string (Optional), did: string (Optional)}, (Optional)
+                        "issuer_did": string (Optional)
+                    }
+                ]  (Optional) - if specified, claim must be created for one of the given
+                                schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
+            }
+        predicate_info:
+            {
+                "attr_name": attribute name,
+                "p_type": predicate type (Currently >= only)
+                "value": requested value of attribute
+                "restrictions": [
+                    {
+                        "schema_key": {name: string (Optional), version: string (Optional), did: string (Optional)}, (Optional)
+                        "issuer_did": string (Optional)
+                    }
+                ]  (Optional) - if specified, claim must be created for one of the given
+                                schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
+            }
     :return: json with claims for the given pool request.
         Claim consists of uuid, human-readable attributes (key-value map), schema_key, issuer_did and revoc_reg_seq_no.
             {
@@ -565,7 +589,7 @@ async def prover_create_proof(wallet_handle: int,
                 "name": attribute name,
                 "restrictions": [
                     {
-                        "schema_key": {name: string, version: string, did: string}, (Optional)
+                        "schema_key": {name: string (Optional), version: string (Optional), did: string (Optional)}, (Optional)
                         "issuer_did": string (Optional)
                     }
                 ]  (Optional) - if specified, claim must be created for one of the given
@@ -578,7 +602,7 @@ async def prover_create_proof(wallet_handle: int,
                 "value": requested value of attribute
                 "restrictions": [
                     {
-                        "schema_key": {name: string, version: string, did: string}, (Optional)
+                        "schema_key": {name: string (Optional), version: string (Optional), did: string(Optional) }, (Optional)
                         "issuer_did": string (Optional)
                     }
                 ]  (Optional) - if specified, claim must be created for one of the given
@@ -697,30 +721,6 @@ async def verifier_verify_proof(proof_request_json: str,
             "requested_predicate_1_referent": <predicate_info>,
             "requested_predicate_2_referent": <predicate_info>,
         }
-        where attr_info:
-            {
-                "name": attribute name,
-                "restrictions": [
-                    {
-                        "schema_key": {name: string, version: string, did: string}, (Optional)
-                        "issuer_did": string (Optional)
-                    }
-                ]  (Optional) - if specified, claim must be created for one of the given
-                                schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
-            }
-        predicate_info:
-            {
-                "attr_name": attribute name,
-                "p_type": predicate type (Currently >= only)
-                "value": requested value of attribute
-                "restrictions": [
-                    {
-                        "schema_key": {name: string, version: string, did: string}, (Optional)
-                        "issuer_did": string (Optional)
-                    }
-                ]  (Optional) - if specified, claim must be created for one of the given
-                                schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
-            }
     :param proof_json: proof json
         For each requested attribute either a proof (with optionally revealed attribute value) or
         self-attested attribute value is provided.

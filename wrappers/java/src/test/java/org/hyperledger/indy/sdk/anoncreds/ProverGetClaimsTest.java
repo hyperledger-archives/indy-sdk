@@ -52,6 +52,20 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 	}
 
 	@Test
+	public void testProverGetClaimsWorksForFilterByPartOfSchema() throws Exception {
+
+		initCommonWallet();
+
+		String filter = "{\"schema_key\": {\"name\":\"gvt\"}}";
+
+		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
+
+		JSONArray claimsArray = new JSONArray(claims);
+
+		assertEquals(2, claimsArray.length());
+	}
+
+	@Test
 	public void testProverGetClaimsWorksForFilterByIssuerAndSchema() throws Exception {
 
 		initCommonWallet();

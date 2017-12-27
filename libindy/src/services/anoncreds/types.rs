@@ -29,10 +29,19 @@ impl<'a> JsonDecodable<'a> for ClaimOffer {}
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
 pub struct Filter {
     pub issuer_did: Option<String>,
-    pub schema_key: Option<SchemaKey>
+    pub schema_key: Option<SchemaKeyFilter>
 }
 
 impl<'a> JsonDecodable<'a> for Filter {}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
+pub struct SchemaKeyFilter {
+    pub name: Option<String>,
+    pub version: Option<String>,
+    pub did: Option<String>
+}
+
+impl<'a> JsonDecodable<'a> for SchemaKeyFilter {}
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct ClaimInfo {

@@ -104,6 +104,32 @@ async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_speci
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
+async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_part_of_schema(wallet_handle,
+                                                                                          prepopulated_wallet,
+                                                                                          schema_key):
+    proof_req = {
+        "nonce": "123432421212",
+        "name": "proof_req_1",
+        "version": "0.1",
+        "requested_attrs": {
+            "attr1_referent": {
+                "name": "name",
+                "restrictions": [{"schema_key": {"name": "gvt"}}]
+            }
+        },
+        "requested_predicates": {}
+    }
+
+    claims = json.loads(
+        await prover_get_claims_for_proof_req(wallet_handle, json.dumps(proof_req)))
+
+    assert len(claims['attrs']) == 1
+    assert len(claims['predicates']) == 0
+    assert len(claims['attrs']['attr1_referent']) == 2
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
 async def test_prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_issuer(wallet_handle,
                                                                                            prepopulated_wallet,
                                                                                            issuer_did):

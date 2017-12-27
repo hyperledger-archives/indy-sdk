@@ -34,6 +34,15 @@ async def test_prover_get_claims_works_for_filter_by_schema(wallet_handle, prepo
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
+async def test_prover_get_claims_works_for_filter_by_part_of_schema(wallet_handle, prepopulated_wallet, schema_key):
+    claims = json.loads(
+        await prover_get_claims(wallet_handle, json.dumps({"schema_key": {"name": "gvt"}})))
+
+    assert len(claims) == 2
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
 async def test_prover_get_claims_works_for_filter_by_issuer_did_and_schema_seq_no(wallet_handle, prepopulated_wallet,
                                                                                   claim_offer_issuer_1_schema_1_json):
     claims = json.loads(

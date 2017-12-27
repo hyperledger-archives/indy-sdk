@@ -285,7 +285,7 @@ pub extern fn indy_prover_store_claim_offer(command_handle: i32,
 ///     Each of the filters is optional and can be combines
 ///        {
 ///            "issuer_did": string, (Optional)
-///            "schema_key" : {name: string, version: string, did: string}  (Optional)
+///            "schema_key" : {name: string (Optional), version: string (Optional), did: string(Optional) }  (Optional)
 ///        }
 ///
 /// #Returns
@@ -492,8 +492,8 @@ pub extern fn indy_prover_store_claim(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// filter_json: filter for claims
 ///     {
-///         "issuer_did": string,
-///         "schema_key" : {name: string, version: string, did: string}
+///         "issuer_did": string (Optional),
+///         "schema_key" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -557,7 +557,7 @@ pub extern fn indy_prover_get_claims(command_handle: i32,
 ///         "name": attribute name,
 ///         "restrictions": [
 ///             {
-///                 "schema_key": {name, version, did}, (Optional)
+///                 "schema_key" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)
 ///                 "issuer_did": string (Optional)
 ///             }
 ///         ]  (Optional) - if specified, claim must be created for one of the given
@@ -570,7 +570,7 @@ pub extern fn indy_prover_get_claims(command_handle: i32,
 ///         "value": requested value of attribute
 ///         "restrictions": [
 ///             {
-///                 "schema_key": {name, version, did}, (Optional)
+///                 "schema_key" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)
 ///                 "issuer_did": string (Optional)
 ///             }
 ///         ]  (Optional) - if specified, claim must be created for one of the given
@@ -679,7 +679,7 @@ pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
 ///         "name": attribute name,
 ///         "restrictions": [
 ///             {
-///                 "schema_key": {name, version, did}, (Optional)
+///                 "schema_key": {name (Optional), version (Optional), did (Optional)}, (Optional)
 ///                 "issuer_did": string (Optional)
 ///             }
 ///         ]  (Optional)
@@ -691,7 +691,7 @@ pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
 ///         "value": requested value of attribute
 ///         "restrictions": [
 ///             {
-///                 "schema_key": {name, version, did}, (Optional)
+///                 "schema_key": {name (Optional), version (Optional), did (Optional)}, (Optional)
 ///                 "issuer_did": string (Optional)
 ///             }
 ///         ]  (Optional)

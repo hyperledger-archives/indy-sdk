@@ -154,7 +154,15 @@ impl ProverCommandExecutor {
                 condition = condition && claim_offer.issuer_did == issuer_did.clone();
             }
             if let Some(ref schema_key) = filter.schema_key {
-                condition = condition && claim_offer.schema_key == schema_key.clone();
+                if let Some(ref name) = schema_key.name {
+                    condition = condition && claim_offer.schema_key.name == name.clone();
+                }
+                if let Some(ref version) = schema_key.version {
+                    condition = condition && claim_offer.schema_key.version == version.clone();
+                }
+                if let Some(ref did) = schema_key.did {
+                    condition = condition && claim_offer.schema_key.did == did.clone();
+                }
             }
             condition
         });
@@ -286,19 +294,7 @@ impl ProverCommandExecutor {
         let filter: Filter = Filter::from_json(filter_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize filter: {:?}", err)))?;
 
-        claims_info.retain(move |claim_info| {
-            let mut condition = true;
-
-            if let Some(ref schema_key) = filter.schema_key {
-                condition = condition && claim_info.schema_key == schema_key.clone();
-            }
-
-            if let Some(issuer_did) = filter.issuer_did.clone() {
-                condition = condition && claim_info.issuer_did == issuer_did;
-            }
-
-            condition
-        });
+        claims_info.retain(move |claim_info| self.anoncreds_service.prover.claim_satisfy_restriction(claim_info, &filter));
 
         let claims_info_json = serde_json::to_string(&claims_info)
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claims info: {:?}", err)))?;

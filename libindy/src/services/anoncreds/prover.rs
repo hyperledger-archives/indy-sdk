@@ -70,7 +70,7 @@ impl Prover {
             for claim in claims {
                 let mut satisfy = Prover::_claim_value_for_attribute(&claim.attrs, &requested_attr.name).is_some();
 
-                satisfy = satisfy && Prover::_claim_satisfy_restrictions(claim, &requested_attr.restrictions);
+                satisfy = satisfy && self._claim_satisfy_restrictions(claim, &requested_attr.restrictions);
 
                 if satisfy { claims_for_attribute.push(claim.clone()); }
             }
@@ -87,7 +87,7 @@ impl Prover {
                     None => false
                 };
 
-                satisfy = satisfy && Prover::_claim_satisfy_restrictions(claim, &requested_predicate.restrictions);
+                satisfy = satisfy && self._claim_satisfy_restrictions(claim, &requested_predicate.restrictions);
 
                 if satisfy { claims_for_predicate.push(claim.clone()); }
             }
@@ -184,12 +184,12 @@ impl Prover {
             .map(|(_, value)| value.to_string())
     }
 
-    fn _claim_satisfy_restrictions(claim: &ClaimInfo, restrictions: &Option<Vec<Filter>>) -> bool {
-        info!("_claim_satisfy_restrictions >>> claim: {:?}, restrictions: {:?}", claim, restrictions);
+    fn _claim_satisfy_restrictions(&self, claim_info: &ClaimInfo, restrictions: &Option<Vec<Filter>>) -> bool {
+        info!("_claim_satisfy_restrictions >>> claim_info: {:?}, restrictions: {:?}", claim_info, restrictions);
 
         let res = match restrictions {
             &Some(ref restrictions) => restrictions.iter().any(|restriction|
-                Prover::_claim_satisfy_restriction(claim, &restriction)),
+                self.claim_satisfy_restriction(claim_info, &restriction)),
             &None => true
         };
 
@@ -198,17 +198,24 @@ impl Prover {
         res
     }
 
-    fn _claim_satisfy_restriction(claim: &ClaimInfo, restriction: &Filter) -> bool {
-        info!("_claim_satisfy_restriction >>> claim: {:?}, restriction: {:?}", claim, restriction);
+    pub fn claim_satisfy_restriction(&self, claim_info: &ClaimInfo, restriction: &Filter) -> bool {
+        info!("_claim_satisfy_restriction >>> claim_info: {:?}, restriction: {:?}", claim_info, restriction);
 
         let mut res = true;
 
-        if let Some(ref schema_key) = restriction.schema_key {
-            res = res && claim.schema_key == schema_key.clone();
-        }
-
         if let Some(issuer_did) = restriction.issuer_did.clone() {
-            res = res && claim.issuer_did == issuer_did;
+            res = res && claim_info.issuer_did == issuer_did;
+        }
+        if let Some(ref schema_key) = restriction.schema_key {
+            if let Some(ref name) = schema_key.name {
+                res = res && claim_info.schema_key.name == name.clone();
+            }
+            if let Some(ref version) = schema_key.version {
+                res = res && claim_info.schema_key.version == version.clone();
+            }
+            if let Some(ref did) = schema_key.did {
+                res = res && claim_info.schema_key.did == did.clone();
+            }
         }
 
         info!("_claim_satisfy_restriction >>> res: {:?}", res);
