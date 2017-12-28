@@ -22,12 +22,6 @@ export interface IClaimConfig {
   claimName: string,
 }
 
-export interface IClaimAttr {
-  issuerDid?: string,
-  schemaSeqNo?: number,
-  name: string,
-}
-
 /**
  * @description Interface that represents the attributes of an Issuer Claim object.
  * This interface is expected as the type for deserialize's parameter and serialize's return value
