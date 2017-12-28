@@ -251,7 +251,6 @@ impl IssuerClaim {
 
         for msg in msgs {
             if msg["typ"] == String::from("claimReq") {
-                //get the followup-claim-req using refMsgId
                 self.state = CxsStateType::CxsStateRequestReceived;
 
                 let payload = match msg["edgeAgentPayload"].as_str() {

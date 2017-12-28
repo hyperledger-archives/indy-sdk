@@ -9,7 +9,7 @@ let config = {
   sourceId: 'jsonCreation',
   schemaNum: 1234,
   issuerDid: 'arandomdidfoobar',
-  attr: JSON.stringify({key: ['value']}),
+  attr: {key: 'value', key2: 'value2', key3: 'value3'},
   claimName: 'Claim Name'
 }
 describe('An issuerClaim', async function () {
@@ -136,7 +136,7 @@ describe('An issuerClaim', async function () {
     const claim = await IssuerClaim.create(config)
     assert.equal(claim.sourceId, config.sourceId)
     assert.equal(claim.schemaNum, config.schemaNum)
-    assert.equal(claim.attr, config.attr)
+    assert.equal(claim.attr, JSON.stringify(IssuerClaim._convert_attrs(config.attr)))
   })
 
   it('accepts a claim offer DID as part of create', async function () {
@@ -191,7 +191,6 @@ describe('An issuerClaim', async function () {
     jsonClaim.state = StateType.RequestReceived
     jsonClaim.handle += 1
     claim = await IssuerClaim.deserialize(jsonClaim)
-    console.log('Claim Data' + claim.claimData)
     await claim.sendClaim(connection)
     assert.equal(claim.state, StateType.Accepted)
   })

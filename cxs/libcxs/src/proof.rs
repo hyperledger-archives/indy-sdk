@@ -12,7 +12,7 @@ use utils::error;
 use settings;
 use messages::proofs::proof_message::{ProofMessage, ClaimData };
 use messages;
-use messages::proofs::proof_request::{ ProofRequest };
+use messages::proofs::proof_request::{ ProofRequestMessage };
 use messages::GeneralMessage;
 use messages::MessageResponseCode::{ MessageAccepted };
 use connection;
@@ -56,7 +56,7 @@ struct Proof {
     version: String,
     nonce: String,
     proof: Option<ProofMessage>,
-    proof_request: Option<ProofRequest>,
+    proof_request: Option<ProofRequestMessage>,
 }
 
 impl Proof {
@@ -65,11 +65,7 @@ impl Proof {
         info!("successfully validated proof {}", self.handle);
         Ok(error::SUCCESS.code_num)
     }
-    
-    fn validate_proof_against_request(&self, proof: &Proof) -> Result<u32, u32> {
-        Ok(error::SUCCESS.code_num)
-    }
-    
+
     fn validate_proof_indy(&mut self, proof_req_json: &str, proof_json: &str, schemas_json: &str, claim_defs_json: &str, revoc_regs_json: &str) -> Result<u32, u32> {
         self.proof_state = ProofStateType::ProofUndefined;
         let (sender, receiver) = channel();
@@ -143,7 +139,7 @@ impl Proof {
     fn build_proof_req_json(&mut self) -> Result<String, u32> {
         match self.proof_request {
             Some(ref mut x) => {
-                x.get_proof_request_data()
+                Ok(x.get_proof_request_data())
             },
             None => Err(error::INVALID_PROOF_OFFER.code_num)
         }
@@ -186,8 +182,6 @@ impl Proof {
         let mut proof_obj = messages::proof_request();
         let proof_request = proof_obj
             .type_version(&self.version)
-            .prover_did(&self.prover_did)
-            .requester_did(&self.requester_did)
             .tid(1)
             .mid(9)
             .nonce(&self.nonce)
@@ -295,8 +289,6 @@ impl Proof {
                 return
             }
         }
-
-
     }
 
     fn update_state(&mut self) {
@@ -448,7 +440,7 @@ pub fn get_proof_uuid(handle: u32) -> Result<String,u32> {
 
 fn get_matching_messages<'a>(msg_uid:&'a str, to_did: &'a str) -> Result<Vec<serde_json::Value>, &'a str> {
     let response = match messages::get_messages().to(to_did).uid(msg_uid).send() {
-            Ok(x) => x,
+        Ok(x) => x,
         Err(x) => {
             return Err("invalid response to get_messages for proof")
         },

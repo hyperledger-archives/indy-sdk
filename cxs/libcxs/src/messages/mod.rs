@@ -15,17 +15,7 @@ use self::rmp_serde::encode;
 use self::create_key::CreateKeyMsg;
 use self::invite::{SendInvite, UpdateProfileData};
 use self::message::{GetMessages, SendMessage};
-use self::proofs::proof_request::{ProofRequest};
-
-#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
-pub enum MessageType {
-    EmptyPayload{},
-    CreateKeyMsg(CreateKeyMsg),
-    SendInviteMsg(SendInvite),
-    UpdateInfoMsg(UpdateProfileData),
-    GetMessagesMsg(GetMessages),
-    ProofRequestMsg(ProofRequest)
-}
+use self::proofs::proof_request::{ProofRequestMessage};
 
 pub enum MessageResponseCode {
     MessageCreate,
@@ -171,7 +161,7 @@ pub fn get_messages() -> GetMessages { GetMessages::create() }
 
 pub fn send_message() -> SendMessage { SendMessage::create() }
 
-pub fn proof_request() -> ProofRequest { ProofRequest::create() }
+pub fn proof_request() -> ProofRequestMessage { ProofRequestMessage::create() }
 
 #[cfg(test)]
 pub mod tests {

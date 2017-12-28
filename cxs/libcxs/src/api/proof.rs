@@ -332,7 +332,7 @@ mod tests {
     }
 
     extern "C" fn verify_invalid_proof_cb(handle: u32, err: u32, proof_state: u32, proof_string: *const c_char) {
-        assert_eq!(err, 0);
+        assert_eq!(err, error::INVALID_PROOF_OFFER.code_num);
         if proof_string.is_null() {
             panic!("proof_string is null");
         }

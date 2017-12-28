@@ -32,7 +32,7 @@ fn test_putting_claim_def_dependencies() {
     use rusqlite::Connection;
     use rusqlite::types::ToSql;
     let home = home_dir().unwrap();
-    let indy = Path::new(".indy_client/wallet/wallet-inject/sqlite.db");
+    let indy = Path::new(".indy_client/wallet/wallet1/sqlite.db");
     let path = home.join(indy);
     let connection = Connection::open(path.as_path()).unwrap();
 
