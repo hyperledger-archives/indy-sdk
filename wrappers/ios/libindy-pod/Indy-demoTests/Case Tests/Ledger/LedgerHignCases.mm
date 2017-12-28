@@ -761,9 +761,11 @@
     ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
                                                         request:nymRequest
                                                        response:&nymResponse];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"PoolUtils::sendRequestWithPoolHandle() returned invalid error");
-    NSLog(@"nymResponse: %@", nymResponse);
-    
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::sendRequestWithPoolHandle() returned not Success");
+    XCTAssertNotNil(nymResponse, @"nymResponse is nil!");
+    NSDictionary *response = [NSDictionary fromString:nymResponse];
+    XCTAssertTrue([response[@"op"] isEqualToString:@"REQNACK"], @"wrong response type");
+
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
@@ -1053,9 +1055,11 @@
     ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
                                                         request:attribRequest
                                                        response:&attribResponse];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() returned not LedgerInvalidTransaction");
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::testAttribRequestWorksWithoutSignature() returned not Success");
     XCTAssertNotNil(attribResponse, @"attribResponse is nil!");
-    
+    NSDictionary *response = [NSDictionary fromString:attribResponse];
+    XCTAssertTrue([response[@"op"] isEqualToString:@"REQNACK"], @"wrong response type");
+
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
@@ -1283,8 +1287,10 @@
     ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
                                                         request:schemaRequest
                                                        response:&schemaResponse];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::sendRequestWithPoolHandle() returned not LedgerInvalidTransaction");
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::sendRequestWithPoolHandle() returned not Success");
     XCTAssertNotNil(schemaResponse, @"schemaResponse is nil!");
+    NSDictionary *response = [NSDictionary fromString:schemaResponse];
+    XCTAssertTrue([response[@"op"] isEqualToString:@"REQNACK"], @"wrong response type");
     
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
@@ -1509,8 +1515,10 @@
     ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
                                                         request:nodeRequest
                                                        response:&nodeResponse];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() returned not LedgerInvalidTransaction");
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() returned not Success");
     XCTAssertNotNil(nodeResponse, @"nodeResponse is nil!");
+    NSDictionary *response = [NSDictionary fromString:nodeResponse];
+    XCTAssertTrue([response[@"op"] isEqualToString:@"REQNACK"], @"wrong response type");
     
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
@@ -1852,8 +1860,11 @@
     ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
                                                         request:claimDefRequestJson
                                                        response:&claimDefResponse];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"PoolUtils::sendRequestWithPoolHandle() returned wrong code");
-    
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() returned not Success");
+    XCTAssertNotNil(claimDefResponse, @"claimDefResponse is nil!");
+    NSDictionary *response = [NSDictionary fromString:claimDefResponse];
+    XCTAssertTrue([response[@"op"] isEqualToString:@"REQNACK"], @"wrong response type");
+
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
