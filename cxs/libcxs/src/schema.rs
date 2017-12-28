@@ -5,7 +5,6 @@ use serde_json::Value;
 
 use self::libc::c_char;
 use std::ffi::CString;
-use settings;
 use utils::error;
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
@@ -199,6 +198,7 @@ mod tests {
     use utils::pool;
     use std::path::Path;
     use std::str::FromStr;
+    use settings;
 
     static  EXAMPLE: &str = r#"{
     "seqNo": 15,

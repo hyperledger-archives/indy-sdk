@@ -198,7 +198,7 @@ mod tests {
         let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
         let for_did = "11235yBzrpJQmNyZzgoTqB";
         let for_verkey = "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A";
-        let nonce = "nonce";
+        let nonce = "0";
         let msg_payload = CreateKeyPayload {
             for_did: for_did.to_string(),
             for_verkey: for_verkey.to_string(),
@@ -236,7 +236,7 @@ mod tests {
             .to(&agent_did)
             .for_did(&my_did)
             .for_verkey(&my_vk)
-            .nonce("nonce")
+            .nonce("0")
             .to_post().unwrap();
         assert!(bytes.len() > 0);
 
@@ -270,7 +270,7 @@ mod tests {
         let to_did = "Fh8yBzrpJQmNyZzgoTqB";
         let for_did = "11235yBzrpJQmNyZzgoTqB";
         let for_verkey = "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A";
-        let nonce = "nonce";
+        let nonce = "0";
         let msg = create_keys()
             .to(to_did)
             .for_did(for_did)
