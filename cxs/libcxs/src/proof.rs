@@ -12,7 +12,7 @@ use utils::error;
 use settings;
 use messages::proofs::proof_message::{ProofMessage, ClaimData };
 use messages;
-use messages::proofs::proof_request::{ ProofRequest };
+use messages::proofs::proof_request::{ ProofRequestMessage };
 use messages::GeneralMessage;
 use messages::MessageResponseCode::{ MessageAccepted };
 use connection;
@@ -56,7 +56,7 @@ struct Proof {
     version: String,
     nonce: String,
     proof: Option<ProofMessage>,
-    proof_request: Option<ProofRequest>,
+    proof_request: Option<ProofRequestMessage>,
 }
 
 impl Proof {
@@ -139,7 +139,7 @@ impl Proof {
     fn build_proof_req_json(&mut self) -> Result<String, u32> {
         match self.proof_request {
             Some(ref mut x) => {
-                x.get_proof_request_data()
+                Ok(x.get_proof_request_data())
             },
             None => Err(error::INVALID_PROOF_OFFER.code_num)
         }
@@ -182,8 +182,6 @@ impl Proof {
         let mut proof_obj = messages::proof_request();
         let proof_request = proof_obj
             .type_version(&self.version)
-            .prover_did(&self.prover_did)
-            .requester_did(&self.requester_did)
             .tid(1)
             .mid(9)
             .nonce(&self.nonce)
