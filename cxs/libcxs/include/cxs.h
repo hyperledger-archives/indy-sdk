@@ -163,7 +163,7 @@ cxs_error_t cxs_proof_set_connection(cxs_command_handle_t command_handle, cxs_pr
 cxs_error_t cxs_proof_send_request(cxs_command_handle_t command_handle, cxs_proof_handle_t proof_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err));
 
 /** Populate response_data with the latest proof offer received. */
-cxs_error_t cxs_proof_get_proof_offer(cxs_proof_handle_t proof_handle, char *proof_offer);
+cxs_error_t cxs_get_proof(cxs_command_handle_t command_handle, cxs_proof_handle_t proof_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_state_t state const, char *state));
 
 /** Set proof offer as accepted. */
 cxs_error_t cxs_proof_accepted(cxs_proof_handle_t proof_handle);

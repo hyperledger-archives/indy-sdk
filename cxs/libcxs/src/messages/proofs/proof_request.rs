@@ -11,33 +11,34 @@ static REQUESTED_ATTRS: &str = "requested_attrs";
 static REQUESTED_PREDICATES: &str = "requested_predicates";
 static DEFAULT_ATTR: &str = "ATTR";
 
-#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
 struct ProofType {
     name: String,
     #[serde(rename = "version")]
     type_version: String,
 }
 
-#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
 struct ProofTopic {
     mid: u32,
     tid: u32,
 }
 
-#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
-struct ProofRequestData{
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
+pub struct ProofRequestData{
     nonce: String,
     name: String,
     #[serde(rename = "version")]
     data_version: String,
     requested_attrs: String,
-    #[serde(skip_serializing, default)]
     requested_predicates: String,
 }
 
-#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, PartialOrd)]
 pub struct ProofRequest{
+    #[serde(skip_serializing, default)]
     prover_did: String,
+    #[serde(skip_serializing, default)]
     requester_did: String,
     #[serde(rename = "@type")]
     type_header: ProofType,
@@ -166,10 +167,20 @@ impl ProofRequest {
         proof[PROOF_DATA][REQUESTED_ATTRS] = combine_request_attributes(
             &self.proof_request_data.name,
             &self.proof_request_data.requested_attrs)?;
-//        proof[PROOF_DATA][REQUESTED_PREDICATES] =combine_request_attributes(
-//            &self.proof_request_data.name,
-//            &self.proof_request_data.requested_predicates)?;
+        //Todo: need to actually add Proof Predicates
+        proof[PROOF_DATA][REQUESTED_PREDICATES] = json!({});
         Ok(proof.to_string())
+    }
+
+    pub fn get_proof_request_data(&mut self) -> Result<String, u32> {
+        let attrs = self.proof_request_data.requested_attrs.clone();
+        let predicates = self.proof_request_data.requested_predicates.clone();
+        let mut proof_data = json!(self)[PROOF_DATA].clone();
+        proof_data[REQUESTED_ATTRS] = combine_request_attributes(
+            &self.proof_request_data.name,
+            &self.proof_request_data.requested_attrs)?;
+        proof_data[REQUESTED_PREDICATES] = json!({});
+        Ok(proof_data.to_string())
     }
 }
 
@@ -280,9 +291,8 @@ mod tests {
                         "name": "zip",
                     },
                 },
+                "requested_predicates": {},
             },
-            "prover_did": "",
-            "requester_did": "",
         });
         assert_eq!(request.serialize_message().unwrap(), proof_request_test.to_string());
     }

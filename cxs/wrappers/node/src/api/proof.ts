@@ -24,6 +24,22 @@ export interface IProofData {
   prover_did: string
   state: StateType
   name: string
+  proof_state: ProofState
+  proof: any
+}
+
+export interface IProofResponses {
+  proofAttrs: IProofResponseAttr[],
+  proofState: ProofState,
+}
+
+export interface IProofResponseAttr {
+  schema_seq_no: number,
+  issuer_did: string,
+  claim_uuid: string,
+  name: string,
+  value: string,
+  type: string,
 }
 
 /**
@@ -35,6 +51,12 @@ export interface IProofAttr {
   issuerDid?: string,
   schemaSeqNo?: number,
   name: string,
+}
+
+export enum ProofState {
+  Undefined = 0,
+  Verified = 1,
+  Invalid = 2
 }
 
 // export interface IProofPredicate {
@@ -55,6 +77,7 @@ export class Proof extends CXSBase {
   protected _deserializeFn = rustAPI().cxs_proof_deserialize
   private _requestedAttributes: IProofAttr[]
   private _name: string
+  private _proofState: number
 
   constructor (sourceId) {
     super(sourceId)
@@ -176,5 +199,38 @@ export class Proof extends CXSBase {
     } catch (err) {
       throw new CXSInternalError(`cxs_proof_send_request -> ${err}`)
     }
+  }
+
+  async getProof (connection: Connection): Promise<IProofResponses> {
+    try {
+      const proof = await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().cxs_get_proof(0, this.handle, connection.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback('void', ['uint32', 'uint32', 'uint32', 'string'],
+          (xcommandHandle, err, proofState, proofData) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            this._setProofState(proofState)
+            resolve(proofData)
+          })
+        )
+      return {proofAttrs: JSON.parse(proof), proofState: this.getProofState()}
+    } catch (err) {
+      throw new CXSInternalError(`cxs_get_proof -> ${err}`)
+    }
+  }
+
+  getProofState (): number {
+    return this._proofState
+  }
+
+  _setProofState (state: number) {
+    this._proofState = state
   }
 }

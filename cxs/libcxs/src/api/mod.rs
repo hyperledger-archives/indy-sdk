@@ -79,7 +79,15 @@ enum_number!(CxsStateType
     CxsStateRevoked = 7,
 });
 
-
+// undefined is correlated with CxsStateNon -> Haven't received Proof
+// Validated is both validated by indy-sdk and by comparing proof-request
+// Invalid is that it failed one or both of validation processes
+enum_number!(ProofStateType
+{
+    ProofUndefined = 0,
+    ProofValidated = 1,
+    ProofInvalid = 2,
+});
 
 #[repr(C)]
 pub struct CxsStatus {

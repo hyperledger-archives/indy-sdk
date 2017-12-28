@@ -5,7 +5,7 @@ pub mod create_key;
 pub mod invite;
 pub mod validation;
 pub mod message;
-pub mod proof_messages;
+pub mod proofs;
 
 use settings;
 use utils::crypto;
@@ -15,7 +15,7 @@ use self::rmp_serde::encode;
 use self::create_key::CreateKeyMsg;
 use self::invite::{SendInvite, UpdateProfileData};
 use self::message::{GetMessages, SendMessage};
-use self::proof_messages::{ProofRequest};
+use self::proofs::proof_request::{ProofRequest};
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
 pub enum MessageType {
@@ -25,6 +25,28 @@ pub enum MessageType {
     UpdateInfoMsg(UpdateProfileData),
     GetMessagesMsg(GetMessages),
     ProofRequestMsg(ProofRequest)
+}
+
+pub enum MessageResponseCode {
+    MessageCreate,
+    MessageSent,
+    MessagePending,
+    MessageAccepted,
+    MessageRejected,
+    MessageAnswered,
+}
+
+impl MessageResponseCode {
+    pub fn as_str(&self) -> &str {
+        match *self {
+            MessageResponseCode::MessageCreate => "MS-101",
+            MessageResponseCode::MessageSent => "MS-102",
+            MessageResponseCode::MessagePending => "MS-103",
+            MessageResponseCode::MessageAccepted => "MS-104",
+            MessageResponseCode::MessageRejected => "MS-105",
+            MessageResponseCode::MessageAnswered => "MS-106",
+        }
+    }
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]

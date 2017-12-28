@@ -1,4 +1,6 @@
 extern crate libc;
+extern crate serde_json;
+
 use self::libc::c_char;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
@@ -8,6 +10,8 @@ use std::ptr::null;
 use std::ffi::CString;
 use utils::timeout::TimeoutUtils;
 use utils::cstring::CStringUtils;
+//use utils::demo::{build_claim_def_txn, sign_and_send_request};
+use ::cxs::utils::pool::get_pool_handle;
 
 #[allow(dead_code)]
 extern {
@@ -53,6 +57,13 @@ pub fn put_claim_def_in_wallet(wallet_handle: i32, issuer_did: &str, schema_json
                 panic!("claim def is empty");
             }
             check_useful_c_str!(claim_def_string, ());
+//            let claim_def: serde_json::Value = serde_json::from_str(claim_def_string).unwrap();
+//            let claim_def_data = claim_def.get("data").unwrap().to_string();
+//            let claim_def_txn = build_claim_def_txn(issuer_did, 103, "CL", &claim_def_data).unwrap();
+//            let claim_def = sign_and_send_request(get_pool_handle().unwrap() as u32,
+//                                                  wallet_handle,
+//                                                  issuer_did,
+//                                                  &claim_def_txn).unwrap();
             println!("successfully called store claim def: {}", claim_def_string);
             cb(err)
         }

@@ -200,7 +200,7 @@ pub fn create_agent_pairwise(handle: u32) -> Result<u32, u32> {
         .for_did(&pw_did)
         .to(&enterprise_did)
         .for_verkey(&pw_verkey)
-        .nonce("anything")
+        .nonce("0")
         .send() {
         Ok(_) => Ok(error::SUCCESS.code_num),
         Err(x) => Err(x),
