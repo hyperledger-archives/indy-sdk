@@ -27,45 +27,80 @@ actor "Agent" as G
 participant "Wallet" as GW
 endbox
 
-=== Claim Schemas Setup ==
+box "Sovrin Steward" #LightYellow
+actor "Agent" as S
+participant "Wallet" as SW
+endbox
+
+=== Getting Trust Anchor credentials for Faber, Acme, Thrift and Government  ==
+S->SW: Create "Sovrin Steward" wallet
+S->SW: Create and store "Sovrin Steward" DID from seed
+
+== Getting Trust Anchor credentials - Government Onboarding  ==
+S->SW: Create and store "Sovrin Steward Government Pairwise" DID
+S->L: Send Nym for "Sovrin Steward Government Pairwise" DID
+S->G: Connection request with "Sovrin Steward Government Pairwise" DID and nonce
 G->GW: Create "Government" wallet
-G->GW: Create and store "Government Trust Anchor" DID from seed
+G->GW: Create and store "Government Sovrin Steward Pairwise" DID
+G->S: Anoncryopted connection response with "Government Sovrin Steward Pairwise" DID, verkey and nonce
+S->G: Send Nym for "Government Sovrin Steward Pairwise" DID with Trust Anchor Role
+
+== Getting Trust Anchor credentials - Faber Onboarding  ==
+S->SW: Create and store "Sovrin Steward Faber Pairwise" DID
+S->L: Send Nym for "Sovrin Steward Faber Pairwise" DID
+S->F: Connection request with "Sovrin Steward Faber Pairwise" DID and nonce
+F->FW: Create "Faber" wallet
+F->FW: Create and store "Faber Sovrin Steward Pairwise" DID
+F->S: Anoncryopted connection response with "Faber Sovrin Steward Pairwise" DID, verkey and nonce
+S->L: Send Nym for "Faber Sovrin Steward Pairwise" DID with Trust Anchor Role
+
+== Getting Trust Anchor credentials - Acme Onboarding  ==
+S->SW: Create and store "Sovrin Steward Acme Pairwise" DID
+S->L: Send Nym for "Sovrin Steward Acme Pairwise" DID
+S->AC: Connection request with "Sovrin Steward Acme Pairwise" DID and nonce
+AC->ACW: Create "Acme" wallet
+AC->ACW: Create and store "Acme Sovrin Steward Pairwise" DID
+AC->S: Anoncryopted connection response with "Acme Sovrin Steward Pairwise" DID, verkey and nonce
+S->L: Send Nym for "Acme Sovrin Steward Pairwise" DID with Trust Anchor Role
+
+== Getting Trust Anchor credentials - Thrift Onboarding  ==
+S->SW: Create and store "Sovrin Steward Thrift Pairwise" DID
+S->L: Send Nym for "Sovrin Steward Thrift Pairwise" DID
+S->T: Connection request with "Sovrin Steward Thrift Pairwise" DID and nonce
+T->TW: Create "Thrift" wallet
+T->TW: Create and store "Thrift Sovrin Steward Pairwise" DID
+T->S: Anoncryopted connection response with "Thrift Sovrin Steward Pairwise" DID, verkey and nonce
+S->L: Send Nym for "Thrift Sovrin Steward Pairwise" DID with Trust Anchor Role
+
+=== Claim Schemas Setup ==
 G->GW: Create and store "Government Schema Issuer" DID
 G->L: Send Nym for "Government Schema Issuer" DID
 G->L: Send Schema for "Employment History" Schema
 G->L: Send Schema for "HE Diploma" Schema
 
 === Faber Claim Definition Setup ==
-F->FW: Create "Faber" wallet
-F->FW: Create and store "Faber Trust Anchor" DID from seed
 F->FW: Create and store "Faber Claim Issuer" DID
 F->L: Send Nym for "Faber Claim Issuer" DID
 F->L: Send GetSchema for "HE Diploma" Schema
-F->F: Create and store "Faber HE Diploma" Claim Definition
+F->FW: Create and store "Faber HE Diploma" Claim Definition
 F->L: Send ClaimDef for "Faber HE Diploma" Claim Defition
 
 === Acme Claim Definition Setup ==
-AC->ACW: Create "Acme" wallet
-AC->ACW: Create and store "Acme Trust Anchor" DID from seed
 AC->ACW: Create and store "Acme Claim Issuer" DID
 AC->L: Send Nym for "Acme Claim Issuer" DID
-F->L: Send GetSchema for "Employment History" Schema
+AC->L: Send GetSchema for "Employment History" Schema
 AC->ACW: Create and store "Acme Employment History" Claim Definition
 AC->L: Send ClaimDef for "Acme Employment History" Claim Definition
 
-=== Thrift Trust Ancor Credentials Setup ==
-T->TW: Create "Thrift" wallet
-T->TW: Create and store "Thrift Trust Anchor" DID from seed
-
 === Getting HE Diploma with Faber ==
 == Getting HE Diploma with Faber - Onboarding ==
+F->FW: Create and store "Faber Alice Pairwise" DID
+F->L: Send Nym for "Faber Alice Pairwise" DID
+F->A: Connection request with "Faber Alice Pairwise" DID and nonce
 A->AW: Create "Alice" wallet
 A->AW: Create and store "Alice Faber Pairwise" DID
-A->F: Send "Alice Faber Pairwise" DID\nand corresponded verkey.
-F->FW: Create and store "Faber Alice Pairwise" DID
+A->F: Anoncryopted connection response with "Alice Faber Pairwise" DID, verkey and nonce
 F->L: Send Nym for "Alice Faber Pairwise" DID
-F->L: Send Nym for "Faber Alice Pairwise" DID
-F->A: Send "Faber Alice Pairwise" DID
 
 == Getting HE Diploma with Faber - Getting HE Diploma Claim ==
 F->A: Send authcrypted "Alice Faber HE Diploma" Claim Offer
@@ -80,12 +115,12 @@ A->AW: Store "Alice Faber HE Diploma" Claim
 
 === Apply for the job with Acme ==
 == Apply for the job with Acme - Onboarding ==
-A->AW: Create and store "Alice Acme Pairwise" DID
-A->AC: Send "Alice Acme Pairwise" DID\nand corresponded verkey.
 AC->ACW: Create and store "Acme Alice Pairwise" DID
-AC->L: Send Nym for "Alice Acme Pairwise" DID
 AC->L: Send Nym for "Acme Alice Pairwise" DID
-AC->A: Send "Faber Alice Pairwise" DID
+AC->A: Connection request with "Acme Alice Pairwise" DID and nonce
+A->AW: Create and store "Alice Acme Pairwise" DID
+A->AC: Anoncryopted connection response with "Alice Acme Pairwise" DID, verkey and nonce
+AC->L: Send Nym for "Alice Acme Pairwise" DID
 
 == Apply for the job with Acme - HE Diploma proving ==
 AC->A: Send authcrypted "HE Diploma" Proof Request
@@ -114,6 +149,13 @@ T->TW: Create and store "Thrift Alice Pairwise" DID
 T->L: Send Nym for "Alice Thrift Pairwise" DID
 T->L: Send Nym for "Acme Thrift Pairwise" DID
 T->A: Send "Thrift Alice Pairwise" DID
+
+T->TW: Create and store "Thrift Alice Pairwise" DID
+T->L: Send Nym for "Thrift Alice Pairwise" DID
+T->A: Connection request with "Thrift Alice Pairwise" DID and nonce
+A->AW: Create and store "Alice Thrift Pairwise" DID
+A->T: Anoncryopted connection response with "Alice Thrift Pairwise" DID, verkey and nonce
+T->L: Send Nym for "Alice Thrift Pairwise" DID
 
 == Apply for the loan with Thrift - HE Diploma and Employment History proving  ==
 T->A: Send authcrypted "HE Diploma and Employment History" Proof Request
