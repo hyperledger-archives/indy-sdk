@@ -2,15 +2,10 @@ package org.hyperledger.indy.sdk.demo;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.did.Did;
-import org.hyperledger.indy.sdk.ledger.InvalidLedgerTransactionException;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.did.DidJSONParameters;
 import org.hyperledger.indy.sdk.did.DidResults.CreateAndStoreMyDidResult;
 import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.isA;
-
-import java.util.concurrent.ExecutionException;
 
 
 public class ReplaceKeysDemoTest extends IndyIntegrationTestWithPoolAndSingleWallet {
@@ -72,11 +67,9 @@ public class ReplaceKeysDemoTest extends IndyIntegrationTestWithPoolAndSingleWal
 		// 5. Apply replacing of keys
 		Did.replaceKeysApply(wallet, myDid).get();
 
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
-
 		// 6. Send schema request
 		String schemaRequest = Ledger.buildSchemaRequest(myDid, SCHEMA_DATA).get();
-		Ledger.signAndSubmitRequest(pool, wallet, myDid, schemaRequest).get();
+		String response = Ledger.signAndSubmitRequest(pool, wallet, myDid, schemaRequest).get();
+		checkResponseType(response,"REQNACK" );
 	}
 }

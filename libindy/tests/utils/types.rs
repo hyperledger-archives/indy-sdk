@@ -22,9 +22,16 @@ pub struct ClaimDefinitionData {
 }
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
+pub enum ResponseType {
+    REQNACK,
+    REPLY,
+    REJECT
+}
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Response {
-    pub op: String,
+    pub op: ResponseType,
     pub reason: String,
     pub req_id: u64,
     pub identifier: String

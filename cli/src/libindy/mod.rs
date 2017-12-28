@@ -96,17 +96,14 @@ pub enum ErrorCode
     // No concensus during ledger operation
     LedgerNoConsensusError = 303,
 
-    // Attempt to send unknown or incomplete transaction message
-    LedgerInvalidTransaction = 304,
-
     // Attempt to send transaction without the necessary privileges
-    LedgerSecurityError = 305,
+    LedgerSecurityError = 304,
 
     // Attempt to create pool ledger config with name used for another existing pool
-    PoolLedgerConfigAlreadyExistsError = 306,
+    PoolLedgerConfigAlreadyExistsError = 305,
 
     // Timeout for action
-    PoolLedgerTimeout = 307,
+    PoolLedgerTimeout = 306,
 
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
