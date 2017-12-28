@@ -76,7 +76,12 @@ pub fn get_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Resu
 
 pub fn get_opt_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Option<Vec<&'a str>>, ()> {
     match params.get(name) {
-        Some(v) => Ok(Some(v.split(",").collect::<Vec<&'a str>>())),
+        Some(v) =>
+            if v.is_empty() {
+                Ok(Some(Vec::<&'a str>::new()))
+            } else {
+                Ok(Some(v.split(",").collect::<Vec<&'a str>>()))
+            },
         None => Ok(None)
     }
 }

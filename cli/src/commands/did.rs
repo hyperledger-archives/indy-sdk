@@ -22,7 +22,7 @@ pub mod new_command {
     command!(CommandMetadata::build("new", "Create new DID")
                 .add_param("did", true, "Known DID for new wallet instance")
                 .add_param("seed", true, "Seed for creating DID key-pair")
-                .add_param("cid", true, "Create DID as CID (default false)")
+                .add_param("cid", true, "Create DID as CID. Can be true or false (default false)")
                 .add_param("metadata", true, "DID metadata")
                 .add_example("did new")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX")
