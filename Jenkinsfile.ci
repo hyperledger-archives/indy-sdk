@@ -132,6 +132,7 @@ def iosTesting() {
                 sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 
                 setupRust()
+                setupRustIOS()
                 setupBrewPackages()
 
                 dir('libindy') {
@@ -314,6 +315,10 @@ def closePool(env_name, network_name, poolInst) {
 
 def setupRust() {
     sh "rustup default 1.21.0"
+}
+
+def setupRustIOS() {
+    sh "rustup target add x86_64-apple-ios"
 }
 
 def setupBrewPackages() {
