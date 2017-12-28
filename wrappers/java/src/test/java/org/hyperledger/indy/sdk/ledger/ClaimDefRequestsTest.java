@@ -125,9 +125,6 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 
 	@Test
 	public void testClaimDefRequestWorksWithoutSignature() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
-
 		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
@@ -144,6 +141,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 		String claimDefJson = String.format("%s", claimDefObj.getJSONObject("data"));
 
 		String claimDefRequest = Ledger.buildClaimDefTxn(myDid, seqNo, signatureType, claimDefJson).get();
-		Ledger.submitRequest(pool, claimDefRequest).get();
+		String response = Ledger.submitRequest(pool, claimDefRequest).get();
+		checkResponseType(response,"REQNACK" );
 	}
 }

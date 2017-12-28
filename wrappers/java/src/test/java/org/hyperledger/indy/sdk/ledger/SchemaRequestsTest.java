@@ -49,15 +49,12 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 
 	@Test
 	public void testSchemaRequestWorksWithoutSignature() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
-
 		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();
 
 		String schemaRequest = Ledger.buildSchemaRequest(did, SCHEMA_DATA).get();
-		String schemaResponse = Ledger.submitRequest(pool, schemaRequest).get();
-		assertNotNull(schemaResponse);
+		String response = Ledger.submitRequest(pool, schemaRequest).get();
+		checkResponseType(response,"REQNACK" );
 	}
 
 	@Test
