@@ -143,13 +143,6 @@ A->AW: Store "Alice Acme Employment History" Claim
 
 === Apply for the loan with Thrift ==
 == Apply for the loan with Thrift - Onboarding ==
-A->AW: Create and store "Alice Thrift Pairwise" DID
-A->T: Send "Alice Thrift Pairwise" DID\nand corresponded verkey.
-T->TW: Create and store "Thrift Alice Pairwise" DID
-T->L: Send Nym for "Alice Thrift Pairwise" DID
-T->L: Send Nym for "Acme Thrift Pairwise" DID
-T->A: Send "Thrift Alice Pairwise" DID
-
 T->TW: Create and store "Thrift Alice Pairwise" DID
 T->L: Send Nym for "Thrift Alice Pairwise" DID
 T->A: Connection request with "Thrift Alice Pairwise" DID and nonce
