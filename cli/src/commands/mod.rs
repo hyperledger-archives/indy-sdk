@@ -120,6 +120,16 @@ pub fn ensure_opened_wallet_handle(ctx: &CommandContext) -> Result<i32, ()> {
     }
 }
 
+pub fn ensure_opened_wallet(ctx: &CommandContext) -> Result<(i32, String), ()> {
+    let handle = ctx.get_int_value("OPENED_WALLET_HANDLE");
+    let name = ctx.get_string_value("OPENED_WALLET_NAME");
+
+    match (handle, name) {
+        (Some(handle), Some(name)) => Ok((handle, name)),
+        _ => Err(println_err!("There is no opened wallet now"))
+    }
+}
+
 pub fn get_opened_wallet(ctx: &CommandContext) -> Option<(i32, String)> {
     let handle = ctx.get_int_value("OPENED_WALLET_HANDLE");
     let name = ctx.get_string_value("OPENED_WALLET_NAME");
@@ -141,6 +151,16 @@ pub fn ensure_connected_pool_handle(ctx: &CommandContext) -> Result<i32, ()> {
     match ctx.get_int_value("CONNECTED_POOL_HANDLE") {
         Some(pool_handle) => Ok(pool_handle),
         None => Err(println_err!("There is no opened pool now"))
+    }
+}
+
+pub fn ensure_connected_pool(ctx: &CommandContext) -> Result<(i32, String), ()> {
+    let handle = ctx.get_int_value("CONNECTED_POOL_HANDLE");
+    let name = ctx.get_string_value("CONNECTED_POOL_NAME");
+
+    match (handle, name) {
+        (Some(handle), Some(name)) => Ok((handle, name)),
+        _ => Err(println_err!("There is no opened pool now"))
     }
 }
 

@@ -124,9 +124,11 @@
                                                               submitterDid:myDid
                                                                requestJson:nodeRequest
                                                            outResponseJson:&nodeResponse];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequest() failed");
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequest() returned not Success");
     XCTAssertNotNil(nodeResponse, @"nodeResponse is nil!");
-    
+    NSDictionary *response = [NSDictionary fromString:nodeResponse];
+    XCTAssertTrue([response[@"op"] isEqualToString:@"REJECT"], @"wrong response type");
+
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
@@ -186,9 +188,11 @@
                                                               submitterDid:myDid
                                                                requestJson:nodeRequest
                                                            outResponseJson:&nodeResponse];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequest() failed");
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequest() returned not Success");
     XCTAssertNotNil(nodeResponse, @"nodeResponse is nil!");
-    
+    NSDictionary *response = [NSDictionary fromString:nodeResponse];
+    XCTAssertTrue([response[@"op"] isEqualToString:@"REJECT"], @"wrong response type");
+
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }

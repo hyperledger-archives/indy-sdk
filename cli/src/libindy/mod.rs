@@ -96,9 +96,6 @@ pub enum ErrorCode
     // No concensus during ledger operation
     LedgerNoConsensusError = 303,
 
-    // Attempt to send unknown or incomplete transaction message
-    LedgerInvalidTransaction = 304,
-
     // Attempt to send transaction without the necessary privileges
     LedgerSecurityError = 305,
 
@@ -126,7 +123,7 @@ pub enum ErrorCode
 
     // Signus errors
     // Unknown format of DID entity keys
-    SignusUnknownCryptoError = 500
+    UnknownCryptoTypeError = 500
 }
 
 impl ErrorCode {
@@ -171,7 +168,7 @@ impl ErrorCode {
             AnoncredsMasterSecretDuplicateNameError => "Attempt to generate master secret with duplicated name",
             AnoncredsProofRejected => "Proof rejected",
             AnoncredsClaimRevoked => "Claim revoked",
-            SignusUnknownCryptoError => "Unknown format of DID entity keys",
+            UnknownCryptoTypeError => "Unknown format of DID entity keys",
         }
     }
 }

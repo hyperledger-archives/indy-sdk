@@ -1,6 +1,6 @@
 use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
-use utils::table::print_table;
+use utils::table::print_list_table;
 
 use libindy::ErrorCode;
 
@@ -9,6 +9,8 @@ use libindy::ledger::Ledger;
 
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
+
+use commands::ledger::handle_send_command_error;
 
 pub mod group {
     use super::*;
@@ -61,6 +63,8 @@ pub mod new_command {
                 println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk);
                 Ok(did)
             }
+            Err(ErrorCode::UnknownCryptoTypeError) => Err(println_err!("Unknown crypto type")),
+            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Wrong command params")),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -69,6 +73,7 @@ pub mod new_command {
                 let res = Did::set_metadata(wallet_handle, &did, metadata);
                 match res {
                     Ok(()) => Ok(println_succ!("Metadata has been saved for DID \"{}\"", did)),
+                    Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Wrong command params")),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                 }
             })
@@ -126,8 +131,8 @@ pub mod rotate_key_command {
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
 
         let did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let identity_json = {
             let mut json = JSONMap::new();
@@ -141,18 +146,12 @@ pub mod rotate_key_command {
             Err(_) => return Err(println_err!("Wrong command params")),
         }?;
 
-        let request = match Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None) {
-            Ok(request) => Ok(request),
-            Err(_) => return Err(println_err!("Wrong command params")),
-        }?;
+        let nym_res = Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None)
+            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request));
 
-        match Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request) {
-            Ok(response) => Ok(response),
-            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
-            Err(ErrorCode::WalletIncompatiblePoolError) => Err(println_err!("Pool handle \"{}\" invalid for wallet handle \"{}\"", pool_handle, wallet_handle)),
-            Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid NYM transaction \"{}\"", request)),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
-        }?;
+        if let Err(err) = nym_res {
+            handle_send_command_error(err, &did, &pool_name, &wallet_name).map(|_| ())?
+        }
 
         let res = match Did::replace_keys_apply(wallet_handle, &did) {
             Ok(_) => Ok(println_succ!("Verkey has been updated. New verkey: \"{}\"", new_verkey)),
@@ -181,10 +180,10 @@ pub mod list_command {
                 let dids: Vec<serde_json::Value> = serde_json::from_str(&dids)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
                 if dids.len() > 0 {
-                    print_table(&dids,
-                                &vec![("did", "Did"),
-                                      ("verkey", "Verkey"),
-                                      ("metadata", "Metadata")]);
+                    print_list_table(&dids,
+                                     &vec![("did", "Did"),
+                                           ("verkey", "Verkey"),
+                                           ("metadata", "Metadata")]);
                 } else {
                     println_succ!("There are no dids");
                 }
@@ -224,6 +223,7 @@ pub mod tests {
 
     pub const SEED_MY3: &'static str = "00000000000000000000000000000My3";
     pub const DID_MY3: &'static str = "5Uu7YveFSGcT3dSzjpvPab";
+    pub const VERKEY_MY3: &'static str = "3SeuRm3uYuQDYmHeuMLu1xNHozNTtzS3kbZRFMMCWrX4";
 
     mod did_new {
         use super::*;

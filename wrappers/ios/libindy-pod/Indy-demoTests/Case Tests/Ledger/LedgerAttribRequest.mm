@@ -80,9 +80,11 @@
     ret = [[PoolUtils sharedInstance] sendRequestWithPoolHandle:poolHandle
                                                         request:attribRequest
                                                        response:&attribResponse];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"PoolUtils::sendRequestWithPoolHandle() failed");
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::sendRequestWithPoolHandle() returned not Success");
     XCTAssertNotNil(attribResponse, @"attribResponse is nil!");
-    
+    NSDictionary *response = [NSDictionary fromString:attribResponse];
+    XCTAssertTrue([response[@"op"] isEqualToString:@"REQNACK"], @"wrong response type");
+
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
