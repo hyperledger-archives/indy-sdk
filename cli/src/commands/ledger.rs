@@ -1,4 +1,5 @@
 extern crate regex;
+extern crate chrono;
 
 use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
@@ -13,6 +14,7 @@ use std::collections::HashSet;
 use utils::table::print_table;
 
 use self::regex::Regex;
+use self::chrono::prelude::*;
 
 pub mod group {
     use super::*;
@@ -707,10 +709,16 @@ pub mod custom_command {
     }
 }
 
-fn handle_transaction_response(response: Response<serde_json::Value>, title: &str,
+fn handle_transaction_response(mut response: Response<serde_json::Value>, title: &str,
                                metadata_headers: &[(&str, &str)],
                                data_field: Option<&str>,
                                data_headers: &[(&str, &str)]) -> Result<(), ()> {
+    if let Some(result) = response.result.as_mut() {
+        if let Some(txn_time) = result["txnTime"].as_i64() {
+            result["txnTime"] = serde_json::Value::String(timestamp_to_datetime(txn_time))
+        }
+    }
+
     match response {
         Response { op: ResponseType::REPLY, result: Some(result), reason: None } => {
             println_succ!("{}", title);
@@ -759,6 +767,10 @@ fn get_role_title(role: &serde_json::Value) -> serde_json::Value {
         Some("101") => "TRUST_ANCHOR",
         _ => "-"
     }.to_string())
+}
+
+fn timestamp_to_datetime(_time: i64) -> String {
+    NaiveDateTime::from_timestamp(_time, 0).to_string()
 }
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]

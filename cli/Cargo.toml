@@ -5,6 +5,7 @@ authors = ["Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>"]
 
 [dependencies]
 ansi_term = "0.10"
+chrono = "0.4"
 env_logger = "0.4"
 unescape = "0.1"
 lazy_static = "0.2"
