@@ -31,8 +31,8 @@ pub mod nym_command {
                 .add_param("role", true, "Role of identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, TGB or empty in case of blacklisting NYM")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
-                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=TRUSTEE")
+                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=")
                 .finalize()
     );
 
@@ -132,7 +132,7 @@ pub mod get_nym_command {
 pub mod attrib_command {
     use super::*;
 
-    command!(CommandMetadata::build("attrib", "Send Attribute transaction to the exists NYM.")
+    command!(CommandMetadata::build("attrib", "Send Attribute transaction to the Ledger for exists NYM.")
                 .add_param("did", false, "DID of identity presented in Ledger")
                 .add_param("hash", true, "Hash of attribute data")
                 .add_param("raw", true, "JSON representation of attribute data")
@@ -414,7 +414,7 @@ pub mod claim_def_command {
 pub mod get_claim_def_command {
     use super::*;
 
-    command!(CommandMetadata::build("get-claim-def", "Get Claim Definition to Ledger.")
+    command!(CommandMetadata::build("get-claim-def", "Get Claim Definition from Ledger.")
                 .add_param("schema_no", false, "Sequence number of schema")
                 .add_param("signature_type", false, "Signature type (only CL supported now)")
                 .add_param("origin", false, "Claim definition owner DID")
@@ -479,6 +479,7 @@ pub mod node_command {
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR blskey=2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y alias=Node5 services=VALIDATOR")
+                .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y alias=Node5 services=")
                 .finalize()
     );
 
@@ -657,7 +658,7 @@ pub mod pool_upgrade_command {
 pub mod custom_command {
     use super::*;
 
-    command!(CommandMetadata::build("custom", "Send custom transaction to Ledger.")
+    command!(CommandMetadata::build("custom", "Send custom transaction to the Ledger.")
                 .add_main_param("txn", "Transaction json")
                 .add_param("sign", true, "Is signature required")
                 .add_example(r#"ledger custom {"reqId":1,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"105","dest":"V4SGRU86Z58d6TV7PBUe6f"},"protocolVersion":1}"#)
