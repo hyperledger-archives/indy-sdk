@@ -5,7 +5,7 @@ use commands::*;
 
 use libindy::ErrorCode;
 use libindy::pool::Pool;
-use utils::table::print_table;
+use utils::table::print_list_table;
 
 pub mod group {
     use super::*;
@@ -124,7 +124,7 @@ pub mod list_command {
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 if pools.len() > 0 {
-                    print_table(&pools, &vec![("pool", "Pool")]);
+                    print_list_table(&pools, &vec![("pool", "Pool")]);
                 } else {
                     println_succ!("There are no pool");
                 }

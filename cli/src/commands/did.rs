@@ -1,6 +1,6 @@
 use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
-use utils::table::print_table;
+use utils::table::print_list_table;
 
 use libindy::ErrorCode;
 
@@ -180,7 +180,7 @@ pub mod list_command {
                 let dids: Vec<serde_json::Value> = serde_json::from_str(&dids)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
                 if dids.len() > 0 {
-                    print_table(&dids,
+                    print_list_table(&dids,
                                 &vec![("did", "Did"),
                                       ("verkey", "Verkey"),
                                       ("metadata", "Metadata")]);
