@@ -18,8 +18,21 @@ export interface IClaimConfig {
   sourceId: string,
   schemaNum: number,
   issuerDid: string,
-  attr: {},
+  attr: {
+    [ index: string ]: string
+  },
   claimName: string,
+}
+
+export interface IClaimCXSAttributes {
+  [ index: string ]: [ string ]
+}
+
+export interface IClaimParams {
+  schemaNum: number,
+  issuerDid: string,
+  claimName: string,
+  attr: IClaimCXSAttributes
 }
 
 /**
@@ -32,6 +45,7 @@ export interface IClaimData {
   handle: number
   schema_seq_no: number
   claim_attributes: string
+  claim_name: string,
   issuer_did: string
   state: StateType
 }
@@ -47,12 +61,14 @@ export class IssuerClaim extends CXSBase {
   private _schemaNum: number
   private _issuerDID: string
   private _claimName: string
+  private _attr: IClaimCXSAttributes
 
-  constructor (sourceId) {
+  constructor (sourceId, { schemaNum, issuerDid, claimName, attr }: IClaimParams) {
     super(sourceId)
-    this._schemaNum = null
-    this._issuerDID = null
-    this._claimName = 'Claim Name Here'
+    this._schemaNum = schemaNum
+    this._issuerDID = issuerDid
+    this._claimName = claimName
+    this._attr = attr
   }
 
   /**
@@ -66,21 +82,19 @@ export class IssuerClaim extends CXSBase {
    * { sourceId: "12", schemaNum: 1, issuerDid: "did", attr: {key: "value"}, claimName: "name of claim"}
    * @returns {Promise<IssuerClaim>} An Issuer Claim Object
    */
-  static async create (config: IClaimConfig): Promise<IssuerClaim> {
-    const claim = new IssuerClaim(config.sourceId)
-    claim._schemaNum = config.schemaNum
-    claim._issuerDID = config.issuerDid
-    const attrs = this._convert_attrs(config.attr)
-    claim._attr = JSON.stringify(attrs)
-    claim._claimName = config.claimName
+  static async create ({ attr, sourceId, schemaNum, issuerDid, claimName }: IClaimConfig): Promise<IssuerClaim> {
+    const attrsCXS: IClaimCXSAttributes = Object.keys(attr)
+      .reduce((accum, attrKey) => ({ ...accum, [attrKey]: [attr[attrKey]] }), {})
+    const claim = new IssuerClaim(sourceId, { schemaNum, issuerDid, claimName, attr: attrsCXS })
+    const attrsStringified = JSON.stringify(attrsCXS)
     try {
       await claim._create((cb) => rustAPI().cxs_issuer_create_claim(
         0,
-        config.sourceId,
-        config.schemaNum,
-        config.issuerDid,
-        claim._attr,
-        config.claimName,
+        sourceId,
+        schemaNum,
+        issuerDid,
+        attrsStringified,
+        claimName,
         cb
         )
       )
@@ -88,14 +102,6 @@ export class IssuerClaim extends CXSBase {
     } catch (err) {
       throw new CXSInternalError(`cxs_issuer_create_claim -> ${err}`)
     }
-  }
-
-  static _convert_attrs (attrs: object): object {
-    const changedAttrs: object = {}
-    Object.keys(attrs).forEach((key) => {
-      changedAttrs[attrs[key]] = [attrs[key]]
-    })
-    return changedAttrs
   }
 
 /**
@@ -113,7 +119,14 @@ export class IssuerClaim extends CXSBase {
  */
   static async deserialize (claimData: IClaimData) {
     try {
-      return await super._deserialize(IssuerClaim, claimData)
+      const attr = JSON.parse(claimData.claim_attributes)
+      const params: IClaimParams = {
+        attr,
+        claimName: claimData.claim_name,
+        issuerDid: claimData.issuer_did,
+        schemaNum: claimData.schema_seq_no
+      }
+      return await super._deserialize<IssuerClaim, IClaimParams>(IssuerClaim, claimData, params)
     } catch (err) {
       throw new CXSInternalError(`cxs_issuer_claim_deserialize -> ${err}`)
     }
@@ -224,5 +237,9 @@ export class IssuerClaim extends CXSBase {
 
   get schemaNum () {
     return this._schemaNum
+  }
+
+  get attr () {
+    return this._attr
   }
 }

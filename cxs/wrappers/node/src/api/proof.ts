@@ -79,10 +79,6 @@ export class Proof extends CXSBase {
   private _name: string
   private _proofState: number
 
-  constructor (sourceId) {
-    super(sourceId)
-  }
-
   /**
    * @memberof Proof
    * @description Builds a generic Proof object

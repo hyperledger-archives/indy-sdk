@@ -5,13 +5,30 @@ const { stubInitCXS, shouldThrow } = require('./helpers')
 
 const { IssuerClaim, Connection, StateType, Error } = cxs
 
-let config = {
+const config = {
   sourceId: 'jsonCreation',
   schemaNum: 1234,
   issuerDid: 'arandomdidfoobar',
-  attr: {key: 'value', key2: 'value2', key3: 'value3'},
+  attr: {
+    key: 'value',
+    key2: 'value2',
+    key3: 'value3'
+  },
   claimName: 'Claim Name'
 }
+const formattedAttrs = {
+  key: ['value'],
+  key2: ['value2'],
+  key3: ['value3']
+}
+const claimDummyArgs = [
+  'Dummy Claim',
+  {
+    schemaNum: 1,
+    issuerDid: 'arandomdidfoobar',
+    claimName: 'Claim Name'
+  }
+]
 describe('An issuerClaim', async function () {
   this.timeout(30000)
 
@@ -21,44 +38,42 @@ describe('An issuerClaim', async function () {
   })
 
   it('can be created.', async function () {
-    const claim = new IssuerClaim('Bank Claim')
+    const claim = new IssuerClaim(...claimDummyArgs)
     assert(claim)
   })
 
   it('can have a source Id.', async function () {
-    const claim = await new IssuerClaim('Bank Claim')
-    assert.equal(claim.sourceId, 'Bank Claim')
+    const claim = await new IssuerClaim(...claimDummyArgs)
+    assert.equal(claim.sourceId, claimDummyArgs[0])
   })
 
   it('has a state of 0 after instanstiated', async function () {
-    const claim = await new IssuerClaim('State Claim')
+    const claim = await new IssuerClaim(...claimDummyArgs)
     const state = await claim.state
     assert.equal(state, 0)
   })
 
   it('has a claimHandle and a sourceId after it is created', async function () {
     const sourceId = 'Claim'
-    config.sourceId = sourceId
-    const claim = await IssuerClaim.create(config)
+    const claim = await IssuerClaim.create({ ...config, sourceId })
     assert(claim.handle > 0)
     assert.equal(claim.sourceId, sourceId)
   })
 
   it('has state that can be found', async function () {
-    config.sourceId = 'TestState'
-    const claim = await IssuerClaim.create(config)
+    const sourceId = 'TestState'
+    const claim = await IssuerClaim.create({ ...config, sourceId })
     await claim.updateState()
     assert.equal(claim.state, 1)
   })
 
   it('can be sent with a valid connection', async function () {
     const sourceId = 'Bank Claim'
-    config.sourceId = sourceId
     let connection = await Connection.create({ id: '234' })
     await connection.connect()
     await connection.updateState()
     assert.equal(2, connection.state)
-    const claim = await IssuerClaim.create(config)
+    const claim = await IssuerClaim.create({ ...config, sourceId })
     await claim.sendOffer(connection)
     await claim.updateState()
     assert.equal(await claim.state, 2)
@@ -66,8 +81,7 @@ describe('An issuerClaim', async function () {
 
   it('can be created, then serialized, then deserialized and have the same sourceId, state, and claimHandle', async function () {
     const sourceId = 'SerializeDeserialize'
-    config.sourceId = sourceId
-    const claim = await IssuerClaim.create(config)
+    const claim = await IssuerClaim.create({ ...config, sourceId })
     const jsonClaim = await claim.serialize()
     assert.equal(jsonClaim.state, StateType.Initialized)
     const claim2 = await IssuerClaim.deserialize(jsonClaim)
@@ -78,12 +92,11 @@ describe('An issuerClaim', async function () {
   it('can be sent, then serialized, then deserialized', async function () {
     // create a connection, send the claim, serialize and then deserialize
     // and compare
-    let connection = await Connection.create({ id: '234' })
+    const connection = await Connection.create({ id: '234' })
     await connection.connect()
 
     const sourceId = 'SendSerializeDeserialize'
-    config.sourceId = sourceId
-    const claim = await IssuerClaim.create(config)
+    const claim = await IssuerClaim.create({ ...config, sourceId })
 
     await claim.sendOffer(connection)
     const claimData = await claim.serialize()
@@ -97,7 +110,7 @@ describe('An issuerClaim', async function () {
   })
 
   it('serialize without correct handle throws error', async function () {
-    const claim = new IssuerClaim(null)
+    const claim = new IssuerClaim(null, {})
     try {
       await claim.serialize()
     } catch (error) {
@@ -107,23 +120,20 @@ describe('An issuerClaim', async function () {
 
   it('is created from a static method', async function () {
     const sourceId = 'staticMethodCreation'
-    config.sourceId = sourceId
-    const claim = await IssuerClaim.create(config)
+    const claim = await IssuerClaim.create({ ...config, sourceId })
     assert(claim.sourceId, sourceId)
   })
 
   it('will have different claim handles even with the same sourceIds', async function () {
     const sourceId = 'sameSourceIds'
-    config.sourceId = sourceId
-    const claim = await IssuerClaim.create(config)
-    const claim2 = await IssuerClaim.create(config)
+    const claim = await IssuerClaim.create({ ...config, sourceId })
+    const claim2 = await IssuerClaim.create({ ...config, sourceId })
     assert.notEqual(claim.handle, claim2.handle)
   })
 
   it('deserialize is a static method', async function () {
     const sourceId = 'deserializeStatic'
-    config.sourceId = sourceId
-    const claim = await IssuerClaim.create(config)
+    const claim = await IssuerClaim.create({ ...config, sourceId })
     const serializedJson = await claim.serialize()
 
     const claimDeserialized = await IssuerClaim.deserialize(serializedJson)
@@ -132,24 +142,22 @@ describe('An issuerClaim', async function () {
 
   it('accepts claim attributes and schema sequence number', async function () {
     const sourceId = 'attributesAndSequenceNumber'
-    config.sourceId = sourceId
-    const claim = await IssuerClaim.create(config)
-    assert.equal(claim.sourceId, config.sourceId)
+    const claim = await IssuerClaim.create({ ...config, sourceId })
+    assert.equal(claim.sourceId, sourceId)
     assert.equal(claim.schemaNum, config.schemaNum)
-    assert.equal(claim.attr, JSON.stringify(IssuerClaim._convert_attrs(config.attr)))
+    assert.deepEqual(claim.attr, formattedAttrs)
   })
 
   it('accepts a claim offer DID as part of create', async function () {
     const sourceId = 'claimOfferDidTest'
-    config.sourceId = sourceId
-    const claim = await IssuerClaim.create(config)
-    assert.equal(claim.sourceId, config.sourceId)
+    const claim = await IssuerClaim.create({ ...config, sourceId })
+    assert.equal(claim.sourceId, sourceId)
     assert.equal(claim.issuerDid, config.issuerDid)
   })
 
   it('throws exception for sending claim with invalid claim handle', async function () {
     let connection = await Connection.create({id: '123'})
-    const claim = new IssuerClaim(null)
+    const claim = new IssuerClaim(null, {})
     try {
       await claim.sendClaim(connection)
     } catch (error) {

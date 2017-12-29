@@ -10,19 +10,20 @@ export abstract class CXSBase extends GCWatcher {
   protected _handle: string
   protected _sourceId: string
   protected _state: StateType
-  protected _attr: string
 
   constructor (sourceId) {
     super()
     this._handle = null
     this._state = StateType.None
     this._sourceId = sourceId
-    this._attr = null
   }
 
-  static async _deserialize<T extends CXSBase = any> (
-    CXSClass: new(...args: any[]) => T, objData: { source_id: string }): Promise<T> {
-    const obj = new CXSClass(objData.source_id)
+  static async _deserialize<T extends CXSBase = any, P = object> (
+    CXSClass: new(...args: any[]) => T,
+    objData: { source_id: string },
+    constructorParams?: P
+  ): Promise<T> {
+    const obj = new CXSClass(objData.source_id, constructorParams)
     await obj._initFromData(objData)
     await obj._updateState()
     return obj
@@ -46,10 +47,6 @@ export abstract class CXSBase extends GCWatcher {
 
   get sourceId () {
     return this._sourceId
-  }
-
-  get attr () {
-    return this._attr
   }
 
   protected async _updateState (): Promise<void> {
