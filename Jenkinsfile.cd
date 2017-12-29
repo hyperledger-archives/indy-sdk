@@ -94,7 +94,15 @@ def getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver) {
     }
 }
 
+def dockerClean() {
+    sh "docker container prune -f"
+    sh "docker network prune -f"
+}
+
 def openPool(env_name, network_name, pool_type = null, pool_ver = null, plenum_ver = null, anoncreds_ver = null, node_ver = null) {
+    echo "${env_name} Test: Clean docker"
+    dockerClean()
+
     echo "${env_name} Test: Create docker network (${network_name}) for nodes pool and test image"
     sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
 
@@ -110,26 +118,13 @@ def openPool(env_name, network_name, pool_type = null, pool_ver = null, plenum_v
 def closePool(env_name, network_name, poolInst) {
     echo "${env_name} Test: Cleanup"
     try {
-        sh "docker network inspect ${network_name}"
-    } catch (error) {
-        echo "${env_name} Tests: error while inspect network ${network_name} - ${error}"
-    }
-    try {
         echo "${env_name} Test: stop pool"
         poolInst.stop()
     } catch (error) {
         echo "${env_name} Tests: error while stop pool ${error}"
     }
-    try {
-        sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f"
-    } catch (error) {
-        echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
-    }
-    try {
-        echo "${env_name} Test: remove pool network ${network_name}"
-        sh "docker network rm ${network_name}"
-    } catch (error) {
-        echo "${env_name} Test: error while delete ${network_name} - ${error}"
+    finally {
+        dockerClean()
     }
     step([$class: 'WsCleanup'])
 }
