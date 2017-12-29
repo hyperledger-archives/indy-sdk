@@ -152,17 +152,17 @@ public enum ErrorCode {
 	/**
 	 * Attempt to send transaction without the necessary privileges
 	 */
-	LedgerSecurityError(304),
+	LedgerSecurityError(305),
 
 	/**
 	 * Attempt to create pool ledger config with name used for another existing pool
 	 */
-	PoolLedgerConfigAlreadyExistsError(305),
+	PoolLedgerConfigAlreadyExistsError(306),
 
 	/**
 	 * Timeout for action
 	 */
-	PoolLedgerTimeout(306),
+	PoolLedgerTimeout(307),
 
 	// Crypto errors
 
