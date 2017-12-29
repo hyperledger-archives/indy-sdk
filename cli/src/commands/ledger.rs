@@ -1,3 +1,6 @@
+extern crate regex;
+extern crate chrono;
+
 use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
 
@@ -7,8 +10,11 @@ use libindy::ledger::Ledger;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use std::collections::{HashSet, HashMap};
-use std::fmt;
+use std::collections::HashSet;
+use utils::table::print_table;
+
+use self::regex::Regex;
+use self::chrono::prelude::*;
 
 pub mod group {
     use super::*;
@@ -34,22 +40,36 @@ pub mod nym_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let verkey = get_opt_str_param("verkey", params).map_err(error_err!())?;
         let role = get_opt_str_param("role", params).map_err(error_err!())?;
 
-        let res = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
+        let response = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
-        let res = match res {
-            Ok(_) => Ok(println_succ!("NYM {{\"did\":\"{}\", \"verkey\":\"{:?}\", \"role\":\"{:?}\"}} has been added to Ledger",
-                                      target_did, verkey, role)),
-            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
-        };
+        let response = match response {
+            Ok(response) => Ok(response),
+            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+        }?;
 
+        let mut response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        if let Some(result) = response.result.as_mut() {
+            result["role"] = get_role_title(&result["role"]);
+        }
+
+        let res = handle_transaction_response(response,
+                                              "Nym request has been sent to Ledger.",
+                                              &vec![("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              None,
+                                              &vec![("dest", "Did"),
+                                                    ("verkey", "Verkey"),
+                                                    ("role", "Role")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -80,14 +100,30 @@ pub mod get_nym_command {
             Err(err) => handle_get_command_error(err),
         }?;
 
-        let nym = serde_json::from_str::<Reply<String>>(&response)
-            .and_then(|response| serde_json::from_str::<NymData>(&response.result.data));
+        let mut response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = match nym {
-            Ok(nym) => Ok(println_succ!("Following NYM has been received: {}", nym)),
-            Err(_) => Err(println_err!("NYM not found"))
+        if let Some(result) = response.result.as_mut() {
+            let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or(""));
+            match data {
+                Ok(mut data) => {
+                    data["role"] = get_role_title(&data["role"]);
+                    result["data"] = data;
+                }
+                Err(_) => return Err(println_err!("NYM not found"))
+            };
         };
 
+        let res = handle_transaction_response(response,
+                                              "Following NYM has been received.",
+                                              &vec![("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              Some("data"),
+                                              &vec![("identifier", "Identifier"),
+                                                    ("dest", "Dest"),
+                                                    ("verkey", "Verkey"),
+                                                    ("role", "Role")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -109,23 +145,40 @@ pub mod attrib_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let hash = get_opt_str_param("hash", params).map_err(error_err!())?;
         let raw = get_opt_str_param("raw", params).map_err(error_err!())?;
         let enc = get_opt_str_param("enc", params).map_err(error_err!())?;
 
-        let res = Ledger::build_attrib_request(&submitter_did, target_did, hash, raw, enc)
+        let response = Ledger::build_attrib_request(&submitter_did, target_did, hash, raw, enc)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
-        let attribute = raw.unwrap_or(hash.unwrap_or(enc.unwrap_or("")));
+        let response = match response {
+            Ok(response) => Ok(response),
+            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+        }?;
 
-        let res = match res {
-            Ok(_) => Ok(println_succ!("Attribute \"{}\" has been added to Ledger", attribute)),
-            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
-        };
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        let attribute =
+            if raw.is_some() {
+                ("raw", "Raw value")
+            } else if hash.is_some() {
+                ("hash", "Hashed value")
+            } else { ("enc", "Encrypted value") };
+
+        let res = handle_transaction_response(response,
+                                              "Attrib request has been sent to Ledger.",
+                                              &vec![("dest", "Dest"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              None,
+                                              &vec![attribute]);
 
         trace!("execute << {:?}", res);
         res
@@ -159,14 +212,27 @@ pub mod get_attrib_command {
             Err(err) => handle_get_command_error(err),
         }?;
 
-        let attrib = serde_json::from_str::<Reply<String>>(&response)
-            .and_then(|response| serde_json::from_str::<AttribData>(&response.result.data));
+        let mut response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = match attrib {
-            Ok(nym) => Ok(println_succ!("Following Attribute has been received: {}", nym)),
-            Err(_) => Err(println_err!("Attribute not found"))
+        if let Some(result) = response.result.as_mut() {
+            let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or(""));
+            match data {
+                Ok(data) => {
+                    result["data"] = data;
+                }
+                Err(_) => return Err(println_err!("Attribute not found"))
+            };
         };
 
+        let res = handle_transaction_response(response,
+                                              "Following NYM has been received.",
+                                              &vec![("dest", "Did"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              None,
+                                              &vec![("data", "Data")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -187,8 +253,8 @@ pub mod schema_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let name = get_str_param("name", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
@@ -202,14 +268,27 @@ pub mod schema_command {
             JSONValue::from(json).to_string()
         };
 
-        let res = Ledger::build_schema_request(&submitter_did, &schema_data)
+        let response = Ledger::build_schema_request(&submitter_did, &schema_data)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
-        let res = match res {
-            Ok(_) => Ok(println_succ!("Schema {{name: \"{}\" version: \"{}\"}}  has been added to Ledger", name, version)),
-            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
-        };
+        let response = match response {
+            Ok(response) => Ok(response),
+            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+        }?;
 
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        let res = handle_transaction_response(response,
+                                              "NodeConfig request has been sent to Ledger.",
+                                              &vec![("identifier", "Identifier"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              Some("data"),
+                                              &vec![("name", "Name"),
+                                                    ("version", "Version"),
+                                                    ("attr_names", "Attributes")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -251,11 +330,26 @@ pub mod get_schema_command {
             Err(err) => handle_get_command_error(err),
         }?;
 
-        let res = match serde_json::from_str::<Reply<SchemaData>>(&response) {
-            Ok(schema) => Ok(println_succ!("Following Schema has been received: {}", schema)),
-            Err(_) => Err(println_err!("Schema not found"))
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        if let Some(result) = response.result.as_ref() {
+            //TODO strange condition
+            if !result["seqNo"].is_i64() {
+                return Err(println_err!("Schema not found"));
+            }
         };
 
+        let res = handle_transaction_response(response,
+                                              "Following Schema has been received.",
+                                              &vec![("identifier", "Identifier"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              Some("data"),
+                                              &vec![("name", "Name"),
+                                                    ("version", "Version"),
+                                                    ("attr_names", "Attributes")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -277,8 +371,8 @@ pub mod claim_def_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let xref = get_int_param::<i32>("schema_no", params).map_err(error_err!())?;
         let signature_type = get_str_param("signature_type", params).map_err(error_err!())?;
@@ -292,15 +386,26 @@ pub mod claim_def_command {
             JSONValue::from(json).to_string()
         };
 
-        let res = Ledger::build_claim_def_txn(&submitter_did, xref, signature_type, &claim_def_data)
+        let response = Ledger::build_claim_def_txn(&submitter_did, xref, signature_type, &claim_def_data)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
-        let res = match res {
-            Ok(_) => Ok(println_succ!("Claim definition {{\"identifier\":\"{}\", \"schema_seq_no\":{}, \"signature_type\":{}}} has been added to Ledger",
-                                      submitter_did, xref, signature_type)),
-            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
-        };
+        let response = match response {
+            Ok(response) => Ok(response),
+            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+        }?;
 
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        let res = handle_transaction_response(response,
+                                              "NodeConfig request has been sent to Ledger.",
+                                              &vec![("identifier", "Identifier"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              Some("data"),
+                                              &vec![("primary", "Primary Key"),
+                                                    ("revocation", "Revocation Key")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -335,11 +440,25 @@ pub mod get_claim_def_command {
             Err(err) => handle_get_command_error(err),
         }?;
 
-        let res = match serde_json::from_str::<Reply<ClaimDefData>>(&response) {
-            Ok(claim_def) => Ok(println_succ!("Following Claim Definition has been received: {}", claim_def.result.data)),
-            Err(_led) => Err(println_err!("Claim definition not found"))
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        if let Some(result) = response.result.as_ref() {
+            //TODO strange condition
+            if !result["seqNo"].is_i64() {
+                return Err(println_err!("Schema not found"));
+            }
         };
 
+        let res = handle_transaction_response(response,
+                                              "Following Claim Definition has been received.",
+                                              &vec![("identifier", "Identifier"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              Some("data"),
+                                              &vec![("primary", "Primary Key"),
+                                                    ("revocation", "Revocation Key")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -367,8 +486,8 @@ pub mod node_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let target_did = get_str_param("target", params).map_err(error_err!())?;
         let node_ip = get_opt_str_param("node_ip", params).map_err(error_err!())?;
@@ -391,14 +510,31 @@ pub mod node_command {
             JSONValue::from(json).to_string()
         };
 
-        let res = Ledger::build_node_request(&submitter_did, target_did, &node_data)
+        let response = Ledger::build_node_request(&submitter_did, target_did, &node_data)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
-        let res = match res {
-            Ok(_) => Ok(println_succ!("Node \"{}\" has been added to Ledger", node_data)),
-            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
-        };
+        let response = match response {
+            Ok(response) => Ok(response),
+            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+        }?;
 
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        let res = handle_transaction_response(response,
+                                              "NodeConfig request has been sent to Ledger.",
+                                              &vec![("identifier", "Identifier"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              Some("data"),
+                                              &vec![("alias", "Alias"),
+                                                    ("node_ip", "Node Ip"),
+                                                    ("node_port", "Node Port"),
+                                                    ("client_ip", "Client Ip"),
+                                                    ("client_port", "Client Port"),
+                                                    ("services", "Services"),
+                                                    ("blskey", "Blskey")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -419,20 +555,32 @@ pub mod pool_config_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let writes = get_bool_param("writes", params).map_err(error_err!())?;
         let force = get_opt_bool_param("force", params).map_err(error_err!())?.unwrap_or(false);
 
-        let res = Ledger::indy_build_pool_config_request(&submitter_did, writes, force)
+        let response = Ledger::indy_build_pool_config_request(&submitter_did, writes, force)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
-        let res = match res {
-            Ok(_) => Ok(println_succ!("Pool configuration {{\"writes\":\"{}\"}} has been set.", writes)),
-            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
-        };
+        let response = match response {
+            Ok(response) => Ok(response),
+            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+        }?;
 
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        let res = handle_transaction_response(response,
+                                              "NodeConfig request has been sent to Ledger.",
+                                              &vec![("identifier", "Identifier"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              None,
+                                              &vec![("writes", "Writes"),
+                                                    ("force", "Force Apply")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -460,8 +608,8 @@ pub mod pool_upgrade_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let name = get_str_param("name", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
@@ -473,17 +621,34 @@ pub mod pool_upgrade_command {
         let reinstall = get_opt_bool_param("reinstall", params).map_err(error_err!())?.unwrap_or(false);
         let force = get_opt_bool_param("force", params).map_err(error_err!())?.unwrap_or(false);
 
-        let res = Ledger::indy_build_pool_upgrade_request(&submitter_did, name, version, action, sha256,
-                                                          timeout, schedule, justification, reinstall, force)
+        let response = Ledger::indy_build_pool_upgrade_request(&submitter_did, name, version, action, sha256,
+                                                               timeout, schedule, justification, reinstall, force)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
-        let res = match res {
-            Ok(_) => Ok(println_succ!("Pool upgrade instruction {{\"name\":\"{}\", \"version\":\"{}\", \"action\":\"{}\",\
-             \"sha256\":\"{}\", \"timeout\":{:?}, \"schedule\":{:?}, \"justification\":{:?}, \"reinstall\":{}, \"force\":{}}} has been sent.",
-              name, version, action, sha256, timeout, schedule, justification, reinstall, force)),
-            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
-        };
+        let response = match response {
+            Ok(response) => Ok(response),
+            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+        }?;
 
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        let res = handle_transaction_response(response,
+                                              "NodeConfig request has been sent to Ledger.",
+                                              &vec![("identifier", "Identifier"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              None,
+                                              &vec![("name", "Name"),
+                                                    ("action", "Action"),
+                                                    ("version", "Version"),
+                                                    ("sha256", "Hash"),
+                                                    ("schedule", "Schedule"),
+                                                    ("timeout", "Timeout"),
+                                                    ("justification", "Justification"),
+                                                    ("reinstall", "Reinstall"),
+                                                    ("force", "Force Apply")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -503,24 +668,40 @@ pub mod custom_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
 
         let txn = get_str_param("txn", params).map_err(error_err!())?;
         let sign = get_opt_bool_param("sign", params).map_err(error_err!())?.unwrap_or(false);
 
-        let res = if sign {
+        let (mut submitter, mut wallet) = (String::new(), String::new());
+
+        let response = if sign {
+            let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
             let submitter_did = ensure_active_did(&ctx)?;
-            let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+
+            submitter = submitter_did.clone();
+            wallet = wallet_name.clone();
 
             Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, txn)
         } else {
             Ledger::submit_request(pool_handle, txn)
         };
 
-        let res = match res {
-            Ok(response) => Ok(println_succ!("Response: {}", response)),
-            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("There is no active did")),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+        let response_json = match response {
+            Ok(response) => Ok(response),
+            Err(err) => handle_send_command_error(err, &submitter, &pool_name, &wallet)
+        }?;
+
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        let res = match response {
+            Response { op: ResponseType::REPLY, result: Some(_), reason: None } =>
+                Ok(println!("Response: \n{}", response_json)),
+            Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
+            Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
+                Err(println_err!("Transaction has been rejected: {:?}", extract_error_message(&reason))),
+            _ => Err(println_err!("Invalid data has been received"))
         };
 
         trace!("execute << {:?}", res);
@@ -528,11 +709,37 @@ pub mod custom_command {
     }
 }
 
-fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_handle: i32, wallet_handle: i32) -> Result<(), ()> {
+fn handle_transaction_response(mut response: Response<serde_json::Value>, title: &str,
+                               metadata_headers: &[(&str, &str)],
+                               data_field: Option<&str>,
+                               data_headers: &[(&str, &str)]) -> Result<(), ()> {
+    if let Some(result) = response.result.as_mut() {
+        if let Some(txn_time) = result["txnTime"].as_i64() {
+            result["txnTime"] = serde_json::Value::String(timestamp_to_datetime(txn_time))
+        }
+    }
+
+    match response {
+        Response { op: ResponseType::REPLY, result: Some(result), reason: None } => {
+            println_succ!("{}", title);
+            println_succ!("Metadata:");
+            print_table(&result, metadata_headers);
+            println_succ!("Data:");
+            print_table(if data_field.is_some() { &result[data_field.unwrap()] } else { &result }, data_headers);
+            Ok(())
+        }
+        Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
+        Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
+            Err(println_err!("Transaction has been rejected: {:?}", extract_error_message(&reason))),
+        _ => Err(println_err!("Invalid data has been received"))
+    }
+}
+
+pub fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_name: &str, wallet_name: &str) -> Result<String, ()> {
     match err {
         ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
         ErrorCode::WalletNotFoundError => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did)),
-        ErrorCode::WalletIncompatiblePoolError => Err(println_err!("Pool handle \"{}\" invalid for wallet handle \"{}\"", pool_handle, wallet_handle)),
+        ErrorCode::WalletIncompatiblePoolError => Err(println_err!("Wallet \"{}\" is incompatible with pool \"{}\".", wallet_name, pool_name)),
         err => Err(println_err!("Indy SDK error occurred {:?}", err))
     }
 }
@@ -544,9 +751,41 @@ fn handle_get_command_error(err: ErrorCode) -> Result<String, ()> {
     }
 }
 
+fn extract_error_message(error: &str) -> String {
+    let re = Regex::new(r"'(.*)'").unwrap();
+    match re.captures(error) {
+        Some(message) => message[1].to_string(),
+        None => error.to_string()
+    }
+}
+
+fn get_role_title(role: &serde_json::Value) -> serde_json::Value {
+    serde_json::Value::String(match role.as_str() {
+        Some("0") => "TRUSTEE",
+        Some("2") => "STEWARD",
+        Some("100") => "TGB",
+        Some("101") => "TRUST_ANCHOR",
+        _ => "-"
+    }.to_string())
+}
+
+fn timestamp_to_datetime(_time: i64) -> String {
+    NaiveDateTime::from_timestamp(_time, 0).to_string()
+}
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+pub enum ResponseType {
+    REQNACK,
+    REPLY,
+    REJECT
+}
+
 #[derive(Deserialize, Debug)]
-pub struct Reply<T> {
-    pub result: ReplyResult<T>,
+#[serde(rename_all = "camelCase")]
+pub struct Response<T> {
+    pub op: ResponseType,
+    pub reason: Option<String>,
+    pub result: Option<T>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -565,39 +804,9 @@ pub struct NymData {
     pub verkey: Option<String>
 }
 
-impl fmt::Display for NymData {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let role = match self.role.as_ref().map(String::as_str) {
-            Some("0") => "TRUSTEE",
-            Some("2") => "STEWARD",
-            Some("100") => "TGB",
-            Some("101") => "TRUST_ANCHOR",
-            _ => "null"
-        };
-
-        write!(f, "\nsubmitter:{} | did:{} | verkey:{} | role:{} ",
-               self.identifier.clone().unwrap_or("null".to_string()), self.dest,
-               self.verkey.clone().unwrap_or("null".to_string()), role)
-    }
-}
-
 #[derive(Deserialize, Debug)]
 pub struct AttribData {
-    pub endpoint: Option<Endpoint>,
-}
-
-impl fmt::Display for AttribData {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if let Some(ref endpoint) = self.endpoint {
-            write!(f, "\n{:?}", endpoint)?;
-        }
-        write!(f, "")
-    }
-}
-
-#[derive(Deserialize, Debug)]
-pub struct Endpoint {
-    pub ha: String,
+    pub endpoint: Option<serde_json::Value>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -607,49 +816,10 @@ pub struct SchemaData {
     pub version: String
 }
 
-impl fmt::Display for Reply<SchemaData> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "\nname:{} | version:{} | attr_names:{:?} | origin:{:?} | seq_no:{:?}",
-               self.result.data.name, self.result.data.version, self.result.data.attr_names, self.result.identifier, self.result.seq_no)
-    }
-}
-
 #[derive(Deserialize, Debug)]
 pub struct ClaimDefData {
     pub primary: serde_json::Value,
     pub revocation: Option<serde_json::Value>,
-}
-
-impl fmt::Display for ClaimDefData {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, r#"Primary key: {{"n":"{}","s":"{}","rms":"{}","rctxt":"{}","z":"{}","r":{:?}}}"#,
-               self.primary["n"].as_str().unwrap_or(""),
-               self.primary["s"].as_str().unwrap_or(""),
-               self.primary["rms"].as_str().unwrap_or(""),
-               self.primary["rctxt"].as_str().unwrap_or(""),
-               self.primary["z"].as_str().unwrap_or(""),
-               self.primary["r"].as_object().unwrap().iter()
-                   .map(|(key, value)| (key.clone(), value.as_str().unwrap_or("").to_string())).collect::<HashMap<String, String>>())?;
-
-        if let Some(ref revocation) = self.revocation {
-            if revocation.as_object().unwrap().len() > 0 {
-                write!(f, "\n")?;
-                write!(f, r#"Revocation key: {{"g":"{}","g_dash":"{}","h":"{}","h0":"{}","h1":"{}","h2":"{}","htilde":"{}","h_cap":"{}","u":"{}","pk":"{}","y":"{}"}}"#,
-                       revocation["g"].as_str().unwrap_or(""),
-                       revocation["g_dash"].as_str().unwrap_or(""),
-                       revocation["h"].as_str().unwrap_or(""),
-                       revocation["h0"].as_str().unwrap_or(""),
-                       revocation["h1"].as_str().unwrap_or(""),
-                       revocation["h2"].as_str().unwrap_or(""),
-                       revocation["htilde"].as_str().unwrap_or(""),
-                       revocation["h_cap"].as_str().unwrap_or(""),
-                       revocation["u"].as_str().unwrap_or(""),
-                       revocation["pk"].as_str().unwrap_or(""),
-                       revocation["y"].as_str().unwrap_or(""))?;
-            }
-        }
-        write!(f, "")
-    }
 }
 
 #[cfg(test)]
@@ -679,7 +849,7 @@ pub mod tests {
                 params.insert("verkey", VERKEY_MY1.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _check_nym_added(&ctx, DID_MY1).is_ok();
+            _ensure_nym_added(&ctx, DID_MY1);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -701,7 +871,7 @@ pub mod tests {
                 params.insert("role", "TRUSTEE".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _check_nym_added(&ctx, DID_MY1).is_ok();
+            _ensure_nym_added(&ctx, DID_MY1);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -800,9 +970,8 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY3.to_string());
                 params.insert("verkey", VERKEY_MY3.to_string());
-                cmd.execute(&ctx, &params).unwrap();
+                cmd.execute(&ctx, &params).unwrap_err();
             }
-            _check_nym_added(&ctx, DID_MY3).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -858,9 +1027,11 @@ pub mod tests {
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
 
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym_my1(&ctx);
             new_did(&ctx, SEED_MY3);
             use_did(&ctx, DID_MY3);
-            send_nym_my1(&ctx);
             {
                 let cmd = get_nym_command::new();
                 let mut params = CommandParams::new();
@@ -894,7 +1065,7 @@ pub mod tests {
                 params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _check_attrib_added(&ctx, DID_MY1).is_ok();
+            _ensure_attrib_added(&ctx, DID_MY1);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -952,9 +1123,8 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY3.to_string());
                 params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
-                cmd.execute(&ctx, &params).unwrap();
+                cmd.execute(&ctx, &params).unwrap_err();
             }
-            _check_attrib_added(&ctx, DID_MY3).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -987,7 +1157,7 @@ pub mod tests {
         use super::*;
 
         #[test]
-        pub fn get_attrib_works() {
+        pub fn get_attrib_worksa() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -1054,7 +1224,7 @@ pub mod tests {
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _check_schema_added(&ctx, DID_TRUSTEE).is_ok();
+            _ensure_schema_added(&ctx, DID_TRUSTEE);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1093,9 +1263,8 @@ pub mod tests {
                 params.insert("name", "gvt".to_string());
                 params.insert("version", "1.0".to_string());
                 params.insert("attr_names", "name,age".to_string());
-                cmd.execute(&ctx, &params).unwrap();
+                cmd.execute(&ctx, &params).unwrap_err();
             }
-            _check_schema_added(&ctx, DID_MY3).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1232,7 +1401,7 @@ pub mod tests {
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _check_claim_def_added(&ctx, DID_TRUSTEE).is_ok();
+            _ensure_claim_def_added(&ctx, DID_TRUSTEE);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1271,9 +1440,8 @@ pub mod tests {
                 params.insert("schema_no", "1".to_string());
                 params.insert("signature_type", "CL".to_string());
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
-                cmd.execute(&ctx, &params).unwrap();
+                cmd.execute(&ctx, &params).unwrap_err();
             }
-            _check_claim_def_added(&ctx, DID_MY3).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1490,7 +1658,6 @@ pub mod tests {
                                             "protocolVersion":1
                                           }"#;
 
-        pub const DID_FOR_SIGN_TXN: &'static str = "E1XWGvsrVp5ZDif2uDdTAM";
         pub const TXN_FOR_SIGN: &'static str = r#"{
                                                     "reqId":1513241300414292814,
                                                     "identifier":"V4SGRU86Z58d6TV7PBUe6f",
@@ -1633,9 +1800,8 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("sign", "true".to_string());
                 params.insert("txn", TXN_FOR_SIGN.to_string());
-                cmd.execute(&ctx, &params).unwrap();
+                cmd.execute(&ctx, &params).unwrap_err();
             }
-            _check_nym_added(&ctx, DID_FOR_SIGN_TXN).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1669,42 +1835,34 @@ pub mod tests {
         cmd.execute(&ctx, &params).unwrap();
     }
 
-    fn _check_nym_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
+    fn _ensure_nym_added(ctx: &CommandContext, did: &str) {
         let request = Ledger::build_get_nym_request(DID_TRUSTEE, did).unwrap();
         let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
         let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Reply<String>>(&response)
-            .and_then(|response| serde_json::from_str::<NymData>(&response.result.data))
-            .map_err(|_| ())?;
-        Ok(())
+        serde_json::from_str::<Response<ReplyResult<String>>>(&response)
+            .and_then(|response| serde_json::from_str::<NymData>(&response.result.unwrap().data)).unwrap();
     }
 
-    fn _check_attrib_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
+    fn _ensure_attrib_added(ctx: &CommandContext, did: &str) {
         let request = Ledger::build_get_attrib_request(DID_MY1, did, "endpoint").unwrap();
         let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
         let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Reply<String>>(&response)
-            .and_then(|response| serde_json::from_str::<AttribData>(&response.result.data))
-            .map_err(|_| ())?;
-        Ok(())
+        serde_json::from_str::<Response<ReplyResult<String>>>(&response)
+            .and_then(|response| serde_json::from_str::<AttribData>(&response.result.unwrap().data)).unwrap();
     }
 
-    fn _check_schema_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
+    fn _ensure_schema_added(ctx: &CommandContext, did: &str) {
         let data = r#"{"name":"gvt", "version":"1.0"}"#;
         let request = Ledger::build_get_schema_request(DID_TRUSTEE, did, data).unwrap();
         let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
         let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Reply<SchemaData>>(&response)
-            .map_err(|_| ())?;
-        Ok(())
+        serde_json::from_str::<Response<ReplyResult<SchemaData>>>(&response).unwrap();
     }
 
-    fn _check_claim_def_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
+    fn _ensure_claim_def_added(ctx: &CommandContext, did: &str) {
         let request = Ledger::build_get_claim_def_txn(DID_TRUSTEE, 1, "CL", did).unwrap();
         let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
         let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Reply<ClaimDefData>>(&response)
-            .map_err(|_| ())?;
-        Ok(())
+        serde_json::from_str::<Response<ReplyResult<ClaimDefData>>>(&response).unwrap();
     }
 }

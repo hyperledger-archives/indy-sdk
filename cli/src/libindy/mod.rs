@@ -123,7 +123,7 @@ pub enum ErrorCode
 
     // Signus errors
     // Unknown format of DID entity keys
-    SignusUnknownCryptoError = 500
+    UnknownCryptoTypeError = 500
 }
 
 impl ErrorCode {
@@ -168,7 +168,7 @@ impl ErrorCode {
             AnoncredsMasterSecretDuplicateNameError => "Attempt to generate master secret with duplicated name",
             AnoncredsProofRejected => "Proof rejected",
             AnoncredsClaimRevoked => "Claim revoked",
-            SignusUnknownCryptoError => "Unknown format of DID entity keys",
+            UnknownCryptoTypeError => "Unknown format of DID entity keys",
         }
     }
 }
