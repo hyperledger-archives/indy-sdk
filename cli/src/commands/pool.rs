@@ -40,6 +40,8 @@ pub mod create_command {
 
         let res = match res {
             Ok(()) => Ok(println_succ!("Pool config \"{}\" has been created", name)),
+            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Pool genesis file is invalid or does not exist.")),
+            Err(ErrorCode::CommonIOError) => Err(println_err!("Pool genesis file is invalid or does not exist.")),
             Err(ErrorCode::PoolLedgerConfigAlreadyExistsError) => Err(println_err!("Pool config \"{}\" already exists", name)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
@@ -70,6 +72,8 @@ pub mod connect_command {
                             set_connected_pool(ctx, None);
                             Ok(println_succ!("Pool \"{}\" has been disconnected", name))
                         }
+                        Err(ErrorCode::PoolLedgerTerminated) => Err(println_err!("Pool \"{}\" does not exist.", name)),
+                        Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid pool ledger config.")),
                         Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err))
                     }
                 } else {
@@ -128,13 +132,14 @@ pub mod list_command {
                 } else {
                     println_succ!("There are no pool");
                 }
+
                 if let Some((_, cur_pool)) = get_connected_pool(ctx) {
                     println_succ!("Current pool \"{}\"", cur_pool);
                 }
 
                 Ok(())
             }
-            Err(ErrorCode::CommonIOError) => Err(println_succ!("There are no pool")),
+            Err(ErrorCode::CommonIOError) => Err(println_succ!("There is no opened pool now")),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -194,6 +199,8 @@ pub mod delete_command {
 
         let res = match res {
             Ok(()) => Ok(println_succ!("Pool \"{}\" has been deleted", name)),
+            Err(ErrorCode::CommonInvalidState) => Err(println_err!("Connected pool cannot be deleted. Please disconnect first.")),
+            Err(ErrorCode::CommonIOError) => Err(println_err!("Pool \"{}\" not found or unavailable", name)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 

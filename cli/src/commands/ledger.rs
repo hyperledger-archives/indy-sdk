@@ -1,3 +1,5 @@
+extern crate regex;
+
 use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
 
@@ -9,6 +11,8 @@ use serde_json::Map as JSONMap;
 
 use std::collections::HashSet;
 use utils::table::print_table;
+
+use self::regex::Regex;
 
 pub mod group {
     use super::*;
@@ -34,8 +38,8 @@ pub mod nym_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let verkey = get_opt_str_param("verkey", params).map_err(error_err!())?;
@@ -46,31 +50,24 @@ pub mod nym_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle).map(|_| String::new())
+            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
         }?;
 
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+        let mut response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = match response {
-            Response { op: ResponseType::REPLY, result: Some(mut result), reason: None } => {
-                result["role"] = get_role_title(&result["role"]);
+        if let Some(result) = response.result.as_mut() {
+            result["role"] = get_role_title(&result["role"]);
+        }
 
-                print_transaction_response("Nym request has been sent to Ledger.",
-                                           &result,
-                                           &vec![("reqId", "Request ID"),
-                                                 ("txnTime", "Transaction time")],
-                                           &result,
-                                           &vec![("dest", "Did"),
-                                                 ("verkey", "Verkey"),
-                                                 ("role", "Role")])
-            }
-            Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
-            Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-                Err(println_err!("Transaction has been rejected: {:?}", reason)),
-            _ => Err(println_err!("Invalid data has been received"))
-        };
-
+        let res = handle_transaction_response(response,
+                                              "Nym request has been sent to Ledger.",
+                                              &vec![("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              None,
+                                              &vec![("dest", "Did"),
+                                                    ("verkey", "Verkey"),
+                                                    ("role", "Role")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -101,37 +98,30 @@ pub mod get_nym_command {
             Err(err) => handle_get_command_error(err),
         }?;
 
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+        let mut response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = match response {
-            Response { op: ResponseType::REPLY, result: Some(result), reason: None } => {
-                let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or(""));
-
-                match data {
-                    Ok(mut data) => {
-                        data["role"] = get_role_title(&data["role"]);
-
-                        print_transaction_response("Following NYM has been received.",
-                                                   &result,
-                                                   &vec![("seqNo", "Sequence Number"),
-                                                         ("reqId", "Request ID"),
-                                                         ("txnTime", "Transaction time")],
-                                                   &data,
-                                                   &vec![("identifier", "Identifier"),
-                                                         ("dest", "Dest"),
-                                                         ("verkey", "Verkey"),
-                                                         ("role", "Role")])
-                    }
-                    Err(_) => Err(println_err!("NYM not found"))
+        if let Some(result) = response.result.as_mut() {
+            let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or(""));
+            match data {
+                Ok(mut data) => {
+                    data["role"] = get_role_title(&data["role"]);
+                    result["data"] = data;
                 }
-            }
-            Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
-            Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-                Err(println_err!("Transaction has been rejected: {:?}", reason)),
-            _ => Err(println_err!("Invalid data has been received"))
+                Err(_) => return Err(println_err!("NYM not found"))
+            };
         };
 
+        let res = handle_transaction_response(response,
+                                              "Following NYM has been received.",
+                                              &vec![("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              Some("data"),
+                                              &vec![("identifier", "Identifier"),
+                                                    ("dest", "Dest"),
+                                                    ("verkey", "Verkey"),
+                                                    ("role", "Role")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -153,8 +143,8 @@ pub mod attrib_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let hash = get_opt_str_param("hash", params).map_err(error_err!())?;
@@ -166,35 +156,27 @@ pub mod attrib_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle).map(|_| String::new())
+            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = match response {
-            Response { op: ResponseType::REPLY, result: Some(result), reason: None } => {
-                let attribute =
-                    if raw.is_some() {
-                        ("raw", "Raw value")
-                    } else if hash.is_some() {
-                        ("hash", "Hashed value")
-                    } else { ("enc", "Encrypted value") };
+        let attribute =
+            if raw.is_some() {
+                ("raw", "Raw value")
+            } else if hash.is_some() {
+                ("hash", "Hashed value")
+            } else { ("enc", "Encrypted value") };
 
-                print_transaction_response("Attrib request has been sent to Ledger.",
-                                           &result,
-                                           &vec![("dest", "Dest"),
-                                                 ("seqNo", "Sequence Number"),
-                                                 ("reqId", "Request ID"),
-                                                 ("txnTime", "Transaction time")],
-                                           &result,
-                                           &vec![attribute])
-            }
-            Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
-            Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-                Err(println_err!("Transaction has been rejected: {:?}", reason)),
-            _ => Err(println_err!("Invalid data has been received"))
-        };
+        let res = handle_transaction_response(response,
+                                              "Attrib request has been sent to Ledger.",
+                                              &vec![("dest", "Dest"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              None,
+                                              &vec![attribute]);
 
         trace!("execute << {:?}", res);
         res
@@ -228,33 +210,27 @@ pub mod get_attrib_command {
             Err(err) => handle_get_command_error(err),
         }?;
 
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+        let mut response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = match response {
-            Response { op: ResponseType::REPLY, result: Some(result), reason: None } => {
-                let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or(""));
-
-                match data {
-                    Ok(_) => {
-                        print_transaction_response("Following Attribute has been received.",
-                                                   &result,
-                                                   &vec![("dest", "Did"),
-                                                         ("seqNo", "Sequence Number"),
-                                                         ("reqId", "Request ID"),
-                                                         ("txnTime", "Transaction time")],
-                                                   &result,
-                                                   &vec![("data", "Data")])
-                    }
-                    Err(_) => Err(println_err!("Attribute not found"))
+        if let Some(result) = response.result.as_mut() {
+            let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or(""));
+            match data {
+                Ok(data) => {
+                    result["data"] = data;
                 }
-            }
-            Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
-            Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-                Err(println_err!("Transaction has been rejected: {:?}", reason)),
-            _ => Err(println_err!("Invalid data has been received"))
+                Err(_) => return Err(println_err!("Attribute not found"))
+            };
         };
 
+        let res = handle_transaction_response(response,
+                                              "Following NYM has been received.",
+                                              &vec![("dest", "Did"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              None,
+                                              &vec![("data", "Data")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -275,8 +251,8 @@ pub mod schema_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let name = get_str_param("name", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
@@ -295,31 +271,22 @@ pub mod schema_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle).map(|_| String::new())
+            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = match response {
-            Response { op: ResponseType::REPLY, result: Some(result), reason: None } => {
-                print_transaction_response("Schema request has been sent to Ledger.",
-                                           &result,
-                                           &vec![("identifier", "Identifier"),
-                                                 ("seqNo", "Sequence Number"),
-                                                 ("reqId", "Request ID"),
-                                                 ("txnTime", "Transaction time")],
-                                           &result["data"],
-                                           &vec![("name", "Name"),
-                                                 ("version", "Version"),
-                                                 ("attr_names", "Attributes")])
-            }
-            Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
-            Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-                Err(println_err!("Transaction has been rejected: {:?}", reason)),
-            _ => Err(println_err!("Invalid data has been received"))
-        };
-
+        let res = handle_transaction_response(response,
+                                              "NodeConfig request has been sent to Ledger.",
+                                              &vec![("identifier", "Identifier"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              Some("data"),
+                                              &vec![("name", "Name"),
+                                                    ("version", "Version"),
+                                                    ("attr_names", "Attributes")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -364,30 +331,23 @@ pub mod get_schema_command {
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = match response {
-            Response { op: ResponseType::REPLY, result: Some(result), reason: None } => {
-                //TODO strange condition
-                if result["seqNo"].is_i64() {
-                    print_transaction_response("Following Schema has been received.",
-                                               &result,
-                                               &vec![("identifier", "Identifier"),
-                                                     ("seqNo", "Sequence Number"),
-                                                     ("reqId", "Request ID"),
-                                                     ("txnTime", "Transaction time")],
-                                               &result["data"],
-                                               &vec![("name", "Name"),
-                                                     ("version", "Version"),
-                                                     ("attr_names", "Attributes")])
-                } else {
-                    Err(println_err!("Schema not found"))
-                }
+        if let Some(result) = response.result.as_ref() {
+            //TODO strange condition
+            if !result["seqNo"].is_i64() {
+                return Err(println_err!("Schema not found"));
             }
-            Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
-            Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-                Err(println_err!("Transaction has been rejected: {:?}", reason)),
-            _ => Err(println_err!("Invalid data has been received"))
         };
 
+        let res = handle_transaction_response(response,
+                                              "Following Schema has been received.",
+                                              &vec![("identifier", "Identifier"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              Some("data"),
+                                              &vec![("name", "Name"),
+                                                    ("version", "Version"),
+                                                    ("attr_names", "Attributes")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -409,8 +369,8 @@ pub mod claim_def_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let xref = get_int_param::<i32>("schema_no", params).map_err(error_err!())?;
         let signature_type = get_str_param("signature_type", params).map_err(error_err!())?;
@@ -429,30 +389,21 @@ pub mod claim_def_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle).map(|_| String::new())
+            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = match response {
-            Response { op: ResponseType::REPLY, result: Some(result), reason: None } => {
-                print_transaction_response("ClaimDef request has been sent to Ledger.",
-                                           &result,
-                                           &vec![("identifier", "Identifier"),
-                                                 ("seqNo", "Sequence Number"),
-                                                 ("reqId", "Request ID"),
-                                                 ("txnTime", "Transaction time")],
-                                           &result["data"],
-                                           &vec![("primary", "Primary Key"),
-                                                 ("revocation", "Revocation Key")])
-            }
-            Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
-            Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-                Err(println_err!("Transaction has been rejected: {:?}", reason)),
-            _ => Err(println_err!("Invalid data has been received"))
-        };
-
+        let res = handle_transaction_response(response,
+                                              "NodeConfig request has been sent to Ledger.",
+                                              &vec![("identifier", "Identifier"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              Some("data"),
+                                              &vec![("primary", "Primary Key"),
+                                                    ("revocation", "Revocation Key")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -490,29 +441,22 @@ pub mod get_claim_def_command {
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = match response {
-            Response { op: ResponseType::REPLY, result: Some(result), reason: None } => {
-                //TODO strange condition
-                if result["seqNo"].is_i64() {
-                    print_transaction_response("Following Claim Definition has been received.",
-                                               &result,
-                                               &vec![("identifier", "Identifier"),
-                                                     ("seqNo", "Sequence Number"),
-                                                     ("reqId", "Request ID"),
-                                                     ("txnTime", "Transaction time")],
-                                               &result["data"],
-                                               &vec![("primary", "Primary Key"),
-                                                     ("revocation", "Revocation Key")])
-                } else {
-                    Err(println_err!("Schema not found"))
-                }
+        if let Some(result) = response.result.as_ref() {
+            //TODO strange condition
+            if !result["seqNo"].is_i64() {
+                return Err(println_err!("Schema not found"));
             }
-            Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
-            Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-                Err(println_err!("Transaction has been rejected: {:?}", reason)),
-            _ => Err(println_err!("Invalid data has been received"))
         };
 
+        let res = handle_transaction_response(response,
+                                              "Following Claim Definition has been received.",
+                                              &vec![("identifier", "Identifier"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              Some("data"),
+                                              &vec![("primary", "Primary Key"),
+                                                    ("revocation", "Revocation Key")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -540,8 +484,8 @@ pub mod node_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let target_did = get_str_param("target", params).map_err(error_err!())?;
         let node_ip = get_opt_str_param("node_ip", params).map_err(error_err!())?;
@@ -569,37 +513,26 @@ pub mod node_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle).map(|_| String::new())
+            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
         }?;
 
-        println!("response {:?}", response);
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = match response {
-            Response { op: ResponseType::REPLY, result: Some(result), reason: None } => {
-                print_transaction_response("Node request has been sent to Ledger.",
-                                           &result,
-                                           &vec![("identifier", "Identifier"),
-                                                 ("seqNo", "Sequence Number"),
-                                                 ("reqId", "Request ID"),
-                                                 ("txnTime", "Transaction time")],
-                                           &result["data"],
-                                           &vec![("alias", "Alias"),
-                                                 ("revocation", "Version"),
-                                                 ("client_ip", "Client Ip"),
-                                                 ("client_port", "Client Port"),
-                                                 ("node_ip", "Node Ip"),
-                                                 ("node_port", "Node Port"),
-                                                 ("blskey", "Blskey"),
-                                                 ("services", "Services")])
-            }
-            Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
-            Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-                Err(println_err!("Transaction has been rejected: {:?}", reason)),
-            _ => Err(println_err!("Invalid data has been received"))
-        };
-
+        let res = handle_transaction_response(response,
+                                              "NodeConfig request has been sent to Ledger.",
+                                              &vec![("identifier", "Identifier"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              Some("data"),
+                                              &vec![("alias", "Alias"),
+                                                    ("node_ip", "Node Ip"),
+                                                    ("node_port", "Node Port"),
+                                                    ("client_ip", "Client Ip"),
+                                                    ("client_port", "Client Port"),
+                                                    ("services", "Services"),
+                                                    ("blskey", "Blskey")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -620,8 +553,8 @@ pub mod pool_config_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let writes = get_bool_param("writes", params).map_err(error_err!())?;
         let force = get_opt_bool_param("force", params).map_err(error_err!())?.unwrap_or(false);
@@ -631,30 +564,21 @@ pub mod pool_config_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle).map(|_| String::new())
+            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = match response {
-            Response { op: ResponseType::REPLY, result: Some(result), reason: None } => {
-                print_transaction_response("NodeConfig request has been sent to Ledger.",
-                                           &result,
-                                           &vec![("identifier", "Identifier"),
-                                                 ("seqNo", "Sequence Number"),
-                                                 ("reqId", "Request ID"),
-                                                 ("txnTime", "Transaction time")],
-                                           &result,
-                                           &vec![("writes", "Writes"),
-                                                 ("force", "Force Apply")])
-            }
-            Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
-            Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-                Err(println_err!("Transaction has been rejected: {:?}", reason)),
-            _ => Err(println_err!("Invalid data has been received"))
-        };
-
+        let res = handle_transaction_response(response,
+                                              "NodeConfig request has been sent to Ledger.",
+                                              &vec![("identifier", "Identifier"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              None,
+                                              &vec![("writes", "Writes"),
+                                                    ("force", "Force Apply")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -682,8 +606,8 @@ pub mod pool_upgrade_command {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
         let submitter_did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let name = get_str_param("name", params).map_err(error_err!())?;
         let version = get_str_param("version", params).map_err(error_err!())?;
@@ -701,37 +625,28 @@ pub mod pool_upgrade_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle).map(|_| String::new())
+            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = match response {
-            Response { op: ResponseType::REPLY, result: Some(result), reason: None } => {
-                print_transaction_response("NodeUpgrade request has been sent to Ledger.",
-                                           &result,
-                                           &vec![("identifier", "Identifier"),
-                                                 ("seqNo", "Sequence Number"),
-                                                 ("reqId", "Request ID"),
-                                                 ("txnTime", "Transaction time")],
-                                           &result,
-                                           &vec![("name", "Name"),
-                                                 ("action", "Action"),
-                                                 ("version", "Version"),
-                                                 ("sha256", "Hash"),
-                                                 ("schedule", "Schedule"),
-                                                 ("timeout", "Timeout"),
-                                                 ("justification", "Justification"),
-                                                 ("reinstall", "Reinstall"),
-                                                 ("force", "Force Apply")])
-            }
-            Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
-            Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-                Err(println_err!("Transaction has been rejected: {:?}", reason)),
-            _ => Err(println_err!("Invalid data has been received"))
-        };
-
+        let res = handle_transaction_response(response,
+                                              "NodeConfig request has been sent to Ledger.",
+                                              &vec![("identifier", "Identifier"),
+                                                    ("seqNo", "Sequence Number"),
+                                                    ("reqId", "Request ID"),
+                                                    ("txnTime", "Transaction time")],
+                                              None,
+                                              &vec![("name", "Name"),
+                                                    ("action", "Action"),
+                                                    ("version", "Version"),
+                                                    ("sha256", "Hash"),
+                                                    ("schedule", "Schedule"),
+                                                    ("timeout", "Timeout"),
+                                                    ("justification", "Justification"),
+                                                    ("reinstall", "Reinstall"),
+                                                    ("force", "Force Apply")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -751,27 +666,40 @@ pub mod custom_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
 
         let txn = get_str_param("txn", params).map_err(error_err!())?;
         let sign = get_opt_bool_param("sign", params).map_err(error_err!())?.unwrap_or(false);
 
+        let (mut submitter, mut wallet) = (String::new(), String::new());
+
         let response = if sign {
+            let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
             let submitter_did = ensure_active_did(&ctx)?;
-            let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+
+            submitter = submitter_did.clone();
+            wallet = wallet_name.clone();
 
             Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, txn)
         } else {
             Ledger::submit_request(pool_handle, txn)
         };
 
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+        let response_json = match response {
+            Ok(response) => Ok(response),
+            Err(err) => handle_send_command_error(err, &submitter, &pool_name, &wallet)
+        }?;
+
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = match res {
-            Ok(response) => Ok(println_succ!("Response: \n{}", response)),
-            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("There is no active did")),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+        let res = match response {
+            Response { op: ResponseType::REPLY, result: Some(_), reason: None } =>
+                Ok(println!("Response: \n{}", response_json)),
+            Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
+            Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
+                Err(println_err!("Transaction has been rejected: {:?}", extract_error_message(&reason))),
+            _ => Err(println_err!("Invalid data has been received"))
         };
 
         trace!("execute << {:?}", res);
@@ -779,14 +707,48 @@ pub mod custom_command {
     }
 }
 
-fn print_transaction_response(title: &str, metadata: &serde_json::Value, metadata_headers: &[(&str, &str)],
-                              data: &serde_json::Value, data_headers: &[(&str, &str)]) -> Result<(), ()> {
-    println_succ!("{}", title);
-    println_succ!("Metadata:");
-    print_table(metadata, metadata_headers);
-    println_succ!("Data:");
-    print_table(data, data_headers);
-    Ok(())
+fn handle_transaction_response(response: Response<serde_json::Value>, title: &str,
+                               metadata_headers: &[(&str, &str)],
+                               data_field: Option<&str>,
+                               data_headers: &[(&str, &str)]) -> Result<(), ()> {
+    match response {
+        Response { op: ResponseType::REPLY, result: Some(result), reason: None } => {
+            println_succ!("{}", title);
+            println_succ!("Metadata:");
+            print_table(&result, metadata_headers);
+            println_succ!("Data:");
+            print_table(if data_field.is_some() { &result[data_field.unwrap()] } else { &result }, data_headers);
+            Ok(())
+        }
+        Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
+        Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
+            Err(println_err!("Transaction has been rejected: {:?}", extract_error_message(&reason))),
+        _ => Err(println_err!("Invalid data has been received"))
+    }
+}
+
+pub fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_name: &str, wallet_name: &str) -> Result<String, ()> {
+    match err {
+        ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
+        ErrorCode::WalletNotFoundError => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did)),
+        ErrorCode::WalletIncompatiblePoolError => Err(println_err!("Wallet \"{}\" is incompatible with pool \"{}\".", wallet_name, pool_name)),
+        err => Err(println_err!("Indy SDK error occurred {:?}", err))
+    }
+}
+
+fn handle_get_command_error(err: ErrorCode) -> Result<String, ()> {
+    match err {
+        ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
+        err => Err(println_err!("Indy SDK error occurred {:?}", err)),
+    }
+}
+
+fn extract_error_message(error: &str) -> String {
+    let re = Regex::new(r"'(.*)'").unwrap();
+    match re.captures(error) {
+        Some(message) => message[1].to_string(),
+        None => error.to_string()
+    }
 }
 
 fn get_role_title(role: &serde_json::Value) -> serde_json::Value {
@@ -797,22 +759,6 @@ fn get_role_title(role: &serde_json::Value) -> serde_json::Value {
         Some("101") => "TRUST_ANCHOR",
         _ => "-"
     }.to_string())
-}
-
-fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_handle: i32, wallet_handle: i32) -> Result<(), ()> {
-    match err {
-        ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
-        ErrorCode::WalletNotFoundError => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did)),
-        ErrorCode::WalletIncompatiblePoolError => Err(println_err!("Pool handle \"{}\" invalid for wallet handle \"{}\"", pool_handle, wallet_handle)),
-        err => Err(println_err!("Indy SDK error occurred {:?}", err))
-    }
-}
-
-fn handle_get_command_error(err: ErrorCode) -> Result<String, ()> {
-    match err {
-        ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
-        err => Err(println_err!("Indy SDK error occurred {:?}", err)),
-    }
 }
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
@@ -1069,9 +1015,11 @@ pub mod tests {
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
 
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym_my1(&ctx);
             new_did(&ctx, SEED_MY3);
             use_did(&ctx, DID_MY3);
-            send_nym_my1(&ctx);
             {
                 let cmd = get_nym_command::new();
                 let mut params = CommandParams::new();
@@ -1105,7 +1053,7 @@ pub mod tests {
                 params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_attrib_added(&ctx, DID_MY1).is_ok();
+            _ensure_attrib_added(&ctx, DID_MY1);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1163,9 +1111,8 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY3.to_string());
                 params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
-                cmd.execute(&ctx, &params).unwrap();
+                cmd.execute(&ctx, &params).unwrap_err();
             }
-            _ensure_attrib_added(&ctx, DID_MY3).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1265,7 +1212,7 @@ pub mod tests {
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_schema_added(&ctx, DID_TRUSTEE).is_ok();
+            _ensure_schema_added(&ctx, DID_TRUSTEE);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1304,9 +1251,8 @@ pub mod tests {
                 params.insert("name", "gvt".to_string());
                 params.insert("version", "1.0".to_string());
                 params.insert("attr_names", "name,age".to_string());
-                cmd.execute(&ctx, &params).unwrap();
+                cmd.execute(&ctx, &params).unwrap_err();
             }
-            _ensure_schema_added(&ctx, DID_MY3).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1443,7 +1389,7 @@ pub mod tests {
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_claim_def_added(&ctx, DID_TRUSTEE).is_ok();
+            _ensure_claim_def_added(&ctx, DID_TRUSTEE);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1482,9 +1428,8 @@ pub mod tests {
                 params.insert("schema_no", "1".to_string());
                 params.insert("signature_type", "CL".to_string());
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
-                cmd.execute(&ctx, &params).unwrap();
+                cmd.execute(&ctx, &params).unwrap_err();
             }
-            _ensure_claim_def_added(&ctx, DID_MY3).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1888,32 +1833,26 @@ pub mod tests {
             .and_then(|response| serde_json::from_str::<NymData>(&response.result.unwrap().data)).unwrap();
     }
 
-    fn _ensure_attrib_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
+    fn _ensure_attrib_added(ctx: &CommandContext, did: &str) {
         let request = Ledger::build_get_attrib_request(DID_MY1, did, "endpoint").unwrap();
         let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
         let response = Ledger::submit_request(pool_handle, &request).unwrap();
         serde_json::from_str::<Response<ReplyResult<String>>>(&response)
             .and_then(|response| serde_json::from_str::<AttribData>(&response.result.unwrap().data)).unwrap();
-        ;
-        Ok(())
     }
 
-    fn _ensure_schema_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
+    fn _ensure_schema_added(ctx: &CommandContext, did: &str) {
         let data = r#"{"name":"gvt", "version":"1.0"}"#;
         let request = Ledger::build_get_schema_request(DID_TRUSTEE, did, data).unwrap();
         let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
         let response = Ledger::submit_request(pool_handle, &request).unwrap();
         serde_json::from_str::<Response<ReplyResult<SchemaData>>>(&response).unwrap();
-        ;
-        Ok(())
     }
 
-    fn _ensure_claim_def_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
+    fn _ensure_claim_def_added(ctx: &CommandContext, did: &str) {
         let request = Ledger::build_get_claim_def_txn(DID_TRUSTEE, 1, "CL", did).unwrap();
         let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
         let response = Ledger::submit_request(pool_handle, &request).unwrap();
         serde_json::from_str::<Response<ReplyResult<ClaimDefData>>>(&response).unwrap();
-        ;
-        Ok(())
     }
 }

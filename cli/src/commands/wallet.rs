@@ -117,6 +117,7 @@ pub mod open_command {
                         set_opened_wallet(ctx, Some((handle, name.to_owned())));
                         Ok(println_succ!("Wallet \"{}\" has been opened", name))
                     }
+                    Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid wallet config")),
                     Err(ErrorCode::WalletAlreadyOpenedError) => Err(println_err!("Wallet \"{}\" already opened", name)),
                     Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
