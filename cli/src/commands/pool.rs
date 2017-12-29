@@ -86,6 +86,7 @@ pub mod connect_command {
                         set_connected_pool(ctx, Some((handle, name.to_owned())));
                         Ok(println_succ!("Pool \"{}\" has been connected", name))
                     }
+                    Err(ErrorCode::PoolLedgerTerminated) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                 }
             });
@@ -198,9 +199,9 @@ pub mod delete_command {
         trace!(r#"Pool::delete return: {:?}"#, res);
 
         let res = match res {
-            Ok(()) => Ok(println_succ!("Pool \"{}\" has been deleted", name)),
+            Ok(()) => Ok(println_succ!("Pool \"{}\" has been deleted.", name)),
             Err(ErrorCode::CommonInvalidState) => Err(println_err!("Connected pool cannot be deleted. Please disconnect first.")),
-            Err(ErrorCode::CommonIOError) => Err(println_err!("Pool \"{}\" not found or unavailable", name)),
+            Err(ErrorCode::CommonIOError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
