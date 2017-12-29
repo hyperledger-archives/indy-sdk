@@ -19,7 +19,7 @@ async def test_prover_store_claim_works(wallet_handle, prepopulated_wallet, prov
 
     (_, claim_json) = await issuer_create_claim(wallet_handle, claim_req, gvt_claim_json, -1)
 
-    await prover_store_claim(wallet_handle, claim_json)
+    await prover_store_claim(wallet_handle, claim_json, None)
 
 
 @pytest.mark.asyncio
@@ -39,6 +39,6 @@ async def test_prover_store_claim_works_for_invalid_wallet_handle(wallet_handle,
     (_, claim_json) = await issuer_create_claim(wallet_handle, claim_req, gvt_claim_json, -1)
 
     with pytest.raises(IndyError) as e:
-        await prover_store_claim(invalid_wallet_handle, claim_json)
+        await prover_store_claim(invalid_wallet_handle, claim_json, None)
 
     assert ErrorCode.WalletInvalidHandle == e.value.error_code

@@ -89,8 +89,7 @@ def notifyingFailure() {
 def getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver) {
     if (pool_type != null && plenum_ver != null && anoncreds_ver != null && node_ver != null) {
         return "--build-arg=indy_stream=${pool_type} --build-arg indy_plenum_ver=${plenum_ver} --build-arg indy_anoncreds_ver=${anoncreds_ver} --build-arg indy_node_ver=${node_ver}"
-    }
-    else {
+    } else {
         return ""
     }
 }
@@ -240,6 +239,8 @@ def windowsTesting() {
                 echo "Windows Test: Run Indy pool"
                 bat "docker -H $INDY_SDK_SERVER_IP build --build-arg pool_ip=$INDY_SDK_SERVER_IP -f ci/indy-pool.dockerfile -t indy_pool ci"
                 bat "docker -H $INDY_SDK_SERVER_IP run -d --network host --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+
+                setupRust()
 
                 dir('libindy') {
                     echo "Windows Test: Download prebuilt dependencies"
@@ -643,3 +644,6 @@ def downloadPackagingUtils() {
     git branch: 'master', credentialsId: 'evernym-github-machine-user', url: 'https://github.com/evernym/sovrin-packaging'
 }
 
+def setupRust() {
+    sh "rustup default 1.21.0"
+}

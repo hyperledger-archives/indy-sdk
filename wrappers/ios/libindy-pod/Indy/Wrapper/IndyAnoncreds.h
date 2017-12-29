@@ -40,7 +40,7 @@
  @param completion Callback that takes command result as parameter. Returns revoc registry json and unique number identifying the revocation registry in the wallet.
  */
 + (void)issuerCreateAndStoreRevocRegForIssuerDid:(NSString *)issuerDID
-                                     schemaSeqNo:(NSNumber *)schemaSeqNo
+                                     schemaJSON:(NSString *)schemaJSON
                                      maxClaimNum:(NSNumber *)maxClaimNum
                                     walletHandle:(IndyHandle)walletHandle
                                       completion:(void (^)(NSError *error, NSString *revocRegJSON)) completion;
@@ -108,7 +108,7 @@
  @param completion Callback that takes command result as parameter. Returns revocation registry update json with a revoked claim.
  */
 + (void)issuerRevokeClaimForIssuerDID:(NSString *)issuerDID
-                          schemaSeqNo:(NSNumber *)schemaSeqNo
+                           schemaJSON:(NSString *)schemaJSON
                        userRevocIndex:(NSNumber *)userRevocIndex
                          walletHandle:(IndyHandle)walletHandle
                            completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) completion;
@@ -241,11 +241,13 @@
  
  @param claimsJson Claim json. See example above.
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param revRegJSON Revocation registry json associated with issuer_DID and schema_seq_no in the claim_offer.
  @param completion Callback that takes command result as parameter.
  */
 + (void)proverStoreClaim:(NSString *)claimsJson
-            walletHandle:(IndyHandle)walletHandle
-              completion:(void (^)(NSError *error)) completion;
+        revRegJSON:(NSString *)revRegJSON
+        walletHandle:(IndyHandle)walletHandle
+        completion:(void (^)(NSError *error)) completion;
 
 /**
  Gets human readable claims according to the filter.  
