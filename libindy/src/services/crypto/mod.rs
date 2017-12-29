@@ -57,8 +57,8 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let seed = key_info.seed.as_ref().map(String::as_bytes);
-        let (vk, sk) = crypto_type.create_key(seed)?;
+        let seed = self.convert_seed(key_info.seed.as_ref().map(String::as_ref))?;
+        let (vk, sk) = crypto_type.create_key(seed.as_ref().map(Vec::as_slice))?;
         let vk = Base58::encode(&vk);
         let sk = Base58::encode(&sk);
 
@@ -84,9 +84,8 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let seed = my_did_info.seed.as_ref().map(String::as_bytes);
-        let (vk, sk) = crypto_type.create_key(seed)?;
-
+        let seed = self.convert_seed(my_did_info.seed.as_ref().map(String::as_ref))?;
+        let (vk, sk) = crypto_type.create_key(seed.as_ref().map(Vec::as_slice))?;
         let did = match my_did_info.did {
             Some(ref did) => Base58::decode(did)?,
             _ if my_did_info.cid == Some(true) => vk.clone(),
@@ -286,6 +285,19 @@ impl CryptoService {
 
         let decrypted_doc = crypto_type.decrypt_sealed(&my_vk, &my_sk, doc)?;
         Ok(decrypted_doc)
+    }
+
+    pub fn convert_seed(&self, seed: Option<&str>) -> Result<Option<Vec<u8>>, CryptoError> {
+        Ok(match seed {
+            Some(ref seed) =>
+                if seed.ends_with("=") {
+                    Some(base64::decode(&seed)
+                        .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Seed from Base64 string: {:?}", err)))?)
+                } else {
+                    Some(seed.as_bytes().to_vec())
+                },
+            None => None
+        })
     }
 
     pub fn validate_key(&self, vk: &str) -> Result<(), CryptoError> {
