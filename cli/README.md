@@ -33,7 +33,7 @@ It is possible to import did's stored in the wallet of deprecated python-based C
 To achieve this user needs to perform the following steps:
 1. Execute script on machine with installed old python-based CLI. 
     ```
-    indy_export_dids [-e <env name>] -w <wallet name> [-f <path to the result file>]
+    indy_old_cli_export_dids [-e <env name>] -w <wallet name> [-f <path to the result file>]
     ```
     This script will export DIDs stored in specified wallet into the result file. 
 By default, this file creates in current folder and has the following name: 
