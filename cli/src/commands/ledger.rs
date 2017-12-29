@@ -1658,7 +1658,6 @@ pub mod tests {
                                             "protocolVersion":1
                                           }"#;
 
-        pub const DID_FOR_SIGN_TXN: &'static str = "E1XWGvsrVp5ZDif2uDdTAM";
         pub const TXN_FOR_SIGN: &'static str = r#"{
                                                     "reqId":1513241300414292814,
                                                     "identifier":"V4SGRU86Z58d6TV7PBUe6f",
@@ -1801,9 +1800,8 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("sign", "true".to_string());
                 params.insert("txn", TXN_FOR_SIGN.to_string());
-                cmd.execute(&ctx, &params).unwrap();
+                cmd.execute(&ctx, &params).unwrap_err();
             }
-            _ensure_nym_added(&ctx, DID_FOR_SIGN_TXN);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
