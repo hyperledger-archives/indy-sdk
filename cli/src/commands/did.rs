@@ -7,6 +7,7 @@ use libindy::ErrorCode;
 use libindy::did::Did;
 use libindy::ledger::Ledger;
 
+use std::fs::File;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
@@ -79,6 +80,69 @@ pub mod new_command {
             })
         } else {
             res.map(|_| ())
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+pub mod import_command {
+    use super::*;
+    use std::io::Read;
+
+    command!(CommandMetadata::build("import", "Import DIDs entities from file to the current wallet.
+        File format:
+        {
+            \"version\": 1
+            \"dids\": [
+                { \"did\": \"did1\", \"seed\": \"UTF-8 or base64 seed string\" },
+            ]
+        }")
+                .add_main_param("file", "Path to file with DIDs")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+
+        let path = get_str_param("file", params).map_err(error_err!())?;
+
+        let mut buf = String::new();
+        let res = File::open(path)
+            .and_then(|mut file| {
+                file.read_to_string(&mut buf)
+            })
+            .map_err(|err| format!("Error during reading file {}", err))
+            .and_then(|_| {
+                serde_json::from_str::<JSONValue>(&buf)
+                    .map_err(|err| format!("Can't parse JSON {:?}", err))
+                    .and_then(|json: JSONValue| -> Result<JSONValue, String> {
+                        let is_correct_version = json["version"].as_i64().map(|ver| (ver == 1)).unwrap_or(false);
+                        if is_correct_version { Ok(json) } else { Err("Invalid or missed version".to_owned()) }
+                    })
+                    .and_then(|json| {
+                        json["dids"].as_array().map(Clone::clone).ok_or("missed DIDs".to_owned())
+                    })
+                    .and_then(|dids| {
+                        for did in dids {
+                            match Did::new(wallet_handle, &did.to_string()) {
+                                Ok((did, vk)) =>
+                                    println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk),
+                                Err(err) =>
+                                    println_warn!("Indy SDK error occured {:?} while importing DID {}", err, did)
+                            }
+                        }
+                        Ok(())
+                    })
+            });
+
+        let res = if let Err(err) = res {
+            Err(println_err!("{}", err))
+        } else {
+            Ok(println_succ!("DIDs import finished"))
         };
 
         trace!("execute << {:?}", res);
