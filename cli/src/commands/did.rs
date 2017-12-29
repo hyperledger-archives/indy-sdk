@@ -214,7 +214,6 @@ pub mod rotate_key_command {
             Ok(response) => Ok(response),
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
             Err(ErrorCode::WalletIncompatiblePoolError) => Err(println_err!("Pool handle \"{}\" invalid for wallet handle \"{}\"", pool_handle, wallet_handle)),
-            Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid NYM transaction \"{}\"", request)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         }?;
 
@@ -288,6 +287,7 @@ pub mod tests {
 
     pub const SEED_MY3: &'static str = "00000000000000000000000000000My3";
     pub const DID_MY3: &'static str = "5Uu7YveFSGcT3dSzjpvPab";
+    pub const VERKEY_MY3: &'static str = "3SeuRm3uYuQDYmHeuMLu1xNHozNTtzS3kbZRFMMCWrX4";
 
     mod did_new {
         use super::*;

@@ -22,12 +22,11 @@ pub mod nym_command {
     command!(CommandMetadata::build("nym", "Add NYM to Ledger.")
                 .add_param("did", false, "DID of new identity")
                 .add_param("verkey", true, "Verification key of new identity")
-                .add_param("alias", true, "Alias of new identity")
                 .add_param("role", true, "Role of new identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, TGB")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
-                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa alias=some_alias")
-                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX alias=some_alias role=TRUSTEE")
+                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
+                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=TRUSTEE")
                 .finalize()
     );
 
@@ -40,15 +39,14 @@ pub mod nym_command {
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let verkey = get_opt_str_param("verkey", params).map_err(error_err!())?;
-        let alias = get_opt_str_param("alias", params).map_err(error_err!())?;
         let role = get_opt_str_param("role", params).map_err(error_err!())?;
 
-        let res = Ledger::build_nym_request(&submitter_did, target_did, verkey, alias, role)
+        let res = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
         let res = match res {
-            Ok(_) => Ok(println_succ!("NYM {{\"did\":\"{}\", \"verkey\":\"{:?}\", \"alias\":\"{:?}\", \"role\":\"{:?}\"}} has been added to Ledger",
-                                      target_did, verkey, alias, role)),
+            Ok(_) => Ok(println_succ!("NYM {{\"did\":\"{}\", \"verkey\":\"{:?}\", \"role\":\"{:?}\"}} has been added to Ledger",
+                                      target_did, verkey, role)),
             Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
         };
 
@@ -254,7 +252,7 @@ pub mod get_schema_command {
         }?;
 
         let res = match serde_json::from_str::<Reply<SchemaData>>(&response) {
-            Ok(schema) => Ok(println_succ!("Following Schema has been received: \"{}\"", schema.result.data)),
+            Ok(schema) => Ok(println_succ!("Following Schema has been received: {}", schema)),
             Err(_) => Err(println_err!("Schema not found"))
         };
 
@@ -298,7 +296,7 @@ pub mod claim_def_command {
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
         let res = match res {
-            Ok(_) => Ok(println_succ!("Claim definition {{\"origin\":\"{}\", \"schema_seq_no\":{}, \"signature_type\":{}}} has been added to Ledger",
+            Ok(_) => Ok(println_succ!("Claim definition {{\"identifier\":\"{}\", \"schema_seq_no\":{}, \"signature_type\":{}}} has been added to Ledger",
                                       submitter_did, xref, signature_type)),
             Err(err) => handle_send_command_error(err, &submitter_did, pool_handle, wallet_handle)
         };
@@ -521,7 +519,6 @@ pub mod custom_command {
 
         let res = match res {
             Ok(response) => Ok(println_succ!("Response: {}", response)),
-            Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid transaction \"{}\"", txn)),
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("There is no active did")),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
@@ -535,7 +532,6 @@ fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_handle: i
     match err {
         ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
         ErrorCode::WalletNotFoundError => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did)),
-        ErrorCode::LedgerInvalidTransaction => Err(println_err!("Invalid transaction")),
         ErrorCode::WalletIncompatiblePoolError => Err(println_err!("Pool handle \"{}\" invalid for wallet handle \"{}\"", pool_handle, wallet_handle)),
         err => Err(println_err!("Indy SDK error occurred {:?}", err))
     }
@@ -544,7 +540,6 @@ fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_handle: i
 fn handle_get_command_error(err: ErrorCode) -> Result<String, ()> {
     match err {
         ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
-        ErrorCode::LedgerInvalidTransaction => Err(println_err!("Invalid transaction")),
         err => Err(println_err!("Indy SDK error occurred {:?}", err)),
     }
 }
@@ -556,7 +551,10 @@ pub struct Reply<T> {
 
 #[derive(Deserialize, Debug)]
 pub struct ReplyResult<T> {
-    pub data: T
+    pub data: T,
+    #[serde(rename = "seqNo")]
+    pub seq_no: u64,
+    pub identifier: String
 }
 
 #[derive(Deserialize, Debug)]
@@ -564,17 +562,22 @@ pub struct NymData {
     pub identifier: Option<String>,
     pub dest: String,
     pub role: Option<String>,
-    pub alias: Option<String>,
     pub verkey: Option<String>
 }
 
 impl fmt::Display for NymData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "\nsubmitter:{} | did:{} | role:{} | alias:{} | verkey:{}",
+        let role = match self.role.as_ref().map(String::as_str) {
+            Some("0") => "TRUSTEE",
+            Some("2") => "STEWARD",
+            Some("100") => "TGB",
+            Some("101") => "TRUST_ANCHOR",
+            _ => "null"
+        };
+
+        write!(f, "\nsubmitter:{} | did:{} | verkey:{} | role:{} ",
                self.identifier.clone().unwrap_or("null".to_string()), self.dest,
-               self.role.clone().unwrap_or("null".to_string()),
-               self.alias.clone().unwrap_or("null".to_string()),
-               self.verkey.clone().unwrap_or("null".to_string()))
+               self.verkey.clone().unwrap_or("null".to_string()), role)
     }
 }
 
@@ -601,14 +604,13 @@ pub struct Endpoint {
 pub struct SchemaData {
     pub attr_names: HashSet<String>,
     pub name: String,
-    pub origin: Option<String>,
     pub version: String
 }
 
-impl fmt::Display for SchemaData {
+impl fmt::Display for Reply<SchemaData> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "\nname:{} | version:{} | attr_names:{:?} | origin:{}",
-               self.name, self.version, self.attr_names, self.origin.clone().unwrap_or("null".to_string()))
+        write!(f, "\nname:{} | version:{} | attr_names:{:?} | origin:{:?} | seq_no:{:?}",
+               self.result.data.name, self.result.data.version, self.result.data.attr_names, self.result.identifier, self.result.seq_no)
     }
 }
 
@@ -655,7 +657,7 @@ pub mod tests {
     use super::*;
     use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
     use commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
-    use commands::did::tests::{new_did, use_did, SEED_TRUSTEE, DID_TRUSTEE, SEED_MY1, DID_MY1, VERKEY_MY1, SEED_MY3, DID_MY3};
+    use commands::did::tests::{new_did, use_did, SEED_TRUSTEE, DID_TRUSTEE, SEED_MY1, DID_MY1, VERKEY_MY1, SEED_MY3, DID_MY3, VERKEY_MY3};
     use libindy::ledger::Ledger;
 
     mod nym {
@@ -677,7 +679,7 @@ pub mod tests {
                 params.insert("verkey", VERKEY_MY1.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_nym_added(&ctx);
+            _check_nym_added(&ctx, DID_MY1).is_ok();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -699,7 +701,7 @@ pub mod tests {
                 params.insert("role", "TRUSTEE".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_nym_added(&ctx);
+            _check_nym_added(&ctx, DID_MY1).is_ok();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -721,28 +723,6 @@ pub mod tests {
                 params.insert("role", "ROLE".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
-            close_and_delete_wallet(&ctx);
-            disconnect_and_delete_pool(&ctx);
-        }
-
-        #[test]
-        pub fn nym_works_for_alias() {
-            let ctx = CommandContext::new();
-
-            create_and_open_wallet(&ctx);
-            create_and_connect_pool(&ctx);
-
-            new_did(&ctx, SEED_TRUSTEE);
-            use_did(&ctx, DID_TRUSTEE);
-            {
-                let cmd = nym_command::new();
-                let mut params = CommandParams::new();
-                params.insert("did", DID_MY1.to_string());
-                params.insert("verkey", VERKEY_MY1.to_string());
-                params.insert("alias", "alias".to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            _ensure_nym_added(&ctx);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -818,11 +798,11 @@ pub mod tests {
             {
                 let cmd = nym_command::new();
                 let mut params = CommandParams::new();
-                params.insert("did", DID_MY1.to_string());
-                params.insert("verkey", VERKEY_MY1.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
+                params.insert("did", DID_MY3.to_string());
+                params.insert("verkey", VERKEY_MY3.to_string());
+                cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_nym_added(&ctx);
+            _check_nym_added(&ctx, DID_MY3).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -914,7 +894,7 @@ pub mod tests {
                 params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_attrib_added(&ctx);
+            _check_attrib_added(&ctx, DID_MY1).is_ok();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -972,8 +952,9 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY3.to_string());
                 params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
+                cmd.execute(&ctx, &params).unwrap();
             }
+            _check_attrib_added(&ctx, DID_MY3).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1073,7 +1054,7 @@ pub mod tests {
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_schema_added(&ctx);
+            _check_schema_added(&ctx, DID_TRUSTEE).is_ok();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1112,8 +1093,9 @@ pub mod tests {
                 params.insert("name", "gvt".to_string());
                 params.insert("version", "1.0".to_string());
                 params.insert("attr_names", "name,age".to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
+                cmd.execute(&ctx, &params).unwrap();
             }
+            _check_schema_added(&ctx, DID_MY3).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1165,7 +1147,6 @@ pub mod tests {
                 params.insert("version", "1.0".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_schema_added(&ctx);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1251,7 +1232,7 @@ pub mod tests {
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_claim_def_added(&ctx);
+            _check_claim_def_added(&ctx, DID_TRUSTEE).is_ok();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1290,8 +1271,9 @@ pub mod tests {
                 params.insert("schema_no", "1".to_string());
                 params.insert("signature_type", "CL".to_string());
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
+                cmd.execute(&ctx, &params).unwrap();
             }
+            _check_claim_def_added(&ctx, DID_MY3).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1508,13 +1490,14 @@ pub mod tests {
                                             "protocolVersion":1
                                           }"#;
 
+        pub const DID_FOR_SIGN_TXN: &'static str = "E1XWGvsrVp5ZDif2uDdTAM";
         pub const TXN_FOR_SIGN: &'static str = r#"{
                                                     "reqId":1513241300414292814,
                                                     "identifier":"V4SGRU86Z58d6TV7PBUe6f",
                                                     "operation":{
                                                         "type":"1",
-                                                        "dest":"VsKV7grR1BUE29mG2Fm2kX",
-                                                        "verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
+                                                        "dest":"E1XWGvsrVp5ZDif2uDdTAM",
+                                                        "verkey":"86F43kmApX7Da5Rcba1vCbYmc7bbauEksGxPKy8PkZyb"
                                                     },
                                                     "protocolVersion":1
                                                   }"#;
@@ -1577,7 +1560,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn custom_works_for_invalid_transaction() {
+        pub fn custom_works_for_invalid_transaction_format() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -1588,11 +1571,11 @@ pub mod tests {
             {
                 let cmd = custom_command::new();
                 let mut params = CommandParams::new();
-                params.insert("txn", format!(r#"{{
+                params.insert("txn", format!(r#"
                                                     "reqId":1513241300414292814,
                                                     "identifier":"{}",
                                                     "protocolVersion":1
-                                                  }}"#, DID_TRUSTEE));
+                                                  "#, DID_TRUSTEE));
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
@@ -1650,8 +1633,9 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("sign", "true".to_string());
                 params.insert("txn", TXN_FOR_SIGN.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
+                cmd.execute(&ctx, &params).unwrap();
             }
+            _check_nym_added(&ctx, DID_FOR_SIGN_TXN).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1685,34 +1669,42 @@ pub mod tests {
         cmd.execute(&ctx, &params).unwrap();
     }
 
-    fn _ensure_nym_added(ctx: &CommandContext) {
-        let request = Ledger::build_get_nym_request(DID_TRUSTEE, DID_MY1).unwrap();
+    fn _check_nym_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
+        let request = Ledger::build_get_nym_request(DID_TRUSTEE, did).unwrap();
         let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
         let response = Ledger::submit_request(pool_handle, &request).unwrap();
         serde_json::from_str::<Reply<String>>(&response)
-            .and_then(|response| serde_json::from_str::<NymData>(&response.result.data)).unwrap();
+            .and_then(|response| serde_json::from_str::<NymData>(&response.result.data))
+            .map_err(|_| ())?;
+        Ok(())
     }
 
-    fn _ensure_attrib_added(ctx: &CommandContext) {
-        let request = Ledger::build_get_attrib_request(DID_MY1, DID_MY1, "endpoint").unwrap();
+    fn _check_attrib_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
+        let request = Ledger::build_get_attrib_request(DID_MY1, did, "endpoint").unwrap();
         let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
         let response = Ledger::submit_request(pool_handle, &request).unwrap();
         serde_json::from_str::<Reply<String>>(&response)
-            .and_then(|response| serde_json::from_str::<AttribData>(&response.result.data)).unwrap();
+            .and_then(|response| serde_json::from_str::<AttribData>(&response.result.data))
+            .map_err(|_| ())?;
+        Ok(())
     }
 
-    fn _ensure_schema_added(ctx: &CommandContext) {
+    fn _check_schema_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
         let data = r#"{"name":"gvt", "version":"1.0"}"#;
-        let request = Ledger::build_get_schema_request(DID_TRUSTEE, DID_TRUSTEE, data).unwrap();
+        let request = Ledger::build_get_schema_request(DID_TRUSTEE, did, data).unwrap();
         let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
         let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Reply<SchemaData>>(&response).unwrap();
+        serde_json::from_str::<Reply<SchemaData>>(&response)
+            .map_err(|_| ())?;
+        Ok(())
     }
 
-    fn _ensure_claim_def_added(ctx: &CommandContext) {
-        let request = Ledger::build_get_claim_def_txn(DID_TRUSTEE, 1, "CL", DID_TRUSTEE).unwrap();
+    fn _check_claim_def_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
+        let request = Ledger::build_get_claim_def_txn(DID_TRUSTEE, 1, "CL", did).unwrap();
         let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
         let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Reply<ClaimDefData>>(&response).unwrap();
+        serde_json::from_str::<Reply<ClaimDefData>>(&response)
+            .map_err(|_| ())?;
+        Ok(())
     }
 }
