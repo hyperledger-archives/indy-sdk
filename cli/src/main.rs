@@ -35,6 +35,10 @@ use std::rc::Rc;
 fn main() {
     utils::logger::LoggerUtils::init();
 
+    if env::args().find(|a| a == "-h" || a == "--help").is_some() {
+        return _print_help();
+    }
+
     let command_executor = build_executor();
 
     if env::args().len() == 1 {
@@ -131,6 +135,18 @@ fn execute_batch(command_executor: CommandExecutor, script_path: Option<&str>) {
         let stdin = std::io::stdin();
         _iter_batch(command_executor, stdin.lock());
     };
+}
+
+fn _print_help() {
+    println_acc!("Hyperledger Indy CLI");
+    println!();
+    println_acc!("CLI supports 2 execution modes:");
+    println_acc!("\tInteractive - reads commands from terminal. To start just run indy-cli without params.");
+    println_acc!("\tUsage: indy-cli");
+    println!();
+    println_acc!("\tBatch - all commands will be read from text file or pipe and executed in series.");
+    println_acc!("\tUsage: indy-cli <path-to-text-file>");
+    println!();
 }
 
 fn _iter_batch<T>(command_executor: CommandExecutor, reader: T) where T: std::io::BufRead {
