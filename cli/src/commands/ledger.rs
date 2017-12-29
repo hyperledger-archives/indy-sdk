@@ -519,7 +519,6 @@ pub mod custom_command {
 
         let res = match res {
             Ok(response) => Ok(println_succ!("Response: {}", response)),
-            Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid transaction \"{}\"", txn)),
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("There is no active did")),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
@@ -533,7 +532,6 @@ fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_handle: i
     match err {
         ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
         ErrorCode::WalletNotFoundError => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did)),
-        ErrorCode::LedgerInvalidTransaction => Err(println_err!("Invalid transaction")),
         ErrorCode::WalletIncompatiblePoolError => Err(println_err!("Pool handle \"{}\" invalid for wallet handle \"{}\"", pool_handle, wallet_handle)),
         err => Err(println_err!("Indy SDK error occurred {:?}", err))
     }
@@ -542,7 +540,6 @@ fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_handle: i
 fn handle_get_command_error(err: ErrorCode) -> Result<String, ()> {
     match err {
         ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
-        ErrorCode::LedgerInvalidTransaction => Err(println_err!("Invalid transaction")),
         err => Err(println_err!("Indy SDK error occurred {:?}", err)),
     }
 }
@@ -660,7 +657,7 @@ pub mod tests {
     use super::*;
     use commands::wallet::tests::{create_and_open_wallet, close_and_delete_wallet};
     use commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
-    use commands::did::tests::{new_did, use_did, SEED_TRUSTEE, DID_TRUSTEE, SEED_MY1, DID_MY1, VERKEY_MY1, SEED_MY3, DID_MY3};
+    use commands::did::tests::{new_did, use_did, SEED_TRUSTEE, DID_TRUSTEE, SEED_MY1, DID_MY1, VERKEY_MY1, SEED_MY3, DID_MY3, VERKEY_MY3};
     use libindy::ledger::Ledger;
 
     mod nym {
@@ -682,7 +679,7 @@ pub mod tests {
                 params.insert("verkey", VERKEY_MY1.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_nym_added(&ctx);
+            _check_nym_added(&ctx, DID_MY1).is_ok();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -704,7 +701,7 @@ pub mod tests {
                 params.insert("role", "TRUSTEE".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_nym_added(&ctx);
+            _check_nym_added(&ctx, DID_MY1).is_ok();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -801,11 +798,11 @@ pub mod tests {
             {
                 let cmd = nym_command::new();
                 let mut params = CommandParams::new();
-                params.insert("did", DID_MY1.to_string());
-                params.insert("verkey", VERKEY_MY1.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
+                params.insert("did", DID_MY3.to_string());
+                params.insert("verkey", VERKEY_MY3.to_string());
+                cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_nym_added(&ctx);
+            _check_nym_added(&ctx, DID_MY3).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -897,7 +894,7 @@ pub mod tests {
                 params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_attrib_added(&ctx);
+            _check_attrib_added(&ctx, DID_MY1).is_ok();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -955,8 +952,9 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY3.to_string());
                 params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
+                cmd.execute(&ctx, &params).unwrap();
             }
+            _check_attrib_added(&ctx, DID_MY3).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1056,7 +1054,7 @@ pub mod tests {
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_schema_added(&ctx);
+            _check_schema_added(&ctx, DID_TRUSTEE).is_ok();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1095,8 +1093,9 @@ pub mod tests {
                 params.insert("name", "gvt".to_string());
                 params.insert("version", "1.0".to_string());
                 params.insert("attr_names", "name,age".to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
+                cmd.execute(&ctx, &params).unwrap();
             }
+            _check_schema_added(&ctx, DID_MY3).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1148,7 +1147,6 @@ pub mod tests {
                 params.insert("version", "1.0".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_schema_added(&ctx);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1234,7 +1232,7 @@ pub mod tests {
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_claim_def_added(&ctx);
+            _check_claim_def_added(&ctx, DID_TRUSTEE).is_ok();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1273,8 +1271,9 @@ pub mod tests {
                 params.insert("schema_no", "1".to_string());
                 params.insert("signature_type", "CL".to_string());
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
+                cmd.execute(&ctx, &params).unwrap();
             }
+            _check_claim_def_added(&ctx, DID_MY3).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1491,13 +1490,14 @@ pub mod tests {
                                             "protocolVersion":1
                                           }"#;
 
+        pub const DID_FOR_SIGN_TXN: &'static str = "E1XWGvsrVp5ZDif2uDdTAM";
         pub const TXN_FOR_SIGN: &'static str = r#"{
                                                     "reqId":1513241300414292814,
                                                     "identifier":"V4SGRU86Z58d6TV7PBUe6f",
                                                     "operation":{
                                                         "type":"1",
-                                                        "dest":"VsKV7grR1BUE29mG2Fm2kX",
-                                                        "verkey":"GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa"
+                                                        "dest":"E1XWGvsrVp5ZDif2uDdTAM",
+                                                        "verkey":"86F43kmApX7Da5Rcba1vCbYmc7bbauEksGxPKy8PkZyb"
                                                     },
                                                     "protocolVersion":1
                                                   }"#;
@@ -1560,7 +1560,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn custom_works_for_invalid_transaction() {
+        pub fn custom_works_for_invalid_transaction_format() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -1571,11 +1571,11 @@ pub mod tests {
             {
                 let cmd = custom_command::new();
                 let mut params = CommandParams::new();
-                params.insert("txn", format!(r#"{{
+                params.insert("txn", format!(r#"
                                                     "reqId":1513241300414292814,
                                                     "identifier":"{}",
                                                     "protocolVersion":1
-                                                  }}"#, DID_TRUSTEE));
+                                                  "#, DID_TRUSTEE));
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
@@ -1633,8 +1633,9 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("sign", "true".to_string());
                 params.insert("txn", TXN_FOR_SIGN.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
+                cmd.execute(&ctx, &params).unwrap();
             }
+            _check_nym_added(&ctx, DID_FOR_SIGN_TXN).is_err();
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1668,34 +1669,42 @@ pub mod tests {
         cmd.execute(&ctx, &params).unwrap();
     }
 
-    fn _ensure_nym_added(ctx: &CommandContext) {
-        let request = Ledger::build_get_nym_request(DID_TRUSTEE, DID_MY1).unwrap();
+    fn _check_nym_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
+        let request = Ledger::build_get_nym_request(DID_TRUSTEE, did).unwrap();
         let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
         let response = Ledger::submit_request(pool_handle, &request).unwrap();
         serde_json::from_str::<Reply<String>>(&response)
-            .and_then(|response| serde_json::from_str::<NymData>(&response.result.data)).unwrap();
+            .and_then(|response| serde_json::from_str::<NymData>(&response.result.data))
+            .map_err(|_| ())?;
+        Ok(())
     }
 
-    fn _ensure_attrib_added(ctx: &CommandContext) {
-        let request = Ledger::build_get_attrib_request(DID_MY1, DID_MY1, "endpoint").unwrap();
+    fn _check_attrib_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
+        let request = Ledger::build_get_attrib_request(DID_MY1, did, "endpoint").unwrap();
         let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
         let response = Ledger::submit_request(pool_handle, &request).unwrap();
         serde_json::from_str::<Reply<String>>(&response)
-            .and_then(|response| serde_json::from_str::<AttribData>(&response.result.data)).unwrap();
+            .and_then(|response| serde_json::from_str::<AttribData>(&response.result.data))
+            .map_err(|_| ())?;
+        Ok(())
     }
 
-    fn _ensure_schema_added(ctx: &CommandContext) {
+    fn _check_schema_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
         let data = r#"{"name":"gvt", "version":"1.0"}"#;
-        let request = Ledger::build_get_schema_request(DID_TRUSTEE, DID_TRUSTEE, data).unwrap();
+        let request = Ledger::build_get_schema_request(DID_TRUSTEE, did, data).unwrap();
         let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
         let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Reply<SchemaData>>(&response).unwrap();
+        serde_json::from_str::<Reply<SchemaData>>(&response)
+            .map_err(|_| ())?;
+        Ok(())
     }
 
-    fn _ensure_claim_def_added(ctx: &CommandContext) {
-        let request = Ledger::build_get_claim_def_txn(DID_TRUSTEE, 1, "CL", DID_TRUSTEE).unwrap();
+    fn _check_claim_def_added(ctx: &CommandContext, did: &str) -> Result<(), ()> {
+        let request = Ledger::build_get_claim_def_txn(DID_TRUSTEE, 1, "CL", did).unwrap();
         let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
         let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Reply<ClaimDefData>>(&response).unwrap();
+        serde_json::from_str::<Reply<ClaimDefData>>(&response)
+            .map_err(|_| ())?;
+        Ok(())
     }
 }

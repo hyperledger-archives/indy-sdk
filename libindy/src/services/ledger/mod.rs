@@ -89,6 +89,10 @@ impl LedgerService {
         if raw.is_none() && hash.is_none() && enc.is_none() {
             return Err(CommonError::InvalidStructure(format!("Either raw or hash or enc must be specified")));
         }
+        if let Some(ref raw) = raw {
+            serde_json::from_str::<serde_json::Value>(raw)
+                .map_err(|err| CommonError::InvalidStructure(format!("Cannon deserialize Raw Attribute: {:?}", err)))?;
+        }
 
         let operation = AttribOperation::new(dest.to_string(),
                                              hash.as_ref().map(|s| s.to_string()),
