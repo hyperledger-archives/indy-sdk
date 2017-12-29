@@ -1,6 +1,6 @@
 use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
-use utils::table::print_table;
+use utils::table::print_list_table;
 use libindy::ErrorCode;
 use libindy::wallet::Wallet;
 
@@ -117,6 +117,7 @@ pub mod open_command {
                         set_opened_wallet(ctx, Some((handle, name.to_owned())));
                         Ok(println_succ!("Wallet \"{}\" has been opened", name))
                     }
+                    Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid wallet config")),
                     Err(ErrorCode::WalletAlreadyOpenedError) => Err(println_err!("Wallet \"{}\" already opened", name)),
                     Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
@@ -160,7 +161,7 @@ pub mod list_command {
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 if wallets.len() > 0 {
-                    print_table(&wallets,
+                    print_list_table(&wallets,
                                 &vec![("name", "Name"),
                                       ("associated_pool_name", "Associated pool name"),
                                       ("type", "Type")]);

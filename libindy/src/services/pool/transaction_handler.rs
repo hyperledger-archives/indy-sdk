@@ -46,9 +46,6 @@ impl TransactionHandler {
             Message::Reply(reply) => {
                 self.process_reply(reply.result.req_id, raw_msg);
             }
-            Message::PoolLedgerTxns(response) => {
-                self.process_reply(response.txn.req_id, raw_msg);
-            }
             Message::Reject(response) | Message::ReqNACK(response) => {
                 self.process_reject(&response, raw_msg);
             }
