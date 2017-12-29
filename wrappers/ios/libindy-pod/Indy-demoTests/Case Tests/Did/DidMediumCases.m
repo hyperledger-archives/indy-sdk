@@ -367,14 +367,18 @@
                                                                       data:schemaData
                                                                 resultJson:&schemaRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildSchemaRequestWithSubmitterDid() failed");
-    
+
+    NSString *schemaResponse = nil;
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
                                                               walletHandle:walletHandle
                                                               submitterDid:myDid
                                                                requestJson:schemaRequest
-                                                           outResponseJson:nil];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() returned wrong error code.");
-    
+                                                           outResponseJson:&schemaResponse];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() returned not Success");
+    XCTAssertNotNil(schemaResponse, @"schemaResponse is nil!");
+    NSDictionary *response = [NSDictionary fromString:schemaResponse];
+    XCTAssertTrue([response[@"op"] isEqualToString:@"REQNACK"], @"wrong response type");
+
     // 9. Apply replacing of keys
     ret = [[DidUtils sharedInstance] replaceKeysApplyForDid:myDid
                                                   walletHandle:walletHandle];
@@ -478,13 +482,16 @@
     
     
     // 10. Send schema request.
+    NSString *schemaResponse;
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
                                                               walletHandle:walletHandle
                                                               submitterDid:myDid
                                                                requestJson:schemaRequest
-                                                           outResponseJson:nil];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() returned wrong error code.");
-    
+                                                           outResponseJson:&schemaResponse];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequestWithPoolHandle() returned not Success");
+    XCTAssertNotNil(schemaResponse, @"schemaResponse is nil!");
+    NSDictionary *response = [NSDictionary fromString:schemaResponse];
+    XCTAssertTrue([response[@"op"] isEqualToString:@"REQNACK"], @"wrong response type");
     
     [[WalletUtils sharedInstance] closeWalletWithHandle:walletHandle];
     [[PoolUtils sharedInstance] closeHandle:poolHandle];

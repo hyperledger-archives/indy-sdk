@@ -8,7 +8,6 @@ import org.hyperledger.indy.sdk.anoncreds.InvalidUserRevocIndexException;
 import org.hyperledger.indy.sdk.anoncreds.ProofRejectedException;
 import org.hyperledger.indy.sdk.anoncreds.RevocationRegistryFullException;
 import org.hyperledger.indy.sdk.ledger.ConsensusException;
-import org.hyperledger.indy.sdk.ledger.InvalidLedgerTransactionException;
 import org.hyperledger.indy.sdk.ledger.LedgerSecurityException;
 import org.hyperledger.indy.sdk.ledger.TimeoutException;
 import org.hyperledger.indy.sdk.pool.InvalidPoolException;
@@ -102,8 +101,6 @@ public class IndyException extends Exception {
 				return new PoolLedgerTerminatedException();
 			case LedgerNoConsensusError:
 				return new ConsensusException();
-			case LedgerInvalidTransaction:
-				return new InvalidLedgerTransactionException();
 			case LedgerSecurityError:
 				return new LedgerSecurityException();
 			case PoolLedgerConfigAlreadyExistsError:

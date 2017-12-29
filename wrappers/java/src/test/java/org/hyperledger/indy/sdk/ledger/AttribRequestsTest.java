@@ -15,8 +15,6 @@ import static org.junit.Assert.assertTrue;
 
 public class AttribRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
-	private String identifier = "Th7MpTaRZVRYnPiabds81Y";
-	private String dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
 	private String endpoint = "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}";
 
 	@Test
@@ -26,18 +24,19 @@ public class AttribRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 				"\"type\":\"100\"," +
 				"\"dest\":\"%s\"," +
 				"\"raw\":\"%s\"" +
-				"}", identifier, dest, endpoint);
+				"}", DID_TRUSTEE, DID_TRUSTEE, endpoint);
 
-		String attribRequest = Ledger.buildAttribRequest(identifier, dest, null, endpoint, null).get();
+		String attribRequest = Ledger.buildAttribRequest(DID_TRUSTEE, DID_TRUSTEE, null, endpoint, null).get();
 
 		assertTrue(attribRequest.replace("\\", "").contains(expectedResult));
 	}
 
 	@Test
 	public void testBuildAttribRequestWorksForMissedAttribute() throws Exception {
-		thrown.expect(IllegalArgumentException.class);
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Ledger.buildAttribRequest(identifier, dest, null, null, null).get();
+		Ledger.buildAttribRequest(DID_TRUSTEE, DID_TRUSTEE, null, null, null).get();
 	}
 
 	@Test
@@ -49,23 +48,21 @@ public class AttribRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 				"\"type\":\"104\"," +
 				"\"dest\":\"%s\"," +
 				"\"raw\":\"%s\"" +
-				"}", identifier, dest, raw);
+				"}", DID_TRUSTEE, DID_TRUSTEE, raw);
 
-		String getAttribRequest = Ledger.buildGetAttribRequest(identifier, dest, raw).get();
+		String getAttribRequest = Ledger.buildGetAttribRequest(DID_TRUSTEE, DID_TRUSTEE, raw).get();
 
 		assertTrue(getAttribRequest.contains(expectedResult));
 	}
 
 	@Test
 	public void testSendAttribRequestWorksWithoutSignature() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
-
 		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
 		String attribRequest = Ledger.buildAttribRequest(trusteeDidResult.getDid(), trusteeDid, null, endpoint, null).get();
-		Ledger.submitRequest(pool, attribRequest).get();
+		String response = Ledger.submitRequest(pool, attribRequest).get();
+		checkResponseType(response,"REQNACK" );
 	}
 
 	@Test
@@ -96,6 +93,6 @@ public class AttribRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Ledger.buildAttribRequest("invalid_base58_identifier", dest, null, endpoint, null).get();
+		Ledger.buildAttribRequest("invalid_base58_identifier", DID_TRUSTEE, null, endpoint, null).get();
 	}
 }

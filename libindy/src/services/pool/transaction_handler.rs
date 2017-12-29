@@ -144,7 +144,7 @@ impl TransactionHandler {
                     CommandExecutor::instance().send(
                         Command::Ledger(
                             LedgerCommand::SubmitAck(cmd_id,
-                                                     Err(PoolError::Rejected(raw_msg.clone()))))
+                                                     Ok(raw_msg.clone())))
                     ).unwrap();
                 }
                 remove = true;

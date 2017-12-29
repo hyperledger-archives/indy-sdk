@@ -483,11 +483,6 @@ public class Ledger extends IndyJava.API {
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
 
-		if (StringUtils.isNullOrWhiteSpace(hash) &&
-				StringUtils.isNullOrWhiteSpace(raw) &&
-				StringUtils.isNullOrWhiteSpace(enc))
-			throw new IllegalArgumentException("At least one of the 'hash', 'raw' or 'enc' parameters must be provided with a non-empty string.");
-
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 

@@ -83,10 +83,7 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     
     // No concensus during ledger operation
     LedgerNoConsensusError = 303,
-    
-    // Attempt to send unknown or incomplete transaction message
-    LedgerInvalidTransaction = 304,
-    
+
     // Attempt to send transaction without the necessary privileges
     LedgerSecurityError = 305,
     
