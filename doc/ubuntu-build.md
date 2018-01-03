@@ -68,7 +68,7 @@ See [libindy/ci/ubuntu.dockerfile](https://github.com/hyperledger/indy-sdk/tree/
    You may need a later version of `libsodium`.
    Check the current version with:
    ```
-   $apt list --installed | grep sodium
+   apt list --installed | grep sodium
    ```
    If the listed version is less than 1.0.12 then you need to upgrade.
 
