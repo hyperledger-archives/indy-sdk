@@ -139,6 +139,8 @@ fn claim_offer_ete() {
     println!("agent:  {} vk: {}", agent_did, agent_vk);
     println!("agency: {} vk: {}", agency_did, agency_vk);
 
+    let genesis_path = "/tmp/genesis.txn";
+    utils::create_genesis_txn_file();
     let config_string = format!("{{\"agent_endpoint\":\"{}\",\
     \"agency_pairwise_did\":\"{}\",\
     \"agent_pairwise_did\":\"{}\",\
@@ -149,7 +151,8 @@ fn claim_offer_ete() {
     \"wallet_name\":\"claim_offer_ete_mine\",\
     \"logo_url\":\"https://s19.postimg.org/ykyz4x8jn/evernym.png\",\
     \"agency_pairwise_verkey\":\"{}\",\
-    \"agent_pairwise_verkey\":\"{}\"}}", mockito::SERVER_URL, agency_did, agent_did, my_did, my_vk, agency_vk, agent_vk);
+    \"agent_pairwise_verkey\":\"{}\",\
+    \"genesis_path\":\"{}\"}}", mockito::SERVER_URL, agency_did, agent_did, my_did, my_vk, agency_vk, agent_vk, genesis_path);
 
     let mut file = NamedTempFileOptions::new()
         .suffix(".json")
@@ -177,9 +180,12 @@ fn claim_offer_ete() {
     assert_eq!(rc,0);
     thread::sleep(Duration::from_secs(4));
     unsafe {assert_eq!(CLAIM_SENT,true);}
+
+    // cleanup
     wallet::delete_wallet("claim_offer_ete_mine").unwrap();
     wallet::delete_wallet("claim_offer_ete_agent").unwrap();
     wallet::delete_wallet("claim_offer_ete_agency").unwrap();
+    utils::deletes_default_genesis_txn_file();
 }
 
 #[test]
