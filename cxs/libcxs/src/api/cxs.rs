@@ -6,6 +6,7 @@ use utils::{pool, wallet};
 use utils::error;
 use settings;
 use std::thread;
+use std::path::Path;
 
 /// Initializes CXS with config file
 ///
@@ -143,9 +144,12 @@ pub extern fn cxs_init (command_handle: u32,
 
     info!("Initializing wallet with name: {} and pool: {}", &wallet_name, &pool_name);
 
+    // this is an unwrap because if it doenst exist, we cannot continue.
     thread::spawn(move|| {
+        let path:String = settings::get_config_value(settings::CONFIG_GENESIS_PATH).unwrap().clone();
+        let option_path = Some(Path::new(&path));
         /* TODO: handle pool config */
-        pool::create_pool_ledger_config(&pool_name, None);
+        pool::create_pool_ledger_config(&pool_name, option_path.to_owned());
         let wrc = match wallet::init_wallet(&wallet_name) {
             Ok(_) => error::SUCCESS.code_num,
             Err(x) => x,
@@ -209,6 +213,9 @@ mod tests {
     fn test_init_with_file() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        settings::tests::remove_file_if_exists(settings::DEFAULT_GENESIS_PATH);
+        settings::tests::create_default_genesis_file();
+
         let config_path = "/tmp/test_init.json";
         let path = Path::new(config_path);
 
@@ -231,7 +238,11 @@ mod tests {
         thread::sleep(Duration::from_secs(1));
         // Leave file around or other concurrent tests will fail
         //fs::remove_file(config_path).unwrap();
+
+
+        // cleanup
         wallet::delete_wallet("my_wallet").unwrap();
+        settings::tests::remove_file_if_exists(settings::DEFAULT_GENESIS_PATH);
     }
 
 

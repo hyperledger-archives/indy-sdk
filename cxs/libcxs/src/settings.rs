@@ -25,12 +25,15 @@ pub static CONFIG_ENTERPRISE_NAME: &'static str = "enterprise_name";
 pub static CONFIG_LOGO_URL: &'static str = "logo_url";
 pub static CONFIG_ENABLE_TEST_MODE: &'static str = "enable_test_mode";
 pub static CONFIG_ENTERPRISE_VERKEY: &'static str = "agent_enterprise_verkey";
+pub static CONFIG_GENESIS_PATH: &str = "genesis_path";
+pub static DEFAULT_GENESIS_PATH: &str = "/tmp/genesis.txn";
 
 lazy_static! {
     static ref SETTINGS: RwLock<Config> = RwLock::new(Config::default());
 }
 
 pub fn set_defaults() -> u32 {
+
     // if this fails the program should exit
     let mut settings = SETTINGS.write().unwrap();
 
@@ -50,6 +53,7 @@ pub fn set_defaults() -> u32 {
     settings.set_default(CONFIG_LOGO_URL,"http://www.evernym.com");
     settings.set_default(CONFIG_ENABLE_TEST_MODE,"false");
     settings.set_default(CONFIG_ENTERPRISE_VERKEY,"2zoa6G7aMfX8GnUEpDxxunFHE7fZktRiiHk1vgMRH2tm");
+    settings.set_default(CONFIG_GENESIS_PATH, DEFAULT_GENESIS_PATH);
 
     error::SUCCESS.code_num
 }
@@ -100,6 +104,14 @@ fn validate_config() -> Result<u32, String> {
             match Url::parse(setting.1) {
                 Err(x) => valid = false,
                 Ok(_) => valid = true,
+            }
+        } else if setting.0 == CONFIG_GENESIS_PATH && !is_valid(setting.1){
+            // test that the file actually exists (do not worry about the contents of the file)
+            if Path::new(setting.1).exists() {
+                valid = true;
+            } else {
+                error!("Genesis file pointed to by cxs config file does not exists");
+                valid = false;
             }
         } else {
             //TODO: determine whether we should ignore invalid parameters
@@ -174,12 +186,55 @@ pub mod tests {
     use std::fs;
     use super::*;
 
+    pub fn remove_default_genesis_file(){
+        remove_file_if_exists(DEFAULT_GENESIS_PATH);
+    }
+
+    pub fn remove_file_if_exists(filename: &str){
+        if Path::new(filename).exists() {
+            info!("{}", format!("Removing file for testing: {}.", &filename));
+            fs::remove_file(filename);
+        }
+    }
+
+    pub fn create_default_genesis_file(){
+        fs::File::create(DEFAULT_GENESIS_PATH).unwrap();
+    }
     #[test]
-    fn test_invalid_config_value() {
+    fn test_default_values() {
+        ::utils::logger::LoggerUtils::init();
+        remove_file_if_exists(DEFAULT_GENESIS_PATH);
+
+        // test invalid config value
         match get_config_value("garbage") {
             Err(x) => assert_eq!(x, error::INVALID_CONFIGURATION.code_num),
             Ok(v) => assert_eq!(v,"totalgarbage"), //if test gets here it will fail
         };
+
+        // set defaults
+        set_defaults();
+        assert_eq!(get_config_value(CONFIG_GENESIS_PATH).unwrap(), DEFAULT_GENESIS_PATH);
+
+        // validate the default config.
+        // should error with error::INVALID_GENEISIS string message
+        // should error because genesis file should not exist
+        match validate_config() {
+            Ok(_) => { error!("Validating config should fail");
+                       panic!("Validating config should fail");},
+            Err(e) => assert_eq!(e, format!("{}{}", "genesis_path has invalid setting: ", DEFAULT_GENESIS_PATH)),
+        }
+
+        // add the genesis.txn file
+        create_default_genesis_file();
+
+        // validate and should pass this time.
+        match validate_config() {
+            Ok(i) => assert_eq!(i, error::SUCCESS.code_num),
+            Err(e) => panic!(format!("error thrown: {}", e)),
+        }
+
+        // cleanup
+        remove_file_if_exists(DEFAULT_GENESIS_PATH);
     }
 
     #[test]
@@ -236,6 +291,11 @@ pub mod tests {
     fn test_invalid_url() {
         let a = "logo_url";
 
+        remove_file_if_exists(DEFAULT_GENESIS_PATH);
+
+        // add the genesis.txn file
+        fs::File::create(DEFAULT_GENESIS_PATH).unwrap();
+
         let config_path = "/tmp/test_settings.json";
         let path = Path::new(config_path);
 
@@ -257,6 +317,8 @@ pub mod tests {
             Ok(_) => println!("expected invalid URL"), //fail if we get here
         }
         //        assert!(process_config_file(&config_path) == Err(ParseError::InvalidIpv6Address));
+
+        remove_file_if_exists(DEFAULT_GENESIS_PATH);
     }
 
     #[test]
