@@ -113,7 +113,7 @@ impl ProofMessage {
         }
     }
 
-    fn set_revealed_attrs(&self, mut claim_attrs: &mut Vec<ClaimData>) -> Result<(), u32> {
+    fn set_revealed_attrs(&self, claim_attrs: &mut Vec<ClaimData>) -> Result<(), u32> {
         for claim_attr in claim_attrs.iter_mut() {
             claim_attr.value = self.compare_and_update_attr_value(&claim_attr.value)?;
         }

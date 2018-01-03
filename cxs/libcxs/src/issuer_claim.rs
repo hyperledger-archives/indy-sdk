@@ -21,6 +21,9 @@ use std::ffi::CString;
 use utils::timeout::TimeoutUtils;
 use utils::wallet;
 use utils::openssl::encode;
+use utils::httpclient;
+use utils::crypto;
+use utils::constants::SEND_CLAIM_OFFER_RESPONSE;
 
 lazy_static! {
     static ref ISSUER_CLAIM_MAP: Mutex<HashMap<u32, Box<IssuerClaim>>> = Default::default();
@@ -72,6 +75,8 @@ pub struct IssuerClaim {
     claim_name: String,
     claim_id: String,
     ref_msg_id: String,
+    #[serde(skip)]
+    connection_handle: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -96,6 +101,7 @@ impl IssuerClaim {
     }
 
     fn send_claim_offer(&mut self, connection_handle: u32) -> Result<u32, u32> {
+        info!("sending claim offer for issuer_claim handle {} to connection handle {}", self.handle, connection_handle);
         if self.state != CxsStateType::CxsStateInitialized {
             warn!("claim {} has invalid state {} for sending claimOffer", self.handle, self.state as u32);
             return Err(error::NOT_READY.code_num);
@@ -106,6 +112,8 @@ impl IssuerClaim {
             return Err(error::INVALID_CONNECTION_HANDLE.code_num);
         }
 
+        let agent_did = connection::get_agent_did(connection_handle)?;
+        let agent_vk = connection::get_agent_verkey(connection_handle)?;
         let to_did = connection::get_pw_did(connection_handle)?;
         let claim_offer = self.generate_claim_offer(&to_did)?;
         let payload = match serde_json::to_string(&claim_offer) {
@@ -113,19 +121,26 @@ impl IssuerClaim {
             Err(_) => return Err(error::INVALID_JSON.code_num)
         };
 
-        /* let data = connection::encrypt_payload(connection_handle, data)?; */
+        debug!("claim offer data: {}", payload);
+
+        if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_CLAIM_OFFER_RESPONSE.to_vec()); }
+
+        let data = connection::generate_encrypted_payload(connection_handle, &payload, "CLAIM_OFFER")?;
         match messages::send_message().to(&to_did).msg_type("claimOffer")
-            .edge_agent_payload(&payload)
+            .edge_agent_payload(&data)
+            .agent_did(&agent_did)
+            .agent_vk(&agent_vk)
             .ref_msg_id(&self.ref_msg_id)
             .status_code(MessageAccepted.as_str())
-            .send() {
+            .send_secure() {
             Err(x) => {
                 warn!("could not send claimOffer: {}", x);
                 return Err(x);
             },
             Ok(response) => {
-                self.msg_uid = get_offer_details(&response)?;
+                self.msg_uid = get_offer_details(&response[0])?;
                 self.issued_did = to_did;
+                self.connection_handle = connection_handle;
                 self.state = CxsStateType::CxsStateOfferSent;
                 return Ok(error::SUCCESS.code_num);
             }
@@ -134,6 +149,7 @@ impl IssuerClaim {
     }
 
     fn send_claim(&mut self, connection_handle: u32) -> Result<u32, u32> {
+        info!("sending claim for issuer_claim handle {} to connection handle {}", self.handle, connection_handle);
         if self.state != CxsStateType::CxsStateRequestReceived {
             warn!("claim {} has invalid state {} for sending claim", self.handle, self.state as u32);
             return Err(error::NOT_READY.code_num);
@@ -145,6 +161,8 @@ impl IssuerClaim {
         }
 
         let to = connection::get_pw_did(connection_handle)?;
+        let agent_did = connection::get_agent_did(connection_handle)?;
+        let agent_vk = connection::get_agent_verkey(connection_handle)?;
         let attrs_with_encodings = self.create_attributes_encodings()?;
         let mut data;
         if settings::test_indy_mode_enabled() {
@@ -169,20 +187,28 @@ impl IssuerClaim {
 
         }
 
-        /* let data = connection::encrypt_payload(connection_handle, data)?; */
+        debug!("claim data: {}", data);
+
+        let data = connection::generate_encrypted_payload(connection_handle, &data, "CLAIM")?;
+
+        if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_CLAIM_OFFER_RESPONSE.to_vec()); }
+
         match messages::send_message().to(&to)
             .ref_msg_id(&self.ref_msg_id)
             .msg_type("claim")
             .status_code((MessageAccepted.as_str()))
             .edge_agent_payload(&data)
-            .send() {
+            .agent_did(&agent_did)
+            .agent_vk(&agent_vk)
+            .send_secure() {
             Err(x) => {
                 warn!("could not send claim: {}", x);
                 return Err(x);
             },
             Ok(response) => {
-                self.msg_uid = get_offer_details(&response)?;
+                self.msg_uid = get_offer_details(&response[0])?;
                 self.issued_did = to;
+                self.connection_handle = connection_handle;
                 self.state = CxsStateType::CxsStateAccepted;
                 return Ok(error::SUCCESS.code_num);
             }
@@ -239,9 +265,10 @@ impl IssuerClaim {
         }
     }
 
+    /*
     fn get_claim_req(&mut self, msg_uid: &str) {
         info!("Checking for outstanding claimReq for {} with uid: {}", self.handle, msg_uid);
-        let msgs = match get_matching_messages(msg_uid, &self.issued_did) {
+        let msgs = match get_matching_messages(msg_uid, self.connection_handle) {
             Ok(x) => x,
             Err(err) => {
                 warn!("{} {}", err, self.handle);
@@ -274,16 +301,18 @@ impl IssuerClaim {
             }
         }
     }
+    */
 
     fn get_claim_offer_status(&mut self) {
+        info!("getting outstanding claim messages issuer_claim handle {}", self.handle);
         if self.state == CxsStateType::CxsStateRequestReceived {
             return;
         }
-            else if self.state != CxsStateType::CxsStateOfferSent || self.msg_uid.is_empty() || self.issued_did.is_empty() {
-                return;
-            }
+        else if self.state != CxsStateType::CxsStateOfferSent || self.msg_uid.is_empty() || self.issued_did.is_empty() {
+            return;
+        }
 
-        let msgs = match get_matching_messages(&self.msg_uid, &self.issued_did) {
+        let payload = match get_claim_req_payload(&self.msg_uid, self.connection_handle) {
             Ok(x) => x,
             Err(err) => {
                 warn!("{} {}", err, self.handle);
@@ -291,21 +320,12 @@ impl IssuerClaim {
             }
         };
 
-        for msg in msgs {
-            if msg["statusCode"] == serde_json::to_value(MessageAccepted.as_str())
-                .unwrap_or(serde_json::Value::Null) {
-                //get the followup-claim-req using refMsgId
-                let ref_msg_id = match msg["refMsgId"].as_str() {
-                    Some(x) => x,
-                    None => {
-                        warn!("invalid message reference id for claim {}", self.handle);
-                        return
-                    }
-                };
-                self.ref_msg_id = ref_msg_id.to_owned();
-                self.get_claim_req(ref_msg_id);
-            }
-        }
+        self.claim_request = match parse_claim_req_payload(&payload) {
+            Err(_) => return,
+            Ok(x) => Some(x),
+        };
+
+        self.state = CxsStateType::CxsStateRequestReceived;
     }
 
     fn update_state(&mut self) {
@@ -329,6 +349,7 @@ impl IssuerClaim {
             claim_attributes: CLAIM_DATA.to_owned(),
             issuer_did: "QTrbV4raAcND4DWWzBmdsh".to_owned(),
             issued_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+            connection_handle: 0,
             state: CxsStateType::CxsStateOfferSent,
             claim_request: Some(claim_req),
             claim_name: "Claim".to_owned(),
@@ -404,7 +425,7 @@ pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRe
         return Err(error::UNKNOWN_ERROR.code_num);
     };
 
-    info!("xclaim_json: {}", xclaim_json);
+    debug!("xclaim_json: {}", xclaim_json);
     // add required fields for Consumer API
 
     Ok(xclaim_json)
@@ -415,6 +436,19 @@ pub fn get_offer_uid(handle: u32) -> Result<String,u32> {
         Some(claim) => Ok(claim.get_offer_uid()),
         None => Err(error::INVALID_ISSUER_CLAIM_HANDLE.code_num),
     }
+}
+
+fn parse_claim_req_payload(payload: &Vec<u8>) -> Result<ClaimRequest, u32> {
+    let data = messages::extract_json_payload(payload)?;
+
+    let my_claim_req = match ClaimRequest::from_str(&data) {
+         Ok(x) => x,
+         Err(x) => {
+             warn!("invalid json {}", x);
+             return Err(error::INVALID_JSON.code_num);
+         },
+    };
+    Ok(my_claim_req)
 }
 
 pub fn issuer_claim_create(schema_seq_no: u32,
@@ -432,6 +466,7 @@ pub fn issuer_claim_create(schema_seq_no: u32,
         msg_uid: String::new(),
         claim_attributes: claim_data,
         issued_did: String::new(),
+        connection_handle: 0,
         issuer_did: issuer_did,
         state: CxsStateType::CxsStateNone,
         schema_seq_no,
@@ -521,7 +556,6 @@ pub fn send_claim(handle: u32, connection_handle: u32) -> Result<u32,u32> {
 }
 
 fn get_offer_details(response: &str) -> Result<String,u32> {
-    if settings::test_agency_mode_enabled() {return Ok("test_mode_response".to_owned());}
     match serde_json::from_str(response) {
         Ok(json) => {
             let json: serde_json::Value = json;
@@ -535,7 +569,7 @@ fn get_offer_details(response: &str) -> Result<String,u32> {
             Ok(String::from(detail))
         },
         Err(_) => {
-            info!("Connect called without a valid response from server");
+            info!("get_messages called without a valid response from server");
             Err(error::UNKNOWN_ERROR.code_num)
         },
     }
@@ -571,33 +605,43 @@ pub fn convert_to_map(s:&str) -> Result<serde_json::Map<String, serde_json::Valu
     Ok(v)
 }
 
-fn get_matching_messages<'a>(msg_uid:&'a str, did:&'a str) -> Result<Vec<serde_json::Value>, &'a str> {
-    let response = match messages::get_messages().to(did).uid(msg_uid).send() {
-        Ok(x) => x,
-        Err(x) => return Err("invalid response to get_messages for claim"),
+fn get_claim_req_payload(msg_uid: &str, connection_handle: u32) -> Result<Vec<u8>, u32> {
+    let pw_did = connection::get_pw_did(connection_handle)?;
+    let pw_vk = connection::get_pw_verkey(connection_handle)?;
+    let agent_did = connection::get_agent_did(connection_handle)?;
+    let agent_vk = connection::get_agent_verkey(connection_handle)?;
+    let my_vk = connection::get_pw_verkey(connection_handle)?;
 
-    };
+    match messages::get_messages()
+        .to(&pw_did)
+        .to_vk(&pw_vk)
+        .agent_did(&agent_did)
+        .agent_vk(&agent_vk)
+        //.uid(msg_uid)
+        .send_secure() {
+        Err(x) => {
+            error!("could not post get_messages: {}", x);
+            return Err(error::POST_MSG_FAILURE.code_num)
+        },
+        Ok(response) => {
+            info!("claim_response: {:?}", response);
+            for i in response {
+                if i.status_code == "MS-103" && i.msg_type == "claimReq" && !i.payload.is_none() {
+                    let payload = messages::to_u8(i.payload.as_ref().unwrap());
+                    let payload = crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, &payload)?;
+                    return Ok(payload);
+                    }
+                }
+            },
+        };
 
-    let json: serde_json::Value = match serde_json::from_str(&response) {
-        Ok(json) => json,
-        Err(_) => return Err("invalid json in get_messages for claim"),
-
-    };
-
-    match json["msgs"].as_array() {
-        Some(array) => Ok(array.to_owned()),
-        None => Err("invalid msgs array returned for claim"),
-    }
+    Err(error::INVALID_HTTP_RESPONSE.code_num)
 }
 
 #[cfg(test)]
 mod tests {
-    extern crate mockito;
-
     use settings;
-    use connection::create_connection;
-    use std::thread;
-    use std::time::Duration;
+    use connection::build_connection;
     use utils::signus::SignusUtils;
     use utils::wallet::init_wallet;
     use utils::issuer_claim::tests::{put_claim_def_in_issuer_wallet, create_default_schema};
@@ -659,6 +703,7 @@ mod tests {
             claim_attributes: CLAIM_DATA.to_owned(),
             issuer_did: "QTrbV4raAcND4DWWzBmdsh".to_owned(),
             issued_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+            connection_handle: 0,
             state: CxsStateType::CxsStateOfferSent,
             claim_name: DEFAULT_CLAIM_NAME.to_owned(),
             claim_request: Some(claim_req.to_owned()),
@@ -670,7 +715,6 @@ mod tests {
 
     fn print_error_message(e: &u32) -> () {
         use utils::error::error_message;
-        ::utils::logger::LoggerUtils::init();
         info!("error message: {}", error_message(e));
     }
 
@@ -715,39 +759,29 @@ mod tests {
 
     #[test]
     fn test_send_claim_offer() {
+        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        let connection_handle = create_connection("test_send_claim_offer".to_owned());
-        connection::set_pw_did(connection_handle, "8XFh8yBzrpJQmNyZzgoTqB");
+        let connection_handle = build_connection("test_send_claim_offer".to_owned()).unwrap();
 
         let claim_id = DEFAULT_CLAIM_ID;
-
-        let _m = mockito::mock("POST", "/agency/route")
-            .with_status(200)
-            .with_body("{\"uid\":\"6a9u7Jt\",\"typ\":\"claimOffer\",\"statusCode\":\"MS-101\"}")
-            .expect(1)
-            .create();
 
         let handle = issuer_claim_create(0,
                                          None,
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                          "{\"attr\":\"value\"}".to_owned()).unwrap();
-        thread::sleep(Duration::from_millis(500));
+
         assert_eq!(send_claim_offer(handle, connection_handle).unwrap(), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(500));
         assert_eq!(get_state(handle), CxsStateType::CxsStateOfferSent as u32);
-        assert_eq!(get_offer_uid(handle).unwrap(), "6a9u7Jt");
-        _m.assert();
+        assert_eq!(get_offer_uid(handle).unwrap(), "ntc2ytb");
     }
 
     #[test]
     fn test_send_a_claim() {
         let test_name = "test_send_a_claim";
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, "QTrbV4raAcND4DWWzBmdsh");
 
         let claim_req:ClaimRequest = match ClaimRequest::from_str(&CLAIM_REQ_STRING) {
@@ -755,18 +789,12 @@ mod tests {
             Err(_) => panic!("error with claim request"),
         };
         let issuer_did = claim_req.issuer_did;
-        let _m = mockito::mock("POST", "/agency/route")
-            .with_status(200)
-            .with_body("{\"uid\":\"6a9u7Jt\",\"typ\":\"claim\",\"statusCode\":\"MS-101\"}")
-            .expect(1)
-            .create();
 
         let mut claim = create_standard_issuer_claim();
         claim.state = CxsStateType::CxsStateRequestReceived;
         util_put_claim_def_in_issuer_wallet(48, 0);
 
-        let connection_handle = create_connection("test_send_claim_offer".to_owned());
-        connection::set_pw_did(connection_handle, "8XFh8yBzrpJQmNyZzgoTqB");
+        let connection_handle = build_connection("test_send_claim_offer".to_owned()).unwrap();
 
         match claim.send_claim(connection_handle) {
             Ok(_) => assert_eq!(0, 0),
@@ -775,8 +803,7 @@ mod tests {
                 assert_eq!(x, 0)
             },
         };
-        _m.assert();
-        assert_eq!(claim.msg_uid, "6a9u7Jt");
+        assert_eq!(claim.msg_uid, "ntc2ytb");
         assert_eq!(claim.state, CxsStateType::CxsStateAccepted);
     }
 
@@ -796,20 +823,11 @@ mod tests {
         assert_eq!(new_string, string);
     }
 
+    #[ignore] /* TODO: get what a valid claimReq looks like with the new format */
     #[test]
     fn test_update_state_with_pending_claim_request() {
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
-
-        let response = "{\"msgs\":[{\"uid\":\"6gmsuWZ\",\"typ\":\"conReq\",\"statusCode\":\"MS-102\",\"statusMsg\":\"message sent\"},\
-        {\"statusCode\":\"MS-104\",\"edgeAgentPayload\":\"{\\\"attr\\\":\\\"value\\\"}\",\"sendStatusCode\":\"MSS-101\",\"typ\":\"claimOffer\",\"statusMsg\":\"message accepted\",\"uid\":\"6a9u7Jt\",\"refMsgId\":\"CKrG14Z\"},\
-        {\"msg_type\":\"CLAIM_REQUEST\",\"typ\":\"claimReq\",\"edgeAgentPayload\":\"{\\\"blinded_ms\\\":{\\\"prover_did\\\":\\\"FQ7wPBUgSPnDGJnS1EYjTK\\\",\\\"u\\\":\\\"923...607\\\",\\\"ur\\\":\\\"null\\\"},\\\"version\\\":\\\"0.1\\\",\\\"mid\\\":\\\"\\\",\\\"to_did\\\":\\\"BnRXf8yDMUwGyZVDkSENeq\\\",\\\"from_did\\\":\\\"GxtnGN6ypZYgEqcftSQFnC\\\",\\\"iid\\\":\\\"cCanHnpFAD\\\",\\\"issuer_did\\\":\\\"QTrbV4raAcND4DWWzBmdsh\\\",\\\"schema_seq_no\\\":48,\\\"optional_data\\\":{\\\"terms_of_service\\\":\\\"<Large block of text>\\\",\\\"price\\\":6}}\"}]}";
-        let _m = mockito::mock("POST", "/agency/route")
-            .with_status(200)
-            .with_body(response)
-            .expect(2)
-            .create();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "agency");
 
         let claim_req:ClaimRequest = ClaimRequest::from_str(CLAIM_REQ_STRING).unwrap();
         let mut claim = IssuerClaim {
@@ -825,10 +843,15 @@ mod tests {
             claim_name: DEFAULT_CLAIM_NAME.to_owned(),
             claim_id: String::from(DEFAULT_CLAIM_ID),
             ref_msg_id: String::new(),
+            connection_handle: 0,
         };
 
+        let response = "{\"msgs\":[{\"uid\":\"6gmsuWZ\",\"typ\":\"conReq\",\"statusCode\":\"MS-102\",\"statusMsg\":\"message sent\"},\
+            {\"statusCode\":\"MS-104\",\"edgeAgentPayload\":\"{\\\"attr\\\":\\\"value\\\"}\",\"sendStatusCode\":\"MSS-101\",\"typ\":\"claimOffer\",\"statusMsg\":\"message accepted\",\"uid\":\"6a9u7Jt\",\"refMsgId\":\"CKrG14Z\"},\
+            {\"msg_type\":\"CLAIM_REQUEST\",\"typ\":\"claimReq\",\"edgeAgentPayload\":\"{\\\"blinded_ms\\\":{\\\"prover_did\\\":\\\"FQ7wPBUgSPnDGJnS1EYjTK\\\",\\\"u\\\":\\\"923...607\\\",\\\"ur\\\":\\\"null\\\"},\\\"version\\\":\\\"0.1\\\",\\\"mid\\\":\\\"\\\",\\\"to_did\\\":\\\"BnRXf8yDMUwGyZVDkSENeq\\\",\\\"from_did\\\":\\\"GxtnGN6ypZYgEqcftSQFnC\\\",\\\"iid\\\":\\\"cCanHnpFAD\\\",\\\"issuer_did\\\":\\\"QTrbV4raAcND4DWWzBmdsh\\\",\\\"schema_seq_no\\\":48,\\\"optional_data\\\":{\\\"terms_of_service\\\":\\\"<Large block of text>\\\",\\\"price\\\":6}}\"}]}";
+        httpclient::set_next_str_response(response.to_string());
+
         claim.update_state();
-        _m.assert();
         assert_eq!(claim.get_state(), CxsStateType::CxsStateRequestReceived as u32);
         let claim_request = claim.claim_request.clone().unwrap();
         assert_eq!(claim_request.issuer_did, "QTrbV4raAcND4DWWzBmdsh");
@@ -860,14 +883,12 @@ mod tests {
     #[test]
     fn test_issuer_claim_can_build_claim_from_correct_parts() {
         let test_name = "test_issuer_claim_can_build_from_correct_parts";
-        ::utils::logger::LoggerUtils::init();
         let schema_str = SCHEMA;
         let mut issuer_claim = create_standard_issuer_claim();
         let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e".to_owned();
         issuer_claim.claim_id = String::from(DEFAULT_CLAIM_ID);
         assert_eq!(issuer_claim.claim_id, DEFAULT_CLAIM_ID);
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, &issuer_did);
         wallet::init_wallet(test_name).unwrap();
         let wallet_handle = wallet::get_wallet_handle();
@@ -899,7 +920,6 @@ mod tests {
     #[test]
     fn test_issuer_claim_request_changes_reflect_in_claim_payload() {
         // TODO: Is this duplicate of the above test?
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, "NcYxiDXkpYi6ov5FcYDi1e");
@@ -923,17 +943,16 @@ mod tests {
         };
 
         let (n1, n2) = normalize_claims(&claim_payload, &X_CLAIM_JSON);
-        info!("claim_payload: {}", claim_payload);
+        debug!("claim_payload: {}", claim_payload);
         assert_eq!(n1, n2);
         let claim_payload_with_from_did = append_value(&claim_payload, "from_did", &settings::CONFIG_ENTERPRISE_DID);
-        info!("claim_payload_with_from_did: {:?}",claim_payload_with_from_did.unwrap());
+        debug!("claim_payload_with_from_did: {:?}",claim_payload_with_from_did.unwrap());
 
         wallet::delete_wallet("test_issuer_claim_request_changes_reflect_in_claim").unwrap();
     }
 
     #[test]
     fn basic_add_attribute_encoding() {
-        ::utils::logger::LoggerUtils::init();
         // FIXME Make this a real test and add additional test for create_attributes_encodings
         let issuer_claim = create_standard_issuer_claim();
         match issuer_claim.create_attributes_encodings() {
@@ -979,7 +998,6 @@ mod tests {
 
     #[test]
     fn test_that_test_mode_enabled_bypasses_libindy_create_claim(){
-        ::utils::logger::LoggerUtils::init();
         let test_name = "test_that_TEST_MODE_ENABLED_bypasses_libindy_create_claim";
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
@@ -991,8 +1009,8 @@ mod tests {
         let mut claim = create_standard_issuer_claim();
         claim.state = CxsStateType::CxsStateRequestReceived;
 
-        let connection_handle = create_connection("test_send_claim_offer".to_owned());
-        connection::set_pw_did(connection_handle, "8XFh8yBzrpJQmNyZzgoTqB");
+        let connection_handle = build_connection("test_send_claim_offer".to_owned()).unwrap();
+
         match claim.send_claim(connection_handle) {
             Ok(_) => assert_eq!(0, 0),
             Err(x) => {

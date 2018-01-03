@@ -1,7 +1,6 @@
 extern crate cxs;
 extern crate tempfile;
 extern crate libc;
-extern crate mockito;
 extern crate serde_json;
 
 #[macro_use]
@@ -68,14 +67,17 @@ fn test_demo(){
     // Init SDK  *********************************************************************
     let issuer_did = "TCwEv4tiAuA5DfC7VTdu83";
     let config_string = format!("{{\"agent_endpoint\":\"{}\",\
-    \"agency_pairwise_did\":\"72x8p4HubxzUK1dwxcc5FU\",\
-    \"agent_pairwise_did\":\"UJGjM6Cea2YVixjWwHN9wq\",\
+    \"agency_pairwise_did\":\"FhrSrYtQcw3p9xwf7NYemf\",\
+    \"agent_pairwise_did\":\"U3w76D784aCFmVQm1FKCEs\",\
+    \"agent_enterprise_verkey\":\"vrWGArMA3toVoZrYGSAMjR2i9KjBS66bZWyWuYJJYPf\",\
     \"enterprise_did_agency\":\"{}\",\
-    \"enterprise_did_agent\":\"JmvnKLYj7b7e5ywLxkRMjM\",\
+    \"enterprise_did_agent\":\"PDgrtXLt8rDfCJpS8GSU9S\",\
     \"enterprise_name\":\"enterprise\",\
+    \"wallet_name\":\"my_real_wallet\",\
+    \"genesis_path\":\"/tmp/PoolForDemo.txn\",\
     \"logo_url\":\"https://s19.postimg.org/ykyz4x8jn/evernym.png\",\
-    \"agency_pairwise_verkey\":\"7118p4HubxzUK1dwxcc5FU\",\
-    \"agent_pairwise_verkey\":\"U22jM6Cea2YVixjWwHN9wq\"}}", "https://agency-ea-sandbox.evernym.com",
+    \"agency_pairwise_verkey\":\"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE\",\
+    \"agent_pairwise_verkey\":\"Fk84VW2ZgAAziFqDNuqJacYy2B8PmKKNiEvBVXRXdhMq\"}}", "https://enym-eagency.pdev.evernym.com",
                                 issuer_did);
 
     let mut file = NamedTempFileOptions::new()
@@ -136,11 +138,11 @@ fn test_demo(){
     // Connect ************************************************************************
     let (sender, receiver) = channel();
     let (command_handle, cb) = closure_to_connect_cb(Box::new(move|err|{sender.send(err).unwrap();}));
-//    let pphone_number = "3852322527";
+//    let pphone_number = "8014710072";
 //    let lphone_number = "8017900625";
     let rc = api::connection::cxs_connection_connect(command_handle,
                                                      connection_handle,
-                                                     CString::new("{\"phone\":\"3852322527\"}").unwrap().into_raw(),cb);
+                                                     CString::new("{\"phone\":\"8014710072\"}").unwrap().into_raw(),cb);
     assert_eq!(rc, 0);
     let err = receiver.recv_timeout(utils::timeout::TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(err,0);

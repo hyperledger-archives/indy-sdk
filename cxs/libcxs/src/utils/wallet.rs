@@ -245,7 +245,7 @@ pub mod tests {
         assert_eq!(error::UNKNOWN_ERROR.code_num, init_wallet(&String::from("")).unwrap_err());
 
         thread::sleep(Duration::from_secs(1));
-        delete_wallet("wallet1").unwrap();
+        delete_wallet("walletUnique").unwrap();
         let handle = get_wallet_handle();
         let wallet_name2 = String::from("wallet2");
         assert!(init_wallet(&wallet_name2).unwrap() > 0);

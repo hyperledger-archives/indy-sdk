@@ -194,11 +194,11 @@ impl LedgerSchema {
 
 #[cfg(test)]
 mod tests {
+    use settings;
     use super::*;
     use utils::pool;
     use std::path::Path;
     use std::str::FromStr;
-    use settings;
 
     static  EXAMPLE: &str = r#"{
     "seqNo": 15,

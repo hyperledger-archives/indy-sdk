@@ -76,7 +76,7 @@ pub mod tests{
             assert_eq!(err,0);
         }
         let (err, claim_def_json) = issuer_create_claim_definition_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-        info!("claim_def_json: {}", claim_def_json);
+        debug!("claim_def_json: {}", claim_def_json);
     }
 
 }

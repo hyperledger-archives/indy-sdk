@@ -272,7 +272,6 @@ pub extern fn cxs_claim_issuer_release(claim_handle: u32) -> u32 { issuer_claim:
 
 #[cfg(test)]
 mod tests {
-    extern crate mockito;
     extern crate serde_json;
     use super::*;
     use std::ffi::CString;
@@ -286,9 +285,9 @@ mod tests {
     use utils::issuer_claim::tests::put_claim_def_in_issuer_wallet;
     use utils::issuer_claim::tests::create_default_schema;
     use utils::wallet::get_wallet_handle;
+    use utils::constants::DEFAULT_SERIALIZED_ISSUER_CLAIM;
     use api::cxs::cxs_init;
 
-    static DEFAULT_SERIALIZED_ISSUER_CLAIM: &str = "{\"claim_id\":\"some claim id testing\",\"claim_name\":\"claim name\",\"source_id\":\"test_claim_serialize\",\"handle\":261385873,\"claim_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"msg_uid\":\"\",\"schema_seq_no\":32,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"issued_did\":\"\",\"state\":1,\"claim_request\":null,\"ref_msg_id\":\"abc123\"}";
     static DEFAULT_CLAIM_NAME: &str = "Claim Name Default";
     static DEFAULT_DID: &str = "8XFh8yBzrpJQmNyZzgoTqB";
     static DEFAULT_ATTR: &str = "{\"attr\":\"value\"}";
@@ -367,23 +366,15 @@ mod tests {
     #[test]
     fn test_cxs_issuer_send_claim_offer() {
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"indy");
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
-        let _m = mockito::mock("POST", "/agency/route")
-            .with_status(200)
-            .with_body("{\"uid\":\"6a9u7Jt\",\"typ\":\"claimOffer\",\"statusCode\":\"MS-101\"}")
-            .expect(1)
-            .create();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
 
         let handle = issuer_claim::from_string(DEFAULT_SERIALIZED_ISSUER_CLAIM).unwrap();
         assert_eq!(issuer_claim::get_state(handle),CxsStateType::CxsStateInitialized as u32);
 
-        let connection_handle = connection::create_connection("test_send_claim_offer".to_owned());
-        connection::set_pw_did(connection_handle, "8XFh8yBzrpJQmNyZzgoTqB");
+        let connection_handle = connection::build_connection("test_send_claim_offer".to_owned()).unwrap();
 
         assert_eq!(cxs_issuer_send_claim_offer(0,handle,connection_handle,Some(send_offer_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(1000));
-        _m.assert();
     }
 
     extern "C" fn init_cb(command_handle: u32, err: u32) {
@@ -395,8 +386,7 @@ mod tests {
     fn test_cxs_issuer_send_a_claim() {
         settings::set_defaults();
         wallet::init_wallet("test_cxs_issuer_send_a_claim").unwrap();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"indy");
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, DEFAULT_DID);
         use claim_request::ClaimRequest;
 
@@ -426,21 +416,13 @@ mod tests {
             settings::CONFIG_ENTERPRISE_DID).unwrap(), &schema, get_wallet_handle());
         /**********************************************************************/
 
-        let _m = mockito::mock("POST", "/agency/route")
-            .with_status(200)
-            .with_body("{\"uid\":\"6a9u7Jt\",\"typ\":\"claimOffer\",\"statusCode\":\"MS-101\"}")
-            .expect(1)
-            .create();
-
         // create connection
-        let connection_handle = connection::create_connection("test_send_claim".to_owned());
-        connection::set_pw_did(connection_handle, "8XFh8yBzrpJQmNyZzgoTqB");
+        let connection_handle = connection::build_connection("test_send_claim".to_owned()).unwrap();
 
         // send the claim
         let command_handle = 0;
         assert_eq!(cxs_issuer_send_claim(command_handle, handle, connection_handle, Some(send_offer_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(1000));
-        _m.assert();
         wallet::delete_wallet("test_cxs_issuer_send_a_claim").unwrap();
     }
     extern "C" fn deserialize_cb(command_handle: u32, err: u32, claim_handle: u32) {
@@ -521,14 +503,11 @@ mod tests {
 
     #[test]
     fn test_create_claim_arguments_correct(){
-        ::utils::logger::LoggerUtils::init();
-
         let result = cxs_init(0,ptr::null(),Some(init_cb));
         thread::sleep(Duration::from_secs(1));
 
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, DEFAULT_DID);
         assert_eq!(cxs_issuer_create_claim(0,
                                            ptr::null(),

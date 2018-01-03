@@ -29,12 +29,19 @@ fn indy_parse_msg(command_handle: i32,
                   encrypted_msg: *const u8,
                   encrypted_len: u32,
                   cb: Option<extern fn(command_handle_: i32, err: i32, sender_vk: *const c_char, msg_data: *const u8, msg_len: u32)>) -> i32;
+
+fn indy_sign(command_handle: i32,
+             wallet_handle: i32,
+             did: *const c_char,
+             message_raw: *const u8,
+             message_len: u32,
+             cb: Option<extern fn(xcommand_handle: i32, err: i32, signature_raw: *const u8, signature_len: u32)>) -> i32;
 }
 
 pub fn prep_msg(wallet_handle: i32, sender_vk: &str, recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
-    info!("prep_msg svk: {} rvk: {}",sender_vk, recipient_vk);
-
     if settings::test_indy_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
+
+    info!("prep_msg svk: {} rvk: {}",sender_vk, recipient_vk);
 
     let (sender, receiver) = channel();
 
@@ -71,9 +78,9 @@ pub fn prep_msg(wallet_handle: i32, sender_vk: &str, recipient_vk: &str, msg: &[
 }
 
 pub fn prep_anonymous_msg(recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
-    info!("prep_anonymous_msg rvk: {}",recipient_vk);
-
     if settings::test_indy_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
+
+    info!("prep_anonymous_msg rvk: {}",recipient_vk);
 
     let (sender, receiver) = channel();
 
@@ -107,8 +114,9 @@ pub fn prep_anonymous_msg(recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32
 }
 
 pub fn parse_msg(wallet_handle: i32, recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
-    if settings::test_indy_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
+    if settings::test_indy_mode_enabled() { return Ok(Vec::from(msg).to_owned()) }
 
+    info!("parse_msg vk: {}",recipient_vk);
     let (sender, receiver) = channel();
 
     let cb = Box::new(move |err, verkey, msg| {
@@ -138,6 +146,45 @@ pub fn parse_msg(wallet_handle: i32, recipient_vk: &str, msg: &[u8]) -> Result<V
         }
 
         Ok(msg)
+    }
+}
+
+
+pub fn sign(wallet_handle: i32, their_did: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
+    if settings::test_indy_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
+
+    info!("sign msg did: {}", their_did);
+
+    let (sender, receiver) = channel();
+
+    let cb = Box::new(move |err, signature| {
+        sender.send((err, signature)).unwrap();
+    });
+
+    let (command_handle, cb) = CallbackUtils::closure_to_sign_cb(cb);
+
+    let their_did = CString::new(their_did).unwrap();
+
+    unsafe {
+        let err =
+            indy_sign(command_handle,
+                      wallet_handle,
+                      their_did.as_ptr(),
+                      msg.as_ptr() as *const u8,
+                      msg.len() as u32,
+                      cb);
+
+        if err != 0 {
+            return Err(err as u32);
+        }
+
+        let (err, signature) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != 0 {
+            return Err(err as u32);
+        }
+
+        Ok(signature)
     }
 }
 

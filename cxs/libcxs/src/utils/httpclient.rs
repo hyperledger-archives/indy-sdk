@@ -1,13 +1,21 @@
 use settings;
 use std::io::Read;
+use std::sync::Mutex;
 use reqwest;
 use reqwest::header::{ContentType};
 
+lazy_static!{
+    static ref NEXT_U8_RESPONSE: Mutex<Vec<Vec<u8>>> = Mutex::new(vec![]);
+}
+
+lazy_static!{
+    static ref NEXT_STR_RESPONSE: Mutex<Vec<String>> = Mutex::new(vec![]);
+}
 
 pub fn post(body_content: &str, url: &str) -> Result<String,String> {
     let client = reqwest::Client::new();
-    info!("Posting \"{}\" to: \"{}\"", body_content, url);
-    if settings::test_agency_mode_enabled() {return Ok("test_mode_response".to_owned());}
+    debug!("Posting \"{}\" to: \"{}\"", body_content, url);
+    if settings::test_agency_mode_enabled() {return Ok(NEXT_STR_RESPONSE.lock().unwrap().pop().unwrap_or("test_mode_response".to_owned()));}
     let mut response = match  client.post(url).body(body_content.to_owned()).send() {
         Ok(result) => result,
         Err(err) => return Err("could not connect".to_string()),
@@ -18,7 +26,7 @@ pub fn post(body_content: &str, url: &str) -> Result<String,String> {
 
     let mut content = String::new();
     match response.read_to_string(&mut content) {
-        Ok(_) => {info!("Response: {}", content); Ok(content.to_owned())},
+        Ok(_) => Ok(content.to_owned()),
         Err(_) => Err("could not read response".to_string()),
     }
 }
@@ -26,8 +34,8 @@ pub fn post(body_content: &str, url: &str) -> Result<String,String> {
 /* TODO: remove and use generics */
 pub fn post_u8(body_content: &Vec<u8>, url: &str) -> Result<Vec<u8>,String> {
     let client = reqwest::Client::new();
-    info!("Posting \"{:?}\" to: \"{}\"", body_content, url);
-    if settings::test_agency_mode_enabled() {return Ok(Vec::new().to_owned());}
+    info!("Posting encrypted bundle to: \"{}\"", url);
+    if settings::test_agency_mode_enabled() {return Ok(NEXT_U8_RESPONSE.lock().unwrap().pop().unwrap_or(Vec::new()));}
     let mut response = match  client.post(url).body(body_content.to_owned()).header(ContentType::octet_stream()).send() {
         Ok(result) => result,
         Err(err) => {
@@ -37,101 +45,26 @@ pub fn post_u8(body_content: &Vec<u8>, url: &str) -> Result<Vec<u8>,String> {
     };
 
     info!("Response Header: {:?}", response);
-    if !response.status().is_success() {return Err("POST failed".to_string());}
+    if !response.status().is_success() {
+        let mut content = String::new();
+        match response.read_to_string(&mut content) {
+            Ok(x) => error!("Request failed: {}", content),
+            Err(x) => error!("could not read response"),
+        };
+        return Err("POST failed".to_string());
+    }
 
     let mut content = Vec::new();
     match response.read_to_end(&mut content) {
-        Ok(x) => {info!("Response: {:?}", content); Ok(content.to_owned())},
+        Ok(x) => Ok(content.to_owned()),
         Err(_) => Err("could not read response".to_string()),
     }
 }
 
+pub fn set_next_u8_response(body: Vec<u8>) {
+    NEXT_U8_RESPONSE.lock().unwrap().push(body);
+}
 
-#[cfg(test)]
-mod tests {
-    extern crate mockito;
-    use super::*;
-    use utils::httpclient;
-
-    const URL: &'static str = mockito::SERVER_URL;
-
-    #[test]
-    fn test_httpclient_fails_with_no_response() {
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        let mut my_url = String::from("http://127.0.0.1:3333");
-        my_url.push_str("/nothing");
-
-        match httpclient::post("anything", &my_url) {
-            Ok(x) => assert_eq!(x, "nothing"), //should fail if we get here
-            Err(x) => assert_eq!(x, "could not connect"),
-        };
-    }
-
-    #[test]
-    fn test_httpclient_success() {
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        let _m = mockito::mock("POST", "/agent/core")
-            .with_status(202)
-            .with_header("content-type", "text/plain")
-            .with_body("world")
-            .create();
-
-        let mut my_url = String::from(URL);
-        my_url.push_str("/agent/core");
-
-        match httpclient::post("anything", &my_url) {
-            Err(x) => assert_eq!(1,0), //should fail if we get here
-            Ok(x) => assert_eq!(x,"world"),
-        };
-    }
-
-    #[test]
-    fn test_httpclient_fails_with_bad_url() {
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        let _m = mockito::mock("POST", "/agent/core")
-            .with_status(202)
-            .with_header("content-type", "text/plain")
-            .with_body("world")
-            .create();
-
-        let mut my_url = String::from(URL);
-        my_url.push_str("/garbage");
-
-        match httpclient::post("anything", &my_url) {
-            Ok(x) => assert_eq!(x, "garbage"), //should fail if we get here
-            Err(x) => assert_eq!(x, "POST failed"),
-        };
-    }
-
-    #[test]
-    fn test_httpclient_fails_with_404() {
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        let _m = mockito::mock("POST", "/agent/core")
-            .with_status(404)
-            .with_header("content-type", "text/plain")
-            .with_body("world")
-            .create();
-
-        let mut my_url = String::from(URL);
-        my_url.push_str("/agent/core");
-
-        match httpclient::post("anything", &my_url) {
-            Err(x) => assert_eq!(x,"POST failed"),
-            Ok(x) => assert_eq!(x,"world"), //should fail if we get here
-        };
-    }
-
-    #[test]
-    fn test_httpclient_in_test_mode() {
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-
-        let mut my_url = String::from(URL);
-        my_url.push_str("/agent/core");
-
-        match httpclient::post("anything", &my_url) {
-            Err(x) => assert_eq!(1,0), //should fail if we get here
-            Ok(x) => assert_eq!(x,"test_mode_response"),
-        };
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-    }
+pub fn set_next_str_response(body: String) {
+    NEXT_STR_RESPONSE.lock().unwrap().push(body);
 }

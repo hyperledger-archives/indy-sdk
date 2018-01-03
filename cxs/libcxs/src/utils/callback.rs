@@ -448,12 +448,12 @@ impl CallbackUtils {
     pub fn closure_to_sign_cb(closure: Box<FnMut(i32, Vec<u8>) + Send>)
                               -> (i32,
                                   Option<extern fn(command_handle: i32, err: i32,
-                                                   signature_raw: *const u8, signature_len: i32)>) {
+                                                   signature_raw: *const u8, signature_len: u32)>) {
         lazy_static! {
             static ref SIGN_CALLBACKS: Mutex<HashMap<i32, Box<FnMut(i32, Vec<u8>) + Send>>> = Default::default();
         }
 
-        extern "C" fn sign_callback(command_handle: i32, err: i32, signature_raw: *const u8, signature_len: i32) {
+        extern "C" fn sign_callback(command_handle: i32, err: i32, signature_raw: *const u8, signature_len: u32) {
             let mut callbacks = SIGN_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let signature = unsafe { slice::from_raw_parts(signature_raw, signature_len as usize) };

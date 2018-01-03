@@ -3,19 +3,21 @@ extern crate serde_json;
 extern crate serde;
 extern crate rmp_serde;
 
+use self::rmp_serde::encode;
 use settings;
 use utils::httpclient;
 use utils::error;
-use messages::{Bundled, GeneralMessage, validation, bundle_for_agency, unbundle_from_agency, MsgType};
+use messages::*;
 use serde::Deserialize;
 use self::rmp_serde::Deserializer;
+use utils::constants::*;
 
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
 struct CreateKeyPayload{
-    #[serde(rename = "type")]
-    msg_type: String,
+    #[serde(rename = "@type")]
+    msg_type: MsgType,
     #[serde(rename = "forDID")]
     for_did: String,
     #[serde(rename = "forDIDVerKey")]
@@ -33,12 +35,17 @@ pub struct CreateKeyMsg {
     payload: CreateKeyPayload,
     #[serde(skip_serializing, default)]
     validate_rc: u32,
+    agent_did: String,
+    agent_vk: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct CreateKeyResponse {
+    #[serde(rename = "@type")]
     msg_type: MsgType,
+    #[serde(rename = "withPairwiseDID")]
     for_did: String,
+    #[serde(rename = "withPairwiseDIDVerKey")]
     for_verkey: String,
 }
 
@@ -48,13 +55,15 @@ impl CreateKeyMsg{
         CreateKeyMsg {
             to_did: String::new(),
             payload: CreateKeyPayload{
-                msg_type: "CREATE_KEY".to_string(),
+                msg_type: MsgType { name: "CREATE_KEY".to_string(), ver: "1.0".to_string(), } ,
                 for_did: String::new(),
                 for_verkey: String::new(),
                 nonce: String::new(),
             },
             agent_payload: String::new(),
             validate_rc: error::SUCCESS.code_num,
+            agent_did: String::new(),
+            agent_vk: String::new(),
         }
     }
 
@@ -96,12 +105,38 @@ impl CreateKeyMsg{
             },
         }
     }
+
+
+    pub fn send_secure(&mut self) -> Result<Vec<String>, u32> {
+        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+
+        let data = match self.msgpack() {
+            Ok(x) => x,
+            Err(x) => return Err(x),
+        };
+
+        if settings::test_agency_mode_enabled() {httpclient::set_next_u8_response(CREATE_KEYS_RESPONSE.to_vec());}
+
+        let mut result = Vec::new();
+        match httpclient::post_u8(&data, &url) {
+            Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
+            Ok(response) => {
+                let (did, vk) = parse_create_keys_response(response)?;
+                result.push(did);
+                result.push(vk);
+            },
+        };
+
+        Ok(result.to_owned())
+    }
 }
 
 //Todo: Every GeneralMessage extension, duplicates code
 impl GeneralMessage for CreateKeyMsg  {
     type Msg = CreateKeyMsg;
 
+    fn set_agent_did(&mut self, did: String) { self.agent_did = did; }
+    fn set_agent_vk(&mut self, vk: String) { self.agent_vk = vk; }
     fn set_to_did(&mut self, to_did: String){ self.to_did = to_did; }
     fn set_validate_rc(&mut self, rc: u32){ self.validate_rc = rc; }
     fn serialize_message(&mut self) -> Result<String, u32> {
@@ -128,55 +163,39 @@ impl GeneralMessage for CreateKeyMsg  {
 
     fn set_to_vk(&mut self, to_vk: String){ /* nothing to do here for CreateKeymsg */ }
 
-    fn to_post(&self) -> Result<Vec<u8>,u32> {
+    fn msgpack(&mut self) -> Result<Vec<u8>,u32> {
         if self.validate_rc != error::SUCCESS.code_num {
             return Err(self.validate_rc)
         }
-        let msg = Bundled::create(self.payload.clone()).encode()?;
-
-        bundle_for_agency(msg, self.to_did.as_ref())
-    }
-
-    fn send_enc(&mut self) -> Result<String, u32> {
-        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
-
-        let data = match self.to_post() {
+        let data = match encode::to_vec_named(&self.payload) {
             Ok(x) => x,
-            Err(x) => return Err(x),
+            Err(x) => {
+                error!("could not encode create_keys msg: {}", x);
+                return Err(error::INVALID_MSGPACK.code_num);
+            },
         };
+        debug!("create_keys inner bundle: {:?}", data);
+        let msg = Bundled::create(data).encode()?;
 
-        match httpclient::post_u8(&data, &url) {
-            Err(_) => Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => parse_create_keys_response(response),
-        }
+        let to_did = settings::get_config_value(settings::CONFIG_AGENT_PAIRWISE_DID).unwrap();
+        bundle_for_agency(msg, &to_did)
     }
 }
 
-pub fn parse_create_keys_response(response: Vec<u8>) -> Result<String, u32> {
-
+pub fn parse_create_keys_response(response: Vec<u8>) -> Result<(String, String), u32> {
     let data = unbundle_from_agency(response)?;
 
-    let mut de = Deserializer::new(&data[..]);
-    let bundle: Bundled<CreateKeyResponse> = match Deserialize::deserialize(&mut de) {
-        Ok(x) => x,
-        Err(x) => {
-            error!("Could not parse messagepack: {}", x);
-            return Err(error::INVALID_MSGPACK.code_num)
-        },
-    };
+    debug!("create keys response inner bundle: {:?}", data[0]);
+    let mut de = Deserializer::new(&data[0][..]);
+    let response: CreateKeyResponse = Deserialize::deserialize(&mut de).unwrap();
 
-    match serde_json::to_string(&bundle.bundled) {
-        Ok(x) => Ok(x),
-        Err(_) => Err(error::INVALID_JSON.code_num),
-    }
+    Ok((response.for_did, response.for_verkey))
 }
 
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use self::rmp_serde::encode;
-    use utils::constants::*;
     use utils::signus::SignusUtils;
     use messages::create_keys;
     use utils::wallet;
@@ -187,7 +206,7 @@ mod tests {
         let msg_payload = CreateKeyPayload {
             for_did: String::new(),
             for_verkey: String::new(),
-            msg_type: "CREATE_KEY".to_string(),
+            msg_type: MsgType { name: "CREATE_KEY".to_string(), ver: "1.0".to_string(), } ,
             nonce: String::new(),
         };
         assert_eq!(msg.payload, msg_payload);
@@ -202,14 +221,14 @@ mod tests {
         let msg_payload = CreateKeyPayload {
             for_did: for_did.to_string(),
             for_verkey: for_verkey.to_string(),
-            msg_type: "CREATE_KEY".to_string(),
             nonce: nonce.to_string(),
+            msg_type: MsgType { name: "CREATE_KEY".to_string(), ver: "1.0".to_string(), } ,
         };
         let msg = create_keys()
             .to(to_did)
             .for_did(for_did)
-            .for_verkey(for_verkey)
-            .nonce(nonce).clone();
+            .nonce("0")
+            .for_verkey(for_verkey).clone();
         assert_eq!(msg.payload, msg_payload);
     }
 
@@ -237,7 +256,7 @@ mod tests {
             .for_did(&my_did)
             .for_verkey(&my_vk)
             .nonce("0")
-            .to_post().unwrap();
+            .msgpack().unwrap();
         assert!(bytes.len() > 0);
 
         wallet::delete_wallet("test_create_key_set_values_and_serialize_mine").unwrap();
@@ -250,19 +269,10 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
 
-        let payload = CreateKeyResponse {
-            msg_type: MsgType { name: "CREATE_KEYS".to_string(), ver: "1.0".to_string(), },
-            for_did: "for_did".to_string(),
-            for_verkey: "for_verkey".to_string(),
-        };
+        let result = parse_create_keys_response(CREATE_KEYS_RESPONSE.to_vec()).unwrap();
 
-        let bundle = Bundled::create(payload);
-        let data = encode::to_vec_named(&bundle).unwrap();
-        let result = parse_create_keys_response(data).unwrap();
-
-        println!("result: {}", result);
-
-        assert!(result.len() > 0);
+        assert_eq!(result.0, "U5LXs4U7P9msh647kToezy");
+        assert_eq!(result.1, "FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq");
     }
 
     #[test]
@@ -274,8 +284,7 @@ mod tests {
         let msg = create_keys()
             .to(to_did)
             .for_did(for_did)
-            .for_verkey(for_verkey)
-            .nonce(nonce).clone();
+            .for_verkey(for_verkey).clone();
 
         assert_eq!(msg.validate_rc, error::INVALID_DID.code_num);
     }

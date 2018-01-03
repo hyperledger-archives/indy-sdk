@@ -1,7 +1,6 @@
 extern crate cxs;
 extern crate tempfile;
 extern crate libc;
-extern crate mockito;
 extern crate serde_json;
 
 use utils::timeout::TimeoutUtils;
