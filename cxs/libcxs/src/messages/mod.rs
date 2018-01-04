@@ -59,14 +59,14 @@ pub enum MessageResponseCode {
 }
 
 impl MessageResponseCode {
-    pub fn as_str(&self) -> &str {
+    pub fn as_string(&self) -> String {
         match *self {
-            MessageResponseCode::MessageCreate => "MS-101",
-            MessageResponseCode::MessageSent => "MS-102",
-            MessageResponseCode::MessagePending => "MS-103",
-            MessageResponseCode::MessageAccepted => "MS-104",
-            MessageResponseCode::MessageRejected => "MS-105",
-            MessageResponseCode::MessageAnswered => "MS-106",
+            MessageResponseCode::MessageCreate => String::from("MS-101"),
+            MessageResponseCode::MessageSent => String::from("MS-102"),
+            MessageResponseCode::MessagePending => String::from("MS-103"),
+            MessageResponseCode::MessageAccepted => String::from("MS-104"),
+            MessageResponseCode::MessageRejected => String::from("MS-105"),
+            MessageResponseCode::MessageAnswered => String::from("MS-106"),
         }
     }
 }

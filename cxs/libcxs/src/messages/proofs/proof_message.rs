@@ -91,7 +91,7 @@ impl ProofMessage {
     pub fn to_string(&self) -> Result<String, u32> {
         match serde_json::to_string(&self){
             Ok(s) => Ok(s),
-            Err(_) => Err(error::INVALID_PROOF_OFFER.code_num),
+            Err(_) => Err(error::INVALID_PROOF.code_num),
         }
     }
 
@@ -99,8 +99,8 @@ impl ProofMessage {
         match serde_json::from_str(payload) {
             Ok(p) => Ok(p),
             Err(err) => {
-                warn!("{} with serde error: {}",error::INVALID_PROOF_OFFER.message, err);
-                Err(error::INVALID_PROOF_OFFER.code_num)},
+                warn!("{} with serde error: {}",error::INVALID_PROOF.message, err);
+                Err(error::INVALID_PROOF.code_num)},
         }
     }
 
@@ -244,8 +244,8 @@ fn create_from_message(s: &str) -> Result<ProofMessage, u32>{
    match serde_json::from_str(s) {
        Ok(p) => Ok(p),
        Err(_) => {
-           warn!("{}",error::INVALID_PROOF_OFFER.message);
-           Err(error::INVALID_PROOF_OFFER.code_num)},
+           warn!("{}",error::INVALID_PROOF.message);
+           Err(error::INVALID_PROOF.code_num)},
    }
 }
 

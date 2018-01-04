@@ -30,7 +30,7 @@ pub static INVALID_MSGPACK: Error = Error{code_num:1019, message:"Invalid Messag
 pub static INVALID_MESSAGES: Error = Error{code_num:1020, message:"Error Retrieving messages from API"};
 pub static INVALID_ATTRIBUTES_STRUCTURE: Error = Error{code_num:1021, message: "Attributes provided to Claim Offer are not correct, possibly malformed"};
 pub static BIG_NUMBER_ERROR: Error = Error{code_num: 1022, message: "Could not encode string to a big integer."};
-pub static INVALID_PROOF_OFFER: Error = Error{code_num: 1023, message: "Proof offer had invalid format"};
+pub static INVALID_PROOF: Error = Error{code_num: 1023, message: "Proof had invalid format"};
 pub static INVALID_GENESIS_TXN_PATH: Error = Error{code_num: 1024, message: "Must have valid genesis txn file path"};
 pub static CREATE_POOL_CONFIG_PARAMETERS: Error = Error{code_num: 1025, message: "Parameters for creating pool config are incorrect."};
 pub static CREATE_POOL_CONFIG: Error = Error{code_num: 1026, message: "Formatting for Pool Config are incorrect."};
@@ -68,7 +68,7 @@ lazy_static! {
         insert_message(&mut m, &INVALID_PROOF_HANDLE);
         insert_message(&mut m, &INVALID_CLAIM_REQUEST);
         insert_message(&mut m, &BIG_NUMBER_ERROR);
-        insert_message(&mut m, &INVALID_PROOF_OFFER);
+        insert_message(&mut m, &INVALID_PROOF);
         insert_message(&mut m, &INVALID_GENESIS_TXN_PATH);
         insert_message(&mut m, &CREATE_POOL_CONFIG);
         insert_message(&mut m, &INVALID_PROOF_CLAIM_DATA);
@@ -193,8 +193,8 @@ mod tests {
     }
 
     #[test]
-    fn test_error_invalid_proof_offer() {
-        assert_eq!(error_message(&INVALID_PROOF_OFFER.code_num), INVALID_PROOF_OFFER.message);
+    fn test_error_invalid_proof() {
+        assert_eq!(error_message(&INVALID_PROOF.code_num), INVALID_PROOF.message);
     }
     #[test]
     fn test_error_genesis() {
@@ -218,8 +218,8 @@ mod tests {
     }
 
     #[test]
-    fn test_proof_offer_incorrect_json_format_error(){
-        assert_eq!(error_message(&INVALID_PROOF_OFFER.code_num), INVALID_PROOF_OFFER.message);
+    fn test_proof_incorrect_json_format_error(){
+        assert_eq!(error_message(&INVALID_PROOF.code_num), INVALID_PROOF.message);
     }
 
     #[test]

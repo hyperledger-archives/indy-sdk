@@ -15,7 +15,7 @@ use messages::proofs::proof_message::{ProofMessage, ClaimData };
 use messages;
 use messages::proofs::proof_request::{ ProofRequestMessage };
 use messages::GeneralMessage;
-use messages::MessageResponseCode::{ MessageAccepted };
+use messages::MessageResponseCode::{ MessagePending };
 use connection;
 use utils::callback::CallbackUtils;
 use std::sync::mpsc::channel;
@@ -127,7 +127,7 @@ impl Proof {
     fn build_proof_json(&mut self, claim_data:&Vec<ClaimData>) -> Result<String, u32> {
         match self.proof {
             Some(ref x) => x.to_string(),
-            None => Err(error::INVALID_PROOF_OFFER.code_num),
+            None => Err(error::INVALID_PROOF.code_num),
         }
     }
 
@@ -138,7 +138,7 @@ impl Proof {
 //      Ok(schema_obj.to_string())
         let data = match schema_obj.data {
             Some(x) => x,
-            None => return Err(error::INVALID_PROOF_OFFER.code_num)
+            None => return Err(error::INVALID_PROOF.code_num)
         };
         Ok(json!({claim_data[0].claim_uuid.clone():data}).to_string())
     }
@@ -148,14 +148,14 @@ impl Proof {
             Some(ref mut x) => {
                 Ok(x.get_proof_request_data())
             },
-            None => Err(error::INVALID_PROOF_OFFER.code_num)
+            None => Err(error::INVALID_PROOF.code_num)
         }
     }
 
     fn proof_validation(&mut self) -> Result<u32, u32> {
         let claim_data = match self.proof {
             Some(ref x) => x.get_claim_schema_info()?,
-            None => return Err(error::INVALID_PROOF_OFFER.code_num),
+            None => return Err(error::INVALID_PROOF.code_num),
         };
 
         if claim_data.len() == 0 {
@@ -175,7 +175,7 @@ impl Proof {
     fn set_invalid_proof_state(&mut self, error:i32) -> u32 {
         error!("Error: {}, Proof wasn't valid {}", error, self.handle);
         self.proof_state = ProofStateType::ProofInvalid;
-        error::INVALID_PROOF_OFFER.code_num
+        error::INVALID_PROOF.code_num
     }
 
     fn send_proof_request(&mut self, connection_handle: u32) -> Result<u32, u32> {
@@ -227,7 +227,7 @@ impl Proof {
     fn get_proof(&self) -> Result<String, u32> {
         let proof = match self.proof {
             Some(ref x) => x,
-            None => return Err(error::INVALID_PROOF_OFFER.code_num),
+            None => return Err(error::INVALID_PROOF.code_num),
         };
         proof.get_proof_attributes()
     }
@@ -455,7 +455,7 @@ fn get_proof_payload(msg_uid:&str, to_did: &str, connection_handle: u32) -> Resu
         Ok(response) => {
             info!("proof_response: {:?}", response);
             for i in response {
-                if i.status_code == "MS-103" && i.msg_type == "proof" && !i.payload.is_none() {
+                if i.status_code == MessagePending.as_string() && i.msg_type == "proof" && !i.payload.is_none() {
                     let payload = messages::to_u8(i.payload.as_ref().unwrap());
                     let payload = crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, &payload)?;
                     return Ok(payload);
@@ -470,7 +470,7 @@ fn get_proof_payload(msg_uid:&str, to_did: &str, connection_handle: u32) -> Resu
 pub fn get_proof(handle: u32) -> Result<String,u32> {
     match PROOF_MAP.lock().unwrap().get(&handle) {
         Some(proof) => Ok(proof.get_proof()?),
-        None => Err(error::INVALID_PROOF_OFFER.code_num),
+        None => Err(error::INVALID_PROOF.code_num),
     }
 }
 
@@ -495,9 +495,6 @@ pub fn generate_nonce() -> Result<String, u32> {
 mod tests {
 
     use super::*;
-    use std::thread;
-    use std::time::Duration;
-    //use utils::constants::*;
     use connection::build_connection;
     static DEFAULT_PROOF_STR: &str = r#"{"source_id":"","handle":486356518,"requested_attrs":"[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]","requested_predicates":"[{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\"}]","msg_uid":"","ref_msg_id":"","requester_did":"","prover_did":"","state":1,"proof_state":0,"tid":0,"mid":0,"name":"Optional","version":"1.0","nonce":"1067639606","proof_offer":null}"#;
     static REQUESTED_ATTRS: &'static str = "[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]";
@@ -647,7 +644,7 @@ mod tests {
                 warn!("Should have failed with no proof");
                 assert_eq!(0, 1)
             },
-            Err(x) => assert_eq!(x, error::INVALID_PROOF_OFFER.code_num),
+            Err(x) => assert_eq!(x, error::INVALID_PROOF.code_num),
 
         }
     }

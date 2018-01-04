@@ -10,7 +10,7 @@ use utils::error;
 use messages;
 use settings;
 use messages::GeneralMessage;
-use messages::MessageResponseCode::{ MessageAccepted };
+use messages::MessageResponseCode::{ MessageAccepted, MessagePending };
 use connection;
 use claim_request::ClaimRequest;
 use utils::issuer_claim::CLAIM_REQ_STRING;
@@ -131,7 +131,7 @@ impl IssuerClaim {
             .agent_did(&agent_did)
             .agent_vk(&agent_vk)
             .ref_msg_id(&self.ref_msg_id)
-            .status_code(MessageAccepted.as_str())
+            .status_code(&MessageAccepted.as_string())
             .send_secure() {
             Err(x) => {
                 warn!("could not send claimOffer: {}", x);
@@ -196,7 +196,7 @@ impl IssuerClaim {
         match messages::send_message().to(&to)
             .ref_msg_id(&self.ref_msg_id)
             .msg_type("claim")
-            .status_code((MessageAccepted.as_str()))
+            .status_code((&MessageAccepted.as_string()))
             .edge_agent_payload(&data)
             .agent_did(&agent_did)
             .agent_vk(&agent_vk)
@@ -626,7 +626,7 @@ fn get_claim_req_payload(msg_uid: &str, connection_handle: u32) -> Result<Vec<u8
         Ok(response) => {
             info!("claim_response: {:?}", response);
             for i in response {
-                if i.status_code == "MS-103" && i.msg_type == "claimReq" && !i.payload.is_none() {
+                if i.status_code == MessagePending.as_string() && i.msg_type == "claimReq" && !i.payload.is_none() {
                     let payload = messages::to_u8(i.payload.as_ref().unwrap());
                     let payload = crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, &payload)?;
                     return Ok(payload);

@@ -274,7 +274,7 @@ mod tests {
         };
 
         let msg1 = Message {
-            status_code: "MS-104".to_string(),
+            status_code: MessageResponseCode::MessageAccepted.as_string(),
             payload: Some(vec![-9, 108, 97, 105, 109, 45, 100, 97, 116, 97]),
             sender_did: "WVsWVh8nL96BE3T3qwaCd5".to_string(),
             uid: "mmi3yze".to_string(),
@@ -283,7 +283,7 @@ mod tests {
             delivery_details: vec![delivery_details1],
         };
         let msg2 = Message {
-            status_code: "MS-101".to_string(),
+            status_code: MessageResponseCode::MessageCreate.as_string(),
             payload: None,
             sender_did: "WVsWVh8nL96BE3T3qwaCd5".to_string(),
             uid: "zjcynmq".to_string(),
