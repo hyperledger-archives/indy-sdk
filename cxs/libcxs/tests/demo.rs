@@ -58,9 +58,16 @@ pub fn open_sandbox_pool() -> u32 {
     pool::open_pool_ledger(&pool_name, Some(config)).unwrap()
 }
 
-#[ignore]
 #[test]
 fn test_demo(){
+    use std::env;
+    match env::var("RUST_TEST_DEMO"){
+        Ok(_) => demo(),
+        Err(_) => {},
+    }
+}
+
+fn demo(){
     let serialize_connection_fn = api::connection::cxs_connection_serialize;
     let serialize_claim_fn = api::issuer_claim::cxs_issuer_claim_serialize;
 

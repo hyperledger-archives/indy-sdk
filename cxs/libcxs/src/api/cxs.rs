@@ -56,15 +56,6 @@ pub extern fn cxs_init (command_handle: u32,
 
     ::utils::logger::LoggerUtils::init();
 
-    settings::set_defaults();
-
-    if wallet::get_wallet_handle() > 0 {
-        error!("Library was already initialized");
-        return error::UNKNOWN_ERROR.code_num;
-    }
-
-    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-
     if !config_path.is_null() {
         check_useful_c_str!(config_path,error::UNKNOWN_ERROR.code_num);
 
@@ -80,7 +71,19 @@ pub extern fn cxs_init (command_handle: u32,
                 Ok(_) => info!("Successfully parsed config: {}", config_path),
             };
         }
+    } else {
+        error!("Cannot initialize with given config path: config path is null.");
+        return error::INVALID_CONFIGURATION.code_num;
     }
+
+    settings::set_defaults();
+
+    if wallet::get_wallet_handle() > 0 {
+        error!("Library was already initialized");
+        return error::UNKNOWN_ERROR.code_num;
+    }
+
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
     let config_name = match settings::get_config_value(settings::CONFIG_POOL_CONFIG_NAME) {
         Err(x) => return x,
@@ -145,10 +148,15 @@ pub extern fn cxs_init (command_handle: u32,
     info!("Initializing wallet with name: {} and pool: {}", &wallet_name, &pool_name);
 
     if !settings::test_indy_mode_enabled() {
-        // this is an unwrap because if it doenst exist, we cannot continue.
-        let path: String = settings::get_config_value(settings::CONFIG_GENESIS_PATH).unwrap().clone();
+        let path: String = match settings::get_config_value(settings::CONFIG_GENESIS_PATH) {
+            Ok(p) => p.clone(),
+            Err(e) => {
+                error!("Invalid Configuration Genesis Path given");
+                return e;
+            },
+        };
+
         let option_path = Some(Path::new(&path));
-        /* TODO: handle pool config */
         match pool::create_pool_ledger_config(&pool_name, option_path.to_owned()) {
             Err(e) => {
                 info!("Pool Config Creation Error: {}", e);
@@ -282,12 +290,13 @@ mod tests {
         };
     }
 
+    // this test now fails, you must provide a path to a valid config
     #[test]
     fn test_init_no_config_path() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let result = cxs_init(0,ptr::null(),Some(init_cb));
-        assert_eq!(result,0);
+        assert_eq!(result,error::INVALID_CONFIGURATION.code_num);
         thread::sleep(Duration::from_secs(1));
         wallet::delete_wallet("wallet1").unwrap();
 
