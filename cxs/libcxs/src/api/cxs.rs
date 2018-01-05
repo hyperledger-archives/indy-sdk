@@ -144,18 +144,41 @@ pub extern fn cxs_init (command_handle: u32,
 
     info!("Initializing wallet with name: {} and pool: {}", &wallet_name, &pool_name);
 
-    // this is an unwrap because if it doenst exist, we cannot continue.
-    thread::spawn(move|| {
-        let path:String = settings::get_config_value(settings::CONFIG_GENESIS_PATH).unwrap().clone();
+    if !settings::test_indy_mode_enabled() {
+        // this is an unwrap because if it doenst exist, we cannot continue.
+        let path: String = settings::get_config_value(settings::CONFIG_GENESIS_PATH).unwrap().clone();
         let option_path = Some(Path::new(&path));
         /* TODO: handle pool config */
-        pool::create_pool_ledger_config(&pool_name, option_path.to_owned());
-        let wrc = match wallet::init_wallet(&wallet_name) {
-            Ok(_) => error::SUCCESS.code_num,
-            Err(x) => x,
-        };
+        match pool::create_pool_ledger_config(&pool_name, option_path.to_owned()) {
+            Err(e) => {
+                info!("Pool Config Creation Error: {}", e);
+                return e;
+            },
+            Ok(_) => {
+                info!("Pool Config Created Successfully");
+                match pool::open_pool_ledger(&pool_name, None) {
+                    Err(e) => {
+                    info!("Open Pool Error: {}", e);
+                        return e;
+                    },
+                    Ok(handle) => {
+                        info!("Open Pool Successful");
+                    }
+                }
+            }
+        }
+    }
 
-        cb(command_handle,wrc);
+    thread::spawn(move|| {
+        match wallet::init_wallet(&wallet_name) {
+            Err(e) => {
+                info!("Init Wallet Error {}.", e);
+                cb(command_handle, e);
+            },
+            Ok(_) => {
+                info!("Init Wallet Successful");
+            },
+        }
     });
 
     error::SUCCESS.code_num
@@ -224,7 +247,7 @@ mod tests {
             Ok(file) => file,
         };
 
-        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"\", \"wallet_name\":\"my_wallet\", \
+        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"config1\", \"wallet_name\":\"my_wallet\", \
         \"agency_pairwise_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"agent_pairwise_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
         \"enterprise_did_agency\" : \"RF3JM851T4EQmhh8CdagSP\", \"enterprise_did_agent\" : \"AB3JM851T4EQmhh8CdagSP\", \"enterprise_name\" : \"evernym enterprise\",\
         \"agency_pairwise_verkey\" : \"7118p4HubxzUK1dwxcc5FU\", \"agent_pairwise_verkey\" : \"U22jM6Cea2YVixjWwHN9wq\"}";
@@ -243,13 +266,20 @@ mod tests {
         // cleanup
         wallet::delete_wallet("my_wallet").unwrap();
         settings::tests::remove_file_if_exists(settings::DEFAULT_GENESIS_PATH);
+
     }
 
 
     #[test]
     fn test_init_bad_path() {
+        use utils::pool::get_pool_handle;
         let empty_str = CString::new("").unwrap().into_raw();
         assert_eq!(error::UNKNOWN_ERROR.code_num,cxs_init(0,empty_str,Some(init_cb)));
+
+        match get_pool_handle() {
+            Ok(h) => {pool::close(h).unwrap();},
+            Err(_) => {},
+        };
     }
 
     #[test]
@@ -260,5 +290,6 @@ mod tests {
         assert_eq!(result,0);
         thread::sleep(Duration::from_secs(1));
         wallet::delete_wallet("wallet1").unwrap();
+
     }
 }

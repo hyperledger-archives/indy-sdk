@@ -58,6 +58,7 @@ pub fn open_sandbox_pool() -> u32 {
     pool::open_pool_ledger(&pool_name, Some(config)).unwrap()
 }
 
+#[ignore]
 #[test]
 fn test_demo(){
     let serialize_connection_fn = api::connection::cxs_connection_serialize;
@@ -86,7 +87,7 @@ fn test_demo(){
 
     file.write_all(config_string.as_bytes()).unwrap();
 
-    open_sandbox_pool();
+//    open_sandbox_pool();
 
     let path = CString::new(file.path().to_str().unwrap()).unwrap();
     let r = api::cxs::cxs_init(0,path.as_ptr(),Some(generic_cb));
