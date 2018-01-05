@@ -58,9 +58,16 @@ pub fn open_sandbox_pool() -> u32 {
     pool::open_pool_ledger(&pool_name, Some(config)).unwrap()
 }
 
-#[ignore]
 #[test]
 fn test_demo(){
+    use std::env;
+    match env::var("RUST_TEST_DEMO"){
+        Ok(_) => demo(),
+        Err(_) => {},
+    }
+}
+
+fn demo(){
     let serialize_connection_fn = api::connection::cxs_connection_serialize;
     let serialize_claim_fn = api::issuer_claim::cxs_issuer_claim_serialize;
 
@@ -87,7 +94,7 @@ fn test_demo(){
 
     file.write_all(config_string.as_bytes()).unwrap();
 
-    open_sandbox_pool();
+//    open_sandbox_pool();
 
     let path = CString::new(file.path().to_str().unwrap()).unwrap();
     let r = api::cxs::cxs_init(0,path.as_ptr(),Some(generic_cb));
@@ -142,7 +149,7 @@ fn test_demo(){
 //    let lphone_number = "8017900625";
     let rc = api::connection::cxs_connection_connect(command_handle,
                                                      connection_handle,
-                                                     CString::new("{\"phone\":\"8014710072\"}").unwrap().into_raw(),cb);
+                                                     CString::new("{\"phone\":\"2056905467\"}").unwrap().into_raw(),cb);
     assert_eq!(rc, 0);
     let err = receiver.recv_timeout(utils::timeout::TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(err,0);

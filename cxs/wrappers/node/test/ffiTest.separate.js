@@ -31,28 +31,17 @@ describe('call to cxs_init with provided path', function () {
     assert.equal(result, 1004)
   })
 
-  it('should return 0', async () => {
-    let result = await new Promise((resolve, reject) =>
-            run.ffi.cxs_init(
-                0,
-                null,
-                ffi.Callback('void', ['uint32', 'uint32'],
-                    (xhandle, err) => {
-                      resolve(err)
-                    }))
-    )
-    assert.equal(result, 0)
-  })
-
-  it('should return 1001', async () => {
+  // null path given should always error
+  it('should return 1004', async () => {
     let result = await new Promise((resolve, reject) =>
             resolve(run.ffi.cxs_init(
                 0,
                 null,
                 ffi.Callback('void', ['uint32', 'uint32'],
-                    (xhandle, err) => ({}))))
+                    (xhandle, err) => ({})))
+            )
     )
-    assert.equal(result, 1001)
+    assert.equal(result, 1004)
   })
 })
 

@@ -56,15 +56,6 @@ pub extern fn cxs_init (command_handle: u32,
 
     ::utils::logger::LoggerUtils::init();
 
-    settings::set_defaults();
-
-    if wallet::get_wallet_handle() > 0 {
-        error!("Library was already initialized");
-        return error::UNKNOWN_ERROR.code_num;
-    }
-
-    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-
     if !config_path.is_null() {
         check_useful_c_str!(config_path,error::UNKNOWN_ERROR.code_num);
 
@@ -80,7 +71,19 @@ pub extern fn cxs_init (command_handle: u32,
                 Ok(_) => info!("Successfully parsed config: {}", config_path),
             };
         }
+    } else {
+        error!("Cannot initialize with given config path: config path is null.");
+        return error::INVALID_CONFIGURATION.code_num;
     }
+
+    settings::set_defaults();
+
+    if wallet::get_wallet_handle() > 0 {
+        error!("Library was already initialized");
+        return error::UNKNOWN_ERROR.code_num;
+    }
+
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
     let config_name = match settings::get_config_value(settings::CONFIG_POOL_CONFIG_NAME) {
         Err(x) => return x,
@@ -144,18 +147,46 @@ pub extern fn cxs_init (command_handle: u32,
 
     info!("Initializing wallet with name: {} and pool: {}", &wallet_name, &pool_name);
 
-    // this is an unwrap because if it doenst exist, we cannot continue.
-    thread::spawn(move|| {
-        let path:String = settings::get_config_value(settings::CONFIG_GENESIS_PATH).unwrap().clone();
-        let option_path = Some(Path::new(&path));
-        /* TODO: handle pool config */
-        pool::create_pool_ledger_config(&pool_name, option_path.to_owned());
-        let wrc = match wallet::init_wallet(&wallet_name) {
-            Ok(_) => error::SUCCESS.code_num,
-            Err(x) => x,
+    if !settings::test_indy_mode_enabled() {
+        let path: String = match settings::get_config_value(settings::CONFIG_GENESIS_PATH) {
+            Ok(p) => p.clone(),
+            Err(e) => {
+                error!("Invalid Configuration Genesis Path given");
+                return e;
+            },
         };
 
-        cb(command_handle,wrc);
+        let option_path = Some(Path::new(&path));
+        match pool::create_pool_ledger_config(&pool_name, option_path.to_owned()) {
+            Err(e) => {
+                info!("Pool Config Creation Error: {}", e);
+                return e;
+            },
+            Ok(_) => {
+                info!("Pool Config Created Successfully");
+                match pool::open_pool_ledger(&pool_name, None) {
+                    Err(e) => {
+                    info!("Open Pool Error: {}", e);
+                        return e;
+                    },
+                    Ok(handle) => {
+                        info!("Open Pool Successful");
+                    }
+                }
+            }
+        }
+    }
+
+    thread::spawn(move|| {
+        match wallet::init_wallet(&wallet_name) {
+            Err(e) => {
+                info!("Init Wallet Error {}.", e);
+                cb(command_handle, e);
+            },
+            Ok(_) => {
+                info!("Init Wallet Successful");
+            },
+        }
     });
 
     error::SUCCESS.code_num
@@ -224,7 +255,7 @@ mod tests {
             Ok(file) => file,
         };
 
-        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"\", \"wallet_name\":\"my_wallet\", \
+        let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"config1\", \"wallet_name\":\"my_wallet\", \
         \"agency_pairwise_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"agent_pairwise_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
         \"enterprise_did_agency\" : \"RF3JM851T4EQmhh8CdagSP\", \"enterprise_did_agent\" : \"AB3JM851T4EQmhh8CdagSP\", \"enterprise_name\" : \"evernym enterprise\",\
         \"agency_pairwise_verkey\" : \"7118p4HubxzUK1dwxcc5FU\", \"agent_pairwise_verkey\" : \"U22jM6Cea2YVixjWwHN9wq\"}";
@@ -243,22 +274,31 @@ mod tests {
         // cleanup
         wallet::delete_wallet("my_wallet").unwrap();
         settings::tests::remove_file_if_exists(settings::DEFAULT_GENESIS_PATH);
+
     }
 
 
     #[test]
     fn test_init_bad_path() {
+        use utils::pool::get_pool_handle;
         let empty_str = CString::new("").unwrap().into_raw();
         assert_eq!(error::UNKNOWN_ERROR.code_num,cxs_init(0,empty_str,Some(init_cb)));
+
+        match get_pool_handle() {
+            Ok(h) => {pool::close(h).unwrap();},
+            Err(_) => {},
+        };
     }
 
+    // this test now fails, you must provide a path to a valid config
     #[test]
     fn test_init_no_config_path() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let result = cxs_init(0,ptr::null(),Some(init_cb));
-        assert_eq!(result,0);
+        assert_eq!(result,error::INVALID_CONFIGURATION.code_num);
         thread::sleep(Duration::from_secs(1));
         wallet::delete_wallet("wallet1").unwrap();
+
     }
 }
