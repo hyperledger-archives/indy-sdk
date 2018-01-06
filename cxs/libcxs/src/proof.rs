@@ -15,7 +15,6 @@ use messages::proofs::proof_message::{ProofMessage, ClaimData };
 use messages;
 use messages::proofs::proof_request::{ ProofRequestMessage };
 use messages::GeneralMessage;
-use messages::MessageResponseCode::{ MessagePending };
 use connection;
 use utils::callback::CallbackUtils;
 use std::sync::mpsc::channel;
@@ -24,8 +23,6 @@ use std::ffi::CString;
 use utils::timeout::TimeoutUtils;
 use utils::claim_def::{ClaimDef};
 use utils::constants::*;
-use utils::crypto;
-use utils::wallet;
 use schema::LedgerSchema;
 
 lazy_static! {
@@ -232,25 +229,19 @@ impl Proof {
         proof.get_proof_attributes()
     }
 
-    fn get_proof_request_status(&mut self) {
+    fn get_proof_request_status(&mut self) -> Result<u32, u32> {
         info!("updating state for proof {}", self.handle);
         if self.state == CxsStateType::CxsStateAccepted {
-            return;
+            return Ok(error::SUCCESS.code_num);
         }
         else if self.state != CxsStateType::CxsStateOfferSent || self.msg_uid.is_empty() || self.prover_did.is_empty() {
-            return;
+            return Ok(error::SUCCESS.code_num);
         }
 
-        let payload = match get_proof_payload(&self.msg_uid, &self.prover_did, self.connection_handle) {
-            Ok(x) => x,
-            Err(err) => {
-                warn!("{} {}", err, self.handle);
-                return
-            }
-        };
+        let payload = messages::get_message::get_ref_msg(&self.msg_uid, self.connection_handle)?;
 
         self.proof = match parse_proof_payload(&payload) {
-            Err(_) => return,
+            Err(_) => return Ok(error::SUCCESS.code_num),
             Ok(x) => Some(x),
         };
 
@@ -268,10 +259,12 @@ impl Proof {
                 self.proof_state = ProofStateType::ProofInvalid;
             }
         };
+
+        Ok(error::SUCCESS.code_num)
     }
 
     fn update_state(&mut self) {
-        self.get_proof_request_status();
+        self.get_proof_request_status().unwrap_or(error::SUCCESS.code_num);
     }
 
     fn get_state(&self) -> u32 {let state = self.state as u32; state}
@@ -418,7 +411,7 @@ pub fn get_proof_uuid(handle: u32) -> Result<String,u32> {
 }
 
 fn parse_proof_payload(payload: &Vec<u8>) -> Result<ProofMessage, u32> {
-    info!("parsing proof payload: {:?}", payload);
+    debug!("parsing proof payload: {:?}", payload);
     let data = messages::extract_json_payload(payload)?;
 
     let my_claim_req = match ProofMessage::from_str(&data) {
@@ -429,42 +422,6 @@ fn parse_proof_payload(payload: &Vec<u8>) -> Result<ProofMessage, u32> {
         },
     };
     Ok(my_claim_req)
-}
-
-fn get_proof_payload(msg_uid:&str, to_did: &str, connection_handle: u32) -> Result<Vec<u8>, u32> {
-    info!("getting proof payload from response");
-    let pw_vk = connection::get_pw_verkey(connection_handle)?;
-    info!("got pw_vk: {}", pw_vk);
-    let agent_did = connection::get_agent_did(connection_handle)?;
-    info!("got agent_did: {}", agent_did);
-    let agent_vk = connection::get_agent_verkey(connection_handle)?;
-    info!("got agent_vk: {}", agent_vk);
-    let my_vk = connection::get_pw_verkey(connection_handle)?;
-    info!("got my_vk: {}", my_vk);
-
-    let response = match messages::get_messages()
-        .to(to_did)
-        //.uid(msg_uid)
-        .agent_did(&agent_did)
-        .agent_vk(&agent_vk)
-        .send_secure() {
-        Err(x) => {
-            error!("could not post get_messages: {}", x);
-            return Err(error::POST_MSG_FAILURE.code_num)
-        },
-        Ok(response) => {
-            info!("proof_response: {:?}", response);
-            for i in response {
-                if i.status_code == MessagePending.as_string() && i.msg_type == "proof" && !i.payload.is_none() {
-                    let payload = messages::to_u8(i.payload.as_ref().unwrap());
-                    let payload = crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, &payload)?;
-                    return Ok(payload);
-                }
-            }
-        },
-    };
-
-    Err(error::INVALID_HTTP_RESPONSE.code_num)
 }
 
 pub fn get_proof(handle: u32) -> Result<String,u32> {
@@ -651,6 +608,7 @@ mod tests {
 
     #[test]
     fn test_update_state_with_pending_proof() {
+        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
@@ -675,7 +633,9 @@ mod tests {
             proof_request: None,
             connection_handle,
         });
-        httpclient::set_next_u8_response(GET_PROOF_RESPONSE.to_vec());
+
+        httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
+        httpclient::set_next_u8_response(UPDATE_PROOF_RESPONSE.to_vec());
 
         proof.update_state();
         assert_eq!(proof.get_state(), CxsStateType::CxsStateAccepted as u32);
@@ -781,7 +741,9 @@ mod tests {
             connection_handle,
         });
 
-        httpclient::set_next_u8_response(GET_PROOF_RESPONSE.to_vec());
+        httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
+        httpclient::set_next_u8_response(UPDATE_PROOF_RESPONSE.to_vec());
+        //httpclient::set_next_u8_response(GET_PROOF_OR_CLAIM_RESPONSE.to_vec());
 
         proof.update_state();
         assert_eq!(proof.get_state(), CxsStateType::CxsStateAccepted as u32);

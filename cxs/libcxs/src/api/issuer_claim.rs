@@ -279,7 +279,6 @@ mod tests {
     use std::time::Duration;
     use settings;
     use connection;
-    use utils::wallet;
     use api::CxsStateType;
     use utils::issuer_claim::CLAIM_REQ_STRING;
     use utils::issuer_claim::tests::put_claim_def_in_issuer_wallet;
@@ -385,7 +384,6 @@ mod tests {
     #[test]
     fn test_cxs_issuer_send_a_claim() {
         settings::set_defaults();
-        wallet::init_wallet("test_cxs_issuer_send_a_claim").unwrap();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, DEFAULT_DID);
         use claim_request::ClaimRequest;
@@ -411,19 +409,14 @@ mod tests {
         issuer_claim::set_claim_request(handle, &claim_request).unwrap();
         assert_eq!(issuer_claim::get_state(handle),CxsStateType::CxsStateRequestReceived as u32);
         let schema = create_default_schema(schema_seq_num);
-        assert!(wallet::init_wallet("test_cxs_issuer_send_a_claim").unwrap() > 0);
-        put_claim_def_in_issuer_wallet(&settings::get_config_value(
-            settings::CONFIG_ENTERPRISE_DID).unwrap(), &schema, get_wallet_handle());
+        //put_claim_def_in_issuer_wallet(&settings::get_config_value(settings::CONFIG_ENTERPRISE_DID).unwrap(), &schema, get_wallet_handle());
         /**********************************************************************/
 
         // create connection
         let connection_handle = connection::build_connection("test_send_claim".to_owned()).unwrap();
 
         // send the claim
-        let command_handle = 0;
-        assert_eq!(cxs_issuer_send_claim(command_handle, handle, connection_handle, Some(send_offer_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(1000));
-        wallet::delete_wallet("test_cxs_issuer_send_a_claim").unwrap();
+        assert_eq!(cxs_issuer_send_claim(0, handle, connection_handle, Some(send_offer_cb)), error::SUCCESS.code_num);
     }
     extern "C" fn deserialize_cb(command_handle: u32, err: u32, claim_handle: u32) {
         fn formatter(original: &str) -> String {

@@ -115,26 +115,6 @@ impl GeneralMessage for UpdateProfileData{
     fn set_validate_rc(&mut self, rc: u32){
         self.validate_rc = rc;
     }
-
-    fn serialize_message(&mut self) -> Result<String, u32> {
-        if self.validate_rc != error::SUCCESS.code_num {
-            return Err(self.validate_rc)
-        }
-        self.agent_payload = json!(self.payload).to_string();
-        Ok(json!(self).to_string())
-    }
-
-    fn send(&mut self) -> Result<String, u32> {
-        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
-
-        let json_msg = self.serialize_message()?;
-
-        match httpclient::post(&json_msg, &url) {
-            Err(_) => Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => Ok(response),
-        }
-    }
-
     fn set_to_vk(&mut self, to_vk: String){ /* nothing to do here for CreateKeymsg */ }
 
     fn msgpack(&mut self) -> Result<Vec<u8>,u32> {
@@ -168,19 +148,6 @@ mod tests {
     use messages::update_data;
     use utils::wallet;
     use utils::signus::SignusUtils;
-
-    #[test]
-    fn test_update_data_set_values_and_serialize() {
-        let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
-        let name = "name";
-        let url = "https://random.com";
-        let msg = update_data()
-            .to(to_did)
-            .name(&name)
-            .logo_url(&url)
-            .serialize_message().unwrap();
-        assert!(msg.len() > 0);
-    }
 
     #[test]
     fn test_update_data_post() {

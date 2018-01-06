@@ -239,25 +239,6 @@ impl GeneralMessage for SendInvite{
     fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
     fn set_validate_rc(&mut self, rc: u32){ self.validate_rc = rc; }
 
-    fn serialize_message(&mut self) -> Result<String, u32> {
-        if self.validate_rc != error::SUCCESS.code_num {
-            return Err(self.validate_rc)
-        }
-        self.agent_payload = json!(self.payload).to_string();
-        Ok(json!(self).to_string())
-    }
-
-    fn send(&mut self) -> Result<String, u32> {
-        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
-
-        let json_msg = self.serialize_message()?;
-
-        match httpclient::post(&json_msg, &url) {
-            Err(_) => Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => Ok(response),
-        }
-    }
-
     fn msgpack(&mut self) -> Result<Vec<u8>,u32> {
         if self.validate_rc != error::SUCCESS.code_num {
             return Err(self.validate_rc)
@@ -327,26 +308,6 @@ mod tests {
     use messages::send_invite;
     use utils::wallet;
     use utils::signus::SignusUtils;
-
-    #[test]
-    fn test_send_invite_set_values_and_serialize(){
-        let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
-        let phone = "phone";
-        let key = "key";
-        let msg = send_invite()
-            .to(to_did)
-            .phone_number(&phone)
-            .key_delegate(&key)
-            .serialize_message().unwrap();
-
-        assert_eq!(msg, "{\"agentDid\":\"\",\"agentPayload\":\"{\\\"createPayload\\\":{\\\"@type\\\":\
-        {\\\"name\\\":\\\"CREATE_MSG\\\",\\\"ver\\\":\\\"1.0\\\"},\\\"mtype\\\":\\\"connReq\\\"},\
-        \\\"msgDetailPayload\\\":{\\\"@type\\\":{\\\"name\\\":\\\"MSG_DETAIL\\\",\\\"ver\\\":\\\"1.0\\\"},\
-        \\\"keyDlgProof\\\":{\\\"agentDID\\\":\\\"\\\",\\\"agentDelegatedKey\\\":\\\"key\\\",\
-        \\\"signature\\\":\\\"\\\"},\\\"phoneNo\\\":\\\"phone\\\"},\\\"sendPayload\\\":\
-        {\\\"@type\\\":{\\\"name\\\":\\\"SEND_MSG\\\",\\\"ver\\\":\\\"1.0\\\"}}}\",\"agentVk\":\"\",\
-        \"to\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"toVk\":\"\"}");
-    }
 
     #[test]
     fn test_send_invite_set_values_and_post(){

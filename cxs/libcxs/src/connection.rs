@@ -236,13 +236,11 @@ pub fn get_state(handle: u32) -> u32 {
 
 pub fn create_agent_pairwise(handle: u32) -> Result<u32, u32> {
     info!("creating pairwise keys on agent for connection handle {}", handle);
-    let enterprise_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENCY).unwrap();
     let pw_did = get_pw_did(handle)?;
     let pw_verkey = get_pw_verkey(handle)?;
 
     let result = match messages::create_keys()
         .for_did(&pw_did)
-        .to(&enterprise_did)
         .for_verkey(&pw_verkey)
         .send_secure() {
         Ok(x) => x,
@@ -388,7 +386,7 @@ pub fn update_state(handle: u32) -> Result<u32, u32> {
             Err(error::POST_MSG_FAILURE.code_num)
         }
         Ok(response) => {
-            info!("update state response: {:?}", response);
+            debug!("update state response: {:?}", response);
             for i in response {
                 if i.status_code == MessageAccepted.as_string() && i.msg_type == "connReqAnswer" {
                     let details = parse_acceptance_details(handle, &i)?;
@@ -653,10 +651,10 @@ mod tests {
         settings::set_defaults();
         let agency_did = "FhrSrYtQcw3p9xwf7NYemf";
         let agency_vk = "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE";
-        let my_did = "2hoqvcwupRTUNkXn6ArYzs";
-        let my_vk = "vrWGArMA3toVoZrYGSAMjR2i9KjBS66bZWyWuYJJYPf";
-        let agent_did = "U3w76D784aCFmVQm1FKCEs";
-        let agent_vk = "Fk84VW2ZgAAziFqDNuqJacYy2B8PmKKNiEvBVXRXdhMq";
+        let my_did = "5bJqPo8aCWyBwLQosZkJcB";
+        let my_vk = "3W9WGtRowAanh5q6giQrGncZVMvRwPedB9fJAJkAN5Gk";
+        let agent_did = "6nLzki22uwcg9n5VAJxhGN";
+        let agent_vk = "49mui8cB48JvLnnWzRmMGzWXuXDUKaVHsQi6N4Hyof8c";
         let host = "https://enym-eagency.pdev.evernym.com";
 
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID,my_did);
@@ -672,7 +670,7 @@ mod tests {
         wallet::init_wallet("my_real_wallet").unwrap();
 
         let handle = build_connection("test_real_connection_create".to_owned()).unwrap();
-        connect(handle,"{ \"phone\": \"8014710072\" }".to_string()).unwrap();
+        connect(handle,"{ \"phone\": \"3852500260\" }".to_string()).unwrap();
 
         let string = to_string(handle).unwrap();
         println!("my connection: {}", string);

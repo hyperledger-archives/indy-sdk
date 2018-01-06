@@ -10,7 +10,7 @@ use utils::error;
 use messages;
 use settings;
 use messages::GeneralMessage;
-use messages::MessageResponseCode::{ MessageAccepted, MessagePending };
+use messages::MessageResponseCode::{ MessageAccepted };
 use connection;
 use claim_request::ClaimRequest;
 use utils::issuer_claim::CLAIM_REQ_STRING;
@@ -22,7 +22,6 @@ use utils::timeout::TimeoutUtils;
 use utils::wallet;
 use utils::openssl::encode;
 use utils::httpclient;
-use utils::crypto;
 use utils::constants::SEND_CLAIM_OFFER_RESPONSE;
 
 lazy_static! {
@@ -265,71 +264,24 @@ impl IssuerClaim {
         }
     }
 
-    /*
-    fn get_claim_req(&mut self, msg_uid: &str) {
-        info!("Checking for outstanding claimReq for {} with uid: {}", self.handle, msg_uid);
-        let msgs = match get_matching_messages(msg_uid, self.connection_handle) {
-            Ok(x) => x,
-            Err(err) => {
-                warn!("{} {}", err, self.handle);
-                return
-            }
-        };
-
-        for msg in msgs {
-            if msg["typ"] == String::from("claimReq") {
-                self.state = CxsStateType::CxsStateRequestReceived;
-
-                let payload = match msg["edgeAgentPayload"].as_str() {
-                    Some(x) => x,
-                    None => {
-                        warn!("claim request has no edge agent payload");
-                        return
-                    }
-                };
-
-                let p = String::from(payload).replace("\\\"","\"");
-                self.claim_request = match ClaimRequest::from_str(&p) {
-
-                    Ok(x) => Some(x),
-                    Err(_) => {
-                        warn!("invalid claim request for claim {}", self.handle);
-                        return
-                    }
-                };
-                return
-            }
-        }
-    }
-    */
-
-    fn get_claim_offer_status(&mut self) {
-        info!("getting outstanding claim messages issuer_claim handle {}", self.handle);
+    fn get_claim_offer_status(&mut self) -> Result<u32, u32> {
+        info!("updating state for claim offer: {}", self.handle);
         if self.state == CxsStateType::CxsStateRequestReceived {
-            return;
+            return Ok(error::SUCCESS.code_num);
         }
         else if self.state != CxsStateType::CxsStateOfferSent || self.msg_uid.is_empty() || self.issued_did.is_empty() {
-            return;
+            return Ok(error::SUCCESS.code_num);
         }
 
-        let payload = match get_claim_req_payload(&self.msg_uid, self.connection_handle) {
-            Ok(x) => x,
-            Err(err) => {
-                warn!("{} {}", err, self.handle);
-                return
-            }
-        };
+        let payload = messages::get_message::get_ref_msg(&self.msg_uid, self.connection_handle)?;
 
-        self.claim_request = match parse_claim_req_payload(&payload) {
-            Err(_) => return,
-            Ok(x) => Some(x),
-        };
-
+        self.claim_request = Some(parse_claim_req_payload(&payload)?);
         self.state = CxsStateType::CxsStateRequestReceived;
+        Ok(error::SUCCESS.code_num)
     }
 
     fn update_state(&mut self) {
-        self.get_claim_offer_status();
+        self.get_claim_offer_status().unwrap_or(error::SUCCESS.code_num);
         //There will probably be more things here once we do other things with the claim
     }
 
@@ -439,6 +391,7 @@ pub fn get_offer_uid(handle: u32) -> Result<String,u32> {
 }
 
 fn parse_claim_req_payload(payload: &Vec<u8>) -> Result<ClaimRequest, u32> {
+    debug!("parsing claimReq payload: {:?}", payload);
     let data = messages::extract_json_payload(payload)?;
 
     let my_claim_req = match ClaimRequest::from_str(&data) {
@@ -605,38 +558,6 @@ pub fn convert_to_map(s:&str) -> Result<serde_json::Map<String, serde_json::Valu
     Ok(v)
 }
 
-fn get_claim_req_payload(msg_uid: &str, connection_handle: u32) -> Result<Vec<u8>, u32> {
-    let pw_did = connection::get_pw_did(connection_handle)?;
-    let pw_vk = connection::get_pw_verkey(connection_handle)?;
-    let agent_did = connection::get_agent_did(connection_handle)?;
-    let agent_vk = connection::get_agent_verkey(connection_handle)?;
-    let my_vk = connection::get_pw_verkey(connection_handle)?;
-
-    match messages::get_messages()
-        .to(&pw_did)
-        .to_vk(&pw_vk)
-        .agent_did(&agent_did)
-        .agent_vk(&agent_vk)
-        //.uid(msg_uid)
-        .send_secure() {
-        Err(x) => {
-            error!("could not post get_messages: {}", x);
-            return Err(error::POST_MSG_FAILURE.code_num)
-        },
-        Ok(response) => {
-            info!("claim_response: {:?}", response);
-            for i in response {
-                if i.status_code == MessagePending.as_string() && i.msg_type == "claimReq" && !i.payload.is_none() {
-                    let payload = messages::to_u8(i.payload.as_ref().unwrap());
-                    let payload = crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, &payload)?;
-                    return Ok(payload);
-                    }
-                }
-            },
-        };
-
-    Err(error::INVALID_HTTP_RESPONSE.code_num)
-}
 
 #[cfg(test)]
 mod tests {
@@ -646,6 +567,7 @@ mod tests {
     use utils::wallet::init_wallet;
     use utils::issuer_claim::tests::{put_claim_def_in_issuer_wallet, create_default_schema};
     use claim_request::ClaimRequest;
+    use utils::constants::*;
     use super::*;
 
     static SCHEMA: &str = r#"{{
@@ -823,12 +745,12 @@ mod tests {
         assert_eq!(new_string, string);
     }
 
-    #[ignore] /* TODO: get what a valid claimReq looks like with the new format */
     #[test]
     fn test_update_state_with_pending_claim_request() {
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "agency");
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
+        let connection_handle = build_connection("test_update_state_with_pending_claim_request".to_owned()).unwrap();
         let claim_req:ClaimRequest = ClaimRequest::from_str(CLAIM_REQ_STRING).unwrap();
         let mut claim = IssuerClaim {
             handle: 123,
@@ -843,19 +765,17 @@ mod tests {
             claim_name: DEFAULT_CLAIM_NAME.to_owned(),
             claim_id: String::from(DEFAULT_CLAIM_ID),
             ref_msg_id: String::new(),
-            connection_handle: 0,
+            connection_handle,
         };
 
-        let response = "{\"msgs\":[{\"uid\":\"6gmsuWZ\",\"typ\":\"conReq\",\"statusCode\":\"MS-102\",\"statusMsg\":\"message sent\"},\
-            {\"statusCode\":\"MS-104\",\"edgeAgentPayload\":\"{\\\"attr\\\":\\\"value\\\"}\",\"sendStatusCode\":\"MSS-101\",\"typ\":\"claimOffer\",\"statusMsg\":\"message accepted\",\"uid\":\"6a9u7Jt\",\"refMsgId\":\"CKrG14Z\"},\
-            {\"msg_type\":\"CLAIM_REQUEST\",\"typ\":\"claimReq\",\"edgeAgentPayload\":\"{\\\"blinded_ms\\\":{\\\"prover_did\\\":\\\"FQ7wPBUgSPnDGJnS1EYjTK\\\",\\\"u\\\":\\\"923...607\\\",\\\"ur\\\":\\\"null\\\"},\\\"version\\\":\\\"0.1\\\",\\\"mid\\\":\\\"\\\",\\\"to_did\\\":\\\"BnRXf8yDMUwGyZVDkSENeq\\\",\\\"from_did\\\":\\\"GxtnGN6ypZYgEqcftSQFnC\\\",\\\"iid\\\":\\\"cCanHnpFAD\\\",\\\"issuer_did\\\":\\\"QTrbV4raAcND4DWWzBmdsh\\\",\\\"schema_seq_no\\\":48,\\\"optional_data\\\":{\\\"terms_of_service\\\":\\\"<Large block of text>\\\",\\\"price\\\":6}}\"}]}";
-        httpclient::set_next_str_response(response.to_string());
+        httpclient::set_next_u8_response(CLAIM_REQ_RESPONSE.to_vec());
+        httpclient::set_next_u8_response(UPDATE_CLAIM_RESPONSE.to_vec());
 
         claim.update_state();
         assert_eq!(claim.get_state(), CxsStateType::CxsStateRequestReceived as u32);
         let claim_request = claim.claim_request.clone().unwrap();
-        assert_eq!(claim_request.issuer_did, "QTrbV4raAcND4DWWzBmdsh");
-        assert_eq!(claim_request.schema_seq_no, 48);
+        assert_eq!(claim_request.issuer_did, "2hoqvcwupRTUNkXn6ArYzs");
+        assert_eq!(claim_request.schema_seq_no, 15);
         claim.claim_attributes = CLAIM_DATA.to_owned();
         println!("{}", &claim.claim_attributes);
         println!("{:?}", &claim.generate_claim_offer(&claim_request.issuer_did).unwrap());

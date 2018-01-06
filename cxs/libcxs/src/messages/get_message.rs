@@ -7,6 +7,9 @@ use settings;
 use utils::httpclient;
 use utils::error;
 use messages::*;
+use messages::MessageResponseCode::{ MessageAccepted, MessagePending };
+use utils::crypto;
+use connection::{ get_pw_verkey, get_pw_did, get_agent_verkey, get_agent_did };
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
@@ -95,26 +98,6 @@ impl GeneralMessage for GetMessages{
     fn set_agent_vk(&mut self, vk: String) { self.agent_vk = vk; }
     fn set_to_did(&mut self, to_did: String){ self.to_did = to_did; }
     fn set_validate_rc(&mut self, rc: u32){ self.validate_rc = rc; }
-
-    fn serialize_message(&mut self) -> Result<String, u32> {
-        if self.validate_rc != error::SUCCESS.code_num {
-            return Err(self.validate_rc)
-        }
-        self.agent_payload = json!(self.payload).to_string();
-        Ok(json!(self).to_string())
-    }
-
-    fn send(&mut self) -> Result<String, u32> {
-        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
-
-        let json_msg = self.serialize_message()?;
-
-        match httpclient::post(&json_msg, &url) {
-            Err(_) => Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => Ok(response),
-        }
-    }
-
     fn set_to_vk(&mut self, to_vk: String){ self.to_vk = to_vk; }
 
     fn msgpack(&mut self) -> Result<Vec<u8>,u32> {
@@ -123,7 +106,7 @@ impl GeneralMessage for GetMessages{
         }
 
         let data = encode::to_vec_named(&self.payload).unwrap();
-        info!("get_message content: {:?}", data);
+        debug!("get_message content: {:?}", data);
 
         let msg = Bundled::create(data).encode()?;
 
@@ -170,6 +153,20 @@ pub struct Message {
     pub delivery_details: Vec<DeliveryDetails>,
 }
 
+impl Message {
+    pub fn new() -> Message {
+        Message {
+            status_code: String::new(),
+            payload: None,
+            sender_did: String::new(),
+            uid: String::new(),
+            msg_type: String::new(),
+            ref_msg_id: None,
+            delivery_details: Vec::new(), 
+        }    
+    }    
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GetMessagesResponse {
@@ -181,7 +178,7 @@ pub struct GetMessagesResponse {
 fn parse_get_messages_response(response: Vec<u8>) -> Result<Vec<Message>, u32> {
     let data = unbundle_from_agency(response)?;
 
-    info!("get_message response: {:?}", data[0]);
+    debug!("get_message response: {:?}", data[0]);
     let mut de = Deserializer::new(&data[0][..]);
     let response: GetMessagesResponse = match Deserialize::deserialize(&mut de) {
         Ok(x) => x,
@@ -194,59 +191,65 @@ fn parse_get_messages_response(response: Vec<u8>) -> Result<Vec<Message>, u32> {
     Ok(response.msgs.to_owned())
 }
 
+fn get_matching_message(msg_uid:&str, connection_handle: u32) -> Result<get_message::Message, u32> {
+    let pw_did = get_pw_did(connection_handle)?;
+    let pw_vk = get_pw_verkey(connection_handle)?;
+    let agent_did = get_agent_did(connection_handle)?;
+    let agent_vk = get_agent_verkey(connection_handle)?;
+
+    match get_messages()
+        .to(&pw_did)
+        .to_vk(&pw_vk)
+        .agent_did(&agent_did)
+        .agent_vk(&agent_vk)
+        .uid(msg_uid)
+        .send_secure() {
+        Err(x) => {
+            error!("could not post get_messages: {}", x);
+            Err(error::POST_MSG_FAILURE.code_num)
+        },
+        Ok(response) => {
+            if response.len() == 0 {
+                Ok(get_message::Message::new())    
+            } else {
+                debug!("message returned: {:?}", response[0]);
+                Ok(response[0].to_owned())
+            }
+        },
+    }
+}
+
+pub fn get_ref_msg(msg_id: &str, connection_handle: u32) -> Result<Vec<u8>, u32> {
+    let message = get_matching_message(msg_id, connection_handle)?;
+
+    debug!("checking for ref_msg: {:?}", message);
+    let msg_id;
+    if message.status_code == MessageAccepted.as_string() && !message.ref_msg_id.is_none() {
+        msg_id = message.ref_msg_id.unwrap()
+    }
+    else {
+        return Err(error::NOT_READY.code_num);
+    }
+
+    let message = get_matching_message(&msg_id, connection_handle)?;
+    let my_vk = get_pw_verkey(connection_handle)?;
+
+    debug!("checking for pending message: {:?}", message);
+
+    // this will work for both claimReq and proof types
+    if message.status_code == MessagePending.as_string() && !message.payload.is_none() {
+        let data = to_u8(message.payload.as_ref().unwrap());
+        crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, &data)
+    }
+    else {
+        Err(error::INVALID_HTTP_RESPONSE.code_num)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use messages::get_messages;
     use utils::constants::GET_MESSAGES_RESPONSE;
-
-    #[test]
-    fn test_get_messages_set_values_and_serialize(){
-        let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
-        let payload = "Some Data";
-        let msg = match get_messages()
-            .to(&to_did)
-            .uid("123")
-            .serialize_message(){
-            Ok(x) => x.to_string(),
-            Err(y) => {
-             println!("Had error during message build: {}", y);
-                String::from("error")
-            }
-        };
-        assert_eq!(msg, "{\"agentPayload\":\"{\\\"@type\\\":{\\\"name\\\":\\\"GET_MSGS\\\",\\\"ver\\\":\\\"1.0\\\"},\\\"uids\\\":\\\"123\\\"}\",\"to\":\"8XFh8yBzrpJQmNyZzgoTqB\"}");
-    }
-
-    #[test]
-    fn test_get_messages_set_some_values_and_serialize(){
-        let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
-        let payload = "Some Data";
-        let msg = match get_messages()
-            .to(&to_did)
-            .serialize_message(){
-            Ok(x) => x.to_string(),
-            Err(y) => {
-             println!("Had error during message build: {}", y);
-                String::from("error")
-            }
-        };
-        assert_eq!(msg, "{\"agentPayload\":\"{\\\"@type\\\":{\\\"name\\\":\\\"GET_MSGS\\\",\\\"ver\\\":\\\"1.0\\\"}}\",\"to\":\"8XFh8yBzrpJQmNyZzgoTqB\"}");
-    }
-
-    #[test]
-    fn test_get_messages_set_invalid_did_errors_at_serialize(){
-        let to_did = "A";
-        let payload = "Some Data";
-        let mut msg = get_messages()
-            .to(&to_did)
-            .uid("123")
-            .include_edge_payload(&payload).clone();
-
-        match msg.serialize_message(){
-            Ok(_) => panic!("should have had did error"),
-            Err(x) => assert_eq!(x, error::INVALID_DID.code_num)
-        }
-    }
 
     #[test]
     fn test_parse_get_messages_response() {

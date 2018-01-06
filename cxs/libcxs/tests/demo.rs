@@ -72,20 +72,17 @@ fn demo(){
     let serialize_claim_fn = api::issuer_claim::cxs_issuer_claim_serialize;
 
     // Init SDK  *********************************************************************
-    let issuer_did = "TCwEv4tiAuA5DfC7VTdu83";
-    let config_string = format!("{{\"agent_endpoint\":\"{}\",\
+    let config_string = format!("{{\"agent_endpoint\":\"https://enym-eagency.pdev.evernym.com\",\
     \"agency_pairwise_did\":\"FhrSrYtQcw3p9xwf7NYemf\",\
-    \"agent_pairwise_did\":\"U3w76D784aCFmVQm1FKCEs\",\
-    \"agent_enterprise_verkey\":\"vrWGArMA3toVoZrYGSAMjR2i9KjBS66bZWyWuYJJYPf\",\
-    \"enterprise_did_agency\":\"{}\",\
-    \"enterprise_did_agent\":\"PDgrtXLt8rDfCJpS8GSU9S\",\
+    \"agent_pairwise_did\":\"6nLzki22uwcg9n5VAJxhGN\",\
+    \"agent_enterprise_verkey\":\"3W9WGtRowAanh5q6giQrGncZVMvRwPedB9fJAJkAN5Gk\",\
+    \"enterprise_did_agent\":\"5bJqPo8aCWyBwLQosZkJcB\",\
     \"enterprise_name\":\"enterprise\",\
     \"wallet_name\":\"my_real_wallet\",\
     \"genesis_path\":\"/tmp/PoolForDemo.txn\",\
     \"logo_url\":\"https://s19.postimg.org/ykyz4x8jn/evernym.png\",\
     \"agency_pairwise_verkey\":\"91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE\",\
-    \"agent_pairwise_verkey\":\"Fk84VW2ZgAAziFqDNuqJacYy2B8PmKKNiEvBVXRXdhMq\"}}", "https://enym-eagency.pdev.evernym.com",
-                                issuer_did);
+    \"agent_pairwise_verkey\":\"49mui8cB48JvLnnWzRmMGzWXuXDUKaVHsQi6N4Hyof8c\"}}");
 
     let mut file = NamedTempFileOptions::new()
         .suffix(".json")

@@ -22,7 +22,6 @@ struct CreateKeyPayload{
     for_did: String,
     #[serde(rename = "forDIDVerKey")]
     for_verkey: String,
-    nonce: String,
 }
 
 #[derive(Serialize, Debug, PartialEq, PartialOrd, Clone)]
@@ -58,7 +57,6 @@ impl CreateKeyMsg{
                 msg_type: MsgType { name: "CREATE_KEY".to_string(), ver: "1.0".to_string(), } ,
                 for_did: String::new(),
                 for_verkey: String::new(),
-                nonce: String::new(),
             },
             agent_payload: String::new(),
             validate_rc: error::SUCCESS.code_num,
@@ -93,20 +91,6 @@ impl CreateKeyMsg{
         }
     }
 
-    pub fn nonce(&mut self, nonce: &str) -> &mut Self {
-        match validation::validate_nonce(nonce){
-            Ok(x) => {
-                self.payload.nonce = x;
-                self
-            },
-            Err(x) => {
-                self.validate_rc = x;
-                self
-            },
-        }
-    }
-
-
     pub fn send_secure(&mut self) -> Result<Vec<String>, u32> {
         let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
 
@@ -139,28 +123,6 @@ impl GeneralMessage for CreateKeyMsg  {
     fn set_agent_vk(&mut self, vk: String) { self.agent_vk = vk; }
     fn set_to_did(&mut self, to_did: String){ self.to_did = to_did; }
     fn set_validate_rc(&mut self, rc: u32){ self.validate_rc = rc; }
-    fn serialize_message(&mut self) -> Result<String, u32> {
-        if self.validate_rc != error::SUCCESS.code_num {
-            return Err(self.validate_rc)
-        }
-        self.agent_payload = json!(self.payload).to_string();
-        Ok(json!(self).to_string())
-    }
-
-    fn send(&mut self) -> Result<String, u32> {
-        let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
-
-        let json_msg = match self.serialize_message() {
-            Ok(x) => x,
-            Err(x) => return Err(x),
-        };
-
-        match httpclient::post(&json_msg, &url) {
-            Err(_) => Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => Ok(response),
-        }
-    }
-
     fn set_to_vk(&mut self, to_vk: String){ /* nothing to do here for CreateKeymsg */ }
 
     fn msgpack(&mut self) -> Result<Vec<u8>,u32> {
@@ -207,7 +169,6 @@ mod tests {
             for_did: String::new(),
             for_verkey: String::new(),
             msg_type: MsgType { name: "CREATE_KEY".to_string(), ver: "1.0".to_string(), } ,
-            nonce: String::new(),
         };
         assert_eq!(msg.payload, msg_payload);
     }
@@ -217,17 +178,14 @@ mod tests {
         let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
         let for_did = "11235yBzrpJQmNyZzgoTqB";
         let for_verkey = "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A";
-        let nonce = "0";
         let msg_payload = CreateKeyPayload {
             for_did: for_did.to_string(),
             for_verkey: for_verkey.to_string(),
-            nonce: nonce.to_string(),
             msg_type: MsgType { name: "CREATE_KEY".to_string(), ver: "1.0".to_string(), } ,
         };
         let msg = create_keys()
             .to(to_did)
             .for_did(for_did)
-            .nonce("0")
             .for_verkey(for_verkey).clone();
         assert_eq!(msg.payload, msg_payload);
     }
@@ -255,7 +213,6 @@ mod tests {
             .to(&agent_did)
             .for_did(&my_did)
             .for_verkey(&my_vk)
-            .nonce("0")
             .msgpack().unwrap();
         assert!(bytes.len() > 0);
 
@@ -280,7 +237,6 @@ mod tests {
         let to_did = "Fh8yBzrpJQmNyZzgoTqB";
         let for_did = "11235yBzrpJQmNyZzgoTqB";
         let for_verkey = "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A";
-        let nonce = "0";
         let msg = create_keys()
             .to(to_did)
             .for_did(for_did)
