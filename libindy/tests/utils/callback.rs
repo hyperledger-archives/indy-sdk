@@ -513,9 +513,9 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_crypto_verify_cb(closure: Box<FnMut(ErrorCode, bool) + Send>) -> (i32,
-                                                                                           Option<extern fn(command_handle: i32,
-                                                                                                            err: ErrorCode,
-                                                                                                            valid: bool)>) {
+                                                                                        Option<extern fn(command_handle: i32,
+                                                                                                         err: ErrorCode,
+                                                                                                         valid: bool)>) {
         lazy_static! {
             static ref CRYPTO_VERIFY_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, bool) + Send > >> = Default::default();
         }
@@ -1300,6 +1300,28 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(key_for_did_callback))
+    }
+
+    pub fn closure_to_key_for_local_did_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                              Option<extern fn(command_handle: i32,
+                                                                                                               err: ErrorCode,
+                                                                                                               verkey: *const c_char)>) {
+        lazy_static! {
+            static ref KEY_FOR_LOCAL_DID_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn key_for_local_did_callback(command_handle: i32, err: ErrorCode, verkey: *const c_char) {
+            let mut callbacks = KEY_FOR_LOCAL_DID_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let verkey = unsafe { CStr::from_ptr(verkey).to_str().unwrap().to_string() };
+            cb(err, verkey)
+        }
+
+        let mut callbacks = KEY_FOR_LOCAL_DID_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(key_for_local_did_callback))
     }
 
     pub fn closure_to_set_endpoint_for_did_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,

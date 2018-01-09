@@ -124,6 +124,36 @@ extern "C" {
                                                                   indy_error_t  err)
                                             );
 
+    /// Returns ver key (key id) for the given DID.
+    ///
+    /// "indy_key_for_did" call follow the idea that we resolve information about their DID from
+    /// the ledger with cache in the local wallet. The "indy_open_wallet" call has freshness parameter
+    /// that is used for checking the freshness of cached pool value.
+    ///
+    /// Note if you don't want to resolve their DID info from the ledger you can use
+    /// "indy_key_for_local_did" call instead that will look only to local wallet and skip
+    /// freshness checking
+    ///
+    /// Note that indy_create_and_store_my_did makes similar wallet record as indy_create_key.
+    /// As result we can use returned ver key in all generic crypto and messaging functions.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// did - The DID to resolve key.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - err: Error code.
+    /// - key - The DIDs ver key (key id).
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
     extern indy_error_t indy_key_for_did(indy_handle_t     command_handle,
                                          indy_handle_t     pool_handle,
                                          indy_handle_t     wallet_handle,
@@ -133,6 +163,43 @@ extern "C" {
                                                                  indy_error_t      err,
                                                                  const char *const key)
                                         );
+
+    //// Returns ver key (key id) for the given DID.
+    ///
+    /// "indy_key_for_local_did" call looks data stored in the local wallet only and skips freshness checking.
+    ///
+    /// Note if you want to get fresh data from the ledger you can use "indy_key_for_did" call
+    /// instead.
+    ///
+    /// Note that "indy_create_and_store_my_did" makes similar wallet record as "indy_create_key".
+    /// As result we can use returned ver key in all generic crypto and messaging functions.
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: Wallet handle (created by open_wallet).
+    /// did - The DID to resolve key.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Error Code
+    /// cb:
+    /// - xcommand_handle: Command handle to map callback to caller context.
+    /// - err: Error code.
+    /// - key - The DIDs ver key (key id).
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    /// Crypto*
+    extern indy_error_t indy_key_for_local_did(indy_handle_t     command_handle,
+                                              indy_handle_t     pool_handle,
+                                              indy_handle_t     wallet_handle,
+                                              const char *const did,
+
+                                              void              (*cb)(indy_handle_t     command_handle,
+                                                                      indy_error_t      err,
+                                                                     const char *const key)
+                                             );
 
     extern indy_error_t indy_set_endpoint_for_did(indy_handle_t     command_handle,
                                                   indy_handle_t     wallet_handle,

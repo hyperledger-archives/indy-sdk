@@ -37,7 +37,7 @@ namespace Hyperledger.Indy.Test.DemoTests
             var theirVerkey = createTheirDidResult.VerKey;
 
             // 6. Store Their DID
-            var identityJson = string.Format("{{\"did\":\"{0}\", \"verkey\":\"{1}\"}}", theirDid, theirVerkey);
+            var identityJson = string.Format(IDENTITY_JSON_TEMPLATE, theirDid, theirVerkey);
             await Signus.StoreTheirDidAsync(myWallet, identityJson);
 
             // 7. Their sign message

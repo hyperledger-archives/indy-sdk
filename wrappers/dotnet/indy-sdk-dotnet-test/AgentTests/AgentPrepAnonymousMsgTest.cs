@@ -37,7 +37,7 @@ namespace Hyperledger.Indy.Test.AgentTests
         [TestMethod]
         public async Task TestPrepAnonymousMsgWorks()
         {
-            var encryptedMsg = await Agent.PrepAnonymousMsgAsync(VERKEY_FOR_MY1_SEED, MESSAGE);
+            var encryptedMsg = await Agent.PrepAnonymousMsgAsync(VERKEY_MY1, MESSAGE);
             await CheckMessage(encryptedMsg);
         }
 
