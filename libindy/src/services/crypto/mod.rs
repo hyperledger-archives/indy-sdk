@@ -317,6 +317,7 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
+        let vk = if vk.starts_with("~") { &vk[1..] } else { vk };
         let vk = Base58::decode(vk)?;
 
         crypto_type.validate_key(&vk)?;

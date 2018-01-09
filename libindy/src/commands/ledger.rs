@@ -314,6 +314,12 @@ impl LedgerCommandExecutor {
         info!("build_nym_request >>> submitter_did: {:?}, target_did: {:?}, verkey: {:?}, alias: {:?}, role: {:?}",
               submitter_did, target_did, verkey, alias, role);
 
+        self.crypto_service.validate_did(submitter_did)?;
+        self.crypto_service.validate_did(target_did)?;
+        if let Some(vk) = verkey {
+            self.crypto_service.validate_key(vk)?;
+        }
+
         let res = self.ledger_service.build_nym_request(submitter_did,
                                                         target_did,
                                                         verkey,
@@ -334,6 +340,9 @@ impl LedgerCommandExecutor {
         info!("build_attrib_request >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
               submitter_did, target_did, hash, raw, enc);
 
+        self.crypto_service.validate_did(submitter_did)?;
+        self.crypto_service.validate_did(target_did)?;
+
         let res = self.ledger_service.build_attrib_request(submitter_did,
                                                            target_did,
                                                            hash,
@@ -351,6 +360,9 @@ impl LedgerCommandExecutor {
                                 data: &str) -> Result<String, IndyError> {
         info!("build_get_attrib_request >>> submitter_did: {:?}, target_did: {:?}, data: {:?}", submitter_did, target_did, data);
 
+        self.crypto_service.validate_did(submitter_did)?;
+        self.crypto_service.validate_did(target_did)?;
+
         let res = self.ledger_service.build_get_attrib_request(submitter_did,
                                                                target_did,
                                                                data)?;
@@ -365,6 +377,9 @@ impl LedgerCommandExecutor {
                              target_did: &str) -> Result<String, IndyError> {
         info!("build_get_nym_request >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
 
+        self.crypto_service.validate_did(submitter_did)?;
+        self.crypto_service.validate_did(target_did)?;
+
         let res = self.ledger_service.build_get_nym_request(submitter_did,
                                                             target_did)?;
 
@@ -377,6 +392,8 @@ impl LedgerCommandExecutor {
                             submitter_did: &str,
                             data: &str) -> Result<String, IndyError> {
         info!("build_schema_request >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
+
+        self.crypto_service.validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_schema_request(submitter_did,
                                                            data)?;
@@ -391,6 +408,9 @@ impl LedgerCommandExecutor {
                                 dest: &str,
                                 data: &str) -> Result<String, IndyError> {
         info!("build_get_schema_request >>> submitter_did: {:?}, dest: {:?}", submitter_did, dest);
+
+        self.crypto_service.validate_did(submitter_did)?;
+        self.crypto_service.validate_did(dest)?;
 
         let res = self.ledger_service.build_get_schema_request(submitter_did,
                                                                dest,
@@ -408,6 +428,8 @@ impl LedgerCommandExecutor {
                                data: &str) -> Result<String, IndyError> {
         info!("build_claim_def_request >>> submitter_did: {:?}, xref: {:?}, signature_type: {:?}, data: {:?}",
               submitter_did, xref, signature_type, data);
+
+        self.crypto_service.validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_claim_def_request(submitter_did,
                                                               xref,
@@ -427,6 +449,9 @@ impl LedgerCommandExecutor {
         info!("build_get_claim_def_request >>> submitter_did: {:?}, xref: {:?}, signature_type: {:?}, origin: {:?}",
               submitter_did, xref, signature_type, origin);
 
+        self.crypto_service.validate_did(submitter_did)?;
+        self.crypto_service.validate_did(origin)?;
+
         let res = self.ledger_service.build_get_claim_def_request(submitter_did,
                                                                   xref,
                                                                   signature_type,
@@ -444,6 +469,9 @@ impl LedgerCommandExecutor {
         info!("build_node_request >>> submitter_did: {:?}, target_did: {:?}, data: {:?}",
               submitter_did, target_did, data);
 
+        self.crypto_service.validate_did(submitter_did)?;
+        self.crypto_service.validate_did(target_did)?;
+
         let res = self.ledger_service.build_node_request(submitter_did,
                                                          target_did,
                                                          data)?;
@@ -459,6 +487,8 @@ impl LedgerCommandExecutor {
         info!("build_get_txn_request >>> submitter_did: {:?}, data: {:?}",
               submitter_did, data);
 
+        self.crypto_service.validate_did(submitter_did)?;
+
         let res = self.ledger_service.build_get_txn_request(submitter_did,
                                                             data)?;
 
@@ -473,6 +503,8 @@ impl LedgerCommandExecutor {
                                  force: bool) -> Result<String, IndyError> {
         info!("build_pool_config_request >>> submitter_did: {:?}, writes: {:?}, force: {:?}",
               submitter_did, writes, force);
+
+        self.crypto_service.validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_pool_config(submitter_did, writes, force)?;
 
@@ -495,6 +527,8 @@ impl LedgerCommandExecutor {
         info!("build_pool_upgrade_request >>> submitter_did: {:?}, name: {:?}, version: {:?}, action: {:?}, sha256: {:?},\
          timeout: {:?}, schedule: {:?}, justification: {:?}, reinstall: {:?}, force: {:?}",
               submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force);
+
+        self.crypto_service.validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_pool_upgrade(submitter_did, name, version, action, sha256,
                                                          timeout, schedule, justification, reinstall, force)?;

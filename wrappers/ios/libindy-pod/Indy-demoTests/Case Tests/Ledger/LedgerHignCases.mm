@@ -655,7 +655,7 @@
     
     NSString *identifier = @"Th7MpTaRZVRYnPiabds81Y";
     NSString *dest = @"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
-    NSString *verkey = @"Anfh2rjAcxkE249DcdsaQl";
+    NSString *verkey = @"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL";
     NSString *role = @"STEWARD";
     NSString *alias = @"some_alias";
     NSError *ret;

@@ -39,8 +39,6 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 	@Test
 	public void testBuildNymRequestWorksForOnlyOptionalFields() throws Exception {
-		String verkey = "Anfh2rjAcxkE249DcdsaQl";
-
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{" +
 				"\"alias\":\"%s\"," +
@@ -48,9 +46,9 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 				"\"role\":\"2\"," +
 				"\"type\":\"1\"," +
 				"\"verkey\":\"%s\"" +
-				"}", DID, alias, dest, verkey);
+				"}", DID, alias, dest, VERKEY_TRUSTEE);
 
-		String nymRequest = Ledger.buildNymRequest(DID, dest, verkey, alias, role).get();
+		String nymRequest = Ledger.buildNymRequest(DID, dest, VERKEY_TRUSTEE, alias, role).get();
 		assertTrue(nymRequest.contains(expectedResult));
 	}
 

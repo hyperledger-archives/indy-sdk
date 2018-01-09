@@ -283,7 +283,6 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_nym_requests_works_with_option_fields() {
-            let verkey = "Anfh2rjAcxkE249DcdsaQl";
             let role = "STEWARD";
             let alias = "some_alias";
 
@@ -296,9 +295,9 @@ mod high_cases {
                     \"type\":\"1\",\
                     \"verkey\":\"{}\"\
                 }},\
-                \"protocolVersion\":1", IDENTIFIER, alias, DEST, verkey);
+                \"protocolVersion\":1", IDENTIFIER, alias, DEST, VERKEY_TRUSTEE);
 
-            let nym_request = LedgerUtils::build_nym_request(&IDENTIFIER, &DEST, Some(verkey), Some(alias), Some(role)).unwrap();
+            let nym_request = LedgerUtils::build_nym_request(&IDENTIFIER, &DEST, Some(VERKEY_TRUSTEE), Some(alias), Some(role)).unwrap();
             assert!(nym_request.contains(&expected_result));
         }
 
