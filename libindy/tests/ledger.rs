@@ -642,12 +642,10 @@ mod high_cases {
 
         #[test]
         fn indy_build_get_claim_def_request_works() {
-            let origin = "origin";
-
             let expected_result = format!(r#""identifier":"{}","operation":{{"type":"108","ref":{},"signature_type":"{}","origin":"{}"}},"protocolVersion":1"#,
-                                          IDENTIFIER, SEQ_NO, SIGNATURE_TYPE, origin);
+                                          IDENTIFIER, SEQ_NO, SIGNATURE_TYPE, IDENTIFIER);
 
-            let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(IDENTIFIER, SEQ_NO, SIGNATURE_TYPE, origin).unwrap();
+            let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(IDENTIFIER, SEQ_NO, SIGNATURE_TYPE, IDENTIFIER).unwrap();
             assert!(get_claim_def_request.contains(&expected_result));
         }
 

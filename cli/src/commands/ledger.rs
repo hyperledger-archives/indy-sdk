@@ -738,7 +738,7 @@ fn handle_transaction_response(mut response: Response<serde_json::Value>, title:
 
 pub fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_name: &str, wallet_name: &str) -> Result<String, ()> {
     match err {
-        ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid format of command params. Please check format of posted json's, keys or did's and etc...")),
+        ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
         ErrorCode::WalletNotFoundError => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did)),
         ErrorCode::WalletIncompatiblePoolError => Err(println_err!("Wallet \"{}\" is incompatible with pool \"{}\".", wallet_name, pool_name)),
         err => Err(println_err!("Indy SDK error occurred {:?}", err))
@@ -747,7 +747,7 @@ pub fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_name:
 
 fn handle_get_command_error(err: ErrorCode) -> Result<String, ()> {
     match err {
-        ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid format of command params. Please check format of posted json's, keys or did's and etc...")),
+        ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
         err => Err(println_err!("Indy SDK error occurred {:?}", err)),
     }
 }
