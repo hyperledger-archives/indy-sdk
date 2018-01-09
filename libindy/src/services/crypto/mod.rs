@@ -87,7 +87,10 @@ impl CryptoService {
         let seed = self.convert_seed(my_did_info.seed.as_ref().map(String::as_ref))?;
         let (vk, sk) = crypto_type.create_key(seed.as_ref().map(Vec::as_slice))?;
         let did = match my_did_info.did {
-            Some(ref did) => Base58::decode(did)?,
+            Some(ref did) => {
+                self.validate_did(did)?;
+                Base58::decode(did)?
+            }
             _ if my_did_info.cid == Some(true) => vk.clone(),
             _ => vk[0..16].to_vec()
         };

@@ -45,7 +45,7 @@ pub mod nym_command {
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let verkey = get_opt_str_param("verkey", params).map_err(error_err!())?;
-        let role = get_opt_str_param("role", params).map_err(error_err!())?;
+        let role = get_opt_empty_str_param("role", params).map_err(error_err!())?;
 
         let response = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
@@ -738,7 +738,7 @@ fn handle_transaction_response(mut response: Response<serde_json::Value>, title:
 
 pub fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_name: &str, wallet_name: &str) -> Result<String, ()> {
     match err {
-        ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
+        ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid format of command params. Please check format of posted json's, keys or did's and etc...")),
         ErrorCode::WalletNotFoundError => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did)),
         ErrorCode::WalletIncompatiblePoolError => Err(println_err!("Wallet \"{}\" is incompatible with pool \"{}\".", wallet_name, pool_name)),
         err => Err(println_err!("Indy SDK error occurred {:?}", err))
@@ -747,13 +747,13 @@ pub fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_name:
 
 fn handle_get_command_error(err: ErrorCode) -> Result<String, ()> {
     match err {
-        ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
+        ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid format of command params. Please check format of posted json's, keys or did's and etc...")),
         err => Err(println_err!("Indy SDK error occurred {:?}", err)),
     }
 }
 
 fn extract_error_message(error: &str) -> String {
-    let re = Regex::new(r"'(.*)'").unwrap();
+    let re = Regex::new(r#"[',"](.*)[',"]"#).unwrap();
     match re.captures(error) {
         Some(message) => message[1].to_string(),
         None => error.to_string()
