@@ -76,7 +76,7 @@ def _indy_loop_callback(command_handle: int, err, *args):
         else:
             res = args
 
-        logger.warning("_indy_loop_callback: Function returned %s", res)
+        logger.debug("_indy_loop_callback: Function returned %s", res)
         future.set_result(res)
 
     logger.debug("_indy_loop_callback <<<")

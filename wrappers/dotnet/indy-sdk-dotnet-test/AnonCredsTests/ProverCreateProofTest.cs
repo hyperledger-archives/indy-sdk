@@ -18,22 +18,22 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                     "                                \"name\":\"proof_req_1\",\n" +
                     "                                \"version\":\"0.1\",\n" +
-                    "                                \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},\n" +
-                    "                                \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+                    "                                \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+                    "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                     "                              }";
 
             var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);                
 
             var claims = JObject.Parse(claimsJson);
 
-            var claimForAttribute = claims["attrs"]["attr1_uuid"][0];
+            var claimForAttribute = claims["attrs"]["attr1_referent"][0];
 
-            var claimUuid = claimForAttribute.Value<string>("claim_uuid");
+            var claimUuid = claimForAttribute.Value<string>("referent");
 
             var requestedClaimsJson = string.Format("{{\n" +
                     "                                          \"self_attested_attributes\":{{}},\n" +
-                    "                                          \"requested_attrs\":{{\"attr1_uuid\":[\"{0}\", true]}},\n" +
-                    "                                          \"requested_predicates\":{{\"predicate1_uuid\":\"{1}\"}}\n" +
+                    "                                          \"requested_attrs\":{{\"attr1_referent\":[\"{0}\", true]}},\n" +
+                    "                                          \"requested_predicates\":{{\"predicate1_referent\":\"{1}\"}}\n" +
                     "                                        }}", claimUuid, claimUuid);
 
             var schemasJson = string.Format("{{\"{0}\":{1}}}", claimUuid, schema);
@@ -55,17 +55,17 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
             var claims = JArray.Parse(claimsJson);
 
-            var claimUuid = claims[0].Value<string>("claim_uuid");
+            var claimUuid = claims[0].Value<string>("referent");
 
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                     "               \"name\":\"proof_req_1\",\n" +
                     "               \"version\":\"0.1\",\n" +
-                    "               \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"some_attr\"}},\n" +
+                    "               \"requested_attrs\":{\"attr1_referent\":{\"name\":\"some_attr\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
                     "               \"requested_predicates\":{}\n" +
                     "              }";
 
             var requestedClaimsJson = string.Format("{{\"self_attested_attributes\":{{}},\n" +
-                    "                                    \"requested_attrs\":{{\"attr1_uuid\":[\"{0}\", true]}},\n" +
+                    "                                    \"requested_attrs\":{{\"attr1_referent\":[\"{0}\", true]}},\n" +
                     "                                    \"requested_predicates\":{{}}\n" +
                     "                                   }}", claimUuid);
 
@@ -87,22 +87,22 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "                                \"name\":\"proof_req_1\",\n" +
                 "                                \"version\":\"0.1\",\n" +
-                "                                \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},\n" +
-                "                                \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+                "                                \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+                "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                 "                              }";
 
             var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
-            var claimForAttribute = claims["attrs"]["attr1_uuid"][0];
+            var claimForAttribute = claims["attrs"]["attr1_referent"][0];
 
-            var claimUuid = claimForAttribute.Value<string>("claim_uuid");
+            var claimUuid = claimForAttribute.Value<string>("referent");
 
             var requestedClaimsJson = string.Format("{{\n" +
                     "                                          \"self_attested_attributes\":{{}},\n" +
-                    "                                          \"requested_attrs\":{{\"attr1_uuid\":[\"{0}\", true]}},\n" +
-                    "                                          \"requested_predicates\":{{\"predicate1_uuid\":\"{1}\"}}\n" +
+                    "                                          \"requested_attrs\":{{\"attr1_referent\":[\"{0}\", true]}},\n" +
+                    "                                          \"requested_predicates\":{{\"predicate1_referent\":\"{1}\"}}\n" +
                     "                                        }}", claimUuid, claimUuid);
 
             var schemasJson = string.Format("{{\"{0}\":{1}}}", claimUuid, schema);
@@ -123,22 +123,22 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "                                \"name\":\"proof_req_1\",\n" +
                 "                                \"version\":\"0.1\",\n" +
-                "                                \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},\n" +
-                "                                \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+                "                                \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+                "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                 "                              }";
 
             var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
-            var claimForAttribute = claims["attrs"]["attr1_uuid"][0];
+            var claimForAttribute = claims["attrs"]["attr1_referent"][0];
 
-            var claimUuid = claimForAttribute.Value<string>("claim_uuid");
+            var claimUuid = claimForAttribute.Value<string>("referent");
 
             var requestedClaimsJson = string.Format("{{\n" +
                     "                                          \"self_attested_attributes\":{{}},\n" +
-                    "                                          \"requested_attrs\":{{\"attr1_uuid\":[\"{0}\", true]}},\n" +
-                    "                                          \"requested_predicates\":{{\"predicate1_uuid\":\"{1}\"}}\n" +
+                    "                                          \"requested_attrs\":{{\"attr1_referent\":[\"{0}\", true]}},\n" +
+                    "                                          \"requested_predicates\":{{\"predicate1_referent\":\"{1}\"}}\n" +
                     "                                        }}", claimUuid, claimUuid);
 
             var schemasJson = "{}";
@@ -159,17 +159,17 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var proofRequest = "{\"nonce\":\"123432421212\",\n" +
                 "                                \"name\":\"proof_req_1\",\n" +
                 "                                \"version\":\"0.1\",\n" +
-                "                                \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},\n" +
-                "                                \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+                "                                \"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\",\"restrictions\":[{\"schema_seq_no\":1}]}},\n" +
+                "                                \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                 "                              }";
 
             var claimsJson = await AnonCreds.ProverGetClaimsForProofReqAsync(commonWallet, proofRequest);
 
             var claims = JObject.Parse(claimsJson);
 
-            var claimForAttribute = claims["attrs"]["attr1_uuid"][0];
+            var claimForAttribute = claims["attrs"]["attr1_referent"][0];
 
-            var claimUuid = claimForAttribute.Value<string>("claim_uuid");
+            var claimUuid = claimForAttribute.Value<string>("referent");
 
             String requestedClaimsJson = "{\"self_attested_attributes\":{},\n" +
                 "                      \"requested_predicates\":{}\n" +

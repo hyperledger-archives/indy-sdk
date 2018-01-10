@@ -9,7 +9,7 @@ use utils::crypto::hash::Hash;
 
 pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
     match v {
-        Value::Bool(value) => Ok(value.to_string()),
+        Value::Bool(value) => Ok(if value {"True".to_string()} else { "False".to_string() }),
         Value::Number(value) => Ok(value.to_string()),
         Value::String(value) => Ok(value),
         Value::Array(array) => {

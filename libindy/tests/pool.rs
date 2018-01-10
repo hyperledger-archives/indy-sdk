@@ -8,7 +8,6 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
-#[macro_use]
 extern crate log;
 
 #[macro_use]
@@ -21,7 +20,6 @@ use utils::environment::EnvironmentUtils;
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 use utils::constants::*;
-
 
 mod high_cases {
     use super::*;
@@ -315,6 +313,17 @@ mod medium_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn create_pool_ledger_config_works_for_empty_lines_in_genesis_txn_file() {
+            TestUtils::cleanup_storage();
+
+            let txn_file_path = PoolUtils::create_genesis_txn_file_for_empty_lines(POOL, None);
+            let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
+            PoolUtils::create_pool_ledger_config("pool_create", Some(pool_config.as_str())).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod open {
@@ -324,10 +333,24 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_invalid_name() {
             TestUtils::cleanup_storage();
-            let pool_name = "open_pool_ledger_works_for_invalid_name";
 
-            let res = PoolUtils::open_pool_ledger(pool_name, None);
+            let res = PoolUtils::open_pool_ledger(POOL, None);
             assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTerminated);//TODO change it on IOError
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn open_pool_ledger_works_after_error() {
+            TestUtils::cleanup_storage();
+
+            let res = PoolUtils::open_pool_ledger(POOL, None);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTerminated);//TODO change it on IOError
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+
+            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }

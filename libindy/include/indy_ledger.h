@@ -379,6 +379,69 @@ extern "C" {
                                                                         indy_error_t  err,
                                                                         const char*   request_json)
                                                    );
+
+    /// Builds a POOL_CONFIG request.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: Id of Identity stored in secured Wallet.
+    /// writes:
+    /// force:
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+
+    extern indy_error_t indy_build_pool_config_request(indy_handle_t command_handle,
+                                                       const char *  submitter_did,
+                                                       indy_bool_t    writes,
+                                                       indy_bool_t    force,
+
+                                                       void           (*cb)(indy_handle_t xcommand_handle,
+                                                                            indy_error_t  err,
+                                                                            const char*   request_json)
+                                                       );
+
+    /// Builds a POOL_UPGRADE request.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// submitter_did: Id of Identity stored in secured Wallet.
+    /// name:
+    /// action: Either start or cancel
+    /// sha256:
+    /// timeout:
+    /// schedule:
+    /// justification:
+    /// reinstall:
+    /// force:
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+
+    extern indy_error_t indy_build_pool_upgrade_request(indy_handle_t command_handle,
+                                                        const char *  submitter_did,
+                                                        const char *  name,
+                                                        const char *  version,
+                                                        const char *  action,
+                                                        const char *  sha256,
+                                                        indy_i32_t    timeout,
+                                                        const char *  schedule,
+                                                        const char *  justification,
+                                                        indy_bool_t   reinstall,
+                                                        indy_bool_t   force,
+
+                                                        void           (*cb)(indy_handle_t xcommand_handle,
+                                                                             indy_error_t  err,
+                                                                             const char*   request_json)
+                                                        );
     
 #ifdef __cplusplus
 }
