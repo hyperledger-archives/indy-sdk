@@ -9,7 +9,7 @@ use errors::common::CommonError;
 use api::ErrorCode;
 use errors::ToErrorCode;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum PoolError {
     NotCreated(String),
     InvalidHandle(String),

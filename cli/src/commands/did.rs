@@ -11,7 +11,7 @@ use std::fs::File;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use commands::ledger::handle_send_command_error;
+use commands::ledger::handle_transaction_error;
 
 pub mod group {
     use super::*;
@@ -214,7 +214,7 @@ pub mod rotate_key_command {
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request));
 
         if let Err(err) = nym_res {
-            handle_send_command_error(err, &did, &pool_name, &wallet_name).map(|_| ())?
+            handle_transaction_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))?;
         }
 
         let res = match Did::replace_keys_apply(wallet_handle, &did) {
