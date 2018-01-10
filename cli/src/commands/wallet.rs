@@ -117,10 +117,15 @@ pub mod open_command {
                         set_opened_wallet(ctx, Some((handle, name.to_owned())));
                         Ok(println_succ!("Wallet \"{}\" has been opened", name))
                     }
-                    Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid wallet config")),
-                    Err(ErrorCode::WalletAlreadyOpenedError) => Err(println_err!("Wallet \"{}\" already opened", name)),
-                    Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
-                    Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                    Err(err) => {
+                        set_opened_wallet(ctx, None);
+                        match err {
+                            ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid wallet config")),
+                            ErrorCode::WalletAlreadyOpenedError => Err(println_err!("Wallet \"{}\" already opened", name)),
+                            ErrorCode::CommonIOError => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
+                            err => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                        }
+                    }
                 }
             });
 
@@ -162,9 +167,9 @@ pub mod list_command {
 
                 if wallets.len() > 0 {
                     print_list_table(&wallets,
-                                &vec![("name", "Name"),
-                                      ("associated_pool_name", "Associated pool name"),
-                                      ("type", "Type")]);
+                                     &vec![("name", "Name"),
+                                           ("associated_pool_name", "Associated pool name"),
+                                           ("type", "Type")]);
                 } else {
                     println_succ!("There are no wallets");
                 }
@@ -205,6 +210,7 @@ pub mod close_command {
                 match Wallet::close_wallet(handle) {
                     Ok(()) => {
                         set_opened_wallet(ctx, None);
+                        set_active_did(ctx, None);
                         Ok(println_succ!("Wallet \"{}\" has been closed", name))
                     }
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
