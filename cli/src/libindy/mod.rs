@@ -121,9 +121,18 @@ pub enum ErrorCode
 
     AnoncredsClaimRevoked = 406,
 
+    // Attempt to create claim definition with duplicated did schema pair
+    AnoncredsClaimDefAlreadyExistsError = 407,
+
+    // Attempt to create revocation registry with duplicated did schema pair
+    AnoncredsRevocRegAlreadyExistsError = 408,
+
     // Signus errors
     // Unknown format of DID entity keys
-    UnknownCryptoTypeError = 500
+    UnknownCryptoTypeError = 500,
+
+    // Attempt to create duplicate did
+    DidAlreadyExistsError = 600
 }
 
 impl ErrorCode {
@@ -168,7 +177,10 @@ impl ErrorCode {
             AnoncredsMasterSecretDuplicateNameError => "Attempt to generate master secret with duplicated name",
             AnoncredsProofRejected => "Proof rejected",
             AnoncredsClaimRevoked => "Claim revoked",
+            AnoncredsClaimDefAlreadyExistsError => "Claim definition already exists",
+            AnoncredsRevocRegAlreadyExistsError => "Revocation registry already exists",
             UnknownCryptoTypeError => "Unknown format of DID entity keys",
+            DidAlreadyExistsError => "Did already exists",
         }
     }
 }
