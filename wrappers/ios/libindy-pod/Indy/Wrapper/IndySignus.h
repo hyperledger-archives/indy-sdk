@@ -101,6 +101,10 @@
      walletHandle:(IndyHandle)walletHandle
        completion:(void (^)(NSError *error, NSString *key))completion;
 
++ (void)keyForLocalDid:(NSString *)did
+     walletHandle:(IndyHandle)walletHandle
+       completion:(void (^)(NSError *error, NSString *key))completion;
+
 + (void)setEndpointAddress:(NSString *)address transportKey:(NSString *)transportKey forDid:(NSString *)did walletHandle:(IndyHandle)walletHandle completion:(void (^)(NSError *error))completion;
 
 + (void)getEndpointForDid:(NSString *)did

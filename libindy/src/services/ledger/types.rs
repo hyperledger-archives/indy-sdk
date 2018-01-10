@@ -16,26 +16,16 @@ use services::ledger::constants::{
     GET_TXN
 };
 
-#[cfg(not(test))]
 #[derive(Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Request<T: serde::Serialize> {
     pub req_id: u64,
     pub identifier: String,
     pub operation: T,
+    #[cfg(not(test))]
     #[serde(skip_serializing)]
     pub protocol_version: u64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub signature: Option<String>
-}
-
-#[cfg(test)]
-#[derive(Serialize, PartialEq, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct Request<T: serde::Serialize> {
-    pub req_id: u64,
-    pub identifier: String,
-    pub operation: T,
+    #[cfg(test)]
     pub protocol_version: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub signature: Option<String>

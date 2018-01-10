@@ -24,8 +24,8 @@ namespace Hyperledger.Indy.Test.SignusTests
             var result = await Signus.CreateAndStoreMyDidAsync(wallet, MY1_IDENTITY_JSON);
             Assert.IsNotNull(result);
 
-            Assert.AreEqual(DID_FOR_MY1_SEED, result.Did);
-            Assert.AreEqual(VERKEY_FOR_MY1_SEED, result.VerKey);
+            Assert.AreEqual(DID_MY1, result.Did);
+            Assert.AreEqual(VERKEY_MY1, result.VerKey);
         }
 
         [TestMethod]
@@ -36,8 +36,8 @@ namespace Hyperledger.Indy.Test.SignusTests
             var result = await Signus.CreateAndStoreMyDidAsync(wallet, json);
             Assert.IsNotNull(result);
 
-            Assert.AreEqual(VERKEY_FOR_MY1_SEED, result.Did);
-            Assert.AreEqual(VERKEY_FOR_MY1_SEED, result.VerKey);
+            Assert.AreEqual(VERKEY_MY1, result.Did);
+            Assert.AreEqual(VERKEY_MY1, result.VerKey);
         }
 
         [TestMethod]
@@ -59,8 +59,8 @@ namespace Hyperledger.Indy.Test.SignusTests
             var result = await Signus.CreateAndStoreMyDidAsync(wallet, json);
 
 
-            Assert.AreEqual(DID_FOR_MY1_SEED, result.Did);
-            Assert.AreEqual(VERKEY_FOR_MY1_SEED, result.VerKey); 
+            Assert.AreEqual(DID_MY1, result.Did);
+            Assert.AreEqual(VERKEY_MY1, result.VerKey); 
         }
 
         [TestMethod]
@@ -92,7 +92,7 @@ namespace Hyperledger.Indy.Test.SignusTests
             Assert.IsNotNull(result);
 
             Assert.AreEqual(DID1, result.Did);
-            Assert.AreEqual(VERKEY_FOR_MY1_SEED, result.VerKey);
+            Assert.AreEqual(VERKEY_MY1, result.VerKey);
         }
 
     }
