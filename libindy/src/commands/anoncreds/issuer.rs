@@ -140,10 +140,6 @@ impl IssuerCommandExecutor {
 
         let id = get_composite_id(issuer_did, &schema_key);
 
-        if self.wallet_service.get(wallet_handle, &format!("revocation_registry::{}", id)).is_ok() {
-            return Err(IndyError::AnoncredsError(AnoncredsError::RevocRegAlreadyExists(format!("Revocation registry for key: {:?} already exists", id))));
-        };
-
         let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", &id))?;
         let claim_def: ClaimDefinition = ClaimDefinition::from_json(&claim_def_json)
             .map_err(|err| CommonError::InvalidState(format!("Cannon deserialize claim definition: {:?}", err)))?;
@@ -157,6 +153,7 @@ impl IssuerCommandExecutor {
         let revocation_registry_private_json = revocation_registry_private.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannon serialize revocation registry private: {:?}", err)))?;
 
+        // TODO: store revocation registry using unique identifier(https://jira.hyperledger.org/browse/IS-514).
         self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", id), &revocation_registry_json)?;
         self.wallet_service.set(wallet_handle, &format!("revocation_registry_private::{}", id), &revocation_registry_private_json)?;
 

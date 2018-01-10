@@ -112,9 +112,6 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     // Attempt to create claim definition with duplicated did schema pair
     AnoncredsClaimDefAlreadyExistsError = 407,
 
-    // Attempt to create revocation registry with duplicated did schema pair
-    AnoncredsRevocRegAlreadyExistsError = 408,
-    
     // Crypto errors
     // Unknown format of DID entity keys
     UnknownCryptoTypeError = 500,

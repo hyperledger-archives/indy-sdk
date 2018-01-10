@@ -206,11 +206,6 @@ public enum ErrorCode {
 	 */
 	AnoncredsClaimDefAlreadyExistsError(407),
 
-	/**
-	 * Attempt to create revocation registry with duplicated did schema pair.
-	 */
-	AnoncredsRevocRegAlreadyExistsError(408),
-
 	// Crypto errors
 	
 	/**

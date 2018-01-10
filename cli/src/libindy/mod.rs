@@ -124,9 +124,6 @@ pub enum ErrorCode
     // Attempt to create claim definition with duplicated did schema pair
     AnoncredsClaimDefAlreadyExistsError = 407,
 
-    // Attempt to create revocation registry with duplicated did schema pair
-    AnoncredsRevocRegAlreadyExistsError = 408,
-
     // Signus errors
     // Unknown format of DID entity keys
     UnknownCryptoTypeError = 500,
@@ -178,7 +175,6 @@ impl ErrorCode {
             AnoncredsProofRejected => "Proof rejected",
             AnoncredsClaimRevoked => "Claim revoked",
             AnoncredsClaimDefAlreadyExistsError => "Claim definition already exists",
-            AnoncredsRevocRegAlreadyExistsError => "Revocation registry already exists",
             UnknownCryptoTypeError => "Unknown format of DID entity keys",
             DidAlreadyExistsError => "Did already exists",
         }
