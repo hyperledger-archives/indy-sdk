@@ -61,6 +61,8 @@ export interface IFFIEntryPoint {
   cxs_proof_send_request: (commandId: number, proofHandle: string, connectionHandle: string, cb: any) => number,
   cxs_proof_serialize: (commandId: number, handle: string, cb: any) => number,
   cxs_proof_update_state: (commandId: number, handle: string, cb: any) => number,
+  // mock
+  cxs_set_next_agency_response: (messageIndex: number) => void,
 
   free: any
 }
@@ -98,6 +100,8 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_CALLBACK_PTR]],
   cxs_proof_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   cxs_proof_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
+  // mock
+  cxs_set_next_agency_response: [FFI_VOID, [FFI_UNSIGNED_INT]],
 
   free: [FFI_VOID, ['void*']]
 }
