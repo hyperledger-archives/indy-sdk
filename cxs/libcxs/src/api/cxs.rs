@@ -185,6 +185,7 @@ pub extern fn cxs_init (command_handle: u32,
             },
             Ok(_) => {
                 info!("Init Wallet Successful");
+                cb(command_handle, error::SUCCESS.code_num);
             },
         }
     });
