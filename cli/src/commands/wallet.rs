@@ -101,10 +101,7 @@ pub mod open_command {
             .and_then(|_| {
                 if let Some((handle, name)) = get_opened_wallet(ctx) {
                     match Wallet::close_wallet(handle) {
-                        Ok(()) => {
-                            set_opened_wallet(ctx, Some((handle, name.clone())));
-                            Ok(println_succ!("Wallet \"{}\" has been closed", name))
-                        }
+                        Ok(()) => Ok(println_succ!("Wallet \"{}\" has been closed", name)),
                         Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                     }
                 } else {
