@@ -5,8 +5,7 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_build_schema_requests_works_for_correct_data_json():
-    identifier = "identifier"
+async def test_build_schema_requests_works_for_correct_data_json(did_trustee):
     data = '{"name":"name", "version":"1.0", "attr_names":["name","male"]}'
 
     expected_response = {
@@ -16,5 +15,5 @@ async def test_build_schema_requests_works_for_correct_data_json():
         }
     }
 
-    response = json.loads(await ledger.build_schema_request(identifier, data))
+    response = json.loads(await ledger.build_schema_request(did_trustee, data))
     assert expected_response.items() <= response.items()
