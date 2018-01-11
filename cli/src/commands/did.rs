@@ -43,7 +43,7 @@ pub mod new_command {
         let did = get_opt_str_param("did", params).map_err(error_err!())?;
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
         let cid = get_opt_bool_param("cid", params).map_err(error_err!())?;
-        let metadata = get_opt_str_param("metadata", params).map_err(error_err!())?;
+        let metadata = get_opt_empty_str_param("metadata", params).map_err(error_err!())?;
 
         let config = {
             let mut json = JSONMap::new();
@@ -65,7 +65,7 @@ pub mod new_command {
                 Ok(did)
             }
             Err(ErrorCode::UnknownCryptoTypeError) => Err(println_err!("Unknown crypto type")),
-            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Wrong command params")),
+            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -74,7 +74,7 @@ pub mod new_command {
                 let res = Did::set_metadata(wallet_handle, &did, metadata);
                 match res {
                     Ok(()) => Ok(println_succ!("Metadata has been saved for DID \"{}\"", did)),
-                    Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Wrong command params")),
+                    Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                 }
             })
@@ -207,7 +207,7 @@ pub mod rotate_key_command {
         let new_verkey = match Did::replace_keys_start(wallet_handle, &did, &identity_json) {
             Ok(request) => Ok(request),
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
-            Err(_) => return Err(println_err!("Wrong command params")),
+            Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
         }?;
 
         let nym_res = Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None)
@@ -220,7 +220,7 @@ pub mod rotate_key_command {
         let res = match Did::replace_keys_apply(wallet_handle, &did) {
             Ok(_) => Ok(println_succ!("Verkey has been updated. New verkey: \"{}\"", new_verkey)),
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
-            Err(_) => return Err(println_err!("Wrong command params")),
+            Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
         };
 
         trace!("execute << {:?}", res);
