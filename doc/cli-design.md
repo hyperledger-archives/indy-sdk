@@ -180,7 +180,7 @@ indy> did <subcommand>
 #### New
 Create and store my DID in the opened wallet. Optionally sends NYM to the ledger with new DID. Requires opened wallet and connection to pool if nym will be send.
 ```
-indy> did new [did=<did>] [seed=<seed str>] [cid=<bool, default false>] [metadata=<metadata string>] [publish_to_ledger=<always false>]
+indy> did new [did=<did>] [seed=<seed str>] [metadata=<metadata string>] [publish_to_ledger=<always false>]
 ```
 Note: publish_to_ledger flags seems like redundant. One side will create full DID with key-pair (future DID owner), another side (e.g. Trustee) will send Nym transaction for this DID with Verkey, Role, etc. But Nym sender should not know secret part of DID keys, so it should not call did new command.
 
