@@ -27,7 +27,7 @@
 - (void)testBuildPoolUpgradeRequestsWorksForStartAction
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"identifier";
+    NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
 
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
 
@@ -67,7 +67,7 @@
 - (void)testBuildPoolUpgradeRequestsWorksForCancelAction
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"identifier";
+    NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
 
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
 

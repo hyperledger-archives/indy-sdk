@@ -21,10 +21,8 @@ pub mod create_command {
                 .add_main_param("name", "The name of new wallet")
                 .add_param("pool_name", false, "The name of associated Indy pool")
                 .add_param("key", true, "Auth key for the wallet")
-                .add_param("freshness_time", true, "Validity time of the values stored in the wallet")
                 .add_example("wallet create wallet1 pool_name=pool1")
                 .add_example("wallet create name=wallet1 pool_name=pool1 key=AAAAB3NzaC1yc2EA")
-                .add_example("wallet create name=wallet1 pool_name=pool1 freshness_time=1000")
                 .finalize()
     );
 
@@ -34,17 +32,15 @@ pub mod create_command {
         let pool_name = get_str_param("pool_name", params).map_err(error_err!())?;
         let name = get_str_param("name", params).map_err(error_err!())?;
         let key = get_opt_str_param("key", params).map_err(error_err!())?;
-        let freshness_time = get_opt_number_param::<i64>("freshness_time", params).map_err(error_err!())?;
 
-        let config: Option<String> = freshness_time.map(|freshness_time| json!({ "freshness_time": freshness_time }).to_string());
         let credentials: Option<String> = key.map(|key| json!({ "key": key }).to_string());
 
-        trace!("Wallet::create_wallet try: name {}, pool_name {}, config {:?}", name, pool_name, config);
+        trace!("Wallet::create_wallet try: name {}, pool_name {}", name, pool_name);
 
         let res = Wallet::create_wallet(pool_name,
                                         name,
                                         None,
-                                        config.as_ref().map(String::as_str),
+                                        None,
                                         credentials.as_ref().map(String::as_str),
         );
 
@@ -68,10 +64,8 @@ pub mod open_command {
                             .add_main_param("name", "The name of wallet")
                             .add_param("key", true, "Auth key for the wallet")
                             .add_param("rekey", true, "New auth key for the wallet (will replace previous one).")
-                            .add_param("freshness_time", true, "Freshness time for entities in the wallet")
                             .add_example("wallet open wallet1")
                             .add_example("wallet open name=wallet1 key=AAAAB3NzaC1yc2EA rekey=BBBAB3NzaC1AS4AC")
-                            .add_example("wallet open name=wallet1 freshness_time=1000")
                             .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
@@ -80,9 +74,6 @@ pub mod open_command {
         let name = get_str_param("name", params).map_err(error_err!())?;
         let key = get_opt_str_param("key", params).map_err(error_err!())?;
         let rekey = get_opt_str_param("rekey", params).map_err(error_err!())?;
-        let freshness_time = get_opt_number_param::<i64>("freshness_time", params).map_err(error_err!())?;
-
-        let config: Option<String> = freshness_time.map(|freshness_time| json!({ "freshness_time": freshness_time }).to_string());
 
         let credentials = {
             let mut json = JSONMap::new();
@@ -101,10 +92,7 @@ pub mod open_command {
             .and_then(|_| {
                 if let Some((handle, name)) = get_opened_wallet(ctx) {
                     match Wallet::close_wallet(handle) {
-                        Ok(()) => {
-                            set_opened_wallet(ctx, Some((handle, name.clone())));
-                            Ok(println_succ!("Wallet \"{}\" has been closed", name))
-                        }
+                        Ok(()) => Ok(println_succ!("Wallet \"{}\" has been closed", name)),
                         Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                     }
                 } else {
@@ -112,15 +100,20 @@ pub mod open_command {
                 }
             })
             .and_then(|_| {
-                match Wallet::open_wallet(name, config.as_ref().map(String::as_str), credentials.as_ref().map(String::as_str)) {
+                match Wallet::open_wallet(name, None, credentials.as_ref().map(String::as_str)) {
                     Ok(handle) => {
                         set_opened_wallet(ctx, Some((handle, name.to_owned())));
                         Ok(println_succ!("Wallet \"{}\" has been opened", name))
                     }
-                    Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid wallet config")),
-                    Err(ErrorCode::WalletAlreadyOpenedError) => Err(println_err!("Wallet \"{}\" already opened", name)),
-                    Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
-                    Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                    Err(err) => {
+                        set_opened_wallet(ctx, None);
+                        match err {
+                            ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid wallet config")),
+                            ErrorCode::WalletAlreadyOpenedError => Err(println_err!("Wallet \"{}\" already opened", name)),
+                            ErrorCode::CommonIOError => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
+                            err => Err(println_err!("Indy SDK error occurred {:?}", err)),
+                        }
+                    }
                 }
             });
 
@@ -162,9 +155,9 @@ pub mod list_command {
 
                 if wallets.len() > 0 {
                     print_list_table(&wallets,
-                                &vec![("name", "Name"),
-                                      ("associated_pool_name", "Associated pool name"),
-                                      ("type", "Type")]);
+                                     &vec![("name", "Name"),
+                                           ("associated_pool_name", "Associated pool name"),
+                                           ("type", "Type")]);
                 } else {
                     println_succ!("There are no wallets");
                 }
@@ -205,6 +198,7 @@ pub mod close_command {
                 match Wallet::close_wallet(handle) {
                     Ok(()) => {
                         set_opened_wallet(ctx, None);
+                        set_active_did(ctx, None);
                         Ok(println_succ!("Wallet \"{}\" has been closed", name))
                     }
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),

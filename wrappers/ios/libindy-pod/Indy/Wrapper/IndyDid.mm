@@ -87,6 +87,16 @@
     [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
 }
 
++ (void)keyForLocalDid:(NSString *)did
+     walletHandle:(IndyHandle)walletHandle
+       completion:(void (^)(NSError *error, NSString *key))completion
+{
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+    indy_error_t ret = indy_key_for_local_did(handle, walletHandle, [did UTF8String], IndyWrapperCommon3PSCallback);
+
+    [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
+}
+
 + (void)setEndpointAddress:(NSString *)address
               transportKey:(NSString *)transportKey
                     forDid:(NSString *)did
