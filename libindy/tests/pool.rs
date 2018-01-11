@@ -335,7 +335,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let res = PoolUtils::open_pool_ledger(POOL, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTerminated);//TODO change it on IOError
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
             TestUtils::cleanup_storage();
         }
@@ -346,7 +346,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let res = PoolUtils::open_pool_ledger(POOL, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTerminated);//TODO change it on IOError
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
@@ -357,7 +357,6 @@ mod medium_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        #[ignore] /* Broken in IS-388 workaround, blocked by IS-390 */
         fn open_pool_ledger_works_for_invalid_nodes_file() {
             TestUtils::cleanup_storage();
 
@@ -367,7 +366,7 @@ mod medium_cases {
             PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
 
             let res = PoolUtils::open_pool_ledger(pool_name, Some(pool_config.as_str()));
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTerminated);//TODO Replace on InvalidState Error
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);//TODO Replace on InvalidState Error
 
             TestUtils::cleanup_storage();
         }
@@ -383,7 +382,7 @@ mod medium_cases {
             PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
 
             let res = PoolUtils::open_pool_ledger(pool_name, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTerminated);//TODO Replace on InvalidState Error
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);
 
             TestUtils::cleanup_storage();
         }
