@@ -30,13 +30,6 @@ use utils::anoncreds::AnoncredsUtils;
 use utils::types::*;
 use utils::constants::*;
 
-
-pub const MESSAGE: &'static str = r#"{"reqId":1495034346617224651}"#;
-pub const GET_SCHEMA_DATA: &'static str = r#"{"name":"name","version":"1.0"}"#;
-pub const ATTRIB_RAW_DATA: &'static str = r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#;
-pub const NODE_DATA: &'static str = r#"{"node_ip":"10.0.0.100", "node_port": 1, "client_ip": "10.0.0.100", "client_port": 1, "alias":"some", "services": ["VALIDATOR"], "blskey": "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}"#;
-
-
 mod high_cases {
     use super::*;
 
@@ -352,8 +345,8 @@ mod high_cases {
 
             let nym_request = LedgerUtils::build_nym_request(&did, &did, None, None, None).unwrap();
 
-            let res = PoolUtils::send_request(pool_handle, &nym_request);
-            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            let response = PoolUtils::send_request(pool_handle, &nym_request).unwrap();
+            PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             PoolUtils::close(pool_handle).unwrap();
 
@@ -465,8 +458,8 @@ mod high_cases {
 
             let attrib_request = LedgerUtils::build_attrib_request(&my_did, &my_did, None, Some(ATTRIB_RAW_DATA), None).unwrap();
 
-            let res = PoolUtils::send_request(pool_handle, &attrib_request);
-            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            let response = PoolUtils::send_request(pool_handle, &attrib_request).unwrap();
+            PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -538,8 +531,8 @@ mod high_cases {
 
             let schema_request = LedgerUtils::build_schema_request(&did, SCHEMA_DATA).unwrap();
 
-            let res = PoolUtils::send_request(pool_handle, &schema_request);
-            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            let response = PoolUtils::send_request(pool_handle, &schema_request).unwrap();
+            PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -597,8 +590,8 @@ mod high_cases {
 
             let node_request = LedgerUtils::build_node_request(&did, &did, NODE_DATA).unwrap();
 
-            let res = PoolUtils::send_request(pool_handle, &node_request);
-            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            let response = PoolUtils::send_request(pool_handle, &node_request).unwrap();
+            PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -677,13 +670,13 @@ mod high_cases {
 
             let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response).unwrap();
 
-            let claim_def_data_json = AnoncredsUtils::get_gvt_claim_def_data_json();
+            let claim_def_data_json = AnoncredsUtils::gvt_claim_def_data_json();
 
             let claim_def_request = LedgerUtils::build_claim_def_txn(&did, get_schema_response.result.seq_no.unwrap(),
                                                                      SIGNATURE_TYPE, &claim_def_data_json).unwrap();
 
-            let res = PoolUtils::send_request(pool_handle, &claim_def_request);
-            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            let response = PoolUtils::send_request(pool_handle, &claim_def_request).unwrap();
+            PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -710,7 +703,7 @@ mod high_cases {
             let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response).unwrap();
             let schema_seq_no = get_schema_response.result.seq_no.unwrap();
 
-            let claim_def_data_json = AnoncredsUtils::get_gvt_claim_def_data_json();
+            let claim_def_data_json = AnoncredsUtils::gvt_claim_def_data_json();
 
             let claim_def_request = LedgerUtils::build_claim_def_txn(&did, schema_seq_no,
                                                                      SIGNATURE_TYPE, &claim_def_data_json).unwrap();
@@ -855,7 +848,8 @@ mod high_cases {
 
             // try send schema request
             let schema_request = LedgerUtils::build_schema_request(&trustee_did, SCHEMA_DATA).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &schema_request).unwrap_err();
+            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &schema_request).unwrap();
+            PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             // return Ledger to the previous state
             let request = LedgerUtils::build_pool_config_request(&trustee_did, true, false).unwrap();
@@ -1131,8 +1125,8 @@ mod medium_cases {
             let (my_did2, _) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&my_did, &my_did2, None, None, None).unwrap();
-            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request);
-            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request).unwrap();
+            PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1152,8 +1146,8 @@ mod medium_cases {
             let (my_did, _) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, None, None, None).unwrap();
-            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
-            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
+            PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1267,8 +1261,8 @@ mod medium_cases {
 
             let attrib_request = LedgerUtils::build_attrib_request(&did, &did, None, Some(ATTRIB_RAW_DATA), None).unwrap();
 
-            let res = PoolUtils::send_request(pool_handle, &attrib_request);
-            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            let response = PoolUtils::send_request(pool_handle, &attrib_request).unwrap();
+            PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1412,8 +1406,8 @@ mod medium_cases {
 
             let schema_request = LedgerUtils::build_schema_request(&did, SCHEMA_DATA).unwrap();
 
-            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request);
-            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
+            PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1476,8 +1470,8 @@ mod medium_cases {
 
             let node_request = LedgerUtils::build_node_request(&did, &did, NODE_DATA).unwrap();
 
-            let res: Result<String, ErrorCode> = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request);
-            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request).unwrap();
+            PoolUtils::check_response_type(&response, ResponseType::REJECT);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1497,8 +1491,8 @@ mod medium_cases {
 
             let node_request = LedgerUtils::build_node_request(&did, &did, NODE_DATA).unwrap();
 
-            let res: Result<String, ErrorCode> = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request);
-            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request).unwrap();
+            PoolUtils::check_response_type(&response, ResponseType::REJECT);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();

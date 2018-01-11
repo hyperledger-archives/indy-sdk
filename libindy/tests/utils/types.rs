@@ -22,9 +22,16 @@ pub struct ClaimDefinitionData {
 }
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
+pub enum ResponseType {
+    REQNACK,
+    REPLY,
+    REJECT
+}
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Response {
-    pub op: String,
+    pub op: ResponseType,
     pub reason: String,
     pub req_id: u64,
     pub identifier: String
@@ -134,7 +141,15 @@ pub struct SchemaResult {
 pub struct Schema {
     #[serde(rename = "seqNo")]
     pub seq_no: i32,
+    pub identifier: String,
     pub data: SchemaData
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
+pub struct SchemaKey {
+    pub name: String,
+    pub version: String,
+    pub did: String
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -148,7 +163,7 @@ pub struct SchemaData {
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct ClaimOffer {
     pub issuer_did: String,
-    pub schema_seq_no: i32
+    pub schema_key: SchemaKey
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -171,21 +186,26 @@ pub struct PredicateInfo {
     pub attr_name: String,
     pub p_type: String,
     pub value: i32,
-    pub schema_seq_no: Option<Vec<i32>>,
-    pub issuer_did: Option<Vec<String>>
+    pub restrictions: Option<Vec<Filter>>
+}
+
+
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
+pub struct Filter {
+    pub issuer_did: Option<String>,
+    pub schema_key: Option<SchemaKey>
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AttributeInfo {
     pub name: String,
-    pub schema_seq_no: Option<Vec<i32>>,
-    pub issuer_did: Option<Vec<String>>
+    pub restrictions: Option<Vec<Filter>>
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct ClaimInfo {
     pub referent: String,
-    pub schema_seq_no: i32,
+    pub schema_key: SchemaKey,
     pub issuer_did: String,
     pub revoc_reg_seq_no: Option<i32>
 }
@@ -194,14 +214,14 @@ pub struct ClaimInfo {
 pub struct ClaimRequest {
     pub prover_did: String,
     pub issuer_did: String,
-    pub schema_seq_no: i32,
+    pub schema_key: SchemaKey,
     pub blinded_ms: BlindedMasterSecret
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Claim {
     pub values: HashMap<String, Vec<String>>,
-    pub schema_seq_no: i32,
+    pub schema_key: SchemaKey,
     pub signature: ClaimSignature,
     pub issuer_did: String
 }
@@ -210,7 +230,7 @@ pub struct Claim {
 pub struct FullProof {
     pub proof: Proof,
     pub requested_proof: RequestedProof,
-    pub identifiers: HashSet<Identifier>
+    pub identifiers: HashMap<String, Identifier>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -224,5 +244,5 @@ pub struct RequestedProof {
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct Identifier {
     pub issuer_did: String,
-    pub schema_seq_no: i32
+    pub schema_key: SchemaKey
 }

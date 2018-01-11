@@ -1,14 +1,17 @@
 use command_executor::{Command, CommandContext, CommandMetadata, CommandParams, CommandGroup, CommandGroupMetadata};
 use commands::*;
-use utils::table::print_table;
+use utils::table::print_list_table;
 
 use libindy::ErrorCode;
 
 use libindy::did::Did;
 use libindy::ledger::Ledger;
 
+use std::fs::File;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
+
+use commands::ledger::handle_send_command_error;
 
 pub mod group {
     use super::*;
@@ -22,7 +25,7 @@ pub mod new_command {
     command!(CommandMetadata::build("new", "Create new DID")
                 .add_param("did", true, "Known DID for new wallet instance")
                 .add_param("seed", true, "Seed for creating DID key-pair")
-                .add_param("cid", true, "Create DID as CID (default false)")
+                .add_param("cid", true, "Create DID as CID. Can be true or false (default false)")
                 .add_param("metadata", true, "DID metadata")
                 .add_example("did new")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX")
@@ -61,6 +64,8 @@ pub mod new_command {
                 println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk);
                 Ok(did)
             }
+            Err(ErrorCode::UnknownCryptoTypeError) => Err(println_err!("Unknown crypto type")),
+            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Wrong command params")),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -69,11 +74,75 @@ pub mod new_command {
                 let res = Did::set_metadata(wallet_handle, &did, metadata);
                 match res {
                     Ok(()) => Ok(println_succ!("Metadata has been saved for DID \"{}\"", did)),
+                    Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Wrong command params")),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                 }
             })
         } else {
             res.map(|_| ())
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+pub mod import_command {
+    use super::*;
+    use std::io::Read;
+
+    command!(CommandMetadata::build("import", "Import DIDs entities from file to the current wallet.
+        File format:
+        {
+            \"version\": 1
+            \"dids\": [
+                { \"did\": \"did1\", \"seed\": \"UTF-8 or base64 seed string\" },
+            ]
+        }")
+                .add_main_param("file", "Path to file with DIDs")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+
+        let path = get_str_param("file", params).map_err(error_err!())?;
+
+        let mut buf = String::new();
+        let res = File::open(path)
+            .and_then(|mut file| {
+                file.read_to_string(&mut buf)
+            })
+            .map_err(|err| format!("Error during reading file {}", err))
+            .and_then(|_| {
+                serde_json::from_str::<JSONValue>(&buf)
+                    .map_err(|err| format!("Can't parse JSON {:?}", err))
+                    .and_then(|json: JSONValue| -> Result<JSONValue, String> {
+                        let is_correct_version = json["version"].as_i64().map(|ver| (ver == 1)).unwrap_or(false);
+                        if is_correct_version { Ok(json) } else { Err("Invalid or missed version".to_owned()) }
+                    })
+                    .and_then(|json| {
+                        json["dids"].as_array().map(Clone::clone).ok_or("missed DIDs".to_owned())
+                    })
+                    .and_then(|dids| {
+                        for did in dids {
+                            match Did::new(wallet_handle, &did.to_string()) {
+                                Ok((did, vk)) =>
+                                    println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk),
+                                Err(err) =>
+                                    println_warn!("Indy SDK error occured {:?} while importing DID {}", err, did)
+                            }
+                        }
+                        Ok(())
+                    })
+            });
+
+        let res = if let Err(err) = res {
+            Err(println_err!("{}", err))
+        } else {
+            Ok(println_succ!("DIDs import finished"))
         };
 
         trace!("execute << {:?}", res);
@@ -126,8 +195,8 @@ pub mod rotate_key_command {
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
 
         let did = ensure_active_did(&ctx)?;
-        let pool_handle = ensure_connected_pool_handle(&ctx)?;
-        let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
         let identity_json = {
             let mut json = JSONMap::new();
@@ -141,18 +210,12 @@ pub mod rotate_key_command {
             Err(_) => return Err(println_err!("Wrong command params")),
         }?;
 
-        let request = match Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None) {
-            Ok(request) => Ok(request),
-            Err(_) => return Err(println_err!("Wrong command params")),
-        }?;
+        let nym_res = Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None)
+            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request));
 
-        match Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request) {
-            Ok(response) => Ok(response),
-            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
-            Err(ErrorCode::WalletIncompatiblePoolError) => Err(println_err!("Pool handle \"{}\" invalid for wallet handle \"{}\"", pool_handle, wallet_handle)),
-            Err(ErrorCode::LedgerInvalidTransaction) => Err(println_err!("Invalid NYM transaction \"{}\"", request)),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
-        }?;
+        if let Err(err) = nym_res {
+            handle_send_command_error(err, &did, &pool_name, &wallet_name).map(|_| ())?
+        }
 
         let res = match Did::replace_keys_apply(wallet_handle, &did) {
             Ok(_) => Ok(println_succ!("Verkey has been updated. New verkey: \"{}\"", new_verkey)),
@@ -181,10 +244,10 @@ pub mod list_command {
                 let dids: Vec<serde_json::Value> = serde_json::from_str(&dids)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
                 if dids.len() > 0 {
-                    print_table(&dids,
-                                &vec![("did", "Did"),
-                                      ("verkey", "Verkey"),
-                                      ("metadata", "Metadata")]);
+                    print_list_table(&dids,
+                                     &vec![("did", "Did"),
+                                           ("verkey", "Verkey"),
+                                           ("metadata", "Metadata")]);
                 } else {
                     println_succ!("There are no dids");
                 }
@@ -224,6 +287,7 @@ pub mod tests {
 
     pub const SEED_MY3: &'static str = "00000000000000000000000000000My3";
     pub const DID_MY3: &'static str = "5Uu7YveFSGcT3dSzjpvPab";
+    pub const VERKEY_MY3: &'static str = "3SeuRm3uYuQDYmHeuMLu1xNHozNTtzS3kbZRFMMCWrX4";
 
     mod did_new {
         use super::*;
