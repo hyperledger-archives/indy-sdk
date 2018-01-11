@@ -25,14 +25,14 @@ pub mod group {
 pub mod nym_command {
     use super::*;
 
-    command!(CommandMetadata::build("nym", "Add NYM to Ledger.")
+    command!(CommandMetadata::build("nym", "Send NYM transaction to the Ledger.")
                 .add_param("did", false, "DID of new identity")
                 .add_param("verkey", true, "Verification key of new identity")
-                .add_param("role", true, "Role of new identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, TGB")
+                .add_param("role", true, "Role of identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, TGB or empty in case of blacklisting NYM")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
-                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=TRUSTEE")
+                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=")
                 .finalize()
     );
 
@@ -45,7 +45,7 @@ pub mod nym_command {
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let verkey = get_opt_str_param("verkey", params).map_err(error_err!())?;
-        let role = get_opt_str_param("role", params).map_err(error_err!())?;
+        let role = get_opt_empty_str_param("role", params).map_err(error_err!())?;
 
         let response = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
@@ -132,7 +132,7 @@ pub mod get_nym_command {
 pub mod attrib_command {
     use super::*;
 
-    command!(CommandMetadata::build("attrib", "Add Attribute to exists NYM.")
+    command!(CommandMetadata::build("attrib", "Send Attribute transaction to the Ledger for exists NYM.")
                 .add_param("did", false, "DID of identity presented in Ledger")
                 .add_param("hash", true, "Hash of attribute data")
                 .add_param("raw", true, "JSON representation of attribute data")
@@ -241,7 +241,7 @@ pub mod get_attrib_command {
 pub mod schema_command {
     use super::*;
 
-    command!(CommandMetadata::build("schema", "Add Schema to Ledger.")
+    command!(CommandMetadata::build("schema", "Send Schema transaction to the Ledger.")
                 .add_param("name", false, "Schema name")
                 .add_param("version", false, "Schema version")
                 .add_param("attr_names", false, "Schema attributes split by comma")
@@ -358,7 +358,7 @@ pub mod get_schema_command {
 pub mod claim_def_command {
     use super::*;
 
-    command!(CommandMetadata::build("claim-def", "Add claim definition to Ledger.")
+    command!(CommandMetadata::build("claim-def", "Send Claim Def transaction to the Ledger.")
                 .add_param("schema_no", false, "Sequence number of schema")
                 .add_param("signature_type", false, "Signature type (only CL supported now)")
                 .add_param("primary", false, "Primary key in json format")
@@ -414,7 +414,7 @@ pub mod claim_def_command {
 pub mod get_claim_def_command {
     use super::*;
 
-    command!(CommandMetadata::build("get-claim-def", "Add claim definition to Ledger.")
+    command!(CommandMetadata::build("get-claim-def", "Get Claim Definition from Ledger.")
                 .add_param("schema_no", false, "Sequence number of schema")
                 .add_param("signature_type", false, "Signature type (only CL supported now)")
                 .add_param("origin", false, "Claim definition owner DID")
@@ -467,18 +467,19 @@ pub mod get_claim_def_command {
 pub mod node_command {
     use super::*;
 
-    command!(CommandMetadata::build("node", "Add Node to Ledger.")
+    command!(CommandMetadata::build("node", "Send Node transaction to the Ledger.")
                 .add_param("target", false, "DID of new identity")
-                .add_param("alias", false, "Node alias")
-                .add_param("node_ip", true, "Node Ip")
-                .add_param("node_port", true, "Node port")
-                .add_param("client_ip", true, "Client Ip")
-                .add_param("client_port", true, "Client port")
+                .add_param("alias", false, "Node alias (can't be changed in case of update)")
+                .add_param("node_ip", true, "Node Ip (mandatory for adding node and optional for update)")
+                .add_param("node_port", true, "Node port (mandatory for adding node and optional for update)")
+                .add_param("client_ip", true, "Client Ip (mandatory for adding node and optional for update)")
+                .add_param("client_port", true, "Client port (mandatory for adding node and optional for update)")
                 .add_param("blskey", true, "Node BLS key")
-                .add_param("services", true, "Node type [VALIDATOR, OBSERVER]")
+                .add_param("services", true, "Node type. One of: VALIDATOR, OBSERVER or empty in case of blacklisting node")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR blskey=2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y alias=Node5 services=VALIDATOR")
+                .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y alias=Node5 services=")
                 .finalize()
     );
 
@@ -543,7 +544,7 @@ pub mod node_command {
 pub mod pool_config_command {
     use super::*;
 
-    command!(CommandMetadata::build("pool-config", "Sends write configuration to pool.")
+    command!(CommandMetadata::build("pool-config", "Send write configuration to pool.")
                 .add_param("writes", false, "Accept write transactions.")
                 .add_param("force", true, "Forced configuration applying without reaching pool consensus.")
                 .add_example("ledger pool-config writes=true")
@@ -589,7 +590,7 @@ pub mod pool_config_command {
 pub mod pool_upgrade_command {
     use super::*;
 
-    command!(CommandMetadata::build("pool-upgrade", "Sends instructions to nodes to update themselves.")
+    command!(CommandMetadata::build("pool-upgrade", "Send instructions to nodes to update themselves.")
                 .add_param("name", false, "Unique upgrade name.")
                 .add_param("version", false, "Target upgrade version.")
                 .add_param("action", false, "Upgrade type. Either start or cancel.")
@@ -657,7 +658,7 @@ pub mod pool_upgrade_command {
 pub mod custom_command {
     use super::*;
 
-    command!(CommandMetadata::build("custom", "Send custom transaction to Ledger.")
+    command!(CommandMetadata::build("custom", "Send custom transaction to the Ledger.")
                 .add_main_param("txn", "Transaction json")
                 .add_param("sign", true, "Is signature required")
                 .add_example(r#"ledger custom {"reqId":1,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"105","dest":"V4SGRU86Z58d6TV7PBUe6f"},"protocolVersion":1}"#)
@@ -737,7 +738,7 @@ fn handle_transaction_response(mut response: Response<serde_json::Value>, title:
 
 pub fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_name: &str, wallet_name: &str) -> Result<String, ()> {
     match err {
-        ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
+        ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
         ErrorCode::WalletNotFoundError => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did)),
         ErrorCode::WalletIncompatiblePoolError => Err(println_err!("Wallet \"{}\" is incompatible with pool \"{}\".", wallet_name, pool_name)),
         err => Err(println_err!("Indy SDK error occurred {:?}", err))
@@ -746,13 +747,13 @@ pub fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_name:
 
 fn handle_get_command_error(err: ErrorCode) -> Result<String, ()> {
     match err {
-        ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
+        ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
         err => Err(println_err!("Indy SDK error occurred {:?}", err)),
     }
 }
 
 fn extract_error_message(error: &str) -> String {
-    let re = Regex::new(r"'(.*)'").unwrap();
+    let re = Regex::new(r#"[',"](.*)[',"]"#).unwrap();
     match re.captures(error) {
         Some(message) => message[1].to_string(),
         None => error.to_string()

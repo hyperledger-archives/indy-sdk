@@ -12,15 +12,30 @@ use std;
 
 pub fn get_str_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<&'a str, ()> {
     match params.get(name) {
+        Some(v) if v == "" => {
+            println_err!("Required \"{}\" parameter is empty.", name);
+            Err(())
+        }
         Some(v) => Ok(v.as_str()),
         None => {
-            println_err!("No required \"{}\" parameter present", name);
+            println_err!("No required \"{}\" parameter present.", name);
             Err(())
         }
     }
 }
 
 pub fn get_opt_str_param<'a>(key: &'a str, params: &'a CommandParams) -> Result<Option<&'a str>, ()> {
+    match params.get(key) {
+        Some(v) if v == "" => {
+            println_err!("Optional parameter \"{}\" is empty.", key);
+            Err(())
+        }
+        Some(v) => Ok(Some(v.as_str())),
+        None => Ok(None)
+    }
+}
+
+pub fn get_opt_empty_str_param<'a>(key: &'a str, params: &'a CommandParams) -> Result<Option<&'a str>, ()> {
     Ok(params.get(key).map(|v| v.as_str()))
 }
 
@@ -76,7 +91,12 @@ pub fn get_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Resu
 
 pub fn get_opt_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Option<Vec<&'a str>>, ()> {
     match params.get(name) {
-        Some(v) => Ok(Some(v.split(",").collect::<Vec<&'a str>>())),
+        Some(v) =>
+            if v.is_empty() {
+                Ok(Some(Vec::<&'a str>::new()))
+            } else {
+                Ok(Some(v.split(",").collect::<Vec<&'a str>>()))
+            },
         None => Ok(None)
     }
 }
