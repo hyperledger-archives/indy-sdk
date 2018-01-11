@@ -4,7 +4,7 @@ import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { StateType } from './common'
 import { Connection } from './connection'
-import { CXSBase } from './CXSBase'
+import { CXSBaseWithState } from './CXSBaseWithState'
 
 export interface IProofConfig {
   sourceId: string,
@@ -70,7 +70,7 @@ export enum ProofState {
 /**
  * @class Class representing a Connection
  */
-export class Proof extends CXSBase {
+export class Proof extends CXSBaseWithState {
   protected _releaseFn = rustAPI().cxs_proof_release
   protected _updateStFn = rustAPI().cxs_proof_update_state
   protected _serializeFn = rustAPI().cxs_proof_serialize
@@ -104,6 +104,7 @@ export class Proof extends CXSBase {
         proof._name,
         cb
       ))
+      await proof._updateState()
       return proof
     } catch (err) {
       throw new CXSInternalError(`cxs_proof_create -> ${err}`)
@@ -125,7 +126,9 @@ export class Proof extends CXSBase {
    */
   static async deserialize (proofData: IProofData) {
     try {
-      return await super._deserialize(Proof, proofData)
+      const proof = await super._deserialize(Proof, proofData)
+      await proof._updateState()
+      return proof
     } catch (err) {
       throw new CXSInternalError(`cxs_proof_deserialize -> ${err}`)
     }

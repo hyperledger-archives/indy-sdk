@@ -1,5 +1,6 @@
 
 export * from './api/init'
+export * from './api/claimDef'
 export * from './api/common'
 export * from './api/connection'
 export * from './api/CXSMock'

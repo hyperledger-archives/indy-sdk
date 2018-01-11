@@ -11,7 +11,6 @@ use std::ffi::CString;
 use utils::timeout::TimeoutUtils;
 use utils::cstring::CStringUtils;
 //use utils::demo::{build_claim_def_txn, sign_and_send_request};
-use ::cxs::utils::pool::get_pool_handle;
 
 #[allow(dead_code)]
 extern {

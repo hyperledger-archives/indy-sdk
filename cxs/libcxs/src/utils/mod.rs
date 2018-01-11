@@ -4,8 +4,6 @@ pub mod ccallback;
 #[macro_use]
 pub mod cstring;
 
-pub mod pool;
-pub mod claim_def;
 pub mod wallet;
 pub mod init;
 pub mod error;
@@ -18,6 +16,7 @@ pub mod timeout;
 pub mod issuer_claim;
 pub mod openssl;
 pub mod json;
+pub mod libindy;
 
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 lazy_static! {

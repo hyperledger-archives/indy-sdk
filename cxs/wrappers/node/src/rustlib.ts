@@ -11,6 +11,7 @@ export const CxsStatus = StructType({
 
 // FFI Type Strings
 export const FFI_ERROR_CODE = 'int'
+export const FFI_BOOL = 'bool'
 export const FFI_CONNECTION_HANDLE = 'uint32'
 export const FFI_UNSIGNED_INT = 'uint32'
 export const FFI_UNSIGNED_INT_PTR = ref.refType('uint32')
@@ -25,6 +26,8 @@ export const FFI_CALLBACK_PTR = 'pointer'
 export const FFI_COMMAND_HANDLE = 'uint32'
 export const FFI_CLAIM_HANDLE = 'uint32'
 export const FFI_PROOF_HANDLE = 'uint32'
+export const FFI_CLAIMDEF_HANDLE = 'uint32'
+export const FFI_SCHEMA_NUMBER = 'string'
 
 // Rust Lib Native Types
 export type rust_did = string
@@ -64,6 +67,12 @@ export interface IFFIEntryPoint {
   // mock
   cxs_set_next_agency_response: (messageIndex: number) => void,
 
+  cxs_claimdef_create: (commandId: number, sourceId: string, claimDefName: string, schemaNo: number, issuerDid: string,
+                        revocation: boolean, cb: any) => number
+  cxs_claimdef_deserialize: (commandId: number, data: string, cb: any) => number,
+  cxs_claimdef_serialize: (commandId: number, handle: string, cb: any) => number,
+  cxs_claimdef_release: (handle: string) => number,
+
   free: any
 }
 
@@ -100,6 +109,12 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_CALLBACK_PTR]],
   cxs_proof_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   cxs_proof_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
+  // claimDef
+  cxs_claimdef_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_SCHEMA_NUMBER,
+    FFI_STRING_DATA, FFI_BOOL, FFI_CALLBACK_PTR]],
+  cxs_claimdef_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  cxs_claimdef_release: [FFI_ERROR_CODE, [FFI_CLAIMDEF_HANDLE]],
+  cxs_claimdef_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIMDEF_HANDLE, FFI_CALLBACK_PTR]],
   // mock
   cxs_set_next_agency_response: [FFI_VOID, [FFI_UNSIGNED_INT]],
 

@@ -3,7 +3,7 @@ import { ConnectionTimeoutError, CXSInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { StateType } from './common'
-import { CXSBase } from './CXSBase'
+import { CXSBaseWithState } from './CXSBaseWithState'
 
 /**
  * @description Interface that represents the attributes of a Connection object.
@@ -35,7 +35,7 @@ export interface IConnectOptions {
 /**
  * @class Class representing a Connection
  */
-export class Connection extends CXSBase {
+export class Connection extends CXSBaseWithState {
   protected _releaseFn = rustAPI().cxs_connection_release
   protected _updateStFn = rustAPI().cxs_connection_update_state
   protected _serializeFn = rustAPI().cxs_connection_serialize
@@ -57,6 +57,7 @@ export class Connection extends CXSBase {
     const commandHandle = 0
     try {
       await connection._create((cb) => rustAPI().cxs_connection_create(commandHandle, recipientInfo.id, cb))
+      await connection._updateState()
       return connection
     } catch (err) {
       throw new CXSInternalError(`cxs_connection_create -> ${err}`)
@@ -78,7 +79,9 @@ export class Connection extends CXSBase {
    */
   static async deserialize (connectionData: IConnectionData) {
     try {
-      return await super._deserialize(Connection, connectionData)
+      const connection = await super._deserialize(Connection, connectionData)
+      await connection._updateState()
+      return connection
     } catch (err) {
       throw new CXSInternalError(`cxs_connection_deserialize -> ${err}`)
     }

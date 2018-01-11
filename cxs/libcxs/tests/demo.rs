@@ -1,6 +1,7 @@
 extern crate cxs;
 extern crate tempfile;
 extern crate libc;
+#[macro_use]
 extern crate serde_json;
 
 #[macro_use]
@@ -8,7 +9,6 @@ extern crate lazy_static;
 mod utils;
 use utils::demo::*;
 use utils::timeout::TimeoutUtils;
-use utils::claim_def_wallet;
 
 use self::tempfile::NamedTempFileOptions;
 use std::io::Write;
@@ -16,22 +16,18 @@ use std::thread;
 use std::time::Duration;
 use std::ffi::CString;
 use cxs::api;
-use cxs::utils::pool;
+use cxs::utils::libindy::pool;
 use std::sync::mpsc::channel;
-use cxs::utils::wallet::get_wallet_handle;
 use std::path::Path;
 use cxs::utils::error;
-use cxs::utils::signus;
 
 #[allow(dead_code)]
 static SERIALIZED_CONNECTION: &str = r#"{"source_id":"test_cxs_connection_connect","handle":2608616713,"pw_did":"62LeFLkN9ZeCr32j73PUyD","pw_verkey":"3jnnnL65mTW786LaTJSwEKENEMwmMowuJTYmVho23qNU","did_endpoint":"","state":4,"uuid":"","endpoint":"","invite_detail":{"e":"34.210.228.152:80","rid":"6oHwpBN","sakdp":"key","sn":"enterprise","sD":"62LeFLkN9ZeCr32j73PUyD","lu":"https://s19.postimg.org/ykyz4x8jn/evernym.png","sVk":"3jnnnL65mTW786LaTJSwEKENEMwmMowuJTYmVho23qNU","tn":"there"}}"#;
 #[allow(dead_code)]
 static SERIALIZED_CLAIM: &str = r#"{"source_id":"Claim For Driver's License","handle":3664805180,"claim_attributes":"{\"age\":[\"28\",\"28\"],\"height\":[\"175\",\"175\"],\"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"]}","msg_uid":"7TKyPLr","schema_seq_no":12,"issuer_did":"Niaxv2v4mPr1HdTeJkQxuU","issued_did":"62LeFLkN9ZeCr32j73PUyD","state":2,"claim_request":null}"#;
-//static CLAIM_DATA: &str = r#"{"sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"], "name":["Alex","1139481716457488690172217916278103335"], "height":["175","175"], "age":["28","28"] }"#;
-static CLAIM_DATA: &str = r#"{"name":["Alex","1139481716457488690172217916278103335"],"sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"]}"#;
-static CLAIM_DATA_2: &str = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
+static CLAIM_DATA: &str = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
 static CLAIM_DEF_ISSUER_DID: &str = "2hoqvcwupRTUNkXn6ArYzs";
-static CLAIM_DEF_SCHEMA_SEQ_NUM: u32 = 103;
+static CLAIM_DEF_SCHEMA_SEQ_NUM: u32 = 15;
 
 fn sandbox_pool_setup() {
     let node_txns = vec![
@@ -52,7 +48,6 @@ fn sandbox_pool_setup() {
 }
 
 pub fn open_sandbox_pool() {
-    let pool_name = "PoolForDemo";
     sandbox_pool_setup();
 }
 
@@ -104,16 +99,42 @@ fn demo(){
     // Create Claim Offer ***************************************************************
     let source_id = "Name and Sex";
     let claim_name = "Name and Sex";
-    let claim_data:serde_json::Value = serde_json::from_str(CLAIM_DATA_2).unwrap(); // this format will make it easier to modify in the futre
+    let claim_data:serde_json::Value = serde_json::from_str(CLAIM_DATA).unwrap(); // this format will make it easier to modify in the futre
     let ledger_issuer_did = CLAIM_DEF_ISSUER_DID.clone();
-    let ledger_schema_seq_num = 15;
+    let ledger_schema_seq_num = CLAIM_DEF_SCHEMA_SEQ_NUM;
     let (err, claim_handle) = create_claim_offer(claim_name, source_id, claim_data, ledger_issuer_did, ledger_schema_seq_num);
     assert_eq!(err, 0);
     assert!(claim_handle>0);
 
     // Create Proof **************************************************************
-    let requested_attrs = r#"[{"schema_seq_no":15,"name":"address1","issuer_did":"2hoqvcwupRTUNkXn6ArYzs"},{"schema_seq_no":15,"name":"address2","issuer_did":"2hoqvcwupRTUNkXn6ArYzs"},{"schema_seq_no":15,"name":"city","issuer_did":"2hoqvcwupRTUNkXn6ArYzs"},{"schema_seq_no":15,"name":"state","issuer_did":"2hoqvcwupRTUNkXn6ArYzs"},{"schema_seq_no":15,"name":"zip","issuer_did":"2hoqvcwupRTUNkXn6ArYzs"}]"#;
-    let (err, proof_handle) = create_proof_request(source_id, requested_attrs);
+    let requested_attrs = json!([
+       {
+          "schema_seq_no":ledger_schema_seq_num,
+          "name":"address1",
+          "issuer_did":ledger_issuer_did
+       },
+       {
+          "schema_seq_no":ledger_schema_seq_num,
+          "name":"address2",
+          "issuer_did":ledger_issuer_did
+       },
+       {
+          "schema_seq_no":ledger_schema_seq_num,
+          "name":"city",
+          "issuer_did":ledger_issuer_did
+       },
+       {
+          "schema_seq_no":ledger_schema_seq_num,
+          "name":"state",
+          "issuer_did":ledger_issuer_did
+       },
+       {
+          "schema_seq_no":ledger_schema_seq_num,
+          "name":"zip",
+          "issuer_did":ledger_issuer_did
+       }
+    ]).to_string();
+    let (err, proof_handle) = create_proof_request(source_id, requested_attrs.as_str());
     assert_eq!(err, 0);
     assert!(proof_handle>0);
 
@@ -135,9 +156,6 @@ fn demo(){
     println!("Connection Handle: {}", connection_handle);
     assert_eq!(err, 0);
     assert!(connection_handle > 0);
-    // Insert Claim Def ***************************************************************
-    println!("STORING CLAIM DEF");
-//    insert_claim_def();
     // Connect ************************************************************************
     let (sender, receiver) = channel();
     let (command_handle, cb) = closure_to_connect_cb(Box::new(move|err|{sender.send(err).unwrap();}));
@@ -145,7 +163,7 @@ fn demo(){
 //    let lphone_number = "8017900625";
     let rc = api::connection::cxs_connection_connect(command_handle,
                                                      connection_handle,
-                                                     CString::new("{\"phone\":\"2184336525\"}").unwrap().into_raw(),cb);
+                                                     CString::new("{\"phone\":\"8017170266\"}").unwrap().into_raw(),cb);
     assert_eq!(rc, 0);
     let err = receiver.recv_timeout(utils::timeout::TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(err,0);
@@ -191,8 +209,6 @@ fn receive_request_send_claim(connection_handle: u32, claim_handle:u32){
     let claim_state = wait_for_updated_state(claim_handle, target_claim_state, api::issuer_claim::cxs_issuer_claim_update_state);
     assert_eq!(claim_state, target_claim_state);
 
-    // Insert Claim Def ***************************************************************
-//    insert_claim_def();
 
     // Send claim *********************************************************************
     let err = utils::demo::send_claim(claim_handle, connection_handle);
@@ -200,11 +216,14 @@ fn receive_request_send_claim(connection_handle: u32, claim_handle:u32){
 }
 
 fn send_proof_request_and_receive_proof(connection_handle: u32, proof_handle:u32){
-    let state = wait_for_updated_state(proof_handle, 1, api::proof::cxs_proof_update_state);
-    let target_state = 4;
     let target_proof_state = 1;
+    let state = wait_for_updated_state(proof_handle, target_proof_state, api::proof::cxs_proof_update_state);
+    assert_eq!(target_proof_state, state);
+    let target_state = 4;
+
     // Send Proof Request *************************************************************
     let err = utils::demo::send_proof_request(proof_handle, connection_handle);
+    assert!(err == 0);
 
     let state = wait_for_updated_state(proof_handle, target_state, api::proof::cxs_proof_update_state);
 
@@ -215,18 +234,11 @@ fn send_proof_request_and_receive_proof(connection_handle: u32, proof_handle:u32
     assert_eq!(err, 0);
 }
 
-fn insert_claim_def(){
-    // init the wallet
-    let claim_def_issuer_did= CLAIM_DEF_ISSUER_DID;
-    let schema_string = claim_def_wallet::create_default_schema(CLAIM_DEF_SCHEMA_SEQ_NUM);
-    claim_def_wallet::put_claim_def_in_wallet(get_wallet_handle(), claim_def_issuer_did, &schema_string);
-}
-
 #[allow(dead_code)]
 fn init_sdk(){
-        // Init SDK  *********************************************************************
-        let issuer_did = "TCwEv4tiAuA5DfC7VTdu83";
-        let config_string = format!("{{\"agent_endpoint\":\"{}\",\
+    // Init SDK  *********************************************************************
+    let issuer_did = "TCwEv4tiAuA5DfC7VTdu83";
+    let config_string = format!("{{\"agent_endpoint\":\"{}\",\
         \"agency_pairwise_did\":\"72x8p4HubxzUK1dwxcc5FU\",\
         \"agent_pairwise_did\":\"UJGjM6Cea2YVixjWwHN9wq\",\
         \"enterprise_did_agency\":\"{}\",\
@@ -235,26 +247,24 @@ fn init_sdk(){
         \"logo_url\":\"https://s19.postimg.org/ykyz4x8jn/evernym.png\",\
         \"agency_pairwise_verkey\":\"7118p4HubxzUK1dwxcc5FU\",\
         \"agent_pairwise_verkey\":\"U22jM6Cea2YVixjWwHN9wq\"}}", "https://agency-ea-sandbox.evernym.com",
-                                    issuer_did);
-        let mut file = NamedTempFileOptions::new()
-            .suffix(".json")
-            .create()
-            .unwrap();
-        file.write_all(config_string.as_bytes()).unwrap();
+                                issuer_did);
+    let mut file = NamedTempFileOptions::new()
+        .suffix(".json")
+        .create()
+        .unwrap();
+    file.write_all(config_string.as_bytes()).unwrap();
 
-        let path = CString::new(file.path().to_str().unwrap()).unwrap();
-        let r = api::cxs::cxs_init(0,path.as_ptr(),Some(generic_cb));
-        assert_eq!(r,0);
-        thread::sleep(Duration::from_secs(1));
+    let path = CString::new(file.path().to_str().unwrap()).unwrap();
+    let r = api::cxs::cxs_init(0,path.as_ptr(),Some(generic_cb));
+    assert_eq!(r,0);
+    thread::sleep(Duration::from_secs(1));
 
-        // deserialize connection *********************************************************
-        let serialized_connection = SERIALIZED_CONNECTION;
-        let connection_handle = deserialize_cxs_object(serialized_connection, api::connection::cxs_connection_deserialize);
-        assert!(connection_handle>0);
+    // deserialize connection *********************************************************
+    let serialized_connection = SERIALIZED_CONNECTION;
+    let connection_handle = deserialize_cxs_object(serialized_connection, api::connection::cxs_connection_deserialize);
+    assert!(connection_handle>0);
 
-        // deserialize claim **************************************************************
-        let claim_handle = deserialize_cxs_object(SERIALIZED_CLAIM, api::issuer_claim::cxs_issuer_claim_deserialize);
-        assert!(claim_handle>0);
+    // deserialize claim **************************************************************
+    let claim_handle = deserialize_cxs_object(SERIALIZED_CLAIM, api::issuer_claim::cxs_issuer_claim_deserialize);
+    assert!(claim_handle>0);
 }
-
-

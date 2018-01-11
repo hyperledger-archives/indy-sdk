@@ -14,37 +14,11 @@ use std::ffi::CString;
 use cxs::api;
 use std::sync::Mutex;
 use std::sync::mpsc::channel;
-use ::cxs::utils::callback::CallbackUtils;
-use ::cxs::utils::error;
+
 lazy_static! {
     static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 }
 
-extern {
-    pub fn indy_build_nym_request(command_handle: i32,
-                                         submitter_did: *const c_char,
-                                         target_did: *const c_char,
-                                         verkey: *const c_char,
-                                         alias: *const c_char,
-                                         role: *const c_char,
-                                         cb: Option<extern fn(xcommand_handle: i32, err: i32,
-                                                              request_json: *const c_char)>) -> i32;
-    pub fn indy_build_claim_def_txn(command_handle: i32,
-                                           submitter_did: *const c_char,
-                                           xref: i32,
-                                           signature_type: *const c_char,
-                                           data: *const c_char,
-                                           cb: Option<extern fn(xcommand_handle: i32, err: i32,
-                                                                request_result_json: *const c_char)>) -> i32;
-
-    pub fn indy_sign_and_submit_request(command_handle: i32,
-                                               pool_handle: i32,
-                                               wallet_handle: i32,
-                                               submitter_did: *const c_char,
-                                               request_json: *const c_char,
-                                               cb: Option<extern fn(xcommand_handle: i32, err: i32,
-                                                                    request_result_json: *const c_char)>) -> i32;
-}
 #[allow(unused_assignments)]
 #[allow(unused_variables)]
 #[allow(dead_code)]
@@ -53,68 +27,6 @@ pub extern "C" fn generic_cb(command_handle:u32, err:u32) {
     println!("connection established!");
 }
 
-pub fn build_claim_def_txn(submitter_did: &str,
-                           xref:u32,
-                           sig_type:&str,
-                           data:&str) -> Result<String, u32> {
-    let (sender, receiver) = channel();
-    let cb = Box::new(move |err, valid | {
-        sender.send((err, valid)).unwrap();
-    });
-
-    let (command_handle, cb) = CallbackUtils::closure_to_build_request_cb(cb);
-    unsafe {
-        let indy_err = indy_build_claim_def_txn(command_handle,
-                                                    CString::new(submitter_did).unwrap().as_ptr(),
-                                                    xref as i32,
-                                                    CString::new( sig_type).unwrap().as_ptr(),
-                                                    CString::new(data).unwrap().as_ptr(),
-                                                    cb);
-        if indy_err != 0 {
-            return Err(error::BUILD_CLAIM_DEF_REQ_ERR.code_num)
-        }
-    }
-
-    let (err, claim_def_req) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-    if err != 0{
-        return Err(error::BUILD_CLAIM_DEF_REQ_ERR.code_num)
-    }
-    println!("Created claim_def request");
-    Ok(claim_def_req)
-}
-
-//pub fn sign_and_send_request(pool_handle:u32,
-//                             wallet_handle:u32,
-//                             submitter_did:u32,
-//                             request_json: &str) ->  Result<String, u32> {
-//    let pool_handle = ::cxs::utils::pool::get_pool_handle()?;
-//
-//    let (sender, receiver) = channel();
-//    let cb = Box::new(move |err, valid | {
-//        sender.send((err, valid)).unwrap();
-//    });
-//
-//    let (command_handle, cb) = CallbackUtils::closure_to_build_request_cb(cb);
-//    unsafe {
-//        let indy_err = indy_sign_and_submit_request(command_handle,
-//                                           pool_handle as i32,
-//                                           wallet_handle as i32,
-//                                           CString::new(submitter_did).unwrap().as_ptr(),
-//                                           CString::new(request_json).unwrap().as_ptr(),
-//                                           cb);
-//        if indy_err != 0 {
-//            return Err(error::INDY_SUBMIT_REQUEST_ERR.code_num)
-//        }
-//    }
-//
-//    let (err, claim_def) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-//
-//    if err != 0{
-//        return Err(error::INDY_SUBMIT_REQUEST_ERR.code_num)
-//    }
-//    Ok(claim_def)
-//}
 
 #[allow(dead_code)]
 pub fn create_claim_offer(claim_name: &str, source_id: &str, claim_data_value: serde_json::Value, issuer_did: &str, schema_seq_no: u32) -> (u32, u32){
@@ -369,11 +281,11 @@ pub fn create_proof_request(source_id: &str, requested_attrs: &str) -> (u32, u32
     let predicates_cstring = CString::new("[]").unwrap();
     let proof_name_cstring = CString::new("proof name").unwrap();
     let rc = api::proof::cxs_proof_create(command_handle,
-                                      source_id_cstring.as_ptr(),
-                                 requested_attrs.as_ptr(),
-                              predicates_cstring.as_ptr(),
-                                         proof_name_cstring.as_ptr(),
-                                                        cb);
+                                          source_id_cstring.as_ptr(),
+                                          requested_attrs.as_ptr(),
+                                          predicates_cstring.as_ptr(),
+                                          proof_name_cstring.as_ptr(),
+                                          cb);
     assert_eq!(rc, 0);
     receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap()
 }
@@ -410,9 +322,9 @@ pub fn get_proof(proof_handle: u32, connection_handle: u32) -> u32 {
     let cb = Box::new(move |err|{sender.send(err).unwrap();});
     let (command_handle, cb) = closure_to_get_proof(cb);
     let rc = api::proof::cxs_get_proof(command_handle,
-               proof_handle,
-               connection_handle,
-                cb);
+                                       proof_handle,
+                                       connection_handle,
+                                       cb);
 
     assert_eq!(rc, 0);
     receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap()

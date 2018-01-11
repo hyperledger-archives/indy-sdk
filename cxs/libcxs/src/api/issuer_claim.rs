@@ -281,9 +281,7 @@ mod tests {
     use connection;
     use api::CxsStateType;
     use utils::issuer_claim::CLAIM_REQ_STRING;
-    use utils::issuer_claim::tests::put_claim_def_in_issuer_wallet;
     use utils::issuer_claim::tests::create_default_schema;
-    use utils::wallet::get_wallet_handle;
     use utils::constants::DEFAULT_SERIALIZED_ISSUER_CLAIM;
     use api::cxs::cxs_init;
 

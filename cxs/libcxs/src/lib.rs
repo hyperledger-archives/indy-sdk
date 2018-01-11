@@ -33,6 +33,7 @@ pub mod issuer_claim;
 pub mod claim_request;
 pub mod proof;
 pub mod schema;
+pub mod claim_def;
 pub mod proof_compliance;
 
 pub fn create_path(s:&str) -> &Path {

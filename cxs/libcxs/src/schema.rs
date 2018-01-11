@@ -1,32 +1,11 @@
-extern crate libc;
-
 use serde_json;
 use serde_json::Value;
 
-use self::libc::c_char;
-use std::ffi::CString;
 use utils::error;
-use utils::callback::CallbackUtils;
-use utils::timeout::TimeoutUtils;
-use std::sync::mpsc::channel;
-use utils::pool::get_pool_handle;
+use utils::libindy::ledger::{libindy_build_get_txn_request, libindy_submit_request};
+use utils::libindy::pool::get_pool_handle;
 use std::string::ToString;
 use std::fmt;
-
-extern {
-
-    fn indy_build_get_txn_request(command_handle: i32,
-                                  submitter_did: *const c_char,
-                                  data: i32,
-                                  cb: Option<extern fn(xcommand_handle: i32, err: i32,
-                                                         request_json: *const c_char)>) -> i32;
-
-    fn indy_submit_request(command_handle: i32,
-                           pool_handle: i32,
-                           request_json: *const c_char,
-                           cb: Option<extern fn(xcommand_handle: i32, err: i32,
-                                                request_result_json: *const c_char)>) -> i32;
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SchemaTransaction {
@@ -91,7 +70,7 @@ impl LedgerSchema {
         let txn = LedgerSchema::retrieve_from_ledger(sequence_num)?;
         let data: SchemaTransaction = match LedgerSchema::process_ledger_txn(txn){
             Ok(data) => data,
-            Err(code) => return Err(code)
+            Err(code) => return Err(error::INVALID_SCHEMA_SEQ_NO.code_num)
         };
         Ok(LedgerSchema{
             sequence_num: sequence_num,
@@ -139,56 +118,14 @@ impl LedgerSchema {
         let txn = LedgerSchema::build_get_txn(sequence_num)?;
         let pool_handle = get_pool_handle()?;
 
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, valid | {
-            sender.send((err, valid)).unwrap();
-        });
-        let (command_handle, cb) = CallbackUtils::closure_to_build_request_cb(cb);
-
-        unsafe {
-            let indy_err = indy_submit_request(command_handle,
-                                               pool_handle as i32,
-                                               CString::new(txn.as_str()).unwrap().as_ptr(),
-                                               cb);
-            if indy_err != 0 {
-                return Err(indy_err as u32)
-            }
-        }
-
-        let (err, txn) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
-
-        if err != 0 {
-            return Err(err as u32)
-        }
-
-        Ok(txn)
+        libindy_submit_request(pool_handle, txn)
     }
 
     fn build_get_txn(sequence_num: i32) -> Result<String, u32>
     {
-        let (sender, receiver) = channel();
-        let cb = Box::new(move |err, valid | {
-            sender.send((err, valid)).unwrap();
-        });
-        let (command_handle, cb) = CallbackUtils::closure_to_build_request_cb(cb);
+        let submitter_did = "GGBDg1j8bsKmr4h5T9XqYf".to_string();
 
-        unsafe {
-            let indy_err = indy_build_get_txn_request(command_handle,
-                                               CString::new("GGBDg1j8bsKmr4h5T9XqYf").unwrap().as_ptr(),
-                                               sequence_num,
-                                               cb);
-            if indy_err != 0 {
-                return Err(error::UNKNOWN_ERROR.code_num)
-            }
-        }
-
-        let (err, txn) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
-        if err != 0 {
-            return Err(error::UNKNOWN_ERROR.code_num)
-        }
-
-        Ok(txn)
+        libindy_build_get_txn_request(submitter_did, sequence_num)
     }
 }
 
@@ -196,7 +133,7 @@ impl LedgerSchema {
 mod tests {
     use settings;
     use super::*;
-    use utils::pool;
+    use utils::libindy::pool;
     use std::path::Path;
     use std::str::FromStr;
 

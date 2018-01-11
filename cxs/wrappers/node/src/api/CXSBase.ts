@@ -1,20 +1,16 @@
 import * as ffi from 'ffi'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { GCWatcher } from '../utils/memory-management-helpers'
-import { StateType } from './common'
 
 export abstract class CXSBase extends GCWatcher {
-  protected abstract _updateStFn: any
   protected abstract _serializeFn: any
   protected abstract _deserializeFn: any
   protected _handle: string
   protected _sourceId: string
-  protected _state: StateType
 
   constructor (sourceId) {
     super()
     this._handle = null
-    this._state = StateType.None
     this._sourceId = sourceId
   }
 
@@ -25,20 +21,13 @@ export abstract class CXSBase extends GCWatcher {
   ): Promise<T> {
     const obj = new CXSClass(objData.source_id, constructorParams)
     await obj._initFromData(objData)
-    await obj._updateState()
     return obj
   }
-
-  async abstract updateState ()
 
   async abstract serialize ()
 
   async _create (createFn): Promise<void> {
     await this._init(createFn)
-  }
-
-  get state (): number {
-    return this._state
   }
 
   get handle () {
@@ -47,25 +36,6 @@ export abstract class CXSBase extends GCWatcher {
 
   get sourceId () {
     return this._sourceId
-  }
-
-  protected async _updateState (): Promise<void> {
-    const commandHandle = 0
-    const state = await createFFICallbackPromise<number>(
-      (resolve, reject, cb) => {
-        const rc = this._updateStFn(commandHandle, this._handle, cb)
-        if (rc) {
-          resolve(StateType.None)
-        }
-      },
-      (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'uint32'], (handle, err, _state) => {
-        if (err) {
-          reject(err)
-        }
-        resolve(_state)
-      })
-    )
-    this._state = state
   }
 
   protected async _serialize (): Promise<string> {
@@ -109,7 +79,6 @@ export abstract class CXSBase extends GCWatcher {
         })
     )
     super._setHandle(handle)
-    await this._updateState()
   }
 
   private async _initFromData (objData): Promise<void> {

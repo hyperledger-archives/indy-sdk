@@ -5,7 +5,7 @@ import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { StateType } from './common'
 import { Connection } from './connection'
-import { CXSBase } from './CXSBase'
+import { CXSBaseWithState } from './CXSBaseWithState'
 
 /**
  * @interface
@@ -53,7 +53,7 @@ export interface IClaimData {
 /**
  * @class Class representing an Issuer Claim
  */
-export class IssuerClaim extends CXSBase {
+export class IssuerClaim extends CXSBaseWithState {
   protected _releaseFn = rustAPI().cxs_connection_release // TODO: Fix me
   protected _updateStFn = rustAPI().cxs_issuer_claim_update_state
   protected _serializeFn = rustAPI().cxs_issuer_claim_serialize
@@ -98,6 +98,7 @@ export class IssuerClaim extends CXSBase {
         cb
         )
       )
+      await claim._updateState()
       return claim
     } catch (err) {
       throw new CXSInternalError(`cxs_issuer_create_claim -> ${err}`)
@@ -126,7 +127,9 @@ export class IssuerClaim extends CXSBase {
         issuerDid: claimData.issuer_did,
         schemaNum: claimData.schema_seq_no
       }
-      return await super._deserialize<IssuerClaim, IClaimParams>(IssuerClaim, claimData, params)
+      const claim = await super._deserialize<IssuerClaim, IClaimParams>(IssuerClaim, claimData, params)
+      await claim._updateState()
+      return claim
     } catch (err) {
       throw new CXSInternalError(`cxs_issuer_claim_deserialize -> ${err}`)
     }

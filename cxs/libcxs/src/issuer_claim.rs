@@ -377,10 +377,16 @@ pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRe
         return Err(error::UNKNOWN_ERROR.code_num);
     };
 
-    debug!("xclaim_json: {}", xclaim_json);
-    // add required fields for Consumer API
-
-    Ok(xclaim_json)
+    match xclaim_json {
+        Some(s) => {
+            debug!("xclaim_json: {:?}", s);
+            Ok(s)
+        },
+        None => {
+            warn!("libindy did not return a string");
+            Err(error::UNKNOWN_LIBINDY_ERROR.code_num)
+        }
+    }
 }
 
 pub fn get_offer_uid(handle: u32) -> Result<String,u32> {

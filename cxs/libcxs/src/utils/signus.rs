@@ -6,6 +6,7 @@ use std::ffi::CString;
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
 use settings;
+use utils::error;
 
 extern {
     fn indy_create_and_store_my_did(command_handle: i32,
@@ -44,16 +45,22 @@ impl SignusUtils {
                                              wallet_handle,
                                              my_did_json.as_ptr(),
                                              create_and_store_my_did_callback);
-
             if err != 0 {
                 return Err(err);
             }
-            let (err, my_did, my_verkey) = create_and_store_my_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-            if err != 0 {
-                return Err(err);
-            }
-            Ok((my_did, my_verkey))
         }
+
+        let (err, my_did, my_verkey) = create_and_store_my_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != 0 {
+            return Err(err);
+        }
+        if my_did.is_none() || my_verkey.is_none() {
+            Err(error::UNKNOWN_LIBINDY_ERROR.code_num as i32)
+        }
+        else {
+            Ok((my_did.unwrap(), my_verkey.unwrap()))
+        }
+
     }
 
     pub fn store_their_did_from_parts(wallet_handle: i32, their_did: &str, their_verkey: &str) -> Result<(), i32> {

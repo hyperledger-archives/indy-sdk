@@ -79,7 +79,6 @@ pub extern fn cxs_proof_set_connection(command_handle: u32,
 ///
 /// #Returns
 /// Error code as a u32
-#[allow(unused_variables, unused_mut)]
 #[no_mangle]
 pub extern fn cxs_proof_update_state(command_handle: u32,
                                      proof_handle: u32,
@@ -152,7 +151,6 @@ pub extern fn cxs_proof_serialize(command_handle: u32,
 ///
 /// #Returns
 /// Error code as a u32
-#[allow(unused_variables, unused_mut)]
 #[no_mangle]
 pub extern fn cxs_proof_deserialize(command_handle: u32,
                                     proof_data: *const c_char,
@@ -351,9 +349,9 @@ mod tests {
         assert_eq!(err, 0);
         assert!(proof_handle > 0);
         println!("successfully called deserialize_cb");
-        let original = "{\"source_id\":\"source id\",\"handle\":1,\"requested_attrs\":\"{\\\"attrs\\\":[{\\\"name\\\":\\\"person name\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"address_1\\\"},{\\\"schema_seq_no\\\":2,\\\"issuer_did\\\":\\\"ISSUER_DID2\\\",\\\"name\\\":\\\"address_2\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"city\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"state\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"zip\\\"}]}\",\"requested_predicates\":\"{\\\"attr_name\\\":\\\"age\\\",\\\"p_type\\\":\\\"GE\\\",\\\"value\\\":18,\\\"schema_seq_no\\\":1,\\\"issuer_did\\\":\\\"DID1\\\"}\",\"msg_uid\":\"\",\"ref_msg_id\":\"\",\"requester_did\":\"234\",\"prover_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"state\":1,\"proof_state\":0,\"name\":\"Name Data\",\"version\":\"1.0\",\"nonce\":\"123456\",\"proof\":null,\"proof_request\":null}";
+        let expected = "{\"source_id\":\"source id\",\"handle\":1,\"requested_attrs\":\"{\\\"attrs\\\":[{\\\"name\\\":\\\"person name\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"address_1\\\"},{\\\"schema_seq_no\\\":2,\\\"issuer_did\\\":\\\"ISSUER_DID2\\\",\\\"name\\\":\\\"address_2\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"city\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"state\\\"},{\\\"schema_seq_no\\\":1,\\\"name\\\":\\\"zip\\\"}]}\",\"requested_predicates\":\"{\\\"attr_name\\\":\\\"age\\\",\\\"p_type\\\":\\\"GE\\\",\\\"value\\\":18,\\\"schema_seq_no\\\":1,\\\"issuer_did\\\":\\\"DID1\\\"}\",\"msg_uid\":\"\",\"ref_msg_id\":\"\",\"requester_did\":\"234\",\"prover_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"state\":1,\"proof_state\":0,\"name\":\"Name Data\",\"version\":\"1.0\",\"nonce\":\"123456\",\"proof\":null,\"proof_request\":null}";
         let new = proof::to_string(proof_handle).unwrap();
-        assert_eq!(original,new);
+        assert_eq!(expected,new);
     }
 
     extern "C" fn update_state_cb(command_handle: u32, err: u32, state: u32) {

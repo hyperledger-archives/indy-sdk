@@ -21,7 +21,8 @@ use std::sync::mpsc::channel;
 use self::libc::c_char;
 use std::ffi::CString;
 use utils::timeout::TimeoutUtils;
-use utils::claim_def::{ClaimDef};
+use utils::libindy::SigTypes;
+use claim_def::{ RetrieveClaimDef, ClaimDefCommon };
 use utils::constants::*;
 use schema::LedgerSchema;
 
@@ -113,8 +114,8 @@ impl Proof {
         let schema_no = claim_data[0].schema_seq_no;
         let claim_uuid: &str = claim_data[0].claim_uuid.as_ref();
 
-        let claim_def = ClaimDef::create()
-            .retrieve_claim_def("GGBDg1j8bsKmr4h5T9XqYf", schema_no, "CL", &issuer_did)?;
+        let claim_def = RetrieveClaimDef::new()
+            .retrieve_claim_def("GGBDg1j8bsKmr4h5T9XqYf", schema_no, Some(SigTypes::CL), &issuer_did)?;
 
         let claim_def_data:serde_json::Value = serde_json::from_str(&claim_def).unwrap();
 
@@ -181,7 +182,7 @@ impl Proof {
             return Err(error::NOT_READY.code_num);
         }
         self.prover_did = connection::get_pw_did(connection_handle)?;
-        self.requester_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT).unwrap();
+        self.requester_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT)?;
 
         let agent_did = connection::get_agent_did(connection_handle)?;
         let agent_vk = connection::get_agent_verkey(connection_handle)?;
@@ -650,7 +651,7 @@ mod tests {
 //        let proof_json = PROOF_JSON;
 //        let schemas_json = SCHEMAS_JSON;
 ////        let claim_defs_json = CLAIM_DEFS_JSON;
-//        let mut claim_defs_json = ClaimDef::create()
+//        let mut claim_defs_json = RetrieveClaimDef::new()
 //            .retrieve_claim_def("GGBDg1j8bsKmr4h5T9XqYf",
 //                                15,
 //                                "CL",

@@ -3,7 +3,7 @@ extern crate rusqlite;
 use std::env::home_dir;
 
 
-static entries: &[[&str;3];4] = &[
+static ENTRIES: &[[&str;3];6] = &[
     [
         "claim_definition_private::2hoqvcwupRTUNkXn6ArYzs:15",
         r#"{"secret_key":{"p":"139487684743426934866224951962492278976033872927645764870932099401267417300834447210226071235132419566799186258471528658750224371754894423526601605874987628975850529277895758002503639302057158499505184482062019901147451416880932855653178276409188907179487058776296448670567237107274584022583573914693235126821","q":"150848315904778847602727788295995229612801377223526257362482582038708340756470009735494354494609454294515467595648482398436537100160962376767833965508330374282858620557637157382774173692642101254072735113266054904673545355852844559552372533850929673778342367814495098505607753561587539451888902205754598009903"},"secret_key_revocation":null}"#,
@@ -23,6 +23,16 @@ static entries: &[[&str;3];4] = &[
         "key::vrWGArMA3toVoZrYGSAMjR2i9KjBS66bZWyWuYJJYPf",
         r#"{"verkey":"vrWGArMA3toVoZrYGSAMjR2i9KjBS66bZWyWuYJJYPf","signkey":"xt19s1sp2UZCGhy9rNyb1FtxdKiDGZZPPWbEpqU41NEy3MmoeUuhq6T8F4JuRPgtj3hoT6BBjgnEF4bbhsR84NH"}"#,
         "2017-12-22 21:00:57"
+    ],
+    [
+        "my_did::5bJqPo8aCWyBwLQosZkJcB",
+        r#"{"did":"5bJqPo8aCWyBwLQosZkJcB","verkey":"3W9WGtRowAanh5q6giQrGncZVMvRwPedB9fJAJkAN5Gk"}"#,
+        "2018-01-04 22:46:18"
+    ],
+    [
+        "key::3W9WGtRowAanh5q6giQrGncZVMvRwPedB9fJAJkAN5Gk",
+        r#"{"verkey":"3W9WGtRowAanh5q6giQrGncZVMvRwPedB9fJAJkAN5Gk","signkey":"xt19s1sp2UZCGhy9rNyb1FtxdKiDGZaRvDuYQ4AKCZCipe1dDms9sw66AKazbdzTSisr1CKjA1r1iDZcjw6pNUY"}"#,
+        "2018-01-04 22:46:18"
     ]
 ];
 #[ignore]
@@ -30,15 +40,14 @@ static entries: &[[&str;3];4] = &[
 fn test_putting_claim_def_dependencies() {
     use std::path::Path;
     use rusqlite::Connection;
-    use rusqlite::types::ToSql;
     let home = home_dir().unwrap();
-    let indy = Path::new(".indy_client/wallet/wallet1/sqlite.db");
+    let indy = Path::new(".indy_client/wallet/my_real_wallet/sqlite.db");
     let path = home.join(indy);
     let connection = Connection::open(path.as_path()).unwrap();
 
 
-    for entry in entries{
-        connection.execute("INSERT INTO wallet VALUES (?,?,?)", &[&entry[0].to_string(),&entry[1].to_string(),&entry[2].to_string()]);
+    for entry in ENTRIES {
+        connection.execute("INSERT INTO wallet VALUES (?,?,?)", &[&entry[0].to_string(),&entry[1].to_string(),&entry[2].to_string()]).unwrap();
     }
 
 }

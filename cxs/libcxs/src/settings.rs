@@ -193,7 +193,10 @@ pub mod tests {
     pub fn remove_file_if_exists(filename: &str){
         if Path::new(filename).exists() {
             info!("{}", format!("Removing file for testing: {}.", &filename));
-            fs::remove_file(filename);
+            match fs::remove_file(filename) {
+                Ok(t) => (),
+                Err(e) => info!("Unable to remove file: {:?}", e)
+            }
         }
     }
 

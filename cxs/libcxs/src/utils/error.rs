@@ -41,6 +41,13 @@ pub static NO_POOL_OPEN: Error = Error{code_num: 1030, message: "No Pool open. C
 pub static INVALID_SCHEMA: Error = Error{code_num: 1031, message: "Schema was invalid or corrupt"};
 pub static FAILED_PROOF_COMPLIANCE: Error = Error{code_num: 1032, message: "Proof is not compliant to proof request"};
 pub static INVALID_HTTP_RESPONSE: Error = Error{code_num: 1033, message: "Invalid HTTP response."};
+pub static CREATE_CLAIM_DEF_ERR: Error = Error{code_num: 1034, message: "Call to create Claim Definition failed"};
+pub static UNKNOWN_LIBINDY_ERROR: Error = Error{code_num: 1035, message: "Unknown libindy error"};
+pub static INVALID_CLAIM_DEF_JSON: Error = Error{code_num: 1036, message: "Claim Def not in valid json"};
+pub static INVALID_CLAIM_DEF_HANDLE: Error = Error{code_num: 1037, message: "Claim Def handle not found"};
+pub static TIMEOUT_LIBINDY_ERROR: Error = Error{code_num: 1038, message: "Waiting for callback timed out"};
+pub static CLAIM_DEF_ALREADY_CREATED: Error = Error{code_num: 1039, message: "Can't create, Claim Def already on ledger"};
+pub static INVALID_SCHEMA_SEQ_NO: Error = Error{code_num: 1040, message: "No Schema for that schema sequence number"};
 
 lazy_static! {
     static ref ERROR_MESSAGES: HashMap<u32, &'static str> = {
@@ -79,6 +86,13 @@ lazy_static! {
         insert_message(&mut m, &INVALID_SCHEMA);
         insert_message(&mut m, &FAILED_PROOF_COMPLIANCE);
         insert_message(&mut m, &INVALID_HTTP_RESPONSE);
+        insert_message(&mut m, &CREATE_CLAIM_DEF_ERR);
+        insert_message(&mut m, &UNKNOWN_LIBINDY_ERROR);
+        insert_message(&mut m, &TIMEOUT_LIBINDY_ERROR);
+        insert_message(&mut m, &INVALID_CLAIM_DEF_JSON);
+        insert_message(&mut m, &INVALID_CLAIM_DEF_HANDLE);
+        insert_message(&mut m, &CLAIM_DEF_ALREADY_CREATED);
+        insert_message(&mut m, &INVALID_SCHEMA_SEQ_NO);
         m
     };
 }
@@ -234,4 +248,39 @@ mod tests {
     fn test_failed_proof_compliance() {
         assert_eq!(error_message(&FAILED_PROOF_COMPLIANCE.code_num), FAILED_PROOF_COMPLIANCE.message);
     }
+
+    #[test]
+    fn test_claim_def_err() {
+        assert_eq!(error_message(&CREATE_CLAIM_DEF_ERR.code_num), CREATE_CLAIM_DEF_ERR.message);
+    }
+
+    #[test]
+    fn test_unknown_libindy_error() {
+        assert_eq!(error_message(&UNKNOWN_LIBINDY_ERROR.code_num), UNKNOWN_LIBINDY_ERROR.message);
+    }
+
+    #[test]
+    fn test_timeout_libindy_error() {
+        assert_eq!(error_message(&TIMEOUT_LIBINDY_ERROR.code_num), TIMEOUT_LIBINDY_ERROR.message);
+    }
+
+    fn test_invalid_claim_def_json() {
+        assert_eq!(error_message(&INVALID_CLAIM_DEF_JSON.code_num), INVALID_CLAIM_DEF_JSON.message);
+    }
+
+    #[test]
+    fn test_claim_def_handle_err() {
+        assert_eq!(error_message(&INVALID_CLAIM_DEF_HANDLE.code_num), INVALID_CLAIM_DEF_HANDLE.message);
+    }
+
+    #[test]
+    fn test_claim_def_already_on_ledger_err() {
+        assert_eq!(error_message(&CLAIM_DEF_ALREADY_CREATED.code_num), CLAIM_DEF_ALREADY_CREATED.message);
+    }
+
+    #[test]
+    fn test_no_schema_no() {
+        assert_eq!(error_message(&INVALID_SCHEMA_SEQ_NO.code_num), INVALID_SCHEMA_SEQ_NO.message);
+    }
 }
+
