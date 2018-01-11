@@ -25,13 +25,11 @@ pub mod new_command {
     command!(CommandMetadata::build("new", "Create new DID")
                 .add_param("did", true, "Known DID for new wallet instance")
                 .add_param("seed", true, "Seed for creating DID key-pair")
-                .add_param("cid", true, "Create DID as CID. Can be true or false (default false)")
                 .add_param("metadata", true, "DID metadata")
                 .add_example("did new")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX seed=00000000000000000000000000000My1")
-                .add_example("did new seed=00000000000000000000000000000My1 cid=true")
-                .add_example("did new seed=00000000000000000000000000000My1 cid=true metadata=did_metadata")
+                .add_example("did new seed=00000000000000000000000000000My1 metadata=did_metadata")
                 .finalize()
     );
 
@@ -42,14 +40,12 @@ pub mod new_command {
 
         let did = get_opt_str_param("did", params).map_err(error_err!())?;
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
-        let cid = get_opt_bool_param("cid", params).map_err(error_err!())?;
         let metadata = get_opt_empty_str_param("metadata", params).map_err(error_err!())?;
 
         let config = {
             let mut json = JSONMap::new();
             update_json_map_opt_key!(json, "did", did);
             update_json_map_opt_key!(json, "seed", seed);
-            update_json_map_opt_key!(json, "cid", cid);
             JSONValue::from(json).to_string()
         };
 
@@ -361,25 +357,6 @@ pub mod tests {
             let dids = get_dids(wallet_handle);
             assert_eq!(1, dids.len());
             assert_eq!(dids[0]["metadata"].as_str().unwrap(), metadata);
-
-            close_and_delete_wallet(&ctx);
-        }
-
-        #[test]
-        pub fn new_works_for_cid() {
-            let ctx = CommandContext::new();
-
-            let wallet_handle = create_and_open_wallet(&ctx);
-            {
-                let cmd = new_command::new();
-                let mut params = CommandParams::new();
-                params.insert("cid", "true".to_string());
-                params.insert("seed", SEED_TRUSTEE.to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            let dids = get_dids(wallet_handle);
-            assert_eq!(1, dids.len());
-            assert_eq!(dids[0]["did"].as_str().unwrap(), VERKEY_TRUSTEE);
 
             close_and_delete_wallet(&ctx);
         }
