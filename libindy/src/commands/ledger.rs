@@ -470,7 +470,6 @@ impl LedgerCommandExecutor {
               submitter_did, target_did, data);
 
         self.crypto_service.validate_did(submitter_did)?;
-        self.crypto_service.validate_did(target_did)?;
 
         let res = self.ledger_service.build_node_request(submitter_did,
                                                          target_did,

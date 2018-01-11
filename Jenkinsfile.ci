@@ -151,7 +151,7 @@ def iosTesting() {
 
                 dir('wrappers/ios/libindy-pod') {
                     echo "iOS Test: Testing"
-                    sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone 7 Plus,OS=10.3.1'"
+                    sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
                 }
             } finally {
                 try {
