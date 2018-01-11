@@ -225,7 +225,7 @@ impl PoolWorker {
 
     pub fn run(&mut self) -> Result<(), PoolError> {
         self._run().or_else(|err: PoolError| {
-            self.handler.flush_requests(Err(PoolError::Terminate))?;
+            self.handler.flush_requests(Err(err.clone()))?;
             match err {
                 PoolError::Terminate => Ok(()),
                 _ => Err(err),
