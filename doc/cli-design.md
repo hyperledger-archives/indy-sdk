@@ -148,16 +148,16 @@ indy> wallet list
 indy> pool <subcommand>
 ```
 
-#### Create config
+#### Create
 Create name pool (network) configuration
 ```
-indy> pool create-config [name=]<pool name> [gen_txn_file=<gen txn file path>] 
+indy> pool create [name=]<pool name> gen_txn_file=<gen txn file path>
 ```
 
 #### Connect
 Connect to Indy nodes pool and make it available for operation that require pool access. If there was pool connection it will be disconnected.
 ```
-indy> pool connect [name=]<pool name> [refresh_on_open=<true or false>] [auto_refresh_time=<auto refresh time>] [network_timeout=<network timeout>]
+indy> pool connect [name=]<pool name> 
 ```
 
 #### Disconnect
