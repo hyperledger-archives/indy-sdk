@@ -36,7 +36,7 @@ async def test_build_nym_request_works_for_only_required_fields():
 async def test_build_nym_request_works_with_option_fields():
     identifier = "Th7MpTaRZVRYnPiabds81Y"
     destination = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4"
-    ver_key = "Anfh2rjAcxkE249DcdsaQl"
+    ver_key = "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL"
     role = "STEWARD"
     alias = "some_alias"
 

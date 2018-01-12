@@ -6,19 +6,17 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_build_node_request_works_for_missed_fields_in_data_json():
-    identifier = "identifier"
+async def test_build_node_request_works_for_missed_fields_in_data_json(did_trustee):
     destination = "destination"
     data = { }
 
     with pytest.raises(IndyError) as e:
-        await ledger.build_node_request(identifier, destination, json.dumps(data))
+        await ledger.build_node_request(did_trustee, destination, json.dumps(data))
     assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
-async def test_build_node_request_works_for_correct_data_json():
-    identifier = "identifier"
+async def test_build_node_request_works_for_correct_data_json(did_trustee):
     destination = "destination"
     data = {
         "node_ip": "ip",
@@ -31,7 +29,7 @@ async def test_build_node_request_works_for_correct_data_json():
     }
 
     expected_response = {
-        "identifier": identifier,
+        "identifier": did_trustee,
         "operation": {
             "type": "0",
             "dest": destination,
@@ -39,5 +37,5 @@ async def test_build_node_request_works_for_correct_data_json():
         }
     }
 
-    response = json.loads(await ledger.build_node_request(identifier, destination, json.dumps(data)))
+    response = json.loads(await ledger.build_node_request(did_trustee, destination, json.dumps(data)))
     assert expected_response.items() <= response.items()

@@ -655,7 +655,7 @@
     
     NSString *identifier = @"Th7MpTaRZVRYnPiabds81Y";
     NSString *dest = @"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
-    NSString *verkey = @"Anfh2rjAcxkE249DcdsaQl";
+    NSString *verkey = @"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL";
     NSString *role = @"STEWARD";
     NSString *alias = @"some_alias";
     NSError *ret;
@@ -1177,7 +1177,7 @@
 - (void) testBuildSchemaRequestsWorksForCorrectDataJson
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"identifier";
+    NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
     NSString *data = @"{"\
     "\"name\":\"name\","\
     "\"version\":\"1.0\","\
@@ -1209,17 +1209,17 @@
 - (void) testBuildGetSchemaRequestsWorksForCorrectDataJson
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"identifier";
+    NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
     NSString *data = @"{"\
     "\"name\":\"name\","\
     "\"version\":\"1.0\"}";
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
     
-    expectedResult[@"identifier"] = @"identifier";
+    expectedResult[@"identifier"] = @"NcYxiDXkpYi6ov5FcYDi1e";
     expectedResult[@"operation"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"type"] = @"107";
-    expectedResult[@"operation"][@"dest"] = @"identifier";
+    expectedResult[@"operation"][@"dest"] = @"NcYxiDXkpYi6ov5FcYDi1e";
     expectedResult[@"operation"][@"data"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"data"][@"name"] = @"name";
     expectedResult[@"operation"][@"data"][@"version"] = @"1.0";
@@ -1414,8 +1414,8 @@
 - (void) testBuildNodeRequestWorksForCorrectDataJson
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"identifier";
-    NSString *dest = @"dest";
+    NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
+    NSString *dest = @"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
     NSString *data = @"{"\
     "\"node_ip\":\"ip\","\
     "\"node_port\":1,"\
@@ -1427,10 +1427,10 @@
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
     
-    expectedResult[@"identifier"] = @"identifier";
+    expectedResult[@"identifier"] = @"NcYxiDXkpYi6ov5FcYDi1e";
     expectedResult[@"operation"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"type"] = @"0";
-    expectedResult[@"operation"][@"dest"] = @"dest";
+    expectedResult[@"operation"][@"dest"] = @"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
     expectedResult[@"operation"][@"data"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"data"][@"node_ip"] = @"ip";
     expectedResult[@"operation"][@"data"][@"node_port"] = @(1);
@@ -1636,7 +1636,7 @@
 - (void) testBuildClaimDefRequestWorksForCorrectDataJson
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"identifier";
+    NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
     NSString *signatureType = @"CL";
     NSNumber *schemaSeqNo = @(1);
     NSString *data = @"{"\
@@ -1651,7 +1651,7 @@
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
     
-    expectedResult[@"identifier"] = @"identifier";
+    expectedResult[@"identifier"] = @"NcYxiDXkpYi6ov5FcYDi1e";
     expectedResult[@"operation"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"ref"] = @(1);
     expectedResult[@"operation"][@"data"] = [NSMutableDictionary new];
@@ -1688,18 +1688,18 @@
 - (void) testBuildGetClaimDefRequestWorks
 {
     [TestUtils cleanupStorage];
-    NSString *identifier = @"identifier";
+    NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
     NSNumber *xref = @(1);
     NSString *signatureType = @"signature_type";
-    NSString *origin = @"origin";
+    NSString *origin = @"NcYxiDXkpYi6ov5FcYDi1e";
     
     NSMutableDictionary *expectedResult = [NSMutableDictionary new];
-    expectedResult[@"identifier"] = @"identifier";
+    expectedResult[@"identifier"] = @"NcYxiDXkpYi6ov5FcYDi1e";
     expectedResult[@"operation"] = [NSMutableDictionary new];
     expectedResult[@"operation"][@"type"] = @"108";
     expectedResult[@"operation"][@"ref"] = @(1);
     expectedResult[@"operation"][@"signature_type"] = @"signature_type";
-    expectedResult[@"operation"][@"origin"] = @"origin";
+    expectedResult[@"operation"][@"origin"] = @"NcYxiDXkpYi6ov5FcYDi1e";
     
     NSString *getClaimDefRequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildGetClaimDefTxnWithSubmitterDid:identifier
@@ -2044,10 +2044,10 @@
 
 - (void)testBuildGetTxnRequest
 {
-    NSString *identifier = @"identifier";
+    NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
     NSNumber *data = @(1);
     
-    NSString *extectedResultJson = @"{\"identifier\":\"identifier\","
+    NSString *extectedResultJson = @"{\"identifier\":\"NcYxiDXkpYi6ov5FcYDi1e\","
                                     "\"operation\":{\"type\":\"3\",\"data\":1}}";
     
     NSDictionary *expectedResult = [NSDictionary fromString:extectedResultJson];

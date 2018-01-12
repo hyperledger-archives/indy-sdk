@@ -45,14 +45,14 @@ pub mod nym_command {
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let verkey = get_opt_str_param("verkey", params).map_err(error_err!())?;
-        let role = get_opt_str_param("role", params).map_err(error_err!())?;
+        let role = get_opt_empty_str_param("role", params).map_err(error_err!())?;
 
         let response = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
 
         let mut response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -97,7 +97,7 @@ pub mod get_nym_command {
 
         let response = match res {
             Ok(response) => Ok(response),
-            Err(err) => handle_get_command_error(err),
+            Err(err) => handle_transaction_error(err, None, None, None),
         }?;
 
         let mut response = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -158,7 +158,7 @@ pub mod attrib_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -209,7 +209,7 @@ pub mod get_attrib_command {
 
         let response = match res {
             Ok(response) => Ok(response),
-            Err(err) => handle_get_command_error(err),
+            Err(err) => handle_transaction_error(err, None, None, None),
         }?;
 
         let mut response = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -273,7 +273,7 @@ pub mod schema_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -327,7 +327,7 @@ pub mod get_schema_command {
 
         let response = match res {
             Ok(response) => Ok(response),
-            Err(err) => handle_get_command_error(err),
+            Err(err) => handle_transaction_error(err, None, None, None),
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -391,7 +391,7 @@ pub mod claim_def_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -437,7 +437,7 @@ pub mod get_claim_def_command {
 
         let response = match res {
             Ok(response) => Ok(response),
-            Err(err) => handle_get_command_error(err),
+            Err(err) => handle_transaction_error(err, None, None, None),
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -516,7 +516,7 @@ pub mod node_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -567,7 +567,7 @@ pub mod pool_config_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -628,7 +628,7 @@ pub mod pool_upgrade_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -690,7 +690,7 @@ pub mod custom_command {
 
         let response_json = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter, &pool_name, &wallet)
+            Err(err) => handle_transaction_error(err, Some(&submitter), Some(&pool_name), Some(&wallet))
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
@@ -736,24 +736,18 @@ fn handle_transaction_response(mut response: Response<serde_json::Value>, title:
     }
 }
 
-pub fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_name: &str, wallet_name: &str) -> Result<String, ()> {
+pub fn handle_transaction_error(err: ErrorCode, submitter_did: Option<&str>, pool_name: Option<&str>, wallet_name: Option<&str>) -> Result<String, ()> {
     match err {
-        ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
-        ErrorCode::WalletNotFoundError => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did)),
-        ErrorCode::WalletIncompatiblePoolError => Err(println_err!("Wallet \"{}\" is incompatible with pool \"{}\".", wallet_name, pool_name)),
+        ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
+        ErrorCode::WalletNotFoundError => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did.unwrap_or(""))),
+        ErrorCode::WalletIncompatiblePoolError => Err(println_err!("Wallet \"{}\" is incompatible with pool \"{}\".", wallet_name.unwrap_or(""), pool_name.unwrap_or(""))),
+        ErrorCode::PoolLedgerTimeout => Err(println_err!("Transaction response has not been received")),
         err => Err(println_err!("Indy SDK error occurred {:?}", err))
     }
 }
 
-fn handle_get_command_error(err: ErrorCode) -> Result<String, ()> {
-    match err {
-        ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
-        err => Err(println_err!("Indy SDK error occurred {:?}", err)),
-    }
-}
-
 fn extract_error_message(error: &str) -> String {
-    let re = Regex::new(r"'(.*)'").unwrap();
+    let re = Regex::new(r#"[',"](.*)[',"]"#).unwrap();
     match re.captures(error) {
         Some(message) => message[1].to_string(),
         None => error.to_string()
