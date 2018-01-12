@@ -100,7 +100,7 @@
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    NSString *schema = [[AnoncredsUtils sharedInstance] getGvtSchemaJson:@(1)];
+    NSString *schema = [[AnoncredsUtils sharedInstance] getSchemaJson:@"ClaimDefWorksForInvalidSignatureType"];
 
     // 2. create claim definition
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
@@ -123,14 +123,8 @@
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    NSString *schema = [NSString stringWithFormat:@"{"
-                                                  "\"seqNo\":1,"
-                                                  "\"identifier\":\"%@\","
-                                                  "\"data\":{"
-                                                  "\"name\":\"duplicate\","
-                                                  "\"version\":\"1.0\","
-                                                  "\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}"
-                                                  "}", [TestUtils issuerDid]];
+
+    NSString *schema = [[AnoncredsUtils sharedInstance] getSchemaJson:@"ClaimDefWorksForDuplicate"];
 
     // 2. create claim definition
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
