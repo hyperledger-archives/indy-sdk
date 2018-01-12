@@ -120,10 +120,10 @@ typedef enum
 
     // Crypto errors
     // Unknown format of DID entity keys
-    UnknownCryptoTypeError = 500
+    UnknownCryptoTypeError = 500,
 
     // Attempt to create duplicate did
-    DidAlreadyExistsError = 600,
+    DidAlreadyExistsError = 600
 
 } indy_error_t;
 
