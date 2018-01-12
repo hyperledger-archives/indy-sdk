@@ -152,7 +152,7 @@ T->L: Send Nym for "Alice Thrift Pairwise" DID
 
 == Apply for the loan with Thrift - HE Diploma and Employment History proving  ==
 T->A: Send authcrypted "HE Diploma and Employment History" Proof Request
-A->AW: Get claims for "HE Diplomaand Employment History" Proof Request
+A->AW: Get claims for "HE Diploma and Employment History" Proof Request
 AW->A: "Alice Faber HE Diploma and Alice Acme Employment History" Claim
 A->A: Create "Alice Faber HE Diploma and Alice Acme Employment History" Proof
 A->T: Send "Alice Faber HE Diploma and Alice Acme Employment History" Proof
