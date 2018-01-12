@@ -126,6 +126,39 @@
     [TestUtils cleanupStorage];
 }
 
+
+- (void)testCreateMyDidWorksForDuplicate
+{
+    [TestUtils cleanupStorage];
+    NSError *ret = nil;
+    NSString *poolName = [TestUtils pool];
+
+    // 1. Create and open wallet, get wallet handle
+    IndyHandle walletHandle = 0;
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                                  xtype:nil
+                                                                 handle:&walletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
+
+    // 2. create my did
+    NSString *myDid = nil;
+    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+                                                       myDidJson:@"{}"
+                                                        outMyDid:&myDid
+                                                     outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:createAndOpenWalletWithPoolName failed");
+
+    // 3. create duplicate did
+    NSString *didJson = [NSString stringWithFormat:@"{\"did\":\"%@\"}", myDid];
+    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
+                                                       myDidJson:didJson
+                                                        outMyDid:nil
+                                                     outMyVerkey:nil];
+    XCTAssertEqual(ret.code, DidAlreadyExistsError, @"DidUtils::createMyDidWithWalletHandle() returned wrong error");
+
+    [TestUtils cleanupStorage];
+}
+
 // MARK: - Replace keys Start
 
 -(void)testReplaceKeysStartWorksForNotExistingDid
