@@ -106,7 +106,7 @@ impl IssuerCommandExecutor {
         let private_key_json = private_key.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claim definition private key: {:?}", err)))?;
 
-        let schema_key = SchemaKey { name: schema.data.name.clone(), version: schema.data.version.clone(), did: schema.identifier.clone() };
+        let schema_key = SchemaKey { name: schema.data.name.clone(), version: schema.data.version.clone(), did: schema.dest.clone() };
         let id = get_composite_id(issuer_did, &schema_key);
         self.wallet_service.set(wallet_handle, &format!("claim_definition::{}", id), &claim_definition_json)?;
         self.wallet_service.set(wallet_handle, &format!("claim_definition_private_key::{}", id), &private_key_json)?;
@@ -129,7 +129,7 @@ impl IssuerCommandExecutor {
 
         let schema: Schema = Schema::from_json(schema_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid schema json: {}", err.to_string())))?;
-        let schema_key = SchemaKey { name: schema.data.name.clone(), version: schema.data.version.clone(), did: schema.identifier.clone() };
+        let schema_key = SchemaKey { name: schema.data.name.clone(), version: schema.data.version.clone(), did: schema.dest.clone() };
 
         let id = get_composite_id(issuer_did, &schema_key);
 
@@ -240,7 +240,7 @@ impl IssuerCommandExecutor {
 
         let schema: Schema = Schema::from_json(schema_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid schema json: {}", err.to_string())))?;
-        let schema_key = SchemaKey { name: schema.data.name.clone(), version: schema.data.version.clone(), did: schema.identifier.clone() };
+        let schema_key = SchemaKey { name: schema.data.name.clone(), version: schema.data.version.clone(), did: schema.dest.clone() };
 
         let id = get_composite_id(issuer_did, &schema_key);
 

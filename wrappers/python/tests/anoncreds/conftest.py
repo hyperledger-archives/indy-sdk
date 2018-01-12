@@ -178,7 +178,7 @@ def claim_offer_prover_2_json(claim_offer_prover_2):
 def gvt_schema(schema_seq_no: int, issuer_did: str):
     return {
         "seqNo": schema_seq_no,
-        "identifier": issuer_did,
+        "dest": issuer_did,
         "data": {
             "name": "gvt",
             "version": "1.0",

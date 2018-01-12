@@ -53,7 +53,7 @@
 {
     return [NSString stringWithFormat:@"{"
             "\"seqNo\":%@,"
-            "\"identifier\":\"%@\","
+            "\"dest\":\"%@\","
             "\"data\":{"
                 "\"name\":\"gvt\","
                 "\"version\":\"1.0\","
@@ -93,7 +93,7 @@
 {
     return [NSString stringWithFormat:@"{"
             "\"seqNo\":%@,"
-            "\"identifier\":\"%@\","
+            "\"dest\":\"%@\","
             "\"data\":{"
                 "\"name\":\"xyz\","
                 "\"version\":\"1.0\","
