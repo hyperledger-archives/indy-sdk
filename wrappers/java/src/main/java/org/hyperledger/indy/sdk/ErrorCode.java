@@ -211,7 +211,7 @@ public enum ErrorCode {
 	/**
 	 * Unknown format of DID entity keys
 	 */
-	UnknownCryptoTypeError(500);
+	UnknownCryptoTypeError(500),
 
 	/**
 	 * Attempt to create duplicate did.

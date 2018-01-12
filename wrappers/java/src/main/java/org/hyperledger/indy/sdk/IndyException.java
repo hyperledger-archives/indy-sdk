@@ -1,12 +1,7 @@
 package org.hyperledger.indy.sdk;
 
-import org.hyperledger.indy.sdk.anoncreds.AccumulatorFullException;
-import org.hyperledger.indy.sdk.anoncreds.ClaimRevokedException;
-import org.hyperledger.indy.sdk.anoncreds.NotIssuedException;
-import org.hyperledger.indy.sdk.anoncreds.DuplicateMasterSecretNameException;
-import org.hyperledger.indy.sdk.anoncreds.InvalidUserRevocIndexException;
-import org.hyperledger.indy.sdk.anoncreds.ProofRejectedException;
-import org.hyperledger.indy.sdk.anoncreds.RevocationRegistryFullException;
+import org.hyperledger.indy.sdk.anoncreds.*;
+import org.hyperledger.indy.sdk.did.DidAlreadyExistsException;
 import org.hyperledger.indy.sdk.ledger.ConsensusException;
 import org.hyperledger.indy.sdk.ledger.LedgerSecurityException;
 import org.hyperledger.indy.sdk.ledger.TimeoutException;
@@ -121,8 +116,12 @@ public class IndyException extends Exception {
 				return new ProofRejectedException();
 			case AnoncredsClaimRevoked:
 				return new ClaimRevokedException();
+			case AnoncredsClaimDefAlreadyExistsError:
+				return new ClaimDefAlreadyExistsException();
 			case UnknownCryptoTypeError:
 				return new UnknownCryptoException();
+			case DidAlreadyExistsError:
+				return new DidAlreadyExistsException();
 			default:
 				String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
 				return new IndyException(message, sdkErrorCode);			

@@ -27,3 +27,13 @@ async def test_issuer_create_and_store_claim_def_works_for_invalid_wallet(wallet
             invalid_wallet_handle, issuer_did, gvt_schema_json, None, False)
 
     assert ErrorCode.WalletInvalidHandle == e.value.error_code
+
+
+@pytest.mark.asyncio
+async def test_issuer_create_and_store_claim_def_works_for_duplicate(wallet_handle, issuer_did, gvt_schema_json):
+    await issuer_create_and_store_claim_def(wallet_handle, issuer_did, gvt_schema_json, "CL", False)
+
+    with pytest.raises(IndyError) as e:
+        await issuer_create_and_store_claim_def(wallet_handle, issuer_did, gvt_schema_json, "CL", False)
+
+    assert ErrorCode.AnoncredsClaimDefAlreadyExistsError == e.value.error_code
