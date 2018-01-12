@@ -7,7 +7,7 @@ def testing() {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
                 'macos-test'  : { macosTesting() },
-//                'ios-test'    : { iosTesting() },
+                'ios-test'    : { iosTesting() },
                 'redhat-test' : { rhelTesting() },
                 'windows-test': { windowsTesting() }
         ])
