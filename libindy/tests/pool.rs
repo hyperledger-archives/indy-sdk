@@ -17,9 +17,15 @@ mod utils;
 use indy::api::ErrorCode;
 
 use utils::environment::EnvironmentUtils;
+use utils::callback::CallbackUtils;
+use utils::constants::*;
+use utils::ledger::LedgerUtils;
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
-use utils::constants::*;
+use utils::timeout::TimeoutUtils;
+
+use std::ffi::CString;
+use std::sync::mpsc::channel;
 
 mod high_cases {
     use super::*;
@@ -221,6 +227,35 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             let pool_handle = PoolUtils::open_pool_ledger(POOL, None).unwrap();
             PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_close_pool_ledger_works_for_pending_request() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+
+            let get_nym_req = LedgerUtils::build_get_nym_request(DID_MY1, DID_MY1).unwrap();
+
+            let get_nym_req = CString::new(get_nym_req).unwrap();
+            let (submit_sender, submit_receiver) = channel();
+            let (submit_cmd_handle, submit_cb) = CallbackUtils::closure_to_send_tx_cb(Box::new(
+                move |err, resp| { submit_sender.send((err, resp)).unwrap(); }));
+            assert_eq!(api::ledger::indy_submit_request(submit_cmd_handle, pool_handle,
+                                                        get_nym_req.as_ptr(), submit_cb),
+                       ErrorCode::Success);
+
+            PoolUtils::close(pool_handle).unwrap();
+
+            let (err, _) = submit_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+            assert_eq!(err, ErrorCode::PoolLedgerTerminated);
+
+            /* Now any request to API can failed, if PoolUtils::close works incorrect in case of pending requests.
+               For example try to delete the pool. */
+            PoolUtils::delete(POOL).unwrap();
 
             TestUtils::cleanup_storage();
         }
