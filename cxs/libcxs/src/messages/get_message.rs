@@ -9,7 +9,6 @@ use utils::error;
 use messages::*;
 use messages::MessageResponseCode::{ MessageAccepted, MessagePending };
 use utils::crypto;
-use connection::{ get_pw_verkey, get_pw_did, get_agent_verkey, get_agent_did };
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
@@ -191,11 +190,7 @@ fn parse_get_messages_response(response: Vec<u8>) -> Result<Vec<Message>, u32> {
     Ok(response.msgs.to_owned())
 }
 
-fn get_matching_message(msg_uid:&str, connection_handle: u32) -> Result<get_message::Message, u32> {
-    let pw_did = get_pw_did(connection_handle)?;
-    let pw_vk = get_pw_verkey(connection_handle)?;
-    let agent_did = get_agent_did(connection_handle)?;
-    let agent_vk = get_agent_verkey(connection_handle)?;
+fn get_matching_message(msg_uid:&str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<get_message::Message, u32> {
 
     match get_messages()
         .to(&pw_did)
@@ -219,8 +214,8 @@ fn get_matching_message(msg_uid:&str, connection_handle: u32) -> Result<get_mess
     }
 }
 
-pub fn get_ref_msg(msg_id: &str, connection_handle: u32) -> Result<Vec<u8>, u32> {
-    let message = get_matching_message(msg_id, connection_handle)?;
+pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<Vec<u8>, u32> {
+    let message = get_matching_message(msg_id, pw_did, pw_vk, agent_did, agent_vk)?;
 
     debug!("checking for ref_msg: {:?}", message);
     let msg_id;
@@ -231,15 +226,14 @@ pub fn get_ref_msg(msg_id: &str, connection_handle: u32) -> Result<Vec<u8>, u32>
         return Err(error::NOT_READY.code_num);
     }
 
-    let message = get_matching_message(&msg_id, connection_handle)?;
-    let my_vk = get_pw_verkey(connection_handle)?;
+    let message = get_matching_message(&msg_id, pw_did, pw_vk, agent_did, agent_vk)?;
 
     debug!("checking for pending message: {:?}", message);
 
     // this will work for both claimReq and proof types
     if message.status_code == MessagePending.as_string() && !message.payload.is_none() {
         let data = to_u8(message.payload.as_ref().unwrap());
-        crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, &data)
+        crypto::parse_msg(wallet::get_wallet_handle(), &pw_vk, &data)
     }
     else {
         Err(error::INVALID_HTTP_RESPONSE.code_num)

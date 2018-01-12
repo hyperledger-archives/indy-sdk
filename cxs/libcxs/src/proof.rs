@@ -51,6 +51,7 @@ struct Proof {
     ref_msg_id: String,
     requester_did: String,
     prover_did: String,
+    prover_vk: String,
     state: CxsStateType,
     proof_state: ProofStateType,
     name: String,
@@ -58,8 +59,10 @@ struct Proof {
     nonce: String,
     proof: Option<ProofMessage>,
     proof_request: Option<ProofRequestMessage>,
-    #[serde(skip)]
-    connection_handle: u32,
+    remote_did: String,
+    remote_vk: String,
+    agent_did: String,
+    agent_vk: String,
 }
 
 impl Proof {
@@ -181,11 +184,10 @@ impl Proof {
             warn!("proof {} has invalid state {} for sending proofRequest", self.handle, self.state as u32);
             return Err(error::NOT_READY.code_num);
         }
-        self.prover_did = connection::get_pw_did(connection_handle)?;
         self.requester_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT)?;
-
-        let agent_did = connection::get_agent_did(connection_handle)?;
-        let agent_vk = connection::get_agent_verkey(connection_handle)?;
+        self.prover_did = connection::get_pw_did(connection_handle)?;
+        self.agent_did = connection::get_agent_did(connection_handle)?;
+        self.agent_vk = connection::get_agent_verkey(connection_handle)?;
 
         let data_version = "0.1";
         let mut proof_obj = messages::proof_request();
@@ -201,18 +203,17 @@ impl Proof {
             .serialize_message()?;
 
         self.proof_request = Some(proof_obj);
-        let data = connection::generate_encrypted_payload(connection_handle, &proof_request, "PROOF_REQUEST")?;
+        let data = connection::generate_encrypted_payload(&self.prover_vk, &self.remote_vk, &proof_request, "PROOF_REQUEST")?;
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_CLAIM_OFFER_RESPONSE.to_vec()); }
 
         match messages::send_message().to(&self.prover_did).msg_type("proofReq")
-            .agent_did(&agent_did)
-            .agent_vk(&agent_vk)
+            .agent_did(&self.agent_did)
+            .agent_vk(&self.agent_vk)
             .edge_agent_payload(&data)
             .send_secure() {
             Ok(response) => {
                 self.msg_uid = get_proof_details(&response[0])?;
                 self.state = CxsStateType::CxsStateOfferSent;
-                self.connection_handle = connection_handle;
                 return Ok(error::SUCCESS.code_num)
             },
             Err(x) => {
@@ -239,7 +240,7 @@ impl Proof {
             return Ok(error::SUCCESS.code_num);
         }
 
-        let payload = messages::get_message::get_ref_msg(&self.msg_uid, self.connection_handle)?;
+        let payload = messages::get_message::get_ref_msg(&self.msg_uid, &self.prover_did, &self.prover_vk, &self.agent_did, &self.agent_vk)?;
 
         self.proof = match parse_proof_payload(&payload) {
             Err(_) => return Ok(error::SUCCESS.code_num),
@@ -294,6 +295,7 @@ pub fn create_proof(source_id: Option<String>,
         requested_predicates,
         requester_did: String::new(),
         prover_did: String::new(),
+        prover_vk: String::new(),
         state: CxsStateType::CxsStateNone,
         proof_state: ProofStateType::ProofUndefined,
         name,
@@ -301,7 +303,10 @@ pub fn create_proof(source_id: Option<String>,
         nonce: generate_nonce()?,
         proof: None,
         proof_request: None,
-        connection_handle: 0,
+        remote_did: String::new(),
+        remote_vk: String::new(),
+        agent_did: String::new(),
+        agent_vk: String::new(),
     });
 
     new_proof.validate_proof_request()?;
@@ -547,6 +552,9 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
         let connection_handle = build_connection("test_send_proof_request".to_owned()).unwrap();
+        connection::set_agent_verkey(connection_handle,VERKEY);
+        connection::set_agent_did(connection_handle,DID);
+        connection::set_their_pw_verkey(connection_handle,VERKEY);
 
         let handle = match create_proof(Some("1".to_string()),
                                         REQUESTED_ATTRS.to_owned(),
@@ -625,6 +633,7 @@ mod tests {
             requested_predicates:String::from("[]"),
             requester_did: String::new(),
             prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
+            prover_vk: VERKEY.to_string(),
             state: CxsStateType::CxsStateOfferSent,
             proof_state: ProofStateType::ProofUndefined,
             name:String::new(),
@@ -632,7 +641,10 @@ mod tests {
             nonce: generate_nonce().unwrap(),
             proof: None,
             proof_request: None,
-            connection_handle,
+            remote_did: DID.to_string(),
+            remote_vk: VERKEY.to_string(),
+            agent_did: DID.to_string(),
+            agent_vk: VERKEY.to_string(),
         });
 
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
@@ -732,6 +744,7 @@ mod tests {
             requested_predicates:String::from("[]"),
             requester_did: String::new(),
             prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
+            prover_vk: VERKEY.to_string(),
             state: CxsStateType::CxsStateOfferSent,
             proof_state: ProofStateType::ProofInvalid,
             name:String::new(),
@@ -739,7 +752,10 @@ mod tests {
             nonce: generate_nonce().unwrap(),
             proof: Some(ProofMessage::from_str(&proof_msg).unwrap()),
             proof_request: None,
-            connection_handle,
+            remote_did: DID.to_string(),
+            remote_vk: VERKEY.to_string(),
+            agent_did: DID.to_string(),
+            agent_vk: VERKEY.to_string(),
         });
 
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());

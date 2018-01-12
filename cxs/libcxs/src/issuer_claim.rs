@@ -68,14 +68,18 @@ pub struct IssuerClaim {
     msg_uid: String,
     schema_seq_no: u32,
     issuer_did: String,
-    issued_did: String,
     state: CxsStateType,
     claim_request: Option<ClaimRequest>,
     claim_name: String,
     claim_id: String,
     ref_msg_id: String,
-    #[serde(skip)]
-    connection_handle: u32,
+    // the following 6 are pulled from the connection object
+    agent_did: String, //agent_did for this relationship
+    agent_vk: String,
+    issued_did: String, //my_pw_did for this relationship
+    issued_vk: String,
+    remote_did: String, //their_pw_did for this relationship
+    remote_vk: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -107,14 +111,17 @@ impl IssuerClaim {
         }
 
         if connection::is_valid_handle(connection_handle) == false {
-            warn!("invalid connection handle ({}) in send_claim_offer", connection_handle);
+            warn!("invalid connection handle ({})", connection_handle);
             return Err(error::INVALID_CONNECTION_HANDLE.code_num);
         }
 
-        let agent_did = connection::get_agent_did(connection_handle)?;
-        let agent_vk = connection::get_agent_verkey(connection_handle)?;
-        let to_did = connection::get_pw_did(connection_handle)?;
-        let claim_offer = self.generate_claim_offer(&to_did)?;
+        self.agent_did = connection::get_agent_did(connection_handle)?;
+        self.agent_vk = connection::get_agent_verkey(connection_handle)?;
+        self.issued_did = connection::get_pw_did(connection_handle)?;
+        self.issued_vk = connection::get_pw_verkey(connection_handle)?;
+        self.remote_vk = connection::get_their_pw_verkey(connection_handle)?;
+
+        let claim_offer = self.generate_claim_offer(&self.issued_did)?;
         let payload = match serde_json::to_string(&claim_offer) {
             Ok(p) => p,
             Err(_) => return Err(error::INVALID_JSON.code_num)
@@ -124,11 +131,12 @@ impl IssuerClaim {
 
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_CLAIM_OFFER_RESPONSE.to_vec()); }
 
-        let data = connection::generate_encrypted_payload(connection_handle, &payload, "CLAIM_OFFER")?;
-        match messages::send_message().to(&to_did).msg_type("claimOffer")
+        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &payload, "CLAIM_OFFER")?;
+
+        match messages::send_message().to(&self.issued_did).msg_type("claimOffer")
             .edge_agent_payload(&data)
-            .agent_did(&agent_did)
-            .agent_vk(&agent_vk)
+            .agent_did(&self.agent_did)
+            .agent_vk(&self.agent_vk)
             .ref_msg_id(&self.ref_msg_id)
             .status_code(&MessageAccepted.as_string())
             .send_secure() {
@@ -138,8 +146,6 @@ impl IssuerClaim {
             },
             Ok(response) => {
                 self.msg_uid = get_offer_details(&response[0])?;
-                self.issued_did = to_did;
-                self.connection_handle = connection_handle;
                 self.state = CxsStateType::CxsStateOfferSent;
                 return Ok(error::SUCCESS.code_num);
             }
@@ -160,8 +166,6 @@ impl IssuerClaim {
         }
 
         let to = connection::get_pw_did(connection_handle)?;
-        let agent_did = connection::get_agent_did(connection_handle)?;
-        let agent_vk = connection::get_agent_verkey(connection_handle)?;
         let attrs_with_encodings = self.create_attributes_encodings()?;
         let mut data;
         if settings::test_indy_mode_enabled() {
@@ -188,17 +192,17 @@ impl IssuerClaim {
 
         debug!("claim data: {}", data);
 
-        let data = connection::generate_encrypted_payload(connection_handle, &data, "CLAIM")?;
+        let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &data, "CLAIM")?;
 
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_CLAIM_OFFER_RESPONSE.to_vec()); }
 
-        match messages::send_message().to(&to)
+        match messages::send_message().to(&self.issued_did)
             .ref_msg_id(&self.ref_msg_id)
             .msg_type("claim")
             .status_code((&MessageAccepted.as_string()))
             .edge_agent_payload(&data)
-            .agent_did(&agent_did)
-            .agent_vk(&agent_vk)
+            .agent_did(&self.agent_did)
+            .agent_vk(&self.agent_vk)
             .send_secure() {
             Err(x) => {
                 warn!("could not send claim: {}", x);
@@ -206,8 +210,6 @@ impl IssuerClaim {
             },
             Ok(response) => {
                 self.msg_uid = get_offer_details(&response[0])?;
-                self.issued_did = to;
-                self.connection_handle = connection_handle;
                 self.state = CxsStateType::CxsStateAccepted;
                 return Ok(error::SUCCESS.code_num);
             }
@@ -273,7 +275,7 @@ impl IssuerClaim {
             return Ok(error::SUCCESS.code_num);
         }
 
-        let payload = messages::get_message::get_ref_msg(&self.msg_uid, self.connection_handle)?;
+        let payload = messages::get_message::get_ref_msg(&self.msg_uid, &self.issued_did, &self.issued_vk, &self.agent_did, &self.agent_vk)?;
 
         self.claim_request = Some(parse_claim_req_payload(&payload)?);
         self.state = CxsStateType::CxsStateRequestReceived;
@@ -300,13 +302,17 @@ impl IssuerClaim {
             msg_uid: "1234".to_owned(),
             claim_attributes: CLAIM_DATA.to_owned(),
             issuer_did: "QTrbV4raAcND4DWWzBmdsh".to_owned(),
-            issued_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
-            connection_handle: 0,
             state: CxsStateType::CxsStateOfferSent,
             claim_request: Some(claim_req),
             claim_name: "Claim".to_owned(),
             claim_id: String::from(DEFAULT_CLAIM_ID),
             ref_msg_id: String::new(),
+            issued_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+            issued_vk: String::new(),
+            remote_did: String::new(),
+            remote_vk: String::new(),
+            agent_did: String::new(),
+            agent_vk: String::new(),
         };
         Ok(issuer_claim)
     }
@@ -424,15 +430,19 @@ pub fn issuer_claim_create(schema_seq_no: u32,
         source_id: source_id_unwrap,
         msg_uid: String::new(),
         claim_attributes: claim_data,
-        issued_did: String::new(),
-        connection_handle: 0,
-        issuer_did: issuer_did,
+        issuer_did,
         state: CxsStateType::CxsStateNone,
         schema_seq_no,
         claim_request: None,
         claim_name: String::from("Claim"),
         claim_id: new_handle.to_string(),
         ref_msg_id: String::new(),
+        issued_did: String::new(),
+        issued_vk: String::new(),
+        remote_did: String::new(),
+        remote_vk: String::new(),
+        agent_did: String::new(),
+        agent_vk: String::new(),
     });
 
     new_issuer_claim.validate_claim_offer()?;
@@ -631,12 +641,16 @@ mod tests {
             claim_attributes: CLAIM_DATA.to_owned(),
             issuer_did: "QTrbV4raAcND4DWWzBmdsh".to_owned(),
             issued_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
-            connection_handle: 0,
+            issued_vk: String::new(),
             state: CxsStateType::CxsStateOfferSent,
             claim_name: DEFAULT_CLAIM_NAME.to_owned(),
             claim_request: Some(claim_req.to_owned()),
             claim_id: String::from(DEFAULT_CLAIM_ID),
             ref_msg_id: String::new(),
+            remote_did: DID.to_string(),
+            remote_vk: VERKEY.to_string(),
+            agent_did: DID.to_string(),
+            agent_vk: VERKEY.to_string(),
         };
         issuer_claim
     }
@@ -687,7 +701,6 @@ mod tests {
 
     #[test]
     fn test_send_claim_offer() {
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
@@ -720,7 +733,6 @@ mod tests {
 
         let mut claim = create_standard_issuer_claim();
         claim.state = CxsStateType::CxsStateRequestReceived;
-        util_put_claim_def_in_issuer_wallet(48, 0);
 
         let connection_handle = build_connection("test_send_claim_offer".to_owned()).unwrap();
 
@@ -753,6 +765,7 @@ mod tests {
 
     #[test]
     fn test_update_state_with_pending_claim_request() {
+        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
@@ -766,12 +779,16 @@ mod tests {
             claim_attributes: "nothing".to_owned(),
             issuer_did: "QTrbV4raAcND4DWWzBmdsh".to_owned(),
             issued_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+            issued_vk: VERKEY.to_string(),
             state: CxsStateType::CxsStateOfferSent,
             claim_request: Some(claim_req.to_owned()),
             claim_name: DEFAULT_CLAIM_NAME.to_owned(),
             claim_id: String::from(DEFAULT_CLAIM_ID),
             ref_msg_id: String::new(),
-            connection_handle,
+            remote_did: DID.to_string(),
+            remote_vk: VERKEY.to_string(),
+            agent_did: DID.to_string(),
+            agent_vk: VERKEY.to_string(),
         };
 
         httpclient::set_next_u8_response(CLAIM_REQ_RESPONSE.to_vec());

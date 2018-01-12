@@ -289,7 +289,7 @@ mod tests {
     static DEFAULT_DID: &str = "8XFh8yBzrpJQmNyZzgoTqB";
     static DEFAULT_ATTR: &str = "{\"attr\":\"value\"}";
     static DEFAULT_SCHEMA_SEQ_NO: u32 = 32;
-    static ISSUER_CLAIM_STATE_ACCEPTED: &str = "{\"claim_id\":\"a claim id\",\"claim_name\":\"claim name\",\"source_id\":\"test_cxs_issuer_send_claim\",\"handle\":123,\"claim_attributes\":\"{\\\"state\\\":[\\\"UT\\\"],\\\"zip\\\":[\\\"84000\\\"],\\\"city\\\":[\\\"Draper\\\"],\\\"address2\\\":[\\\"Suite 3\\\"],\\\"address1\\\":[\\\"123 Main St\\\"]}\",\"msg_uid\":\"\",\"schema_seq_no\":32,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"issued_did\":\"\",\"state\":3,\"ref_msg_id\":\"abc123\"}";
+    static ISSUER_CLAIM_STATE_ACCEPTED: &str = r#"{"claim_id":"a claim id","claim_name":"claim name","source_id":"test_cxs_issuer_send_claim","handle":123,"claim_attributes":"{\"state\":[\"UT\"],\"zip\":[\"84000\"],\"city\":[\"Draper\"],\"address2\":[\"Suite 3\"],\"address1\":[\"123 Main St\"]}","msg_uid":"","schema_seq_no":32,"issuer_did":"8XFh8yBzrpJQmNyZzgoTqB","issued_did":"VsKV7grR1BUE29mG2Fm2kX","issued_vk":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","remote_did":"VsKV7grR1BUE29mG2Fm2kX","remote_vk":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","agent_did":"VsKV7grR1BUE29mG2Fm2kX","agent_vk":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","state":3,"ref_msg_id":"abc123"}"#;
     extern "C" fn create_cb(command_handle: u32, err: u32, claim_handle: u32) {
         assert_eq!(err, 0);
         assert!(claim_handle > 0);
@@ -415,6 +415,7 @@ mod tests {
 
         // send the claim
         assert_eq!(cxs_issuer_send_claim(0, handle, connection_handle, Some(send_offer_cb)), error::SUCCESS.code_num);
+        thread::sleep(Duration::from_millis(1000));
     }
     extern "C" fn deserialize_cb(command_handle: u32, err: u32, claim_handle: u32) {
         fn formatter(original: &str) -> String {

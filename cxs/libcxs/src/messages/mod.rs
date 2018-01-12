@@ -253,6 +253,7 @@ pub trait GeneralMessage{
                 self
             },
             Err(x) => {
+                warn!("could not validate recipient did");
                 self.set_validate_rc(x);
                 self
             },
@@ -266,6 +267,7 @@ pub trait GeneralMessage{
                 self
             },
             Err(x) => {
+                warn!("could not validate recipient vk");
                 self.set_validate_rc(x);
                 self
             },
@@ -279,6 +281,7 @@ pub trait GeneralMessage{
                 self
             },
             Err(x) => {
+                warn!("could not validate agent_did");
                 self.set_validate_rc(x);
                 self
             },
@@ -292,6 +295,7 @@ pub trait GeneralMessage{
                 self
             },
             Err(x) => {
+                warn!("could not validate agent_vk");
                 self.set_validate_rc(x);
                 self
             },

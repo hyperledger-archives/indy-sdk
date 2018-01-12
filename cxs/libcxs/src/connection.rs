@@ -48,7 +48,7 @@ struct Connection {
     agent_did: String,
     agent_vk: String,
     their_pw_did: String,
-    their_pw_verkey: String,
+    their_pw_verkey: String, // used by proofs/claims when sending to edge device
 }
 
 impl Connection {
@@ -454,10 +454,7 @@ pub fn get_invite_detail(response: &str) -> Result<InviteDetail, u32> {
     Ok(details)
 }
 
-pub fn generate_encrypted_payload(handle: u32, data: &str, msg_type: &str) -> Result<Vec<u8>, u32> {
-
-    let my_vk = get_pw_verkey(handle)?;
-    let their_vk = get_their_pw_verkey(handle)?;
+pub fn generate_encrypted_payload(my_vk: &str, their_vk: &str, data: &str, msg_type: &str) -> Result<Vec<u8>, u32> {
 
     let my_payload = messages::Payload {
         msg_info: messages::MsgInfo { name: msg_type.to_string(), ver: "1.0".to_string(), fmt: "json".to_string(), },
