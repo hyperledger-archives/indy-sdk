@@ -2,8 +2,8 @@ package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
-import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusResults;
+import org.hyperledger.indy.sdk.did.Did;
+import org.hyperledger.indy.sdk.did.DidResults;
 import org.json.JSONObject;
 import org.junit.*;
 
@@ -49,20 +49,17 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 
 	@Test
 	public void testSchemaRequestWorksWithoutSignature() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
-
-		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();
 
 		String schemaRequest = Ledger.buildSchemaRequest(did, SCHEMA_DATA).get();
-		String schemaResponse = Ledger.submitRequest(pool, schemaRequest).get();
-		assertNotNull(schemaResponse);
+		String response = Ledger.submitRequest(pool, schemaRequest).get();
+		checkResponseType(response,"REQNACK" );
 	}
 
 	@Test
 	public void testSchemaRequestsWorks() throws Exception {
-		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();
 
 		String schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"attr_names\": [\"name\", \"male\"]}";
@@ -82,7 +79,7 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 
 	@Test
 	public void testGetSchemaRequestsWorksForUnknownSchema() throws Exception {
-		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();
 
 		String getSchemaData = "{\"name\":\"schema_name\",\"version\":\"2.0\"}";

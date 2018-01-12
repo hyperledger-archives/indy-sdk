@@ -20,178 +20,24 @@ use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
 
 use indy::api::ErrorCode;
-use indy::api::agent::*;
 use indy::api::anoncreds::*;
 use indy::api::crypto::*;
 #[cfg(feature = "local_nodes_pool")]
-use indy::api::ledger::{
-    indy_sign_and_submit_request,
-    indy_submit_request,
-};
+use indy::api::ledger::*;
 #[cfg(feature = "local_nodes_pool")]
 use indy::api::pool::*;
 use indy::api::wallet::*;
-use indy::api::signus::*;
+use indy::api::did::*;
 
 use utils::callback::CallbackUtils;
 
 use std::ptr::null;
 use std::sync::mpsc::channel;
 use std::ffi::CString;
-use utils::types::ProofClaimsJson;
+use utils::types::ClaimsForProofRequest;
 
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;
-
-#[test]
-fn agent_demo_works() {
-    TestUtils::cleanup_storage();
-
-    let (alice_create_wallet_sender, alice_create_wallet_receiver) = channel();
-    let (alice_open_wallet_sender, alice_open_wallet_receiver) = channel();
-    let (bob_create_wallet_sender, bob_create_wallet_receiver) = channel();
-    let (bob_open_wallet_sender, bob_open_wallet_receiver) = channel();
-    let (alice_create_key_sender, alice_create_key_receiver) = channel();
-    let (bob_create_key_sender, bob_create_key_receiver) = channel();
-    let (prep_msg_sender, prep_msg_receiver) = channel();
-    let (auth_msg_parse_sender, auth_msg_parse_receiver) = channel();
-    let (prep_anon_msg_sender, prep_anon_msg_receiver) = channel();
-    let (anon_msg_parse_sender, anon_msg_parse_receiver) = channel();
-
-    let alice_create_wallet_cb = Box::new(move |err| {
-        alice_create_wallet_sender.send(err).unwrap();
-    });
-    let alice_open_wallet_cb = Box::new(move |err, handle| {
-        alice_open_wallet_sender.send((err, handle)).unwrap();
-    });
-    let bob_create_wallet_cb = Box::new(move |err| {
-        bob_create_wallet_sender.send(err).unwrap();
-    });
-    let bob_open_wallet_cb = Box::new(move |err, handle| {
-        bob_open_wallet_sender.send((err, handle)).unwrap();
-    });
-    let alice_create_key_cb = Box::new(move |err, verkey| {
-        alice_create_key_sender.send((err, verkey)).unwrap();
-    });
-    let bob_create_key_cb = Box::new(move |err, verkey| {
-        bob_create_key_sender.send((err, verkey)).unwrap();
-    });
-    let prep_msg_cb = Box::new(move |err, encrypted| {
-        prep_msg_sender.send((err, encrypted)).unwrap();
-    });
-    let auth_msg_parse_cb = Box::new(move |err, sender_vk, decrypted| {
-        auth_msg_parse_sender.send((err, sender_vk, decrypted)).unwrap();
-    });
-    let prep_anon_msg_cb = Box::new(move |err, encrypted| {
-        prep_anon_msg_sender.send((err, encrypted)).unwrap();
-    });
-    let anon_msg_parse_cb = Box::new(move |err, sender_vk, decrypted| {
-        anon_msg_parse_sender.send((err, sender_vk, decrypted)).unwrap();
-    });
-
-    let (alice_create_wallet_command_handle, alice_create_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(alice_create_wallet_cb);
-    let (alice_open_wallet_command_handle, alice_open_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(alice_open_wallet_cb);
-    let (bob_create_wallet_command_handle, bob_create_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(bob_create_wallet_cb);
-    let (bob_open_wallet_command_handle, bob_open_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(bob_open_wallet_cb);
-    let (alice_create_key_command_handle, alice_create_key_callback) = CallbackUtils::closure_to_create_key_cb(alice_create_key_cb);
-    let (bob_create_key_command_handle, bob_create_key_callback) = CallbackUtils::closure_to_create_key_cb(bob_create_key_cb);
-    let (prep_msg_handle, prep_msg_callback) = CallbackUtils::closure_to_prep_msg_cb(prep_msg_cb);
-    let (auth_msg_parse_handle, auth_msg_parse_callback) = CallbackUtils::closure_to_parse_msg_cb(auth_msg_parse_cb);
-    let (prep_anon_msg_handle, prep_anon_msg_callback) = CallbackUtils::closure_to_prep_msg_cb(prep_anon_msg_cb);
-    let (anon_msg_parse_handle, anon_msg_parse_callback) = CallbackUtils::closure_to_parse_msg_cb(anon_msg_parse_cb);
-
-    let empty_json = CString::new("{}").unwrap();
-    let alice_wallet_name = CString::new("alice_wallet").unwrap();
-    let bob_wallet_name = CString::new("bob_wallet").unwrap();
-    let pool_name = CString::new("no pool").unwrap();
-    let msg_auth = "message for auth";
-    let msg_anon = "message for anon";
-
-    // 1. Create and open wallets for Alice and Bob
-    let err = indy_create_wallet(alice_create_wallet_command_handle,
-                                 pool_name.as_ptr(),
-                                 alice_wallet_name.as_ptr(),
-                                 null(), null(), null(),
-                                 alice_create_wallet_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let err = alice_create_wallet_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-    let err = indy_open_wallet(alice_open_wallet_command_handle,
-                               alice_wallet_name.as_ptr(),
-                               null(), null(),
-                               alice_open_wallet_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, alice_wallet_handle) = alice_open_wallet_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-
-    let err = indy_create_wallet(bob_create_wallet_command_handle,
-                                 pool_name.as_ptr(),
-                                 bob_wallet_name.as_ptr(),
-                                 null(), null(), null(),
-                                 bob_create_wallet_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let err = bob_create_wallet_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-    let err = indy_open_wallet(bob_open_wallet_command_handle,
-                               bob_wallet_name.as_ptr(),
-                               null(), null(),
-                               bob_open_wallet_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, bob_wallet_handle) = bob_open_wallet_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-
-    // 2. Create keys for Alice and Bob
-    let err = indy_create_key(alice_create_key_command_handle, alice_wallet_handle, empty_json.as_ptr(), alice_create_key_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, alice_vk) = alice_create_key_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-    let err = indy_create_key(bob_create_key_command_handle, bob_wallet_handle, empty_json.as_ptr(), bob_create_key_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, bob_vk) = bob_create_key_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-    let alice_vk_c_str = CString::new(alice_vk.clone()).unwrap();
-    let bob_vk_c_str = CString::new(bob_vk).unwrap();
-
-    // 3. Prepare authenticated message from Alice to Bob
-    let err = indy_prep_msg(prep_msg_handle,
-                            alice_wallet_handle,
-                            alice_vk_c_str.as_ptr(),
-                            bob_vk_c_str.as_ptr(),
-                            msg_auth.as_ptr(), msg_auth.len() as u32,
-                            prep_msg_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, encrypted_auth): (ErrorCode, Vec<u8>) = prep_msg_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-
-    // 4. Parse authenticated message on Bob's side
-    let err = indy_parse_msg(auth_msg_parse_handle, bob_wallet_handle, bob_vk_c_str.as_ptr(),
-                             encrypted_auth.as_ptr(), encrypted_auth.len() as u32,
-                             auth_msg_parse_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, sender_vk_auth, decrypted_auth) = auth_msg_parse_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-    assert_eq!(sender_vk_auth, Some(alice_vk));
-    assert_eq!(decrypted_auth.as_slice(), msg_auth.as_bytes());
-
-    // 5. Prepare anonymous message from Bob to Alice
-    let err = indy_prep_anonymous_msg(prep_anon_msg_handle, alice_vk_c_str.as_ptr(),
-                                      msg_anon.as_ptr(), msg_anon.len() as u32, prep_anon_msg_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, encrypted): (ErrorCode, Vec<u8>) = prep_anon_msg_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-
-    // 6. Parse anonymous message on Alice's side
-    let err = indy_parse_msg(anon_msg_parse_handle, alice_wallet_handle, alice_vk_c_str.as_ptr(),
-                             encrypted.as_ptr(), encrypted.len() as u32,
-                             anon_msg_parse_callback);
-    assert_eq!(ErrorCode::Success, err);
-    let (err, sender_vk_anon, decrypted_anon) = anon_msg_parse_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-    assert_eq!(ErrorCode::Success, err);
-    assert!(sender_vk_anon.is_none());
-    assert_eq!(decrypted_anon.as_slice(), msg_anon.as_bytes());
-
-    TestUtils::cleanup_storage();
-}
 
 #[test]
 fn anoncreds_demo_works() {
@@ -258,7 +104,7 @@ fn anoncreds_demo_works() {
     let xtype = "default";
 
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
-    //1. Create Wallet
+    //1. Creates Wallet
     let err =
         indy_create_wallet(create_wallet_command_handle,
                            CString::new(pool_name).unwrap().as_ptr(),
@@ -272,7 +118,7 @@ fn anoncreds_demo_works() {
     let err = create_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    //2. Open Issuer Wallet. Gets Issuer wallet handle
+    //2. Opens Wallet
     let err =
         indy_open_wallet(open_wallet_command_handle,
                          CString::new(wallet_name).unwrap().as_ptr(),
@@ -286,14 +132,17 @@ fn anoncreds_demo_works() {
 
     let schema_seq_no = 1;
     let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
+    let prover_did = "VsKV7grR1BUE29mG2Fm2kX";
+
     let schema = format!(r#"{{
-                            "seqNo":{},
-                            "data":{{
-                                "name":"gvt",
-                                "version":"1.0",
-                                "attr_names":["age","sex","height","name"]
-                            }}
-                         }}"#, schema_seq_no);
+                                    "seqNo":{},
+                                    "identifier":"{}",
+                                    "data":{{
+                                        "name":"gvt",
+                                        "version":"1.0",
+                                        "attr_names":["age","sex","height","name"]
+                                    }}
+                                 }}"#, schema_seq_no, issuer_did);
 
     // 3. Issuer create Claim Definition for Schema
     let err =
@@ -307,7 +156,6 @@ fn anoncreds_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claim_def_json) = issuer_create_claim_definition_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    println!("claim_def_json {:?}", claim_def_json);
     assert_eq!(ErrorCode::Success, err);
 
     let master_secret_name = "master_secret";
@@ -323,8 +171,7 @@ fn anoncreds_demo_works() {
     let err = prover_create_master_secret_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    let prover_did = "BzfFCYk";
-    let claim_offer_json = format!(r#"{{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_seq_no":{}}}"#, schema_seq_no);
+    let claim_offer_json = format!(r#"{{"issuer_did":"{}","schema_key":{{"name":"gvt","version":"1.0","did":"{}"}}}}"#, issuer_did, issuer_did);
 
     // 6. Prover create Claim Request
     let err =
@@ -338,15 +185,14 @@ fn anoncreds_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claim_req_json) = prover_create_claim_req_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    info!("claim_req_json {:?}", claim_req_json);
     assert_eq!(ErrorCode::Success, err);
 
     let claim_json = r#"{
-                       "sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"],
-                       "name":["Alex","1139481716457488690172217916278103335"],
-                       "height":["175","175"],
-                       "age":["28","28"]
-                     }"#;
+                               "sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"],
+                               "name":["Alex","1139481716457488690172217916278103335"],
+                               "height":["175","175"],
+                               "age":["28","28"]
+                             }"#;
 
     // 7. Issuer create Claim for Claim Request
     let err =
@@ -358,9 +204,7 @@ fn anoncreds_demo_works() {
                                  issuer_create_claim_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, revoc_reg_update_json, xclaim_json) = issuer_create_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    info!("xclaim_json {:?}", xclaim_json);
-    info!("revoc_reg_update_json {:?}", revoc_reg_update_json);
+    let (err, _, xclaim_json) = issuer_create_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 7. Prover process and store Claim
@@ -368,6 +212,7 @@ fn anoncreds_demo_works() {
         indy_prover_store_claim(prover_store_claim_command_handle,
                                 wallet_handle,
                                 CString::new(xclaim_json).unwrap().as_ptr(),
+                                null(),
                                 prover_store_claim_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -375,12 +220,29 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                   "name":"proof_req_1",
-                                   "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
-                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
-                                }}"#, schema_seq_no);
+                                               "nonce":"123432421212",
+                                               "name":"proof_req_1",
+                                               "version":"0.1",
+                                               "requested_attrs":{{
+                                                    "attr1_referent":{{
+                                                        "name":"name",
+                                                        "restrictions":[{{"issuer_did":"{}",
+                                                                        "schema_key":{{
+                                                                            "name":"gvt",
+                                                                            "version":"1.0",
+                                                                            "did":"{}"
+                                                                        }}
+                                                        }}]
+                                                    }}
+                                               }},
+                                               "requested_predicates":{{
+                                                   "predicate1_referent":{{
+                                                       "attr_name":"age",
+                                                       "p_type":">=",
+                                                       "value":18
+                                                   }}
+                                               }}
+                                           }}"#, issuer_did, issuer_did);
 
     // 8. Prover gets Claims for Proof Request
     let err =
@@ -391,22 +253,21 @@ fn anoncreds_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claims_json) = prover_get_claims_for_proof_req_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    info!("claims_json {:?}", claims_json);
     assert_eq!(ErrorCode::Success, err);
-    let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-    let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
+    let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+    let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
     assert_eq!(1, claims_for_attr_1.len());
 
     let claim = claims_for_attr_1[0].clone();
 
     let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_uuid":["{}",true]}},
-                                          "requested_predicates":{{"predicate1_uuid":"{}"}}
-                                        }}"#, claim.claim_uuid, claim.claim_uuid);
+                                                    "self_attested_attributes":{{}},
+                                                    "requested_attrs":{{"attr1_referent":["{}",true]}},
+                                                    "requested_predicates":{{"predicate1_referent":"{}"}}
+                                                  }}"#, claim.referent, claim.referent);
 
-    let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
-    let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
+    let schemas_json = format!(r#"{{"{}":{}}}"#, claim.referent, schema);
+    let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.referent, claim_def_json);
     let revoc_regs_jsons = "{}";
 
     // 9. Prover create Proof for Proof Request
@@ -423,7 +284,6 @@ fn anoncreds_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, proof_json) = prover_create_proof_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-    info!("proof_json {:?}", proof_json);
     assert_eq!(ErrorCode::Success, err);
 
     // 10. Verifier verify proof
@@ -708,7 +568,6 @@ fn ledger_demo_works() {
         req_id: u64,
         identifier: String,
         operation: Operation,
-        #[serde(skip_serializing)]
         protocol_version: u64,
         #[serde(skip_serializing_if = "Option::is_none")]
         signature: Option<String>,
@@ -745,7 +604,7 @@ fn ledger_demo_works() {
 }
 
 #[test]
-fn signus_demo_works() {
+fn crypto_demo_works() {
     TestUtils::cleanup_storage();
 
     let (create_sender, create_receiver) = channel();
@@ -934,12 +793,12 @@ fn signus_demo_works() {
     let message_len = message.len() as u32;
 
     let err =
-        indy_sign(sign_command_handle,
-                  their_wallet_handle,
-                  CString::new(their_did.clone()).unwrap().as_ptr(),
-                  message_ptr,
-                  message_len,
-                  sign_callback);
+        indy_crypto_sign(sign_command_handle,
+                         their_wallet_handle,
+                         CString::new(their_verkey.clone()).unwrap().as_ptr(),
+                         message_ptr,
+                         message_len,
+                         sign_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, signature) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -947,15 +806,13 @@ fn signus_demo_works() {
 
     // 11. I Verify message
     let err =
-        indy_verify_signature(verify_command_handle,
-                              my_wallet_handle,
-                              pool_handle,
-                              CString::new(their_did).unwrap().as_ptr(),
-                              message_ptr,
-                              message_len,
-                              signature.as_ptr() as *const u8,
-                              signature.len() as u32,
-                              verify_callback);
+        indy_crypto_verify(verify_command_handle,
+                           CString::new(their_verkey).unwrap().as_ptr(),
+                           message_ptr,
+                           message_len,
+                           signature.as_ptr() as *const u8,
+                           signature.len() as u32,
+                           verify_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, valid) = verify_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();

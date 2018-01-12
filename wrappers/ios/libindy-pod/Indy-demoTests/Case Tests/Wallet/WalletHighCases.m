@@ -9,7 +9,7 @@
 #import "TestUtils.h"
 #import <Indy/Indy.h>
 #import "WalletUtils.h"
-#import "SignusUtils.h"
+#import "DidUtils.h"
 #import "LedgerUtils.h"
 #import "AnoncredsUtils.h"
 #import "NSDictionary+JSON.h"

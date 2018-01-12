@@ -20,7 +20,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 		JSONArray claimsArray = new JSONArray(claims);
 
-		assertEquals(1, claimsArray.length());
+		assertEquals(3, claimsArray.length());
 	}
 
 	@Test
@@ -34,7 +34,35 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 		JSONArray claimsArray = new JSONArray(claims);
 
-		assertEquals(1, claimsArray.length());
+		assertEquals(2, claimsArray.length());
+	}
+
+	@Test
+	public void testProverGetClaimsWorksForFilterBySchema() throws Exception {
+
+		initCommonWallet();
+
+		String filter = String.format("{\"schema_key\":%s}", gvtSchemaKey);
+
+		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
+
+		JSONArray claimsArray = new JSONArray(claims);
+
+		assertEquals(2, claimsArray.length());
+	}
+
+	@Test
+	public void testProverGetClaimsWorksForFilterByPartOfSchema() throws Exception {
+
+		initCommonWallet();
+
+		String filter = "{\"schema_key\": {\"name\":\"gvt\"}}";
+
+		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
+
+		JSONArray claimsArray = new JSONArray(claims);
+
+		assertEquals(2, claimsArray.length());
 	}
 
 	@Test
@@ -42,7 +70,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		String filter = String.format("{\"issuer_did\":\"%s\", \"schema_seq_no\":%d}", issuerDid, 1);
+		String filter = String.format("{\"issuer_did\":\"%s\", \"schema_key\":%s}", issuerDid, gvtSchemaKey);
 
 		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
 
@@ -56,7 +84,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		String filter = String.format("{\"schema_seq_no\":%d}", 10);
+		String filter = String.format("{\"issuer_did\":\"%s\"}", issuerDid + "a");
 
 		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
 
@@ -73,7 +101,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String filter = String.format("{\"schema_seq_no\":\"%d\"}", 1);
+		String filter = "{\"schema_key\":\"gvt\"}";
 
 		Anoncreds.proverGetClaims(wallet, filter).get();
 	}

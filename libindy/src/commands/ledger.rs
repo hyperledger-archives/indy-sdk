@@ -1,19 +1,19 @@
 extern crate serde_json;
+extern crate indy_crypto;
 
 use self::serde_json::Value;
 
 use errors::common::CommonError;
 use errors::pool::PoolError;
-use errors::signus::SignusError;
+use errors::crypto::CryptoError;
 use errors::indy::IndyError;
 
 use services::pool::PoolService;
-use services::signus::SignusService;
-use services::signus::types::{Did, Key};
+use services::crypto::CryptoService;
+use services::crypto::types::{Did, Key};
 use services::wallet::WalletService;
 use services::ledger::LedgerService;
 
-use utils::json::JsonDecodable;
 
 use super::utils::check_wallet_and_pool_handles_consistency;
 
@@ -25,6 +25,7 @@ use std::rc::Rc;
 use utils::crypto::base58::Base58;
 
 use utils::crypto::signature_serializer::serialize_signature;
+use self::indy_crypto::utils::json::JsonDecodable;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
@@ -102,12 +103,29 @@ pub enum LedgerCommand {
     BuildGetTxnRequest(
         String, // submitter did
         i32, // data
+        Box<Fn(Result<String, IndyError>) + Send>),
+    BuildPoolConfigRequest(
+        String, // submitter did
+        bool, // writes
+        bool, // force
+        Box<Fn(Result<String, IndyError>) + Send>),
+    BuildPoolUpgradeRequest(
+        String, // submitter did
+        String, // name
+        String, // version
+        String, // action
+        String, // sha256
+        Option<u32>, // timeout
+        Option<String>, // schedule
+        Option<String>, // justification
+        bool, // reinstall
+        bool, // force
         Box<Fn(Result<String, IndyError>) + Send>)
 }
 
 pub struct LedgerCommandExecutor {
     pool_service: Rc<PoolService>,
-    signus_service: Rc<SignusService>,
+    crypto_service: Rc<CryptoService>,
     wallet_service: Rc<WalletService>,
     ledger_service: Rc<LedgerService>,
 
@@ -116,14 +134,14 @@ pub struct LedgerCommandExecutor {
 
 impl LedgerCommandExecutor {
     pub fn new(pool_service: Rc<PoolService>,
-               signus_service: Rc<SignusService>,
+               crypto_service: Rc<CryptoService>,
                wallet_service: Rc<WalletService>,
                ledger_service: Rc<LedgerService>) -> LedgerCommandExecutor {
         LedgerCommandExecutor {
-            pool_service: pool_service,
-            signus_service: signus_service,
-            wallet_service: wallet_service,
-            ledger_service: ledger_service,
+            pool_service,
+            crypto_service,
+            wallet_service,
+            ledger_service,
             send_callbacks: RefCell::new(HashMap::new()),
         }
     }
@@ -154,51 +172,60 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildNymRequest(submitter_did, target_did, verkey, alias, role, cb) => {
                 info!(target: "ledger_command_executor", "BuildNymRequest command received");
-                self.build_nym_request(&submitter_did, &target_did,
-                                       verkey.as_ref().map(String::as_str),
-                                       alias.as_ref().map(String::as_str),
-                                       role.as_ref().map(String::as_str),
-                                       cb);
+                cb(self.build_nym_request(&submitter_did, &target_did,
+                                          verkey.as_ref().map(String::as_str),
+                                          alias.as_ref().map(String::as_str),
+                                          role.as_ref().map(String::as_str)));
             }
             LedgerCommand::BuildAttribRequest(submitter_did, target_did, hash, raw, enc, cb) => {
                 info!(target: "ledger_command_executor", "BuildAttribRequest command received");
-                self.build_attrib_request(&submitter_did, &target_did,
-                                          hash.as_ref().map(String::as_str),
-                                          raw.as_ref().map(String::as_str),
-                                          enc.as_ref().map(String::as_str),
-                                          cb);
+                cb(self.build_attrib_request(&submitter_did, &target_did,
+                                             hash.as_ref().map(String::as_str),
+                                             raw.as_ref().map(String::as_str),
+                                             enc.as_ref().map(String::as_str)));
             }
             LedgerCommand::BuildGetAttribRequest(submitter_did, target_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetAttribRequest command received");
-                self.build_get_attrib_request(&submitter_did, &target_did, &data, cb);
+                cb(self.build_get_attrib_request(&submitter_did, &target_did, &data));
             }
             LedgerCommand::BuildGetNymRequest(submitter_did, target_did, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetNymRequest command received");
-                self.build_get_nym_request(&submitter_did, &target_did, cb);
+                cb(self.build_get_nym_request(&submitter_did, &target_did));
             }
             LedgerCommand::BuildSchemaRequest(submitter_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildSchemaRequest command received");
-                self.build_schema_request(&submitter_did, &data, cb);
+                cb(self.build_schema_request(&submitter_did, &data));
             }
             LedgerCommand::BuildGetSchemaRequest(submitter_did, dest, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetSchemaRequest command received");
-                self.build_get_schema_request(&submitter_did, &dest, &data, cb);
+                cb(self.build_get_schema_request(&submitter_did, &dest, &data));
             }
             LedgerCommand::BuildClaimDefRequest(submitter_did, xref, signature_type, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildClaimDefRequest command received");
-                self.build_claim_def_request(&submitter_did, xref, &signature_type, &data, cb);
+                cb(self.build_claim_def_request(&submitter_did, xref, &signature_type, &data));
             }
             LedgerCommand::BuildGetClaimDefRequest(submitter_did, xref, signature_type, origin, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetClaimDefRequest command received");
-                self.build_get_claim_def_request(&submitter_did, xref, &signature_type, &origin, cb);
+                cb(self.build_get_claim_def_request(&submitter_did, xref, &signature_type, &origin));
             }
             LedgerCommand::BuildNodeRequest(submitter_did, target_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildNodeRequest command received");
-                self.build_node_key_request(&submitter_did, &target_did, &data, cb);
+                cb(self.build_node_request(&submitter_did, &target_did, &data));
             }
             LedgerCommand::BuildGetTxnRequest(submitter_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetTxnRequest command received");
-                self.build_get_txn_request(&submitter_did, data, cb);
+                cb(self.build_get_txn_request(&submitter_did, data));
+            }
+            LedgerCommand::BuildPoolConfigRequest(submitter_did, writes, force, cb) => {
+                info!(target: "ledger_command_executor", "BuildPoolConfigRequest command received");
+                cb(self.build_pool_config_request(&submitter_did, writes, force));
+            }
+            LedgerCommand::BuildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb) => {
+                info!(target: "ledger_command_executor", "BuildPoolUpgradeRequest command received");
+                cb(self.build_pool_upgrade_request(&submitter_did, &name, &version, &action, &sha256, timeout,
+                                                   schedule.as_ref().map(String::as_str),
+                                                   justification.as_ref().map(String::as_str),
+                                                   reinstall, force));
             }
         };
     }
@@ -232,21 +259,21 @@ impl LedgerCommandExecutor {
 
         let mut request: Value = serde_json::from_str(request_json)
             .map_err(|err|
-                IndyError::SignusError(SignusError::CommonError(
-                    CommonError::InvalidStructure(format!("Message is invalid json: {}", err.description())))))?;
+                CryptoError::CommonError(
+                    CommonError::InvalidStructure(format!("Message is invalid json: {}", err.description()))))?;
 
         if !request.is_object() {
-            return Err(IndyError::SignusError(SignusError::CommonError(
+            return Err(IndyError::CryptoError(CryptoError::CommonError(
                 CommonError::InvalidStructure(format!("Message is invalid json: {}", request)))));
         }
         let serialized_request = serialize_signature(request.clone())?;
-        let signature = self.signus_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
+        let signature = self.crypto_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
 
         request["signature"] = Value::String(Base58::encode(&signature));
         let signed_request: String = serde_json::to_string(&request)
             .map_err(|err|
-                IndyError::SignusError(SignusError::CommonError(
-                    CommonError::InvalidState(format!("Can't serialize message after signing: {}", err.description())))))?;
+                CryptoError::CommonError(
+                    CommonError::InvalidState(format!("Can't serialize message after signing: {}", err.description()))))?;
 
         Ok(signed_request)
     }
@@ -283,14 +310,25 @@ impl LedgerCommandExecutor {
                          target_did: &str,
                          verkey: Option<&str>,
                          alias: Option<&str>,
-                         role: Option<&str>,
-                         cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self.ledger_service.build_nym_request(submitter_did,
-                                                 target_did,
-                                                 verkey,
-                                                 alias,
-                                                 role
-        ).map_err(|err| IndyError::CommonError(err)))
+                         role: Option<&str>) -> Result<String, IndyError> {
+        info!("build_nym_request >>> submitter_did: {:?}, target_did: {:?}, verkey: {:?}, alias: {:?}, role: {:?}",
+              submitter_did, target_did, verkey, alias, role);
+
+        self.crypto_service.validate_did(submitter_did)?;
+        self.crypto_service.validate_did(target_did)?;
+        if let Some(vk) = verkey {
+            self.crypto_service.validate_key(vk)?;
+        }
+
+        let res = self.ledger_service.build_nym_request(submitter_did,
+                                                        target_did,
+                                                        verkey,
+                                                        alias,
+                                                        role)?;
+
+        info!("build_nym_request <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn build_attrib_request(&self,
@@ -298,99 +336,204 @@ impl LedgerCommandExecutor {
                             target_did: &str,
                             hash: Option<&str>,
                             raw: Option<&str>,
-                            enc: Option<&str>,
-                            cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self.ledger_service.build_attrib_request(submitter_did,
-                                                    target_did,
-                                                    hash,
-                                                    raw,
-                                                    enc
-        ).map_err(|err| IndyError::CommonError(err)))
+                            enc: Option<&str>) -> Result<String, IndyError> {
+        info!("build_attrib_request >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
+              submitter_did, target_did, hash, raw, enc);
+
+        self.crypto_service.validate_did(submitter_did)?;
+        self.crypto_service.validate_did(target_did)?;
+
+        let res = self.ledger_service.build_attrib_request(submitter_did,
+                                                           target_did,
+                                                           hash,
+                                                           raw,
+                                                           enc)?;
+
+        info!("build_attrib_request <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn build_get_attrib_request(&self,
                                 submitter_did: &str,
                                 target_did: &str,
-                                data: &str,
-                                cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self.ledger_service.build_get_attrib_request(submitter_did,
-                                                        target_did,
-                                                        data
-        ).map_err(|err| IndyError::CommonError(err)))
+                                data: &str) -> Result<String, IndyError> {
+        info!("build_get_attrib_request >>> submitter_did: {:?}, target_did: {:?}, data: {:?}", submitter_did, target_did, data);
+
+        self.crypto_service.validate_did(submitter_did)?;
+        self.crypto_service.validate_did(target_did)?;
+
+        let res = self.ledger_service.build_get_attrib_request(submitter_did,
+                                                               target_did,
+                                                               data)?;
+
+        info!("build_get_attrib_request <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn build_get_nym_request(&self,
                              submitter_did: &str,
-                             target_did: &str,
-                             cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self.ledger_service.build_get_nym_request(submitter_did,
-                                                     target_did
-        ).map_err(|err| IndyError::CommonError(err)))
+                             target_did: &str) -> Result<String, IndyError> {
+        info!("build_get_nym_request >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
+
+        self.crypto_service.validate_did(submitter_did)?;
+        self.crypto_service.validate_did(target_did)?;
+
+        let res = self.ledger_service.build_get_nym_request(submitter_did,
+                                                            target_did)?;
+
+        info!("build_get_attrib_request <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn build_schema_request(&self,
                             submitter_did: &str,
-                            data: &str,
-                            cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self.ledger_service.build_schema_request(submitter_did,
-                                                    data
-        ).map_err(|err| IndyError::CommonError(err)))
+                            data: &str) -> Result<String, IndyError> {
+        info!("build_schema_request >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
+
+        self.crypto_service.validate_did(submitter_did)?;
+
+        let res = self.ledger_service.build_schema_request(submitter_did,
+                                                           data)?;
+
+        info!("build_schema_request <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn build_get_schema_request(&self,
                                 submitter_did: &str,
                                 dest: &str,
-                                data: &str,
-                                cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self.ledger_service.build_get_schema_request(submitter_did,
-                                                        dest,
-                                                        data
-        ).map_err(|err| IndyError::CommonError(err)))
+                                data: &str) -> Result<String, IndyError> {
+        info!("build_get_schema_request >>> submitter_did: {:?}, dest: {:?}", submitter_did, dest);
+
+        self.crypto_service.validate_did(submitter_did)?;
+        self.crypto_service.validate_did(dest)?;
+
+        let res = self.ledger_service.build_get_schema_request(submitter_did,
+                                                               dest,
+                                                               data)?;
+
+        info!("build_get_schema_request <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn build_claim_def_request(&self,
                                submitter_did: &str,
                                xref: i32,
                                signature_type: &str,
-                               data: &str,
-                               cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self.ledger_service.build_claim_def_request(submitter_did,
-                                                       xref,
-                                                       signature_type,
-                                                       data
-        ).map_err(|err| IndyError::CommonError(err)))
+                               data: &str) -> Result<String, IndyError> {
+        info!("build_claim_def_request >>> submitter_did: {:?}, xref: {:?}, signature_type: {:?}, data: {:?}",
+              submitter_did, xref, signature_type, data);
+
+        self.crypto_service.validate_did(submitter_did)?;
+
+        let res = self.ledger_service.build_claim_def_request(submitter_did,
+                                                              xref,
+                                                              signature_type,
+                                                              data)?;
+
+        info!("build_claim_def_request <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn build_get_claim_def_request(&self,
                                    submitter_did: &str,
                                    xref: i32,
                                    signature_type: &str,
-                                   origin: &str,
-                                   cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self.ledger_service.build_get_claim_def_request(submitter_did,
-                                                           xref,
-                                                           signature_type,
-                                                           origin
-        ).map_err(|err| IndyError::CommonError(err)))
+                                   origin: &str) -> Result<String, IndyError> {
+        info!("build_get_claim_def_request >>> submitter_did: {:?}, xref: {:?}, signature_type: {:?}, origin: {:?}",
+              submitter_did, xref, signature_type, origin);
+
+        self.crypto_service.validate_did(submitter_did)?;
+        self.crypto_service.validate_did(origin)?;
+
+        let res = self.ledger_service.build_get_claim_def_request(submitter_did,
+                                                                  xref,
+                                                                  signature_type,
+                                                                  origin)?;
+
+        info!("build_get_claim_def_request <<< res: {:?}", res);
+
+        Ok(res)
     }
 
-    fn build_node_key_request(&self,
-                              submitter_did: &str,
-                              target_did: &str,
-                              data: &str,
-                              cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self.ledger_service.build_node_request(submitter_did,
-                                                  target_did,
-                                                  data
-        ).map_err(|err| IndyError::CommonError(err)))
+    fn build_node_request(&self,
+                          submitter_did: &str,
+                          target_did: &str,
+                          data: &str) -> Result<String, IndyError> {
+        info!("build_node_request >>> submitter_did: {:?}, target_did: {:?}, data: {:?}",
+              submitter_did, target_did, data);
+
+        self.crypto_service.validate_did(submitter_did)?;
+
+        let res = self.ledger_service.build_node_request(submitter_did,
+                                                         target_did,
+                                                         data)?;
+
+        info!("build_node_request <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn build_get_txn_request(&self,
                              submitter_did: &str,
-                             data: i32,
-                             cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self.ledger_service.build_get_txn_request(submitter_did,
-                                                     data
-        ).map_err(|err| IndyError::CommonError(err)))
+                             data: i32) -> Result<String, IndyError> {
+        info!("build_get_txn_request >>> submitter_did: {:?}, data: {:?}",
+              submitter_did, data);
+
+        self.crypto_service.validate_did(submitter_did)?;
+
+        let res = self.ledger_service.build_get_txn_request(submitter_did,
+                                                            data)?;
+
+        info!("build_get_txn_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_pool_config_request(&self,
+                                 submitter_did: &str,
+                                 writes: bool,
+                                 force: bool) -> Result<String, IndyError> {
+        info!("build_pool_config_request >>> submitter_did: {:?}, writes: {:?}, force: {:?}",
+              submitter_did, writes, force);
+
+        self.crypto_service.validate_did(submitter_did)?;
+
+        let res = self.ledger_service.build_pool_config(submitter_did, writes, force)?;
+
+        info!("build_pool_config_request  <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_pool_upgrade_request(&self,
+                                  submitter_did: &str,
+                                  name: &str,
+                                  version: &str,
+                                  action: &str,
+                                  sha256: &str,
+                                  timeout: Option<u32>,
+                                  schedule: Option<&str>,
+                                  justification: Option<&str>,
+                                  reinstall: bool,
+                                  force: bool) -> Result<String, IndyError> {
+        info!("build_pool_upgrade_request >>> submitter_did: {:?}, name: {:?}, version: {:?}, action: {:?}, sha256: {:?},\
+         timeout: {:?}, schedule: {:?}, justification: {:?}, reinstall: {:?}, force: {:?}",
+              submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force);
+
+        self.crypto_service.validate_did(submitter_did)?;
+
+        let res = self.ledger_service.build_pool_upgrade(submitter_did, name, version, action, sha256,
+                                                         timeout, schedule, justification, reinstall, force)?;
+
+        info!("build_pool_upgrade_request  <<< res: {:?}", res);
+
+        Ok(res)
     }
 }

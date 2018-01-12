@@ -17,24 +17,18 @@ public class IssuerCreateClaimTest extends AnoncredsIntegrationTest {
 
 		initCommonWallet();
 
-		String claimRequest = String.format(claimRequestTemplate, issuerDid, 1);
+		String claimRequest = String.format(claimRequestTemplate, issuerDid, gvtSchemaKey);
 
-		String claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
-				"               \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
-				"               \"height\":[\"175\",\"175\"],\n" +
-				"               \"age\":[\"28\",\"28\"]\n" +
-				"        }";
-
-		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
+		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, gvtClaimValuesJson, - 1).get();
 		assertNotNull(createClaimResult);
 		String claimJson = createClaimResult.getClaimJson();
 
 		JSONObject claimObj = new JSONObject(claimJson);
 
-		JSONObject primaryClaim = claimObj.getJSONObject("signature").getJSONObject("primary_claim");
+		JSONObject primaryClaim = claimObj.getJSONObject("signature").getJSONObject("p_claim");
 
 		assertTrue(primaryClaim.getString("a").length() > 0);
-		assertTrue(primaryClaim.getString("m2").length() > 0);
+		assertTrue(primaryClaim.getString("m_2").length() > 0);
 		assertTrue(primaryClaim.getString("e").length() > 0);
 		assertTrue(primaryClaim.getString("v").length() > 0);
 	}
@@ -49,15 +43,11 @@ public class IssuerCreateClaimTest extends AnoncredsIntegrationTest {
 
 		String claimRequest = String.format(claimRequestTemplate, issuerDid, 1);
 
-		String claim = "{\"status\":[\"partial\",\"51792877103171595686471452153480627530895\"],\n" +
-				"        \"period\":[\"8\",\"8\"]\n" +
-				"       }";
-
-		Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
+		Anoncreds.issuerCreateClaim(wallet, claimRequest, xyzClaimValuesJson, - 1).get();
 	}
 
 	@Test
-	public void testIssuerCreateClaimWorksForInvalidClaim() throws Exception {
+	public void testIssuerCreateClaimWorksForInvalidClaimValues() throws Exception {
 
 		initCommonWallet();
 
@@ -66,7 +56,8 @@ public class IssuerCreateClaimTest extends AnoncredsIntegrationTest {
 
 		String claimRequest = String.format(claimRequestTemplate, issuerDid, 1);
 
-		String claim = "{\"sex\":\"male\",\n" +
+		String claim = "{" +
+				"        \"sex\":\"male\",\n" +
 				"        \"name\":\"Alex\",\n" +
 				"        \"height\":\"175\",\n" +
 				"        \"age\":\"28\"" +

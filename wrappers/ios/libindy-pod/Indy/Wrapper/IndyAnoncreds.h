@@ -40,10 +40,10 @@
  @param completion Callback that takes command result as parameter. Returns revoc registry json and unique number identifying the revocation registry in the wallet.
  */
 + (void)issuerCreateAndStoreRevocRegForIssuerDid:(NSString *)issuerDID
-                                     schemaSeqNo:(NSNumber *)schemaSeqNo
+                                     schemaJSON:(NSString *)schemaJSON
                                      maxClaimNum:(NSNumber *)maxClaimNum
                                     walletHandle:(IndyHandle)walletHandle
-                                      completion:(void (^)(NSError *error, NSString *revocRegJSON, NSString *revocRegUUID)) completion;
+                                      completion:(void (^)(NSError *error, NSString *revocRegJSON)) completion;
 
 /**
  Signs a given claim for the given user by a given key (claim ef).
@@ -108,7 +108,7 @@
  @param completion Callback that takes command result as parameter. Returns revocation registry update json with a revoked claim.
  */
 + (void)issuerRevokeClaimForIssuerDID:(NSString *)issuerDID
-                          schemaSeqNo:(NSNumber *)schemaSeqNo
+                           schemaJSON:(NSString *)schemaJSON
                        userRevocIndex:(NSNumber *)userRevocIndex
                          walletHandle:(IndyHandle)walletHandle
                            completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) completion;
@@ -241,11 +241,13 @@
  
  @param claimsJson Claim json. See example above.
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param revRegJSON Revocation registry json associated with issuer_DID and schema_seq_no in the claim_offer.
  @param completion Callback that takes command result as parameter.
  */
 + (void)proverStoreClaim:(NSString *)claimsJson
-            walletHandle:(IndyHandle)walletHandle
-              completion:(void (^)(NSError *error)) completion;
+        revRegJSON:(NSString *)revRegJSON
+        walletHandle:(IndyHandle)walletHandle
+        completion:(void (^)(NSError *error)) completion;
 
 /**
  Gets human readable claims according to the filter.  
@@ -265,7 +267,7 @@
  @code
  Example claims json returned in handler:
       [{
-          "claim_uuid": <string>,
+          "referent": <string>,
           "attrs": [{"attr_name" : "attr_value"}],
           "schema_seq_no": string,
           "issuer_DID": string,
@@ -291,25 +293,25 @@
           "name": string,
           "version": string,
           "nonce": string,
-          "requested_attr1_uuid": <attr_info>,
-          "requested_attr2_uuid": <attr_info>,
-         "requested_attr3_uuid": <attr_info>,
-          "requested_predicate_1_uuid": <predicate_info>,
-         "requested_predicate_2_uuid": <predicate_info>,
+          "requested_attr1_referent": <attr_info>,
+          "requested_attr2_referent": <attr_info>,
+         "requested_attr3_referent": <attr_info>,
+          "requested_predicate_1_referent": <predicate_info>,
+         "requested_predicate_2_referent": <predicate_info>,
       }
  @endcode
  
  @code
  Example claimsJSON returned in handler:
       {
-          "requested_attr1_uuid": [claim1, claim2],
-          "requested_attr2_uuid": [],
-          "requested_attr3_uuid": [claim3],
-          "requested_predicate_1_uuid": [claim1, claim3],
-          "requested_predicate_2_uuid": [claim2],
+          "requested_attr1_referent": [claim1, claim2],
+          "requested_attr2_referent": [],
+          "requested_attr3_referent": [claim3],
+          "requested_predicate_1_referent": [claim1, claim3],
+          "requested_predicate_2_referent": [claim2],
       }, where claim is
       {
-          "claim_uuid": <string>,
+          "referent": <string>,
           "attrs": [{"attr_name" : "attr_value"}],
           "schema_seq_no": string,
           "issuer_DID": string,
@@ -343,50 +345,50 @@
  Example proofReqJSON:
  {
         "nonce": string,
-        "requested_attr1_uuid": <attr_info>,
-        "requested_attr2_uuid": <attr_info>,
-        "requested_attr3_uuid": <attr_info>,
-        "requested_predicate_1_uuid": <predicate_info>,
-        "requested_predicate_2_uuid": <predicate_info>
+        "requested_attr1_referent": <attr_info>,
+        "requested_attr2_referent": <attr_info>,
+        "requested_attr3_referent": <attr_info>,
+        "requested_predicate_1_referent": <predicate_info>,
+        "requested_predicate_2_referent": <predicate_info>
  }
  @endcode
  
  @code
  Example requestedClaimsJSON:
       {
-          "requested_attr1_uuid": [claim1_uuid_in_wallet, true <reveal_attr>],
-          "requested_attr2_uuid": [self_attested_attribute],
-          "requested_attr3_uuid": [claim2_seq_no_in_wallet, false]
-          "requested_attr4_uuid": [claim2_seq_no_in_wallet, true]
-          "requested_predicate_1_uuid": [claim2_seq_no_in_wallet],
-          "requested_predicate_2_uuid": [claim3_seq_no_in_wallet],
+          "requested_attr1_referent": [claim1_referent_in_wallet, true <reveal_attr>],
+          "requested_attr2_referent": [self_attested_attribute],
+          "requested_attr3_referent": [claim2_seq_no_in_wallet, false]
+          "requested_attr4_referent": [claim2_seq_no_in_wallet, true]
+          "requested_predicate_1_referent": [claim2_seq_no_in_wallet],
+          "requested_predicate_2_referent": [claim3_seq_no_in_wallet],
       }
  @endcode
  
  @code
  Example schemasJSON:
       {
-         "claim1_uuid_in_wallet": <schema1>,
-         "claim2_uuid_in_wallet": <schema2>,
-         "claim3_uuid_in_wallet": <schema3>,
+         "claim1_referent_in_wallet": <schema1>,
+         "claim2_referent_in_wallet": <schema2>,
+         "claim3_referent_in_wallet": <schema3>,
       }
  @endcode
  
  @code
  Example claimDefsJSON:
      {
-        "claim1_uuid_in_wallet": <claim_def1>,
-        "claim2_uuid_in_wallet": <claim_def2>,
-        "claim3_uuid_in_wallet": <claim_def3>,
+        "claim1_referent_in_wallet": <claim_def1>,
+        "claim2_referent_in_wallet": <claim_def2>,
+        "claim3_referent_in_wallet": <claim_def3>,
      }
  @endcode
  
  @code
  Example revocRegsJSON:
     {
-        "claim1_uuid_in_wallet": <revoc_reg1>,
-        "claim2_uuid_in_wallet": <revoc_reg2>,
-        "claim3_uuid_in_wallet": <revoc_reg3>,
+        "claim1_referent_in_wallet": <revoc_reg1>,
+        "claim2_referent_in_wallet": <revoc_reg2>,
+        "claim3_referent_in_wallet": <revoc_reg3>,
     }
  @endcode
  
@@ -394,17 +396,17 @@
  Example proofJSON returned in handler:
       {
           "requested": {
-              "requested_attr1_id": [claim_proof1_uuid, revealed_attr1, revealed_attr1_as_int],
+              "requested_attr1_id": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
               "requested_attr2_id": [self_attested_attribute],
-              "requested_attr3_id": [claim_proof2_uuid]
-              "requested_attr4_id": [claim_proof2_uuid, revealed_attr4, revealed_attr4_as_int],
-              "requested_predicate_1_uuid": [claim_proof2_uuid],
-              "requested_predicate_2_uuid": [claim_proof3_uuid],
+              "requested_attr3_id": [claim_proof2_referent]
+              "requested_attr4_id": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
+              "requested_predicate_1_referent": [claim_proof2_referent],
+              "requested_predicate_2_referent": [claim_proof3_referent],
           }
           "claim_proofs": {
-              "claim_proof1_uuid": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no],
-              "claim_proof2_uuid": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no],
-              "claim_proof3_uuid": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no]
+              "claim_proof1_referent": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no],
+              "claim_proof2_referent": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no],
+              "claim_proof3_referent": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no]
           },
          "aggregated_proof": <aggregated_proof>
       }
@@ -444,11 +446,11 @@
  Example proofReqJSON:
   {
     "nonce": string,
-    "requested_attr1_uuid": <attr_info>,
-    "requested_attr2_uuid": <attr_info>,
-    "requested_attr3_uuid": <attr_info>,
-    "requested_predicate_1_uuid": <predicate_info>,
-    "requested_predicate_2_uuid": <predicate_info>,
+    "requested_attr1_referent": <attr_info>,
+    "requested_attr2_referent": <attr_info>,
+    "requested_attr3_referent": <attr_info>,
+    "requested_predicate_1_referent": <predicate_info>,
+    "requested_predicate_2_referent": <predicate_info>,
   }
  @endcode
  
@@ -456,17 +458,17 @@
  Example proofJSON:
       {
           "requested": {
-              "requested_attr1_id": [claim_proof1_uuid, revealed_attr1, revealed_attr1_as_int],
+              "requested_attr1_id": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
               "requested_attr2_id": [self_attested_attribute],
-              "requested_attr3_id": [claim_proof2_uuid]
-              "requested_attr4_id": [claim_proof2_uuid, revealed_attr4, revealed_attr4_as_int],
-              "requested_predicate_1_uuid": [claim_proof2_uuid],
-              "requested_predicate_2_uuid": [claim_proof3_uuid],
+              "requested_attr3_id": [claim_proof2_referent]
+              "requested_attr4_id": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
+              "requested_predicate_1_referent": [claim_proof2_referent],
+              "requested_predicate_2_referent": [claim_proof3_referent],
           }
           "claim_proofs": {
-              "claim_proof1_uuid": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no],
-              "claim_proof2_uuid": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no],
-              "claim_proof3_uuid": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no]
+              "claim_proof1_referent": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no],
+              "claim_proof2_referent": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no],
+              "claim_proof3_referent": [<claim_proof>, issuer_DID, schema_seq_no, revoc_reg_seq_no]
           },
           "aggregated_proof": <aggregated_proof>
       }
@@ -475,27 +477,27 @@
  @code
  Example schemasJSON:
           {
-              "claim_proof1_uuid": <schema>,
-              "claim_proof2_uuid": <schema>,
-              "claim_proof3_uuid": <schema>
+              "claim_proof1_referent": <schema>,
+              "claim_proof2_referent": <schema>,
+              "claim_proof3_referent": <schema>
           }
  @endcode
  
  @code
  Example claimDefsJSON:
         {
-              "claim_proof1_uuid": <claim_def>,
-              "claim_proof2_uuid": <claim_def>,
-              "claim_proof3_uuid": <claim_def>
+              "claim_proof1_referent": <claim_def>,
+              "claim_proof2_referent": <claim_def>,
+              "claim_proof3_referent": <claim_def>
         }
  @endcode
  
  @code
  Example revocRegsJSON:
         {
-            "claim_proof1_uuid": <revoc_reg>,
-            "claim_proof2_uuid": <revoc_reg>,
-            "claim_proof3_uuid": <revoc_reg>
+            "claim_proof1_referent": <revoc_reg>,
+            "claim_proof2_referent": <revoc_reg>,
+            "claim_proof3_referent": <revoc_reg>
         }
  @endcode
  

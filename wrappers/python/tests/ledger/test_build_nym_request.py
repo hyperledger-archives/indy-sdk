@@ -1,4 +1,4 @@
-from indy import ledger, signus
+from indy import ledger, did
 from indy.error import ErrorCode, IndyError
 
 import json
@@ -36,7 +36,7 @@ async def test_build_nym_request_works_for_only_required_fields():
 async def test_build_nym_request_works_with_option_fields():
     identifier = "Th7MpTaRZVRYnPiabds81Y"
     destination = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4"
-    ver_key = "Anfh2rjAcxkE249DcdsaQl"
+    ver_key = "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL"
     role = "STEWARD"
     alias = "some_alias"
 
@@ -65,7 +65,7 @@ async def test_nym_request_works_for_different_roles(wallet_handle, pool_handle,
 
 
 async def check_for_role(pool_handle, wallet_handle, trustee_did, role, expected_role_value):
-    (my_did, my_verkey) = await signus.create_and_store_my_did(wallet_handle, "{}")
+    (my_did, my_verkey) = await did.create_and_store_my_did(wallet_handle, "{}")
 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, role)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)

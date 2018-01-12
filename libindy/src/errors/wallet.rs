@@ -1,7 +1,7 @@
 extern crate serde_json;
+extern crate indy_crypto;
 
 use std::error;
-use std::error::Error;
 use std::io;
 use std::fmt;
 
@@ -91,8 +91,8 @@ impl From<io::Error> for WalletError {
     }
 }
 
-impl From<serde_json::Error> for WalletError {
-    fn from(err: serde_json::Error) -> WalletError {
-        WalletError::CommonError(CommonError::InvalidStructure(err.description().to_string()))
+impl From<indy_crypto::errors::IndyCryptoError> for WalletError {
+    fn from(err: indy_crypto::errors::IndyCryptoError) -> Self {
+        WalletError::CommonError(CommonError::from(err))
     }
 }

@@ -29,10 +29,7 @@ public class ProverStoreClaimOfferTest extends AnoncredsIntegrationTest {
 
 	@Test
 	public void testProverStoreClaimOfferWorks() throws Exception {
-
-		String claimOffer = "{\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"schema_seq_no\":1 }";
-
-		Anoncreds.proverStoreClaimOffer(wallet, claimOffer).get();
+		Anoncreds.proverStoreClaimOffer(wallet, gvtClaimOffer).get();
 	}
 
 	@Test
@@ -41,7 +38,7 @@ public class ProverStoreClaimOfferTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String claimOffer = "{\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\"}";
+		String claimOffer = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
 
 		Anoncreds.proverStoreClaimOffer(wallet, claimOffer).get();
 	}

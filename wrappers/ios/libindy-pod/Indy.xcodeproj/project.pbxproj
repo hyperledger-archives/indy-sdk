@@ -35,8 +35,6 @@
 		5DB57A511F711EE600EB4C90 /* IndyKeychainWalletItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A281F711EE600EB4C90 /* IndyKeychainWalletItem.swift */; };
 		5DB57A521F711EE600EB4C90 /* IndyWalletCallbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A291F711EE600EB4C90 /* IndyWalletCallbacks.h */; };
 		5DB57A531F711EE600EB4C90 /* IndyWalletCallbacks.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A2A1F711EE600EB4C90 /* IndyWalletCallbacks.m */; };
-		5DB57A541F711EE600EB4C90 /* IndyAgent.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A2C1F711EE600EB4C90 /* IndyAgent.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DB57A551F711EE600EB4C90 /* IndyAgent.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A2D1F711EE600EB4C90 /* IndyAgent.mm */; };
 		5DB57A561F711EE600EB4C90 /* IndyAnoncreds.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A2E1F711EE600EB4C90 /* IndyAnoncreds.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DB57A571F711EE600EB4C90 /* IndyAnoncreds.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A2F1F711EE600EB4C90 /* IndyAnoncreds.mm */; };
 		5DB57A581F711EE600EB4C90 /* IndyErrors.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A301F711EE600EB4C90 /* IndyErrors.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -44,8 +42,8 @@
 		5DB57A5A1F711EE600EB4C90 /* IndyLedger.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A321F711EE600EB4C90 /* IndyLedger.mm */; };
 		5DB57A5B1F711EE600EB4C90 /* IndyPool.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A331F711EE600EB4C90 /* IndyPool.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DB57A5C1F711EE600EB4C90 /* IndyPool.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A341F711EE600EB4C90 /* IndyPool.mm */; };
-		5DB57A5D1F711EE600EB4C90 /* IndySignus.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A351F711EE600EB4C90 /* IndySignus.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		5DB57A5E1F711EE600EB4C90 /* IndySignus.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A361F711EE600EB4C90 /* IndySignus.mm */; };
+		5DB57A5D1F711EE600EB4C90 /* IndyDid.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A351F711EE600EB4C90 /* IndyDid.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5DB57A5E1F711EE600EB4C90 /* IndyDid.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A361F711EE600EB4C90 /* IndyDid.mm */; };
 		5DB57A5F1F711EE600EB4C90 /* IndyTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A371F711EE600EB4C90 /* IndyTypes.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DB57A601F711EE600EB4C90 /* IndyWallet.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DB57A381F711EE600EB4C90 /* IndyWallet.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5DB57A611F711EE600EB4C90 /* IndyWallet.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57A391F711EE600EB4C90 /* IndyWallet.mm */; };
@@ -85,8 +83,6 @@
 		5DB57A281F711EE600EB4C90 /* IndyKeychainWalletItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IndyKeychainWalletItem.swift; sourceTree = "<group>"; };
 		5DB57A291F711EE600EB4C90 /* IndyWalletCallbacks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWalletCallbacks.h; sourceTree = "<group>"; };
 		5DB57A2A1F711EE600EB4C90 /* IndyWalletCallbacks.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IndyWalletCallbacks.m; sourceTree = "<group>"; };
-		5DB57A2C1F711EE600EB4C90 /* IndyAgent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyAgent.h; sourceTree = "<group>"; };
-		5DB57A2D1F711EE600EB4C90 /* IndyAgent.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyAgent.mm; sourceTree = "<group>"; };
 		5DB57A2E1F711EE600EB4C90 /* IndyAnoncreds.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyAnoncreds.h; sourceTree = "<group>"; };
 		5DB57A2F1F711EE600EB4C90 /* IndyAnoncreds.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyAnoncreds.mm; sourceTree = "<group>"; };
 		5DB57A301F711EE600EB4C90 /* IndyErrors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyErrors.h; sourceTree = "<group>"; };
@@ -94,8 +90,8 @@
 		5DB57A321F711EE600EB4C90 /* IndyLedger.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyLedger.mm; sourceTree = "<group>"; };
 		5DB57A331F711EE600EB4C90 /* IndyPool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyPool.h; sourceTree = "<group>"; };
 		5DB57A341F711EE600EB4C90 /* IndyPool.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyPool.mm; sourceTree = "<group>"; };
-		5DB57A351F711EE600EB4C90 /* IndySignus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndySignus.h; sourceTree = "<group>"; };
-		5DB57A361F711EE600EB4C90 /* IndySignus.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndySignus.mm; sourceTree = "<group>"; };
+		5DB57A351F711EE600EB4C90 /* IndyDid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyDid.h; sourceTree = "<group>"; };
+		5DB57A361F711EE600EB4C90 /* IndyDid.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyDid.mm; sourceTree = "<group>"; };
 		5DB57A371F711EE600EB4C90 /* IndyTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyTypes.h; sourceTree = "<group>"; };
 		5DB57A381F711EE600EB4C90 /* IndyWallet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyWallet.h; sourceTree = "<group>"; };
 		5DB57A391F711EE600EB4C90 /* IndyWallet.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyWallet.mm; sourceTree = "<group>"; };
@@ -215,8 +211,6 @@
 				053FA7E71FB32097006CEC35 /* IndyCrypto.mm */,
 				5D57DEE01F861FBD00CD63FE /* IndyPairwise.h */,
 				5D57DEE11F861FBD00CD63FE /* IndyPairwise.mm */,
-				5DB57A2C1F711EE600EB4C90 /* IndyAgent.h */,
-				5DB57A2D1F711EE600EB4C90 /* IndyAgent.mm */,
 				5DB57A2E1F711EE600EB4C90 /* IndyAnoncreds.h */,
 				5DB57A2F1F711EE600EB4C90 /* IndyAnoncreds.mm */,
 				5DB57A301F711EE600EB4C90 /* IndyErrors.h */,
@@ -224,8 +218,8 @@
 				5DB57A321F711EE600EB4C90 /* IndyLedger.mm */,
 				5DB57A331F711EE600EB4C90 /* IndyPool.h */,
 				5DB57A341F711EE600EB4C90 /* IndyPool.mm */,
-				5DB57A351F711EE600EB4C90 /* IndySignus.h */,
-				5DB57A361F711EE600EB4C90 /* IndySignus.mm */,
+				5DB57A351F711EE600EB4C90 /* IndyDid.h */,
+				5DB57A361F711EE600EB4C90 /* IndyDid.mm */,
 				5DB57A371F711EE600EB4C90 /* IndyTypes.h */,
 				5DB57A381F711EE600EB4C90 /* IndyWallet.h */,
 				5DB57A391F711EE600EB4C90 /* IndyWallet.mm */,
@@ -250,7 +244,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5DB57A541F711EE600EB4C90 /* IndyAgent.h in Headers */,
 				5D57DED61F853A9700CD63FE /* IndyCallbacks.h in Headers */,
 				5DB57A621F711EE600EB4C90 /* IndyWalletProtocols.h in Headers */,
 				5D57DEE21F861FBD00CD63FE /* IndyPairwise.h in Headers */,
@@ -269,7 +262,7 @@
 				5DB57A521F711EE600EB4C90 /* IndyWalletCallbacks.h in Headers */,
 				5D57DED11F853A9700CD63FE /* NSError+IndyError.h in Headers */,
 				5DB57A4F1F711EE600EB4C90 /* IndyKeychainWalletConfig.h in Headers */,
-				5DB57A5D1F711EE600EB4C90 /* IndySignus.h in Headers */,
+				5DB57A5D1F711EE600EB4C90 /* IndyDid.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -371,7 +364,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [[ $? != 0 ]] ; then\n    cat << EOM\nerror: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\nEOM\n    exit 1\nfi\n";
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -396,10 +389,9 @@
 				053FA7E91FB32097006CEC35 /* IndyCrypto.mm in Sources */,
 				5DB57A531F711EE600EB4C90 /* IndyWalletCallbacks.m in Sources */,
 				5D57DED41F853A9700CD63FE /* NSString+JSON.m in Sources */,
-				5DB57A5E1F711EE600EB4C90 /* IndySignus.mm in Sources */,
+				5DB57A5E1F711EE600EB4C90 /* IndyDid.mm in Sources */,
 				5D57DECE1F853A9700CD63FE /* DictionaryExtension.swift in Sources */,
 				5D57DED71F853A9700CD63FE /* IndyCallbacks.mm in Sources */,
-				5DB57A551F711EE600EB4C90 /* IndyAgent.mm in Sources */,
 				5DB57A511F711EE600EB4C90 /* IndyKeychainWalletItem.swift in Sources */,
 				5D57DEE31F861FBD00CD63FE /* IndyPairwise.mm in Sources */,
 				5D57DED51F853A9700CD63FE /* StringExtensions.swift in Sources */,
@@ -538,7 +530,6 @@
 					"-l\"indy\"",
 					"-l\"libsodium\"",
 					"-l\"libzmq-pw\"",
-					"-l\"milagro\"",
 					"-l\"ssl\"",
 					"-l\"stdc++\"",
 					"-\"lpthread\"",
@@ -585,7 +576,6 @@
 					"-l\"indy\"",
 					"-l\"libsodium\"",
 					"-l\"libzmq-pw\"",
-					"-l\"milagro\"",
 					"-l\"ssl\"",
 					"-l\"stdc++\"",
 					"-\"lpthread\"",

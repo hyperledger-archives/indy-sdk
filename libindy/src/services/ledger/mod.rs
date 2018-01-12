@@ -1,32 +1,18 @@
 extern crate time;
 extern crate serde_json;
+extern crate indy_crypto;
 
 pub mod merkletree;
 pub mod types;
 pub mod constants;
 
-use self::types::{
-    AttribOperation,
-    GetAttribOperation,
-    GetNymOperation,
-    GetSchemaOperationData,
-    GetSchemaOperation,
-    Request,
-    SchemaOperation,
-    SchemaOperationData,
-    ClaimDefOperation,
-    ClaimDefOperationData,
-    GetClaimDefOperation,
-    GetDdoOperation,
-    NodeOperation,
-    NodeOperationData,
-    GetTxnOperation
-};
+use self::types::*;
 use errors::common::CommonError;
-use utils::json::JsonDecodable;
-use utils::crypto::base58::Base58;
 use serde_json::Value;
 use services::ledger::constants::NYM;
+use self::indy_crypto::utils::json::JsonDecodable;
+
+use std::collections::HashMap;
 
 trait LedgerSerializer {
     fn serialize(&self) -> String;
@@ -41,10 +27,6 @@ impl LedgerService {
 
     pub fn build_nym_request(&self, identifier: &str, dest: &str, verkey: Option<&str>,
                              alias: Option<&str>, role: Option<&str>) -> Result<String, CommonError> {
-        //TODO: check identifier, dest, verkey
-        Base58::decode(&identifier)?;
-        Base58::decode(&dest)?;
-
         let req_id = LedgerService::get_req_id();
 
         let mut operation: Value = Value::Object(serde_json::map::Map::new());
@@ -74,33 +56,29 @@ impl LedgerService {
         }
 
         Request::build_request(identifier.to_string(), operation)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid nym request json: {}", err.to_string())))
+            .map_err(|err| CommonError::InvalidState(format!("Invalid nym request json: {:?}", err)))
     }
 
     pub fn build_get_nym_request(&self, identifier: &str, dest: &str) -> Result<String, CommonError> {
-        Base58::decode(&identifier)?;
-        Base58::decode(&dest)?;
-
         let operation = GetNymOperation::new(dest.to_string());
         Request::build_request(identifier.to_string(), operation)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid get_nym request json: {}", err.to_string())))
+            .map_err(|err| CommonError::InvalidState(format!("Invalid get_nym request json: {:?}", err)))
     }
 
     pub fn build_get_ddo_request(&self, identifier: &str, dest: &str) -> Result<String, CommonError> {
-        Base58::decode(&identifier)?;
-        Base58::decode(&dest)?;
-
         let operation = GetDdoOperation::new(dest.to_string());
         Request::build_request(identifier.to_string(), operation)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid get_ddo request json: {}", err.to_string())))
+            .map_err(|err| CommonError::InvalidState(format!("Invalid get_ddo request json: {:?}", err)))
     }
 
     pub fn build_attrib_request(&self, identifier: &str, dest: &str, hash: Option<&str>,
                                 raw: Option<&str>, enc: Option<&str>) -> Result<String, CommonError> {
-        Base58::decode(&identifier)?;
-        Base58::decode(&dest)?;
         if raw.is_none() && hash.is_none() && enc.is_none() {
             return Err(CommonError::InvalidStructure(format!("Either raw or hash or enc must be specified")));
+        }
+        if let Some(ref raw) = raw {
+            serde_json::from_str::<serde_json::Value>(raw)
+                .map_err(|err| CommonError::InvalidStructure(format!("Cannon deserialize Raw Attribute: {:?}", err)))?;
         }
 
         let operation = AttribOperation::new(dest.to_string(),
@@ -108,77 +86,97 @@ impl LedgerService {
                                              raw.as_ref().map(|s| s.to_string()),
                                              enc.as_ref().map(|s| s.to_string()));
         Request::build_request(identifier.to_string(), operation)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid attrib request json: {}", err.to_string())))
+            .map_err(|err| CommonError::InvalidState(format!("Invalid attrib request json: {:?}", err)))
     }
 
     pub fn build_get_attrib_request(&self, identifier: &str, dest: &str, raw: &str) -> Result<String, CommonError> {
-        Base58::decode(&identifier)?;
-        Base58::decode(&dest)?;
-
         let operation = GetAttribOperation::new(dest.to_string(), raw.to_string());
         Request::build_request(identifier.to_string(), operation)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid get_attrib request json: {}", err.to_string())))
+            .map_err(|err| CommonError::InvalidState(format!("Invalid get_attrib request json: {:?}", err)))
     }
 
     pub fn build_schema_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
-        Base58::decode(&identifier)?;
-
         let data = SchemaOperationData::from_json(&data)
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {}", err.to_string())))?;
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {:?}", err)))?;
         let operation = SchemaOperation::new(data);
         Request::build_request(identifier.to_string(), operation)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid schema request json: {}", err.to_string())))
+            .map_err(|err| CommonError::InvalidState(format!("Invalid schema request json: {:?}", err)))
     }
 
     pub fn build_get_schema_request(&self, identifier: &str, dest: &str, data: &str) -> Result<String, CommonError> {
-        Base58::decode(&identifier)?;
-        Base58::decode(&dest)?;
-
         let data = GetSchemaOperationData::from_json(data)
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {}", err.to_string())))?;
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {:?}", err)))?;
         let operation = GetSchemaOperation::new(dest.to_string(), data);
         Request::build_request(identifier.to_string(), operation)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid get_schema request json: {}", err.to_string())))
+            .map_err(|err| CommonError::InvalidState(format!("Invalid get_schema request json: {:?}", err)))
     }
 
     pub fn build_claim_def_request(&self, identifier: &str, _ref: i32, signature_type: &str, data: &str) -> Result<String, CommonError> {
-        Base58::decode(&identifier)?;
-
         let data = ClaimDefOperationData::from_json(&data)
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {}", err.to_string())))?;
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {:?}", err)))?;
         let operation = ClaimDefOperation::new(_ref, signature_type.to_string(), data);
         Request::build_request(identifier.to_string(), operation)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid claim_def request json: {}", err.to_string())))
+            .map_err(|err| CommonError::InvalidState(format!("Invalid claim_def request json: {:?}", err)))
     }
 
     pub fn build_get_claim_def_request(&self, identifier: &str, _ref: i32, signature_type: &str, origin: &str) -> Result<String, CommonError> {
-        Base58::decode(&identifier)?;
-        Base58::decode(&origin)?;
-
         let operation = GetClaimDefOperation::new(_ref,
                                                   signature_type.to_string(),
                                                   origin.to_string());
         Request::build_request(identifier.to_string(), operation)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid get_claim_def request json: {}", err.to_string())))
+            .map_err(|err| CommonError::InvalidState(format!("Invalid get_claim_def request json: {:?}", err)))
     }
 
     pub fn build_node_request(&self, identifier: &str, dest: &str, data: &str) -> Result<String, CommonError> {
-        Base58::decode(&identifier)?;
-        Base58::decode(&dest)?;
-
         let data = NodeOperationData::from_json(&data)
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {}", err.to_string())))?;
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {:?}", err)))?;
+        if data.node_ip.is_none() && data.node_port.is_none()
+            && data.client_ip.is_none() && data.client_port.is_none()
+            && data.services.is_none() && data.blskey.is_none() {
+            return Err(CommonError::InvalidStructure("Invalid data json: all fields missed at once".to_string()));
+        }
+
+        if (data.node_ip.is_some() || data.node_port.is_some() || data.client_ip.is_some() || data.client_port.is_some()) &&
+            (data.node_ip.is_none() || data.node_port.is_none() || data.client_ip.is_none() || data.client_port.is_none()) {
+            return Err(CommonError::InvalidStructure("Invalid data json: Fields node_ip, node_port, client_ip, client_port must be specified together".to_string()));
+        }
+
         let operation = NodeOperation::new(dest.to_string(), data);
         Request::build_request(identifier.to_string(), operation)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid node request json: {}", err.to_string())))
+            .map_err(|err| CommonError::InvalidState(format!("Invalid node request json: {:?}", err)))
     }
 
     pub fn build_get_txn_request(&self, identifier: &str, data: i32) -> Result<String, CommonError> {
-        Base58::decode(&identifier)?;
-
         let operation = GetTxnOperation::new(data);
         Request::build_request(identifier.to_string(), operation)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid get txn request json: {}", err.to_string())))
+            .map_err(|err| CommonError::InvalidState(format!("Invalid get txn request json: {:?}", err)))
+    }
+
+    pub fn build_pool_config(&self, identifier: &str, writes: bool, force: bool) -> Result<String, CommonError> {
+        let operation = PoolConfigOperation::new(writes, force);
+        Request::build_request(identifier.to_string(), operation)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid pool_config request json: {:?}", err)))
+    }
+
+    pub fn build_pool_upgrade(&self, identifier: &str, name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
+                              justification: Option<&str>, reinstall: bool, force: bool) -> Result<String, CommonError> {
+        let schedule = match schedule {
+            Some(schedule) => Some(serde_json::from_str::<HashMap<String, String>>(schedule)
+                .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize schedule: {:?}", err)))?),
+            None => None
+        };
+
+        if action != "start" && action != "cancel" {
+            return Err(CommonError::InvalidStructure(format!("Invalid action: {}", action)));
+        }
+
+        if action == "start" && schedule.is_none() {
+            return Err(CommonError::InvalidStructure(format!("Schedule is required for `{}` action", action)));
+        }
+
+        let operation = PoolUpgradeOperation::new(name, version, action, sha256, timeout, schedule, justification, reinstall, force);
+        Request::build_request(identifier.to_string(), operation)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid pool_upgrade request json: {:?}", err)))
     }
 
     fn get_req_id() -> u64 {
@@ -383,8 +381,12 @@ mod tests {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
         let dest = "dest";
-        let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1}"#;
 
+        let data = r#"{ }"#;
+        let node_request = ledger_service.build_node_request(identifier, dest, data);
+        assert!(node_request.is_err());
+
+        let data = r#"{ "unexpected_param": 1 }"#;
         let node_request = ledger_service.build_node_request(identifier, dest, data);
         assert!(node_request.is_err());
     }

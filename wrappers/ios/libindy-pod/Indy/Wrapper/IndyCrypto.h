@@ -31,24 +31,22 @@
                     key:(NSString *)key
              completion:(void (^)(NSError *error, BOOL valid))completion;
 
-+ (void)cryptoBox:(NSData *)message
++ (void)authCrypt:(NSData *)message
             myKey:(NSString *)myKey
          theirKey:(NSString *)theirKey
      walletHandle:(IndyHandle)walletHandle
-       completion:(void (^)(NSError *error, NSData *encryptedMsg, NSData *nonce))completion;
+       completion:(void (^)(NSError *error, NSData *encryptedMsg))completion;
 
-+ (void)cryptoBoxOpen:(NSData *)encryptedMessage
-                myKey:(NSString *)myKey
-             theirKey:(NSString *)theirKey
-                nonce:(NSData *)nonce
-         walletHandle:(IndyHandle)walletHandle
-           completion:(void (^)(NSError *error, NSData *decryptedMessage))completion;
++ (void)authDecrypt:(NSData *)encryptedMessage
+        myKey:(NSString *)myKey
+        walletHandle:(IndyHandle)walletHandle
+        completion:(void (^)(NSError *error, NSString *theirKey, NSData *decryptedMessage))completion;
 
-+ (void)cryptoBoxSeal:(NSData *)message
++ (void)anonCrypt:(NSData *)message
              theirKey:(NSString *)theirKey
            completion:(void (^)(NSError *error, NSData *encryptedMsg))completion;
 
-+ (void)cryptoBoxSealOpen:(NSData *)encryptedMessage
++ (void)anonDecrypt:(NSData *)encryptedMessage
                     myKey:(NSString *)myKey
              walletHandle:(IndyHandle)walletHandle
                completion:(void (^)(NSError *error, NSData *decryptedMessage))completion;
