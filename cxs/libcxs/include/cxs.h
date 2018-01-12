@@ -24,6 +24,7 @@ typedef unsigned int cxs_connection_handle_t;
 typedef unsigned int cxs_claim_handle_t;
 typedef unsigned int cxs_proof_handle_t;
 typedef unsigned int cxs_command_handle_t;
+typedef unsigned int cxs_bool_t;
 
 typedef struct {
 
@@ -74,7 +75,13 @@ cxs_error_t cxs_schema_get_sequence_no(cxs_schema_handle_t schema_handle, int *s
  */
 
 /** Creates a claim definition from the given schema.  Populates a handle to the new claimdef. */
-cxs_error_t cxs_claimdef_create(cxs_schema_handle_t schema_handle, cxs_claimdef_handle_t *claimdef_handle);
+cxs_error_t cxs_claimdef_create(cxs_command_handle_t command_handle, const char *source_id, const char *claimdef_name, cxs_schema_handle_t schema_seq_no, cxs_bool_t revocation, void (*cb)(cxs_command_handle_t command_handle, cxs_error_t err, cxs_claimdef_handle_t claimdef_handle));
+
+/** Populates status with the current state of this claim. */
+cxs_error_t cxs_claimdef_serialize(cxs_command_handle_t command_handle, cxs_claimdef_handle_t claimdef_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, const char *state));
+
+/** Re-creates a claim object from the specified serialization. */
+cxs_error_t cxs_claimdef_deserialize(cxs_command_handle_t command_handle, const char *serialized_claimdef, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_claimdef_handle_t claimdef_handle));
 
 /** Asynchronously commits the claimdef to the ledger.  */
 cxs_error_t cxs_claimdef_commit(cxs_claimdef_handle_t claimdef_handle);
@@ -118,7 +125,7 @@ cxs_error_t cxs_connection_release(cxs_connection_handle_t connection_handle);
  */
 
 /** Creates a claim object from the specified claimdef handle. Populates a handle the new claim. */
-cxs_error_t cxs_issuer_create_claim(cxs_command_handle_t, const char *source_id, cxs_schema_handle_t schema_seq_no, const char *issuer_did, const char * claim_data, const char * claim_name, void (*cb)(cxs_command_handle_t command_handle, cxs_error_t err, cxs_claim_handle_t claim_handle));
+cxs_error_t cxs_issuer_create_claim(cxs_command_handle_t command_handle, const char *source_id, cxs_schema_handle_t schema_seq_no, const char *issuer_did, const char * claim_data, const char * claim_name, void (*cb)(cxs_command_handle_t command_handle, cxs_error_t err, cxs_claim_handle_t claim_handle));
 
 /** Asynchronously sends the claim offer to the connection. */
 cxs_error_t cxs_issuer_send_claim_offer(cxs_command_handle_t command_handle, cxs_claim_handle_t claim_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err));

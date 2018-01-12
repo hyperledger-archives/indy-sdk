@@ -6,19 +6,19 @@ use utils::error;
 use std::thread;
 use std::ptr;
 use claim_def;
+use settings;
 
 #[no_mangle]
 pub extern fn cxs_claimdef_create(command_handle: u32,
                                   source_id: *const c_char,
                                   claimdef_name: *const c_char,
                                   schema_seq_no: u32,
-                                  issuer_did: *const c_char,
                                   create_non_revoc: bool,
                                   cb: Option<extern fn(xcommand_handle: u32, err: u32, claimdef_handle: u32)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(claimdef_name, error::INVALID_OPTION.code_num);
-    check_useful_c_str!(issuer_did, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
+    let issuer_did = settings::CONFIG_ENTERPRISE_DID.to_string();
 
     thread::spawn( move|| {
         let ( rc, handle) = match claim_def::create_new_claimdef(source_id,
@@ -156,7 +156,6 @@ mod tests {
                                        CString::new("Test Source ID").unwrap().into_raw(),
                                        CString::new("Test Claim Def").unwrap().into_raw(),
                                        15,
-                                       CString::new("4fUDR9R7fjwELRvH9JT6HH").unwrap().into_raw(),
                                        false,
                                        Some(create_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
@@ -170,7 +169,6 @@ mod tests {
                                        CString::new("Test Source ID").unwrap().into_raw(),
                                        CString::new("Test Claim Def").unwrap().into_raw(),
                                        0,
-                                       CString::new("11ll").unwrap().into_raw(),
                                        false,
                                        Some(create_cb_err)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
@@ -183,7 +181,6 @@ mod tests {
                                        CString::new("Test Source ID").unwrap().into_raw(),
                                        CString::new("Test Claim Def").unwrap().into_raw(),
                                        15,
-                                       CString::new("4fUDR9R7fjwELRvH9JT6HH").unwrap().into_raw(),
                                        false,
                                        Some(create_and_serialize_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));

@@ -4,10 +4,9 @@ const { stubInitCXS } = require('./helpers')
 const { ClaimDef, Error } = cxs
 
 const CLAIM_DEF = {
-  issuerDid: '8XFh8yBzrpJQmNyZzgoTqB',
   name: 'test',
   revocation: false,
-  schemaSeqNo: 1,
+  schemaNo: 15,
   sourceId: 'sourceId'
 }
 

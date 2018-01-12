@@ -6,7 +6,6 @@ export interface IClaimDefinition {
   sourceId: string,
   name: string,
   schemaNo: number,
-  issuerDid: string,
   revocation: boolean
 }
 
@@ -29,18 +28,16 @@ export class ClaimDef extends CXSBase {
   protected _serializeFn = rustAPI().cxs_claimdef_serialize
   protected _deserializeFn = rustAPI().cxs_claimdef_deserialize
   private _name: string
-  private _issuerDid: string
   private _schemaNo: number
 
-  constructor (sourceId, name, issuerDid, schemaNo) {
+  constructor (sourceId, name, schemaNo) {
     super(sourceId)
     this._name = name
-    this._issuerDid = issuerDid
     this._schemaNo = schemaNo
   }
 
   static async create (data: IClaimDefinition): Promise<ClaimDef> {
-    const claimDef = new ClaimDef(data.sourceId, data.name, data.issuerDid, data.schemaNo)
+    const claimDef = new ClaimDef(data.sourceId, data.name, data.schemaNo)
     const commandHandle = 0
     try {
       await claimDef._create((cb) => rustAPI().cxs_claimdef_create(
@@ -48,7 +45,6 @@ export class ClaimDef extends CXSBase {
       claimDef.sourceId,
       claimDef._name,
       data.schemaNo,
-      data.issuerDid,
       data.revocation,
       cb
       ))
@@ -61,7 +57,6 @@ export class ClaimDef extends CXSBase {
   static async deserialize (data: IClaimDefObj) {
     try {
       const claimDefParams = {
-        issuerDid: data.claim_def.origin,
         name: data.name,
         schemaNo: data.claim_def.ref
       }
