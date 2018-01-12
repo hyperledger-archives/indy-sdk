@@ -2,6 +2,7 @@ extern crate indy_crypto;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use errors::common::CommonError;
+use errors::did::DidError;
 use errors::wallet::WalletError;
 use errors::indy::IndyError;
 use services::crypto::types::{KeyInfo, MyDidInfo, TheirDidInfo, Did, Key};
@@ -195,6 +196,12 @@ impl DidCommandExecutor {
             .map_err(|err|
                 CommonError::InvalidStructure(
                     format!("Invalid MyDidInfo json: {}", err.description())))?;
+
+        if let Some(ref did) = my_did_info.did.as_ref() {
+            if self.wallet_service.get(wallet_handle, &format!("my_did::{}", did)).is_ok() {
+                return Err(IndyError::DidError(DidError::AlreadyExistsError(format!("Did already exists"))));
+            };
+        }
 
         let (my_did, key) = self.crypto_service.create_my_did(&my_did_info)?;
 

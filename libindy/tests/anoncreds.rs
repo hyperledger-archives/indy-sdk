@@ -37,7 +37,7 @@ mod high_cases {
 
             let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
                                                                                 ISSUER_DID,
-                                                                                &AnoncredsUtils::gvt_schema_json(),
+                                                                                &AnoncredsUtils::custom_schema("claim_def_works"),
                                                                                 None, false).unwrap();
 
             serde_json::from_str::<ClaimDefinition>(&claim_def_json).unwrap();
@@ -50,7 +50,7 @@ mod high_cases {
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::issuer_create_claim_definition(invalid_wallet_handle,
                                                                      ISSUER_DID,
-                                                                     &AnoncredsUtils::gvt_schema_json(),
+                                                                     &AnoncredsUtils::custom_schema("claim_def_works_for_invalid_wallet"),
                                                                      None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
@@ -1525,7 +1525,7 @@ mod medium_cases {
 
             let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
                                                                      INVALID_IDENTIFIER,
-                                                                     &AnoncredsUtils::gvt_schema_json(),
+                                                                     &AnoncredsUtils::custom_schema("claim_def_works_for_invalid_did"),
                                                                      None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
@@ -1534,7 +1534,7 @@ mod medium_cases {
         fn issuer_create_and_store_claim_def_works_for_empty_schema_attr_names() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let schema = r#"{"seqNo":1, "data":{"name":"name","version":"1.0","attr_names":[]}}"#;
+            let schema = r#"{"seqNo":1, "identifier":"NcYxiDXkpYi6ov5FcYDi1e", "data":{"name":"name","version":"1.0","attr_names":[]}}"#;
 
             let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, ISSUER_DID, None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1545,7 +1545,7 @@ mod medium_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
-                                                                     &AnoncredsUtils::gvt_schema_json(),
+                                                                     &AnoncredsUtils::custom_schema("claim_def_works_for_correct_signature_type"),
                                                                      ISSUER_DID,
                                                                      Some(SIGNATURE_TYPE), false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1556,10 +1556,28 @@ mod medium_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
-                                                                     &AnoncredsUtils::gvt_schema_json(),
+                                                                     &AnoncredsUtils::custom_schema("claim_def_works_for_invalid_signature_type"),
                                                                      ISSUER_DID,
                                                                      Some("some_type"), false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+        }
+
+
+        #[test]
+        fn issuer_create_and_store_claim_def_works_for_duplicate() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
+                                                           ISSUER_DID,
+                                                           &AnoncredsUtils::custom_schema("claim_def_works_for_duplicate"),
+                                                           None, false).unwrap();
+
+            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
+                                                                     ISSUER_DID,
+                                                                     &AnoncredsUtils::custom_schema("claim_def_works_for_duplicate"),
+                                                                     None, false);
+
+            assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsClaimDefAlreadyExistsError);
         }
     }
 

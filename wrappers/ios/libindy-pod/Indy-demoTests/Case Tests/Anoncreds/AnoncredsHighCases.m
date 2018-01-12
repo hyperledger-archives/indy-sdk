@@ -46,7 +46,7 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. issuer create claim definition
-    NSString *schema = [[AnoncredsUtils sharedInstance] getGvtSchemaJson:@(1)];
+    NSString *schema = [[AnoncredsUtils sharedInstance] getSchemaJson:@"ClaimDefWorks"];
     NSString *claimDefJson;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
                                                                              issuerDid:[TestUtils issuerDid]
@@ -79,7 +79,7 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
     
     // 2. Create claim definition
-    NSString *schema = [[AnoncredsUtils sharedInstance] getGvtSchemaJson:@(1)];
+    NSString *schema = [[AnoncredsUtils sharedInstance] getSchemaJson:@"ClaimDefWorksForInvalidWallet"];
     IndyHandle invalidWalletHandle = walletHandle + 100;
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:invalidWalletHandle
                                                                              issuerDid:[TestUtils issuerDid]

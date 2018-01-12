@@ -93,15 +93,15 @@
 - (void)testIssuerCreateAndStoreClaimDefWorksForInvalidSignatureType
 {
     NSError *ret;
-    
+
     // 1. init commmon wallet
     IndyHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
                                                                     claimDefJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
-    
-    NSString *schema = [[AnoncredsUtils sharedInstance] getGvtSchemaJson:@(1)];
-    
+
+    NSString *schema = [[AnoncredsUtils sharedInstance] getSchemaJson:@"ClaimDefWorksForInvalidSignatureType"];
+
     // 2. create claim definition
     ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
                                                                              issuerDid:[TestUtils issuerDid]
@@ -110,6 +110,39 @@
                                                                         createNonRevoc:false
                                                                           claimDefJson:nil];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::issuerCreateClaimDefinifionWithWalletHandle returned wrong code");
+}
+
+
+- (void)testIssuerCreateAndStoreClaimDefWorksForDuplicate
+{
+    NSError *ret;
+
+    // 1. init commmon wallet
+    IndyHandle walletHandle = 0;
+    ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
+                                                                    claimDefJson:nil];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
+
+
+    NSString *schema = [[AnoncredsUtils sharedInstance] getSchemaJson:@"ClaimDefWorksForDuplicate"];
+
+    // 2. create claim definition
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
+                                                                             issuerDid:[TestUtils issuerDid]
+                                                                            schemaJson:schema
+                                                                         signatureType:nil
+                                                                        createNonRevoc:false
+                                                                          claimDefJson:nil];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateClaimDefinifionWithWalletHandle returned wrong code");
+
+    // 3. create duplicate claim definition
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
+                                                                             issuerDid:[TestUtils issuerDid]
+                                                                            schemaJson:schema
+                                                                         signatureType:nil
+                                                                        createNonRevoc:false
+                                                                          claimDefJson:nil];
+    XCTAssertEqual(ret.code, AnoncredsClaimDefAlreadyExistsError, @"AnoncredsUtils::issuerCreateClaimDefinifionWithWalletHandle returned wrong code");
 }
 
 // MARK: - Prover store claim offer

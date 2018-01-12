@@ -2,6 +2,7 @@ extern crate serde_json;
 extern crate indy_crypto;
 
 use errors::indy::IndyError;
+use errors::anoncreds::AnoncredsError;
 use errors::common::CommonError;
 
 use services::anoncreds::AnoncredsService;
@@ -97,6 +98,14 @@ impl IssuerCommandExecutor {
         let schema: Schema = Schema::from_json(schema_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid schema json: {}", err.to_string())))?;
 
+        let schema_key = SchemaKey { name: schema.data.name.clone(), version: schema.data.version.clone(), did: schema.identifier.clone() };
+
+        let id = get_composite_id(issuer_did, &schema_key);
+
+        if self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", id)).is_ok() {
+            return Err(IndyError::AnoncredsError(AnoncredsError::ClaimDefAlreadyExists(format!("Claim definition for key: {:?} already exists", id))));
+        };
+
         let (claim_definition, private_key) =
             self.anoncreds_service.issuer.new_claim_definition(issuer_did, &schema, signature_type, create_non_revoc)?;
 
@@ -106,8 +115,6 @@ impl IssuerCommandExecutor {
         let private_key_json = private_key.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claim definition private key: {:?}", err)))?;
 
-        let schema_key = SchemaKey { name: schema.data.name.clone(), version: schema.data.version.clone(), did: schema.identifier.clone() };
-        let id = get_composite_id(issuer_did, &schema_key);
         self.wallet_service.set(wallet_handle, &format!("claim_definition::{}", id), &claim_definition_json)?;
         self.wallet_service.set(wallet_handle, &format!("claim_definition_private_key::{}", id), &private_key_json)?;
 
@@ -146,6 +153,7 @@ impl IssuerCommandExecutor {
         let revocation_registry_private_json = revocation_registry_private.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannon serialize revocation registry private: {:?}", err)))?;
 
+        // TODO: store revocation registry using unique identifier(https://jira.hyperledger.org/browse/IS-514).
         self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", id), &revocation_registry_json)?;
         self.wallet_service.set(wallet_handle, &format!("revocation_registry_private::{}", id), &revocation_registry_private_json)?;
 

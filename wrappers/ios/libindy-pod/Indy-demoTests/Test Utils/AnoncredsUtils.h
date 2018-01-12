@@ -13,6 +13,7 @@
 
 - (NSString *)getGvtSchemaKey;
 - (NSString *)getGvtSchemaJson:(NSNumber *)seqNo;
+- (NSString *)getSchemaJson:(NSString *)schemaName;
 
 - (NSString *)getClaimOfferJson:(NSString *)issuerDid
                     schemaKey:(NSString *)schemaKey;

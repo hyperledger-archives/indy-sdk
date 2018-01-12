@@ -505,6 +505,18 @@ impl AnoncredsUtils {
         }
     }
 
+    pub fn custom_schema(name: &str) -> String {
+        serde_json::to_string(&Schema {
+            seq_no: 1,
+            identifier: DID_TRUSTEE.to_string(),
+            data: SchemaData {
+                name: name.to_string(),
+                version: "1.0".to_string(),
+                attr_names: HashSet::from_iter(vec!["age".to_string(), "sex".to_string(), "height".to_string(), "name".to_string()].iter().cloned())
+            }
+        }).unwrap()
+    }
+
     pub fn xyz_schema_json() -> String {
         serde_json::to_string(&AnoncredsUtils::xyz_schema()).unwrap()
     }

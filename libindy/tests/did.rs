@@ -654,6 +654,21 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn indy_create_my_did_works_for_duplicate() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (my_did, _) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
+            let res = DidUtils::create_my_did(wallet_handle, &format!(r#"{{"did":{:?}}}"#, my_did));
+            assert_eq!(res.unwrap_err(), ErrorCode::DidAlreadyExistsError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod replace_keys_start {
