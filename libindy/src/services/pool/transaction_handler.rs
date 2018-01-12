@@ -215,7 +215,7 @@ impl TransactionHandler {
                         "Can't flash all transaction requests with common success status".to_string())));
             }
             Err(err) => {
-                for (_, pending_cmd) in &self.pending_commands {
+                for (_, pending_cmd) in &mut self.pending_commands {
                     pending_cmd.terminate_parent_cmds(false)?
                 }
                 Ok(())
@@ -454,8 +454,8 @@ impl TransactionHandler {
     }
 
     pub fn process_timeout(&mut self) -> Result<(), PoolError> {
-        let timeout_cmds: Vec<u64> = self.pending_commands.iter()
-            .filter(|&(_, cur)| match cur.full_cmd_timeout {
+        let timeout_cmds: Vec<u64> = self.pending_commands.iter_mut()
+            .filter(|&(_, ref cur)| match cur.full_cmd_timeout {
                 Some(tm) => tm <= time::now_utc(),
                 None => false
             })
@@ -510,7 +510,7 @@ impl CommandProcess {
         }
     }
 
-    fn terminate_parent_cmds(&self, is_timeout: bool) -> Result<(), CommonError> {
+    fn terminate_parent_cmds(&mut self, is_timeout: bool) -> Result<(), CommonError> {
         for cmd_id in &self.parent_cmd_ids {
             CommandExecutor::instance()
                 .send(Command::Ledger(LedgerCommand::SubmitAck(
@@ -518,6 +518,7 @@ impl CommandProcess {
                     Err(if is_timeout { PoolError::Timeout } else { PoolError::Terminate }))))
                 .map_err(|err| CommonError::InvalidState("Can't send ACK cmd".to_string()))?;
         }
+        self.parent_cmd_ids.clear();
         Ok(())
     }
 }
