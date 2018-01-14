@@ -20,6 +20,8 @@ use messages::get_message::Message;
 use serde::Deserialize;
 use self::rmp_serde::{encode, Deserializer};
 use messages::MessageResponseCode::{ MessageAccepted };
+use serde_json::Value;
+use serde_json::Map;
 
 lazy_static! {
     static ref CONNECTION_MAP: Mutex<HashMap<u32, Box<Connection>>> = Default::default();
@@ -76,7 +78,7 @@ impl Connection {
             },
             Ok(response) => {
                 self.state = CxsStateType::CxsStateOfferSent;
-                self.invite_detail = match get_invite_detail(&response[0]) {
+                self.invite_detail = match parse_invite_detail(&response[0]) {
                     Ok(x) => x,
                     Err(x) => {
                         error!("error when sending invite: {}", x);
@@ -441,7 +443,30 @@ pub fn release(handle: u32) -> u32 {
     }
 }
 
-pub fn get_invite_detail(response: &str) -> Result<InviteDetail, u32> {
+pub fn get_invite_details(handle: u32, abbreviated:bool) -> Result<String,u32> {
+    match CONNECTION_MAP.lock().unwrap().get(&handle) {
+        Some(t) => {
+            match abbreviated {
+                false => {
+                    Ok(serde_json::to_string(&t.invite_detail)
+                        .or(Err(error::CONNECTION_ERROR.code_num))?)
+                },
+                true => {
+                    let details = serde_json::to_value(&t.invite_detail)
+                        .or(Err(error::CONNECTION_ERROR.code_num))?;
+                    let abbr = abbrv_event_detail(details)
+                        .or(Err(error::CONNECTION_ERROR.code_num))?;
+                    Ok(serde_json::to_string(&abbr)
+                        .or(Err(error::CONNECTION_ERROR.code_num))?)
+                }
+            }
+        },
+        None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
+    }
+
+}
+
+pub fn parse_invite_detail(response: &str) -> Result<InviteDetail, u32> {
 
     let details: InviteDetail = match serde_json::from_str(response) {
         Ok(x) => x,
@@ -470,6 +495,69 @@ pub fn generate_encrypted_payload(my_vk: &str, their_vk: &str, data: &str, msg_t
     debug!("Sending payload: {:?}", bytes);
     crypto::prep_msg(wallet::get_wallet_handle(),&my_vk, &their_vk, &bytes)
 }
+
+
+
+//**********
+// Code to convert InviteDetails to Abbreviated String
+//**********
+lazy_static! {
+    static ref ABBREVIATIONS: HashMap<&'static str, &'static str> = {
+        let mut m = HashMap::new();
+        m.insert("statusCode", "sc");
+        m.insert("connReqId", "id");
+        m.insert("senderDetail", "s");
+        m.insert("name", "n");
+        m.insert("agentKeyDlgProof", "dp");
+        m.insert("agentDID", "d");
+        m.insert("agentDelegatedKey", "k");
+        m.insert("signature", "s");
+        m.insert("DID", "d");
+        m.insert("logoUrl", "l");
+        m.insert("verKey", "v");
+        m.insert("senderAgencyDetail", "sa");
+        m.insert("endpoint", "e");
+        m.insert("targetName", "t");
+        m.insert("statusMsg", "sm");
+        m
+    };
+}
+
+fn collect_keys(map:&Map<String, Value>) -> Vec<String>{
+    let mut rtn:Vec<String> = Default::default();
+    for key in map.keys() {
+        rtn.push(key.clone());
+    }
+    rtn
+}
+
+fn abbrv_event_detail(val: Value) -> Result<Value, u32> {
+
+    if let Value::Object(mut map) = val {
+        let mut keys:Vec<String> = collect_keys(&map);
+
+        while let Some(k) = keys.pop() {
+            let mut value = map.remove(&k).ok_or_else(||{
+                warn!("Unexpected key value mutation");
+                error::UNKNOWN_ERROR.code_num
+            })?;
+
+            value = abbrv_event_detail(value)?;
+            let new_k = match ABBREVIATIONS.get(k.as_str()) {
+                Some(s) => s.to_string(),
+                None => k
+            };
+
+            map.insert(new_k, value);
+        }
+        Ok(Value::Object(map))
+    }
+    else {
+        Ok(val)
+    }
+}
+
+
 
 #[cfg(test)]
 mod tests {
@@ -529,7 +617,7 @@ mod tests {
 
     #[test]
     fn test_parse_invite_details() {
-        let invite = get_invite_detail(INVITE_DETAIL_STRING).unwrap();
+        let invite = parse_invite_detail(INVITE_DETAIL_STRING).unwrap();
         assert_eq!(invite.sender_detail.verkey,"ESE6MnqAyjRigduPG454vfLvKhMbmaZjy9vqxCnSKQnp");
     }
 
@@ -562,7 +650,9 @@ mod tests {
         println!("updating state");
         httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
         update_state(handle).unwrap();
-        assert_eq!(get_state(handle), CxsStateType::CxsStateAccepted as u32);
+        let details = get_invite_details(handle, true).unwrap();
+        println!("{}",details);
+        assert!(details.contains("\"dp\":"));
     }
 
     #[test]
@@ -677,4 +767,66 @@ mod tests {
             update_state(handle).unwrap();
         }
     }
+
+    #[test]
+    fn test_invite_detail_abbr() {
+        let invite_detail:Value = serde_json::from_str(INVITE_DETAIL_STRING).unwrap();
+        let abbr = abbrv_event_detail(invite_detail).unwrap();
+
+        let abbr_obj = abbr.as_object().unwrap();
+        assert_eq!(abbr_obj.get("sc").unwrap(), "MS-101")
+    }
+
+    #[test]
+    fn test_invite_detail_abbr2() {
+        let un_abbr = json!({
+  "statusCode":"MS-102",
+  "connReqId":"yta2odh",
+  "senderDetail":{
+    "name":"ent-name",
+    "agentKeyDlgProof":{
+      "agentDID":"N2Uyi6SVsHZq1VWXuA3EMg",
+      "agentDelegatedKey":"CTfF2sZ5q4oPcBvTP75pgx3WGzYiLSTwHGg9zUsJJegi",
+      "signature":"/FxHMzX8JaH461k1SI5PfyxF5KwBAe6VlaYBNLI2aSZU3APsiWBfvSC+mxBYJ/zAhX9IUeTEX67fj+FCXZZ2Cg=="
+    },
+    "DID":"F2axeahCaZfbUYUcKefc3j",
+    "logoUrl":"ent-logo-url",
+    "verKey":"74xeXSEac5QTWzQmh84JqzjuXc8yvXLzWKeiqyUnYokx"
+  },
+  "senderAgencyDetail":{
+    "DID":"BDSmVkzxRYGE4HKyMKxd1H",
+    "verKey":"6yUatReYWNSUfEtC2ABgRXmmLaxCyQqsjLwv2BomxsxD",
+    "endpoint":"52.38.32.107:80/agency/msg"
+  },
+  "targetName":"there",
+  "statusMsg":"message sent"
+});
+
+        let abbr = json!({
+  "sc":"MS-102",
+  "id": "yta2odh",
+  "s": {
+    "n": "ent-name",
+    "dp": {
+      "d": "N2Uyi6SVsHZq1VWXuA3EMg",
+      "k": "CTfF2sZ5q4oPcBvTP75pgx3WGzYiLSTwHGg9zUsJJegi",
+      "s":
+        "/FxHMzX8JaH461k1SI5PfyxF5KwBAe6VlaYBNLI2aSZU3APsiWBfvSC+mxBYJ/zAhX9IUeTEX67fj+FCXZZ2Cg==",
+    },
+    "d": "F2axeahCaZfbUYUcKefc3j",
+    "l": "ent-logo-url",
+    "v": "74xeXSEac5QTWzQmh84JqzjuXc8yvXLzWKeiqyUnYokx",
+  },
+  "sa": {
+    "d": "BDSmVkzxRYGE4HKyMKxd1H",
+    "v": "6yUatReYWNSUfEtC2ABgRXmmLaxCyQqsjLwv2BomxsxD",
+    "e": "52.38.32.107:80/agency/msg",
+  },
+  "t": "there",
+  "sm":"message sent"
+});
+        let processed = abbrv_event_detail(un_abbr).unwrap();
+        assert_eq!(processed, abbr);
+    }
+
 }

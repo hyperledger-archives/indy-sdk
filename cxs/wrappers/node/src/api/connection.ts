@@ -40,6 +40,7 @@ export class Connection extends CXSBaseWithState {
   protected _updateStFn = rustAPI().cxs_connection_update_state
   protected _serializeFn = rustAPI().cxs_connection_serialize
   protected _deserializeFn = rustAPI().cxs_connection_deserialize
+  protected _inviteDetailFn = rustAPI().cxs_connection_invite_details
 
   /**
    * @memberof Connection
@@ -108,7 +109,7 @@ export class Connection extends CXSBaseWithState {
    * Data returned can be used to recreate a Connection object by passing it to the deserialize function.
    * @async
    * @function serialize
-   * @returns {Promise<IConnectionData>} - Jason object with all of the underlying Rust attributes.
+   * @returns {Promise<IConnectionData>} - Json object with all of the underlying Rust attributes.
    * Same json object structure that is passed to the deserialize function.
    */
   async serialize (): Promise<IConnectionData> {
@@ -133,6 +134,47 @@ export class Connection extends CXSBaseWithState {
     } catch (error) {
       throw new CXSInternalError(`cxs_connection_updateState -> ${error}`)
     }
+  }
+
+  /**
+   * @memberof Connection
+   * @description
+   * Gets the details of the invitation that was returned from the Agent Service.
+   * @async
+   * @function inviteDetails
+   * @returns {Promise<string>} - String with the details
+   */
+  async inviteDetails (abbr: boolean = false): Promise<string> {
+    try {
+      const data: string = await this._inviteDetails(abbr)
+      return data
+    } catch (err) {
+      throw new CXSInternalError(`cxs_connection_invite_details -> ${err}`)
+    }
+  }
+
+  protected async _inviteDetails (abbr: boolean = false): Promise<string> {
+    const connHandle = this._handle
+    let rc = null
+    const data = await createFFICallbackPromise<string>(
+        (resolve, reject, cb) => {
+          rc = this._inviteDetailFn(0, connHandle, abbr, cb)
+          if (rc) {
+            // TODO: handle correct exception
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'string'], (handle, err, details) => {
+          if (err) {
+            reject(err)
+            return
+          } else if (details == null) {
+            reject('no details returned')
+          }
+          resolve(details)
+        })
+    )
+    return data
   }
 
   private async _connect (options: IConnectOptions): Promise<number> {

@@ -5,7 +5,7 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use std::ptr;
 use std::thread;
-use connection::{build_connection, connect, to_string, get_state, release, is_valid_handle, update_state, from_string};
+use connection::{build_connection, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details};
 
 /**
  * connection object
@@ -102,7 +102,7 @@ pub extern fn cxs_connection_connect(command_handle:u32,
 #[no_mangle]
 pub extern fn cxs_connection_serialize(command_handle: u32,
                                        connection_handle: u32,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, claim_state: *const c_char)>) -> u32 {
+                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, serialized_data: *const c_char)>) -> u32 {
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
@@ -189,6 +189,47 @@ pub extern fn cxs_connection_update_state(command_handle: u32,
         };
         let state = get_state(connection_handle);
         cb(command_handle, rc, state);
+    });
+
+    error::SUCCESS.code_num
+}
+
+/// Gets the current connection details
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// connection_handle: was provided during creation. Used to identify connection object
+///
+/// abbreviated: abbreviated connection details for QR codes or not
+///
+/// cb: Callback that provides the json string of details
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub extern fn cxs_connection_invite_details(command_handle: u32,
+                                            connection_handle: u32,
+                                            abbreviated: bool,
+                                            cb: Option<extern fn(xcommand_handle: u32, err: u32, details: *const c_char)>) -> u32 {
+
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    if !is_valid_handle(connection_handle) {
+        return error::INVALID_CONNECTION_HANDLE.code_num;
+    }
+
+    thread::spawn(move|| {
+        match get_invite_details(connection_handle, abbreviated){
+            Ok(str) => {
+                let msg = CStringUtils::string_to_cstring(str);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            },
+            Err(x) => {
+                warn!("could not get invite details for {}",connection_handle);
+                cb(command_handle, x, ptr::null_mut());
+            }
+        }
     });
 
     error::SUCCESS.code_num
