@@ -69,11 +69,11 @@ pub extern fn cxs_connection_connect(command_handle:u32,
     }
 
     let options = if !connection_options.is_null() {
-        check_useful_c_str!(connection_options, error::UNKNOWN_ERROR.code_num);
+        check_useful_opt_c_str!(connection_options, error::UNKNOWN_ERROR.code_num);
         connection_options.to_owned()
     }
     else {
-        "".to_string()
+        None
     };
 
     thread::spawn(move|| {

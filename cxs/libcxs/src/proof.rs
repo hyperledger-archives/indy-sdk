@@ -188,6 +188,16 @@ impl Proof {
         self.prover_did = connection::get_pw_did(connection_handle)?;
         self.agent_did = connection::get_agent_did(connection_handle)?;
         self.agent_vk = connection::get_agent_verkey(connection_handle)?;
+        self.remote_vk = connection::get_their_pw_verkey(connection_handle)?;
+        self.prover_vk = connection::get_pw_verkey(connection_handle)?;
+
+        debug!("requester_did: {} -- prover_did: {} -- agent_did: {} -- agent_vk: {} -- remote_vk: {} -- prover_vk: {}",
+               self.requester_did,
+               self.prover_did,
+               self.agent_did,
+               self.agent_vk,
+               self.remote_vk,
+               self.prover_vk);
 
         let data_version = "0.1";
         let mut proof_obj = messages::proof_request();

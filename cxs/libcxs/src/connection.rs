@@ -30,9 +30,9 @@ lazy_static! {
 #[derive(Serialize, Deserialize)]
 struct ConnectionOptions {
     #[serde(default)]
-    connection_type: String,
+    connection_type: Option<String>,
     #[serde(default)]
-    phone: String,
+    phone: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -54,16 +54,32 @@ struct Connection {
 }
 
 impl Connection {
-    fn connect(&mut self, options: String) -> Result<u32,u32> {
+    fn connect(&mut self, options: Option<String>) -> Result<u32,u32> {
         info!("\"cxs_connection_connect\" for handle {}", self.handle);
         if self.state != CxsStateType::CxsStateInitialized {
             info!("connection {} in state {} not ready to connect",self.handle,self.state as u32);
             return Err(error::NOT_READY.code_num);
         }
 
-        let options_obj: ConnectionOptions = match serde_json::from_str(options.trim()) {
-            Ok(val) => val,
-            Err(_) => return Err(error::INVALID_OPTION.code_num),
+        let options_obj: ConnectionOptions = match options{
+            Some(opt) => {
+                match opt.trim().is_empty() {
+                    true => ConnectionOptions {
+                                connection_type: None,
+                                phone: None
+                            },
+                    false => match serde_json::from_str(opt.trim()) {
+                                Ok(val) => val,
+                                Err(_) => return Err(error::INVALID_OPTION.code_num),
+                            }
+                }
+            },
+            None => {
+                ConnectionOptions{
+                    connection_type: None,
+                    phone: None
+                }
+            }
         };
 
         match messages::send_invite()
@@ -403,7 +419,7 @@ pub fn update_state(handle: u32) -> Result<u32, u32> {
     }
 }
 
-pub fn connect(handle: u32, options: String) -> Result<u32,u32> {
+pub fn connect(handle: u32, options: Option<String>) -> Result<u32,u32> {
     match CONNECTION_MAP.lock().unwrap().get_mut(&handle) {
         Some(t) => t.connect(options),
         None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
@@ -577,7 +593,7 @@ mod tests {
         assert!(!get_pw_did(handle).unwrap().is_empty());
         assert!(!get_pw_verkey(handle).unwrap().is_empty());
         assert_eq!(get_state(handle), CxsStateType::CxsStateInitialized as u32);
-        connect(handle, "{}".to_string()).unwrap();
+        connect(handle, Some("{}".to_string())).unwrap();
         release(handle);
     }
 
@@ -757,7 +773,7 @@ mod tests {
         wallet::init_wallet("my_real_wallet").unwrap();
 
         let handle = build_connection("test_real_connection_create".to_owned()).unwrap();
-        connect(handle,"{ \"phone\": \"3852500260\" }".to_string()).unwrap();
+        connect(handle,Some("{ \"phone\": \"3852500260\" }".to_string())).unwrap();
 
         let string = to_string(handle).unwrap();
         println!("my connection: {}", string);

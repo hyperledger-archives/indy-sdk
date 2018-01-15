@@ -1,6 +1,7 @@
 extern crate cxs;
 extern crate tempfile;
 extern crate libc;
+extern crate rand;
 #[macro_use]
 extern crate serde_json;
 
@@ -63,9 +64,13 @@ fn test_demo(){
 fn demo(){
     let serialize_connection_fn = api::connection::cxs_connection_serialize;
     let serialize_claim_fn = api::issuer_claim::cxs_issuer_claim_serialize;
+    let invite_details = api::connection::cxs_connection_invite_details;
+
+    let random_int: u32 = rand::random();
+    let log_url = format!("https://robohash.org/{}?set=set3", random_int);
 
     // Init SDK  *********************************************************************
-    let config_string = r#"{"agent_endpoint":"https://enym-eagency.pdev.evernym.com",
+    let config_string: String = json!({"agent_endpoint":"https://enym-eagency.pdev.evernym.com",
     "agency_pairwise_did":"Ab8TvZa3Q19VNkQVzAWVL7",
     "agency_pairwise_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf",
     "agent_pairwise_did":"9f9juYT9NHdnewYZwbY9ra",
@@ -76,7 +81,8 @@ fn demo(){
     "enterprise_name":"enterprise",
     "wallet_name":"my_real_wallet",
     "genesis_path":"/tmp/PoolForDemo.txn",
-    "logo_url":"https://s19.postimg.org/ykyz4x8jn/evernym.png"}"#;
+    "logo_url":log_url
+    }).to_string();
 
     let mut file = NamedTempFileOptions::new()
         .suffix(".json")
@@ -161,15 +167,21 @@ fn demo(){
     let (command_handle, cb) = closure_to_connect_cb(Box::new(move|err|{sender.send(err).unwrap();}));
 //    let pphone_number = "8014710072";
 //    let lphone_number = "8017900625";
+//    let phone_number = "8017170266";
+//    let connection_opt = json!({"phone":phone_number});
+    let connection_opt = String::from("");
     let rc = api::connection::cxs_connection_connect(command_handle,
                                                      connection_handle,
-                                                     CString::new("{\"phone\":\"8017170266\"}").unwrap().into_raw(),cb);
+                                                     CString::new(connection_opt.to_string()).unwrap().into_raw(),cb);
     assert_eq!(rc, 0);
     let err = receiver.recv_timeout(utils::timeout::TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(err,0);
 
     // serialize connection to see the connection invite ******************************
     let err = serialize_cxs_object(connection_handle, serialize_connection_fn);
+    assert_eq!(err,0);
+
+    let err = invite_details_cxs_object(connection_handle, invite_details);
     assert_eq!(err,0);
 
     //  Update State, wait for connection *********************************************
@@ -223,7 +235,7 @@ fn send_proof_request_and_receive_proof(connection_handle: u32, proof_handle:u32
 
     // Send Proof Request *************************************************************
     let err = utils::demo::send_proof_request(proof_handle, connection_handle);
-    assert!(err == 0);
+    assert_eq!(err, 0);
 
     let state = wait_for_updated_state(proof_handle, target_state, api::proof::cxs_proof_update_state);
 

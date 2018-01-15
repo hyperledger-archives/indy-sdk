@@ -41,7 +41,8 @@ struct MsgDetailPayload {
     #[serde(rename = "keyDlgProof")]
     key_proof: KeyDlgProofPayload,
     #[serde(rename = "phoneNo")]
-    phone: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    phone: Option<String>,
 }
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
@@ -154,7 +155,7 @@ impl SendInvite{
                 msg_detail_payload: MsgDetailPayload {
                     msg_type: MsgType { name: "MSG_DETAIL".to_string(), ver: "1.0".to_string(), } ,
                     key_proof: KeyDlgProofPayload { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() , } ,
-                    phone: String::new(), } ,
+                    phone: None, } ,
                 send_payload: SendMsgPayload { msg_type: MsgType { name: "SEND_MSG".to_string(), ver: "1.0".to_string(), }, } ,
             },
             agent_payload: String::new(),
@@ -177,17 +178,18 @@ impl SendInvite{
         }
     }
 
-    pub fn phone_number(&mut self, p_num: &str)-> &mut Self{
-        match validation::validate_phone_number(p_num){
-            Ok(x) => {
-                self.payload.msg_detail_payload.phone = x;
-                self
-            }
-            Err(x) => {
-                self.validate_rc = x;
-                self
-            }
+    pub fn phone_number(&mut self, phone_number: &Option<String>)-> &mut Self{
+        if let &Some(ref p_num) = phone_number {
+            match validation::validate_phone_number(p_num.as_str()) {
+                Ok(x) => {
+                    self.payload.msg_detail_payload.phone = Some(x);
+                }
+                Err(x) => {
+                    self.validate_rc = x;
+                }
+            };
         }
+        self
     }
 
     pub fn generate_signature(&mut self) -> Result<u32, u32> {
@@ -334,7 +336,7 @@ mod tests {
             .to_vk(&user_vk)
             .agent_did(&agent_did)
             .agent_vk(&agent_vk)
-            .phone_number("phone")
+            .phone_number(&Some("phone".to_string()))
             .key_delegate("key")
             .msgpack().unwrap();
 

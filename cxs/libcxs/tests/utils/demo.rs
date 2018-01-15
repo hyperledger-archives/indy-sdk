@@ -142,6 +142,44 @@ pub fn serialize_cxs_object(connection_handle: u32, f:extern fn(u32, u32, Option
     receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap()
 }
 
+
+#[allow(dead_code)]
+pub fn invite_details_cxs_object(connection_handle: u32, f:extern fn(u32, u32, bool, Option<extern fn(u32, u32, *const c_char)>) -> u32) -> u32 {
+    fn closure_to_cxs_connection(closure: Box<FnMut(u32) + Send>) ->
+    (u32, Option<extern fn( command_handle: u32, err: u32 , details: *const c_char)>) {
+        lazy_static! { static ref CALLBACKS_SERIALIZE_CONNECTION: Mutex<HashMap<u32,
+                                        Box<FnMut(u32) + Send>>> = Default::default(); }
+
+        extern "C" fn callback(command_handle: u32, err: u32, details: *const c_char) {
+            let mut callbacks = CALLBACKS_SERIALIZE_CONNECTION.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            assert_eq!(err, 0);
+            if details.is_null() {
+                panic!("details is empty");
+            }
+            check_useful_c_str!(details, ());
+            println!("\n*************\nQR CODE JSON: {}\n*************", details);
+            cb(err)
+        }
+
+        let mut callbacks = CALLBACKS_SERIALIZE_CONNECTION.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as u32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(callback))
+    }
+    let (sender, receiver) = channel();
+    let cb = Box::new(move |err|{sender.send(err).unwrap();});
+    let (command_handle, cb) = closure_to_cxs_connection(cb);
+    let rc = f(command_handle,
+               connection_handle,
+               true,
+               cb);
+
+    assert_eq!(rc, 0);
+    receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap()
+}
+
 #[allow(dead_code)]
 pub fn wait_for_updated_state(handle: u32, target_state:u32, f: extern fn(u32, u32, Option<extern fn(u32, u32, u32)>)->u32)->u32{
     //  Update State, wait for connection *********************************************
