@@ -106,6 +106,7 @@ F->L: Send Nym for "Alice Faber Pairwise" DID
 F->A: Send authcrypted "Alice Faber HE Diploma" Claim Offer
 A->AW: Store "Alice Faber HE Diploma" Claim Offer
 A->AW: Create and store "Alice" Master Secret
+A->L: Send GetSchema for "HE Diploma" Schema
 A->L: Send GetClaimDef for "Faber HE Diploma" Claim Definition
 A->AW: Create and store "Alice Faber HE Diploma" Claim Request
 A->F: Send authcrypted "Alice Faber HE Diploma" Claim Request
@@ -126,14 +127,18 @@ AC->L: Send Nym for "Alice Acme Pairwise" DID
 AC->A: Send authcrypted "HE Diploma" Proof Request
 A->AW: Get claims for "HE Diploma" Proof Request
 AW->A: "Alice Faber HE Diploma" Claim
+A->L: Send GetSchema for "HE Diploma" Schema
+A->L: Send GetClaimDef for "Faber HE Diploma" Claim Definition
 A->A: Create "Alice HE Diploma" Proof
-A->AC: Send "Alice HE Diploma" Proof
+A->AC: Send authcrypted "Alice HE Diploma" Proof
 AC->L: Send GetSchema for "HE Diploma" Schema
+AC->L: Send GetClaimDef for "Faber HE Diploma" Claim Definition
 AC->AC: Verify "Alice HE Diploma" Proof
 
 == Apply for the job with Acme - Getting Employment History Claim ==
 AC->A: Send authcrypted "Alice Acme Employment History" Claim Offer
 A->AW: Store "Alice Acme Employment History" Claim Offer
+A->L: Send GetSchema for "Employment History" Schema
 A->L: Send GetClaimDef for "Acme Employment History" Claim Definition
 A->AW: Create and store "Alice Acme Employment History" Claim Request
 A->AC: Send authcrypted "Alice Acme Employment History" Claim Request
@@ -154,10 +159,16 @@ T->L: Send Nym for "Alice Thrift Pairwise" DID
 T->A: Send authcrypted "HE Diploma and Employment History" Proof Request
 A->AW: Get claims for "HE Diploma and Employment History" Proof Request
 AW->A: "Alice Faber HE Diploma and Alice Acme Employment History" Claim
+A->L: Send GetSchema for "HE Diploma" Schema
+A->L: Send GetClaimDef for "Faber HE Diploma" Claim Definition
+A->L: Send GetSchema for "Employment History" Schema
+A->L: Send GetClaimDef for "Acme Employment History" Claim Definition
 A->A: Create "Alice Faber HE Diploma and Alice Acme Employment History" Proof
 A->T: Send "Alice Faber HE Diploma and Alice Acme Employment History" Proof
 T->L: Send GetSchema for "HE Diploma" Schema
+T->L: Send GetClaimDef for "Faber HE Diploma" Claim Definition
 T->L: Send GetSchema for "Employment History" Schema
+T->L: Send GetClaimDef for "Acme Employment History" Claim Definition
 T->T: Verify "Alice Faber HE Diploma and Alice Acme Employment History" Proof
 
 @enduml
