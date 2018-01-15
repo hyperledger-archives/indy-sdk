@@ -1,6 +1,7 @@
 package org.hyperledger.indy.sdk.pool;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
@@ -16,7 +17,7 @@ import com.sun.jna.Callback;
 /**
  * High level wrapper around SDK Pool functionality.
  */
-public class Pool extends IndyJava.API {
+public class Pool extends IndyJava.API implements AutoCloseable {
 
 	private final int poolHandle;
 
@@ -286,5 +287,10 @@ public class Pool extends IndyJava.API {
 			) throws IndyException {
 
 		return closePoolLedger(this);
+	}
+
+	@Override
+	public void close() throws InterruptedException, ExecutionException, IndyException {
+		closePoolLedger().get();
 	}
 }
