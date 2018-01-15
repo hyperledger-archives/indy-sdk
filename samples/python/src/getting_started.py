@@ -706,7 +706,7 @@ async def run():
 
     logger.info("\"Acme\" -> Create \"Job-Application\" Proof Request")
     # Job-Application proof request
-    proof_req_json = json.dumps({
+    apply_for_job_proof_request_json = json.dumps({
         'nonce': '1432422343242122312411212',
         'name': 'Job-Application',
         'version': '0.1',
@@ -754,7 +754,8 @@ async def run():
     logger.info("\"Acme\" -> Authcrypt \"Job-Application\" Proof Request for Alice")
     # Authcrypt "Job-Application" Proof Request
     authcrypted_he_diploma_acme_proof_request = \
-        await crypto.auth_crypt(acme_wallet, acme_alice_key, alice_verkey, proof_req_json.encode('utf-8'))
+        await crypto.auth_crypt(acme_wallet, acme_alice_key, alice_verkey,
+                                apply_for_job_proof_request_json.encode('utf-8'))
 
     logger.info("\"Acme\" -> Sentd authcrypted \"Job-Application\" Proof Request to Alice")
 
@@ -906,7 +907,8 @@ async def run():
     assert 'attr5_referent' in alice_he_diploma_acme_proof['requested_proof']['unrevealed_attrs']
 
     # Check proof
-    assert await anoncreds.verifier_verify_proof(proof_req_json, authdecrypted_he_diploma_acme_proof_request,
+    assert await anoncreds.verifier_verify_proof(apply_for_job_proof_request_json,
+                                                 authdecrypted_he_diploma_acme_proof_request,
                                                  json.dumps(schemas_json), json.dumps(claim_defs_json),
                                                  json.dumps(revoc_regs_json))
 
