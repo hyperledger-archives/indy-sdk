@@ -109,4 +109,14 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 
 		Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, gvtSchemaJson, "type", false).get();
 	}
+
+	@Test
+	public void testIssuerCreateAndStoreClaimDefWorksForDuplicate() throws Exception {
+		Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, gvtSchemaJson, null, false).get();
+
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(isA(ClaimDefAlreadyExistsException.class));
+
+		Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, gvtSchemaJson, null, false).get();
+	}
 }

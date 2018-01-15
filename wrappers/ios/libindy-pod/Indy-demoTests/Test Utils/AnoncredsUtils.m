@@ -61,6 +61,19 @@
             "}", seqNo, [TestUtils issuerDid]];
 }
 
+
+- (NSString *)getSchemaJson:(NSString *)schemaName
+{
+    return [NSString stringWithFormat:@"{"
+                                              "\"seqNo\":1,"
+                                              "\"identifier\":\"%@\","
+                                              "\"data\":{"
+                                              "\"name\":\"%@\","
+                                              "\"version\":\"1.0\","
+                                              "\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}"
+                                              "}", schemaName, [TestUtils issuerDid]];
+}
+
 - (NSString *)getClaimOfferJson:(NSString *)issuerDid
                       schemaKey:(NSString *)schemaKey
 {

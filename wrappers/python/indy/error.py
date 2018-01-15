@@ -109,9 +109,17 @@ class ErrorCode(IntEnum):
 
     AnoncredsProofRejected = 405,
 
+    AnoncredsClaimRevoked = 406,
+
+    # Attempt to create claim definition with duplicated did schema pair
+    AnoncredsClaimDefAlreadyExistsError = 407,
+
     # Crypto errors
     # Unknown format of DID entity keys
-    UnknownCryptoTypeError = 500
+    UnknownCryptoTypeError = 500,
+
+    # Attempt to create duplicate did
+    DidAlreadyExistsError = 600
 
 
 class IndyError(Exception):
