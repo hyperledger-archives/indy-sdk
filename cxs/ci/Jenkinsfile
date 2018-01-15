@@ -16,13 +16,16 @@ node('ubuntu') {
             checkout scm
         }
         app = buildDocker()
+        // build the so file and test the so file
         buildRust(app)
-        testRust(app) 
-        createZip(app)
+        // update the versions in the toml file and package.json
+        updateVersions(app)
+        // test the npm package and create the npm gzip artifact
         testNodeWrapper(app)
-        if (env.BRANCH_NAME == "master") {
-            createZip(app)
-        }
+        // create the debian of the library
+        createDeb(app)
+        // create the npm deb 
+        createNpmDeb(app) 
     } catch (Exception ex) {
         currentBuild.result = "FAILED"
         if (env.BRANCH_NAME == "master") {
@@ -47,13 +50,15 @@ def buildDocker(){
 }
 
 def buildRust(envn){
-    stage ('Building Rust Library'){
+    stage ('Building and Testing Rust Library'){
         envn.inside {
+            sh "ls -l"
             sh "rustc --version"
             sh "gcc --version"
             sh "mkdir -p cxs/wrappers/node/lib"
-            sh "cd cxs/libcxs; cargo build"
-            sh "cp cxs/libcxs/target/debug/libcxs.so cxs/wrappers/node/lib"
+            sh "ls -l"
+            sh "cd cxs/libcxs; cargo test -- --test-threads=1"
+            sh "cp cxs/libcxs/target/debug/libcxs.so cxs/wrappers/node/lib/"
             sh "ls cxs/wrappers/node/lib"
         }
     }
@@ -69,48 +74,89 @@ def testRust(envn) {
 }
 
 
-def createZip(envn) {
-    dir ('cxs/libcxs/target/debug'){
-        stage ('Create Zip File') {
-            envn.inside {
-                sh 'tar -cf libcxs.tar libcxs.so'
-                archiveArtifacts allowEmptyArchive: true, artifacts: 'libcxs.tar'
-            }
+// updates the path to include the scripts, 
+// needed for cargo commands
+def updatePath(app) {
+    dir ('cxs/ci/scripts') {
+        app.inside {
+            sh 'export PATH=$PATH:`pwd`'
         }
     }
 }
 
+
+// Update the version and revision in the Cargo.toml file, also the so file .
+def updateVersions(app) {
+        stage('Updating Versions') {
+            app.inside {
+                sh 'ls -l'
+                sh 'cd cxs/libcxs; ls -l; ls ../ci/scripts'
+                sh 'cd cxs/libcxs; python ../ci/scripts/cargo-update-version'
+                sh 'cd cxs/libcxs; python ../ci/scripts/cargo-update-so'
+            }
+        }
+}
+
+
+// Creates the debian package for the library, as well as gzips the libcxs.so.<version> file
+// Publishes both artifacts.
+def createDeb(envn) {
+  stage('Build libcxs Debian and compress .so file') {
+      envn.inside {
+        SCRIPT = 'cxs/ci/scripts/gzip_so_file.py'
+        SO_FILE = 'cxs/libcxs/target/debug/libcxs.so.*'
+        DEST = 'cxs'
+        sh 'cd cxs/libcxs/; cargo deb --no-build'
+        archiveArtifacts allowEmptyARchive: true, artifacts: "cxs/libcxs/target/debian/libcxs_*_amd64.deb"
+        sh "python ${SCRIPT} ${SO_FILE} ${DEST}"
+        archiveArtifacts allowEmptyARchive: true, artifacts: "cxs/libcxs.so.*.gz"
+      }
+  }
+}
+
+
+// Creates the tgz file that can be 'npm install'-ed.
 def testNodeWrapper(envn) {
-    dir ('cxs/wrappers/node'){
-        stage ('Test Node Wrapper'){
-            envn.inside {
-                sh 'npm -v'
-                sh 'npm install'
-                sh 'npm rebuild'
-                sh 'npm run lint'
-                sh 'npm run compile'
-                sh 'npm test'
-            }
-        }
-        stage ('Build Node Artifact'){
-            envn.inside {
-                //if (env.BRANCH_NAME == "master") {
-                    sh 'npm pack'
-                    sh 'test -f cxs-1.0.0.tgz'
-                    archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.tgz'
-                //}
-            }
-        }
+  dir ('cxs/wrappers/node'){
+    stage ('Test Node Wrapper'){
+      envn.inside {
+        sh 'ls -l lib'
+        sh 'npm -v'
+        sh 'npm install'
+        sh 'npm rebuild'
+        sh 'npm run lint'
+        sh 'npm run compile'
+        sh 'npm test'
+        sh 'ls -l'
+        sh 'npm pack'
+        sh 'ls'
+        sh "test -f cxs-*.tgz"
+        archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.tgz'
+      }
     }
+  }
+}
+
+
+// Creates debian that can install through npm.
+def createNpmDeb(app){
+  dir('cxs') {
+    stage ('Create Npm Deb') {
+      app.inside {
+        // TODO make this a version number from the script somehow.
+        sh 'ls'
+        sh 'python ci/scripts/create_npm_deb.py wrappers/node/cxs-*.tgz'
+        sh 'ls'
+        archiveArtifacts allowEmptyArchive: true, artifacts: 'cxs*.deb'
+      }
+    }
+  }
 }
 
 def fail() {
-
     def message = [
         message: "$JOB_NAME - Build # $BUILD_NUMBER - fail: Check console output at $BUILD_URL to view the results."
     ]
-
     slackSend message
-
 }
 

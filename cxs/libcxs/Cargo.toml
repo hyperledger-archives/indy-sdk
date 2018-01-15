@@ -1,9 +1,11 @@
 [package]
 
 name = "libcxs"
-version = "0.0.1"
+version = "0.1.543416"
 authors = [ "Mark Hadley <mark.hadley@evernym.com>" ]
 publish = false
+description = "C callable library for libcxs"
+license = ""
 
 [lib]
 name = "cxs"
@@ -32,4 +34,19 @@ openssl = "0.9"
 [dev-dependencies]
 tempfile = "2.2"
 rusqlite = "0.13.0"
+
+[package.metadata.deb]
+maintainer = "Mark Hadley<mark.hadley@evernym.com>, Devin Fisher, Ryan Marsh, Doug Wightman"
+copyright = "2018, Evernym Inc."
+depends = "$auto, systemd"
+extended-description = """\
+"TODO DESCRIPTION"""
+section = "admin"
+revision = "469b25d"
+priority = "optional"
+assets = [
+    ["target/debug/libcxs.so.*", "usr/lib/", "644"]
+]
+maintainer-scripts = "./scripts"
+
 #rusqlcipher = "0.14.6"
