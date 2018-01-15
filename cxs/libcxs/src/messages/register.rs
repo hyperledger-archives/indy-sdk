@@ -44,7 +44,7 @@ struct RegisterResponse {
     msg_type: MsgType,
 }
 
-pub fn connect_register_provision(endpoint: &str, agency_did: &str, agency_vk: &str, wallet_name: &str, seed: Option<String>) -> Result<String,u32> {
+pub fn connect_register_provision(endpoint: &str, agency_did: &str, agency_vk: &str, wallet_name: &str, seed: Option<String>, wallet_key: Option<String>) -> Result<String,u32> {
 
     ::utils::logger::LoggerUtils::init();
     settings::set_defaults();
@@ -53,7 +53,16 @@ pub fn connect_register_provision(endpoint: &str, agency_did: &str, agency_vk: &
     settings::set_config_value(settings::CONFIG_WALLET_NAME, wallet_name);
     settings::set_config_value(settings::CONFIG_AGENCY_PAIRWISE_DID, agency_did);
     settings::set_config_value(settings::CONFIG_AGENCY_PAIRWISE_VERKEY, agency_vk);
-    settings::set_config_value(settings::CONFIG_AGENT_PAIRWISE_VERKEY,&agency_vk);
+    settings::set_config_value(settings::CONFIG_AGENT_PAIRWISE_VERKEY, agency_vk);
+
+    let mut wallet_key_string = String::new();
+    match wallet_key {
+        Some(x) => {
+            wallet_key_string = format!("\"wallet_key\":\"{}\"", x);
+            settings::set_config_value(settings::CONFIG_WALLET_KEY, &x)
+        },
+        None => (),
+    };
 
     wallet::init_wallet(&wallet_name).unwrap();
 
@@ -121,6 +130,7 @@ pub fn connect_register_provision(endpoint: &str, agency_did: &str, agency_vk: &
     let agent_vk = response.from_vk;
 
     let final_config = format!("{{\
+    {},\
     \"agent_endpoint\":\"{}\",\
     \"agency_pairwise_did\":\"{}\",\
     \"agency_pairwise_verkey\":\"{}\",\
@@ -129,6 +139,7 @@ pub fn connect_register_provision(endpoint: &str, agency_did: &str, agency_vk: &
     \"wallet_name\":\"{}\",\
     \"agent_pairwise_did\":\"{}\",\
     \"agent_pairwise_verkey\":\"{}\"}}",
+        wallet_key_string,
         endpoint,
         agency_did,
         agency_vk,
@@ -157,12 +168,13 @@ mod tests {
         let agency_vk = "5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf";
         let host = "http://www.whocares.org";
         let wallet_name = "test_connect_register_provision";
+        let wallet_key = Some("test_key".to_string());
 
         httpclient::set_next_u8_response(PROVISION_RESPONSE.to_vec());
         httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec());
         httpclient::set_next_u8_response(PROVISION_RESPONSE.to_vec());
 
-        let result = connect_register_provision(&host, &agency_did, &agency_vk, &wallet_name, None).unwrap();
+        let result = connect_register_provision(&host, &agency_did, &agency_vk, &wallet_name, None, wallet_key).unwrap();
         assert!(result.len() > 0);
         println!("result: {}", result);
 
@@ -179,7 +191,7 @@ mod tests {
         let host = "https://enym-eagency.pdev.evernym.com";
         let wallet_name = "my_real_wallet";
 
-        let result = connect_register_provision(&host, &agency_did, &agency_vk, &wallet_name, Some(DEMO_AGENT_PW_SEED.to_string())).unwrap();
+        let result = connect_register_provision(&host, &agency_did, &agency_vk, &wallet_name, Some(DEMO_AGENT_PW_SEED.to_string()), None).unwrap();
         assert!(result.len() > 0);
         println!("result: {}", result);
 

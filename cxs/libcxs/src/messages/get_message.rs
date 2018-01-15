@@ -149,6 +149,7 @@ pub struct Message {
     #[serde(rename = "type")]
     pub msg_type: String,
     pub ref_msg_id: Option<String>,
+    #[serde(skip_deserializing)]
     pub delivery_details: Vec<DeliveryDetails>,
 }
 

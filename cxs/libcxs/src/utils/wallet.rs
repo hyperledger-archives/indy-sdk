@@ -82,6 +82,11 @@ pub fn init_wallet(wallet_name: &str) -> Result<i32, u32> {
     let pool_name = CString::new(pool_name).unwrap();
     let xtype = CString::new("default").unwrap();
     let wallet_name = CString::new(wallet_name).unwrap();
+    let mut use_key = false;
+    let credentials = match settings::get_wallet_credentials() {
+        Some(x) => {use_key = true; CString::new(x).unwrap() },
+        None => CString::new("").unwrap(),
+    };
 
     unsafe {
         let err =
@@ -90,7 +95,7 @@ pub fn init_wallet(wallet_name: &str) -> Result<i32, u32> {
                                wallet_name.as_ptr(),
                                xtype.as_ptr(),
                                null(),
-                               null(),
+                               if use_key { credentials.as_ptr() } else { null() },
                                cb);
 
         // ignore 203 - wallet already exists
@@ -108,7 +113,7 @@ pub fn init_wallet(wallet_name: &str) -> Result<i32, u32> {
             indy_open_wallet(open_command_handle,
                              wallet_name.as_ptr(),
                              null(),
-                             null(),
+                             if use_key { credentials.as_ptr() } else { null() },
                              open_cb);
 
         if err != 206 && err != 0 {
@@ -236,6 +241,7 @@ pub mod tests {
     use utils::error;
     use std::thread;
     use std::time::Duration;
+    use utils::signus::SignusUtils;
 
     #[test]
     fn test_wallet() {
@@ -253,5 +259,17 @@ pub mod tests {
         thread::sleep(Duration::from_secs(1));
         assert_ne!(handle, get_wallet_handle());
         delete_wallet("wallet2").unwrap();
+    }
+
+    #[test]
+    fn test_wallet_with_credentials() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        settings::set_config_value(settings::CONFIG_WALLET_KEY,"pass");
+
+        let handle = init_wallet("password_wallet").unwrap();
+
+        SignusUtils::create_and_store_my_did(handle,None).unwrap();
+        delete_wallet("password_wallet").unwrap();
     }
 }

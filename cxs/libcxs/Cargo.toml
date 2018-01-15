@@ -32,3 +32,4 @@ openssl = "0.9"
 [dev-dependencies]
 tempfile = "2.2"
 rusqlite = "0.13.0"
+#rusqlcipher = "0.14.6"

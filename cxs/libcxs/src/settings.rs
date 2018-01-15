@@ -26,7 +26,9 @@ pub static CONFIG_LOGO_URL: &'static str = "logo_url";
 pub static CONFIG_ENABLE_TEST_MODE: &'static str = "enable_test_mode";
 pub static CONFIG_ENTERPRISE_VERKEY: &'static str = "agent_enterprise_verkey";
 pub static CONFIG_GENESIS_PATH: &str = "genesis_path";
+pub static CONFIG_WALLET_KEY: &str = "wallet_key";
 pub static DEFAULT_GENESIS_PATH: &str = "/tmp/genesis.txn";
+pub static UNINITIALIZED_WALLET_KEY: &str = "<KEY_IS_NOT_SET>";
 
 lazy_static! {
     static ref SETTINGS: RwLock<Config> = RwLock::new(Config::default());
@@ -54,6 +56,7 @@ pub fn set_defaults() -> u32 {
     settings.set_default(CONFIG_ENABLE_TEST_MODE,"false");
     settings.set_default(CONFIG_ENTERPRISE_VERKEY,"2zoa6G7aMfX8GnUEpDxxunFHE7fZktRiiHk1vgMRH2tm");
     settings.set_default(CONFIG_GENESIS_PATH, DEFAULT_GENESIS_PATH);
+    settings.set_default(CONFIG_WALLET_KEY,UNINITIALIZED_WALLET_KEY);
 
     error::SUCCESS.code_num
 }
@@ -176,6 +179,12 @@ pub fn get_config_value(key: &str) -> Result<String, u32> {
 
 pub fn set_config_value(key: &str, value: &str) {
     SETTINGS.write().unwrap().set(key, value).unwrap();
+}
+
+pub fn get_wallet_credentials() -> Option<String> {
+    let key = get_config_value(CONFIG_WALLET_KEY).unwrap();
+
+    if key == UNINITIALIZED_WALLET_KEY { None } else { Some(format!("{{\"key\":\"{}\"}}", key)) }
 }
 
 

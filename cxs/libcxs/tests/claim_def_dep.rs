@@ -1,3 +1,4 @@
+//extern crate rusqlcipher;
 extern crate rusqlite;
 
 use std::env::home_dir;
@@ -39,12 +40,14 @@ static ENTRIES: &[[&str;3];6] = &[
 #[test]
 fn test_putting_claim_def_dependencies() {
     use std::path::Path;
+    //use self::rusqlcipher::Connection;
     use rusqlite::Connection;
     let home = home_dir().unwrap();
     let indy = Path::new(".indy_client/wallet/my_real_wallet/sqlite.db");
     let path = home.join(indy);
     let connection = Connection::open(path.as_path()).unwrap();
 
+    //connection.execute(&format!("PRAGMA key='pass'"), &[]).unwrap();
 
     for entry in ENTRIES {
         connection.execute("INSERT INTO wallet VALUES (?,?,?)", &[&entry[0].to_string(),&entry[1].to_string(),&entry[2].to_string()]).unwrap();

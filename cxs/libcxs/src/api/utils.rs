@@ -9,15 +9,16 @@ use utils::cstring::CStringUtils;
 
 
 #[no_mangle]
-pub extern fn cxs_provision_agent(endpoint:*const c_char, agent_did: *const c_char, agent_vk: *const c_char, wallet_name: *const c_char, seed: *const c_char) -> *mut c_char {
+pub extern fn cxs_provision_agent(endpoint:*const c_char, agent_did: *const c_char, agent_vk: *const c_char, wallet_name: *const c_char, seed: *const c_char, wallet_key: *const c_char) -> *mut c_char {
 
     check_useful_c_str!(endpoint, ptr::null_mut());
     check_useful_c_str!(agent_did, ptr::null_mut());
     check_useful_c_str!(agent_vk, ptr::null_mut());
     check_useful_c_str!(wallet_name, ptr::null_mut());
     check_useful_opt_c_str!(seed, ptr::null_mut());
+    check_useful_opt_c_str!(wallet_key, ptr::null_mut());
 
-    match messages::register::connect_register_provision(&endpoint, &agent_did, &agent_vk, &wallet_name, seed) {
+    match messages::register::connect_register_provision(&endpoint, &agent_did, &agent_vk, &wallet_name, seed, wallet_key) {
         Err(e) => {
             error!("Provision Agent Error {}.", e);
             return ptr::null_mut();
@@ -73,7 +74,7 @@ mod tests {
         httpclient::set_next_u8_response(PROVISION_RESPONSE.to_vec());
         httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec());
         httpclient::set_next_u8_response(PROVISION_RESPONSE.to_vec());
-        let result = cxs_provision_agent(c_did, c_vk, c_host, c_wallet, ptr::null());
+        let result = cxs_provision_agent(c_did, c_vk, c_host, c_wallet, ptr::null(), ptr::null());
 
         let final_string;
         unsafe {
