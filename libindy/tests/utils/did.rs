@@ -195,7 +195,7 @@ impl DidUtils {
         let verkey = DidUtils::replace_keys_start(wallet_handle, did, "{}").unwrap();
 
         let nym_request = LedgerUtils::build_nym_request(did, did, Some(&verkey), None, None).unwrap();
-        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, did, &nym_request).unwrap();
+        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, did, &nym_request, None).unwrap();
 
         DidUtils::replace_keys_apply(wallet_handle, did).unwrap();
 

@@ -13,66 +13,98 @@ use std::sync::mpsc::channel;
 pub struct LedgerUtils {}
 
 impl LedgerUtils {
-    pub fn sign_and_submit_request(pool_handle: i32, wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
+    const SUBMIT_RETRY_CNT: usize = 3;
+    pub fn sign_and_submit_request(pool_handle: i32, wallet_handle: i32, submitter_did: &str, request_json: &str, minimal_timestamp: Option<u64>) -> Result<String, ErrorCode> {
+        let mut i = 0;
+        let request_result_json = loop {
+            let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, request_result_json| {
-            sender.send((err, request_result_json)).unwrap();
-        });
+            let cb = Box::new(move |err, request_result_json| {
+                sender.send((err, request_result_json)).unwrap();
+            });
 
-        let (command_handle, cb) = CallbackUtils::closure_to_sign_and_submit_request_cb(cb);
+            let (command_handle, cb) = CallbackUtils::closure_to_sign_and_submit_request_cb(cb);
 
-        let submitter_did = CString::new(submitter_did).unwrap();
-        let request_json = CString::new(request_json).unwrap();
+            let submitter_did = CString::new(submitter_did).unwrap();
+            let request_json = CString::new(request_json).unwrap();
 
-        let err =
-            indy_sign_and_submit_request(command_handle,
-                                         pool_handle,
-                                         wallet_handle,
-                                         submitter_did.as_ptr(),
-                                         request_json.as_ptr(),
-                                         cb);
+            let err =
+                indy_sign_and_submit_request(command_handle,
+                                             pool_handle,
+                                             wallet_handle,
+                                             submitter_did.as_ptr(),
+                                             request_json.as_ptr(),
+                                             cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
+            if err != ErrorCode::Success {
+                return Err(err);
+            }
 
-        let (err, request_result_json) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+            let (err, request_result_json) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
+            if err != ErrorCode::Success {
+                return Err(err);
+            }
+
+            let retry = minimal_timestamp.map(|minimal_timestamp| {
+                LedgerUtils::extract_timestamp_from_state_proof_in_reply(&request_result_json)
+                    .map(|received_timestamp| received_timestamp < minimal_timestamp)
+                    .unwrap_or(true)
+            }).unwrap_or(false);
+
+            if retry && i < LedgerUtils::SUBMIT_RETRY_CNT {
+                ::std::thread::sleep(TimeoutUtils::short_timeout());
+                i += 1;
+            } else {
+                break request_result_json;
+            }
+        };
 
         Ok(request_result_json)
     }
 
-    pub fn submit_request(pool_handle: i32, request_json: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
+    pub fn submit_request(pool_handle: i32, request_json: &str, minimal_timestamp: Option<u64>) -> Result<String, ErrorCode> {
+        let mut i = 0;
+        let request_result_json = loop {
+            let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, request_result_json| {
-            sender.send((err, request_result_json)).unwrap();
-        });
+            let cb = Box::new(move |err, request_result_json| {
+                sender.send((err, request_result_json)).unwrap();
+            });
 
-        let (command_handle, cb) = CallbackUtils::closure_to_submit_request_cb(cb);
+            let (command_handle, cb) = CallbackUtils::closure_to_submit_request_cb(cb);
 
-        let request_json = CString::new(request_json).unwrap();
+            let request_json = CString::new(request_json).unwrap();
 
-        let err =
-            indy_submit_request(command_handle,
-                                pool_handle,
-                                request_json.as_ptr(),
-                                cb);
+            let err =
+                indy_submit_request(command_handle,
+                                    pool_handle,
+                                    request_json.as_ptr(),
+                                    cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
+            if err != ErrorCode::Success {
+                return Err(err);
+            }
 
-        let (err, request_result_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+            let (err, request_result_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
+            if err != ErrorCode::Success {
+                return Err(err);
+            }
 
+            let retry = minimal_timestamp.map(|minimal_timestamp| {
+                LedgerUtils::extract_timestamp_from_state_proof_in_reply(&request_result_json)
+                    .map(|received_timestamp| received_timestamp < minimal_timestamp)
+                    .unwrap_or(true)
+            }).unwrap_or(false);
+
+            if retry && i < LedgerUtils::SUBMIT_RETRY_CNT {
+                ::std::thread::sleep(TimeoutUtils::short_timeout());
+                i += 1;
+            } else {
+                break request_result_json;
+            }
+        };
         Ok(request_result_json)
     }
 
@@ -106,6 +138,18 @@ impl LedgerUtils {
         }
 
         Ok(request_result_json)
+    }
+
+    pub fn extract_timestamp_from_reply(reply: &str) -> Result<u64, &'static str> {
+        ::serde_json::from_str::<::serde_json::Value>(reply).map_err(|_| "Reply isn't valid JSON")?
+            ["result"]["txnTime"]
+            .as_u64().ok_or("Missed timestamp in reply")
+    }
+
+    fn extract_timestamp_from_state_proof_in_reply(reply: &str) -> Result<u64, &'static str> {
+        ::serde_json::from_str::<::serde_json::Value>(reply).map_err(|_| "Reply isn't valid JSON")?
+            ["result"]["state_proof"]["multi_signature"]["value"]["timestamp"]
+            .as_u64().ok_or("Missed timestamp in reply")
     }
 
     pub fn build_get_ddo_request(submitter_did: &str, target_did: &str) -> Result<String, ErrorCode> {
