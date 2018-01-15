@@ -119,7 +119,7 @@ indy> wallet <command>
 ```
 
 #### Wallet create
-Create new wallet with specified name:
+Create new wallet with specified name and pool:
 ```
 indy> wallet create [name=]<wallet name> pool_name=<pool name> [key=<key>]
 ```
@@ -128,7 +128,7 @@ TODO: Think about custom wallet types support. Now we force default wallet secur
 #### Wallet open
 Open the wallet with specified name and make it available for commands that require wallet. If there was opened wallet it will be closed:
 ```
-indy> wallet open [name=]<wallet name> [key=<key>] [rekey=<rekey>] [freshness_time=<freshness_time>]
+indy> wallet open [name=]<wallet name> [key=<key>] [rekey=<rekey>]
 ```
 
 #### Wallet close
@@ -151,13 +151,13 @@ indy> pool <subcommand>
 #### Create config
 Create name pool (network) configuration
 ```
-indy> pool create-config [name=]<pool name> [gen_txn_file=<gen txn file path>] 
+indy> pool create [name=]<pool name> gen_txn_file=<gen txn file path> 
 ```
 
 #### Connect
 Connect to Indy nodes pool and make it available for operation that require pool access. If there was pool connection it will be disconnected.
 ```
-indy> pool connect [name=]<pool name> [refresh_on_open=<true or false>] [auto_refresh_time=<auto refresh time>] [network_timeout=<network timeout>]
+indy> pool connect [name=]<pool name>
 ```
 
 #### Disconnect
@@ -178,11 +178,10 @@ indy> did <subcommand>
 ```
 
 #### New
-Create and store my DID in the opened wallet. Optionally sends NYM to the ledger with new DID. Requires opened wallet and connection to pool if nym will be send.
+Create and store my DID in the opened wallet. Requires opened wallet.
 ```
-indy> did new [did=<did>] [seed=<seed str>] [cid=<bool, default false>] [metadata=<metadata string>] [publish_to_ledger=<always false>]
+indy> did new [did=<did>] [seed=<seed str>] [metadata=<metadata string>]
 ```
-Note: publish_to_ledger flags seems like redundant. One side will create full DID with key-pair (future DID owner), another side (e.g. Trustee) will send Nym transaction for this DID with Verkey, Role, etc. But Nym sender should not know secret part of DID keys, so it should not call did new command.
 
 #### List
 List my DIDs stored in the opened wallet as table (did, verkey, metadata). Requires wallet to be opened.:
@@ -197,9 +196,9 @@ indy> did use [did=]<did>
 ```
 
 #### Rotate key
-Rotate keys for used DID. Optionally sends NYM to the ledger with updated keys. Requires opened wallet and connection to pool if nym will be send:
+Rotate keys for used DID. Sends NYM to the ledger with updated keys. Requires opened wallet and connection to pool:
 ```
-indy> did rotate-key [publish_to_ledger=<always true, deprecated>] [seed=<seed str>]
+indy> did rotate-key [seed=<seed str>]
 ```
 
 ### Ledger transactions/messages
@@ -210,7 +209,7 @@ indy> ledger <subcommand>
 #### NYM transaction
 Send NYM transaction
 ```
-ledger nym did=<did-value> [verkey=<verkey-value>] [alias=<alias-value>] [role=<role-value>]
+ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>]
 ```
 
 #### GET_NYM transaction
@@ -240,7 +239,7 @@ ledger node target=<target-value> node_ip=<node_ip-value> node_port=<node_port-v
 #### POOL_UPGRADE transaction
 Send POOL_UPGRADE transaction
 ```
-TODO: Define params
+ledger pool-upgrade name=<name> version=<version> action=<start or cancel> sha256=<sha256> [timeout=<timeout>] [schedule=<schedule>] [justification=<justification>] [reinstall=<true or false (default false)>] [force=<true or false (default false)>]
 ```
 
 #### SCHEMA transaction
@@ -269,7 +268,7 @@ ledger get-claim-def schema_no=<schema_no-value> signature_type=<signature_type-
 #### POOL_CONFIG transaction
 Send POOL_CONFIG transaction
 ```
-TODO: Define params
+ledger pool-config writes=<true or false (default false)> [force=<true or false (default false)>]
 ```
 
 #### Custom transaction
@@ -301,12 +300,17 @@ pool(sandbox):wallet(alice_wallet):indy> did use MYDID000000000000000000001
 pool(sandbox):wallet(alice_wallet):did(MYD...001):indy> did list
 ```
 
-#### Create new DID for BOB and post to the ledger
+#### Create new DID for BOB
 ```
 pool(sandbox):wallet(alice_wallet):did(MYD...001):indy> did new metadata="Bob DID" publish_to_ledger=true
 ```
 
+#### Post new NYM to the ledger
+```
+pool(sandbox):wallet(alice_wallet):did(MYD...001):indy> ledger nym did=MYDID000000000000000000001
+```
+
 #### Send GET_NYM transaction
 ```
-pool(sandbox):wallet(alice_wallet):did(MYD...001):indy> ledger get-nym target_did=MYDID000000000000000000002
+pool(sandbox):wallet(alice_wallet):did(MYD...001):indy> ledger get-nym did=MYDID000000000000000000001
 ```

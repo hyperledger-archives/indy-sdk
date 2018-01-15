@@ -1,5 +1,6 @@
 extern crate time;
 extern crate indy_crypto;
+extern crate serde_json;
 
 use indy::api::ErrorCode;
 use indy::api::pool::{indy_create_pool_ledger_config, indy_delete_pool_ledger_config};
@@ -19,6 +20,7 @@ use std::io::Write;
 use std::ptr::null;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
+use utils::types::{Response, ResponseType};
 
 #[derive(Serialize, Deserialize)]
 struct PoolConfig {
@@ -271,5 +273,10 @@ impl PoolUtils {
 
     pub fn get_req_id() -> u64 {
         time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64
+    }
+
+    pub fn check_response_type(response: &str, _type: ResponseType) {
+        let response: Response = serde_json::from_str(&response).unwrap();
+        assert_eq!(response.op, _type);
     }
 }

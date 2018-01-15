@@ -59,11 +59,12 @@
     NSNumber *schemaSeqNo = @(1);
     NSString *schema = [ NSString stringWithFormat:@"{"
                         "\"seqNo\":%@,"
+                        "\"identifier\":\"%@\","
                         "\"data\":{"
                             "\"name\":\"gvt\","
                             "\"version\":\"1.0\","
                             "\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}"
-                        "}", schemaSeqNo ];
+                        "}", schemaSeqNo, [TestUtils issuerDid] ];
     
     __block NSString *claimDefJSON = nil;
     
@@ -93,9 +94,10 @@
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     NSString *proverDiD = @"BzfFCYk";
+    NSString *schemaKey = @"{\"name\":\"gvt\",\"version\":\"1.0\",\"did\":\"NcYxiDXkpYi6ov5FcYDi1e\"}";
     NSString *claimOfferJSON =  [NSString stringWithFormat: @"{"\
                                  "\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\","\
-                                 "\"schema_seq_no\": %@}", schemaSeqNo ];
+                                 "\"schema_key\": %@}", schemaKey ];
     __block NSString *claimReqJSON = nil;
     
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:[NSDictionary toString:claimDef]
@@ -128,7 +130,8 @@
     
     // 8. Prover process and store Claim
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
-                                                                 claimsJson:xClaimJSON];
+                                                                 claimsJson:xClaimJSON
+                                                                 revRegJSON:nil];
     XCTAssertEqual( ret.code, Success, @"proverStoreClaim() failed!");
     
     // 9. Prover gets Claims for Proof Request
@@ -142,7 +145,7 @@
                               "\"requested_attrs\":{\
                                     \"attr1_referent\":{\
                                         \"name\":\"name\",\
-                                        \"restrictions\":[{\"schema_seq_no\":%@}]\
+                                        \"restrictions\":[{\"schema_key\":%@}]\
                                     }\
                               },\
                               \"requested_predicates\":{\
@@ -152,7 +155,7 @@
                                         \"value\":18\
                                     }\
                               }\
-                            }", schemaSeqNo ];
+                            }", schemaKey ];
     
     __block NSString *claimsJson = nil;
     
@@ -247,13 +250,15 @@
     // 3. Issuer create Claim Definition for Schema
     
     NSNumber *schemaSeqNo = @(1);
+    NSString *schemaKey = @"{\"name\":\"gvt\",\"version\":\"1.0\",\"did\":\"NcYxiDXkpYi6ov5FcYDi1e\"}";
     NSString *schema = [ NSString stringWithFormat:@"{"
                         "\"seqNo\":%@,"
+                        "\"identifier\":\"%@\","
                         "\"data\":{"
                         "\"name\":\"gvt\","
                         "\"version\":\"1.0\","
                         "\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}"
-                        "}", schemaSeqNo ];
+                        "}", schemaSeqNo, [TestUtils issuerDid] ];
     
     __block NSString *claimDefJSON = nil;
     
@@ -284,7 +289,7 @@
     NSString *proverDiD = @"BzfFCYk";
     NSString *claimOfferJSON =  [NSString stringWithFormat: @"{"\
                                  "\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\","\
-                                 "\"schema_seq_no\": %@}", schemaSeqNo ];
+                                 "\"schema_key\": %@}", schemaKey ];
     __block NSString *claimReqJSON = nil;
     
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:[NSDictionary toString:claimDef]
@@ -315,7 +320,8 @@
     
     // 8. Prover process and store Claim
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
-                                                                 claimsJson:xClaimJSON];
+                                                                 claimsJson:xClaimJSON
+                                                                 revRegJSON:nil];
     XCTAssertEqual( ret.code, Success, @"proverStoreClaim() failed!");
     
     // 9. Prover gets Claims for Proof Request
@@ -329,7 +335,7 @@
                               "\"requested_attrs\":{\
                               \"attr1_referent\":{\
                               \"name\":\"name\",\
-                              \"restrictions\":[{\"schema_seq_no\":%@}]\
+                              \"restrictions\":[{\"schema_key\":%@}]\
                               }\
                               },\
                               \"requested_predicates\":{\
@@ -339,7 +345,7 @@
                               \"value\":18\
                               }\
                               }\
-                              }", schemaSeqNo ];
+                              }", schemaKey ];
     
     __block NSString *claimsJson = nil;
     

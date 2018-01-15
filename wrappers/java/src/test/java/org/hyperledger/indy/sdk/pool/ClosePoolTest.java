@@ -44,4 +44,14 @@ public class ClosePoolTest extends IndyIntegrationTest {
 		pool = Pool.openPoolLedger(poolName, null).get();
 		openedPools.add(pool);
 	}
+
+	@Test
+	public void testAutoCloseWorks() throws Exception {
+		String poolName = PoolUtils.createPoolLedgerConfig();
+		try (Pool pool = Pool.openPoolLedger(poolName, null).get()) {
+			assertNotNull(pool);
+		}
+		Pool pool = Pool.openPoolLedger(poolName, null).get();
+		openedPools.add(pool);
+	}
 }

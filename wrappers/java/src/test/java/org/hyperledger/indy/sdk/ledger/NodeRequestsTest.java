@@ -42,14 +42,12 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 
 	@Test
 	public void testSendNodeRequestWorksWithoutSignature() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
-
 		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, stewardDidJson.toJson()).get();
 		String did = didResult.getDid();
 
 		String nodeRequest = Ledger.buildNodeRequest(did, did, data).get();
-		Ledger.submitRequest(pool, nodeRequest).get();
+		String response = Ledger.submitRequest(pool, nodeRequest).get();
+		checkResponseType(response,"REQNACK" );
 	}
 
 	@Test
@@ -80,14 +78,12 @@ public class NodeRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet
 
 	@Test
 	public void testSendNodeRequestWorksForWrongRole() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
-
 		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();
 
 		String nodeRequest = Ledger.buildNodeRequest(did, did, data).get();
-		Ledger.signAndSubmitRequest(pool, wallet, did, nodeRequest).get();
+		String response = Ledger.signAndSubmitRequest(pool, wallet, did, nodeRequest).get();
+		checkResponseType(response,"REJECT" );
 	}
 
 	@Test

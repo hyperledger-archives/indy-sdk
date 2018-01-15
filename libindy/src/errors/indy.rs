@@ -4,6 +4,7 @@ use errors::ledger::LedgerError;
 use errors::pool::PoolError;
 use errors::crypto::CryptoError;
 use errors::wallet::WalletError;
+use errors::did::DidError;
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -19,6 +20,7 @@ pub enum IndyError {
     PoolError(PoolError),
     CryptoError(CryptoError),
     WalletError(WalletError),
+    DidError(DidError),
 }
 
 impl fmt::Display for IndyError {
@@ -29,7 +31,8 @@ impl fmt::Display for IndyError {
             IndyError::LedgerError(ref err) => err.fmt(f),
             IndyError::PoolError(ref err) => err.fmt(f),
             IndyError::CryptoError(ref err) => err.fmt(f),
-            IndyError::WalletError(ref err) => err.fmt(f)
+            IndyError::WalletError(ref err) => err.fmt(f),
+            IndyError::DidError(ref err) => err.fmt(f)
         }
     }
 }
@@ -42,7 +45,8 @@ impl error::Error for IndyError {
             IndyError::LedgerError(ref err) => err.description(),
             IndyError::PoolError(ref err) => err.description(),
             IndyError::CryptoError(ref err) => err.description(),
-            IndyError::WalletError(ref err) => err.description()
+            IndyError::WalletError(ref err) => err.description(),
+            IndyError::DidError(ref err) => err.description()
         }
     }
 
@@ -53,7 +57,8 @@ impl error::Error for IndyError {
             IndyError::LedgerError(ref err) => Some(err),
             IndyError::PoolError(ref err) => Some(err),
             IndyError::CryptoError(ref err) => Some(err),
-            IndyError::WalletError(ref err) => Some(err)
+            IndyError::WalletError(ref err) => Some(err),
+            IndyError::DidError(ref err) => Some(err)
         }
     }
 }
@@ -67,7 +72,8 @@ impl ToErrorCode for IndyError {
             IndyError::LedgerError(ref err) => err.to_error_code(),
             IndyError::PoolError(ref err) => err.to_error_code(),
             IndyError::CryptoError(ref err) => err.to_error_code(),
-            IndyError::WalletError(ref err) => err.to_error_code()
+            IndyError::WalletError(ref err) => err.to_error_code(),
+            IndyError::DidError(ref err) => err.to_error_code()
         }
     }
 }
@@ -105,5 +111,11 @@ impl From<LedgerError> for IndyError {
 impl From<CryptoError> for IndyError {
     fn from(err: CryptoError) -> IndyError {
         IndyError::CryptoError(err)
+    }
+}
+
+impl From<DidError> for IndyError {
+    fn from(err: DidError) -> IndyError {
+        IndyError::DidError(err)
     }
 }

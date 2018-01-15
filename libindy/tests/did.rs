@@ -20,6 +20,7 @@ use utils::test::TestUtils;
 use utils::pool::PoolUtils;
 use utils::ledger::LedgerUtils;
 use utils::constants::*;
+use utils::types::ResponseType;
 
 use indy::api::ErrorCode;
 
@@ -653,6 +654,21 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn indy_create_my_did_works_for_duplicate() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (my_did, _) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
+            let res = DidUtils::create_my_did(wallet_handle, &format!(r#"{{"did":{:?}}}"#, my_did));
+            assert_eq!(res.unwrap_err(), ErrorCode::DidAlreadyExistsError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod replace_keys_start {
@@ -963,8 +979,8 @@ mod high_cases {
 
             // 8. Send Schema request before apply replacing of keys
             let schema_request = LedgerUtils::build_schema_request(&my_did, SCHEMA_DATA).unwrap();
-            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request);
-            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+            PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             // 9. Apply replacing of keys
             DidUtils::replace_keys_apply(wallet_handle, &my_did).unwrap();
@@ -995,8 +1011,8 @@ mod high_cases {
             DidUtils::replace_keys_apply(wallet_handle, &my_did).unwrap();
 
             let schema_request = LedgerUtils::build_schema_request(&my_did, SCHEMA_DATA).unwrap();
-            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request);
-            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &schema_request).unwrap();
+            PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
             PoolUtils::close(pool_handle).unwrap();

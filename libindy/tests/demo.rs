@@ -104,7 +104,7 @@ fn anoncreds_demo_works() {
     let xtype = "default";
 
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
-    //1. Create Wallet
+    //1. Creates Wallet
     let err =
         indy_create_wallet(create_wallet_command_handle,
                            CString::new(pool_name).unwrap().as_ptr(),
@@ -118,7 +118,7 @@ fn anoncreds_demo_works() {
     let err = create_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    //2. Open Issuer Wallet. Gets Issuer wallet handle
+    //2. Opens Wallet
     let err =
         indy_open_wallet(open_wallet_command_handle,
                          CString::new(wallet_name).unwrap().as_ptr(),
@@ -132,16 +132,17 @@ fn anoncreds_demo_works() {
 
     let schema_seq_no = 1;
     let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
-    let prover_did = "BzfFCYk";
+    let prover_did = "VsKV7grR1BUE29mG2Fm2kX";
 
     let schema = format!(r#"{{
                                     "seqNo":{},
+                                    "identifier":"{}",
                                     "data":{{
                                         "name":"gvt",
                                         "version":"1.0",
                                         "attr_names":["age","sex","height","name"]
                                     }}
-                                 }}"#, schema_seq_no);
+                                 }}"#, schema_seq_no, issuer_did);
 
     // 3. Issuer create Claim Definition for Schema
     let err =
@@ -170,7 +171,7 @@ fn anoncreds_demo_works() {
     let err = prover_create_master_secret_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    let claim_offer_json = format!(r#"{{"issuer_did":"{}","schema_seq_no":{}}}"#, issuer_did, schema_seq_no);
+    let claim_offer_json = format!(r#"{{"issuer_did":"{}","schema_key":{{"name":"gvt","version":"1.0","did":"{}"}}}}"#, issuer_did, issuer_did);
 
     // 6. Prover create Claim Request
     let err =
@@ -211,6 +212,7 @@ fn anoncreds_demo_works() {
         indy_prover_store_claim(prover_store_claim_command_handle,
                                 wallet_handle,
                                 CString::new(xclaim_json).unwrap().as_ptr(),
+                                null(),
                                 prover_store_claim_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -224,7 +226,13 @@ fn anoncreds_demo_works() {
                                                "requested_attrs":{{
                                                     "attr1_referent":{{
                                                         "name":"name",
-                                                        "restrictions":[{{"schema_seq_no":{}, "issuer_did":"{}"}}]
+                                                        "restrictions":[{{"issuer_did":"{}",
+                                                                        "schema_key":{{
+                                                                            "name":"gvt",
+                                                                            "version":"1.0",
+                                                                            "did":"{}"
+                                                                        }}
+                                                        }}]
                                                     }}
                                                }},
                                                "requested_predicates":{{
@@ -234,7 +242,7 @@ fn anoncreds_demo_works() {
                                                        "value":18
                                                    }}
                                                }}
-                                           }}"#, schema_seq_no, issuer_did);
+                                           }}"#, issuer_did, issuer_did);
 
     // 8. Prover gets Claims for Proof Request
     let err =

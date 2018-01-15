@@ -284,11 +284,15 @@ impl CatchupHandler {
     }
 
     pub fn flush_requests(&mut self, status: Result<(), PoolError>) -> Result<(), PoolError> {
+        if self.initiate_cmd_id == -1 {
+            return Ok(());
+        }
         let cmd = if self.is_refresh {
             PoolCommand::RefreshAck(self.initiate_cmd_id, status)
         } else {
             PoolCommand::OpenAck(self.initiate_cmd_id, self.pool_id, status)
         };
+        self.initiate_cmd_id = -1;
         CommandExecutor::instance()
             .send(Command::Pool(cmd))
             .map_err(|err|

@@ -56,9 +56,9 @@ async def test_send_nym_request_works_without_signature(pool_handle, identity_my
 
     nym_request = await ledger.build_nym_request(my_did, my_did, None, None, None)
 
-    with pytest.raises(IndyError) as e:
-        await ledger.submit_request(pool_handle, nym_request)
-    assert ErrorCode.LedgerInvalidTransaction == e.value.error_code
+    response = await ledger.submit_request(pool_handle, nym_request)
+    assert json.loads(response)['op'] == 'REQNACK'
+
 
 
 @pytest.mark.asyncio
@@ -91,9 +91,8 @@ async def test_send_attrib_request_works_without_signature(pool_handle, identity
 
     attrib_request = await ledger.build_attrib_request(my_did, my_did, None,
                                                        "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}", None)
-    with pytest.raises(IndyError) as e:
-        await ledger.submit_request(pool_handle, attrib_request)
-    assert ErrorCode.LedgerInvalidTransaction == e.value.error_code
+    response = await ledger.submit_request(pool_handle, attrib_request)
+    assert json.loads(response)['op'] == 'REQNACK'
 
 
 @pytest.mark.asyncio
@@ -126,9 +125,8 @@ async def test_send_schema_request_works_without_signature(pool_handle, identity
 
     schema_request = await ledger.build_schema_request(my_did, json.dumps(schema_data))
 
-    with pytest.raises(IndyError) as e:
-        await ledger.submit_request(pool_handle, schema_request)
-    assert ErrorCode.LedgerInvalidTransaction == e.value.error_code
+    response = await ledger.submit_request(pool_handle, schema_request)
+    assert json.loads(response)['op'] == 'REQNACK'
 
 
 @pytest.mark.asyncio
@@ -174,9 +172,8 @@ async def test_send_node_request_works_without_signature(pool_handle, identity_m
 
     node_request = await ledger.build_node_request(my_did, my_did, json.dumps(node_data))
 
-    with pytest.raises(IndyError) as e:
-        await ledger.submit_request(pool_handle, node_request)
-    assert ErrorCode.LedgerInvalidTransaction == e.value.error_code
+    response = await ledger.submit_request(pool_handle, node_request)
+    assert json.loads(response)['op'] == 'REQNACK'
 
 
 @pytest.mark.asyncio

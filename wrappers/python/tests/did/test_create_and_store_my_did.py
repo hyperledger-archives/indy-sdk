@@ -62,3 +62,11 @@ async def test_create_my_did_works_for_invalid_handle(wallet_handle):
     with pytest.raises(IndyError) as e:
         await did.create_and_store_my_did(wallet_handle + 1, '{}')
     assert ErrorCode.WalletInvalidHandle == e.value.error_code
+
+
+@pytest.mark.asyncio
+async def test_create_my_did_works_for_duplicate(wallet_handle):
+    (_did, _) = await did.create_and_store_my_did(wallet_handle, '{}')
+    with pytest.raises(IndyError) as e:
+        await did.create_and_store_my_did(wallet_handle, json.dumps({'did': _did}))
+    assert ErrorCode.DidAlreadyExistsError == e.value.error_code

@@ -1,6 +1,4 @@
-libindy (1.1.1) unstable; urgency=medium
+libindy (1.3.0) unstable; urgency=medium
 
   [ Hyperledger ]
-  * Replaced Agent2Agent API
-  * New Crypto API
-  * Updated Signus API
+  * encryption option for default wallet is added

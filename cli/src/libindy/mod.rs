@@ -96,9 +96,6 @@ pub enum ErrorCode
     // No concensus during ledger operation
     LedgerNoConsensusError = 303,
 
-    // Attempt to send unknown or incomplete transaction message
-    LedgerInvalidTransaction = 304,
-
     // Attempt to send transaction without the necessary privileges
     LedgerSecurityError = 305,
 
@@ -124,9 +121,15 @@ pub enum ErrorCode
 
     AnoncredsClaimRevoked = 406,
 
+    // Attempt to create claim definition with duplicated did schema pair
+    AnoncredsClaimDefAlreadyExistsError = 407,
+
     // Signus errors
     // Unknown format of DID entity keys
-    SignusUnknownCryptoError = 500
+    UnknownCryptoTypeError = 500,
+
+    // Attempt to create duplicate did
+    DidAlreadyExistsError = 600
 }
 
 impl ErrorCode {
@@ -171,7 +174,9 @@ impl ErrorCode {
             AnoncredsMasterSecretDuplicateNameError => "Attempt to generate master secret with duplicated name",
             AnoncredsProofRejected => "Proof rejected",
             AnoncredsClaimRevoked => "Claim revoked",
-            SignusUnknownCryptoError => "Unknown format of DID entity keys",
+            AnoncredsClaimDefAlreadyExistsError => "Claim definition already exists",
+            UnknownCryptoTypeError => "Unknown format of DID entity keys",
+            DidAlreadyExistsError => "Did already exists",
         }
     }
 }
