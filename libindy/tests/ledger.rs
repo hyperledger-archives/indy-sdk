@@ -1,5 +1,8 @@
 extern crate indy;
 extern crate time;
+extern crate openssl;
+extern crate hex;
+extern crate sodiumoxide;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
 use indy::api as api;
@@ -10,9 +13,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
 extern crate log;
-extern crate openssl;
-extern crate hex;
-extern crate sodiumoxide;
+
 #[macro_use]
 mod utils;
 
@@ -31,6 +32,10 @@ use utils::did::DidUtils;
 use utils::anoncreds::AnoncredsUtils;
 use utils::types::*;
 use utils::constants::*;
+
+use self::openssl::hash::{MessageDigest, Hasher};
+use self::hex::ToHex;
+use self::sodiumoxide::crypto::secretbox;
 
 mod high_cases {
     use super::*;
@@ -536,15 +541,15 @@ mod high_cases {
 
             let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
-//            let key = secretbox::gen_key();
-//            let nonce = secretbox::gen_nonce();
-//            let mut ciphertext = secretbox::seal(&ATTRIB_RAW_DATA.as_bytes(), &nonce, &key).to_hex();
+            let key = secretbox::gen_key();
+            let nonce = secretbox::gen_nonce();
+            let encryted_attr = secretbox::seal(&ATTRIB_RAW_DATA.as_bytes(), &nonce, &key).to_hex();
 
             let attrib_request = LedgerUtils::build_attrib_request(&trustee_did,
                                                                    &trustee_did,
                                                                    None,
                                                                    None,
-                                                                   Some("V4SGRU86Z58d6TV7")).unwrap();
+                                                                   Some(&encryted_attr)).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
