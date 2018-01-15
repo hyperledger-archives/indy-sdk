@@ -249,7 +249,7 @@ pub fn create_new_claimdef(source_id: String,
                                                     &issuer_did,
                                                     Some(SigTypes::CL),
                                                     create_non_revoc)?;
-
+    info!("stored new claim def in wallet");
     new_claimdef.set_claim_def(ClaimDefinition::from_str(&claim_def_json)?);
 
     let claim_def_txn = new_claimdef.build_create_txn(&new_claimdef
@@ -259,6 +259,7 @@ pub fn create_new_claimdef(source_id: String,
     )?;
 
     new_claimdef.sign_and_send_request(&claim_def_txn)?;
+    info!("stored new claim def on ledger");
 
     let new_handle = rand::thread_rng().gen::<u32>();
     new_claimdef.set_name(claimdef_name);
@@ -290,6 +291,7 @@ fn create_and_store_claim_def(schema_json: &str,
 pub fn get_schema_data(schema_seq_no: u32) -> Result<String, u32> {
     if settings::test_indy_mode_enabled() { return Ok(SCHEMAS_JSON.to_string()); }
     let schema_obj = LedgerSchema::new_from_ledger(schema_seq_no as i32)?;
+    info!("retrieved schema data from ledger");
     Ok(schema_obj.to_string())
 }
 
