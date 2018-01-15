@@ -633,7 +633,7 @@ mod high_cases {
         fn indy_build_claim_def_request_works_for_correct_data_json() {
             let data = r#"{"primary":{"n":"1","s":"2","rms":"3","r":{"name":"1"},"rctxt":"1","z":"1"}}"#;
 
-            let expected_result = format!(r#""identifier":"{}","operation":{{"ref":{},"data":{{"primary":{{"n":"1","s":"2","rms":"3","r":{{"name":"1"}},"rctxt":"1","z":"1"}},"revocation":{{}}}},"type":"102","signature_type":"{}"}},"protocolVersion":1"#,
+            let expected_result = format!(r#""identifier":"{}","operation":{{"ref":{},"data":{{"primary":{{"n":"1","s":"2","rms":"3","r":{{"name":"1"}},"rctxt":"1","z":"1"}}}},"type":"102","signature_type":"{}"}},"protocolVersion":1"#,
                                           IDENTIFIER, SEQ_NO, SIGNATURE_TYPE);
 
             let claim_def_request = LedgerUtils::build_claim_def_txn(IDENTIFIER, SEQ_NO, SIGNATURE_TYPE, &data).unwrap();

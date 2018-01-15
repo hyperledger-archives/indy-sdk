@@ -66,7 +66,7 @@
 {
     return [NSString stringWithFormat:@"{"
                                               "\"seqNo\":1,"
-                                              "\"identifier\":\"%@\","
+                                              "\"dest\":\"%@\","
                                               "\"data\":{"
                                               "\"name\":\"%@\","
                                               "\"version\":\"1.0\","

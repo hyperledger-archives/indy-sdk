@@ -28,7 +28,7 @@ public class AnoncredsIntegrationTest {
 	String proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 	private String schemaTemplate = "{\n" +
 			"                    \"seqNo\":%d,\n" +
-			"                    \"identifier\":\"%s\",\n" +
+			"                    \"dest\":\"%s\",\n" +
 			"                    \"data\": {\n" +
 			"                        \"name\":\"%s\",\n" +
 			"                        \"version\":\"1.0\",\n" +
