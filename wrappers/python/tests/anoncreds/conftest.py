@@ -191,7 +191,7 @@ def gvt_schema(schema_seq_no: int, issuer_did: str):
 def xyz_schema(schema_seq_no: int, issuer_did: str):
     return {
         "seqNo": 2,
-        "identifier": issuer_did,
+        "dest": issuer_did,
         "data": {
             "name": "xyz",
             "version": "1.0",
