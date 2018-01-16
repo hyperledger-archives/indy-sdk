@@ -71,7 +71,7 @@ mod high_cases {
             let get_nym_request = LedgerUtils::build_get_nym_request(&my_did, &my_did).unwrap();
 
             let invalid_pool_handle = pool_handle + 1;
-            let res = LedgerUtils::sign_and_submit_request(invalid_pool_handle, wallet_handle, &my_did, &get_nym_request, None);
+            let res = LedgerUtils::sign_and_submit_request(invalid_pool_handle, wallet_handle, &my_did, &get_nym_request);
             assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -94,7 +94,7 @@ mod high_cases {
             let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, None, None, None).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 1;
-            let res = LedgerUtils::sign_and_submit_request(pool_handle, invalid_wallet_handle, &trustee_did, &nym_request, None);
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, invalid_wallet_handle, &trustee_did, &nym_request);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -116,7 +116,7 @@ mod high_cases {
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, None, None, None).unwrap();
 
-            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request, None);
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletIncompatiblePoolError);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -174,7 +174,7 @@ mod high_cases {
             let (my_did, _) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, None, None, None).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -386,7 +386,7 @@ mod high_cases {
             let (my_did, my_verkey) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, Some(&my_verkey), None, None).unwrap();
-            let nym_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request, None).unwrap();
+            let nym_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             let get_nym_request = LedgerUtils::build_get_nym_request(&my_did, &my_did).unwrap();
             let get_nym_response = LedgerUtils::submit_request(pool_handle, &get_nym_request,
@@ -482,7 +482,7 @@ mod high_cases {
                                                                    None,
                                                                    Some(ATTRIB_RAW_DATA),
                                                                    None).unwrap();
-            let attrib_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request, None).unwrap();
+            let attrib_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
 
             let get_attrib_request = LedgerUtils::build_get_attrib_request(&trustee_did, &trustee_did, "endpoint").unwrap();
             let get_attrib_response = LedgerUtils::submit_request(pool_handle, &get_attrib_request,
@@ -552,7 +552,7 @@ mod high_cases {
             let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
             let schema_request = LedgerUtils::build_schema_request(&did, SCHEMA_DATA).unwrap();
-            let schema_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request, None).unwrap();
+            let schema_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
 
             let get_schema_request = LedgerUtils::build_get_schema_request(&did, &did, GET_SCHEMA_DATA).unwrap();
             let get_schema_response = LedgerUtils::submit_request(pool_handle, &get_schema_request,
@@ -615,12 +615,12 @@ mod high_cases {
 
             let role = "STEWARD";
             let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, Some(&my_verkey), None, Some(role)).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             let dest = "A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y"; // random(32) and base58
 
             let node_request = LedgerUtils::build_node_request(&my_did, dest, NODE_DATA).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &node_request, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &node_request).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -663,7 +663,7 @@ mod high_cases {
             let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
             let schema_request = LedgerUtils::build_schema_request(&did, SCHEMA_DATA).unwrap();
-            let schema_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request, None).unwrap();
+            let schema_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
 
             let get_schema_request = LedgerUtils::build_get_schema_request(&did, &did, GET_SCHEMA_DATA).unwrap();
             let get_schema_response_str = LedgerUtils::submit_request(pool_handle, &get_schema_request,
@@ -697,7 +697,7 @@ mod high_cases {
             let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
             let schema_request = LedgerUtils::build_schema_request(&did, SCHEMA_DATA).unwrap();
-            let schema_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request, None).unwrap();
+            let schema_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
 
             let get_schema_request = LedgerUtils::build_get_schema_request(&did, &did, GET_SCHEMA_DATA).unwrap();
             let get_schema_response_str = LedgerUtils::submit_request(pool_handle, &get_schema_request,
@@ -711,7 +711,7 @@ mod high_cases {
             let claim_def_request = LedgerUtils::build_claim_def_txn(&did, schema_seq_no,
                                                                      SIGNATURE_TYPE, &claim_def_data_json).unwrap();
 
-            let claim_def_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &claim_def_request, None).unwrap();
+            let claim_def_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &claim_def_request).unwrap();
 
             let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(&did, schema_seq_no,
                                                                              &SIGNATURE_TYPE, &did).unwrap();
@@ -749,7 +749,7 @@ mod high_cases {
             let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
             let schema_request = LedgerUtils::build_schema_request(&did, &SCHEMA_DATA).unwrap();
-            let schema_response_str = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request, None).unwrap();
+            let schema_response_str = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
             let schema_response: Reply<SchemaResult> = serde_json::from_str(&schema_response_str).unwrap();
             let seq_no = schema_response.result.seq_no;
 
@@ -784,7 +784,7 @@ mod high_cases {
             let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
             let schema_request = LedgerUtils::build_schema_request(&did, &SCHEMA_DATA).unwrap();
-            let schema_response_str = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request, None).unwrap();
+            let schema_response_str = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
             let schema_response: Reply<SchemaResult> = serde_json::from_str(&schema_response_str).unwrap();
 
             let get_schema_request = LedgerUtils::build_get_schema_request(&did, &did, GET_SCHEMA_DATA).unwrap();
@@ -833,7 +833,7 @@ mod high_cases {
             let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
             let request = LedgerUtils::build_pool_config_request(&trustee_did, true, false).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -853,16 +853,16 @@ mod high_cases {
 
             // set Ledger as readonly
             let request = LedgerUtils::build_pool_config_request(&trustee_did, false, false).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
 
             // try send schema request
             let schema_request = LedgerUtils::build_schema_request(&trustee_did, SCHEMA_DATA).unwrap();
-            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &schema_request, None).unwrap();
+            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &schema_request).unwrap();
             PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             // return Ledger to the previous state
             let request = LedgerUtils::build_pool_config_request(&trustee_did, true, false).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -949,7 +949,7 @@ mod high_cases {
                                                                   None,
                                                                   false,
                                                                   false).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
 
             //cancel
             let request = LedgerUtils::build_pool_upgrade_request(&trustee_did,
@@ -962,7 +962,7 @@ mod high_cases {
                                                                   Some("Upgrade is not required"),
                                                                   false,
                                                                   false).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -988,7 +988,7 @@ mod medium_cases {
 
             let nym_request = LedgerUtils::build_nym_request(&DID, &DID, None, None, None).unwrap();
 
-            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &DID, &nym_request, None);
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &DID, &nym_request);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -1022,7 +1022,7 @@ mod medium_cases {
 
             let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
-            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, "request", None);
+            let res = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, "request");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -1048,7 +1048,7 @@ mod medium_cases {
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, None, None, None).unwrap();
 
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1071,7 +1071,7 @@ mod medium_cases {
             let alias = "some_alias";
             let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, Some(&my_verkey), Some(alias), Some(role)).unwrap();
 
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1092,7 +1092,7 @@ mod medium_cases {
             for role in ["STEWARD", "TRUSTEE", "TRUST_ANCHOR"].iter() {
                 let (my_did, _) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
                 let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, None, None, Some(role)).unwrap();
-                LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request, None).unwrap();
+                LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
             }
 
             PoolUtils::close(pool_handle).unwrap();
@@ -1121,14 +1121,14 @@ mod medium_cases {
             let (my_did, _) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, None, None, None).unwrap();
-            let nym_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request, None).unwrap();
+            let nym_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             let get_nym_request = LedgerUtils::build_get_nym_request(&trustee_did, &my_did).unwrap();
             LedgerUtils::submit_request(pool_handle, &get_nym_request, Some(LedgerUtils::extract_timestamp_from_reply(&nym_req_resp).unwrap())).unwrap();
 
             let (my_did2, _) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
             let nym_request = LedgerUtils::build_nym_request(&my_did, &my_did2, None, None, None).unwrap();
-            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request, None).unwrap();
+            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request).unwrap();
             PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -1149,7 +1149,7 @@ mod medium_cases {
             let (my_did, _) = DidUtils::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, None, None, None).unwrap();
-            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request, None).unwrap();
+            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
             PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -1221,7 +1221,7 @@ mod medium_cases {
 
             let mut nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did,
                                                                  Some(&my_verkey), None, Some("TRUSTEE")).unwrap();
-            let nym_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request, None).unwrap();
+            let nym_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
             let mut get_nym_request = LedgerUtils::build_get_nym_request(&my_did, &my_did).unwrap();
             let get_nym_response_with_role = LedgerUtils::submit_request(pool_handle, &get_nym_request,
@@ -1232,7 +1232,7 @@ mod medium_cases {
 
             nym_request = LedgerUtils::build_nym_request(&my_did, &my_did,
                                                          Some(&my_verkey), None, Some("")).unwrap();
-            let nym_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request, None).unwrap();
+            let nym_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request).unwrap();
 
             get_nym_request = LedgerUtils::build_get_nym_request(&my_did, &my_did).unwrap();
             let get_nym_response_without_role = LedgerUtils::submit_request(pool_handle, &get_nym_request,
@@ -1411,7 +1411,7 @@ mod medium_cases {
 
             let schema_request = LedgerUtils::build_schema_request(&did, SCHEMA_DATA).unwrap();
 
-            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request, None).unwrap();
+            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &schema_request).unwrap();
             PoolUtils::check_response_type(&response, ResponseType::REQNACK);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -1475,7 +1475,7 @@ mod medium_cases {
 
             let node_request = LedgerUtils::build_node_request(&did, &did, NODE_DATA).unwrap();
 
-            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request, None).unwrap();
+            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request).unwrap();
             PoolUtils::check_response_type(&response, ResponseType::REJECT);
 
             PoolUtils::close(pool_handle).unwrap();
@@ -1496,7 +1496,7 @@ mod medium_cases {
 
             let node_request = LedgerUtils::build_node_request(&did, &did, NODE_DATA).unwrap();
 
-            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request, None).unwrap();
+            let response = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &node_request).unwrap();
             PoolUtils::check_response_type(&response, ResponseType::REJECT);
 
             PoolUtils::close(pool_handle).unwrap();
