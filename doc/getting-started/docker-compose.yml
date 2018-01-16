@@ -1,13 +1,13 @@
 version: '2'
 services:
-  pool:
+  indy_pool:
     build:
       context: ../../ci/
       dockerfile: indy-pool.dockerfile
       args:
         pool_ip: '10.0.0.2'
-    image: pool
-    container_name: pool
+    image: indy_pool
+    container_name: indy_pool
     working_dir: /home/indy
     ports:
       - "9701:9701"
@@ -31,12 +31,13 @@ services:
     working_dir: /home/indy
     volumes:
       - ./docker_pool_transactions_genesis:/home/indy/docker_pool_transactions_genesis
+      - ./getting-started.ipynb:/home/indy/getting-started.ipynb
     ports:
       - "8888:8888"
     networks:
       - pool_network
     links:
-      - pool
+      - indy_pool
 networks:
   pool_network:
     driver: bridge
