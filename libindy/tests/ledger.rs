@@ -615,13 +615,12 @@ mod high_cases {
 
             let role = "STEWARD";
             let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, Some(&my_verkey), None, Some(role)).unwrap();
-            let nym_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request, None).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request, None).unwrap();
 
             let dest = "A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y"; // random(32) and base58
 
             let node_request = LedgerUtils::build_node_request(&my_did, dest, NODE_DATA).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &node_request,
-                                                 Some(LedgerUtils::extract_timestamp_from_reply(&nym_req_resp).unwrap())).unwrap();
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &node_request, None).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -712,8 +711,7 @@ mod high_cases {
             let claim_def_request = LedgerUtils::build_claim_def_txn(&did, schema_seq_no,
                                                                      SIGNATURE_TYPE, &claim_def_data_json).unwrap();
 
-            let claim_def_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &claim_def_request,
-                                                                          Some(LedgerUtils::extract_timestamp_from_reply(&get_schema_response_str).unwrap())).unwrap();
+            let claim_def_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &did, &claim_def_request, None).unwrap();
 
             let get_claim_def_request = LedgerUtils::build_get_claim_def_txn(&did, schema_seq_no,
                                                                              &SIGNATURE_TYPE, &did).unwrap();
