@@ -1,3 +1,4 @@
+extern crate serde;
 extern crate serde_json;
 extern crate indy_crypto;
 
@@ -248,7 +249,7 @@ impl JsonEncodable for ClaimDefOperation {}
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct ClaimDefOperationData {
     pub primary: IssuerPrimaryPublicKey,
-    #[serde(serialize_with = "empty_map_instead_of_null")] //FIXME
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub revocation: Option<IssuerRevocationPublicKey>
 }
 
@@ -260,22 +261,6 @@ impl ClaimDefOperationData {
         }
     }
 }
-
-//FIXME workaround for ledger: serialize required dictionary as empty instead of using null
-extern crate serde;
-
-use self::serde::Serializer;
-use self::serde::ser::SerializeMap;
-
-fn empty_map_instead_of_null<S>(x: &Option<IssuerRevocationPublicKey>, s: S) -> Result<S::Ok, S::Error>
-    where S: Serializer {
-    if let &Some(ref x) = x {
-        s.serialize_some(&x)
-    } else {
-        s.serialize_map(None)?.end()
-    }
-}
-//FIXME
 
 impl JsonEncodable for ClaimDefOperationData {}
 

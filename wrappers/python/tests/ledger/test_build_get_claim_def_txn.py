@@ -56,5 +56,4 @@ async def test_build_claim_def_request_works_for_correct_data_json(did_trustee):
         await ledger.build_claim_def_txn(
             did_trustee, schema_seq_no, signature_type, json.dumps(data)))
 
-    expected_response['operation']['data']['revocation'] = {}  # FIXME workaround for ledger
     assert expected_response.items() <= response.items()

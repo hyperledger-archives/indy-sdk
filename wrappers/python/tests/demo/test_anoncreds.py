@@ -21,7 +21,7 @@ async def test_anoncreds_demo_works(pool_name, wallet_name, path_home):
 
     schema = {
         'seqNo': 1,
-        'identifier': issuer_did,
+        'dest': issuer_did,
         'data': {
             'name': 'gvt',
             'version': '1.0',

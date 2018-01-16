@@ -44,10 +44,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 
 	@Test
 	public void testBuildClaimDefRequestWorks() throws Exception {
-		String dataTemplate = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"},\"rctxt\":\"1\",\"z\":\"1\"}%s}";
-		String data = String.format(dataTemplate, "");
-
-		String expectedData = String.format(dataTemplate, ",\"revocation\":{}");
+		String data = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"},\"rctxt\":\"1\",\"z\":\"1\"}}";
 
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{" +
@@ -55,7 +52,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 				"\"data\":%s," +
 				"\"type\":\"102\"," +
 				"\"signature_type\":\"%s\"" +
-				"}", DID, seqNo, expectedData, signatureType);
+				"}", DID, seqNo, data, signatureType);
 
 		String claimDefRequest = Ledger.buildClaimDefTxn(DID, seqNo, signatureType, data).get();
 

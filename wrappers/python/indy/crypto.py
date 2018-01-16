@@ -198,7 +198,7 @@ async def crypto_verify(their_vk: str,
 async def auth_crypt(wallet_handle: int,
                      my_vk: str,
                      their_vk: str,
-                     msg: bytes) -> (bytes, bytes):
+                     msg: bytes) -> bytes:
     """
     Encrypt a message by authenticated-encryption scheme.
 
@@ -305,7 +305,7 @@ async def auth_decrypt(wallet_handle: int,
 
 
 async def anon_crypt(their_vk: str,
-                     msg: bytes) -> (bytes, bytes):
+                     msg: bytes) -> bytes:
     """
     Encrypts a message by anonymous-encryption scheme.
 
