@@ -80,8 +80,7 @@ mod high_cases {
             let nym_resp = LedgerUtils::sign_and_submit_request(pool_handle, trustee_wallet_handle, &trustee_did, &nym_request).unwrap();
 
             let get_nym_request = LedgerUtils::build_get_nym_request(&did, &did).unwrap();
-            LedgerUtils::submit_request(pool_handle, &get_nym_request,
-                                        Some(LedgerUtils::extract_timestamp_from_reply(&nym_resp).unwrap())).unwrap();
+            LedgerUtils::submit_request_with_retries(pool_handle, &get_nym_request, &nym_resp).unwrap();
 
             let received_verkey = DidUtils::key_for_did(pool_handle, wallet_handle, &did).unwrap();
             assert_eq!(verkey, received_verkey);
@@ -345,8 +344,7 @@ mod high_cases {
             let attrib_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
 
             let get_attrib_req = LedgerUtils::build_get_attrib_request(&trustee_did, &trustee_did, "endpoint").unwrap();
-            LedgerUtils::submit_request(pool_handle, &get_attrib_req,
-                                        Some(LedgerUtils::extract_timestamp_from_reply(&attrib_req_resp).unwrap())).unwrap();
+            LedgerUtils::submit_request_with_retries(pool_handle, &get_attrib_req, &attrib_req_resp).unwrap();
 
             let (endpoint, key) = DidUtils::get_endpoint_for_did(wallet_handle, pool_handle, &trustee_did).unwrap();
             assert_eq!(ENDPOINT, endpoint);
