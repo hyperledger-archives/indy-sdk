@@ -16,59 +16,68 @@ async def test_prover_get_claim_offers_works_for_empty_filter(wallet_handle, pre
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_prover_get_claim_offers_works_for_filter_by_issuer(wallet_handle, prepopulated_wallet, issuer_did):
+async def test_prover_get_claim_offers_works_for_filter_by_issuer(wallet_handle, prepopulated_wallet, issuer_did,
+                                                                  schema_key, xyz_schema_key):
     claim_offers = json.loads(
         await prover_get_claim_offers(wallet_handle, json.dumps({"issuer_did": issuer_did})))
 
     assert len(claim_offers) == 2
-    assert {"issuer_did": issuer_did, "schema_seq_no": 1} in claim_offers
-    assert {"issuer_did": issuer_did, "schema_seq_no": 2} in claim_offers
+    assert {"issuer_did": issuer_did, "schema_key": schema_key} in claim_offers
+    assert {"issuer_did": issuer_did, "schema_key": xyz_schema_key} in claim_offers
 
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
 async def test_prover_get_claim_offers_works_for_filter_by_schema(wallet_handle, prepopulated_wallet, issuer_did,
-                                                                  prover_did,
-                                                                  schema_seq_no_2):
+                                                                  prover_did, xyz_schema_key):
     claim_offers = json.loads(
         await prover_get_claim_offers(
-            wallet_handle, json.dumps({"schema_seq_no": schema_seq_no_2})))
+            wallet_handle, json.dumps({"schema_key": {"name": "xyz"}})))
 
-    assert len(claim_offers) == 2
-    assert {'issuer_did': issuer_did, 'schema_seq_no': schema_seq_no_2} in claim_offers
-    assert {'issuer_did': prover_did, 'schema_seq_no': 2} in claim_offers
+    assert len(claim_offers) == 1
+    assert {'issuer_did': issuer_did, 'schema_key': xyz_schema_key} in claim_offers
+
+
+# noinspection PyUnusedLocal
+@pytest.mark.asyncio
+async def test_prover_get_claim_offers_works_for_filter_by_part_of_schema(wallet_handle, prepopulated_wallet,
+                                                                          issuer_did, prover_did, xyz_schema_key):
+    claim_offers = json.loads(
+        await prover_get_claim_offers(
+            wallet_handle, json.dumps({"schema_key": xyz_schema_key})))
+
+    assert len(claim_offers) == 1
+    assert {'issuer_did': issuer_did, 'schema_key': xyz_schema_key} in claim_offers
 
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
 async def test_prover_get_claim_offers_works_for_filter_by_issuer_and_schema(wallet_handle, prepopulated_wallet,
-                                                                             issuer_did, claim_offer_issuer_1_json,
-                                                                             schema_seq_no):
+                                                                             issuer_did, schema_key,
+                                                                             claim_offer_issuer_1_schema_1_json):
     claim_offers = json.loads(
-        await prover_get_claim_offers(
-            wallet_handle, claim_offer_issuer_1_json))
+        await prover_get_claim_offers(wallet_handle, claim_offer_issuer_1_schema_1_json))
 
     assert len(claim_offers) == 1
-    assert {'issuer_did': issuer_did, 'schema_seq_no': schema_seq_no} in claim_offers
+    assert {'issuer_did': issuer_did, 'schema_key': schema_key} in claim_offers
 
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_prover_get_claim_offers_works_for_no_results(wallet_handle, prepopulated_wallet, schema_seq_no):
+async def test_prover_get_claim_offers_works_for_no_results(wallet_handle, prepopulated_wallet, schema_key, issuer_did):
     claim_offers = json.loads(
         await prover_get_claim_offers(
-            wallet_handle, json.dumps({"schema_seq_no": schema_seq_no + 100})))
+            wallet_handle, json.dumps({"issuer_did": issuer_did + 'a'})))
 
     assert len(claim_offers) == 0
 
 
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
-async def test_prover_get_claim_offers_works_for_invalid_wallet_handle(wallet_handle, prepopulated_wallet,
-                                                                       schema_seq_no):
+async def test_prover_get_claim_offers_works_for_invalid_wallet_handle(wallet_handle, prepopulated_wallet, schema_key):
     invalid_wallet_handle = wallet_handle + 100
 
     with pytest.raises(IndyError) as e:
-        await prover_get_claim_offers(invalid_wallet_handle, json.dumps({"schema_seq_no": schema_seq_no}))
+        await prover_get_claim_offers(invalid_wallet_handle, json.dumps({"schema_key": schema_key}))
 
     assert ErrorCode.WalletInvalidHandle == e.value.error_code

@@ -1,7 +1,5 @@
 package org.hyperledger.indy.sdk.wallet;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.anoncreds.Anoncreds;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults;
@@ -12,6 +10,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.*;
 
 import java.util.concurrent.ExecutionException;
@@ -19,20 +18,20 @@ import java.util.concurrent.TimeUnit;
 
 public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
+	private String type = "inmem";
+
 	@Test
 	@Ignore //The wallet is already registered by the base class!
 	public void testRegisterWalletTypeWorks() throws Exception {
-
-		Wallet.registerWalletType("inmem", new InMemWalletType()).get();
+		Wallet.registerWalletType(type, new InMemWalletType()).get();
 	}
 
 	@Test
 	public void testRegisterWalletTypeDoesNotWorkForTwiceWithSameName() throws Exception {
-
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletTypeAlreadyRegisteredError));
+		thrown.expectCause(isA(DuplicateWalletTypeException.class));
 
-		Wallet.registerWalletType("inmem", new InMemWalletType()).get();
+		Wallet.registerWalletType(type, new InMemWalletType()).get();
 	}
 
 	@Rule
@@ -45,25 +44,25 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
 		String walletName = "inmemWorkoutWallet";
 
-		Wallet.createWallet("default", walletName, "inmem", null, null).get();
+		Wallet.createWallet(POOL, walletName, type, null, null).get();
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 
-		String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
-		String schema = "{\"seqNo\":1,\"data\": {\"name\":\"gvt\",\"version\":\"1.0\",\"keys\":[\"age\",\"sex\",\"height\",\"name\"]}}";
-		String claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, schema, null, false).get();
+		String gvtSchemaKey = String.format(SCHEMA_KEY_TEMPLATE, "gvt", DID);
+		String xyzSchemaKey = String.format(SCHEMA_KEY_TEMPLATE, "xyz", DID_TRUSTEE);
 
-		String claimOfferTemplate = "{\"issuer_did\":\"%s\",\"schema_seq_no\":%d}";
-		Anoncreds.proverStoreClaimOffer(wallet, String.format(claimOfferTemplate, issuerDid, 1)).get();
-		Anoncreds.proverStoreClaimOffer(wallet, String.format(claimOfferTemplate, issuerDid, 2)).get();
-		String issuerDid2 = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-		Anoncreds.proverStoreClaimOffer(wallet, String.format(claimOfferTemplate, issuerDid2, 2)).get();
+		String gvtSchemaJson = String.format(SCHEMA_TEMPLATE, 1, DID, "gvt", "[\"age\",\"sex\",\"height\",\"name\"]");
+		String claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, DID, gvtSchemaJson, null, false).get();
+
+		Anoncreds.proverStoreClaimOffer(wallet, String.format(CLAIM_OFFER_TEMPLATE, DID, gvtSchemaKey)).get();
+		Anoncreds.proverStoreClaimOffer(wallet, String.format(CLAIM_OFFER_TEMPLATE, DID, xyzSchemaKey)).get();
+		Anoncreds.proverStoreClaimOffer(wallet, String.format(CLAIM_OFFER_TEMPLATE, DID_TRUSTEE, gvtSchemaKey)).get();
 
 		String masterSecretName = "master_secret_name";
 		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
 
-		String claimOffer = String.format("{\"issuer_did\":\"%s\",\"schema_seq_no\":%d}", issuerDid, 1);
+		String claimOffer = String.format(CLAIM_OFFER_TEMPLATE, DID, gvtSchemaKey);
 
-		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", claimOffer, claimDef, masterSecretName).get();
+		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, DID_MY1, claimOffer, claimDef, masterSecretName).get();
 
 		String claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
 				"                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
@@ -74,11 +73,9 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
 		String claimJson = createClaimResult.getClaimJson();
 
-		Anoncreds.proverStoreClaim(wallet, claimJson).get();
+		Anoncreds.proverStoreClaim(wallet, claimJson, null).get();
 
-		String filter = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
-
-		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
+		String claims = Anoncreds.proverGetClaims(wallet, String.format("{\"issuer_did\":\"%s\"}", DID)).get();
 
 		JSONArray claimsArray = new JSONArray(claims);
 

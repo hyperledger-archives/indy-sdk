@@ -150,17 +150,19 @@ public enum ErrorCode {
 	LedgerNoConsensusError(303),
 
 	/**
-	 * Attempt to send unknown or incomplete transaction message
-	 */
-	LedgerInvalidTransaction(304),
-	
-	/**
 	 * Attempt to send transaction without the necessary privileges
 	 */
 	LedgerSecurityError(305),
 
-	// Attempt to create pool ledger config with name used for another existing pool
+	/**
+	 * Attempt to create pool ledger config with name used for another existing pool
+	 */
 	PoolLedgerConfigAlreadyExistsError(306),
+
+	/**
+	 * Timeout for action
+	 */
+	PoolLedgerTimeout(307),
 
 	// Crypto errors
 
@@ -193,13 +195,28 @@ public enum ErrorCode {
 	 * ???
 	 */
 	AnoncredsProofRejected(405),
+	
+	/**
+	 * Attempt to use a revoked claim.
+	 */
+	AnoncredsClaimRevoked(406),
 
-	// Signus errors
+	/**
+	 * Attempt to create claim definition with duplicated did schema pair.
+	 */
+	AnoncredsClaimDefAlreadyExistsError(407),
+
+	// Crypto errors
 	
 	/**
 	 * Unknown format of DID entity keys
 	 */
-	SignusUnknownCryptoError(500);
+	UnknownCryptoTypeError(500),
+
+	/**
+	 * Attempt to create duplicate did.
+	 */
+	DidAlreadyExistsError(600);
 
 	private int value;
 	private static Map<Integer, ErrorCode> map = new HashMap<Integer, ErrorCode>();

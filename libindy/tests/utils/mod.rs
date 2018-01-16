@@ -6,11 +6,14 @@ pub mod callback;
 pub mod environment;
 
 pub mod pool;
-pub mod signus;
+pub mod crypto;
+pub mod did;
 pub mod wallet;
 pub mod ledger;
 pub mod anoncreds;
 pub mod types;
+pub mod pairwise;
+pub mod constants;
 
 #[macro_use]
 #[allow(unused_macros)]
@@ -19,15 +22,12 @@ pub mod test;
 
 #[path = "../../src/utils/timeout.rs"]
 pub mod timeout;
-pub mod agent;
 
 #[path = "../../src/utils/sequence.rs"]
 pub mod sequence;
 
-#[path = "../../src/utils/json.rs"]
-pub mod json;
-
 #[macro_use]
+#[allow(unused_macros)]
 #[path = "../../src/utils/cstring.rs"]
 pub mod cstring;
 

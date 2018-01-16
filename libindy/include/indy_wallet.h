@@ -44,15 +44,15 @@ extern "C" {
 
                                                   indy_error_t (*getFn)(indy_handle_t handle,
                                                                           const char* key,
-                                                                          const char *const *value_ptr),
+                                                                          const char ** const value_ptr),
 
-                                                  indy_error_t (*getNotExiredFn)(indy_handle_t handle,
+                                                  indy_error_t (*getNotExpiredFn)(indy_handle_t handle,
                                                                           const char* key,
-                                                                          const char *const *value_ptr),
+                                                                          const char ** const value_ptr),
 
                                                   indy_error_t (*listFn)(indy_handle_t handle,
                                                                           const char* key,
-                                                                          const char *const *values_json_ptr),
+                                                                          const char ** const values_json_ptr),
 
                                                   indy_error_t (*closeFn)(indy_handle_t handle),
                                                   indy_error_t (*deleteFn)(const char* name,
@@ -118,6 +118,11 @@ extern "C" {
                                          const char*    credentials,
                                          void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err, indy_handle_t handle)
                                         );
+
+    /// Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool
+    extern indy_error_t indy_list_wallets(indy_handle_t command_handle,
+                                          void          (*fn)(indy_handle_t xcommand_handle, indy_error_t err, const char *const wallets)
+                                          );
 
     /// Closes opened wallet and frees allocated resources.
     ///

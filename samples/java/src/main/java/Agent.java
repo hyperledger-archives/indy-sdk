@@ -1,134 +1,53 @@
-import org.hyperledger.indy.sdk.agent.Agent.Connection;
-import org.hyperledger.indy.sdk.agent.Agent.Listener;
-import org.hyperledger.indy.sdk.agent.AgentObservers.ConnectionObserver;
-import org.hyperledger.indy.sdk.agent.AgentObservers.MessageObserver;
-import org.hyperledger.indy.sdk.ledger.Ledger;
-import org.hyperledger.indy.sdk.pool.Pool;
-import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
-import org.hyperledger.indy.sdk.signus.SignusResults;
+import org.hyperledger.indy.sdk.agent.AgentResults;
+import org.hyperledger.indy.sdk.crypto.Crypto;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.junit.Assert;
-import utils.PoolUtils;
 
-import java.util.concurrent.CompletableFuture;
-
-import static org.hyperledger.indy.sdk.agent.Agent.agentConnect;
-import static org.hyperledger.indy.sdk.agent.Agent.agentListen;
-
+import static org.hyperledger.indy.sdk.agent.Agent.*;
 
 class Agent {
-
+	private static final byte[] MESSAGE = "{\"reqId\":1496822211362017764}".getBytes();
+	private static final String ALICE_WALLET = "alice_wallet";
+	private static final String BOB_WALLET = "bob_wallet";
+	private static final String POOL_NAME = "no pool";
 
 	static void demo() throws Exception {
 		System.out.println("Agent sample -> started");
 
-		String listenerWalletName = "listenerWallet";
-		String trusteeWalletName = "trusteeWallet";
-		String endpoint = "127.0.0.1:9801";
-		String message = "test";
-		String trusteeSeed = "000000000000000000000000Trustee1";
+		// 1. Create and open wallets for Alice and Bob
+		Wallet.createWallet(POOL_NAME, ALICE_WALLET, null, null, null).get();
+		Wallet aliceWallet = Wallet.openWallet(ALICE_WALLET, null, null).get();
+		Wallet.createWallet(POOL_NAME, BOB_WALLET, null, null, null).get();
+		Wallet bobWallet = Wallet.openWallet(BOB_WALLET, null, null).get();
 
+		// 2. Create keys for Alice and Bob
+		String aliceKey = Crypto.createKey(aliceWallet, "{}").get();
+		String bobKey = Crypto.createKey(bobWallet, "{}").get();
 
-		//1. Create and Open Pool
-		String poolName = PoolUtils.createPoolLedgerConfig();
-		Pool pool = Pool.openPoolLedger(poolName, "{}").get();
+		// 3. Prepare authenticated message from Alice to Bob
+		byte[] encryptedAuthMsg = prepMsg(aliceWallet, aliceKey, bobKey, MESSAGE).get();
 
-		//2. Create and Open Listener Wallet
-		Wallet.createWallet(poolName, listenerWalletName, "default", null, null).get();
-		Wallet listenerWallet = Wallet.openWallet(listenerWalletName, null, null).get();
+		// 4. Parse authenticated message on Bob's side
+		{
+			AgentResults.ParseMsgResult decryptedAuth = parseMsg(bobWallet, bobKey, encryptedAuthMsg).get();
+			Assert.assertEquals(aliceKey, decryptedAuth.getSenderKey());
+			Assert.assertArrayEquals(MESSAGE, decryptedAuth.getMessage());
+		}
 
-		//3. Create and Open Trustee Wallet
-		Wallet.createWallet(poolName, trusteeWalletName, "default", null, null).get();
-		Wallet trusteeWallet = Wallet.openWallet(trusteeWalletName, null, null).get();
-		Wallet senderWallet = trusteeWallet;
+		// 5. Prepare anonymous message from Bob to Alice
+		byte[] encryptedAnonMsg = prepAnonymousMsg(aliceKey, MESSAGE).get();
 
-		//4. Create My Did
-		SignusResults.CreateAndStoreMyDidResult createMyDidResult = Signus.createAndStoreMyDid(listenerWallet, "{}").get();
-		String listenerDid = createMyDidResult.getDid();
-		String listenerVerkey = createMyDidResult.getVerkey();
-		String listenerPk = createMyDidResult.getPk();
+		// 6. Parse anonymous message on Alice's side
+		{
+			AgentResults.ParseMsgResult decryptedAnon = parseMsg(aliceWallet, aliceKey, encryptedAnonMsg).get();
+			Assert.assertNull(decryptedAnon.getSenderKey());
+			Assert.assertArrayEquals(MESSAGE, decryptedAnon.getMessage());
+		}
 
-		//5. Create Their Did from Trustee seed
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, trusteeSeed, null, null);
-
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(trusteeWallet, trusteeDidJson.toJson()).get();
-		String trusteeDid = trusteeDidResult.getDid();
-		String senderDid = trusteeDid;
-
-		// 6. Prepare and Send NYM request with signing
-		String nymRequest = Ledger.buildNymRequest(trusteeDid, listenerDid, listenerVerkey, null, null).get();
-		Ledger.signAndSubmitRequest(pool, trusteeWallet, trusteeDid, nymRequest).get();
-
-		// 7. Prepare and Send Attrib for listener (will be requested from ledger and used by sender at start connection)
-		String attribRequest = Ledger.buildAttribRequest(listenerDid, listenerDid, null,
-				String.format("{\"endpoint\":{\"ha\":\"%s\",\"verkey\":\"%s\"}}", endpoint, listenerPk), null).get();
-		Ledger.signAndSubmitRequest(pool, listenerWallet, listenerDid, attribRequest).get();
-
-		CompletableFuture<String> clientToServerMsgFuture = new CompletableFuture<String>();
-
-		final MessageObserver messageObserver = new MessageObserver() {
-
-			public void onMessage(Connection connection, String message) {
-
-				System.out.println("Received message '" + message + "' on connection " + connection);
-			}
-		};
-
-		final MessageObserver messageObserverForIncoming = new MessageObserver() {
-
-			public void onMessage(Connection connection, String receivedMessage) {
-
-				System.out.println("Received message '" + receivedMessage + "' on incoming connection " + connection);
-
-				clientToServerMsgFuture.complete(receivedMessage);
-			}
-		};
-
-		final ConnectionObserver incomingConnectionObserver = new ConnectionObserver() {
-
-			public MessageObserver onConnection(Listener listener, Connection connection, String senderDid, String receiverDid) {
-
-				System.out.println("New connection " + connection);
-
-				return messageObserverForIncoming;
-			}
-		};
-
-		// 8. start listener on endpoint
-		Listener activeListener = agentListen(endpoint, incomingConnectionObserver).get();
-
-		// 9. Allow listener accept incoming connection for specific DID (listener_did)
-		activeListener.agentAddIdentity(pool, listenerWallet, listenerDid).get();
-
-		// 10. Initiate connection from sender to listener
-		Connection connection = agentConnect(pool, senderWallet, senderDid, listenerDid, messageObserver).get();
-
-		// 11. Send test message from sender to listener
-		connection.agentSend(message).get();
-
-		Assert.assertEquals(message, clientToServerMsgFuture.get());
-
-		// 12. Close connection
-		connection.agentCloseConnection();
-
-		// 13. Close listener
-		activeListener.agentCloseListener();
-
-		// 14. Close and delete Listener Wallet
-		listenerWallet.closeWallet().get();
-		Wallet.deleteWallet(listenerWalletName, null).get();
-
-		// 15. Close and delete Sender Wallet
-		trusteeWallet.closeWallet().get();
-		Wallet.deleteWallet(trusteeWalletName, null).get();
-
-		// 16. Close Pool
-		pool.closePoolLedger().get();
-
-		// 17. Delete Pool ledger config
-		Pool.deletePoolLedgerConfig(poolName).get();
+		aliceWallet.closeWallet();
+		bobWallet.closeWallet();
+		Wallet.deleteWallet(ALICE_WALLET, null);
+		Wallet.deleteWallet(BOB_WALLET, null);
 
 		System.out.println("Agent sample -> completed");
 	}

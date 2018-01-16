@@ -1,4 +1,5 @@
 extern crate serde_json;
+extern crate indy_crypto;
 
 use std::error;
 use std::fmt;
@@ -7,6 +8,8 @@ use errors::common::CommonError;
 
 use api::ErrorCode;
 use errors::ToErrorCode;
+
+use self::indy_crypto::errors::IndyCryptoError;
 
 #[derive(Debug)]
 pub enum AnoncredsError {
@@ -17,6 +20,7 @@ pub enum AnoncredsError {
     InvalidUserRevocIndex(String),
     AccumulatorIsFull(String),
     ClaimRevoked(String),
+    ClaimDefAlreadyExists(String),
     CommonError(CommonError)
 }
 
@@ -30,6 +34,7 @@ impl fmt::Display for AnoncredsError {
             AnoncredsError::InvalidUserRevocIndex(ref description) => write!(f, "Invalid revocation index: {}", description),
             AnoncredsError::AccumulatorIsFull(ref description) => write!(f, "Accumulator is full: {}", description),
             AnoncredsError::ClaimRevoked(ref description) => write!(f, "Claim revoked: {}", description),
+            AnoncredsError::ClaimDefAlreadyExists(ref description) => write!(f, "Claim definition already exists: {}", description),
             AnoncredsError::CommonError(ref err) => err.fmt(f)
         }
     }
@@ -45,6 +50,7 @@ impl error::Error for AnoncredsError {
             AnoncredsError::InvalidUserRevocIndex(ref description) => description,
             AnoncredsError::AccumulatorIsFull(ref description) => description,
             AnoncredsError::ClaimRevoked(ref description) => description,
+            AnoncredsError::ClaimDefAlreadyExists(ref description) => description,
             AnoncredsError::CommonError(ref err) => err.description()
         }
     }
@@ -58,6 +64,7 @@ impl error::Error for AnoncredsError {
             AnoncredsError::InvalidUserRevocIndex(ref description) => None,
             AnoncredsError::AccumulatorIsFull(ref description) => None,
             AnoncredsError::ClaimRevoked(ref description) => None,
+            AnoncredsError::ClaimDefAlreadyExists(ref description) => None,
             AnoncredsError::CommonError(ref err) => Some(err)
         }
     }
@@ -73,6 +80,7 @@ impl ToErrorCode for AnoncredsError {
             AnoncredsError::InvalidUserRevocIndex(ref description) => ErrorCode::AnoncredsInvalidUserRevocIndex,
             AnoncredsError::AccumulatorIsFull(ref description) => ErrorCode::AnoncredsAccumulatorIsFull,
             AnoncredsError::ClaimRevoked(ref description) => ErrorCode::AnoncredsClaimRevoked,
+            AnoncredsError::ClaimDefAlreadyExists(ref description) => ErrorCode::AnoncredsClaimDefAlreadyExistsError,
             AnoncredsError::CommonError(ref err) => err.to_error_code()
         }
     }
@@ -81,6 +89,18 @@ impl ToErrorCode for AnoncredsError {
 impl From<CommonError> for AnoncredsError {
     fn from(err: CommonError) -> AnoncredsError {
         AnoncredsError::CommonError(err)
+    }
+}
+
+impl From<indy_crypto::errors::IndyCryptoError> for AnoncredsError {
+    fn from(err: indy_crypto::errors::IndyCryptoError) -> Self {
+        match err {
+            IndyCryptoError::AnoncredsRevocationAccumulatorIsFull(err) => AnoncredsError::AccumulatorIsFull(err),
+            IndyCryptoError::AnoncredsProofRejected(err) => AnoncredsError::ProofRejected(err),
+            IndyCryptoError::AnoncredsInvalidRevocationAccumulatorIndex(err) => AnoncredsError::InvalidUserRevocIndex(err),
+            IndyCryptoError::AnoncredsClaimRevoked(err) => AnoncredsError::ClaimRevoked(err),
+            _ => AnoncredsError::CommonError(CommonError::InvalidStructure("Invalid error code".to_string()))
+        }
     }
 }
 

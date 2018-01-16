@@ -1,10 +1,12 @@
 package org.hyperledger.indy.sdk.pool;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
+import org.hyperledger.indy.sdk.ParamGuard;
 
 import com.sun.jna.Callback;
 
@@ -15,7 +17,7 @@ import com.sun.jna.Callback;
 /**
  * High level wrapper around SDK Pool functionality.
  */
-public class Pool extends IndyJava.API {
+public class Pool extends IndyJava.API implements AutoCloseable {
 
 	private final int poolHandle;
 
@@ -136,6 +138,8 @@ public class Pool extends IndyJava.API {
 			String configName,
 			String config) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(configName, "configName");		
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -162,6 +166,8 @@ public class Pool extends IndyJava.API {
 			String configName,
 			String config) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(configName, "configName");	
+		
 		CompletableFuture<Pool> future = new CompletableFuture<Pool>();
 		int commandHandle = addFuture(future);
 
@@ -186,6 +192,8 @@ public class Pool extends IndyJava.API {
 	private static CompletableFuture<Void> refreshPoolLedger(
 			Pool pool) throws IndyException {
 
+		ParamGuard.notNull(pool, "pool");	
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -211,6 +219,8 @@ public class Pool extends IndyJava.API {
 	private static CompletableFuture<Void> closePoolLedger(
 			Pool pool) throws IndyException {
 
+		ParamGuard.notNull(pool, "pool");	
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -236,6 +246,8 @@ public class Pool extends IndyJava.API {
 	public static CompletableFuture<Void> deletePoolLedgerConfig(
 			String configName) throws IndyException {
 
+		ParamGuard.notNullOrWhiteSpace(configName, "configName");	
+		
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);
 
@@ -275,5 +287,10 @@ public class Pool extends IndyJava.API {
 			) throws IndyException {
 
 		return closePoolLedger(this);
+	}
+
+	@Override
+	public void close() throws InterruptedException, ExecutionException, IndyException {
+		closePoolLedger().get();
 	}
 }

@@ -86,14 +86,14 @@ class ErrorCode(IntEnum):
     # No concensus during ledger operation
     LedgerNoConsensusError = 303,
 
-    # Attempt to send unknown or incomplete transaction message
-    LedgerInvalidTransaction = 304,
-
     # Attempt to send transaction without the necessary privileges
     LedgerSecurityError = 305,
 
     # Attempt to create pool ledger config with name used for another existing pool
     PoolLedgerConfigAlreadyExistsError = 306,
+
+    # Timeout for action
+    PoolLedgerTimeout = 307,
 
     # Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
@@ -109,13 +109,21 @@ class ErrorCode(IntEnum):
 
     AnoncredsProofRejected = 405,
 
-    # Signus errors
+    AnoncredsClaimRevoked = 406,
+
+    # Attempt to create claim definition with duplicated did schema pair
+    AnoncredsClaimDefAlreadyExistsError = 407,
+
+    # Crypto errors
     # Unknown format of DID entity keys
-    SignusUnknownCryptoError = 500
+    UnknownCryptoTypeError = 500,
+
+    # Attempt to create duplicate did
+    DidAlreadyExistsError = 600
 
 
 class IndyError(Exception):
-    error_code: ErrorCode
+    # error_code: ErrorCode
 
     def __init__(self, error_code: ErrorCode):
         self.error_code = error_code

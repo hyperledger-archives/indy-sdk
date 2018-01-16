@@ -1,0 +1,77 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "files": [
+            "**/Hyperledger.Indy.Sdk.dll"
+          ],
+          "src": ".",
+          "exclude": [
+            "_site/**"
+          ]
+        }
+      ],
+      "dest": "obj/api"
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [
+          "api/**.yml"
+        ],
+        "src": "obj"
+      },
+      {
+        "files": [
+          "api/*.md",
+          "toc.yml",
+          "*.md"
+        ],
+        "exclude": [
+          "obj/**",
+          "_site/**"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "images/**"
+        ],
+        "exclude": [
+          "obj/**",
+          "_site/**"
+        ]
+      }
+    ],
+    "overwrite": [
+      {
+        "files": [
+          "apidoc/**.md"
+        ],
+        "exclude": [
+          "obj/**",
+          "_site/**"
+        ]
+      }
+    ],
+    "dest": "_site",
+    "template": [
+      "default"
+    ],
+    "xref": [
+      "msdn.4.5.2.zip"
+    ],
+    "globalMetadata": {
+      "_appLogoPath": "images/hyperledger_logo.png",
+      "_appFaviconPath": "images/favicon.png",
+      "_appTitle": "Hyperledger Indy .NET Wrapper",
+      "_appFooter": "Copyright &copy; 2017 The Linux Foundation&reg;",
+      "_enableNewTab": true,
+      "_disableContribution": true,
+      "_enableSearch": true
+    }
+  }
+}

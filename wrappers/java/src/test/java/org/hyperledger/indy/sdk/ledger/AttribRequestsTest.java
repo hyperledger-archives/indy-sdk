@@ -1,74 +1,46 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
-import org.hyperledger.indy.sdk.IndyIntegrationTest;
-import org.hyperledger.indy.sdk.pool.Pool;
-import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
-import org.hyperledger.indy.sdk.signus.SignusResults;
-import org.hyperledger.indy.sdk.utils.PoolUtils;
-import org.hyperledger.indy.sdk.wallet.Wallet;
+import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
+import org.hyperledger.indy.sdk.InvalidStructureException;
+import org.hyperledger.indy.sdk.did.Did;
+import org.hyperledger.indy.sdk.did.DidResults;
 import org.json.JSONObject;
 import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
 
+import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class AttribRequestsTest extends IndyIntegrationTest {
+public class AttribRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
-	private Pool pool;
-	private Wallet wallet;
-	private String walletName = "ledgerWallet";
-	private String identifier = "Th7MpTaRZVRYnPiabds81Y";
-	private String dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
 	private String endpoint = "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}";
-
-	@Before
-	public void openPool() throws Exception {
-		String poolName = PoolUtils.createPoolLedgerConfig();
-		pool = Pool.openPoolLedger(poolName, null).get();
-
-		Wallet.createWallet(poolName, walletName, "default", null, null).get();
-		wallet = Wallet.openWallet(walletName, null, null).get();
-	}
-
-	@After
-	public void closePool() throws Exception {
-		pool.closePoolLedger().get();
-		wallet.closeWallet().get();
-		Wallet.deleteWallet(walletName, null).get();
-	}
 
 	@Test
 	public void testBuildAttribRequestWorksForRawData() throws Exception {
-
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{" +
 				"\"type\":\"100\"," +
 				"\"dest\":\"%s\"," +
 				"\"raw\":\"%s\"" +
-				"}", identifier, dest, endpoint);
+				"}", DID_TRUSTEE, DID_TRUSTEE, endpoint);
 
-		String attribRequest = Ledger.buildAttribRequest(identifier, dest, null, endpoint, null).get();
+		String attribRequest = Ledger.buildAttribRequest(DID_TRUSTEE, DID_TRUSTEE, null, endpoint, null).get();
 
 		assertTrue(attribRequest.replace("\\", "").contains(expectedResult));
 	}
 
 	@Test
 	public void testBuildAttribRequestWorksForMissedAttribute() throws Exception {
-
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Ledger.buildAttribRequest(identifier, dest, null, null, null).get();
+		Ledger.buildAttribRequest(DID_TRUSTEE, DID_TRUSTEE, null, null, null).get();
 	}
 
 	@Test
 	public void testBuildGetAttribRequestWorks() throws Exception {
-
 		String raw = "endpoint";
 
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
@@ -76,39 +48,29 @@ public class AttribRequestsTest extends IndyIntegrationTest {
 				"\"type\":\"104\"," +
 				"\"dest\":\"%s\"," +
 				"\"raw\":\"%s\"" +
-				"}", identifier, dest, raw);
+				"}", DID_TRUSTEE, DID_TRUSTEE, raw);
 
-		String getAttribRequest = Ledger.buildGetAttribRequest(identifier, dest, raw).get();
+		String getAttribRequest = Ledger.buildGetAttribRequest(DID_TRUSTEE, DID_TRUSTEE, raw).get();
 
 		assertTrue(getAttribRequest.contains(expectedResult));
 	}
 
 	@Test
 	public void testSendAttribRequestWorksWithoutSignature() throws Exception {
-
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.LedgerInvalidTransaction));
-
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
-
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
+		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
-		String attribRequest = Ledger.buildAttribRequest(trusteeDid, trusteeDid, null, endpoint, null).get();
-		Ledger.submitRequest(pool, attribRequest).get();
+		String attribRequest = Ledger.buildAttribRequest(trusteeDidResult.getDid(), trusteeDid, null, endpoint, null).get();
+		String response = Ledger.submitRequest(pool, attribRequest).get();
+		checkResponseType(response,"REQNACK" );
 	}
 
 	@Test
 	public void testAttribRequestsWorks() throws Exception {
-
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter trusteeDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
-
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, trusteeDidJson.toJson()).get();
+		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
-		SignusResults.CreateAndStoreMyDidResult myDidResult = Signus.createAndStoreMyDid(wallet, "{}").get();
+		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
 		String myDid = myDidResult.getDid();
 		String myVerkey = myDidResult.getVerkey();
 
@@ -128,10 +90,9 @@ public class AttribRequestsTest extends IndyIntegrationTest {
 
 	@Test
 	public void testBuildAttribRequestWorksForInvalidIdentifier() throws Exception {
-
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Ledger.buildAttribRequest("invalid_base58_identifier", dest, null, endpoint, null).get();
+		Ledger.buildAttribRequest("invalid_base58_identifier", DID_TRUSTEE, null, endpoint, null).get();
 	}
 }

@@ -1,8 +1,10 @@
 package org.hyperledger.indy.sdk.anoncreds;
 
-import org.hyperledger.indy.sdk.ErrorCode;
-import org.hyperledger.indy.sdk.ErrorCodeMatcher;
+import org.hyperledger.indy.sdk.InvalidStructureException;
+import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.isA;
 
 import java.util.concurrent.ExecutionException;
 
@@ -12,10 +14,7 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 	public void testProverCreateAndStoreClaimReqWorks() throws Exception {
 
 		initCommonWallet();
-
-		String claimOffer = String.format(claimOfferTemplate, issuerDid, 1);
-
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, gvtClaimOffer, claimDef, masterSecretName).get();
 	}
 
 	@Test
@@ -24,22 +23,9 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 		initCommonWallet();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String claimOffer = String.format(claimOfferTemplate, "acWziYqKpYi6ov5FcYDi1e3", 1);
-
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
-	}
-
-	@Test
-	public void testProverCreateAndStoreClaimReqWorksForClaimDefDoesNotCorrespondToClaimOfferDifferentSchema() throws Exception {
-
-		initCommonWallet();
-
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
-
-		String claimOffer = String.format(claimOfferTemplate, issuerDid, 2);
+		String claimOffer = String.format(claimOfferTemplate, issuerDid + "a", 1);
 
 		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
 	}
@@ -50,7 +36,7 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 		initCommonWallet();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.CommonInvalidStructure));
+		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String claimOffer = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
 
@@ -63,10 +49,8 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 		initCommonWallet();
 
 		thrown.expect(ExecutionException.class);
-		thrown.expectCause(new ErrorCodeMatcher(ErrorCode.WalletNotFoundError));
+		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		String claimOffer = String.format(claimOfferTemplate, issuerDid, 1);
-
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, "other_master_secret").get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, gvtClaimOffer, claimDef, masterSecretName + "a").get();
 	}
 }

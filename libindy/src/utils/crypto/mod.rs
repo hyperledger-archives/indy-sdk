@@ -1,18 +1,10 @@
-#[cfg(feature = "bn_openssl")]
-#[path = "bn/openssl.rs"]
-pub mod bn;
-
-#[cfg(feature = "ed25519_sodium")]
-#[path = "ed25519/sodium.rs"]
-pub mod ed25519;
+#[cfg(feature = "box_sodium")]
+#[path = "box_/sodium.rs"]
+pub mod box_;
 
 #[cfg(feature = "base58_rust_base58")]
 #[path = "base58/rust_base58.rs"]
 pub mod base58;
-
-#[cfg(feature = "pair_amcl")]
-#[path = "pair/amcl.rs"]
-pub mod pair;
 
 #[cfg(feature = "xsalsa20_sodium")]
 #[path = "xsalsa20/sodium.rs"]
@@ -25,3 +17,7 @@ pub mod hash;
 pub mod signature_serializer;
 
 pub mod verkey_builder;
+
+#[cfg(feature = "sealedbox_sodium")]
+#[path = "sealedbox/sodium.rs"]
+pub mod sealedbox;
