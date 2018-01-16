@@ -1,11 +1,26 @@
-FROM jupyter/base-notebook:latest
+FROM ubuntu:16.04
 
-USER root
+RUN useradd -ms /bin/bash indy
 
-RUN apt-get update \
-    && apt-get install -y \
-    software-properties-common \
-    apt-transport-https
+# Install environment
+RUN apt-get update -y && apt-get install -y \
+	wget \
+	python3.5 \
+	python3-pip \
+	python-setuptools \
+	ipython \
+	ipython-notebook \
+	apt-transport-https \
+	ca-certificates \
+	software-properties-common
+
+WORKDIR /home/indy
+
+RUN pip3 install -U \
+	pip \
+	setuptools \
+	jupyter \
+	python3-indy==1.1.1-dev-306
 
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 \
     && add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial master" \
@@ -13,6 +28,6 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 \
     && apt-get install -y \
     libindy
 
-USER $NB_USER
+USER indy
 
-RUN pip install python3-indy
+EXPOSE 8888
