@@ -73,7 +73,7 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 
 		String schema = "{\n" +
 				"                    \"seqNo\":1,\n" +
-				"                    \"identifier\":\"NcYxiDXkpYi6ov5FcYDi1e\",\n" +
+				"                    \"dest\":\"NcYxiDXkpYi6ov5FcYDi1e\",\n" +
 				"                    \"data\": {\n" +
 				"                        \"name\":\"gvt\",\n" +
 				"                        \"version\":\"1.0\",\n" +

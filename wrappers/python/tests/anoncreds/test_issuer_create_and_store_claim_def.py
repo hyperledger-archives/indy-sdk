@@ -7,7 +7,7 @@ from indy.error import ErrorCode, IndyError
 
 schema = {
     "seqNo": 1,
-    "identifier": 'CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW',
+    "dest": 'CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW',
     "data": {
         "name": "",
         "version": "1.0",

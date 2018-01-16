@@ -49,7 +49,7 @@ public class IndyIntegrationTest {
 	protected String CLAIM_OFFER_TEMPLATE = "{\"issuer_did\":\"%s\", \"schema_key\":%s}";
 	protected String SCHEMA_TEMPLATE = "{\n" +
 			"                    \"seqNo\":%d,\n" +
-			"                    \"identifier\":\"%s\",\n" +
+			"                    \"dest\":\"%s\",\n" +
 			"                    \"data\": {\n" +
 			"                        \"name\":\"%s\",\n" +
 			"                        \"version\":\"1.0\",\n" +
