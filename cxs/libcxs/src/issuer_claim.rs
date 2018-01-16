@@ -13,7 +13,6 @@ use messages::GeneralMessage;
 use messages::MessageResponseCode::{ MessageAccepted };
 use connection;
 use claim_request::ClaimRequest;
-use utils::issuer_claim::CLAIM_REQ_STRING;
 use self::libc::c_char;
 use utils::callback::CallbackUtils;
 use std::sync::mpsc::channel;
@@ -28,19 +27,8 @@ lazy_static! {
     static ref ISSUER_CLAIM_MAP: Mutex<HashMap<u32, Box<IssuerClaim>>> = Default::default();
 }
 
-static DEFAULT_CLAIM_NAME: &str = "Claim";
-static DEFAULT_CLAIM_ID: &str = "defaultClaimId";
 static CLAIM_OFFER_ID_KEY: &str = "claim_offer_id";
-static MESSAGE_TYPE_KEY: &str = "msg_type";
-static MESSAGE_TYPE_CLAIM: &str = "claim";
-static MESSAGES_KEY: &str = "msgs";
-static CLAIM_DATA: &str =
-    r#"{"address2":["101 Wilson Lane"],
-        "zip":["87121"],
-        "state":["UT"],
-        "city":["SLC"],
-        "address1":["101 Tela Lane"]
-        }"#;
+
 extern {
     fn indy_issuer_create_and_store_claim_def(command_handle: i32,
                                               wallet_handle: i32,
@@ -241,9 +229,6 @@ impl IssuerClaim {
                     return Err(error::INVALID_JSON.code_num)
                 }
             };
-            //          FIXME This is hardcode but should have logic for finding strings and integers and
-            //          doing a real encoding (sha256)
-            //            let encoded = serde_json::Value::from("1139481716457488690172217916278103335");
             let i = list[0].clone();
             let value = match i.as_str(){
                 Some(v) => v,
@@ -293,29 +278,6 @@ impl IssuerClaim {
     fn set_claim_request(&mut self, claim_request:&ClaimRequest){
         self.claim_request = Some(claim_request.clone());
     }
-    pub fn create_standard_issuer_claim() -> Result<IssuerClaim, u32> {
-        let claim_req:ClaimRequest = ClaimRequest::from_str(CLAIM_REQ_STRING).unwrap();
-        let issuer_claim = IssuerClaim {
-            handle: 123,
-            source_id: "standard_claim".to_owned(),
-            schema_seq_no: 103,
-            msg_uid: "1234".to_owned(),
-            claim_attributes: CLAIM_DATA.to_owned(),
-            issuer_did: "QTrbV4raAcND4DWWzBmdsh".to_owned(),
-            state: CxsStateType::CxsStateOfferSent,
-            claim_request: Some(claim_req),
-            claim_name: "Claim".to_owned(),
-            claim_id: String::from(DEFAULT_CLAIM_ID),
-            ref_msg_id: String::new(),
-            issued_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
-            issued_vk: String::new(),
-            remote_did: String::new(),
-            remote_vk: String::new(),
-            agent_did: String::new(),
-            agent_vk: String::new(),
-        };
-        Ok(issuer_claim)
-    }
 
     fn generate_claim_offer(&self, to_did: &str) -> Result<ClaimOffer, u32> {
         let attr_map = convert_to_map(&self.claim_attributes)?;
@@ -342,7 +304,6 @@ pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRe
     let cb = Box::new(move |err, revoc_reg_update_json, xclaim_json| {
         sender.send((err, revoc_reg_update_json, xclaim_json)).unwrap();
     });
-    info!("wallet_handle: {}", wallet_handle);
     let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_cb(cb);
 
     let claim_req_master_secret = match claim_req.blinded_ms.clone() {
@@ -584,8 +545,11 @@ mod tests {
     use utils::issuer_claim::tests::{put_claim_def_in_issuer_wallet, create_default_schema};
     use claim_request::ClaimRequest;
     use utils::constants::*;
+    use utils::issuer_claim::CLAIM_REQ_STRING;
     use super::*;
 
+    static DEFAULT_CLAIM_NAME: &str = "Claim";
+    static DEFAULT_CLAIM_ID: &str = "defaultClaimId";
     static SCHEMA: &str = r#"{{
                             "seqNo":32,
                             "data":{{
@@ -921,22 +885,6 @@ mod tests {
             },
             Err(e) => assert_eq!(error::INVALID_JSON.code_num, e),
         }
-    }
-
-    #[test]
-    fn test_claim_offer_has_proper_fields_for_sending_message() {
-        static CORRECT_CLAIM_OFFER_PAYLOAD: &str = r#"{"msg_type":"CLAIM_OFFER","version":"0.1","to_did":"BnRXf8yDMUwGyZVDkSENeq","from_did":"GxtnGN6ypZYgEqcftSQFnC","iid":"cCanHnpFAD","mid":"","claim":{"name":["Alice"],"date_of_birth":["2000-05-17"],"height":["175"]},"schema_seq_no":103,"issuer_did":"V4SGRU86Z58d6TV7PBUe6f","nonce":"351590","claim_name":"Profiledetail","issuer_name":"TestEnterprise","optional_data":{"terms_of_service":"<Largeblockoftext>","price":6}}"#;
-        let to_did_from_connection = "E7pKs2CKAtKQQE3z3rmx8C";
-        let issuer_claim = IssuerClaim::create_standard_issuer_claim().unwrap();
-        assert_eq!(issuer_claim.claim_name, DEFAULT_CLAIM_NAME);
-        let claim_offer_payload = issuer_claim.generate_claim_offer(&to_did_from_connection).unwrap();
-        assert_eq!(claim_offer_payload.schema_seq_no, 103);
-        assert_eq!(claim_offer_payload.claim_name, issuer_claim.claim_name);
-        assert_eq!(claim_offer_payload.version, "0.1");
-        assert_eq!(claim_offer_payload.from_did, issuer_claim.issued_did);
-        assert_eq!(claim_offer_payload.issuer_did, issuer_claim.issuer_did);
-        assert_eq!(claim_offer_payload.msg_type, "CLAIM_OFFER");
-        assert_eq!(claim_offer_payload.claim, convert_to_map(&issuer_claim.claim_attributes).unwrap());
     }
 
     #[test]

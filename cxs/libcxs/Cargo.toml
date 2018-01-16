@@ -33,7 +33,7 @@ openssl = "0.9"
 
 [dev-dependencies]
 tempfile = "2.2"
-rusqlite = "0.13.0"
+rusqlcipher = "0.14.6"
 
 [package.metadata.deb]
 maintainer = "Mark Hadley<mark.hadley@evernym.com>, Devin Fisher, Ryan Marsh, Doug Wightman"
@@ -49,4 +49,3 @@ assets = [
 ]
 maintainer-scripts = "./scripts"
 
-#rusqlcipher = "0.14.6"

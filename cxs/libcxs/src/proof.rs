@@ -49,7 +49,6 @@ struct Proof {
     requested_predicates: String,
     msg_uid: String,
     ref_msg_id: String,
-    requester_did: String,
     prover_did: String,
     prover_vk: String,
     state: CxsStateType,
@@ -184,15 +183,13 @@ impl Proof {
             warn!("proof {} has invalid state {} for sending proofRequest", self.handle, self.state as u32);
             return Err(error::NOT_READY.code_num);
         }
-        self.requester_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT)?;
         self.prover_did = connection::get_pw_did(connection_handle)?;
         self.agent_did = connection::get_agent_did(connection_handle)?;
         self.agent_vk = connection::get_agent_verkey(connection_handle)?;
         self.remote_vk = connection::get_their_pw_verkey(connection_handle)?;
         self.prover_vk = connection::get_pw_verkey(connection_handle)?;
 
-        debug!("requester_did: {} -- prover_did: {} -- agent_did: {} -- agent_vk: {} -- remote_vk: {} -- prover_vk: {}",
-               self.requester_did,
+        debug!("prover_did: {} -- agent_did: {} -- agent_vk: {} -- remote_vk: {} -- prover_vk: {}",
                self.prover_did,
                self.agent_did,
                self.agent_vk,
@@ -303,7 +300,6 @@ pub fn create_proof(source_id: Option<String>,
         ref_msg_id: String::new(),
         requested_attrs,
         requested_predicates,
-        requester_did: String::new(),
         prover_did: String::new(),
         prover_vk: String::new(),
         state: CxsStateType::CxsStateNone,
@@ -469,7 +465,7 @@ mod tests {
 
     use super::*;
     use connection::build_connection;
-    static DEFAULT_PROOF_STR: &str = r#"{"source_id":"","handle":486356518,"requested_attrs":"[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]","requested_predicates":"[{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\"}]","msg_uid":"","ref_msg_id":"","requester_did":"","prover_did":"","state":1,"proof_state":0,"tid":0,"mid":0,"name":"Optional","version":"1.0","nonce":"1067639606","proof_offer":null}"#;
+    static DEFAULT_PROOF_STR: &str = r#"{"source_id":"","handle":486356518,"requested_attrs":"[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]","requested_predicates":"[{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\"}]","msg_uid":"","ref_msg_id":"","prover_did":"","state":1,"proof_state":0,"tid":0,"mid":0,"name":"Optional","version":"1.0","nonce":"1067639606","proof_offer":null}"#;
     static REQUESTED_ATTRS: &'static str = "[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]";
     static REQUESTED_PREDICATES: &'static str = "[{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\"}]";
 
@@ -641,7 +637,6 @@ mod tests {
             ref_msg_id: String::new(),
             requested_attrs: String::from("[]"),
             requested_predicates:String::from("[]"),
-            requester_did: String::new(),
             prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
             prover_vk: VERKEY.to_string(),
             state: CxsStateType::CxsStateOfferSent,
@@ -752,7 +747,6 @@ mod tests {
             ref_msg_id: String::new(),
             requested_attrs: String::from("[]"),
             requested_predicates:String::from("[]"),
-            requester_did: String::new(),
             prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
             prover_vk: VERKEY.to_string(),
             state: CxsStateType::CxsStateOfferSent,

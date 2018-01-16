@@ -22,8 +22,8 @@ extern crate lazy_static;
 
 #[macro_use]
 pub mod utils;
-mod settings;
-mod messages;
+pub mod settings;
+pub mod messages;
 
 use std::path::Path;
 

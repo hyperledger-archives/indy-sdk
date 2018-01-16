@@ -167,9 +167,9 @@ fn demo(){
     let (command_handle, cb) = closure_to_connect_cb(Box::new(move|err|{sender.send(err).unwrap();}));
 //    let pphone_number = "8014710072";
 //    let lphone_number = "8017900625";
-//    let phone_number = "8017170266";
-//    let connection_opt = json!({"phone":phone_number});
-    let connection_opt = String::from("");
+    let phone_number = "2053863441";
+    let connection_opt = json!({"phone":phone_number});
+    //let connection_opt = String::from("");
     let rc = api::connection::cxs_connection_connect(command_handle,
                                                      connection_handle,
                                                      CString::new(connection_opt.to_string()).unwrap().into_raw(),cb);

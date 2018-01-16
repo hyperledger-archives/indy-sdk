@@ -1,5 +1,5 @@
-//extern crate rusqlcipher;
-extern crate rusqlite;
+extern crate cxs;
+extern crate rusqlcipher;
 
 use std::env::home_dir;
 
@@ -36,21 +36,37 @@ static ENTRIES: &[[&str;3];6] = &[
         "2018-01-04 22:46:18"
     ]
 ];
+
 #[ignore]
 #[test]
 fn test_putting_claim_def_dependencies() {
-    use std::path::Path;
-    //use self::rusqlcipher::Connection;
-    use rusqlite::Connection;
-    let home = home_dir().unwrap();
-    let indy = Path::new(".indy_client/wallet/my_real_wallet/sqlite.db");
-    let path = home.join(indy);
-    let connection = Connection::open(path.as_path()).unwrap();
 
-    //connection.execute(&format!("PRAGMA key='pass'"), &[]).unwrap();
+    use std::path::Path;
+    use self::rusqlcipher::Connection;
+
+    ::cxs::utils::logger::LoggerUtils::init();
+    ::cxs::settings::set_defaults();
+    let wallet_key = String::from("");
+    let home = home_dir().unwrap();
+    let wallet_name = "my_real_wallet";
+    let wallet_dir = format!(".indy_client/wallet/{}/sqlite.db", wallet_name);
+    let wallet_dir = Path::new(&wallet_dir);
+    let wallet_db = home.join(wallet_dir);
+
+    if wallet_key.len() > 0 {
+        ::cxs::settings::set_config_value(::cxs::settings::CONFIG_WALLET_KEY, &wallet_key);
+    }
+
+    ::cxs::utils::wallet::init_wallet(wallet_name).unwrap();
+
+    let connection = Connection::open(wallet_db.as_path()).unwrap();
+
+    if wallet_key.len() > 0 {
+        connection.execute(&format!("PRAGMA key='{}'", wallet_key), &[]).unwrap();
+    }
 
     for entry in ENTRIES {
-        connection.execute("INSERT INTO wallet VALUES (?,?,?)", &[&entry[0].to_string(),&entry[1].to_string(),&entry[2].to_string()]).unwrap();
+        connection.execute("INSERT OR REPLACE INTO wallet VALUES (?,?,?)", &[&entry[0].to_string(),&entry[1].to_string(),&entry[2].to_string()]).unwrap();
     }
 
 }

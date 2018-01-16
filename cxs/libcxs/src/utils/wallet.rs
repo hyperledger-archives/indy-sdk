@@ -84,7 +84,7 @@ pub fn init_wallet(wallet_name: &str) -> Result<i32, u32> {
     let wallet_name = CString::new(wallet_name).unwrap();
     let mut use_key = false;
     let credentials = match settings::get_wallet_credentials() {
-        Some(x) => {use_key = true; CString::new(x).unwrap() },
+        Some(x) => {info!("using key for indy wallet"); use_key = true; CString::new(x).unwrap() },
         None => CString::new("").unwrap(),
     };
 
