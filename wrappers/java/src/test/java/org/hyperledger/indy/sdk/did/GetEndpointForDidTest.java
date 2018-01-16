@@ -21,7 +21,7 @@ public class GetEndpointForDidTest extends IndyIntegrationTestWithPoolAndSingleW
 		assertEquals(VERKEY, receivedEndpoint.getTransportKey());
 	}
 
-	@Test
+	@Test(timeout = 10_000)
 	public void testGetEndpointForDidWorksFromLedger() throws Exception {
 		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
@@ -31,6 +31,8 @@ public class GetEndpointForDidTest extends IndyIntegrationTestWithPoolAndSingleW
 
 		String attribRequest = Ledger.buildAttribRequest(trusteeDid, trusteeDid, null, endpoint, null).get();
 		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, attribRequest).get();
+
+		Thread.sleep(5_000);
 
 		DidResults.EndpointForDidResult receivedEndpoint = Did.getEndpointForDid(wallet, pool, trusteeDid).get();
 		assertEquals(ENDPOINT, receivedEndpoint.getAddress());

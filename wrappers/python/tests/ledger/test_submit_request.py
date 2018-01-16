@@ -1,5 +1,6 @@
 import json
 import datetime
+import time
 
 import pytest
 
@@ -197,6 +198,8 @@ async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_tru
         "name": "gvt2",
         "version": "2.0"
     }
+
+    time.sleep(5)
 
     get_schema_request = await ledger.build_get_schema_request(my_did, my_did, json.dumps(get_schema_data))
     get_schema_response = json.loads(await ledger.submit_request(pool_handle, get_schema_request))
