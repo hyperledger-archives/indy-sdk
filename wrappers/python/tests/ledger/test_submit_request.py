@@ -227,13 +227,14 @@ async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_tru
     claim_def_request = await ledger.build_claim_def_txn(
         my_did, get_schema_response['result']['seqNo'], "CL", json.dumps(claim_def))
 
+    claim_def["revocation"] = {}  # FIXME workaround for ledger
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, claim_def_request)
     get_claim_def_request = await ledger.build_get_claim_def_txn(
         my_did, get_schema_response['result']['seqNo'], "CL", get_schema_response['result']['dest'])
-    get_claim_def_response = json.loads(
-        (await ledger.submit_request(pool_handle, get_claim_def_request)))
-    claim_def["revocation"] = {}  # FIXME workaround for ledger
-    assert claim_def == get_claim_def_response['result']['data']
+    get_claim_def_response = await ensure_previous_request_applied(pool_handle, get_claim_def_request,
+                                                                   lambda response:
+                                                                   claim_def == response['result']['data'])
+    assert get_claim_def_response
 
 
 @pytest.mark.asyncio
