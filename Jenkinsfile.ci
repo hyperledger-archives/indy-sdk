@@ -238,14 +238,12 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
 
         sh "cp libindy/target/debug/libindy.so cli"
         dir('cli') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name} -u 0:0") {
-                sh "cp libindy.so /usr/lib"
-
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Indy Cli Test: Build"
-                sh "RUST_BACKTRACE=1 cargo test --no-run"
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
 
                 echo "${env_name} Indy Cli Test: Run tests"
-                sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
             }
         }
     }
@@ -316,3 +314,4 @@ def setupBrewPackages() {
     sh "brew switch libsodium 1.0.12"
     sh "brew switch openssl 1.0.2l"
 }
+
