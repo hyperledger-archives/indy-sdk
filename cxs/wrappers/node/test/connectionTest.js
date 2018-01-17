@@ -98,7 +98,7 @@ describe('A Connection object with ', function () {
     try {
       await Connection.deserialize({source_id: 'Invalid'})
     } catch (error) {
-      assert.equal(error.toString(), 'Error: cxs_connection_deserialize -> 1001')
+      assert.equal(error.toString(), 'Error: cxs_connection_deserialize -> 1016')
     }
   })
 

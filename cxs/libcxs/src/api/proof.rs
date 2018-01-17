@@ -53,7 +53,7 @@ pub extern fn cxs_proof_create(command_handle: u32,
         let ( rc, handle) = match proof::create_proof(
             source_id_opt, requested_attrs, requested_predicates, name) {
             Ok(x) => (error::SUCCESS.code_num, x),
-            Err(_) => (error::UNKNOWN_ERROR.code_num, 0),
+            Err(x) => (x, 0),
         };
 
         cb(command_handle, rc, handle);

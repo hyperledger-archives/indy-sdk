@@ -69,7 +69,7 @@ pub extern fn cxs_connection_connect(command_handle:u32,
     }
 
     let options = if !connection_options.is_null() {
-        check_useful_opt_c_str!(connection_options, error::UNKNOWN_ERROR.code_num);
+        check_useful_opt_c_str!(connection_options, error::INVALID_OPTION.code_num);
         connection_options.to_owned()
     }
     else {
@@ -150,7 +150,7 @@ pub extern fn cxs_connection_deserialize(command_handle: u32,
     thread::spawn(move|| {
         let (rc, handle) = match from_string(&connection_data) {
             Ok(x) => (error::SUCCESS.code_num, x),
-            Err(_) => (error::UNKNOWN_ERROR.code_num, 0),
+            Err(x) => (x, 0),
         };
 
         cb(command_handle, rc, handle);

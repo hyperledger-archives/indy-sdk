@@ -58,7 +58,7 @@ pub extern fn cxs_init (command_handle: u32,
     ::utils::logger::LoggerUtils::init();
 
     if !config_path.is_null() {
-        check_useful_c_str!(config_path,error::UNKNOWN_ERROR.code_num);
+        check_useful_c_str!(config_path,error::INVALID_OPTION.code_num);
 
         if config_path == "ENABLE_TEST_MODE" {
             settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
@@ -81,7 +81,7 @@ pub extern fn cxs_init (command_handle: u32,
 
     if wallet::get_wallet_handle() > 0 {
         error!("Library was already initialized");
-        return error::UNKNOWN_ERROR.code_num;
+        return error::ALREADY_INITIALIZED.code_num;
     }
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
@@ -284,7 +284,7 @@ mod tests {
     fn test_init_bad_path() {
         use utils::libindy::pool::get_pool_handle;
         let empty_str = CString::new("").unwrap().into_raw();
-        assert_eq!(error::UNKNOWN_ERROR.code_num,cxs_init(0,empty_str,Some(init_cb)));
+        assert_eq!(error::INVALID_OPTION.code_num,cxs_init(0,empty_str,Some(init_cb)));
 
         match get_pool_handle() {
             Ok(h) => {pool::close(h).unwrap();},

@@ -255,7 +255,7 @@ pub mod tests {
         let tmp_string = "garbage.txt";
         match process_config_file(&tmp_string) {
             Err(x) => assert_eq!(x,"could not find configuration file"),
-            Ok(x) => assert_eq!(x,error::UNKNOWN_ERROR.code_num),  //if test gets here it will fail
+            Ok(x) => assert_eq!(x,error::INVALID_CONFIGURATION.code_num),  //if test gets here it will fail
         }
     }
 
@@ -282,7 +282,7 @@ pub mod tests {
 
         match process_config_file(&config_path) {
             Err(_) => println!("expected invalid setting"),
-            Ok(v) => assert_eq!(v, error::UNKNOWN_ERROR.code_num), //fail if we get here
+            Ok(v) => assert_eq!(v, error::INVALID_CONFIGURATION.code_num), //fail if we get here
         }
 
         match get_config_value(&a) {

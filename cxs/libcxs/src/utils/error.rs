@@ -48,6 +48,9 @@ pub static INVALID_CLAIM_DEF_HANDLE: Error = Error{code_num: 1037, message: "Cla
 pub static TIMEOUT_LIBINDY_ERROR: Error = Error{code_num: 1038, message: "Waiting for callback timed out"};
 pub static CLAIM_DEF_ALREADY_CREATED: Error = Error{code_num: 1039, message: "Can't create, Claim Def already on ledger"};
 pub static INVALID_SCHEMA_SEQ_NO: Error = Error{code_num: 1040, message: "No Schema for that schema sequence number"};
+pub static ALREADY_INITIALIZED: Error = Error{code_num: 1041, message: "Library already initialized"};
+pub static INVALID_INVITE_DETAILS: Error = Error{code_num: 1042, message: "Invalid invite details structure"};
+pub static INVALID_MASTER_SECRET: Error = Error{code_num: 1043, message: "Invalid master secret"};
 
 lazy_static! {
     static ref ERROR_MESSAGES: HashMap<u32, &'static str> = {
@@ -93,6 +96,9 @@ lazy_static! {
         insert_message(&mut m, &INVALID_CLAIM_DEF_HANDLE);
         insert_message(&mut m, &CLAIM_DEF_ALREADY_CREATED);
         insert_message(&mut m, &INVALID_SCHEMA_SEQ_NO);
+        insert_message(&mut m, &ALREADY_INITIALIZED);
+        insert_message(&mut m, &INVALID_INVITE_DETAILS);
+        insert_message(&mut m, &INVALID_MASTER_SECRET);
         m
     };
 }
@@ -281,6 +287,21 @@ mod tests {
     #[test]
     fn test_no_schema_no() {
         assert_eq!(error_message(&INVALID_SCHEMA_SEQ_NO.code_num), INVALID_SCHEMA_SEQ_NO.message);
+    }
+
+    #[test]
+    fn test_already_initialized() {
+        assert_eq!(error_message(&ALREADY_INITIALIZED.code_num), ALREADY_INITIALIZED.message);
+    }
+
+    #[test]
+    fn test_invalid_invite_details() {
+        assert_eq!(error_message(&INVALID_INVITE_DETAILS.code_num), INVALID_INVITE_DETAILS.message);
+    }
+
+    #[test]
+    fn test_invalid_master_secret() {
+        assert_eq!(error_message(&INVALID_MASTER_SECRET.code_num), INVALID_MASTER_SECRET.message);
     }
 }
 

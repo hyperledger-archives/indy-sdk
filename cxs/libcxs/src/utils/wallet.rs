@@ -100,13 +100,15 @@ pub fn init_wallet(wallet_name: &str) -> Result<i32, u32> {
 
         // ignore 203 - wallet already exists
         if err != 203 && err != 0 {
-            return Err(error::UNKNOWN_ERROR.code_num);
+            warn!("libindy create wallet returned: {}", err);
+            return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
         }
 
         let err = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
 
         if err != 203 && err != 0 {
-            return Err(error::UNKNOWN_ERROR.code_num);
+            warn!("libindy create wallet returned: {}", err);
+            return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
         }
 
         let err =
@@ -117,12 +119,14 @@ pub fn init_wallet(wallet_name: &str) -> Result<i32, u32> {
                              open_cb);
 
         if err != 206 && err != 0 {
+            warn!("libindy open wallet returned: {}", err);
             return Err(err as u32);
         }
 
         let (err, wallet_handle) = open_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
 
         if err != 206 && err != 0 {
+            warn!("libindy open wallet returned: {}", err);
             return Err(err as u32);
         }
 
@@ -245,10 +249,11 @@ pub mod tests {
 
     #[test]
     fn test_wallet() {
+        settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         let wallet_name = String::from("walletUnique");
         assert!(init_wallet(&wallet_name).unwrap() > 0);
-        assert_eq!(error::UNKNOWN_ERROR.code_num, init_wallet(&String::from("")).unwrap_err());
+        assert_eq!(error::UNKNOWN_LIBINDY_ERROR.code_num, init_wallet(&String::from("")).unwrap_err());
 
         thread::sleep(Duration::from_secs(1));
         delete_wallet("walletUnique").unwrap();

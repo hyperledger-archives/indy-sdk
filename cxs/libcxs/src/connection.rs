@@ -327,7 +327,7 @@ pub fn build_connection(source_id: String) -> Result<u32,u32> {
         Err(x) => {
             error!("could not create DID/VK: {}", x);
             release(new_handle);
-            return Err(error::UNKNOWN_ERROR.code_num);
+            return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
         },
     };
 
@@ -339,7 +339,7 @@ pub fn build_connection(source_id: String) -> Result<u32,u32> {
         Err(x) => {
             error!("could not create pairwise key on agent: {}", x);
             release(new_handle);
-            return Err(error::UNKNOWN_ERROR.code_num);
+            return Err(x);
         },
         Ok(_) => info!("created pairwise key on agent"),
     };
@@ -348,7 +348,7 @@ pub fn build_connection(source_id: String) -> Result<u32,u32> {
         Err(x) => {
             error!("could not update profile on agent: {}", x);
             release(new_handle);
-            return Err(error::UNKNOWN_ERROR.code_num);
+            return Err(x);
         },
         Ok(_) => info!("updated profile on agent"),
     };
@@ -555,7 +555,7 @@ fn abbrv_event_detail(val: Value) -> Result<Value, u32> {
         while let Some(k) = keys.pop() {
             let mut value = map.remove(&k).ok_or_else(||{
                 warn!("Unexpected key value mutation");
-                error::UNKNOWN_ERROR.code_num
+                error::INVALID_INVITE_DETAILS.code_num
             })?;
 
             value = abbrv_event_detail(value)?;
@@ -705,7 +705,7 @@ mod tests {
     fn test_bad_wallet_connection_fails() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        assert_eq!(build_connection("test_bad_wallet_connection_fails".to_owned()).unwrap_err(),error::UNKNOWN_ERROR.code_num);
+        assert_eq!(build_connection("test_bad_wallet_connection_fails".to_owned()).unwrap_err(),error::UNKNOWN_LIBINDY_ERROR.code_num);
     }
 
     #[test]

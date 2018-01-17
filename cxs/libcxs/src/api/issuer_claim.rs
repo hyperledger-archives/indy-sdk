@@ -56,7 +56,7 @@ pub extern fn cxs_issuer_create_claim(command_handle: u32,
     thread::spawn(move|| {
         let (rc, handle) = match issuer_claim::issuer_claim_create(schema_seq_no, source_id_opt, issuer_did, claim_data) {
             Ok(x) => (error::SUCCESS.code_num, x),
-            Err(_) => (error::UNKNOWN_ERROR.code_num, 0),
+            Err(x) => (x, 0),
         };
 
         cb(command_handle, rc, handle);
@@ -250,7 +250,7 @@ pub extern fn cxs_issuer_claim_deserialize(command_handle: u32,
     thread::spawn(move|| {
         let (rc, handle) = match issuer_claim::from_string(&claim_data) {
             Ok(x) => (error::SUCCESS.code_num, x),
-            Err(_) => (error::UNKNOWN_ERROR.code_num, 0),
+            Err(x) => (x, 0),
         };
 
         cb(command_handle, rc, handle);

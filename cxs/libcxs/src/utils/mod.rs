@@ -5,7 +5,6 @@ pub mod ccallback;
 pub mod cstring;
 
 pub mod wallet;
-pub mod init;
 pub mod error;
 pub mod httpclient;
 pub mod callback;

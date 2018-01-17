@@ -85,7 +85,7 @@ pub struct ClaimOffer {
 }
 
 impl IssuerClaim {
-    fn validate_claim_offer(&self) -> Result<u32, String> {
+    fn validate_claim_offer(&self) -> Result<u32, u32> {
         //TODO: validate claim_attributes against claim_def
         info!("successfully validated issuer_claim {}", self.handle);
         Ok(error::SUCCESS.code_num)
@@ -311,7 +311,7 @@ pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRe
         // TODO: need new error
         None => {
             error!("No Master Secret in the Claim Request!");
-            return Err(error::UNKNOWN_ERROR.code_num);
+            return Err(error::INVALID_MASTER_SECRET.code_num);
         },
     };
 
@@ -320,7 +320,7 @@ pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRe
         // TODO: need new error
         Err(x) => {
             error!("Claim Request is not properly formatted/formed: {}", x);
-            return Err(error::UNKNOWN_ERROR.code_num);
+            return Err(error::INVALID_JSON.code_num);
         },
     };
 
@@ -333,7 +333,7 @@ pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRe
                                            cb);
         if err != 0 {
             error!("could not create claim: {}", err);
-            return Err(error::UNKNOWN_ERROR.code_num);
+            return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
         }
     }
 
@@ -341,7 +341,7 @@ pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRe
 
     if err != 0 {
         error!("could not create claim: {}", err);
-        return Err(error::UNKNOWN_ERROR.code_num);
+        return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
     };
 
     match xclaim_json {
@@ -380,7 +380,7 @@ fn parse_claim_req_payload(payload: &Vec<u8>) -> Result<ClaimRequest, u32> {
 pub fn issuer_claim_create(schema_seq_no: u32,
                            source_id: Option<String>,
                            issuer_did: String,
-                           claim_data: String) -> Result<u32, String> {
+                           claim_data: String) -> Result<u32, u32> {
 
     let new_handle = rand::thread_rng().gen::<u32>();
 
@@ -500,7 +500,7 @@ fn get_offer_details(response: &str) -> Result<String,u32> {
         },
         Err(_) => {
             info!("get_messages called without a valid response from server");
-            Err(error::UNKNOWN_ERROR.code_num)
+            Err(error::INVALID_JSON.code_num)
         },
     }
 }
@@ -509,7 +509,7 @@ pub fn set_claim_request(handle: u32, claim_request: &ClaimRequest) -> Result<u3
     match ISSUER_CLAIM_MAP.lock().unwrap().get_mut(&handle) {
         Some(c) => {c.set_claim_request(claim_request);
             Ok(error::SUCCESS.code_num)},
-        None => Err(error::UNKNOWN_ERROR.code_num),
+        None => Err(error::INVALID_ISSUER_CLAIM_HANDLE.code_num),
     }
 }
 
