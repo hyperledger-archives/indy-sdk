@@ -444,7 +444,7 @@ def libindyDebPublishing(testEnv) {
     echo 'Publish Libindy deb files to Apt'
 
     testEnv.inside {
-        sh 'chmod -R 755 ci/*.sh'
+        sh 'chmod -R 755 libindy/ci/*.sh'
 
         def suffix = "~$env.BUILD_NUMBER"
 
@@ -453,6 +453,7 @@ def libindyDebPublishing(testEnv) {
         }
 
         unstash name: 'LibindyUbuntuBuildResult'
+        sh 'mkdir --parent libindy/target/release/ && mv target/release/* libindy/target/release/'
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
             sh "cd libindy && ./ci/libindy-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
@@ -504,7 +505,7 @@ def libindyCliDebPublishing(testEnv) {
     echo 'Publish Indy Cli deb files to Apt'
 
     testEnv.inside {
-        sh 'chmod -R 755 ci/*.sh'
+        sh 'chmod -R 755 cli/ci/*.sh'
 
         def suffix = "~$env.BUILD_NUMBER"
 
@@ -513,6 +514,7 @@ def libindyCliDebPublishing(testEnv) {
         }
 
         unstash name: 'IndyCliUbuntuBuildResult'
+        sh 'mkdir --parent cli/target/release/ && mv target/release/* cli/target/release/'
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
             sh "cd cli && ./ci/indy-cli-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
@@ -589,8 +591,8 @@ def publishLibindyDebRCtoStable(testEnv, version) {
 
         unstash name: 'libindyDebs'
 
-        sh "fakeroot deb-reversion -v $version debs/libindy_\"$rcFullVersion\"_amd64.deb"
-        sh "fakeroot deb-reversion -v $version debs/libindy-dev_\"$rcFullVersion\"_amd64.deb"
+        sh "fakeroot deb-reversion -v $version libindy/debs/libindy_\"$rcFullVersion\"_amd64.deb"
+        sh "fakeroot deb-reversion -v $version libindy/debs/libindy-dev_\"$rcFullVersion\"_amd64.deb"
 
         uploadDebianFilesToStable()
     }
@@ -602,7 +604,7 @@ def publishLibindyCliDebRCtoStable(testEnv, version) {
 
         unstash name: 'libindyCliDebs'
 
-        sh "fakeroot deb-reversion -v $version debs/indy-cli_\"$rcFullVersion\"_amd64.deb"
+        sh "fakeroot deb-reversion -v $version cli/debs/indy-cli_\"$rcFullVersion\"_amd64.deb"
 
         uploadDebianFilesToStable()
     }
