@@ -3,13 +3,13 @@
 @Library('SovrinHelpers') _
 
 properties([
-    [$class: 'BuildDiscarderProperty', strategy: [
-        $class: 'LogRotator',
-        artifactDaysToKeepStr: '28',
-        artifactNumToKeepStr: '',
-        daysToKeepStr: '28',
-        numToKeepStr: ''
-    ]]
+        [$class: 'BuildDiscarderProperty', strategy: [
+                $class               : 'LogRotator',
+                artifactDaysToKeepStr: '28',
+                artifactNumToKeepStr : '',
+                daysToKeepStr        : '28',
+                numToKeepStr         : ''
+        ]]
 ]);
 
 try {
@@ -440,38 +440,25 @@ def getSuffix(isRelease, target) {
     return suffix
 }
 
-def clean() {
-    sh "rm -rf debian"
-    sh "rm -rf debs"
-    sh "rm -rf sovrin-packaging"
-}
-
 def libindyDebPublishing(testEnv) {
-    dir('libindy') {
-        echo 'Publish Libindy deb files to Apt'
+    echo 'Publish Libindy deb files to Apt'
 
-        testEnv.inside('-u 0:0') {
-            try {
-                sh 'chmod -R 755 ci/*.sh'
+    testEnv.inside {
+        sh 'chmod -R 755 ci/*.sh'
 
-                def suffix = "~$env.BUILD_NUMBER"
+        def suffix = "~$env.BUILD_NUMBER"
 
-                dir('sovrin-packaging') {
-                    downloadPackagingUtils()
-                }
+        dir('sovrin-packaging') {
+            downloadPackagingUtils()
+        }
 
-                unstash name: 'LibindyUbuntuBuildResult'
+        unstash name: 'LibindyUbuntuBuildResult'
 
-                withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-                    sh "./ci/libindy-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
+        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
+            sh "cd libindy && ./ci/libindy-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
 
-                    if (env.BRANCH_NAME == 'rc') {
-                        stash includes: 'debs/*', name: 'libindyDebs'
-                    }
-                }
-            }
-            finally {
-                clean()
+            if (env.BRANCH_NAME == 'rc') {
+                stash includes: 'libindy/debs/*', name: 'libindyDebs'
             }
         }
     }
@@ -514,31 +501,24 @@ def javaWrapperPublishing(testEnv, isRelease) {
 }
 
 def libindyCliDebPublishing(testEnv) {
-    dir('cli') {
-        echo 'Publish Indy Cli deb files to Apt'
+    echo 'Publish Indy Cli deb files to Apt'
 
-        testEnv.inside('-u 0:0') {
-            try {
-                sh 'chmod -R 755 ci/*.sh'
+    testEnv.inside {
+        sh 'chmod -R 755 ci/*.sh'
 
-                def suffix = "~$env.BUILD_NUMBER"
+        def suffix = "~$env.BUILD_NUMBER"
 
-                dir('sovrin-packaging') {
-                    downloadPackagingUtils()
-                }
+        dir('sovrin-packaging') {
+            downloadPackagingUtils()
+        }
 
-                unstash name: 'IndyCliUbuntuBuildResult'
+        unstash name: 'IndyCliUbuntuBuildResult'
 
-                withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-                    sh "./ci/indy-cli-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
+        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
+            sh "cd cli && ./ci/indy-cli-deb-build-and-upload.sh $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
 
-                    if (env.BRANCH_NAME == 'rc') {
-                        stash includes: 'debs/*', name: 'libindyCliDebs'
-                    }
-                }
-            }
-            finally {
-                clean()
+            if (env.BRANCH_NAME == 'rc') {
+                stash includes: 'cli/debs/*', name: 'libindyCliDebs'
             }
         }
     }
@@ -605,36 +585,26 @@ def publishLibindyCliWindowsFilesRCtoStable(version) {
 
 def publishLibindyDebRCtoStable(testEnv, version) {
     testEnv.inside {
-        try {
-            rcFullVersion = "${version}~${env.BUILD_NUMBER}"
+        rcFullVersion = "${version}~${env.BUILD_NUMBER}"
 
-            unstash name: 'libindyDebs'
+        unstash name: 'libindyDebs'
 
-            sh "fakeroot deb-reversion -v $version debs/libindy_\"$rcFullVersion\"_amd64.deb"
-            sh "fakeroot deb-reversion -v $version debs/libindy-dev_\"$rcFullVersion\"_amd64.deb"
+        sh "fakeroot deb-reversion -v $version debs/libindy_\"$rcFullVersion\"_amd64.deb"
+        sh "fakeroot deb-reversion -v $version debs/libindy-dev_\"$rcFullVersion\"_amd64.deb"
 
-            uploadDebianFilesToStable()
-        }
-        finally {
-            clean()
-        }
+        uploadDebianFilesToStable()
     }
 }
 
 def publishLibindyCliDebRCtoStable(testEnv, version) {
     testEnv.inside {
-        try {
-            rcFullVersion = "${version}~${env.BUILD_NUMBER}"
+        rcFullVersion = "${version}~${env.BUILD_NUMBER}"
 
-            unstash name: 'libindyCliDebs'
+        unstash name: 'libindyCliDebs'
 
-            sh "fakeroot deb-reversion -v $version debs/indy-cli_\"$rcFullVersion\"_amd64.deb"
+        sh "fakeroot deb-reversion -v $version debs/indy-cli_\"$rcFullVersion\"_amd64.deb"
 
-            uploadDebianFilesToStable()
-        }
-        finally {
-            clean()
-        }
+        uploadDebianFilesToStable()
     }
 }
 

@@ -25,4 +25,4 @@ dpkg-buildpackage -tc
 
 mkdir debs &&  mv ../*.deb ./debs/
 
-./sovrin-packaging/upload_debs.py ./debs $repo $type --host $host --ssh-key $key
+../sovrin-packaging/upload_debs.py ./debs $repo $type --host $host --ssh-key $key
