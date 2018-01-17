@@ -61,7 +61,6 @@ async def test_send_nym_request_works_without_signature(pool_handle, identity_my
     assert json.loads(response)['op'] == 'REQNACK'
 
 
-
 @pytest.mark.asyncio
 async def test_send_get_nym_request_works(pool_handle, identity_trustee1):
     (my_did, _) = identity_trustee1
@@ -81,9 +80,10 @@ async def test_nym_requests_works(pool_handle, wallet_handle, identity_trustee1,
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
     get_nym_request = await ledger.build_get_nym_request(my_did, my_did)
-    response = json.loads(await ledger.submit_request(pool_handle, get_nym_request))
+    get_nym_response = await ensure_previous_request_applied(pool_handle, get_nym_request,
+                                                             lambda response: response['result']['data'] is not None)
 
-    assert response['result']['data'] is not None
+    assert get_nym_response
 
 
 @pytest.mark.asyncio
@@ -109,9 +109,10 @@ async def test_attrib_requests_works(pool_handle, wallet_handle, identity_truste
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, attrib_request)
 
     get_attrib_request = await ledger.build_get_attrib_request(my_did, my_did, "endpoint")
-    response = json.loads(await ledger.submit_request(pool_handle, get_attrib_request))
+    get_attrib_response = await ensure_previous_request_applied(pool_handle, get_attrib_request,
+                                                                lambda response: response['result']['data'] is not None)
 
-    assert response['result']['data'] is not None
+    assert get_attrib_response
 
 
 @pytest.mark.asyncio
@@ -152,9 +153,10 @@ async def test_schema_requests_works(pool_handle, wallet_handle, identity_truste
         "version": "2.0"
     }
     get_schema_request = await ledger.build_get_schema_request(my_did, my_did, json.dumps(get_schema_data))
-    response = json.loads(await ledger.submit_request(pool_handle, get_schema_request))
+    get_schema_response = await ensure_previous_request_applied(pool_handle, get_schema_request,
+                                                                lambda response: response['result']['data'] is not None)
 
-    assert response['result']['data'] is not None
+    assert get_schema_response
 
 
 @pytest.mark.asyncio
@@ -199,10 +201,10 @@ async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_tru
         "version": "2.0"
     }
 
-    time.sleep(5)
-
     get_schema_request = await ledger.build_get_schema_request(my_did, my_did, json.dumps(get_schema_data))
-    get_schema_response = json.loads(await ledger.submit_request(pool_handle, get_schema_request))
+    get_schema_response = await ensure_previous_request_applied(pool_handle, get_schema_request,
+                                                                lambda response: response['result'][
+                                                                                     'seqNo'] is not None)
 
     claim_def = {
         "primary": {
@@ -315,3 +317,11 @@ async def test_pool_upgrade_requests_works(pool_handle, wallet_handle, identity_
                                                       'ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398',
                                                       None, None, None, False, False)
     json.loads(await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request))
+
+
+async def ensure_previous_request_applied(pool_handle, checker_request, checker):
+    for _ in range(3):
+        response = json.loads(await ledger.submit_request(pool_handle, checker_request))
+        if checker(response):
+            return response
+        time.sleep(5)
