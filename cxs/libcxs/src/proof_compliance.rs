@@ -1,37 +1,18 @@
 use messages::proofs::proof_message::ProofMessage;
-use serde_json;
-use serde_json::Value;
+use messages::proofs::proof_request::{ ProofRequestData };
 use utils::error;
 
 
-pub fn proof_compliance(request: &String, proof: &ProofMessage) -> Result<(), u32> {
+pub fn proof_compliance(request: &ProofRequestData, proof: &ProofMessage) -> Result<(), u32> {
     let proof_revealed_attrs = &proof.requested_proof.revealed_attrs;
     let proofs = &proof.proofs;
+    let requested_attrs = &request.requested_attrs;
+    for (key, val) in requested_attrs.iter() {
+        let name = &val.name;
+        let issuer_did = val.issuer_did.clone();
+        let schema_seq_no = val.schema_seq_no;
 
-    let request_serde: Value = match serde_json::from_str(request){
-        Ok(s) => s,
-        Err(e) => {
-            warn!("Proof Compliance: Invalid JSON for Proof Request: {}", e);
-            return Err(error::INVALID_JSON.code_num);
-        }
-
-    };
-    let requested_attrs: &Value = match request_serde.get("requested_attrs"){
-        Some(attr) => attr,
-        None => {
-            warn!("Proof Compliance: No requested_attrs found");
-            return Ok(());
-        }
-    };
-
-    for attr in requested_attrs.as_object().unwrap() {
-        let key: &String = attr.0;
-        let val: &Value = attr.1;
-        let name = val.get("name");
-        let issuer_did = val.get("issuer_did");
-        let schema_seq_no = val.get("schema_seq_no");
-
-        if issuer_did.is_none() || schema_seq_no.is_none() {
+        if issuer_did.is_none() && schema_seq_no.is_none() {
             continue;
         }
 
@@ -44,7 +25,7 @@ pub fn proof_compliance(request: &String, proof: &ProofMessage) -> Result<(), u3
         };
         let proof_id = match proof_attr_data.get(0){
             Some(id) => match id.as_str(){
-                Some(str) => str,
+                Some(id_str) => id_str,
                 None => {
                     warn!("Proof Compliance: proof_id is not a string");
                     return Err(error::FAILED_PROOF_COMPLIANCE.code_num);
@@ -67,12 +48,13 @@ pub fn proof_compliance(request: &String, proof: &ProofMessage) -> Result<(), u3
         let proof_issuer_did = &proof_data.issuer_did;
         let proof_schema_seq_no = proof_data.schema_seq_no;
 
-
-        if !check_value(issuer_did, Some(&Value::from(proof_issuer_did.clone()))) {
+        if !check_value(issuer_did,
+                        proof_issuer_did) {
             return Err(error::FAILED_PROOF_COMPLIANCE.code_num)
         }
 
-        if !check_value(schema_seq_no, Some(&Value::from(proof_schema_seq_no))) {
+        if !check_value(schema_seq_no,
+                             &proof_schema_seq_no) {
             return Err(error::FAILED_PROOF_COMPLIANCE.code_num)
         }
     }
@@ -81,16 +63,11 @@ pub fn proof_compliance(request: &String, proof: &ProofMessage) -> Result<(), u3
     Ok(())
 }
 
-fn check_value(control: Option<&Value>, val: Option<&Value>) -> bool {
+fn check_value<T: PartialEq>(control: Option<T>, val: &T) -> bool {
     if control.is_none() {
         return true;
     }
-
-    if val.is_none() {
-        return false;
-    }
-
-    let rtn = control.unwrap().eq(val.unwrap());
+    let rtn = control.unwrap().eq(val);
 
     rtn
 }
@@ -101,28 +78,23 @@ fn check_value(control: Option<&Value>, val: Option<&Value>) -> bool {
 mod tests {
     use ::proof_compliance::proof_compliance;
     use ::messages::proofs::proof_message::ProofMessage;
-    use serde_json::Value;
+    use messages::proofs::proof_request::{ ProofRequestData };
+    use serde_json::{ from_str };
     use ::proof_compliance::check_value;
 
     #[test]
     fn test_check_value(){
         //Test equal
-        let control = Value::from("sdf");
-        let val = Value::from("sdf");
-        assert!(check_value(Some(&control), Some(&val)));
+        let control = "sdf".to_string();
+        let val = "sdf".to_string();
+        assert!(check_value(Some(control), &val));
 
         //Test not equal
-        let control = Value::from("eee");
-        assert!(!check_value(Some(&control), Some(&val)));
+        let control = "eee".to_string();
+        assert!(!check_value(Some(control), &val));
 
         //Test None control
-        assert!(check_value(None, Some(&val)));
-
-        //Test None val
-        assert!(!check_value(Some(&control), None));
-
-        //Test both None
-        assert!(check_value(None, None));
+        assert!(check_value(None, &val));
     }
 
     #[test]
@@ -216,7 +188,8 @@ mod tests {
   }
 }"#;
         let proof_obj = ProofMessage::from_str(proof).unwrap();
-        proof_compliance(&request.to_string(), &proof_obj).unwrap();
+        let proof_req: ProofRequestData = from_str(request).unwrap();
+        proof_compliance(&proof_req, &proof_obj).unwrap();
     }
 
 }

@@ -25,11 +25,11 @@ struct ProofTopic {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Attr {
-    name: String,
+    pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    schema_seq_no: Option<u32>,
+    pub schema_seq_no: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    issuer_did: Option<String>,
+    pub issuer_did: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -43,8 +43,8 @@ pub struct ProofRequestData{
     name: String,
     #[serde(rename = "version")]
     data_version: String,
-    requested_attrs: HashMap<String, Attr>,
-    requested_predicates: HashMap<String, Attr>,
+    pub requested_attrs: HashMap<String, Attr>,
+    pub requested_predicates: HashMap<String, Attr>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -54,7 +54,7 @@ pub struct ProofRequestMessage{
     type_header: ProofType,
     #[serde(rename = "@topic")]
     topic: ProofTopic,
-    proof_request_data: ProofRequestData,
+    pub proof_request_data: ProofRequestData,
     #[serde(skip_serializing, default)]
     validate_rc: u32,
 }
@@ -169,6 +169,13 @@ impl ProofRequestMessage {
 
     pub fn get_proof_request_data(&mut self) -> String {
         json!(self)[PROOF_DATA].to_string()
+    }
+
+    pub fn to_string(&self) -> Result<String, u32> {
+        match serde_json::to_string(&self){
+            Ok(s) => Ok(s),
+            Err(_) => Err(error::INVALID_JSON.code_num),
+        }
     }
 }
 
