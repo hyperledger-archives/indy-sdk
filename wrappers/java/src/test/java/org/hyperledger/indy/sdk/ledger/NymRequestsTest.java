@@ -5,6 +5,7 @@ import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.did.DidJSONParameters;
 import org.hyperledger.indy.sdk.did.DidResults;
+import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.*;
 
@@ -67,7 +68,7 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 		String nymRequest = Ledger.buildNymRequest(did, did, null, null, null).get();
 		String response = Ledger.submitRequest(pool, nymRequest).get();
-		checkResponseType(response,"REQNACK" );
+		checkResponseType(response, "REQNACK");
 	}
 
 	@Test
@@ -125,7 +126,7 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 		String nymRequest2 = Ledger.buildNymRequest(myDid, myDid2, null, null, null).get();
 		String response = Ledger.signAndSubmitRequest(pool, wallet, myDid, nymRequest2).get();
-		checkResponseType(response,"REQNACK" );
+		checkResponseType(response, "REQNACK");
 
 	}
 
@@ -142,10 +143,10 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 
 		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, null, null, null).get();
 		String response = Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
-		checkResponseType(response,"REQNACK" );
+		checkResponseType(response, "REQNACK");
 	}
 
-	@Test
+	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testNymRequestsWorks() throws Exception {
 		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
@@ -158,9 +159,9 @@ public class NymRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet 
 		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
 
 		String getNymRequest = Ledger.buildGetNymRequest(myDid, myDid).get();
-		String response = Ledger.submitRequest(pool, getNymRequest).get();
-
-		checkResponseType(response,"REPLY" );
+		String getNymResponse = PoolUtils.ensurePreviousRequestApplied(pool, getNymRequest,
+				response -> compareResponseType(response, "REPLY"));
+		assertNotNull(getNymResponse);
 	}
 
 	@Test
