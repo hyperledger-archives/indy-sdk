@@ -5,6 +5,7 @@ import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters;
+import org.json.JSONException;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -84,8 +85,13 @@ public class PoolUtils {
 	public static String ensurePreviousRequestApplied(Pool pool, String checkerRequest, PoolResponseChecker checker) throws IndyException, ExecutionException, InterruptedException {
 		for (int i = 0; i < RESUBMIT_REQUEST_CNT; i++) {
 			String response = Ledger.submitRequest(pool, checkerRequest).get();
-			if (checker.check(response)) {
-				return response;
+			try {
+				if (checker.check(response)) {
+					return response;
+				}
+			} catch (JSONException e) {
+				System.out.println(e.toString());
+				System.out.println(response);
 			}
 			Thread.sleep(RESUBMIT_REQUEST_TIMEOUT);
 		}

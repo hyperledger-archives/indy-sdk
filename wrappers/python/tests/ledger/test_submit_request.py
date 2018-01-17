@@ -322,6 +322,10 @@ async def test_pool_upgrade_requests_works(pool_handle, wallet_handle, identity_
 async def ensure_previous_request_applied(pool_handle, checker_request, checker):
     for _ in range(3):
         response = json.loads(await ledger.submit_request(pool_handle, checker_request))
-        if checker(response):
-            return response
+        try:
+            if checker(response):
+                return response
+        except TypeError as e:
+            print(e)
+            print(response)
         time.sleep(5)
