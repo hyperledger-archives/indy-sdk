@@ -1303,6 +1303,8 @@ pub mod tests {
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            //TODO avoid assumption aboout previous one test schema::schema successfully passed
+            _ensure_schema_added(&ctx, DID_TRUSTEE);
             {
                 let cmd = get_schema_command::new();
                 let mut params = CommandParams::new();
