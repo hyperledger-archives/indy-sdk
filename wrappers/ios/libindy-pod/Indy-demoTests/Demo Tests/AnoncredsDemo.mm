@@ -59,7 +59,7 @@
     NSNumber *schemaSeqNo = @(1);
     NSString *schema = [ NSString stringWithFormat:@"{"
                         "\"seqNo\":%@,"
-                        "\"identifier\":\"%@\","
+                        "\"dest\":\"%@\","
                         "\"data\":{"
                             "\"name\":\"gvt\","
                             "\"version\":\"1.0\","
@@ -253,7 +253,7 @@
     NSString *schemaKey = @"{\"name\":\"gvt\",\"version\":\"1.0\",\"did\":\"NcYxiDXkpYi6ov5FcYDi1e\"}";
     NSString *schema = [ NSString stringWithFormat:@"{"
                         "\"seqNo\":%@,"
-                        "\"identifier\":\"%@\","
+                        "\"dest\":\"%@\","
                         "\"data\":{"
                         "\"name\":\"gvt\","
                         "\"version\":\"1.0\","

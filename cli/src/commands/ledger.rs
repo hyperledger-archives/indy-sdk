@@ -342,7 +342,7 @@ pub mod get_schema_command {
 
         let res = handle_transaction_response(response,
                                               "Following Schema has been received.",
-                                              &vec![("identifier", "Identifier"),
+                                              &vec![("dest", "Did"),
                                                     ("seqNo", "Sequence Number"),
                                                     ("reqId", "Request ID"),
                                                     ("txnTime", "Transaction time")],

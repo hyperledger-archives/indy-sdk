@@ -213,7 +213,7 @@ pub struct RequestedProof {
 pub struct Schema {
     #[serde(rename = "seqNo")]
     pub seq_no: i32,
-    pub identifier: String,
+    pub dest: String,
     pub data: SchemaData
 }
 
