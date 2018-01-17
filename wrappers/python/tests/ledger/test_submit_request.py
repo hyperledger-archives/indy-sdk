@@ -1,5 +1,6 @@
-import json
 import datetime
+import json
+import logging
 import time
 
 import pytest
@@ -326,6 +327,7 @@ async def ensure_previous_request_applied(pool_handle, checker_request, checker)
             if checker(response):
                 return response
         except TypeError as e:
-            print(e)
-            print(response)
+            logger = logging.getLogger(__name__)
+            logger.warning(e)
+            logger.warning(response)
         time.sleep(5)

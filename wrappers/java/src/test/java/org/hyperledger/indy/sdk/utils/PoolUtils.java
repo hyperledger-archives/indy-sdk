@@ -90,8 +90,9 @@ public class PoolUtils {
 					return response;
 				}
 			} catch (JSONException e) {
-				System.out.println(e.toString());
-				System.out.println(response);
+				e.printStackTrace();
+				System.err.println(e.toString());
+				System.err.println(response);
 			}
 			Thread.sleep(RESUBMIT_REQUEST_TIMEOUT);
 		}
