@@ -31,7 +31,6 @@ pub extern fn cxs_claimdef_create(command_handle: u32,
             Ok(x) => (error::SUCCESS.code_num, x),
             Err(x) => (x, 0),
         };
-
         cb(command_handle, rc, handle);
     });
     error::SUCCESS.code_num
@@ -109,6 +108,8 @@ mod tests {
     use utils::libindy::pool;
     use std::path::{Path};
     use utils::wallet::{ init_wallet };
+    use utils::signus::SignusUtils;
+    use utils::constants::{ MY1_SEED };
 
     extern "C" fn create_cb(command_handle: u32, err: u32, claimdef_handle: u32) {
         assert_eq!(err, 0);
@@ -200,10 +201,12 @@ mod tests {
         settings::set_defaults();
         open_sandbox_pool();
         let wallet_handle = init_wallet("wallet1").unwrap();
+        let (my_did, my_vk) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+        settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, &my_did);
         assert_eq!(cxs_claimdef_create(0,
                                        CString::new("qqqqq").unwrap().into_raw(),
                                        CString::new("Test Claim Def").unwrap().into_raw(),
-                                       15,
+                                       103,
                                        false,
                                        Some(claim_def_on_ledger_err_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_secs(1));

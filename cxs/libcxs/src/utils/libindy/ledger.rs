@@ -20,6 +20,14 @@ extern {
                                                        request_json: *const c_char)>
     ) -> i32;
 
+    fn indy_build_schema_request(command_handle: i32,
+                                  submitter_did: *const c_char,
+                                  data: *const c_char,
+                                  cb: Option<extern fn(xcommand_handle: i32,
+                                                       err: i32,
+                                                       request_json: *const c_char)>
+    ) -> i32;
+
     fn indy_submit_request(command_handle: i32,
                            pool_handle: i32,
                            request_json: *const c_char,
@@ -119,6 +127,23 @@ pub fn libindy_build_get_txn_request(submitter_did: String, sequence_num: i32) -
     rtn_obj.receive(None).and_then(check_str)
 }
 
+pub fn libindy_build_schema_request(submitter_did: String, data: String) -> Result<String, u32>
+{
+    let rtn_obj = Return_I32_STR::new()?;
+    let did = CString::new(submitter_did).map_err(map_string_error)?;
+    let data = CString::new(data).map_err(map_string_error)?;
+    unsafe {
+        indy_function_eval(
+            indy_build_schema_request(rtn_obj.command_handle,
+                                       did.as_ptr(),
+                                       data.as_ptr(),
+                                       Some(rtn_obj.get_callback()))
+        ).map_err(map_indy_error_code)?;
+    }
+
+    rtn_obj.receive(None).and_then(check_str)
+}
+
 pub fn libindy_build_get_claim_def_txn(submitter_did: String,
                                        schema_sequence_num: i32,
                                        sig_type: Option<SigTypes>,
@@ -189,6 +214,14 @@ mod tests {
     #[test]
     fn simple_libindy_build_create_txn_request_test() {
         let result = libindy_build_create_claim_def_txn("GGBDg1j8bsKmr4h5T9XqYf".to_string(),15, None, CLAIM_DEF_DATA.to_string());
+        assert!(result.is_ok());
+        println!("{}",result.unwrap());
+    }
+
+    #[test]
+    fn simple_libindy_build_schema_request_test() {
+        let request = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#.to_string();
+        let result = libindy_build_schema_request("GGBDg1j8bsKmr4h5T9XqYf".to_string(),request);
         assert!(result.is_ok());
         println!("{}",result.unwrap());
     }

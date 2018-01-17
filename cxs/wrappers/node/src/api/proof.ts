@@ -1,4 +1,6 @@
+import { snakeCase } from 'change-case'
 import { Callback } from 'ffi'
+import { _ } from 'lodash'
 import { CXSInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
@@ -95,11 +97,12 @@ export class Proof extends CXSBaseWithState {
     proof._requestedAttributes = data.attrs
     proof._name = data.name
     const commandHandle = 0
+
     try {
       await proof._create((cb) => rustAPI().cxs_proof_create(
         commandHandle,
         proof.sourceId,
-        JSON.stringify(proof._requestedAttributes),
+        JSON.stringify(proof._convertAttrToSnakeCase(data.attrs)),
         JSON.stringify([]),
         proof._name,
         cb
@@ -231,5 +234,15 @@ export class Proof extends CXSBaseWithState {
 
   _setProofState (state: number) {
     this._proofState = state
+  }
+
+  _convertAttrToSnakeCase (data: IProofAttr[]): any[] {
+    const requestedAttrs = []
+    data.forEach((x) => {
+      requestedAttrs.push(_.mapKeys(x, (value, key) => {
+        return snakeCase(key)
+      }))
+    })
+    return requestedAttrs
   }
 }

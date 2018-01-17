@@ -23,6 +23,11 @@ export interface IClaimDefData {
   data: any,
 }
 
+export interface IClaimDefParams {
+  schemaNo: number,
+  name: string,
+}
+
 export class ClaimDef extends CXSBase {
   protected _releaseFn = rustAPI().cxs_claimdef_release
   protected _serializeFn = rustAPI().cxs_claimdef_serialize
@@ -30,14 +35,14 @@ export class ClaimDef extends CXSBase {
   private _name: string
   private _schemaNo: number
 
-  constructor (sourceId, name, schemaNo) {
+  constructor (sourceId, { name, schemaNo }: IClaimDefParams) {
     super(sourceId)
     this._name = name
     this._schemaNo = schemaNo
   }
 
   static async create (data: IClaimDefinition): Promise<ClaimDef> {
-    const claimDef = new ClaimDef(data.sourceId, data.name, data.schemaNo)
+    const claimDef = new ClaimDef(data.sourceId, { name: data.name, schemaNo: data.schemaNo })
     const commandHandle = 0
     try {
       await claimDef._create((cb) => rustAPI().cxs_claimdef_create(

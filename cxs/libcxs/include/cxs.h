@@ -56,7 +56,13 @@ cxs_error_t cxs_init(cxs_command_handle_t handle, const char *config_path,void (
  */
 
 /** Creates a schema from a json string. Populates a handle to the new schema. */
-cxs_error_t cxs_schema_create(const char *schema_data, cxs_schema_handle_t *schema_handle);
+cxs_error_t cxs_schema_create(cxs_command_handle_t command_handle, const char *source_id, const char *schema_name, const char *schema_data, void (*cb)(cxs_command_handle_t command_handle, cxs_error_t err, cxs_schema_handle_t schema_handle));
+
+/** Populates status with the current state of this claim. */
+cxs_error_t cxs_schema_serialize(cxs_command_handle_t command_handle, cxs_schema_handle_t schema_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, const char *state));
+
+/** Re-creates a claim object from the specified serialization. */
+cxs_error_t cxs_schema_deserialize(cxs_command_handle_t command_handle, const char *serialized_schema, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_schema_handle_t schema_handle));
 
 /** Asynchronously commits the schema to the ledger. */
 cxs_error_t cxs_schema_commit(cxs_schema_handle_t schema_handle);
@@ -65,7 +71,7 @@ cxs_error_t cxs_schema_commit(cxs_schema_handle_t schema_handle);
 cxs_error_t cxs_schema_get_data(cxs_schema_handle_t schema_handle, char *data);
 
 /** Populates sequence_no with the actual sequence number of the schema on the sovrin ledger. */
-cxs_error_t cxs_schema_get_sequence_no(cxs_schema_handle_t schema_handle, int *sequence_no);
+cxs_error_t cxs_schema_get_sequence_no(cxs_command_handle_t command_handle, cxs_schema_handle_t schema_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_schema_handle_t sequence_no));
 
 
 /**

@@ -27,6 +27,7 @@ export const FFI_COMMAND_HANDLE = 'uint32'
 export const FFI_CLAIM_HANDLE = 'uint32'
 export const FFI_PROOF_HANDLE = 'uint32'
 export const FFI_CLAIMDEF_HANDLE = 'uint32'
+export const FFI_SCHEMA_HANDLE = 'uint32'
 export const FFI_SCHEMA_NUMBER = 'uint32'
 
 // Rust Lib Native Types
@@ -68,11 +69,20 @@ export interface IFFIEntryPoint {
   // mock
   cxs_set_next_agency_response: (messageIndex: number) => void,
 
+  // claimdef
   cxs_claimdef_create: (commandId: number, sourceId: string, claimDefName: string, schemaNo: number,
                         revocation: boolean, cb: any) => number
   cxs_claimdef_deserialize: (commandId: number, data: string, cb: any) => number,
   cxs_claimdef_serialize: (commandId: number, handle: string, cb: any) => number,
   cxs_claimdef_release: (handle: string) => number,
+
+  // schema
+  cxs_schema_create: (commandId: number, sourceId: string, schemaName: string, schemaData: string,
+                      cb: any) => number,
+  cxs_schema_get_sequence_no: (commandId: number, handle: string, cb: any) => number,
+  cxs_schema_deserialize: (commandId: number, data: string, cb: any) => number,
+  cxs_schema_serialize: (commandId: number, handle: string, cb: any) => number,
+  cxs_schema_release: (handle: string) => number,
 
   free: any
 }
@@ -120,7 +130,13 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   cxs_claimdef_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIMDEF_HANDLE, FFI_CALLBACK_PTR]],
   // mock
   cxs_set_next_agency_response: [FFI_VOID, [FFI_UNSIGNED_INT]],
-
+  // schema
+  cxs_schema_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,
+    FFI_CALLBACK_PTR]],
+  cxs_schema_get_sequence_no: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SCHEMA_HANDLE, FFI_CALLBACK_PTR]],
+  cxs_schema_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  cxs_schema_release: [FFI_ERROR_CODE, [FFI_SCHEMA_HANDLE]],
+  cxs_schema_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SCHEMA_HANDLE, FFI_CALLBACK_PTR]],
   free: [FFI_VOID, ['void*']]
 }
 
