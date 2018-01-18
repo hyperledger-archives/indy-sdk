@@ -232,47 +232,76 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
                         }
                     }
                 },
-                "${env_name}-java-test"   : {
-                    unstash name: 'LibindyJavaSO'
-                    dir('wrappers/java') {
-                        testEnv.inside("--network=${network_name}") {
-                            echo "${env_name} Libindy Test: Test java wrapper"
-
-                            sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
-                        }
-                    }
-                },
-                "${env_name}-python-test" : {
-                    unstash name: 'LibindyPythonSO'
-                    dir('wrappers/python') {
-                        testEnv.inside("--network=${network_name}") {
-                            echo "${env_name} Libindy Test: Test python wrapper"
-
-                            sh '''
-                                python3.5 -m pip install --user -e .
-                                LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
-                            '''
-                        }
-                    }
-                },
-                "${env_name}-cli-test"   : {
-                    unstash name: 'LibindyCliSO'
-                    dir('cli') {
-                        testEnv.inside("--network=${network_name} -u 0:0") {
-                            sh "cp libindy.so /usr/lib"
-
-                            echo "${env_name} Indy Cli Test: Build"
-                            sh "RUST_BACKTRACE=1 cargo test --no-run"
-
-                            echo "${env_name} Indy Cli Test: Run tests"
-                            sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
-                        }
-                    }
-                }
+                "${env_name}-java-test"   : { linuxModuleTesting(env_name, network_name, linuxJavaTesting) },
+                "${env_name}-python-test" : { linuxModuleTesting(env_name, network_name, linuxPythonTesting) },
+                "${env_name}-cli-test"    : { linuxModuleTesting(env_name, network_name, linuxCLITesting) }
         ])
     }
     finally {
         closePool(env_name, network_name, poolInst)
+    }
+}
+
+def linuxModuleTesting(env_name, network_name, module_tester) {
+    node('ubuntu') {
+        def poolInst
+        try {
+            echo "${env_name} Test: Checkout csm"
+            checkout scm
+
+            poolInst = openPool(env_name, network_name)
+
+            def testEnv
+
+            dir('libindy') {
+                echo "${env_name} Libindy Test: Build docker image"
+                testEnv = dockerBuild('libindy', file)
+            }
+
+            module_tester(env_name, network_name, testEnv)
+        } finally {
+            closePool(env_name, network_name, poolInst)
+        }
+    }
+}
+
+def linuxJavaTesting(env_name, network_name, testEnv) {
+    unstash name: 'LibindyJavaSO'
+    dir('wrappers/java') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Libindy Test: Test java wrapper"
+
+            sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+        }
+    }
+}
+
+def linuxPythonTesting(env_name, network_name, testEnv) {
+    unstash name: 'LibindyPythonSO'
+    dir('wrappers/python') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Libindy Test: Test python wrapper"
+
+            sh '''
+                python3.5 -m pip install --user -e .
+                LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+            '''
+        }
+    }
+}
+
+def linuxCLITesting(env_name, network_name, testEnv) {
+    unstash name: 'LibindyCliSO'
+    dir('cli') {
+        testEnv.inside("--network=${network_name} -u 0:0") {
+            sh "cp libindy.so /usr/lib"
+
+            echo "${env_name} Indy Cli Test: Build"
+            sh "RUST_BACKTRACE=1 cargo test --no-run"
+
+            echo "${env_name} Indy Cli Test: Run tests"
+            sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
+        }
     }
 }
 
