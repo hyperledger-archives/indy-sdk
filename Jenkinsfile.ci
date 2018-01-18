@@ -232,9 +232,9 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
                         }
                     }
                 },
-                "${env_name}-java-test"   : { linuxModuleTesting(env_name, network_name, linuxJavaTesting) },
-                "${env_name}-python-test" : { linuxModuleTesting(env_name, network_name, linuxPythonTesting) },
-                "${env_name}-cli-test"    : { linuxModuleTesting(env_name, network_name, linuxCLITesting) }
+                "${env_name}-java-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
+                "${env_name}-python-test" : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
+                "${env_name}-cli-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) }
         ])
     }
     finally {
@@ -242,7 +242,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
     }
 }
 
-def linuxModuleTesting(env_name, network_name, module_tester) {
+def linuxModuleTesting(file, env_name, network_name, module_tester) {
     node('ubuntu') {
         def poolInst
         try {
