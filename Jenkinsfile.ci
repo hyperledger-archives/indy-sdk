@@ -214,9 +214,9 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
         sh "cp libindy/target/debug/libindy.so wrappers/python"
         sh "cp libindy/target/debug/libindy.so cli"
 
-        stash includes: 'wrappers/java/lib/libindy.so', name: 'LibindyJavaSO'
-        stash includes: 'wrappers/python/libindy.so', name: 'LibindyPythonSO'
-        stash includes: 'cli/libindy.so', name: 'LibindyCliSO'
+        stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
+        stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
+        stash includes: 'cli/libindy.so', name: "LibindyCliSO${env_name}"
 
         parallel([
                 "${env_name}-libindy-test": {
@@ -266,7 +266,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
 }
 
 def linuxJavaTesting(env_name, network_name, testEnv) {
-    unstash name: 'LibindyJavaSO'
+    unstash name: "LibindyJavaSO${env_name}"
     dir('wrappers/java') {
         testEnv.inside("--network=${network_name}") {
             echo "${env_name} Libindy Test: Test java wrapper"
@@ -277,7 +277,7 @@ def linuxJavaTesting(env_name, network_name, testEnv) {
 }
 
 def linuxPythonTesting(env_name, network_name, testEnv) {
-    unstash name: 'LibindyPythonSO'
+    unstash name: "LibindyPythonSO${env_name}"
     dir('wrappers/python') {
         testEnv.inside("--network=${network_name}") {
             echo "${env_name} Libindy Test: Test python wrapper"
@@ -291,7 +291,7 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
 }
 
 def linuxCLITesting(env_name, network_name, testEnv) {
-    unstash name: 'LibindyCliSO'
+    unstash name: "LibindyCliSO${env_name}"
     dir('cli') {
         testEnv.inside("--network=${network_name}") {
             echo "${env_name} Indy Cli Test: Build"
