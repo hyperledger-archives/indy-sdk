@@ -94,14 +94,23 @@ def getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver) {
     }
 }
 
-def dockerClean() {
-    sh "docker container prune -f"
-    sh "docker network prune -f"
+def dockerClean(env_name, network_name) {
+    try {
+        sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f"
+    } catch (error) {
+        echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
+    }
+    try {
+        echo "${env_name} Test: remove pool network ${network_name}"
+        sh "docker network rm ${network_name}"
+    } catch (error) {
+        echo "${env_name} Test: error while delete ${network_name} - ${error}"
+    }
 }
 
 def openPool(env_name, network_name, pool_type = null, pool_ver = null, plenum_ver = null, anoncreds_ver = null, node_ver = null) {
     echo "${env_name} Test: Clean docker"
-    dockerClean()
+    dockerClean(env_name, network_name)
 
     echo "${env_name} Test: Create docker network (${network_name}) for nodes pool and test image"
     sh "docker network create --subnet=10.0.0.0/8 ${network_name}"
@@ -124,7 +133,7 @@ def closePool(env_name, network_name, poolInst) {
         echo "${env_name} Tests: error while stop pool ${error}"
     }
     finally {
-        dockerClean()
+        dockerClean(env_name, network_name)
     }
     step([$class: 'WsCleanup'])
 }
@@ -443,14 +452,14 @@ def getSuffix(isRelease, target) {
 def libindyDebPublishing(testEnv) {
     echo 'Publish Libindy deb files to Apt'
 
+    dir('libindy/sovrin-packaging') {
+        downloadPackagingUtils()
+    }
+
     testEnv.inside {
         sh 'chmod -R 755 libindy/ci/*.sh'
 
         def suffix = "~$env.BUILD_NUMBER"
-
-        dir('sovrin-packaging') {
-            downloadPackagingUtils()
-        }
 
         unstash name: 'LibindyUbuntuBuildResult'
         sh 'mkdir --parent libindy/target/release/ && mv target/release/* libindy/target/release/'
@@ -504,14 +513,14 @@ def javaWrapperPublishing(testEnv, isRelease) {
 def libindyCliDebPublishing(testEnv) {
     echo 'Publish Indy Cli deb files to Apt'
 
+    dir('cli/sovrin-packaging') {
+        downloadPackagingUtils()
+    }
+
     testEnv.inside {
         sh 'chmod -R 755 cli/ci/*.sh'
 
         def suffix = "~$env.BUILD_NUMBER"
-
-        dir('sovrin-packaging') {
-            downloadPackagingUtils()
-        }
 
         unstash name: 'IndyCliUbuntuBuildResult'
         sh 'mkdir --parent cli/target/release/ && mv target/release/* cli/target/release/'
@@ -612,12 +621,10 @@ def publishLibindyCliDebRCtoStable(testEnv, version) {
 
 def uploadDebianFilesToStable() {
     withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
-        dir('sovrin-packaging') {
-            downloadPackagingUtils()
-        }
+        downloadPackagingUtils()
         path = sh(returnStdout: true, script: 'pwd').trim()
 
-        sh "./sovrin-packaging/upload_debs.py $path $SOVRIN_SDK_REPO_NAME stable --host $SOVRIN_REPO_HOST --ssh-key $sovrin_key"
+        sh "./upload_debs.py $path $SOVRIN_SDK_REPO_NAME stable --host $SOVRIN_REPO_HOST --ssh-key $sovrin_key"
     }
 }
 
