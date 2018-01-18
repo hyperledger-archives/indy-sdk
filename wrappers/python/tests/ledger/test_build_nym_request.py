@@ -1,6 +1,8 @@
 from indy import ledger, did
 from indy.error import ErrorCode, IndyError
 
+from tests.ledger.test_submit_request import ensure_previous_request_applied
+
 import json
 import pytest
 
@@ -71,8 +73,11 @@ async def check_for_role(pool_handle, wallet_handle, trustee_did, role, expected
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
     get_nym_request = await ledger.build_get_nym_request(my_did, my_did)
-    get_nym_response = json.loads(await ledger.submit_request(pool_handle, get_nym_request))
-    assert expected_role_value == json.loads(get_nym_response['result']['data'])['role']
+    get_nym_response = await ensure_previous_request_applied(pool_handle, get_nym_request,
+                                                       lambda response:
+                                                       expected_role_value ==
+                                                       json.loads(response['result']['data'])['role'])
+    assert get_nym_response
 
 
 @pytest.mark.asyncio

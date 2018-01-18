@@ -468,12 +468,12 @@ pub mod node_command {
     use super::*;
 
     command!(CommandMetadata::build("node", "Send Node transaction to the Ledger.")
-                .add_param("target", false, "DID of new identity")
+                .add_param("target", false, "Node identifier'")
                 .add_param("alias", false, "Node alias (can't be changed in case of update)")
-                .add_param("node_ip", true, "Node Ip (mandatory for adding node and optional for update)")
-                .add_param("node_port", true, "Node port (mandatory for adding node and optional for update)")
-                .add_param("client_ip", true, "Client Ip (mandatory for adding node and optional for update)")
-                .add_param("client_port", true, "Client port (mandatory for adding node and optional for update)")
+                .add_param("node_ip", true, "Node Ip. Note that it is mandatory for adding node case")
+                .add_param("node_port", true, "Node port. Note that it is mandatory for adding node case")
+                .add_param("client_ip", true, "Client Ip. Note that it is mandatory for adding node case")
+                .add_param("client_port", true, "Client port. Note that it is mandatory for adding node case")
                 .add_param("blskey", true, "Node BLS key")
                 .add_param("services", true, "Node type. One of: VALIDATOR, OBSERVER or empty in case of blacklisting node")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR blskey=2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw")
@@ -1303,6 +1303,8 @@ pub mod tests {
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            //TODO avoid assumption aboout previous one test schema::schema successfully passed
+            _ensure_schema_added(&ctx, DID_TRUSTEE);
             {
                 let cmd = get_schema_command::new();
                 let mut params = CommandParams::new();
@@ -1832,32 +1834,50 @@ pub mod tests {
 
     fn _ensure_nym_added(ctx: &CommandContext, did: &str) {
         let request = Ledger::build_get_nym_request(DID_TRUSTEE, did).unwrap();
-        let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
-        let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Response<ReplyResult<String>>>(&response)
-            .and_then(|response| serde_json::from_str::<NymData>(&response.result.unwrap().data)).unwrap();
+        _submit_retry(ctx, &request, |response| {
+            serde_json::from_str::<Response<ReplyResult<String>>>(&response)
+                .and_then(|response| serde_json::from_str::<NymData>(&response.result.unwrap().data))
+        }).unwrap();
     }
 
     fn _ensure_attrib_added(ctx: &CommandContext, did: &str) {
         let request = Ledger::build_get_attrib_request(DID_MY1, did, "endpoint").unwrap();
-        let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
-        let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Response<ReplyResult<String>>>(&response)
-            .and_then(|response| serde_json::from_str::<AttribData>(&response.result.unwrap().data)).unwrap();
+        _submit_retry(ctx, &request, |response| {
+            serde_json::from_str::<Response<ReplyResult<String>>>(&response)
+                .and_then(|response| serde_json::from_str::<AttribData>(&response.result.unwrap().data))
+        }).unwrap();
     }
 
     fn _ensure_schema_added(ctx: &CommandContext, did: &str) {
         let data = r#"{"name":"gvt", "version":"1.0"}"#;
         let request = Ledger::build_get_schema_request(DID_TRUSTEE, did, data).unwrap();
-        let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
-        let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Response<ReplyResult<SchemaData>>>(&response).unwrap();
+        _submit_retry(ctx, &request, |response| {
+            serde_json::from_str::<Response<ReplyResult<SchemaData>>>(&response)
+        }).unwrap();
     }
 
     fn _ensure_claim_def_added(ctx: &CommandContext, did: &str) {
         let request = Ledger::build_get_claim_def_txn(DID_TRUSTEE, 1, "CL", did).unwrap();
-        let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
-        let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Response<ReplyResult<ClaimDefData>>>(&response).unwrap();
+        _submit_retry(ctx, &request, |response| {
+            serde_json::from_str::<Response<ReplyResult<ClaimDefData>>>(response)
+        }).unwrap();
+    }
+
+    fn _submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> Result<(), ()>
+        where F: Fn(&str) -> Result<T, E> {
+        const SUBMIT_RETRY_CNT: usize = 3;
+        const SUBMIT_TIMEOUT_SEC: u64 = 2;
+
+        let pool_handle = ensure_connected_pool_handle(ctx).unwrap();
+
+        for _ in 0..SUBMIT_RETRY_CNT {
+            let response = Ledger::submit_request(pool_handle, request).unwrap();
+            if parser(&response).is_ok() {
+                return Ok(());
+            }
+            ::std::thread::sleep(::std::time::Duration::from_secs(SUBMIT_TIMEOUT_SEC));
+        }
+
+        return Err(());
     }
 }

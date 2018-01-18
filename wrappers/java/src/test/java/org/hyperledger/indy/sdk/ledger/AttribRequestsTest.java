@@ -4,13 +4,14 @@ import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.did.DidResults;
+import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class AttribRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
@@ -62,10 +63,10 @@ public class AttribRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 
 		String attribRequest = Ledger.buildAttribRequest(trusteeDidResult.getDid(), trusteeDid, null, endpoint, null).get();
 		String response = Ledger.submitRequest(pool, attribRequest).get();
-		checkResponseType(response,"REQNACK" );
+		checkResponseType(response, "REQNACK");
 	}
 
-	@Test
+	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testAttribRequestsWorks() throws Exception {
 		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
@@ -81,11 +82,12 @@ public class AttribRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 		Ledger.signAndSubmitRequest(pool, wallet, myDid, attribRequest).get();
 
 		String getAttribRequest = Ledger.buildGetAttribRequest(myDid, myDid, "endpoint").get();
-		String getAttribResponse = Ledger.submitRequest(pool, getAttribRequest).get();
 
-		JSONObject getAttribResponseObject = new JSONObject(getAttribResponse);
-
-		assertEquals(endpoint, getAttribResponseObject.getJSONObject("result").getString("data"));
+		String getAttribResponse = PoolUtils.ensurePreviousRequestApplied(pool, getAttribRequest, response -> {
+			JSONObject getAttribResponseObject = new JSONObject(response);
+			return endpoint.equals(getAttribResponseObject.getJSONObject("result").getString("data"));
+		});
+		assertNotNull(getAttribResponse);
 	}
 
 	@Test

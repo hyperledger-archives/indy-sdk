@@ -90,6 +90,7 @@ pub mod open_command {
 
         let res = Ok(())
             .and_then(|_| {
+                set_active_did(ctx, None);
                 if let Some((handle, name)) = get_opened_wallet(ctx) {
                     match Wallet::close_wallet(handle) {
                         Ok(()) => Ok(println_succ!("Wallet \"{}\" has been closed", name)),
