@@ -200,7 +200,6 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
             testEnv = dockerBuild('libindy', file)
 
             if (run_interoperability_tests) {
-                sh 'chmod -R 777 /home/indy/indy-anoncreds/'
                 featuresArgs = '--features "interoperability_tests"'
             }
 
@@ -226,6 +225,10 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
 
                             echo "${env_name} Libindy Test: Build Test"
                             sh "RUST_BACKTRACE=1 cargo test $featuresArgs --no-run"
+
+                            if (run_interoperability_tests) {
+                                sh 'chmod -R 777 /home/indy/indy-anoncreds/'
+                            }
 
                             echo "${env_name} Libindy Test: Run tests"
                             sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test $featuresArgs"
