@@ -193,62 +193,116 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
         poolInst = openPool(env_name, network_name)
 
         def testEnv
+        def featuresArgs = ''
 
         dir('libindy') {
             echo "${env_name} Libindy Test: Build docker image"
             testEnv = dockerBuild('libindy', file)
 
+            if (run_interoperability_tests) {
+                featuresArgs = '--features "interoperability_tests"'
+            }
+
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Libindy Test: Test"
-
-                def featuresArgs = ''
-                if (run_interoperability_tests) {
-                    sh 'chmod -R 777 /home/indy/indy-anoncreds/'
-                    featuresArgs = '--features "interoperability_tests"'
-                }
-
                 echo "${env_name} Libindy Test: Build"
-                sh "RUST_BACKTRACE=1 cargo test $featuresArgs --no-run"
-
-                echo "${env_name} Libindy Test: Run tests"
-                sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test $featuresArgs"
+                sh "cargo build $featuresArgs"
             }
         }
 
         sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
-        dir('wrappers/java') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Libindy Test: Test java wrapper"
-
-                sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
-            }
-        }
-
         sh "cp libindy/target/debug/libindy.so wrappers/python"
-        dir('wrappers/python') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Libindy Test: Test python wrapper"
-
-                sh '''
-                    python3.5 -m pip install --user -e .
-                    LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
-                '''
-            }
-        }
-
         sh "cp libindy/target/debug/libindy.so cli"
-        dir('cli') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Indy Cli Test: Build"
-                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
 
-                echo "${env_name} Indy Cli Test: Run tests"
-                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
-            }
-        }
+        stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
+        stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
+        stash includes: 'cli/libindy.so', name: "LibindyCliSO${env_name}"
+
+        parallel([
+                "${env_name}-libindy-test": {
+                    dir('libindy') {
+                        testEnv.inside("--network=${network_name}") {
+                            echo "${env_name} Libindy Test: Test"
+
+                            echo "${env_name} Libindy Test: Build Test"
+                            sh "RUST_BACKTRACE=1 cargo test $featuresArgs --no-run"
+
+                            if (run_interoperability_tests) {
+                                sh 'chmod -R 777 /home/indy/indy-anoncreds/'
+                            }
+
+                            echo "${env_name} Libindy Test: Run tests"
+                            sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test $featuresArgs"
+                        }
+                    }
+                },
+                "${env_name}-java-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
+                "${env_name}-python-test" : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
+                "${env_name}-cli-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) }
+        ])
     }
     finally {
         closePool(env_name, network_name, poolInst)
+    }
+}
+
+def linuxModuleTesting(file, env_name, network_name, module_tester) {
+    node('ubuntu') {
+        def poolInst
+        try {
+            echo "${env_name} Test: Checkout csm"
+            checkout scm
+
+            poolInst = openPool(env_name, network_name)
+
+            def testEnv
+
+            dir('libindy') {
+                echo "${env_name} Libindy Test: Build docker image"
+                testEnv = dockerBuild('libindy', file)
+            }
+
+            module_tester(env_name, network_name, testEnv)
+        } finally {
+            closePool(env_name, network_name, poolInst)
+        }
+    }
+}
+
+def linuxJavaTesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyJavaSO${env_name}"
+    dir('wrappers/java') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Libindy Test: Test java wrapper"
+
+            sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+        }
+    }
+}
+
+def linuxPythonTesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyPythonSO${env_name}"
+    dir('wrappers/python') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Libindy Test: Test python wrapper"
+
+            sh '''
+                python3.5 -m pip install --user -e .
+                LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+            '''
+        }
+    }
+}
+
+def linuxCLITesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyCliSO${env_name}"
+    dir('cli') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Indy Cli Test: Build"
+            sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
+
+            echo "${env_name} Indy Cli Test: Run tests"
+            sh "LD_LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
+        }
     }
 }
 
