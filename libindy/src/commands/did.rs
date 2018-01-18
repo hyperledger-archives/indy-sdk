@@ -21,6 +21,7 @@ use commands::ledger::LedgerCommand;
 use commands::{Command, CommandExecutor};
 use std::collections::HashMap;
 use utils::sequence::SequenceUtils;
+use utils::crypto::base58::Base58;
 
 use super::utils::check_wallet_and_pool_handles_consistency;
 
@@ -77,6 +78,10 @@ pub enum DidCommand {
     GetDidMetadata(
         i32, // wallet handle
         String, // did
+        Box<Fn(Result<String, IndyError>) + Send>),
+    GetAbbrVerkey(
+        String, // did
+        String, // verkey
         Box<Fn(Result<String, IndyError>) + Send>),
     // Internal commands
     GetNymAck(
@@ -178,6 +183,10 @@ impl DidCommandExecutor {
             DidCommand::GetDidMetadata(wallet_handle, did, cb) => {
                 info!("GetDidMetadata command received");
                 cb(self.get_did_metadata(wallet_handle, did));
+            }
+            DidCommand::GetAbbrVerkey(did, verkey, cb) => {
+                info!("GetAbbrVerkey command received");
+                cb(self.get_abbr_verkey(did, verkey));
             }
             DidCommand::GetNymAck(wallet_handle, result, deferred_cmd_id) => {
                 info!("GetNymAck command received");
@@ -394,6 +403,22 @@ impl DidCommandExecutor {
         self.crypto_service.validate_did(&did)?;
         let res = self._wallet_get_did_metadata(wallet_handle, &did)?;
         Ok(res)
+    }
+
+    fn get_abbr_verkey(&self,
+                       did: String,
+                       verkey: String) -> Result<String, IndyError> {
+        self.crypto_service.validate_did(&did)?;
+        self.crypto_service.validate_key(&verkey)?;
+
+        let did = Base58::decode(&did)?;
+        let dverkey = Base58::decode(&verkey)?;
+
+        let (first_part, second_part) = dverkey.split_at(16);
+
+        if first_part.eq(did.as_slice()) {
+            Ok(format!("~{}", Base58::encode(second_part)))
+        } else { Ok(verkey) }
     }
 
     fn get_nym_ack(&self,

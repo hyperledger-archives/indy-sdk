@@ -149,4 +149,14 @@
     [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
 }
 
++ (void)getAbbrVerkey:(NSString *)did
+           fullVerkey:(NSString *)fullVerkey
+           completion:(void (^)(NSError *error, NSString *verkey))completion
+{
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+    indy_error_t ret = indy_get_abbr_verkey(handle,[did UTF8String],[fullVerkey UTF8String], IndyWrapperCommon3PSCallback);
+
+    [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
+}
+
 @end

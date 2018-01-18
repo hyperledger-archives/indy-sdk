@@ -499,3 +499,28 @@ pub extern fn indy_list_my_dids_with_meta(command_handle: i32,
 
     result_to_err_code!(result)
 }
+
+/// Retrieves abbreviated verkey if it is possible otherwise return full verkey.
+#[no_mangle]
+pub  extern fn indy_get_abbr_verkey(command_handle: i32,
+                                    did: *const c_char,
+                                    full_verkey: *const c_char,
+                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                         verkey: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(full_verkey, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Did(DidCommand::GetAbbrVerkey(
+            did,
+            full_verkey,
+            Box::new(move |result| {
+                let (err, verkey) = result_to_err_code_1!(result, String::new());
+                let verkey = CStringUtils::string_to_cstring(verkey);
+                cb(command_handle, err, verkey.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}

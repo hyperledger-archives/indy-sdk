@@ -291,6 +291,15 @@ extern "C" {
                                                     void          (*fn)(indy_handle_t xcommand_handle, indy_error_t err, const char *const dids)
                                                    );
 
+    /// Retrieves abbreviated verkey if it is possible otherwise return full verkey
+    extern indy_error_t indy_get_abbr_verkey(indy_handle_t command_handle,
+                                             const char *const did,
+                                             const char *const full_verkey,
+                                             void          (*fn)(indy_handle_t xcommand_handle,
+                                                                 indy_error_t err,
+                                                                 const char *const verkey)
+                                            );
+
 #ifdef __cplusplus
 }
 #endif

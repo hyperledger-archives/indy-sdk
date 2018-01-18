@@ -899,7 +899,7 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
-        
+
         #[test]
         fn indy_store_their_did_works_for_invalid_did() {
             TestUtils::cleanup_storage();
@@ -947,7 +947,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
-    
+
     mod replace_keys {
         use super::*;
 
@@ -1018,6 +1018,52 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
+        }
+    }
+
+    mod get_abbr_verkey {
+        use super::*;
+
+        #[test]
+        fn indy_get_abbr_verkey_works_for_abbr_key() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (did, verkey) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
+
+            let abbr_verkey = DidUtils::get_abbr_verkey(&did, &verkey).unwrap();
+
+            assert_ne!(verkey, abbr_verkey);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_get_abbr_verkey_works_for_not_abbr_key() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (did, verkey) = DidUtils::create_my_did(wallet_handle, &format!(r#"{{"did":{:?}}}"#, DID_TRUSTEE)).unwrap();
+
+            let full_verkey = DidUtils::get_abbr_verkey(&did, &verkey).unwrap();
+
+            assert_eq!(verkey, full_verkey);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_get_abbr_verkey_works_for_invalid_did() {
+            let res = DidUtils::get_abbr_verkey(INVALID_BASE58_DID, VERKEY_TRUSTEE);
+            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
+        }
+
+        #[test]
+        fn indy_get_abbr_verkey_works_for_invalid_verkey() {
+            let res = DidUtils::get_abbr_verkey(DID_TRUSTEE, INVALID_BASE58_VERKEY);
+            assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
         }
     }
 }

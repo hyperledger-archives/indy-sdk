@@ -7,7 +7,7 @@ pub struct Did {}
 
 impl Did {
     pub fn new(wallet_handle: IndyHandle, my_did_json: &str) -> Result<(String, String), ErrorCode> {
-        let (receiver, command_handle, cb) =  super::callbacks::_closure_to_cb_ec_string_string();
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string_string();
 
         let my_did_json = CString::new(my_did_json).unwrap();
 
@@ -22,7 +22,6 @@ impl Did {
     }
 
     pub fn replace_keys_start(wallet_handle: i32, did: &str, identity_json: &str) -> Result<String, ErrorCode> {
-
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let did = CString::new(did).unwrap();
@@ -93,6 +92,23 @@ impl Did {
 
         super::results::result_to_string(err, receiver)
     }
+
+
+    pub fn get_abbr_verkey(did: &str, verkey: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+
+        let did = CString::new(did).unwrap();
+        let verkey = CString::new(verkey).unwrap();
+
+        let err = unsafe {
+            indy_get_abbr_verkey(command_handle,
+                                 did.as_ptr(),
+                                 verkey.as_ptr(),
+                                 cb)
+        };
+
+        super::results::result_to_string(err, receiver)
+    }
 }
 
 extern {
@@ -139,4 +155,11 @@ extern {
                                    wallet_handle: i32,
                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                         dids: *const c_char)>) -> ErrorCode;
+
+    #[no_mangle]
+    fn indy_get_abbr_verkey(command_handle: i32,
+                            did: *const c_char,
+                            full_verkey: *const c_char,
+                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                 verkey: *const c_char)>) -> ErrorCode;
 }

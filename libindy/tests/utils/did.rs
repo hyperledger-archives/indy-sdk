@@ -353,4 +353,29 @@ impl DidUtils {
         }
         Ok(metadata)
     }
+
+    pub fn get_abbr_verkey(did: &str, verkey: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err, metadata| {
+            sender.send((err, metadata)).unwrap();
+        });
+        let (command_handle, callback) = CallbackUtils::closure_to_get_abbr_verkey_cb(cb);
+
+        let did = CString::new(did).unwrap();
+        let verkey = CString::new(verkey).unwrap();
+
+        let err = indy_get_abbr_verkey(command_handle,
+                                       did.as_ptr(),
+                                       verkey.as_ptr(),
+                                       callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let (err, verkey) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok(verkey)
+    }
 }
