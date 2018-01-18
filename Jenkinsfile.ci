@@ -301,7 +301,7 @@ def linuxCLITesting(env_name, network_name, testEnv) {
             sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
 
             echo "${env_name} Indy Cli Test: Run tests"
-            sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
+            sh "LD_LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
         }
     }
 }
