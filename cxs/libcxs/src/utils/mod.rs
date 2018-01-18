@@ -12,7 +12,6 @@ pub mod crypto;
 pub mod signus;
 pub mod constants;
 pub mod timeout;
-pub mod issuer_claim;
 pub mod openssl;
 pub mod json;
 pub mod libindy;

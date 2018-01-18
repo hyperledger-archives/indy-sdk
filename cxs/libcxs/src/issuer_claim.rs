@@ -165,17 +165,10 @@ impl IssuerClaim {
                     return Err(error::INVALID_CLAIM_REQUEST.code_num)},
             };
             // append values we need for example 'from_did' and 'claim_id'
-            data = match append_value(&data, CLAIM_OFFER_ID_KEY, &self.msg_uid) {
-                Ok(s) => s,
-                Err(_) => return Err(error::INVALID_JSON.code_num),
-            };
-
+            data = append_value(&data, CLAIM_OFFER_ID_KEY, &self.msg_uid)?;
             data = append_value(&data, "from_did", &to)?;
-
             data = append_value(&data, "version", "0.1")?;
-
             data = append_value(&data, "msg_type", "CLAIM")?;
-
         }
 
         debug!("claim data: {}", data);
@@ -275,8 +268,8 @@ impl IssuerClaim {
     fn get_state(&self) -> u32 { let state = self.state as u32; state }
     fn get_offer_uid(&self) -> String { self.msg_uid.clone() }
     fn set_offer_uid(&mut self, uid: &str) {self.msg_uid = uid.to_owned();}
-    fn set_claim_request(&mut self, claim_request:&ClaimRequest){
-        self.claim_request = Some(claim_request.clone());
+    fn set_claim_request(&mut self, claim_request:ClaimRequest){
+        self.claim_request = Some(claim_request);
     }
 
     fn generate_claim_offer(&self, to_did: &str) -> Result<ClaimOffer, u32> {
@@ -297,8 +290,7 @@ impl IssuerClaim {
 }
 
 pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRequest, claim_data: &str, wallet_handle: i32) -> Result< String, u32> {
-    println!("claim data: {}", claim_data);
-    println!("claim request: {:?}", serde_json::to_string(&claim_req));
+    info!("claim data: {}", claim_data);
     let (sender, receiver) = channel();
 
     let cb = Box::new(move |err, revoc_reg_update_json, xclaim_json| {
@@ -306,23 +298,19 @@ pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRe
     });
     let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_cb(cb);
 
-    let claim_req_master_secret = match claim_req.blinded_ms.clone() {
-        Some(ms) => ms,
-        // TODO: need new error
-        None => {
-            error!("No Master Secret in the Claim Request!");
-            return Err(error::INVALID_MASTER_SECRET.code_num);
-        },
-    };
+    if claim_req.blinded_ms.is_none() {
+        error!("No Master Secret in the Claim Request!");
+        return Err(error::INVALID_MASTER_SECRET.code_num);
+    }
 
-    let claim_req_str = match serde_json::to_string(&claim_req) {
+    let claim_req_str = match serde_json::to_string(claim_req) {
         Ok(s) => s,
-        // TODO: need new error
         Err(x) => {
             error!("Claim Request is not properly formatted/formed: {}", x);
             return Err(error::INVALID_JSON.code_num);
         },
     };
+    info!("claim request: {}", claim_req_str);
 
     unsafe {
         let err = indy_issuer_create_claim(command_handle,
@@ -337,7 +325,7 @@ pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRe
         }
     }
 
-    let (err, revoc_reg_update_json, xclaim_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, _, xclaim_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
 
     if err != 0 {
         error!("could not create claim: {}", err);
@@ -505,7 +493,7 @@ fn get_offer_details(response: &str) -> Result<String,u32> {
     }
 }
 
-pub fn set_claim_request(handle: u32, claim_request: &ClaimRequest) -> Result<u32,u32>{
+pub fn set_claim_request(handle: u32, claim_request: ClaimRequest) -> Result<u32,u32>{
     match ISSUER_CLAIM_MAP.lock().unwrap().get_mut(&handle) {
         Some(c) => {c.set_claim_request(claim_request);
             Ok(error::SUCCESS.code_num)},
@@ -542,10 +530,9 @@ mod tests {
     use connection::build_connection;
     use utils::signus::SignusUtils;
     use utils::wallet::init_wallet;
-    use utils::issuer_claim::tests::{put_claim_def_in_issuer_wallet, create_default_schema};
+    use utils::libindy::anoncreds::libindy_create_and_store_claim_def;
     use claim_request::ClaimRequest;
     use utils::constants::*;
-    use utils::issuer_claim::CLAIM_REQ_STRING;
     use super::*;
 
     static DEFAULT_CLAIM_NAME: &str = "Claim";
@@ -568,17 +555,15 @@ mod tests {
         }"#;
 
     static X_CLAIM_JSON: &str =
-        r#"{"claim":{"address1":["101 Tela Lane","63690509275174663089934667471948380740244018358024875547775652380902762701972"],"address2":["101 Wilson Lane","68086943237164982734333428280784300550565381723532936263016368251445461241953"],"city":["SLC","101327353979588246869873249766058188995681113722618593621043638294296500696424"],"state":["UT","93856629670657830351991220989031130499313559332549427637940645777813964461231"],"zip":["87121","87121"]},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_seq_no":48,"signature":{"non_revocation_claim":null,"primary_claim":{"a":"","e":"","m2":"","v":""}}}"#;
+        r#"{"claim":{"address1":["101 Tela Lane","63690509275174663089934667471948380740244018358024875547775652380902762701972"],"address2":["101 Wilson Lane","68086943237164982734333428280784300550565381723532936263016368251445461241953"],"city":["SLC","101327353979588246869873249766058188995681113722618593621043638294296500696424"],"state":["UT","93856629670657830351991220989031130499313559332549427637940645777813964461231"],"zip":["87121","87121"]},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_seq_no":15,"signature":{"non_revocation_claim":null,"primary_claim":{"a":"","e":"","m2":"","v":""}}}"#;
 
     fn util_put_claim_def_in_issuer_wallet(schema_seq_num: u32, wallet_handle: i32) {
-        let schema = &create_default_schema(schema_seq_num);
-
         let stored_xclaim = String::from("");
 
         info!("wallet_handle: {}", wallet_handle);
-        let issuer_did = &settings::get_config_value(settings::CONFIG_ENTERPRISE_DID).unwrap();
+        let issuer_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID).unwrap();
 
-        put_claim_def_in_issuer_wallet(issuer_did, schema, wallet_handle);
+        libindy_create_and_store_claim_def(wallet_handle, issuer_did, SCHEMAS_JSON.to_string(), None, false).unwrap();
     }
 
     fn set_default_and_enable_test_mode() {
@@ -800,7 +785,7 @@ mod tests {
         wallet::init_wallet(test_name).unwrap();
         let wallet_handle = wallet::get_wallet_handle();
         SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-        util_put_claim_def_in_issuer_wallet(48, wallet_handle);
+        util_put_claim_def_in_issuer_wallet(15, wallet_handle);
 
         // set the claim request issuer did to the correct (enterprise) did.
         let mut claim_req = issuer_claim.claim_request.clone().unwrap();
@@ -833,11 +818,11 @@ mod tests {
         wallet::init_wallet("test_issuer_claim_request_changes_reflect_in_claim").unwrap();
         let wallet_handle = wallet::get_wallet_handle();
 
-        util_put_claim_def_in_issuer_wallet(48, wallet_handle);
+        util_put_claim_def_in_issuer_wallet(15, wallet_handle);
         let issuer_claim = create_standard_issuer_claim();
         let mut claim_request = issuer_claim.claim_request.clone().unwrap();
         claim_request.issuer_did = String::from("NcYxiDXkpYi6ov5FcYDi1e");
-        assert_eq!(claim_request.schema_seq_no, 48);
+        assert_eq!(claim_request.schema_seq_no, 15);
         info!("claim request: {:?}", serde_json::to_string(&claim_request));
         info!("claim data: {:?}", &CLAIM_DATA);
         let encoded = issuer_claim.create_attributes_encodings().unwrap();

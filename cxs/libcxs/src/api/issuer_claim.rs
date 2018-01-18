@@ -280,9 +280,7 @@ mod tests {
     use settings;
     use connection;
     use api::CxsStateType;
-    use utils::issuer_claim::CLAIM_REQ_STRING;
-    use utils::issuer_claim::tests::create_default_schema;
-    use utils::constants::DEFAULT_SERIALIZED_ISSUER_CLAIM;
+    use utils::constants::{DEFAULT_SERIALIZED_ISSUER_CLAIM, CLAIM_REQ_STRING};
     use api::cxs::cxs_init;
 
     static DEFAULT_CLAIM_NAME: &str = "Claim Name Default";
@@ -387,7 +385,6 @@ mod tests {
         use claim_request::ClaimRequest;
 
         let test_name = "test_cxs_issuer_send_a_claim";
-        let schema_seq_num = 32 as u32;
 
         //let result = cxs_init(0,ptr::null(),Some(init_cb));
         thread::sleep(Duration::from_secs(1));
@@ -401,13 +398,9 @@ mod tests {
         };
         // set claim request to have the same did as enterprise did (and sam as claim def)
         claim_request.issuer_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID).clone().unwrap();
-        // set claim request to have the same sequence number as the schema sequence number
-        claim_request.schema_seq_no = schema_seq_num as i32;
-        assert_eq!(claim_request.schema_seq_no, schema_seq_num as i32);
-        issuer_claim::set_claim_request(handle, &claim_request).unwrap();
+        claim_request.schema_seq_no = 15;
+        issuer_claim::set_claim_request(handle, claim_request).unwrap();
         assert_eq!(issuer_claim::get_state(handle),CxsStateType::CxsStateRequestReceived as u32);
-        let schema = create_default_schema(schema_seq_num);
-        //put_claim_def_in_issuer_wallet(&settings::get_config_value(settings::CONFIG_ENTERPRISE_DID).unwrap(), &schema, get_wallet_handle());
         /**********************************************************************/
 
         // create connection

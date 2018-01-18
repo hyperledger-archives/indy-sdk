@@ -61,7 +61,7 @@ impl ClaimRequest {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::issuer_claim::CLAIM_REQ_STRING;
+    use utils::constants::CLAIM_REQ_STRING;
 
     static TEMP_ISSUER_DID: &'static str = "4reqXeZVm7JZAffAoaNLsb";
 
@@ -113,7 +113,7 @@ mod tests {
         assert_eq!(bms.u, "923...607");
         assert_eq!(bms.ur,None);
         assert_eq!(claim_req.issuer_did, "QTrbV4raAcND4DWWzBmdsh");
-        assert_eq!(claim_req.schema_seq_no, 48);
+        assert_eq!(claim_req.schema_seq_no, 15);
         assert_eq!(claim_req.tid, "cCanHnpFAD");
         assert_eq!(claim_req.to_did, "BnRXf8yDMUwGyZVDkSENeq");
         assert_eq!(claim_req.from_did, "GxtnGN6ypZYgEqcftSQFnC");
@@ -127,7 +127,7 @@ mod tests {
         let seq_no = claim_req.schema_seq_no;
         let master_secret = claim_req.blinded_ms.unwrap();
         assert_eq!(issuer_did, "QTrbV4raAcND4DWWzBmdsh");
-        assert_eq!(seq_no, 48);
+        assert_eq!(seq_no, 15);
         assert_eq!(master_secret.prover_did, "FQ7wPBUgSPnDGJnS1EYjTK");
     }
 
