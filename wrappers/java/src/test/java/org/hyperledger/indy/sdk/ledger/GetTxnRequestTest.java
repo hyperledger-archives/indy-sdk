@@ -1,10 +1,12 @@
 package org.hyperledger.indy.sdk.ledger;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.did.DidResults;
+import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.Test;
 
@@ -23,7 +25,7 @@ public class GetTxnRequestTest extends IndyIntegrationTestWithPoolAndSingleWalle
 		assertTrue(getTxnRequest.replace("\\", "").contains(expectedResult));
 	}
 
-	@Test
+	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testGetTxnRequestWorks() throws Exception {
 		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();
@@ -35,12 +37,13 @@ public class GetTxnRequestTest extends IndyIntegrationTestWithPoolAndSingleWalle
 		int seqNo = schemaResponseObj.getJSONObject("result").getInt("seqNo");
 
 		String getTxnRequest = Ledger.buildGetTxnRequest(did, seqNo).get();
-		String getTxnResponse = Ledger.submitRequest(pool, getTxnRequest).get();
+		String getTxnResponse = PoolUtils.ensurePreviousRequestApplied(pool, getTxnRequest, response -> {
+			JSONObject getTxnResponseObj = new JSONObject(response);
+			JSONObject schemaTransactionObj = getTxnResponseObj.getJSONObject("result").getJSONObject("data");
 
-		JSONObject getTxnResponseObj = new JSONObject(getTxnResponse);
-		JSONObject schemaTransactionObj = getTxnResponseObj.getJSONObject("result").getJSONObject("data");
-
-		assertTrue(new JSONObject(SCHEMA_DATA).similar(schemaTransactionObj.getJSONObject("data")));
+			return new JSONObject(SCHEMA_DATA).similar(schemaTransactionObj.getJSONObject("data"));
+		});
+		assertNotNull(getTxnResponse);
 	}
 
 	@Test
