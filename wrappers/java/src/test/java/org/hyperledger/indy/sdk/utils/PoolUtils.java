@@ -82,6 +82,10 @@ public class PoolUtils {
 		boolean check(String response);
 	}
 
+	public interface ActionChecker {
+		String action() throws IndyException, ExecutionException, InterruptedException;
+	}
+
 	public static String ensurePreviousRequestApplied(Pool pool, String checkerRequest, PoolResponseChecker checker) throws IndyException, ExecutionException, InterruptedException {
 		for (int i = 0; i < RESUBMIT_REQUEST_CNT; i++) {
 			String response = Ledger.submitRequest(pool, checkerRequest).get();
@@ -97,5 +101,14 @@ public class PoolUtils {
 			Thread.sleep(RESUBMIT_REQUEST_TIMEOUT);
 		}
 		throw new IllegalStateException();
+	}
+
+	public static boolean retryCheck(ActionChecker action, PoolResponseChecker checker) throws InterruptedException, ExecutionException, IndyException {
+		for (int i = 0; i < RESUBMIT_REQUEST_CNT; i++) {
+			if (checker.check(action.action())) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
