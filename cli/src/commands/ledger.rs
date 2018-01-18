@@ -468,12 +468,12 @@ pub mod node_command {
     use super::*;
 
     command!(CommandMetadata::build("node", "Send Node transaction to the Ledger.")
-                .add_param("target", false, "DID of new identity")
+                .add_param("target", false, "Node identifier'")
                 .add_param("alias", false, "Node alias (can't be changed in case of update)")
-                .add_param("node_ip", true, "Node Ip (mandatory for adding node and optional for update)")
-                .add_param("node_port", true, "Node port (mandatory for adding node and optional for update)")
-                .add_param("client_ip", true, "Client Ip (mandatory for adding node and optional for update)")
-                .add_param("client_port", true, "Client port (mandatory for adding node and optional for update)")
+                .add_param("node_ip", true, "Node Ip. Note that it is mandatory for adding node case")
+                .add_param("node_port", true, "Node port. Note that it is mandatory for adding node case")
+                .add_param("client_ip", true, "Client Ip. Note that it is mandatory for adding node case")
+                .add_param("client_port", true, "Client port. Note that it is mandatory for adding node case")
                 .add_param("blskey", true, "Node BLS key")
                 .add_param("services", true, "Node type. One of: VALIDATOR, OBSERVER or empty in case of blacklisting node")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR blskey=2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw")

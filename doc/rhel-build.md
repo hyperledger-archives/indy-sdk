@@ -71,4 +71,4 @@
      RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test
      ```
 
-See [ci/amazon.dockerfile](https://github.com/hyperledger/indy-sdk/tree/master/ci/amazon.dockerfile) for example of Amazon Linux based environment creation in Docker.
+See [ci/amazon.dockerfile](https://github.com/hyperledger/indy-sdk/blob/master/libindy/ci/amazon.dockerfile) for example of Amazon Linux based environment creation in Docker.
