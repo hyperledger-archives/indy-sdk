@@ -68,7 +68,7 @@ cxs_error_t cxs_schema_deserialize(cxs_command_handle_t command_handle, const ch
 cxs_error_t cxs_schema_commit(cxs_schema_handle_t schema_handle);
 
 /** Populates data with the contents of the schema handle. */
-cxs_error_t cxs_schema_get_data(cxs_schema_handle_t schema_handle, char *data);
+cxs_error_t cxs_schema_get_attributes(cxs_command_handle_t command_handle, const char *source_id, cxs_schema_handle_t sequence_no,  void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, const char *schema_attrs));
 
 /** Populates sequence_no with the actual sequence number of the schema on the sovrin ledger. */
 cxs_error_t cxs_schema_get_sequence_no(cxs_command_handle_t command_handle, cxs_schema_handle_t schema_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_schema_handle_t sequence_no));

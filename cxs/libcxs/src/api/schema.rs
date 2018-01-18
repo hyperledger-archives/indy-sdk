@@ -110,10 +110,35 @@ pub extern fn cxs_schema_get_sequence_no(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+#[no_mangle]
+pub extern fn cxs_schema_get_attributes(command_handle: u32,
+                                        source_id: *const c_char,
+                                        sequence_no: u32,
+                                        cb: Option<extern fn(xcommand_handle: u32, err: u32, schema_attrs: *const c_char)>) -> u32 {
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
+
+    thread::spawn( move|| {
+        match schema::get_schema_attrs(source_id, sequence_no) {
+            Ok(x) => {
+                info!("retrieving schema attrs with data: {}", x);
+                let msg = CStringUtils::string_to_cstring(x);
+                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            },
+            Err(x) => {
+                warn!("could not retrieve attrs for schema sequence number {}", sequence_no);
+                cb(command_handle, x, ptr::null_mut());
+            },
+        };
+
+    });
+
+    error::SUCCESS.code_num
+}
+
 #[allow(unused_variables, unused_mut)]
 pub extern fn cxs_schema_commit(schema_handle: u32) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables)]
-pub extern fn cxs_schema_get_data(schema_handle: u32, data: *mut c_char) -> u32 { error::SUCCESS.code_num }
+
 
 #[cfg(test)]
 mod tests {
@@ -262,7 +287,7 @@ mod tests {
         let wallet_handle = init_wallet("wallet1").unwrap();
         let (my_did, my_vk) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, &my_did);
-        let data = r#"{"name":"test","version":"1.0","attr_names":["name","male","test","test2"]}"#.to_string();
+        let data = r#"{"name":"get schema attrs","version":"1.0","attr_names":["test","get","schema","attrs"]}"#.to_string();
         assert_eq!(cxs_schema_create(0,
                                      CString::new("Test Source ID").unwrap().into_raw(),
                                      CString::new("Test Schema").unwrap().into_raw(),
@@ -301,5 +326,17 @@ mod tests {
                                      Some(create_cb_get_seq_no)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
 
+    }
+
+    #[test]
+    fn test_cxs_schema_get_attrs() {
+        set_default_and_enable_test_mode();
+        let data = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#.to_string();
+        assert_eq!(cxs_schema_create(0,
+                                     CString::new("Test Source ID").unwrap().into_raw(),
+                                     CString::new("Test Schema").unwrap().into_raw(),
+                                     CString::new(data).unwrap().into_raw(),
+                                     Some(create_and_serialize_cb)), error::SUCCESS.code_num);
+        thread::sleep(Duration::from_millis(200));
     }
 }

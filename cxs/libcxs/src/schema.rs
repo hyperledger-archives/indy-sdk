@@ -9,7 +9,7 @@ use std::sync::Mutex;
 use std::string::ToString;
 use std::collections::HashMap;
 use utils::error;
-use utils::constants::{ SCHEMA_REQ, CREATE_SCHEMA_RESULT };
+use utils::constants::{ SCHEMA_REQ, CREATE_SCHEMA_RESULT, SCHEMA_TXN };
 use utils::libindy::pool::{ get_pool_handle };
 use utils::wallet::{ get_wallet_handle };
 use utils::libindy::ledger::{
@@ -63,6 +63,12 @@ pub trait Schema: ToString {
     type SchemaType;
     fn retrieve_schema(sequence_num: i32) -> Result<SchemaTransaction, u32>
     {
+        if settings::test_indy_mode_enabled() {
+            match serde_json::from_str(SCHEMA_TXN) {
+                Ok(x) => return Ok(x),
+                Err(_) => return Err(error::INVALID_JSON.code_num)
+            };
+        }
         let txn = Self::retrieve_from_ledger(sequence_num)?;
         match Self::process_ledger_txn(txn){
             Ok(data) => Ok(data),
@@ -242,6 +248,25 @@ pub fn create_new_schema(source_id: String,
     }
 
     Ok(new_handle)
+}
+
+pub fn get_schema_attrs(source_id: String, sequence_num: u32) -> Result<String, u32> {
+    let new_handle = rand::thread_rng().gen::<u32>();
+    let new_schema = Box::new(CreateSchema {
+        source_id,
+        sequence_num,
+        handle: new_handle,
+        name: String::new(),
+        data: LedgerSchema::retrieve_schema(sequence_num as i32)?,
+    });
+
+    {
+        let mut m = SCHEMA_MAP.lock().unwrap();
+        info!("inserting handle {} into schema table", new_handle);
+        m.insert(new_handle, new_schema);
+    }
+
+    to_string(new_handle)
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
@@ -483,6 +508,16 @@ mod tests {
     }
 
     #[test]
+    fn test_get_schema_attrs_success(){
+        ::utils::logger::LoggerUtils::init();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        let schema_attrs = get_schema_attrs("Check For Success".to_string(), 999).unwrap();
+        assert!(schema_attrs.contains(SCHEMA_TXN));
+        assert!(schema_attrs.contains("\"source_id\":\"Check For Success\""));
+        assert!(schema_attrs.contains("\"sequence_num\":999"));
+    }
+
+    #[test]
     fn test_create_schema_fails(){
         ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
@@ -493,6 +528,8 @@ mod tests {
 
     #[test]
     fn test_from_ledger_without_pool(){
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let test = LedgerSchema::new_from_ledger(15);
         assert!(test.is_err());
         assert_eq!(error::NO_POOL_OPEN.code_num, test.unwrap_err())
@@ -509,6 +546,19 @@ mod tests {
         let req = CreateSchema::create_schema_req(&my_did, data).unwrap();
         let sign_response = CreateSchema::sign_and_send_request(&my_did, &req).unwrap();
         assert!(sign_response.contains("\"data\":{\"version\":\"1.0\",\"attr_names\":[\"name\",\"male\"],\"name\":\"name\"}"));
+        delete_wallet("wallet1").unwrap();
+    }
+
+    #[ignore]
+    #[test]
+    fn test_get_schema_attrs_from_ledger(){
+        settings::set_defaults();
+        open_sandbox_pool();
+        let data = r#"{"name":"get schema attrs","version":"1.0","attr_names":["test","get","schema","attrs"]}"#.to_string();
+        let wallet_handle = init_wallet("wallet1").unwrap();
+        let schema_attrs = get_schema_attrs("id".to_string(), 344).unwrap();
+        assert!(schema_attrs.contains(&data));
+        assert!(schema_attrs.contains("\"seqNo\":344"));
         delete_wallet("wallet1").unwrap();
     }
 

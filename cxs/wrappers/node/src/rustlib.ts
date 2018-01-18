@@ -77,6 +77,7 @@ export interface IFFIEntryPoint {
   cxs_claimdef_release: (handle: string) => number,
 
   // schema
+  cxs_schema_get_attributes: (commandId: number, sourceId: string, schemaNo: number, cb: any) => number,
   cxs_schema_create: (commandId: number, sourceId: string, schemaName: string, schemaData: string,
                       cb: any) => number,
   cxs_schema_get_sequence_no: (commandId: number, handle: string, cb: any) => number,
@@ -84,7 +85,6 @@ export interface IFFIEntryPoint {
   cxs_schema_serialize: (commandId: number, handle: string, cb: any) => number,
   cxs_schema_release: (handle: string) => number,
 
-  free: any
 }
 
 // tslint:disable object-literal-sort-keys
@@ -131,13 +131,13 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   // mock
   cxs_set_next_agency_response: [FFI_VOID, [FFI_UNSIGNED_INT]],
   // schema
+  cxs_schema_get_attributes: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_SCHEMA_NUMBER, FFI_CALLBACK_PTR]],
   cxs_schema_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,
     FFI_CALLBACK_PTR]],
   cxs_schema_get_sequence_no: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SCHEMA_HANDLE, FFI_CALLBACK_PTR]],
   cxs_schema_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   cxs_schema_release: [FFI_ERROR_CODE, [FFI_SCHEMA_HANDLE]],
-  cxs_schema_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SCHEMA_HANDLE, FFI_CALLBACK_PTR]],
-  free: [FFI_VOID, ['void*']]
+  cxs_schema_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SCHEMA_HANDLE, FFI_CALLBACK_PTR]]
 }
 
 let _rustAPI: IFFIEntryPoint = null
