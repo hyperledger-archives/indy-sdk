@@ -36,7 +36,7 @@ async def test_open_wallet_works_for_encrypted_wallet(wallet_handle, credentials
 async def test_open_wallet_works_for_encrypted_wallet_with_invalid_credentials(xwallet, wallet_name):
     with pytest.raises(IndyError) as e:
         await wallet.open_wallet(wallet_name, None, '{"key":"otherkey"}')
-    assert ErrorCode.WalletSecurityError == e.value.error_code
+    assert ErrorCode.WalletAccessFailedError == e.value.error_code
 
 
 @pytest.mark.asyncio

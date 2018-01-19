@@ -75,7 +75,7 @@ typedef enum
     WalletAlreadyOpenedError = 206,
 
     // Attempt to open encrypted wallet with invalid credentials
-    WalletSecurityError = 207,
+    WalletAccessFailedError = 207,
 
     // Ledger errors
     // Trying to open pool ledger that wasn't created before

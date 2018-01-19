@@ -6,16 +6,16 @@ import org.hyperledger.indy.sdk.IndyException;
 /**
  * Attempt to open encrypted wallet with invalid credentials
  */
-public class WalletSecurityException extends IndyException
+public class WalletAccessFailedException extends IndyException
 {
 	private static final long serialVersionUID = 3294831240096535507L;
 	private final static String message = "The wallet security error.";
 
 	/**
-	 * Initializes a new WalletSecurityException.
+	 * Initializes a new WalletAccessFailedException.
 	 */
-	public WalletSecurityException()
+	public WalletAccessFailedException()
     {
-    	super(message, ErrorCode.WalletSecurityError.value());
+    	super(message, ErrorCode.WalletAccessFailedError.value());
     }
 }

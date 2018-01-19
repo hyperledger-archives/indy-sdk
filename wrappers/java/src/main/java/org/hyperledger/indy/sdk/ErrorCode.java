@@ -130,7 +130,7 @@ public enum ErrorCode {
 	/**
 	 * Attempt to open encrypted wallet with invalid credentials
 	 */
-	WalletSecurityError(207),
+	WalletAccessFailedError(207),
 
 	// Ledger errors
 	
