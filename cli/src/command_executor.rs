@@ -1,10 +1,13 @@
+extern crate rpassword;
+
 use unescape::unescape;
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
+use std::error::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ParamMetadata {
     name: &'static str,
     is_optional: bool,
@@ -39,6 +42,7 @@ pub struct CommandMetadata {
     help: &'static str,
     main_param: Option<ParamMetadata>,
     params: Vec<ParamMetadata>,
+    deferred_params: Vec<ParamMetadata>,
     examples: Vec<&'static str>
 }
 
@@ -49,6 +53,7 @@ impl CommandMetadata {
             help,
             main_param: None,
             params: Vec::new(),
+            deferred_params: Vec::new(),
             examples: Vec::new(),
         }
     }
@@ -65,8 +70,15 @@ impl CommandMetadata {
         self.main_param.as_ref()
     }
 
-    pub fn params(&self) -> &[ParamMetadata] {
-        self.params.as_slice()
+    pub fn params(&self) -> &[ParamMetadata] { self.params.as_slice() }
+
+    pub fn deferred_params(&self) -> &[ParamMetadata] { self.deferred_params.as_slice() }
+
+    pub fn all_params(&self) -> Vec<ParamMetadata> {
+        let mut res: Vec<ParamMetadata> = Vec::new();
+        res.extend_from_slice(self.params());
+        res.extend_from_slice(self.deferred_params());
+        res
     }
 
     pub fn examples(&self) -> &[&'static str] { self.examples.as_slice() }
@@ -77,6 +89,7 @@ pub struct CommandMetadataBuilder {
     name: &'static str,
     main_param: Option<ParamMetadata>,
     params: Vec<ParamMetadata>,
+    deferred_params: Vec<ParamMetadata>,
     examples: Vec<&'static str>
 }
 
@@ -96,6 +109,14 @@ impl CommandMetadataBuilder {
         self
     }
 
+    pub fn add_deferred_params(mut self,
+                               name: &'static str,
+                               is_optional: bool,
+                               help: &'static str) -> CommandMetadataBuilder {
+        self.deferred_params.push(ParamMetadata::new(name, is_optional, help));
+        self
+    }
+
     pub fn add_example(mut self,
                        example: &'static str) -> CommandMetadataBuilder {
         self.examples.push(example);
@@ -108,6 +129,7 @@ impl CommandMetadataBuilder {
             help: self.help,
             main_param: self.main_param,
             params: self.params,
+            deferred_params: self.deferred_params,
             examples: self.examples,
         }
     }
@@ -332,7 +354,7 @@ impl CommandExecutor {
 
                 let param_names: Vec<(String, char)> = command
                     .metadata()
-                    .params()
+                    .all_params()
                     .iter()
                     .filter(|param| param.name().starts_with(word))
                     .map(|param| (param.name().to_owned(), '='))
@@ -363,7 +385,7 @@ impl CommandExecutor {
 
                     let param_names: Vec<(String, char)> = command
                         .metadata()
-                        .params()
+                        .all_params()
                         .iter()
                         .filter(|param| param.name().starts_with(word))
                         .map(|param| (param.name().to_owned(), '='))
@@ -523,7 +545,7 @@ impl CommandExecutor {
             print!(" [{}=]<{}-value>", main_param.name(), main_param.name())
         }
 
-        for param in command.metadata().params() {
+        for param in command.metadata().all_params() {
             if param.is_optional() {
                 print!(" [{}=<{}-value>]", param.name(), param.name())
             } else {
@@ -533,7 +555,7 @@ impl CommandExecutor {
 
         println!();
 
-        if command.metadata().main_param().is_some() || command.metadata().params().len() > 0 {
+        if command.metadata().main_param().is_some() || command.metadata().all_params().len() > 0 {
             println!();
             println_acc!("Parameters are:");
 
@@ -541,7 +563,7 @@ impl CommandExecutor {
                 println!("\t{} - {}", main_param.name(), main_param.help())
             }
 
-            for param in command.metadata().params() {
+            for param in command.metadata().all_params() {
                 print!("\t{} - ", param.name());
 
                 if param.is_optional() {
@@ -590,6 +612,8 @@ impl CommandExecutor {
             }
         }
 
+        let mut deffered_params = Vec::new();
+
         // Read rest params
         loop {
             let (param, tail) = CommandExecutor::_split_first_word(params);
@@ -607,21 +631,26 @@ impl CommandExecutor {
                 return Err(format!("\"{}\" parameter presented multiple times", param_name));
             }
 
-            let param_metadata = command.params().iter().find(|p| p.name() == param_name);
-
-            if let Some(param_metadata) = param_metadata {
-                if let Some(param_value) = param_value {
-                    if let Some(param_value) = unescape(CommandExecutor::_trim_quotes(param_value)) {
-                        res.insert(param_metadata.name(), param_value);
+            match command.all_params().iter().find(|p| p.name() == param_name) {
+                Some(param_metadata) => {
+                    if let Some(param_value) = param_value {
+                        unescape(CommandExecutor::_trim_quotes(&param_value))
+                            .ok_or(format!("Invalid escape sequence for \"{}\" parameter present", param_name))
+                            .map(|param_value| res.insert(param_metadata.name(), param_value))?;
+                    } else if command.deferred_params().iter().find(|p| p.name() == param_name).is_some() {
+                        deffered_params.push(param_metadata.name());
                     } else {
-                        return Err(format!("Invalid escape sequence for \"{}\" parameter present", param_metadata.name()));
+                        return Err(format!("No value for \"{}\" parameter present", param_name));
                     }
-                } else {
-                    return Err(format!("No value for \"{}\" parameter present", param_name));
                 }
-            } else {
-                return Err(format!("Unknown \"{}\" parameter present", param_name));
+                None => return Err(format!("Unknown \"{}\" parameter present", param_name))
             }
+        }
+
+        for param in deffered_params {
+            println!("Enter value for {}:", param);
+            let val = rpassword::read_password().unwrap_or_else(|err| err.description().to_string());
+            res.insert(param, val);
         }
 
         Ok(res)
