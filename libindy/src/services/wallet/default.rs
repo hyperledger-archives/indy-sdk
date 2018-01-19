@@ -289,7 +289,9 @@ impl From<rusqlcipher::Error> for WalletError {
     fn from(err: rusqlcipher::Error) -> WalletError {
         match err {
             rusqlcipher::Error::QueryReturnedNoRows => WalletError::NotFound(format!("Wallet record is not found: {}", err.description())),
-            _ => WalletError::SecurityError(format!("Unexpected SQLite error: {}", err.description()))
+            rusqlcipher::Error::SqliteFailure(err, _) if err.code == rusqlcipher::ErrorCode::NotADatabase =>
+                WalletError::SecurityError(format!("Wallet security error: {}", err.description())),
+            _ => WalletError::CommonError(CommonError::InvalidState(format!("Unexpected SQLite error: {}", err.description())))
         }
     }
 }
