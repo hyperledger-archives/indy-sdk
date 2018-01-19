@@ -77,4 +77,16 @@ describe('A Shema', function () {
     assert.equal(JSON.stringify(schema.getSchemaAttrs()),
     JSON.stringify({name: 'get schema attrs', version: '1.0', attrNames: ['test', 'get', 'schema', 'attrs']}))
   })
+
+  it('can be retrieved by calling lookup and then serialized', async () => {
+    const schema = await Schema.lookup({sourceId: '1cda', seqNo: 58})
+    // The attrNames are mocked values returned from sdk
+    assert.equal(JSON.stringify(schema.getSchemaAttrs()),
+    JSON.stringify({name: 'get schema attrs', version: '1.0', attrNames: ['test', 'get', 'schema', 'attrs']}))
+    const serializedLookup = await schema.serialize()
+    assert.equal(schema.handle, serializedLookup.handle)
+    const deserializedSchema = await Schema.deserialize(serializedLookup)
+    assert(schema)
+    assert.equal(schema.handle, deserializedSchema.handle)
+  })
 })
