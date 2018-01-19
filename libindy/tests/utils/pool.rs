@@ -6,7 +6,6 @@ use indy::api::ErrorCode;
 use indy::api::pool::{indy_create_pool_ledger_config, indy_delete_pool_ledger_config};
 #[cfg(feature = "local_nodes_pool")]
 use indy::api::pool::{indy_close_pool_ledger, indy_open_pool_ledger, indy_refresh_pool_ledger};
-use indy::api::ledger::indy_submit_request;
 
 use utils::callback::CallbackUtils;
 use utils::environment::EnvironmentUtils;
@@ -243,32 +242,6 @@ impl PoolUtils {
             return Err(res)
         }
         Ok(())
-    }
-
-    pub fn send_request(pool_handle: i32, request: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-        let cb_send = Box::new(move |err, resp| {
-            sender.send((err, resp)).unwrap();
-        });
-        let req = CString::new(request).unwrap();
-        let (command_handle, callback) = CallbackUtils::closure_to_send_tx_cb(cb_send);
-
-        let err = indy_submit_request(command_handle,
-                                      pool_handle,
-                                      req.as_ptr(),
-                                      callback);
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, resp) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(resp)
     }
 
     pub fn get_req_id() -> u64 {
