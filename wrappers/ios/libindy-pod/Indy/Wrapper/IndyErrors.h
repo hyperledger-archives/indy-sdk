@@ -70,6 +70,9 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     
     // Trying to open wallet that was opened already
     WalletAlreadyOpenedError = 206,
+
+    // Attempt to open encrypted wallet with invalid credentials
+    WalletSecurityError = 207,
     
     // Ledger errors
     // Trying to open pool ledger that wasn't created before

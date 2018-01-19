@@ -10,13 +10,7 @@ import org.hyperledger.indy.sdk.pool.PoolConfigNotCreatedException;
 import org.hyperledger.indy.sdk.pool.PoolLedgerConfigExistsException;
 import org.hyperledger.indy.sdk.pool.PoolLedgerTerminatedException;
 import org.hyperledger.indy.sdk.crypto.UnknownCryptoException;
-import org.hyperledger.indy.sdk.wallet.DuplicateWalletTypeException;
-import org.hyperledger.indy.sdk.wallet.UnknownWalletTypeException;
-import org.hyperledger.indy.sdk.wallet.WalletAlreadyOpenedException;
-import org.hyperledger.indy.sdk.wallet.InvalidWalletException;
-import org.hyperledger.indy.sdk.wallet.WalletExistsException;
-import org.hyperledger.indy.sdk.wallet.WalletValueNotFoundException;
-import org.hyperledger.indy.sdk.wallet.WrongWalletForPoolException;
+import org.hyperledger.indy.sdk.wallet.*;
 
 /**
  * Thrown when an Indy specific error has occurred.
@@ -88,6 +82,8 @@ public class IndyException extends Exception {
 				return new WrongWalletForPoolException();
 			case WalletAlreadyOpenedError:
 				return new WalletAlreadyOpenedException();
+			case WalletSecurityError:
+				return new WalletSecurityException();
 			case PoolLedgerNotCreatedError:
 				return new PoolConfigNotCreatedException();
 			case PoolLedgerInvalidPoolHandle:

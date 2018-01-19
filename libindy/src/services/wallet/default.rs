@@ -17,7 +17,7 @@ use std::path::PathBuf;
 use std::ops::Sub;
 
 
-use self::indy_crypto::utils::json::{JsonDecodable};
+use self::indy_crypto::utils::json::JsonDecodable;
 
 #[derive(Deserialize)]
 struct DefaultWalletRuntimeConfig {
@@ -131,20 +131,20 @@ impl Wallet for DefaultWallet {
 
         if self.config.freshness_time != 0
             && time::get_time().sub(record.time_created).num_seconds() > self.config.freshness_time {
-            return Err(WalletError::NotFound(key.to_string()))
+            return Err(WalletError::NotFound(key.to_string()));
         }
 
-        return Ok(record.value)
+        return Ok(record.value);
     }
 
-    fn close(&self) -> Result<(), WalletError>{ Ok(()) }
+    fn close(&self) -> Result<(), WalletError> { Ok(()) }
 
     fn get_pool_name(&self) -> String {
         self.pool_name.clone()
     }
 
     fn get_name(&self) -> String {
-       self.name.clone()
+        self.name.clone()
     }
 }
 
@@ -162,7 +162,7 @@ impl WalletType for DefaultWalletType {
         let path = _db_path(name);
         if path.exists() {
             trace!("DefaultWalletType.create << path exists");
-            return Err(WalletError::AlreadyExists(name.to_string()))
+            return Err(WalletError::AlreadyExists(name.to_string()));
         }
 
         let runtime_auth = match credentials {
@@ -189,10 +189,19 @@ impl WalletType for DefaultWalletType {
             None => DefaultWalletRuntimeConfig::default()
         };
 
-        let runtime_auth = match credentials {
+        let mut runtime_auth = match credentials {
             Some(auth) => DefaultWalletCredentials::from_json(auth)?,
             None => DefaultWalletCredentials::default()
         };
+
+        _open_connection(name, &runtime_auth).map_err(map_err_trace!())?
+            .query_row("SELECT sql FROM sqlite_master", &[], |_| {})
+            .map_err(map_err_trace!())?;
+
+        if let Some(rekey) = runtime_auth.rekey {
+            runtime_auth.key = rekey;
+            runtime_auth.rekey = None;
+        }
 
         Ok(Box::new(
             DefaultWallet::new(
@@ -240,7 +249,7 @@ fn _export_encrypted_to_unencrypted(conn: Connection, name: &str) -> Result<Conn
     path.push("plaintext.db");
 
     conn.execute(&format!("ATTACH DATABASE {:?} AS plaintext KEY ''", path), &[])?;
-    conn.query_row(&"SELECT sqlcipher_export('plaintext')", &[], |row|{})?;
+    conn.query_row(&"SELECT sqlcipher_export('plaintext')", &[], |row| {})?;
     conn.execute(&"DETACH DATABASE plaintext", &[])?;
     let r = conn.close();
     if let Err((c, w)) = r {
@@ -280,7 +289,7 @@ impl From<rusqlcipher::Error> for WalletError {
     fn from(err: rusqlcipher::Error) -> WalletError {
         match err {
             rusqlcipher::Error::QueryReturnedNoRows => WalletError::NotFound(format!("Wallet record is not found: {}", err.description())),
-            _ => WalletError::CommonError(CommonError::InvalidState(format!("Unexpected SQLite error: {}", err.description())))
+            _ => WalletError::SecurityError(format!("Unexpected SQLite error: {}", err.description()))
         }
     }
 }
@@ -295,7 +304,7 @@ mod tests {
     use serde_json;
     use self::serde_json::Error as JsonError;
 
-    use std::time::{Duration};
+    use std::time::Duration;
     use std::thread;
 
     #[test]
