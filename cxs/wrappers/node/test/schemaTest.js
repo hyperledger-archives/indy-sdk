@@ -4,7 +4,6 @@ const { stubInitCXS } = require('./helpers')
 const { Schema, Error } = cxs
 
 const SCHEMA = {
-  name: 'test',
   sourceId: 'sourceId',
   data: {
     name: 'data name',
@@ -32,10 +31,10 @@ describe('A Shema', function () {
     assert.equal(schema.getSchemaAttrs(), SCHEMA.data)
   })
 
-  it('has a name of test after instanstiated', async () => {
+  it('has a name of data name after instanstiated', async () => {
     const schema = await Schema.create(SCHEMA)
     const name = await schema._name
-    assert.equal(name, 'test')
+    assert.equal(name, 'data name')
   })
 
   it('can be created, then serialized, then deserialized and have the same sourceId, name, and handle', async () => {
