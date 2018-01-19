@@ -79,7 +79,7 @@ pub enum DidCommand {
         i32, // wallet handle
         String, // did
         Box<Fn(Result<String, IndyError>) + Send>),
-    GetAbbrVerkey(
+    AbbreviatedVerkey(
         String, // did
         String, // verkey
         Box<Fn(Result<String, IndyError>) + Send>),
@@ -184,9 +184,9 @@ impl DidCommandExecutor {
                 info!("GetDidMetadata command received");
                 cb(self.get_did_metadata(wallet_handle, did));
             }
-            DidCommand::GetAbbrVerkey(did, verkey, cb) => {
-                info!("GetAbbrVerkey command received");
-                cb(self.get_abbr_verkey(did, verkey));
+            DidCommand::AbbreviatedVerkey(did, verkey, cb) => {
+                info!("AbbreviatedVerkey command received");
+                cb(self.abbreviate_verkey(did, verkey));
             }
             DidCommand::GetNymAck(wallet_handle, result, deferred_cmd_id) => {
                 info!("GetNymAck command received");
@@ -405,7 +405,7 @@ impl DidCommandExecutor {
         Ok(res)
     }
 
-    fn get_abbr_verkey(&self,
+    fn abbreviate_verkey(&self,
                        did: String,
                        verkey: String) -> Result<String, IndyError> {
         self.crypto_service.validate_did(&did)?;

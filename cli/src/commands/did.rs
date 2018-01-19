@@ -54,7 +54,7 @@ pub mod new_command {
         let res =
             Did::new(wallet_handle, config.as_str())
                 .and_then(|(did, vk)|
-                    match Did::get_abbr_verkey(&did, &vk) {
+                    match Did::abbreviate_verkey(&did, &vk) {
                         Ok(vk) => Ok((did, vk)),
                         Err(err) => Err(err)
                     });
@@ -132,7 +132,7 @@ pub mod import_command {
                         for did in dids {
                             match Did::new(wallet_handle, &did.to_string())
                                 .and_then(|(did, vk)|
-                                    match Did::get_abbr_verkey(&did, &vk) {
+                                    match Did::abbreviate_verkey(&did, &vk) {
                                         Ok(vk) => Ok((did, vk)),
                                         Err(err) => Err(err)
                                     }) {
@@ -226,7 +226,7 @@ pub mod rotate_key_command {
 
         let res =
             match Did::replace_keys_apply(wallet_handle, &did)
-                .and_then(|_| Did::get_abbr_verkey(&did, &new_verkey)) {
+                .and_then(|_| Did::abbreviate_verkey(&did, &new_verkey)) {
                 Ok(vk) => Ok(println_succ!("Verkey for did \"{}\" has been updated. New verkey: \"{}\"", did, vk)),
                 Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
                 Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
@@ -255,7 +255,7 @@ pub mod list_command {
 
                 if dids.len() > 0 {
                     for did_info in dids.iter_mut() {
-                        match Did::get_abbr_verkey(did_info["did"].as_str().unwrap_or(""),
+                        match Did::abbreviate_verkey(did_info["did"].as_str().unwrap_or(""),
                                                    did_info["verkey"].as_str().unwrap_or("")) {
                             Ok(vk) => did_info["verkey"] = serde_json::Value::String(vk),
                             Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err))

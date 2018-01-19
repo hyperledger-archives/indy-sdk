@@ -571,7 +571,7 @@ public class Did extends IndyJava.API {
 	 * @return A future resolving to a verkey
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> getAbbrVerkey(
+	public static CompletableFuture<String> AbbreviatedVerkey(
 			String did,
 			String verkey) throws IndyException {
 
@@ -581,7 +581,7 @@ public class Did extends IndyJava.API {
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_get_abbr_verkey(
+		int result = LibIndy.api.indy_abbreviate_verkey(
 				commandHandle,
 				did,
 				verkey,

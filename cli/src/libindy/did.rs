@@ -94,14 +94,14 @@ impl Did {
     }
 
 
-    pub fn get_abbr_verkey(did: &str, verkey: &str) -> Result<String, ErrorCode> {
+    pub fn abbreviate_verkey(did: &str, verkey: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let did = CString::new(did).unwrap();
         let verkey = CString::new(verkey).unwrap();
 
         let err = unsafe {
-            indy_get_abbr_verkey(command_handle,
+            indy_abbreviate_verkey(command_handle,
                                  did.as_ptr(),
                                  verkey.as_ptr(),
                                  cb)
@@ -157,7 +157,7 @@ extern {
                                                         dids: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
-    fn indy_get_abbr_verkey(command_handle: i32,
+    fn indy_abbreviate_verkey(command_handle: i32,
                             did: *const c_char,
                             full_verkey: *const c_char,
                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,

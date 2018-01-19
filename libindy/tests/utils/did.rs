@@ -354,7 +354,7 @@ impl DidUtils {
         Ok(metadata)
     }
 
-    pub fn get_abbr_verkey(did: &str, verkey: &str) -> Result<String, ErrorCode> {
+    pub fn abbreviate_verkey(did: &str, verkey: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
         let cb = Box::new(move |err, metadata| {
             sender.send((err, metadata)).unwrap();
@@ -364,7 +364,7 @@ impl DidUtils {
         let did = CString::new(did).unwrap();
         let verkey = CString::new(verkey).unwrap();
 
-        let err = indy_get_abbr_verkey(command_handle,
+        let err = indy_abbreviate_verkey(command_handle,
                                        did.as_ptr(),
                                        verkey.as_ptr(),
                                        callback);

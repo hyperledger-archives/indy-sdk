@@ -121,7 +121,7 @@
                completion:(void (^)(NSError *error, NSString *metadata))completion;
 
 
-+ (void)getAbbrVerkey:(NSString *)did
++ (void)AbbreviatedVerkey:(NSString *)did
            fullVerkey:(NSString *)fullVerkey
                completion:(void (^)(NSError *error, NSString *verkey))completion;
 

@@ -1021,18 +1021,18 @@ mod high_cases {
         }
     }
 
-    mod get_abbr_verkey {
+    mod abbreviate_verkey {
         use super::*;
 
         #[test]
-        fn indy_get_abbr_verkey_works_for_abbr_key() {
+        fn indy_abbreviate_verkey_works_for_abbr_key() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (did, verkey) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-            let abbr_verkey = DidUtils::get_abbr_verkey(&did, &verkey).unwrap();
+            let abbr_verkey = DidUtils::abbreviate_verkey(&did, &verkey).unwrap();
 
             assert_ne!(verkey, abbr_verkey);
 
@@ -1040,14 +1040,14 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_get_abbr_verkey_works_for_not_abbr_key() {
+        fn indy_abbreviate_verkey_works_for_not_abbr_key() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let (did, verkey) = DidUtils::create_my_did(wallet_handle, &format!(r#"{{"did":{:?}}}"#, DID_TRUSTEE)).unwrap();
 
-            let full_verkey = DidUtils::get_abbr_verkey(&did, &verkey).unwrap();
+            let full_verkey = DidUtils::abbreviate_verkey(&did, &verkey).unwrap();
 
             assert_eq!(verkey, full_verkey);
 
@@ -1055,14 +1055,14 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_get_abbr_verkey_works_for_invalid_did() {
-            let res = DidUtils::get_abbr_verkey(INVALID_BASE58_DID, VERKEY_TRUSTEE);
+        fn indy_abbreviate_verkey_works_for_invalid_did() {
+            let res = DidUtils::abbreviate_verkey(INVALID_BASE58_DID, VERKEY_TRUSTEE);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
         }
 
         #[test]
-        fn indy_get_abbr_verkey_works_for_invalid_verkey() {
-            let res = DidUtils::get_abbr_verkey(DID_TRUSTEE, INVALID_BASE58_VERKEY);
+        fn indy_abbreviate_verkey_works_for_invalid_verkey() {
+            let res = DidUtils::abbreviate_verkey(DID_TRUSTEE, INVALID_BASE58_VERKEY);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
         }
     }
