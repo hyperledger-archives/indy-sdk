@@ -75,6 +75,10 @@ impl DefaultWallet {
 
 impl Wallet for DefaultWallet {
     fn set(&self, key: &str, value: &str) -> Result<(), WalletError> {
+        if self.credentials.rekey.is_some() {
+            return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
+        }
+        
         _open_connection(self.name.as_str(), &self.credentials)?
             .execute(
                 "INSERT OR REPLACE INTO wallet (key, value, time_created) VALUES (?1, ?2, ?3)",
@@ -83,6 +87,10 @@ impl Wallet for DefaultWallet {
     }
 
     fn get(&self, key: &str) -> Result<String, WalletError> {
+        if self.credentials.rekey.is_some() {
+            return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
+        }
+
         let record = _open_connection(self.name.as_str(), &self.credentials)?
             .query_row(
                 "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
@@ -97,6 +105,10 @@ impl Wallet for DefaultWallet {
     }
 
     fn list(&self, key_prefix: &str) -> Result<Vec<(String, String)>, WalletError> {
+        if self.credentials.rekey.is_some() {
+            return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
+        }
+
         let connection = _open_connection(self.name.as_str(), &self.credentials)?;
         let mut stmt = connection.prepare("SELECT key, value, time_created FROM wallet WHERE key like ?1 order by key")?;
         let records = stmt.query_map(&[&format!("{}%", key_prefix)], |row| {
@@ -118,6 +130,10 @@ impl Wallet for DefaultWallet {
     }
 
     fn get_not_expired(&self, key: &str) -> Result<String, WalletError> {
+        if self.credentials.rekey.is_some() {
+            return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
+        }
+
         let record = _open_connection(self.name.as_str(), &self.credentials)?
             .query_row(
                 "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
@@ -169,6 +185,10 @@ impl WalletType for DefaultWalletType {
             Some(auth) => DefaultWalletCredentials::from_json(auth)?,
             None => DefaultWalletCredentials::default()
         };
+
+        if runtime_auth.rekey.is_some() {
+            return Err(WalletError::CommonError(CommonError::InvalidStructure(format!("Invalid wallet credentials json"))));
+        }
 
         _open_connection(name, &runtime_auth).map_err(map_err_trace!())?
             .execute("CREATE TABLE wallet (key TEXT CONSTRAINT constraint_name PRIMARY KEY, value TEXT NOT NULL, time_created TEXT NOT_NULL)", &[])
