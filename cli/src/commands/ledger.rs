@@ -591,15 +591,19 @@ pub mod pool_upgrade_command {
     use super::*;
 
     command!(CommandMetadata::build("pool-upgrade", "Send instructions to nodes to update themselves.")
-                .add_param("name", "Unique upgrade name.")
-                .add_param("version", "Target upgrade version.")
+                .add_param("name", "Human-readable name for the upgrade.")
+                .add_param("version", "The version of indy-node package we perform upgrade to. \n                  \
+                                              Must be greater than existing one (or equal if reinstall flag is True)")
                 .add_param("action", "Upgrade type. Either start or cancel.")
-                .add_param("sha256", "Unique hex identifier.")
-                .add_optional_param("timeout", "Timeout.")
-                .add_optional_param("schedule", "Node upgrade schedule.")
-                .add_optional_param("justification", "Comment.")
-                .add_optional_param("reinstall", "Same version reinstallation.")
-                .add_optional_param("force", "Forced upgrade applying without reaching pool consensus")
+                .add_param("sha256", "Sha256 hash of the package.")
+                .add_optional_param("timeout", "Limits upgrade time on each Node.")
+                .add_optional_param("schedule", "Node upgrade schedule. Schedule should contain identifiers of all nodes. Upgrade dates should be in future. \n                              \
+                                              If force flag is False, then it's required that time difference between each Upgrade must be not less than 5 minutes.\n                              \
+                                              Requirements for schedule can be ignored by parameter force=true.\n                              \
+                                              Schedule is mandatory for action=start.")
+                .add_optional_param("justification", "Justification string for this particular Upgrade.")
+                .add_optional_param("reinstall", "Whether it's allowed to re-install the same version. False by default.")
+                .add_optional_param("force", "Whether we should apply transaction without waiting for consensus of this transaction. False by default.")
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=start sha256=f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398 schedule={"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"2020-01-25T12:49:05.258870+00:00"}"#)
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=cancel sha256=ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398"#)
                 .finalize()
@@ -634,6 +638,19 @@ pub mod pool_upgrade_command {
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
+        let mut schedule = None;
+        let mut hash = None;
+        if let Some(res) = response.result.as_ref() {
+            schedule = res["schedule"].as_object()
+                .map(|s| format!("{{{}\n}}",
+                                 s.iter()
+                                     .map(|(key, value)| format!("\n    {:?}:{:?}", key, value.as_str().unwrap_or("")))
+                                     .collect::<Vec<String>>()
+                                     .join(",")));
+
+            hash = res["sha256"].as_str().map(|h| h.to_string());
+        };
+
         let res = handle_transaction_response(response,
                                               "NodeConfig request has been sent to Ledger.",
                                               &vec![("identifier", "Identifier"),
@@ -642,14 +659,22 @@ pub mod pool_upgrade_command {
                                                     ("txnTime", "Transaction time")],
                                               None,
                                               &mut vec![("name", "Name"),
-                                                        ("action", "Action"),
-                                                        ("version", "Version"),
-                                                        ("sha256", "Hash"),
-                                                        ("schedule", "Schedule"),
-                                                        ("timeout", "Timeout"),
-                                                        ("justification", "Justification"),
-                                                        ("reinstall", "Reinstall"),
-                                                        ("force", "Force Apply")]);
+                                                    ("action", "Action"),
+                                                    ("version", "Version"),
+                                                    ("timeout", "Timeout"),
+                                                    ("justification", "Justification"),
+                                                    ("reinstall", "Reinstall"),
+                                                    ("force", "Force Apply")]);
+
+        if let Some(h) = hash {
+            println_succ!("Hash:");
+            println!("{}", h);
+        }
+        if let Some(s) = schedule {
+            println_succ!("Schedule:");
+            println!("{}", s);
+        }
+
         trace!("execute << {:?}", res);
         res
     }
