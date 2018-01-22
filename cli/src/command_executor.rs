@@ -7,18 +7,20 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::error::Error;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ParamMetadata {
     name: &'static str,
     is_optional: bool,
+    is_deferred: bool,
     help: &'static str,
 }
 
 impl ParamMetadata {
-    pub fn new(name: &'static str, is_optional: bool, help: &'static str) -> ParamMetadata {
+    pub fn new(name: &'static str, is_optional: bool, is_deferred: bool, help: &'static str) -> ParamMetadata {
         ParamMetadata {
             name,
             is_optional,
+            is_deferred,
             help
         }
     }
@@ -29,6 +31,10 @@ impl ParamMetadata {
 
     pub fn is_optional(&self) -> bool {
         self.is_optional
+    }
+
+    pub fn is_deferred(&self) -> bool {
+        self.is_deferred
     }
 
     pub fn help(&self) -> &'static str {
@@ -42,7 +48,6 @@ pub struct CommandMetadata {
     help: &'static str,
     main_param: Option<ParamMetadata>,
     params: Vec<ParamMetadata>,
-    deferred_params: Vec<ParamMetadata>,
     examples: Vec<&'static str>
 }
 
@@ -53,7 +58,6 @@ impl CommandMetadata {
             help,
             main_param: None,
             params: Vec::new(),
-            deferred_params: Vec::new(),
             examples: Vec::new(),
         }
     }
@@ -72,15 +76,6 @@ impl CommandMetadata {
 
     pub fn params(&self) -> &[ParamMetadata] { self.params.as_slice() }
 
-    pub fn deferred_params(&self) -> &[ParamMetadata] { self.deferred_params.as_slice() }
-
-    pub fn all_params(&self) -> Vec<ParamMetadata> {
-        let mut res: Vec<ParamMetadata> = Vec::new();
-        res.extend_from_slice(self.params());
-        res.extend_from_slice(self.deferred_params());
-        res
-    }
-
     pub fn examples(&self) -> &[&'static str] { self.examples.as_slice() }
 }
 
@@ -89,7 +84,6 @@ pub struct CommandMetadataBuilder {
     name: &'static str,
     main_param: Option<ParamMetadata>,
     params: Vec<ParamMetadata>,
-    deferred_params: Vec<ParamMetadata>,
     examples: Vec<&'static str>
 }
 
@@ -97,23 +91,16 @@ impl CommandMetadataBuilder {
     pub fn add_main_param(mut self,
                           name: &'static str,
                           help: &'static str) -> CommandMetadataBuilder {
-        self.main_param = Some(ParamMetadata::new(name, false, help));
+        self.main_param = Some(ParamMetadata::new(name, false, false, help));
         self
     }
 
     pub fn add_param(mut self,
                      name: &'static str,
                      is_optional: bool,
+                     is_deferred: bool,
                      help: &'static str) -> CommandMetadataBuilder {
-        self.params.push(ParamMetadata::new(name, is_optional, help));
-        self
-    }
-
-    pub fn add_deferred_params(mut self,
-                               name: &'static str,
-                               is_optional: bool,
-                               help: &'static str) -> CommandMetadataBuilder {
-        self.deferred_params.push(ParamMetadata::new(name, is_optional, help));
+        self.params.push(ParamMetadata::new(name, is_optional, is_deferred, help));
         self
     }
 
@@ -129,7 +116,6 @@ impl CommandMetadataBuilder {
             help: self.help,
             main_param: self.main_param,
             params: self.params,
-            deferred_params: self.deferred_params,
             examples: self.examples,
         }
     }
@@ -354,7 +340,7 @@ impl CommandExecutor {
 
                 let param_names: Vec<(String, char)> = command
                     .metadata()
-                    .all_params()
+                    .params()
                     .iter()
                     .filter(|param| param.name().starts_with(word))
                     .map(|param| (param.name().to_owned(), '='))
@@ -385,7 +371,7 @@ impl CommandExecutor {
 
                     let param_names: Vec<(String, char)> = command
                         .metadata()
-                        .all_params()
+                        .params()
                         .iter()
                         .filter(|param| param.name().starts_with(word))
                         .map(|param| (param.name().to_owned(), '='))
@@ -546,24 +532,20 @@ impl CommandExecutor {
         }
 
         for param in command.metadata().params() {
-            if param.is_optional() {
+            if param.is_optional() && param.is_deferred() {
+                print!(" [{}[=<{}-value>]]", param.name(), param.name())
+            } else if param.is_optional() && !param.is_deferred() {
                 print!(" [{}=<{}-value>]", param.name(), param.name())
+            } else if !param.is_optional() && param.is_deferred() {
+                print!(" {}[=<{}-value>]", param.name(), param.name())
             } else {
                 print!(" {}=<{}-value>", param.name(), param.name())
             }
         }
 
-        for param in command.metadata().deferred_params() {
-            if param.is_optional() {
-                print!(" [{}[=<{}-value>]]", param.name(), param.name())
-            } else {
-                print!(" {}[=<{}-value>]", param.name(), param.name())
-            }
-        }
-
         println!();
 
-        if command.metadata().main_param().is_some() || command.metadata().all_params().len() > 0 {
+        if command.metadata().main_param().is_some() || command.metadata().params().len() > 0 {
             println!();
             println_acc!("Parameters are:");
 
@@ -578,17 +560,9 @@ impl CommandExecutor {
                     print!("(optional) ")
                 }
 
-                println!("{}", param.help());
-            }
-
-            for param in command.metadata().deferred_params() {
-                print!("\t{} - ", param.name());
-
-                if param.is_optional() {
-                    print!("(optional) ")
+                if param.is_deferred() {
+                    print!("(left empty for deferred input) ")
                 }
-
-                print!("(left empty for deferred input) ");
 
                 println!("{}", param.help());
             }
@@ -651,13 +625,13 @@ impl CommandExecutor {
                 return Err(format!("\"{}\" parameter presented multiple times", param_name));
             }
 
-            match command.all_params().iter().find(|p| p.name() == param_name) {
+            match command.params().iter().find(|p| p.name() == param_name) {
                 Some(param_metadata) => {
                     if let Some(param_value) = param_value {
                         unescape(CommandExecutor::_trim_quotes(&param_value))
                             .ok_or(format!("Invalid escape sequence for \"{}\" parameter present", param_name))
                             .map(|param_value| res.insert(param_metadata.name(), param_value))?;
-                    } else if command.deferred_params().iter().find(|p| p.name() == param_name).is_some() {
+                    } else if param_metadata.is_deferred() {
                         deffered_params.push(param_metadata.name());
                     } else {
                         return Err(format!("No value for \"{}\" parameter present", param_name));
