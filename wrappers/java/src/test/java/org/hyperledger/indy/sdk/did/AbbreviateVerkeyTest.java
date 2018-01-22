@@ -7,7 +7,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-public class GetAbbrVerkeyTest extends IndyIntegrationTestWithSingleWallet {
+public class AbbreviateVerkeyTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testAbbrVerkeyWorksForAbbrVerekey() throws Exception {
