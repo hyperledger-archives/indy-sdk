@@ -571,7 +571,7 @@ public class Did extends IndyJava.API {
 	 * @return A future resolving to a verkey
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> AbbreviatedVerkey(
+	public static CompletableFuture<String> AbbreviateVerkey(
 			String did,
 			String verkey) throws IndyException {
 

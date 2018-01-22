@@ -149,7 +149,7 @@
     [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
 }
 
-+ (void)AbbreviatedVerkey:(NSString *)did
++ (void)AbbreviateVerkey:(NSString *)did
            fullVerkey:(NSString *)fullVerkey
            completion:(void (^)(NSError *error, NSString *verkey))completion
 {

@@ -413,7 +413,7 @@ mod tests {
     }
 
     #[test]
-    fn create_their_did_works_for_abbreviate_verkey() {
+    fn create_their_did_works_for_abbreviated_verkey() {
         let service = CryptoService::new();
         let did = "8wZcEriaNLNKtteJvx7f8i";
         let their_did_info = TheirDidInfo::new(did.to_string(), Some("~NcYxiDXkpYi6ov5FcYDi1e".to_string()));

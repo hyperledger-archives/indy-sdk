@@ -13,7 +13,7 @@ public class GetAbbrVerkeyTest extends IndyIntegrationTestWithSingleWallet {
 	public void testAbbrVerkeyWorksForAbbrVerekey() throws Exception {
 		CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, "{}").get();
 
-		String verkey = Did.AbbreviatedVerkey(result.getDid(), result.getVerkey()).get();
+		String verkey = Did.AbbreviateVerkey(result.getDid(), result.getVerkey()).get();
 
 		assertNotEquals(result.getVerkey(), verkey);
 	}
@@ -25,7 +25,7 @@ public class GetAbbrVerkeyTest extends IndyIntegrationTestWithSingleWallet {
 
 		CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, theirDidJson.toJson()).get();
 
-		String verkey = Did.AbbreviatedVerkey(result.getDid(), result.getVerkey()).get();
+		String verkey = Did.AbbreviateVerkey(result.getDid(), result.getVerkey()).get();
 
 		assertEquals(result.getVerkey(), verkey);
 	}

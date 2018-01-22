@@ -79,7 +79,7 @@ pub enum DidCommand {
         i32, // wallet handle
         String, // did
         Box<Fn(Result<String, IndyError>) + Send>),
-    AbbreviatedVerkey(
+    AbbreviateVerkey(
         String, // did
         String, // verkey
         Box<Fn(Result<String, IndyError>) + Send>),
@@ -184,8 +184,8 @@ impl DidCommandExecutor {
                 info!("GetDidMetadata command received");
                 cb(self.get_did_metadata(wallet_handle, did));
             }
-            DidCommand::AbbreviatedVerkey(did, verkey, cb) => {
-                info!("AbbreviatedVerkey command received");
+            DidCommand::AbbreviateVerkey(did, verkey, cb) => {
+                info!("AbbreviateVerkey command received");
                 cb(self.abbreviate_verkey(did, verkey));
             }
             DidCommand::GetNymAck(wallet_handle, result, deferred_cmd_id) => {

@@ -512,7 +512,7 @@ pub  extern fn indy_abbreviate_verkey(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
-        .send(Command::Did(DidCommand::AbbreviatedVerkey(
+        .send(Command::Did(DidCommand::AbbreviateVerkey(
             did,
             full_verkey,
             Box::new(move |result| {
