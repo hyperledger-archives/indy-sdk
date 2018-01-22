@@ -97,10 +97,22 @@ impl CommandMetadataBuilder {
 
     pub fn add_param(mut self,
                      name: &'static str,
-                     is_optional: bool,
-                     is_deferred: bool,
                      help: &'static str) -> CommandMetadataBuilder {
-        self.params.push(ParamMetadata::new(name, is_optional, is_deferred, help));
+        self.params.push(ParamMetadata::new(name, false, false, help));
+        self
+    }
+
+    pub fn add_optional_param(mut self,
+                              name: &'static str,
+                              help: &'static str) -> CommandMetadataBuilder {
+        self.params.push(ParamMetadata::new(name, true, false, help));
+        self
+    }
+
+    pub fn add_optional_deferred(mut self,
+                                 name: &'static str,
+                                 help: &'static str) -> CommandMetadataBuilder {
+        self.params.push(ParamMetadata::new(name, true, true, help));
         self
     }
 
@@ -332,12 +344,6 @@ impl CommandExecutor {
                     completes.push(("help".to_owned(), ' '));
                 }
 
-                if let Some(main_param) = command.metadata().main_param() {
-                    if main_param.name().starts_with(word) {
-                        completes.push((main_param.name().to_owned(), '='));
-                    }
-                }
-
                 let param_names: Vec<(String, char)> = command
                     .metadata()
                     .params()
@@ -361,12 +367,6 @@ impl CommandExecutor {
                 } else {
                     if "help".starts_with(word) {
                         completes.push(("help".to_owned(), ' '));
-                    }
-
-                    if let Some(main_param) = command.metadata().main_param() {
-                        if main_param.name().starts_with(word) {
-                            completes.push((main_param.name().to_owned(), '='));
-                        }
                     }
 
                     let param_names: Vec<(String, char)> = command
@@ -438,9 +438,9 @@ impl CommandExecutor {
     }
 
     fn _execute_command(&self, group: Option<&CommandGroup>, command: &Command, params: &str) -> Result<(), ()> {
-        let (main_param, _) = CommandExecutor::_split_first_word(params);
+        let (first_word, _) = CommandExecutor::_split_first_word(params);
 
-        if main_param == "help" {
+        if first_word == "help" {
             self._print_command_help(group, command);
             return Ok(());
         }
@@ -528,18 +528,15 @@ impl CommandExecutor {
         }
 
         if let Some(ref main_param) = command.metadata().main_param() {
-            print!(" [{}=]<{}-value>", main_param.name(), main_param.name())
+            print!(" <{}-value>", main_param.name());
         }
 
         for param in command.metadata().params() {
-            if param.is_optional() && param.is_deferred() {
-                print!(" [{}[=<{}-value>]]", param.name(), param.name())
-            } else if param.is_optional() && !param.is_deferred() {
-                print!(" [{}=<{}-value>]", param.name(), param.name())
-            } else if !param.is_optional() && param.is_deferred() {
-                print!(" {}[=<{}-value>]", param.name(), param.name())
-            } else {
-                print!(" {}=<{}-value>", param.name(), param.name())
+            match (param.is_optional(), param.is_deferred()) {
+                (true, true) => print!(" [{}[=<{}-value>]]", param.name(), param.name()),
+                (true, false) => print!(" [{}=<{}-value>]", param.name(), param.name()),
+                (false, true) => print!(" {}[=<{}-value>]", param.name(), param.name()),
+                (false, false) => print!(" {}=<{}-value>", param.name(), param.name())
             }
         }
 
@@ -586,14 +583,8 @@ impl CommandExecutor {
 
         // Read main param
         if let Some(param_metadata) = command.main_param() {
-            let (mut param_value, tail) = CommandExecutor::_split_first_word(params);
+            let (param_value, tail) = CommandExecutor::_split_first_word(params);
             params = tail;
-
-            // Check for full param format
-            let mut split = param_value.splitn(2, '=');
-            if split.next().unwrap_or("") == param_metadata.name() {
-                param_value = split.next().unwrap_or("")
-            }
 
             if param_value.is_empty() {
                 return Err(format!("No main \"{}\" parameter present", param_metadata.name()));
@@ -627,14 +618,16 @@ impl CommandExecutor {
 
             match command.params().iter().find(|p| p.name() == param_name) {
                 Some(param_metadata) => {
-                    if let Some(param_value) = param_value {
-                        unescape(CommandExecutor::_trim_quotes(&param_value))
-                            .ok_or(format!("Invalid escape sequence for \"{}\" parameter present", param_name))
-                            .map(|param_value| res.insert(param_metadata.name(), param_value))?;
-                    } else if param_metadata.is_deferred() {
-                        deffered_params.push(param_metadata.name());
-                    } else {
-                        return Err(format!("No value for \"{}\" parameter present", param_name));
+                    match param_value {
+                        Some(param_value) => {
+                            unescape(CommandExecutor::_trim_quotes(&param_value))
+                                .ok_or(format!("Invalid escape sequence for \"{}\" parameter present", param_name))
+                                .map(|param_value| res.insert(param_metadata.name(), param_value))?;
+                        }
+                        _ if param_metadata.is_deferred() => {
+                            deffered_params.push(param_metadata.name());
+                        }
+                        _ => return Err(format!("No value for \"{}\" parameter present", param_name))
                     }
                 }
                 None => return Err(format!("Unknown \"{}\" parameter present", param_name))
