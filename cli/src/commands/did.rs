@@ -51,7 +51,13 @@ pub mod new_command {
 
         trace!(r#"Did::new try: config {:?}"#, config);
 
-        let res = Did::new(wallet_handle, config.as_str());
+        let res =
+            Did::new(wallet_handle, config.as_str())
+                .and_then(|(did, vk)|
+                    match Did::abbreviate_verkey(&did, &vk) {
+                        Ok(vk) => Ok((did, vk)),
+                        Err(err) => Err(err)
+                    });
 
         trace!(r#"Did::new return: {:?}"#, res);
 
@@ -124,7 +130,12 @@ pub mod import_command {
                     })
                     .and_then(|dids| {
                         for did in dids {
-                            match Did::new(wallet_handle, &did.to_string()) {
+                            match Did::new(wallet_handle, &did.to_string())
+                                .and_then(|(did, vk)|
+                                    match Did::abbreviate_verkey(&did, &vk) {
+                                        Ok(vk) => Ok((did, vk)),
+                                        Err(err) => Err(err)
+                                    }) {
                                 Ok((did, vk)) =>
                                     println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk),
                                 Err(err) =>
@@ -213,11 +224,13 @@ pub mod rotate_key_command {
             handle_transaction_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))?;
         }
 
-        let res = match Did::replace_keys_apply(wallet_handle, &did) {
-            Ok(_) => Ok(println_succ!("Verkey has been updated. New verkey: \"{}\"", new_verkey)),
-            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
-            Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
-        };
+        let res =
+            match Did::replace_keys_apply(wallet_handle, &did)
+                .and_then(|_| Did::abbreviate_verkey(&did, &new_verkey)) {
+                Ok(vk) => Ok(println_succ!("Verkey for did \"{}\" has been updated. New verkey: \"{}\"", did, vk)),
+                Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
+                Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
+            };
 
         trace!("execute << {:?}", res);
         res
@@ -237,9 +250,18 @@ pub mod list_command {
 
         let res = match Did::list_dids_with_meta(wallet_handle) {
             Ok(dids) => {
-                let dids: Vec<serde_json::Value> = serde_json::from_str(&dids)
+                let mut dids: Vec<serde_json::Value> = serde_json::from_str(&dids)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
+
                 if dids.len() > 0 {
+                    for did_info in dids.iter_mut() {
+                        match Did::abbreviate_verkey(did_info["did"].as_str().unwrap_or(""),
+                                                   did_info["verkey"].as_str().unwrap_or("")) {
+                            Ok(vk) => did_info["verkey"] = serde_json::Value::String(vk),
+                            Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err))
+                        }
+                    }
+
                     print_list_table(&dids,
                                      &vec![("did", "Did"),
                                            ("verkey", "Verkey"),
