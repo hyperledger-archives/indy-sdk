@@ -592,7 +592,7 @@ pub mod pool_upgrade_command {
 
     command!(CommandMetadata::build("pool-upgrade", "Send instructions to nodes to update themselves.")
                 .add_param("name", "Human-readable name for the upgrade.")
-                .add_param("version", "The version of indy-node package we perform upgrade to. \n                  \
+                .add_param("version","The version of indy-node package we perform upgrade to. \n                  \
                                               Must be greater than existing one (or equal if reinstall flag is True)")
                 .add_param("action", "Upgrade type. Either start or cancel.")
                 .add_param("sha256", "Sha256 hash of the package.")
