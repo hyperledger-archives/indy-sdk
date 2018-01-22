@@ -879,7 +879,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_store_their_did_works_for_abbreviated_verkey() {
+        fn indy_store_their_did_works_for_abbreviate_verkey() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();

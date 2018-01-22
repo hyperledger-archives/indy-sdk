@@ -102,9 +102,9 @@ impl Did {
 
         let err = unsafe {
             indy_abbreviate_verkey(command_handle,
-                                 did.as_ptr(),
-                                 verkey.as_ptr(),
-                                 cb)
+                                   did.as_ptr(),
+                                   verkey.as_ptr(),
+                                   cb)
         };
 
         super::results::result_to_string(err, receiver)
@@ -158,8 +158,8 @@ extern {
 
     #[no_mangle]
     fn indy_abbreviate_verkey(command_handle: i32,
-                            did: *const c_char,
-                            full_verkey: *const c_char,
-                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                 verkey: *const c_char)>) -> ErrorCode;
+                              did: *const c_char,
+                              full_verkey: *const c_char,
+                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                   verkey: *const c_char)>) -> ErrorCode;
 }

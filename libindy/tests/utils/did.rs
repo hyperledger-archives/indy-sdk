@@ -128,7 +128,7 @@ impl DidUtils {
         }
         Ok(())
     }
-    
+
     pub fn replace_keys_start(wallet_handle: i32, did: &str, identity_json: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
@@ -365,9 +365,9 @@ impl DidUtils {
         let verkey = CString::new(verkey).unwrap();
 
         let err = indy_abbreviate_verkey(command_handle,
-                                       did.as_ptr(),
-                                       verkey.as_ptr(),
-                                       callback);
+                                         did.as_ptr(),
+                                         verkey.as_ptr(),
+                                         callback);
 
         if err != ErrorCode::Success {
             return Err(err);

@@ -406,8 +406,8 @@ impl DidCommandExecutor {
     }
 
     fn abbreviate_verkey(&self,
-                       did: String,
-                       verkey: String) -> Result<String, IndyError> {
+                         did: String,
+                         verkey: String) -> Result<String, IndyError> {
         self.crypto_service.validate_did(&did)?;
         self.crypto_service.validate_key(&verkey)?;
 
