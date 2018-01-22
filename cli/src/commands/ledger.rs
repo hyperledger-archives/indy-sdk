@@ -67,9 +67,9 @@ pub mod nym_command {
                                               &vec![("reqId", "Request ID"),
                                                     ("txnTime", "Transaction time")],
                                               None,
-                                              &vec![("dest", "Did"),
-                                                    ("verkey", "Verkey"),
-                                                    ("role", "Role")]);
+                                              &mut vec![("dest", "Did"),
+                                                        ("verkey", "Verkey"),
+                                                        ("role", "Role")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -120,10 +120,10 @@ pub mod get_nym_command {
                                                     ("reqId", "Request ID"),
                                                     ("txnTime", "Transaction time")],
                                               Some("data"),
-                                              &vec![("identifier", "Identifier"),
-                                                    ("dest", "Dest"),
-                                                    ("verkey", "Verkey"),
-                                                    ("role", "Role")]);
+                                              &mut vec![("identifier", "Identifier"),
+                                                        ("dest", "Dest"),
+                                                        ("verkey", "Verkey"),
+                                                        ("role", "Role")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -178,7 +178,7 @@ pub mod attrib_command {
                                                     ("reqId", "Request ID"),
                                                     ("txnTime", "Transaction time")],
                                               None,
-                                              &vec![attribute]);
+                                              &mut vec![attribute]);
 
         trace!("execute << {:?}", res);
         res
@@ -232,7 +232,7 @@ pub mod get_attrib_command {
                                                     ("reqId", "Request ID"),
                                                     ("txnTime", "Transaction time")],
                                               None,
-                                              &vec![("data", "Data")]);
+                                              &mut vec![("data", "Data")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -286,9 +286,9 @@ pub mod schema_command {
                                                     ("reqId", "Request ID"),
                                                     ("txnTime", "Transaction time")],
                                               Some("data"),
-                                              &vec![("name", "Name"),
-                                                    ("version", "Version"),
-                                                    ("attr_names", "Attributes")]);
+                                              &mut vec![("name", "Name"),
+                                                        ("version", "Version"),
+                                                        ("attr_names", "Attributes")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -347,9 +347,9 @@ pub mod get_schema_command {
                                                     ("reqId", "Request ID"),
                                                     ("txnTime", "Transaction time")],
                                               Some("data"),
-                                              &vec![("name", "Name"),
-                                                    ("version", "Version"),
-                                                    ("attr_names", "Attributes")]);
+                                              &mut vec![("name", "Name"),
+                                                        ("version", "Version"),
+                                                        ("attr_names", "Attributes")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -404,8 +404,8 @@ pub mod claim_def_command {
                                                     ("reqId", "Request ID"),
                                                     ("txnTime", "Transaction time")],
                                               Some("data"),
-                                              &vec![("primary", "Primary Key"),
-                                                    ("revocation", "Revocation Key")]);
+                                              &mut vec![("primary", "Primary Key"),
+                                                        ("revocation", "Revocation Key")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -457,8 +457,8 @@ pub mod get_claim_def_command {
                                                     ("reqId", "Request ID"),
                                                     ("txnTime", "Transaction time")],
                                               Some("data"),
-                                              &vec![("primary", "Primary Key"),
-                                                    ("revocation", "Revocation Key")]);
+                                              &mut vec![("primary", "Primary Key"),
+                                                        ("revocation", "Revocation Key")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -529,13 +529,13 @@ pub mod node_command {
                                                     ("reqId", "Request ID"),
                                                     ("txnTime", "Transaction time")],
                                               Some("data"),
-                                              &vec![("alias", "Alias"),
-                                                    ("node_ip", "Node Ip"),
-                                                    ("node_port", "Node Port"),
-                                                    ("client_ip", "Client Ip"),
-                                                    ("client_port", "Client Port"),
-                                                    ("services", "Services"),
-                                                    ("blskey", "Blskey")]);
+                                              &mut vec![("alias", "Alias"),
+                                                        ("node_ip", "Node Ip"),
+                                                        ("node_port", "Node Port"),
+                                                        ("client_ip", "Client Ip"),
+                                                        ("client_port", "Client Port"),
+                                                        ("services", "Services"),
+                                                        ("blskey", "Blskey")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -580,8 +580,8 @@ pub mod pool_config_command {
                                                     ("reqId", "Request ID"),
                                                     ("txnTime", "Transaction time")],
                                               None,
-                                              &vec![("writes", "Writes"),
-                                                    ("force", "Force Apply")]);
+                                              &mut vec![("writes", "Writes"),
+                                                        ("force", "Force Apply")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -658,13 +658,13 @@ pub mod pool_upgrade_command {
                                                     ("reqId", "Request ID"),
                                                     ("txnTime", "Transaction time")],
                                               None,
-                                              &vec![("name", "Name"),
-                                                    ("action", "Action"),
-                                                    ("version", "Version"),
-                                                    ("timeout", "Timeout"),
-                                                    ("justification", "Justification"),
-                                                    ("reinstall", "Reinstall"),
-                                                    ("force", "Force Apply")]);
+                                              &mut vec![("name", "Name"),
+                                                        ("action", "Action"),
+                                                        ("version", "Version"),
+                                                        ("timeout", "Timeout"),
+                                                        ("justification", "Justification"),
+                                                        ("reinstall", "Reinstall"),
+                                                        ("force", "Force Apply")]);
 
         if let Some(h) = hash {
             println_succ!("Hash:");
@@ -738,7 +738,7 @@ pub mod custom_command {
 fn handle_transaction_response(mut response: Response<serde_json::Value>, title: &str,
                                metadata_headers: &[(&str, &str)],
                                data_field: Option<&str>,
-                               data_headers: &[(&str, &str)]) -> Result<(), ()> {
+                               data_headers: &mut [(&str, &str)]) -> Result<(), ()> {
     if let Some(result) = response.result.as_mut() {
         if let Some(txn_time) = result["txnTime"].as_i64() {
             result["txnTime"] = serde_json::Value::String(timestamp_to_datetime(txn_time))
@@ -751,7 +751,11 @@ fn handle_transaction_response(mut response: Response<serde_json::Value>, title:
             println_succ!("Metadata:");
             print_table(&result, metadata_headers);
             println_succ!("Data:");
-            print_table(if data_field.is_some() { &result[data_field.unwrap()] } else { &result }, data_headers);
+
+            let data = if data_field.is_some() { &result[data_field.unwrap()] } else { &result };
+            data_headers.to_vec().retain(|&(ref key, _)| !data[key].is_null());
+
+            print_table(data, data_headers);
             Ok(())
         }
         Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
