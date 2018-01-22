@@ -287,7 +287,7 @@ mod tests {
         assert_eq!(error::INVALID_OPTION.code_num,cxs_init(0,empty_str,Some(init_cb)));
 
         match get_pool_handle() {
-            Ok(h) => {pool::close(h).unwrap();},
+            Ok(h) => {pool::close().unwrap();},
             Err(_) => {},
         };
     }
