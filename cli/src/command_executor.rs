@@ -545,11 +545,19 @@ impl CommandExecutor {
             print!(" [{}=]<{}-value>", main_param.name(), main_param.name())
         }
 
-        for param in command.metadata().all_params() {
+        for param in command.metadata().params() {
             if param.is_optional() {
                 print!(" [{}=<{}-value>]", param.name(), param.name())
             } else {
                 print!(" {}=<{}-value>", param.name(), param.name())
+            }
+        }
+
+        for param in command.metadata().deferred_params() {
+            if param.is_optional() {
+                print!(" [{}[=<{}-value>]]", param.name(), param.name())
+            } else {
+                print!(" {}[=<{}-value>]", param.name(), param.name())
             }
         }
 
@@ -563,12 +571,24 @@ impl CommandExecutor {
                 println!("\t{} - {}", main_param.name(), main_param.help())
             }
 
-            for param in command.metadata().all_params() {
+            for param in command.metadata().params() {
                 print!("\t{} - ", param.name());
 
                 if param.is_optional() {
                     print!("(optional) ")
                 }
+
+                println!("{}", param.help());
+            }
+
+            for param in command.metadata().deferred_params() {
+                print!("\t{} - ", param.name());
+
+                if param.is_optional() {
+                    print!("(optional) ")
+                }
+
+                print!("(left empty for deferred input) ");
 
                 println!("{}", param.help());
             }
