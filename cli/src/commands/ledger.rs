@@ -64,12 +64,12 @@ pub mod nym_command {
 
         let res = handle_transaction_response(response,
                                               "Nym request has been sent to Ledger.",
-                                              &vec![("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
+                                              &[("reqId", "Request ID"),
+                                                  ("txnTime", "Transaction time")],
                                               None,
-                                              &vec![("dest", "Did"),
-                                                    ("verkey", "Verkey"),
-                                                    ("role", "Role")]);
+                                              &mut vec![("dest", "Did"),
+                                                        ("verkey", "Verkey"),
+                                                        ("role", "Role")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -116,14 +116,14 @@ pub mod get_nym_command {
 
         let res = handle_transaction_response(response,
                                               "Following NYM has been received.",
-                                              &vec![("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
+                                              &[("seqNo", "Sequence Number"),
+                                                  ("reqId", "Request ID"),
+                                                  ("txnTime", "Transaction time")],
                                               Some("data"),
-                                              &vec![("identifier", "Identifier"),
-                                                    ("dest", "Dest"),
-                                                    ("verkey", "Verkey"),
-                                                    ("role", "Role")]);
+                                              &[("identifier", "Identifier"),
+                                                  ("dest", "Dest"),
+                                                  ("verkey", "Verkey"),
+                                                  ("role", "Role")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -173,12 +173,12 @@ pub mod attrib_command {
 
         let res = handle_transaction_response(response,
                                               "Attrib request has been sent to Ledger.",
-                                              &vec![("dest", "Dest"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
+                                              &[("dest", "Dest"),
+                                                  ("seqNo", "Sequence Number"),
+                                                  ("reqId", "Request ID"),
+                                                  ("txnTime", "Transaction time")],
                                               None,
-                                              &vec![attribute]);
+                                              &[attribute]);
 
         trace!("execute << {:?}", res);
         res
@@ -227,12 +227,12 @@ pub mod get_attrib_command {
 
         let res = handle_transaction_response(response,
                                               "Following NYM has been received.",
-                                              &vec![("dest", "Did"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
+                                              &[("dest", "Did"),
+                                                  ("seqNo", "Sequence Number"),
+                                                  ("reqId", "Request ID"),
+                                                  ("txnTime", "Transaction time")],
                                               None,
-                                              &vec![("data", "Data")]);
+                                              &[("data", "Data")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -281,14 +281,14 @@ pub mod schema_command {
 
         let res = handle_transaction_response(response,
                                               "NodeConfig request has been sent to Ledger.",
-                                              &vec![("identifier", "Identifier"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
+                                              &[("identifier", "Identifier"),
+                                                  ("seqNo", "Sequence Number"),
+                                                  ("reqId", "Request ID"),
+                                                  ("txnTime", "Transaction time")],
                                               Some("data"),
-                                              &vec![("name", "Name"),
-                                                    ("version", "Version"),
-                                                    ("attr_names", "Attributes")]);
+                                              &[("name", "Name"),
+                                                  ("version", "Version"),
+                                                  ("attr_names", "Attributes")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -342,14 +342,14 @@ pub mod get_schema_command {
 
         let res = handle_transaction_response(response,
                                               "Following Schema has been received.",
-                                              &vec![("dest", "Did"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
+                                              &[("dest", "Did"),
+                                                  ("seqNo", "Sequence Number"),
+                                                  ("reqId", "Request ID"),
+                                                  ("txnTime", "Transaction time")],
                                               Some("data"),
-                                              &vec![("name", "Name"),
-                                                    ("version", "Version"),
-                                                    ("attr_names", "Attributes")]);
+                                              &[("name", "Name"),
+                                                  ("version", "Version"),
+                                                  ("attr_names", "Attributes")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -399,13 +399,13 @@ pub mod claim_def_command {
 
         let res = handle_transaction_response(response,
                                               "NodeConfig request has been sent to Ledger.",
-                                              &vec![("identifier", "Identifier"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
+                                              &[("identifier", "Identifier"),
+                                                  ("seqNo", "Sequence Number"),
+                                                  ("reqId", "Request ID"),
+                                                  ("txnTime", "Transaction time")],
                                               Some("data"),
-                                              &vec![("primary", "Primary Key"),
-                                                    ("revocation", "Revocation Key")]);
+                                              &[("primary", "Primary Key"),
+                                                  ("revocation", "Revocation Key")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -452,13 +452,13 @@ pub mod get_claim_def_command {
 
         let res = handle_transaction_response(response,
                                               "Following Claim Definition has been received.",
-                                              &vec![("identifier", "Identifier"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
+                                              &[("identifier", "Identifier"),
+                                                  ("seqNo", "Sequence Number"),
+                                                  ("reqId", "Request ID"),
+                                                  ("txnTime", "Transaction time")],
                                               Some("data"),
-                                              &vec![("primary", "Primary Key"),
-                                                    ("revocation", "Revocation Key")]);
+                                              &[("primary", "Primary Key"),
+                                                  ("revocation", "Revocation Key")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -524,18 +524,18 @@ pub mod node_command {
 
         let res = handle_transaction_response(response,
                                               "NodeConfig request has been sent to Ledger.",
-                                              &vec![("identifier", "Identifier"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
+                                              &[("identifier", "Identifier"),
+                                                  ("seqNo", "Sequence Number"),
+                                                  ("reqId", "Request ID"),
+                                                  ("txnTime", "Transaction time")],
                                               Some("data"),
-                                              &vec![("alias", "Alias"),
-                                                    ("node_ip", "Node Ip"),
-                                                    ("node_port", "Node Port"),
-                                                    ("client_ip", "Client Ip"),
-                                                    ("client_port", "Client Port"),
-                                                    ("services", "Services"),
-                                                    ("blskey", "Blskey")]);
+                                              &[("alias", "Alias"),
+                                                  ("node_ip", "Node Ip"),
+                                                  ("node_port", "Node Port"),
+                                                  ("client_ip", "Client Ip"),
+                                                  ("client_port", "Client Port"),
+                                                  ("services", "Services"),
+                                                  ("blskey", "Blskey")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -575,13 +575,13 @@ pub mod pool_config_command {
 
         let res = handle_transaction_response(response,
                                               "NodeConfig request has been sent to Ledger.",
-                                              &vec![("identifier", "Identifier"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
+                                              &[("identifier", "Identifier"),
+                                                  ("seqNo", "Sequence Number"),
+                                                  ("reqId", "Request ID"),
+                                                  ("txnTime", "Transaction time")],
                                               None,
-                                              &vec![("writes", "Writes"),
-                                                    ("force", "Force Apply")]);
+                                              &[("writes", "Writes"),
+                                                  ("force", "Force Apply")]);
         trace!("execute << {:?}", res);
         res
     }
@@ -591,15 +591,19 @@ pub mod pool_upgrade_command {
     use super::*;
 
     command!(CommandMetadata::build("pool-upgrade", "Send instructions to nodes to update themselves.")
-                .add_param("name", false, "Unique upgrade name.")
-                .add_param("version", false, "Target upgrade version.")
+                .add_param("name", false, "Human-readable name for the upgrade.")
+                .add_param("version", false, "The version of indy-node package we perform upgrade to. \n                  \
+                                              Must be greater than existing one (or equal if reinstall flag is True)")
                 .add_param("action", false, "Upgrade type. Either start or cancel.")
-                .add_param("sha256", false, "Unique hex identifier.")
-                .add_param("timeout", true, "Timeout.")
-                .add_param("schedule", true, "Node upgrade schedule.")
-                .add_param("justification", true, "Comment.")
-                .add_param("reinstall", true, "Same version reinstallation.")
-                .add_param("force", true, "Forced upgrade applying without reaching pool consensus")
+                .add_param("sha256", false, "Sha256 hash of the package.")
+                .add_param("timeout", true, "Limits upgrade time on each Node.")
+                .add_param("schedule", true, "Node upgrade schedule. Schedule should contain identifiers of all nodes. Upgrade dates should be in future. \n                              \
+                                              If force flag is False, then it's required that time difference between each Upgrade must be not less than 5 minutes.\n                              \
+                                              Requirements for schedule can be ignored by parameter force=true.\n                              \
+                                              Schedule is mandatory for action=start.")
+                .add_param("justification", true, "Justification string for this particular Upgrade.")
+                .add_param("reinstall", true, "Whether it's allowed to re-install the same version. False by default.")
+                .add_param("force", true, "Whether we should apply transaction without waiting for consensus of this transaction. False by default.")
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=start sha256=f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398 schedule={"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"2020-01-25T12:49:05.258870+00:00"}"#)
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=cancel sha256=ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398"#)
                 .finalize()
@@ -634,22 +638,43 @@ pub mod pool_upgrade_command {
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
+        let mut schedule = None;
+        let mut hash = None;
+        if let Some(res) = response.result.as_ref() {
+            schedule = res["schedule"].as_object()
+                .map(|s| format!("{{{}\n}}",
+                                 s.iter()
+                                     .map(|(key, value)| format!("\n    {:?}:{:?}", key, value.as_str().unwrap_or("")))
+                                     .collect::<Vec<String>>()
+                                     .join(",")));
+
+            hash = res["sha256"].as_str().map(|h| h.to_string());
+        };
+
         let res = handle_transaction_response(response,
                                               "NodeConfig request has been sent to Ledger.",
-                                              &vec![("identifier", "Identifier"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
+                                              &[("identifier", "Identifier"),
+                                                  ("seqNo", "Sequence Number"),
+                                                  ("reqId", "Request ID"),
+                                                  ("txnTime", "Transaction time")],
                                               None,
-                                              &vec![("name", "Name"),
-                                                    ("action", "Action"),
-                                                    ("version", "Version"),
-                                                    ("sha256", "Hash"),
-                                                    ("schedule", "Schedule"),
-                                                    ("timeout", "Timeout"),
-                                                    ("justification", "Justification"),
-                                                    ("reinstall", "Reinstall"),
-                                                    ("force", "Force Apply")]);
+                                              &[("name", "Name"),
+                                                  ("action", "Action"),
+                                                  ("version", "Version"),
+                                                  ("timeout", "Timeout"),
+                                                  ("justification", "Justification"),
+                                                  ("reinstall", "Reinstall"),
+                                                  ("force", "Force Apply")]);
+
+        if let Some(h) = hash {
+            println_succ!("Hash:");
+            println!("{}", h);
+        }
+        if let Some(s) = schedule {
+            println_succ!("Schedule:");
+            println!("{}", s);
+        }
+
         trace!("execute << {:?}", res);
         res
     }
@@ -726,7 +751,12 @@ fn handle_transaction_response(mut response: Response<serde_json::Value>, title:
             println_succ!("Metadata:");
             print_table(&result, metadata_headers);
             println_succ!("Data:");
-            print_table(if data_field.is_some() { &result[data_field.unwrap()] } else { &result }, data_headers);
+
+            let data = if data_field.is_some() { &result[data_field.unwrap()] } else { &result };
+            let mut data_headers = data_headers.to_vec();
+            data_headers.retain(|&(ref key, _)| !data[key].is_null());
+
+            print_table(data, &data_headers);
             Ok(())
         }
         Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |

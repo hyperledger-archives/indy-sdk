@@ -506,3 +506,35 @@ async def get_did_metadata(wallet_handle: int,
 
     logger.debug("get_did_metadata: <<< res: %r", res)
     return res
+
+
+async def abbreviate_verkey(did: str,
+                          full_verkey: str) -> str:
+    """
+    Retrieves abbreviated verkey if it is possible otherwise return full verkey.
+
+    :param did: The DID.
+    :param full_verkey: The Verkey.
+    :return: metadata: Either abbreviated or full verkey.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("abbreviate_verkey: >>> did: %r, full_verkey: %r",
+                 did, full_verkey)
+
+    if not hasattr(abbreviate_verkey, "cb"):
+        logger.debug("abbreviate_verkey: Creating callback")
+        abbreviate_verkey.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_did = c_char_p(did.encode('utf-8'))
+    c_full_verkey = c_char_p(full_verkey.encode('utf-8'))
+
+    metadata = await do_call('indy_abbreviate_verkey',
+                             c_did,
+                             c_full_verkey,
+                             abbreviate_verkey.cb)
+
+    res = metadata.decode()
+
+    logger.debug("abbreviate_verkey: <<< res: %r", res)
+    return res
