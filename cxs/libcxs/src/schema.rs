@@ -231,6 +231,7 @@ pub fn create_new_schema(source_id: String,
                          schema_name: String,
                          issuer_did: String,
                          data: String) -> Result<u32, u32> {
+    info!("creating schema with source_id: {}, name: {}, issuer_did: {}", source_id, schema_name, issuer_did);
     let req = CreateSchema::create_schema_req(&issuer_did, data)?;
     let sign_response = CreateSchema::sign_and_send_request(&issuer_did, &req)?;
     info!("created schema on ledger");

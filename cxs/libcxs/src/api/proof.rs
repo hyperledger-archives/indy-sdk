@@ -7,7 +7,6 @@ use proof;
 use connection;
 use std::thread;
 use std::ptr;
-use api::CxsStatus;
 
 /// Create a new Proof object that requests a proof for an enterprise
 ///
@@ -61,12 +60,6 @@ pub extern fn cxs_proof_create(command_handle: u32,
 
     error::SUCCESS.code_num
 }
-
-#[allow(unused_variables)]
-pub extern fn cxs_proof_set_connection(command_handle: u32,
-                                       proof_handle: u32,
-                                       connection_handle: u32,
-                                       cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 { error::SUCCESS.code_num }
 
 /// Checks for any state change and updates the proof state attribute
 ///
@@ -272,9 +265,7 @@ pub extern fn cxs_get_proof(command_handle: u32,
 
 
 #[allow(unused_variables)]
-pub extern fn cxs_proof_validate_response(proof_handle: u32, response_data: *const c_char) -> u32 { error::SUCCESS.code_num }
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_proof_list_state(status_array: *mut CxsStatus) -> u32 { error::SUCCESS.code_num }
+pub extern fn cxs_proof_accepted(proof_handle: u32, response_data: *const c_char) -> u32 { error::SUCCESS.code_num }
 
 
 #[cfg(test)]

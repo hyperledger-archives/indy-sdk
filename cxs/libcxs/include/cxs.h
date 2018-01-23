@@ -64,14 +64,14 @@ cxs_error_t cxs_schema_serialize(cxs_command_handle_t command_handle, cxs_schema
 /** Re-creates a claim object from the specified serialization. */
 cxs_error_t cxs_schema_deserialize(cxs_command_handle_t command_handle, const char *serialized_schema, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_schema_handle_t schema_handle));
 
-/** Asynchronously commits the schema to the ledger. */
-cxs_error_t cxs_schema_commit(cxs_schema_handle_t schema_handle);
-
 /** Populates data with the contents of the schema handle. */
 cxs_error_t cxs_schema_get_attributes(cxs_command_handle_t command_handle, const char *source_id, cxs_schema_handle_t sequence_no,  void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, const char *schema_attrs));
 
 /** Populates sequence_no with the actual sequence number of the schema on the sovrin ledger. */
 cxs_error_t cxs_schema_get_sequence_no(cxs_command_handle_t command_handle, cxs_schema_handle_t schema_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_schema_handle_t sequence_no));
+
+/** Release memory associated with schema object. */
+cxs_error_t cxs_schema_release(cxs_schema_handle_t handle);
 
 
 /**
@@ -169,9 +169,6 @@ cxs_error_t cxs_issuer_accept_claim(cxs_claim_handle_t claim_handle);
 /** Creates a proof object.  Populates a handle to the new proof. */
 cxs_error_t cxs_proof_create(cxs_command_handle_t command_handle, const char *source_id, const char *requested_attrs, const char *requested_predicates, const char *name, void (*cb)(cxs_command_handle_t command_handle, cxs_error_t err, cxs_proof_handle_t proof_handle));
 
-/** Sets the specific connection for this proof request. */
-cxs_error_t cxs_proof_set_connection(cxs_command_handle_t command_handle, cxs_proof_handle_t proof_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err));
-
 /** Asynchronously send a proof request to the connection. */
 cxs_error_t cxs_proof_send_request(cxs_command_handle_t command_handle, cxs_proof_handle_t proof_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err));
 
@@ -180,9 +177,6 @@ cxs_error_t cxs_get_proof(cxs_command_handle_t command_handle, cxs_proof_handle_
 
 /** Set proof offer as accepted. */
 cxs_error_t cxs_proof_accepted(cxs_proof_handle_t proof_handle);
-
-/** Populate status_array with the state of each proof handle. */
-cxs_error_t cxs_proof_list_state(cxs_status_t *status_array);
 
 /** Populates status with the current state of this proof request. */
 cxs_error_t cxs_proof_update_state(cxs_command_handle_t command_handle, cxs_proof_handle_t proof_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_state_t state));

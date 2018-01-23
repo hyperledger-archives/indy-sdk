@@ -65,7 +65,7 @@ fn demo(){
     file.write_all(config_string.as_bytes()).unwrap();
 
     open_sandbox_pool();
-    self::cxs::utils::libindy::pool::close();
+    self::cxs::utils::libindy::pool::close().unwrap();
 
     let path = CString::new(file.path().to_str().unwrap()).unwrap();
     let r = api::cxs::cxs_init(0,path.as_ptr(),Some(generic_cb));

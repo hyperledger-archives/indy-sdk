@@ -136,9 +136,6 @@ pub extern fn cxs_schema_get_attributes(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-#[allow(unused_variables, unused_mut)]
-pub extern fn cxs_schema_commit(schema_handle: u32) -> u32 { error::SUCCESS.code_num }
-
 
 #[cfg(test)]
 mod tests {

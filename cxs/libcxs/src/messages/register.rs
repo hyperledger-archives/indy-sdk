@@ -145,8 +145,6 @@ pub fn connect_register_provision(endpoint: &str,
 
     let final_config = format!("{{\
     {}\
-    \"enterprise_name\":\"<CHANGE_ME>\",\
-    \"logo_url\":\"https://gust-production.s3.amazonaws.com/uploads/startup/logo_image/82575/Evernym-Logo-Final-square_20icon.png\",\
     \"agent_endpoint\":\"{}\",\
     \"agency_pairwise_did\":\"{}\",\
     \"agency_pairwise_verkey\":\"{}\",\
@@ -156,7 +154,11 @@ pub fn connect_register_provision(endpoint: &str,
     \"enterprise_did\":\"{}\",\
     \"enterprise_verkey\":\"{}\",\
     \"agent_pairwise_did\":\"{}\",\
-    \"agent_pairwise_verkey\":\"{}\"}}",
+    \"agent_pairwise_verkey\":\"{}\",\
+    \"enterprise_name\":\"<CHANGE_ME>\",\
+    \"logo_url\":\"<CHANGE_ME>\",\
+    \"genesis_path\":\"<CHANGE_ME>\"\
+    }}",
         wallet_key_string,
         endpoint,
         agency_did,
