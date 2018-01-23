@@ -726,7 +726,7 @@ pub mod custom_command {
                 Ok(println!("Response: \n{}", response_json)),
             Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
             Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-                Err(println_err!("Transaction has been rejected: {:?}", extract_error_message(&reason))),
+                Err(println_err!("Transaction has been rejected: {}", extract_error_message(&reason))),
             _ => Err(println_err!("Invalid data has been received"))
         };
 
@@ -756,7 +756,7 @@ fn handle_transaction_response(mut response: Response<serde_json::Value>, title:
         }
         Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
         Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-            Err(println_err!("Transaction has been rejected: {:?}", extract_error_message(&reason))),
+            Err(println_err!("Transaction has been rejected: {}", extract_error_message(&reason))),
         _ => Err(println_err!("Invalid data has been received"))
     }
 }
@@ -772,7 +772,7 @@ pub fn handle_transaction_error(err: ErrorCode, submitter_did: Option<&str>, poo
 }
 
 fn extract_error_message(error: &str) -> String {
-    let re = Regex::new(r#"[',"](.*)[',"]"#).unwrap();
+    let re = Regex::new(r#"\(["'](.*)["'],\)"#).unwrap();
     match re.captures(error) {
         Some(message) => message[1].to_string(),
         None => error.to_string()
