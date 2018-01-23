@@ -5,11 +5,11 @@ testing()
 def testing() {
     stage('Testing') {
         parallel([
-                'ubuntu-test' : { ubuntuTesting() },
+                //'ubuntu-test' : { ubuntuTesting() },
                 'macos-test'  : { macosTesting() },
-                'ios-test'    : { iosTesting() },
-                'redhat-test' : { rhelTesting() },
-                'windows-test': { windowsTesting() }
+                //'ios-test'    : { iosTesting() },
+                //'redhat-test' : { rhelTesting() },
+                //'windows-test': { windowsTesting() }
         ])
     }
 }
@@ -110,6 +110,10 @@ def macosTesting() {
                     setupBrewPackages()
                     sh "cargo build"
                     // TODO testing
+                }
+
+                dir('cli'){
+                    sh "LIBRARY_PATH=../libindy/target/debug/ DYLD_LIBRARY_PATH=../libindy/target/debug cargo run"
                 }
 
                 //TODO wrappers testing
