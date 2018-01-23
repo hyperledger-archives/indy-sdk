@@ -753,8 +753,8 @@ mod tests {
 
         command!(CommandMetadata::build("test_command", "Test command help")
                     .add_main_param("main_param", "Main param help")
-                    .add_param("param1", false, "Param1 help")
-                    .add_param("param2", true, "Param2 help")
+                    .add_param("param1", "Param1 help")
+                    .add_optional_param("param2", "Param2 help")
                     .finalize());
 
         fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
