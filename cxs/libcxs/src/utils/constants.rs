@@ -1,5 +1,6 @@
 pub const LARGE_NONCE: usize = 80;
 pub static REVOC_REGS_JSON: &str = "{}";
+pub static SCHEMA_TYPE: &str = "101";
 pub static SCHEMAS_JSON: &str = r#"{"seqNo":15,"data":{"name":"gvt","version":"1.0","attr_names":["address1","address2","zip","city","state"]}}"#;
 pub static SCHEMA_REQ: &str = r#"{"reqId":1,"identifier":"4fUDR9R7fjwELRvH9JT6HH","operation":{"type":"101","data":{"name":"name","version":"1.0","attr_names":["name","male"]}}}"#;
 pub static SCHEMA_TXN: &str = r#"{"seqNo":344,"identifier":"VsKV7grR1BUE29mG2Fm2kX","txnTime":1516284381,"type":"101","data":{"name":"get schema attrs","version":"1.0","attr_names":["test","get","schema","attrs"]}}"#;

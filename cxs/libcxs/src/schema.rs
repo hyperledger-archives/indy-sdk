@@ -9,7 +9,7 @@ use std::sync::Mutex;
 use std::string::ToString;
 use std::collections::HashMap;
 use utils::error;
-use utils::constants::{ SCHEMA_REQ, CREATE_SCHEMA_RESULT, SCHEMA_TXN };
+use utils::constants::{ SCHEMA_REQ, CREATE_SCHEMA_RESULT, SCHEMA_TXN, SCHEMA_TYPE };
 use utils::libindy::pool::{ get_pool_handle };
 use utils::wallet::{ get_wallet_handle };
 use utils::libindy::ledger::{
@@ -23,7 +23,7 @@ lazy_static! {
     static ref SCHEMA_MAP: Mutex<HashMap<u32, Box<CreateSchema>>> = Default::default();
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SchemaTransaction {
     #[serde(rename = "seqNo")]
     sequence_num: Option<usize>,
@@ -37,7 +37,7 @@ pub struct SchemaTransaction {
 
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct SchemaData {
     name: String,
     version: String,
@@ -79,7 +79,7 @@ pub trait Schema: ToString {
     fn process_ledger_txn(txn: String) -> Result<SchemaTransaction, u32>
     {
         let result = Self::extract_result_from_txn(&txn)?;
-        match result.get("data") {
+        let schema_txn: SchemaTransaction = match result.get("data") {
             Some(d) => {
                 let schema: SchemaTransaction = match serde_json::from_value(d.clone()) {
                     Ok(parsed) => parsed,
@@ -88,12 +88,23 @@ pub trait Schema: ToString {
                         return Err(error::INVALID_JSON.code_num)
                     }
                 };
-                Ok(schema)
+                schema
             },
             None => {
                 warn!("{}","'data' not found in json");
-                Err(error::INVALID_JSON.code_num)
+                return Err(error::INVALID_JSON.code_num)
             }
+        };
+
+        match schema_txn.clone().txn_type {
+            Some(x) => {
+                if x.ne(SCHEMA_TYPE) {
+                    warn!("ledger txn type not schema: {:?}", x);
+                    return Err(error::INVALID_SCHEMA_SEQ_NO.code_num)
+                }
+                Ok(schema_txn)
+            },
+            None => Err(error::INVALID_SCHEMA_SEQ_NO.code_num)
         }
     }
 
@@ -454,6 +465,14 @@ mod tests {
     }
 
     #[test]
+    fn test_process_ledger_txn_fails_with_incorrect_type(){
+        ::utils::logger::LoggerUtils::init();
+        let data = r#"{"result":{"identifier":"GGBDg1j8bsKmr4h5T9XqYf","data":{"verkey":"~CoRER63DVYnWZtK8uAzNbx","dest":"V4SGRU86Z58d6TV7PBUe6f","role":"0","type":"1","auditPath":[],"rootHash":"3W3ih6Hxf1yv8pmerY6jdEhYR3scDVFBk4PM91XKx1Bk","seqNo":1},"type":"3","reqId":1516732266277924815,"seqNo":1},"op":"REPLY"}"#;
+        let test = LedgerSchema::process_ledger_txn(String::from_str(data).unwrap());
+        assert!(test.is_err());
+    }
+
+    #[test]
     fn test_schema_request(){
         let data = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#.to_string();
         let test = CreateSchema::create_schema_req("4fUDR9R7fjwELRvH9JT6HH", data).unwrap();
@@ -554,11 +573,11 @@ mod tests {
     fn test_get_schema_attrs_from_ledger(){
         settings::set_defaults();
         open_sandbox_pool();
-        let data = r#"{"name":"get schema attrs","version":"1.0","attr_names":["test","get","schema","attrs"]}"#.to_string();
+        let data = r#""data":{"name":"New Claim - Claim5","version":"1.0","attr_names":["New Claim","claim5","a5","b5","c5","d5"]}"#.to_string();
         let wallet_handle = init_wallet("wallet1").unwrap();
-        let schema_attrs = get_schema_attrs("id".to_string(), 344).unwrap();
+        let schema_attrs = get_schema_attrs("id".to_string(), 116).unwrap();
         assert!(schema_attrs.contains(&data));
-        assert!(schema_attrs.contains("\"seqNo\":344"));
+        assert!(schema_attrs.contains("\"seqNo\":116"));
         delete_wallet("wallet1").unwrap();
     }
 
