@@ -109,7 +109,7 @@ impl CommandMetadataBuilder {
         self
     }
 
-    pub fn add_optional_deferred(mut self,
+    pub fn add_optional_deferred_param(mut self,
                                  name: &'static str,
                                  help: &'static str) -> CommandMetadataBuilder {
         self.params.push(ParamMetadata::new(name, true, true, help));
