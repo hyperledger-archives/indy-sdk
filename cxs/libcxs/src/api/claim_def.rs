@@ -106,9 +106,9 @@ mod tests {
     use std::time::Duration;
     use settings;
     use utils::libindy::pool;
-    use utils::wallet::{ init_wallet };
+    use utils::wallet::{ init_wallet, get_wallet_handle };
     use utils::signus::SignusUtils;
-    use utils::constants::{ MY1_SEED };
+    use utils::constants::{ DEMO_AGENT_PW_SEED, DEMO_ISSUER_PW_SEED };
 
     extern "C" fn create_cb(command_handle: u32, err: u32, claimdef_handle: u32) {
         assert_eq!(err, 0);
@@ -176,13 +176,15 @@ mod tests {
     fn test_cxs_create_claimdef_with_pool() {
         settings::set_defaults();
         pool::open_sandbox_pool();
-        let wallet_handle = init_wallet("wallet1").unwrap();
-        let (my_did, my_vk) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+        init_wallet("a_test_wallet").unwrap();
+        let wallet_handle = get_wallet_handle();
+        let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_ISSUER_PW_SEED)).unwrap();
+        SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_AGENT_PW_SEED)).unwrap();
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, &my_did);
         assert_eq!(cxs_claimdef_create(0,
                                        CString::new("qqqqq").unwrap().into_raw(),
                                        CString::new("Test Claim Def").unwrap().into_raw(),
-                                       103,
+                                       22,
                                        false,
                                        Some(claim_def_on_ledger_err_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_secs(1));
