@@ -48,7 +48,7 @@ pub fn set_defaults() -> u32 {
     settings.set_default(CONFIG_AGENCY_PAIRWISE_VERKEY,"3BVdD7SGNenA1NDK4Z8Kf9A33uVoGZcKrfJa5vELJZVm");
     settings.set_default(CONFIG_AGENT_PAIRWISE_DID,"8xUi3QNchFXzfhCgbALpBr");
     settings.set_default(CONFIG_AGENT_PAIRWISE_VERKEY,"5LXDnRUM7k651nBmhcRraKThVAZYqepaW99zCBYosuwX");
-    settings.set_default(CONFIG_ENTERPRISE_DID,"4fUDR9R7fjwELRvH9JT6HH");
+    settings.set_default(CONFIG_ENTERPRISE_DID,"2hoqvcwupRTUNkXn6ArYzs");
     settings.set_default(CONFIG_ENTERPRISE_DID_AGENCY,"KkTVEE7RGg7z2d2hrfM2Hj");
     settings.set_default(CONFIG_ENTERPRISE_DID_AGENT,"515rg5tehHwzJK5ZKwtkBb");
     settings.set_default(CONFIG_ENTERPRISE_NAME,"default");

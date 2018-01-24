@@ -9,7 +9,7 @@ use utils::libindy::pool;
 use utils::error;
 use settings;
 use schema::LedgerSchema;
-use utils::constants::{ SCHEMAS_JSON, CLAIM_DEF_JSON };
+use utils::constants::{ SCHEMAS_JSON, CLAIM_DEF_JSON, STORE_CLAIM_DEF_RESULT };
 use utils::wallet::{ get_wallet_handle };
 use utils::libindy::SigTypes;
 use utils::libindy::anoncreds::{libindy_create_and_store_claim_def};
@@ -73,9 +73,7 @@ pub trait ClaimDefCommon {
                           schema_num:u32,
                           sig_type: Option<SigTypes>,
                           issuer_did: &str) -> Result<String, u32> {
-
         let request = self.build_get_txn(submitter_did, schema_num, sig_type, issuer_did)?;
-
         match self.send_request(&request) {
             Ok(x) => {
                 info!("Retrieved claim_def from the ledger");
@@ -101,7 +99,7 @@ pub trait ClaimDefCommon {
     }
 
     fn send_request(&self, request: &str) ->  Result<String, u32> {
-        if settings::test_indy_mode_enabled() { return Ok("{}".to_string()); }
+        if settings::test_indy_mode_enabled() { return Ok(STORE_CLAIM_DEF_RESULT.to_string()); }
         let pool_handle = pool::get_pool_handle()?;
         libindy_submit_request(pool_handle, request.to_string())
             .or(Err(error::INDY_SUBMIT_REQUEST_ERR.code_num))
@@ -173,6 +171,7 @@ impl CreateClaimDef {
                            schema_no: u32,
                            issuer_did: &str,
                            sig_type: Option<SigTypes>) -> bool {
+        if settings::test_indy_mode_enabled() { return false }
         let claim_def_str = match self.retrieve_claim_def(submitter_did.unwrap_or(""),
                                                           schema_no,
                                                           sig_type,

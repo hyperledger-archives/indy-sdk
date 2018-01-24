@@ -42,20 +42,21 @@ fn demo(){
     let logo_url = format!("https://robohash.org/{}?set=set3", random_int);
 
     // Init SDK  *********************************************************************
-    let config_string: String = json!({"enterprise_verkey": "4EMiwyMpqAQEkNEoXW3tYsVukZkwdLdd9B8rnnmud7hD",
-        "logo_url":logo_url,
-        "agent_pairwise_verkey": "9av3yK654Zzc25xe7mQMcUQoUMouwuLcne322eLMfUbq",
-        "enterprise_did_agent": "5bJqPo8aCWyBwLQosZkJcB",
-        "agent_pairwise_did": "GkYnFwrAaMMRPaBUYF9jT2",
-        "wallet_name": "my_real_wallet",
-        "enterprise_did": "6vkhW3L28AophhA68SSzRS",
-        "agent_endpoint": "https://enym-eagency.pdev.evernym.com",
-        "agency_pairwise_verkey": "4hmBc54YanNhQHTD66u6XDp1NSgQm1BacPFbE7b5gtat",
-        "agent_enterprise_verkey": "3W9WGtRowAanh5q6giQrGncZVMvRwPedB9fJAJkAN5Gk",
-        "agency_pairwise_did": "7o2xT9Qtp83cJUJMUBTF3M",
-        "enterprise_name": "Evernym",
-        "genesis_path":self::cxs::utils::constants::GENESIS_PATH
-    }).to_string();
+    let config_string: String = json!({
+       "agent_endpoint": "https://enym-eagency.pdev.evernym.com",
+       "logo_url":logo_url,
+       "agent_enterprise_verkey": "By1CvKuLFRRdqMyGsmu8naVQQQfSH4MYna4K7d4KDvfy",
+       "enterprise_did": "2hoqvcwupRTUNkXn6ArYzs",
+       "agent_pairwise_did": "NUHiPAuSi8XoPRPGnECPUo",
+       "enterprise_name":"Evernym",
+       "enterprise_did_agent": "M7uZU89SUdsav7i4hVZtXp",
+       "agency_pairwise_verkey": "4hmBc54YanNhQHTD66u6XDp1NSgQm1BacPFbE7b5gtat",
+       "wallet_name": "my_real_wallet",
+       "agency_pairwise_did": "7o2xT9Qtp83cJUJMUBTF3M",
+       "enterprise_verkey": "vrWGArMA3toVoZrYGSAMjR2i9KjBS66bZWyWuYJJYPf",
+       "agent_pairwise_verkey": "Chj1oQYdmbTXKG96Fpo8C2sd6fRrt9UyCrbmuo4vzroK",
+       "genesis_path":self::cxs::utils::constants::GENESIS_PATH
+      }).to_string();
 
     let mut file = NamedTempFileOptions::new()
         .suffix(".json")
@@ -141,6 +142,8 @@ fn demo(){
     let (command_handle, cb) = closure_to_connect_cb(Box::new(move|err|{sender.send(err).unwrap();}));
 //    let pphone_number = "8014710072";
 //    let lphone_number = "8017900625";
+//    let phone_number = "3858814106";
+//    let phone_number = "2053863441";
     let phone_number = "2182578533";
     let connection_opt = json!({"phone":phone_number});
 //    let connection_opt = String::from("");

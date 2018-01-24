@@ -141,6 +141,38 @@ impl Return_I32_STR {
     }
 }
 
+#[allow(non_camel_case_types)]
+pub struct Return_I32_BOOL {
+    pub command_handle: i32,
+    receiver: Receiver<(i32, bool)>,
+}
+
+impl Return_I32_BOOL {
+    pub fn new() -> Result<Return_I32_BOOL, u32> {
+        let (sender, receiver) = channel();
+        let closure: Box<FnMut(i32, bool) + Send> = Box::new(move |err, arg1 | {
+            sender.send((err, arg1)).unwrap_or_else(log_error);
+        });
+
+        let command_handle = insert_closure(closure, callback::CALLBACKS_I32_BOOL.deref());
+
+        Ok(Return_I32_BOOL {
+            command_handle,
+            receiver,
+        })
+    }
+
+    pub fn get_callback(&self) -> extern fn (command_handle: i32, arg1: i32, arg2: bool) {
+        callback::call_cb_i32_bool
+    }
+
+    pub fn receive(&self, timeout: Option<Duration>) -> Result<bool, u32> {
+        let (err, arg1) = receive(&self.receiver, timeout)?;
+
+        map_indy_error(arg1, err)?;
+        Ok(arg1)
+    }
+}
 
 #[cfg(test)]
 mod tests {

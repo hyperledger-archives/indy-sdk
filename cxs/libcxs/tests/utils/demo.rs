@@ -158,7 +158,7 @@ pub fn invite_details_cxs_object(connection_handle: u32, f:extern fn(u32, u32, b
                 panic!("details is empty");
             }
             check_useful_c_str!(details, ());
-            println!("\n*************\nQR CODE JSON: {}\n*************", details);
+            println!("\n*************\nQR CODE JSON: \n{}\n*************", details);
             cb(err)
         }
 
@@ -283,6 +283,24 @@ pub fn closure_to_create_claim(closure: Box<FnMut(u32, u32) + Send>) ->
 }
 
 #[allow(dead_code)]
+pub fn closure_to_create_claimdef(closure: Box<FnMut(u32, u32) + Send>) ->
+(u32, Option<extern fn( command_handle: u32, err: u32, claimdef_handle: u32)>) {
+    lazy_static! { static ref CALLBACKS_CREATE_CLAIMDEF: Mutex<HashMap<u32, Box<FnMut(u32, u32) + Send>>> = Default::default(); }
+
+    extern "C" fn callback(command_handle: u32, err: u32, claimdef_handle: u32) {
+        let mut callbacks = CALLBACKS_CREATE_CLAIMDEF.lock().unwrap();
+        let mut cb = callbacks.remove(&command_handle).unwrap();
+        cb(err, claimdef_handle)
+    }
+
+    let mut callbacks = CALLBACKS_CREATE_CLAIMDEF.lock().unwrap();
+    let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as u32;
+    callbacks.insert(command_handle, closure);
+
+    (command_handle, Some(callback))
+}
+
+#[allow(dead_code)]
 pub fn closure_to_send_claim_object(closure: Box<FnMut(u32) + Send>) -> (u32, Option<extern fn(command_handle: u32, err: u32 )>) {
     lazy_static! { static ref CALLBACKS_SEND_CLAIM: Mutex<HashMap<u32, Box<FnMut(u32) + Send>>> = Default::default(); }
 
@@ -367,4 +385,40 @@ pub fn get_proof(proof_handle: u32, connection_handle: u32) -> u32 {
     assert_eq!(rc, 0);
     receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap()
 
+}
+
+#[allow(dead_code)]
+pub fn create_claimdef(source_id: &str, claimdef_name: &str, schema_seq_no: u32) -> (u32, u32){
+    let source_id_cstring = CString::new(source_id).unwrap();
+    let (sender, receiver) = channel();
+    let cb = Box::new(move|err, claimdef_handle|{sender.send((err, claimdef_handle)).unwrap();});
+    let (command_handle, cb) = closure_to_create_claimdef(cb);
+    let claimdef_name_cstring = CString::new(claimdef_name).unwrap();
+    let rc = api::claim_def::cxs_claimdef_create(command_handle,
+                                                     source_id_cstring.as_ptr(),
+                                                     claimdef_name_cstring.as_ptr(),
+                                                     schema_seq_no,
+                                                     false,
+                                                     cb);
+    assert_eq!(rc, 0);
+    receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap()
+}
+
+#[allow(dead_code)]
+pub fn create_schema(source_id: &str, schema_name: &str, schema_data: &str) -> (u32, u32, u32){
+    let source_id_cstring = CString::new(source_id).unwrap();
+    let (sender, receiver) = channel();
+    let cb = Box::new(move|err, claimdef_handle|{sender.send((err, claimdef_handle)).unwrap();});
+    let (command_handle, cb) = closure_to_create_claimdef(cb);
+    let schema_name_cstring = CString::new(schema_name).unwrap();
+    let schema_data_cstring = CString::new(schema_data).unwrap();
+    let rc = api::schema::cxs_schema_create(command_handle,
+                                                     source_id_cstring.as_ptr(),
+                                                     schema_name_cstring.as_ptr(),
+                                                     schema_data_cstring.as_ptr(),
+                                                     cb);
+    assert_eq!(rc, 0);
+    let (rc, handle) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let schema_no = ::cxs::schema::get_sequence_num(handle).unwrap();
+    (rc, handle, schema_no)
 }

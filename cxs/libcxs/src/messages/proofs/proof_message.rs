@@ -69,10 +69,10 @@ pub struct ClaimData{
     pub schema_seq_no: u32,
     pub issuer_did: String,
     pub claim_uuid: String,
-    name: String,
-    value: Value,
+    pub name: String,
+    pub value: Value,
     #[serde(rename = "type")]
-    attr_type: String,
+    pub attr_type: String,
 }
 
 impl ProofMessage {

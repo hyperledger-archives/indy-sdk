@@ -774,6 +774,7 @@ mod tests {
 
     #[test]
     fn test_issuer_claim_can_build_claim_from_correct_parts() {
+        settings::set_defaults();
         let test_name = "test_issuer_claim_can_build_from_correct_parts";
         let schema_str = SCHEMA;
         let mut issuer_claim = create_standard_issuer_claim();

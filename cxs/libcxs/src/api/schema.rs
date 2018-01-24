@@ -264,13 +264,13 @@ mod tests {
         let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_ISSUER_PW_SEED)).unwrap();
         SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_AGENT_PW_SEED)).unwrap();
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, &my_did);
-        let data = r#"{"name":"get schema attrs","version":"1.0","attr_names":["test","get","schema","attrs"]}"#.to_string();
+        let data = r#"{"name":"Claim For Driver's License","version":"1.0","attr_names":["address1","address2","city","state","zip"]}"#.to_string();
         assert_eq!(cxs_schema_create(0,
                                      CString::new("Test Source ID").unwrap().into_raw(),
                                      CString::new("Test Schema").unwrap().into_raw(),
                                      CString::new(data).unwrap().into_raw(),
                                      Some(create_schema_and_claimdef_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_secs(2));
+        thread::sleep(Duration::from_secs(60));
     }
 
     #[test]
