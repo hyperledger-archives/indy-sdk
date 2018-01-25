@@ -71,7 +71,7 @@ export interface IFFIEntryPoint {
 
   // claimdef
   cxs_claimdef_create: (commandId: number, sourceId: string, claimDefName: string, schemaNo: number,
-                        revocation: boolean, cb: any) => number
+                        issuerDid: string, revocation: boolean, cb: any) => number
   cxs_claimdef_deserialize: (commandId: number, data: string, cb: any) => number,
   cxs_claimdef_serialize: (commandId: number, handle: string, cb: any) => number,
   cxs_claimdef_release: (handle: string) => number,
@@ -124,7 +124,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   cxs_proof_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   // claimDef
   cxs_claimdef_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_SCHEMA_NUMBER,
-    FFI_BOOL, FFI_CALLBACK_PTR]],
+    FFI_STRING_DATA, FFI_BOOL, FFI_CALLBACK_PTR]],
   cxs_claimdef_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   cxs_claimdef_release: [FFI_ERROR_CODE, [FFI_CLAIMDEF_HANDLE]],
   cxs_claimdef_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIMDEF_HANDLE, FFI_CALLBACK_PTR]],

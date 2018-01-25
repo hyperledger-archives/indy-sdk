@@ -17,7 +17,6 @@ import { CXSBaseWithState } from './CXSBaseWithState'
 export interface IClaimConfig {
   sourceId: string,
   schemaNum: number,
-  issuerDid: string,
   attr: {
     [ index: string ]: string
   },
@@ -30,7 +29,6 @@ export interface IClaimCXSAttributes {
 
 export interface IClaimParams {
   schemaNum: number,
-  issuerDid: string,
   claimName: string,
   attr: IClaimCXSAttributes
 }
@@ -63,10 +61,9 @@ export class IssuerClaim extends CXSBaseWithState {
   private _claimName: string
   private _attr: IClaimCXSAttributes
 
-  constructor (sourceId, { schemaNum, issuerDid, claimName, attr }: IClaimParams) {
+  constructor (sourceId, { schemaNum, claimName, attr }: IClaimParams) {
     super(sourceId)
     this._schemaNum = schemaNum
-    this._issuerDID = issuerDid
     this._claimName = claimName
     this._attr = attr
   }
@@ -82,14 +79,16 @@ export class IssuerClaim extends CXSBaseWithState {
    * { sourceId: "12", schemaNum: 1, issuerDid: "did", attr: {key: "value"}, claimName: "name of claim"}
    * @returns {Promise<IssuerClaim>} An Issuer Claim Object
    */
-  static async create ({ attr, sourceId, schemaNum, issuerDid, claimName }: IClaimConfig): Promise<IssuerClaim> {
+  static async create ({ attr, sourceId, schemaNum, claimName }: IClaimConfig): Promise<IssuerClaim> {
     const attrsCXS: IClaimCXSAttributes = Object.keys(attr)
       .reduce((accum, attrKey) => ({ ...accum, [attrKey]: [attr[attrKey]] }), {})
-    const claim = new IssuerClaim(sourceId, { schemaNum, issuerDid, claimName, attr: attrsCXS })
+    const claim = new IssuerClaim(sourceId, { schemaNum, claimName, attr: attrsCXS })
     const attrsStringified = JSON.stringify(attrsCXS)
+    const commandHandle = 0
+    const issuerDid = null
     try {
       await claim._create((cb) => rustAPI().cxs_issuer_create_claim(
-        0,
+        commandHandle,
         sourceId,
         schemaNum,
         issuerDid,
@@ -124,7 +123,6 @@ export class IssuerClaim extends CXSBaseWithState {
       const params: IClaimParams = {
         attr,
         claimName: claimData.claim_name,
-        issuerDid: claimData.issuer_did,
         schemaNum: claimData.schema_seq_no
       }
       const claim = await super._deserialize<IssuerClaim, IClaimParams>(IssuerClaim, claimData, params)

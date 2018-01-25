@@ -44,12 +44,14 @@ export class ClaimDef extends CXSBase {
   static async create (data: IClaimDefinition): Promise<ClaimDef> {
     const claimDef = new ClaimDef(data.sourceId, { name: data.name, schemaNo: data.schemaNo })
     const commandHandle = 0
+    const issuerDid = null
     try {
       await claimDef._create((cb) => rustAPI().cxs_claimdef_create(
       commandHandle,
       claimDef.sourceId,
       claimDef._name,
       data.schemaNo,
+      issuerDid,
       data.revocation,
       cb
       ))

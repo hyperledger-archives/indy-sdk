@@ -148,13 +148,6 @@ describe('An issuerClaim', async function () {
     assert.deepEqual(claim.attr, formattedAttrs)
   })
 
-  it('accepts a claim offer DID as part of create', async function () {
-    const sourceId = 'claimOfferDidTest'
-    const claim = await IssuerClaim.create({ ...config, sourceId })
-    assert.equal(claim.sourceId, sourceId)
-    assert.equal(claim.issuerDid, config.issuerDid)
-  })
-
   it('throws exception for sending claim with invalid claim handle', async function () {
     let connection = await Connection.create({id: '123'})
     const claim = new IssuerClaim(null, {})

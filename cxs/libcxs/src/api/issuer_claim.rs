@@ -4,6 +4,7 @@ use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
 use connection;
+use settings;
 use issuer_claim;
 use std::thread;
 use std::ptr;
@@ -45,7 +46,16 @@ pub extern fn cxs_issuer_create_claim(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(claim_data, error::INVALID_OPTION.code_num);
-    check_useful_c_str!(issuer_did, error::INVALID_OPTION.code_num);
+
+    let issuer_did: String = if !issuer_did.is_null() {
+        check_useful_c_str!(issuer_did, error::INVALID_OPTION.code_num);
+        issuer_did.to_owned()
+    } else {
+        match settings::get_config_value(settings::CONFIG_ENTERPRISE_DID) {
+            Ok(x) => x,
+            Err(x) => return x
+        }
+    };
 
     let source_id_opt = if !source_id.is_null() {
         check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
@@ -310,7 +320,7 @@ mod tests {
         assert_eq!(cxs_issuer_create_claim(0,
                                            ptr::null(),
                                            32,
-                                           CString::new(DEFAULT_DID).unwrap().into_raw(),
+                                           ptr::null(),
                                            CString::new(DEFAULT_ATTR).unwrap().into_raw(),
                                            CString::new(DEFAULT_CLAIM_NAME).unwrap().into_raw(),
                                            Some(create_cb)), error::SUCCESS.code_num);

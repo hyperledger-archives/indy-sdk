@@ -13,15 +13,23 @@ pub extern fn cxs_claimdef_create(command_handle: u32,
                                   source_id: *const c_char,
                                   claimdef_name: *const c_char,
                                   schema_seq_no: u32,
+                                  issuer_did: *const c_char,
                                   create_non_revoc: bool,
                                   cb: Option<extern fn(xcommand_handle: u32, err: u32, claimdef_handle: u32)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(claimdef_name, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
-    let issuer_did = match settings::get_config_value(settings::CONFIG_ENTERPRISE_DID) {
-        Ok(x) => x,
-        Err(x) => return x
+
+    let issuer_did: String = if !issuer_did.is_null() {
+        check_useful_c_str!(issuer_did, error::INVALID_OPTION.code_num);
+        issuer_did.to_owned()
+    } else {
+        match settings::get_config_value(settings::CONFIG_ENTERPRISE_DID) {
+            Ok(x) => x,
+            Err(x) => return x
+        }
     };
+
     thread::spawn( move|| {
         let ( rc, handle) = match claim_def::create_new_claimdef(source_id,
                                                                  claimdef_name,
@@ -166,6 +174,7 @@ mod tests {
                                        CString::new("Test Source ID").unwrap().into_raw(),
                                        CString::new("Test Claim Def").unwrap().into_raw(),
                                        15,
+                                       CString::new("6vkhW3L28AophhA68SSzRS").unwrap().into_raw(),
                                        false,
                                        Some(create_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
@@ -185,6 +194,7 @@ mod tests {
                                        CString::new("qqqqq").unwrap().into_raw(),
                                        CString::new("Test Claim Def").unwrap().into_raw(),
                                        22,
+                                       ptr::null(),
                                        false,
                                        Some(claim_def_on_ledger_err_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_secs(1));
@@ -198,6 +208,7 @@ mod tests {
                                        CString::new("Test Source ID").unwrap().into_raw(),
                                        CString::new("Test Claim Def").unwrap().into_raw(),
                                        0,
+                                       ptr::null(),
                                        false,
                                        Some(create_cb_err)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
@@ -210,6 +221,7 @@ mod tests {
                                        CString::new("Test Source ID").unwrap().into_raw(),
                                        CString::new("Test Claim Def").unwrap().into_raw(),
                                        15,
+                                       ptr::null(),
                                        false,
                                        Some(create_and_serialize_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
