@@ -738,7 +738,7 @@ pub mod custom_command {
 fn handle_transaction_response(mut response: Response<serde_json::Value>, title: &str,
                                metadata_headers: &[(&str, &str)],
                                data_field: Option<&str>,
-                               data_headers: &mut Vec<(&str, &str)>) -> Result<(), ()> {
+                               data_headers: &[(&str, &str)]) -> Result<(), ()> {
     if let Some(result) = response.result.as_mut() {
         if let Some(txn_time) = result["txnTime"].as_i64() {
             result["txnTime"] = serde_json::Value::String(timestamp_to_datetime(txn_time))
