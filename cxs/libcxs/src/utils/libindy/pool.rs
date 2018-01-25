@@ -15,7 +15,7 @@ use utils::libindy::error_codes::{map_indy_error_code, map_string_error};
 use std::sync::RwLock;
 use std::time::Duration;
 use utils::timeout::TimeoutUtils;
-use utils::constants::{POOL, GENESIS_PATH, GENESIS_NODE_TXNS};
+use utils::constants::{POOL, GENESIS_PATH, DEV_GENESIS_NODE_TXNS};
 
 lazy_static! {
     static ref POOL_HANDLE: RwLock<Option<i32>> = RwLock::new(None);
@@ -211,7 +211,7 @@ pub fn get_pool_handle() -> Result<i32, u32> {
 fn sandbox_pool_setup() {
     let config_string = format!("{{\"genesis_txn\":\"/tmp/{}.txn\"}}", POOL);
     let nodes_count = 4;
-    let txn_file_data = GENESIS_NODE_TXNS[0..(nodes_count as usize)].join("\n");
+    let txn_file_data = DEV_GENESIS_NODE_TXNS[0..(nodes_count as usize)].join("\n");
     create_genesis_txn_file(POOL, &txn_file_data, Some(Path::new(GENESIS_PATH)));
     pool_config_json(Path::new(GENESIS_PATH));
     assert_eq!(create_pool_ledger_config(POOL, Some(Path::new(GENESIS_PATH))),Ok(error::SUCCESS.code_num));
