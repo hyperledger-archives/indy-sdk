@@ -24,7 +24,7 @@ pub mod new_command {
 
     command!(CommandMetadata::build("new", "Create new DID")
                 .add_optional_param("did", "Known DID for new wallet instance")
-                .add_optional_param("seed", "Seed for creating DID key-pair")
+                .add_optional_deferred_param("seed", "Seed for creating DID key-pair")
                 .add_optional_param("metadata", "DID metadata")
                 .add_example("did new")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX")
@@ -191,7 +191,7 @@ pub mod rotate_key_command {
     use super::*;
 
     command!(CommandMetadata::build("rotate-key", "Rotate keys for active did")
-                .add_optional_param("seed", "If not provide then a random one will be created")
+                .add_optional_deferred_param("seed", "If not provide then a random one will be created")
                 .add_example("did rotate-key")
                 .add_example("did rotate-key seed=00000000000000000000000000000My2")
                 .finalize());

@@ -558,7 +558,7 @@ impl CommandExecutor {
                 }
 
                 if param.is_deferred() {
-                    print!("(left empty for deferred input) ")
+                    print!("(leave empty for deferred input) ")
                 }
 
                 println!("{}", param.help());
