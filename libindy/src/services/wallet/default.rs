@@ -664,14 +664,11 @@ mod tests {
         }
         {
             let default_wallet_type = DefaultWalletType::new();
-            let wallet = default_wallet_type.open("encrypted_wallet", "pool1", None, None, None).unwrap();
+            let wallet_error = default_wallet_type.open("encrypted_wallet", "pool1", None, None, None);
 
-            let wallet_error = wallet.list("key1::").err();
             match wallet_error {
-                Some(error) => {
-                    assert_eq!(error.description(), String::from("Unexpected SQLite error: file is encrypted or is not a database"));
-                }
-                None => assert!(false)
+                Ok(_) => assert!(false),
+                Err(error) => assert_eq!(error.description(), String::from("Wallet security error: File opened that is not a database file"))
             };
         }
 
