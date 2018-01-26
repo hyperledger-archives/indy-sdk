@@ -26,9 +26,9 @@ pub mod nym_command {
     use super::*;
 
     command!(CommandMetadata::build("nym", "Send NYM transaction to the Ledger.")
-                .add_param("did", false, "DID of new identity")
-                .add_param("verkey", true, "Verification key of new identity")
-                .add_param("role", true, "Role of identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, TGB or empty in case of blacklisting NYM")
+                .add_param("did", "DID of new identity")
+                .add_optional_param("verkey", "Verification key of new identity")
+                .add_optional_param("role", "Role of identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, TGB or empty in case of blacklisting NYM")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=TRUSTEE")
@@ -79,7 +79,7 @@ pub mod get_nym_command {
     use super::*;
 
     command!(CommandMetadata::build("get-nym", "Get NYM from Ledger.")
-                .add_param("did", false, "DID of identity presented in Ledger")
+                .add_param("did","DID of identity presented in Ledger")
                 .add_example("ledger get-nym did=VsKV7grR1BUE29mG2Fm2kX")
                 .finalize()
     );
@@ -133,10 +133,10 @@ pub mod attrib_command {
     use super::*;
 
     command!(CommandMetadata::build("attrib", "Send Attribute transaction to the Ledger for exists NYM.")
-                .add_param("did", false, "DID of identity presented in Ledger")
-                .add_param("hash", true, "Hash of attribute data")
-                .add_param("raw", true, "JSON representation of attribute data")
-                .add_param("enc", true, "Encrypted attribute data")
+                .add_param("did",  "DID of identity presented in Ledger")
+                .add_optional_param("hash", "Hash of attribute data")
+                .add_optional_param("raw", "JSON representation of attribute data")
+                .add_optional_param("enc", "Encrypted attribute data")
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX raw={"endpoint":{"ha":"127.0.0.1:5555"}}"#)
                 .finalize()
     );
@@ -189,8 +189,8 @@ pub mod get_attrib_command {
     use super::*;
 
     command!(CommandMetadata::build("get-attrib", "Get ATTRIB from Ledger.")
-                .add_param("did", false, "DID of identity presented in Ledger")
-                .add_param("attr", false, "Name of attribute")
+                .add_param("did", "DID of identity presented in Ledger")
+                .add_param("attr", "Name of attribute")
                 .add_example("ledger get-attrib did=VsKV7grR1BUE29mG2Fm2kX attr=endpoint")
                 .finalize()
     );
@@ -242,9 +242,9 @@ pub mod schema_command {
     use super::*;
 
     command!(CommandMetadata::build("schema", "Send Schema transaction to the Ledger.")
-                .add_param("name", false, "Schema name")
-                .add_param("version", false, "Schema version")
-                .add_param("attr_names", false, "Schema attributes split by comma")
+                .add_param("name", "Schema name")
+                .add_param("version", "Schema version")
+                .add_param("attr_names", "Schema attributes split by comma")
                 .add_example("ledger schema name=gvt version=1.0 attr_names=name,age")
                 .finalize()
     );
@@ -298,9 +298,9 @@ pub mod get_schema_command {
     use super::*;
 
     command!(CommandMetadata::build("get-schema", "Get Schema from Ledger.")
-                .add_param("did", false, "DID of identity presented in Ledger")
-                .add_param("name", false, "Schema name")
-                .add_param("version", false, "Schema version")
+                .add_param("did", "DID of identity presented in Ledger")
+                .add_param("name", "Schema name")
+                .add_param("version", "Schema version")
                 .add_example("ledger get-schema did=VsKV7grR1BUE29mG2Fm2kX name=gvt version=1.0")
                 .finalize()
     );
@@ -359,10 +359,10 @@ pub mod claim_def_command {
     use super::*;
 
     command!(CommandMetadata::build("claim-def", "Send Claim Def transaction to the Ledger.")
-                .add_param("schema_no", false, "Sequence number of schema")
-                .add_param("signature_type", false, "Signature type (only CL supported now)")
-                .add_param("primary", false, "Primary key in json format")
-                .add_param("revocation", true, "Revocation key in json format")
+                .add_param("schema_no", "Sequence number of schema")
+                .add_param("signature_type", "Signature type (only CL supported now)")
+                .add_param("primary", "Primary key in json format")
+                .add_optional_param("revocation", "Revocation key in json format")
                 .add_example(r#"ledger claim-def schema_no=1 signature_type=CL primary={"n":"1","s":"2","rms":"3","r":{"age":"4","name":"5"},"rctxt":"6","z":"7"}"#)
                 .finalize()
     );
@@ -415,9 +415,9 @@ pub mod get_claim_def_command {
     use super::*;
 
     command!(CommandMetadata::build("get-claim-def", "Get Claim Definition from Ledger.")
-                .add_param("schema_no", false, "Sequence number of schema")
-                .add_param("signature_type", false, "Signature type (only CL supported now)")
-                .add_param("origin", false, "Claim definition owner DID")
+                .add_param("schema_no", "Sequence number of schema")
+                .add_param("signature_type", "Signature type (only CL supported now)")
+                .add_param("origin", "Claim definition owner DID")
                 .add_example("ledger get-claim-def schema_no=1 signature_type=CL origin=VsKV7grR1BUE29mG2Fm2kX")
                 .finalize()
     );
@@ -468,14 +468,14 @@ pub mod node_command {
     use super::*;
 
     command!(CommandMetadata::build("node", "Send Node transaction to the Ledger.")
-                .add_param("target", false, "Node identifier'")
-                .add_param("alias", false, "Node alias (can't be changed in case of update)")
-                .add_param("node_ip", true, "Node Ip. Note that it is mandatory for adding node case")
-                .add_param("node_port", true, "Node port. Note that it is mandatory for adding node case")
-                .add_param("client_ip", true, "Client Ip. Note that it is mandatory for adding node case")
-                .add_param("client_port", true, "Client port. Note that it is mandatory for adding node case")
-                .add_param("blskey", true, "Node BLS key")
-                .add_param("services", true, "Node type. One of: VALIDATOR, OBSERVER or empty in case of blacklisting node")
+                .add_param("target", "Node identifier'")
+                .add_param("alias", "Node alias (can't be changed in case of update)")
+                .add_optional_param("node_ip", "Node Ip. Note that it is mandatory for adding node case")
+                .add_optional_param("node_port", "Node port. Note that it is mandatory for adding node case")
+                .add_optional_param("client_ip", "Client Ip. Note that it is mandatory for adding node case")
+                .add_optional_param("client_port","Client port. Note that it is mandatory for adding node case")
+                .add_optional_param("blskey",  "Node BLS key")
+                .add_optional_param("services", "Node type. One of: VALIDATOR, OBSERVER or empty in case of blacklisting node")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR blskey=2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y alias=Node5 services=VALIDATOR")
@@ -545,8 +545,8 @@ pub mod pool_config_command {
     use super::*;
 
     command!(CommandMetadata::build("pool-config", "Send write configuration to pool.")
-                .add_param("writes", false, "Accept write transactions.")
-                .add_param("force", true, "Forced configuration applying without reaching pool consensus.")
+                .add_param("writes", "Accept write transactions.")
+                .add_optional_param("force", "Forced configuration applying without reaching pool consensus.")
                 .add_example("ledger pool-config writes=true")
                 .add_example("ledger pool-config writes=true force=true")
                 .finalize()
@@ -591,19 +591,19 @@ pub mod pool_upgrade_command {
     use super::*;
 
     command!(CommandMetadata::build("pool-upgrade", "Send instructions to nodes to update themselves.")
-                .add_param("name", false, "Human-readable name for the upgrade.")
-                .add_param("version", false, "The version of indy-node package we perform upgrade to. \n                  \
+                .add_param("name", "Human-readable name for the upgrade.")
+                .add_param("version","The version of indy-node package we perform upgrade to. \n                  \
                                               Must be greater than existing one (or equal if reinstall flag is True)")
-                .add_param("action", false, "Upgrade type. Either start or cancel.")
-                .add_param("sha256", false, "Sha256 hash of the package.")
-                .add_param("timeout", true, "Limits upgrade time on each Node.")
-                .add_param("schedule", true, "Node upgrade schedule. Schedule should contain identifiers of all nodes. Upgrade dates should be in future. \n                              \
+                .add_param("action", "Upgrade type. Either start or cancel.")
+                .add_param("sha256", "Sha256 hash of the package.")
+                .add_optional_param("timeout", "Limits upgrade time on each Node.")
+                .add_optional_param("schedule", "Node upgrade schedule. Schedule should contain identifiers of all nodes. Upgrade dates should be in future. \n                              \
                                               If force flag is False, then it's required that time difference between each Upgrade must be not less than 5 minutes.\n                              \
                                               Requirements for schedule can be ignored by parameter force=true.\n                              \
                                               Schedule is mandatory for action=start.")
-                .add_param("justification", true, "Justification string for this particular Upgrade.")
-                .add_param("reinstall", true, "Whether it's allowed to re-install the same version. False by default.")
-                .add_param("force", true, "Whether we should apply transaction without waiting for consensus of this transaction. False by default.")
+                .add_optional_param("justification", "Justification string for this particular Upgrade.")
+                .add_optional_param("reinstall", "Whether it's allowed to re-install the same version. False by default.")
+                .add_optional_param("force", "Whether we should apply transaction without waiting for consensus of this transaction. False by default.")
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=start sha256=f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398 schedule={"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"2020-01-25T12:49:05.258870+00:00"}"#)
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=cancel sha256=ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398"#)
                 .finalize()
@@ -685,7 +685,7 @@ pub mod custom_command {
 
     command!(CommandMetadata::build("custom", "Send custom transaction to the Ledger.")
                 .add_main_param("txn", "Transaction json")
-                .add_param("sign", true, "Is signature required")
+                .add_optional_param("sign", "Is signature required")
                 .add_example(r#"ledger custom {"reqId":1,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"105","dest":"V4SGRU86Z58d6TV7PBUe6f"},"protocolVersion":1}"#)
                 .add_example(r#"ledger custom {"reqId":2,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"1","dest":"VsKV7grR1BUE29mG2Fm2kX"},"protocolVersion":1} sign=true"#)
                 .finalize()

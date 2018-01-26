@@ -18,7 +18,7 @@ pub mod create_command {
 
     command!(CommandMetadata::build("create", "Create new pool ledger config with specified name")
                 .add_main_param("name", "The name of new pool ledger config")
-                .add_param("gen_txn_file", false, "Path to file with genesis transactions")
+                .add_param("gen_txn_file", "Path to file with genesis transactions")
                 .add_example("pool create pool1 gen_txn_file=/home/pool_genesis_transactions")
                 .finalize()
     );
