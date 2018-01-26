@@ -197,8 +197,8 @@ mod high_cases {
             InmemWallet::cleanup();
 
             WalletUtils::register_wallet_type(INMEM_TYPE, false).unwrap();
-            WalletUtils::create_wallet(POOL, WALLET, Some(INMEM_TYPE), None).unwrap();
-            let wallet_handle = WalletUtils::open_wallet(WALLET, None).unwrap();
+            WalletUtils::create_wallet(POOL, WALLET, Some(INMEM_TYPE), None, None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(WALLET, None, None).unwrap();
 
             AnoncredsUtils::prover_store_claim_offer(wallet_handle, &AnoncredsUtils::gvt_claim_offer()).unwrap();
             AnoncredsUtils::prover_store_claim_offer(wallet_handle, &AnoncredsUtils::xyz_claim_offer()).unwrap();

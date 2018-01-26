@@ -45,7 +45,7 @@ def xwallet_cleanup():
 # noinspection PyUnusedLocal
 @pytest.fixture(scope="module")
 def xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home):
-    xwallet_gen = x_xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home)
+    xwallet_gen = x_xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home, None)
     yield next(xwallet_gen)
     next(xwallet_gen)
 
@@ -57,7 +57,8 @@ def wallet_handle_cleanup():
 
 @pytest.fixture(scope="module")
 def wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, wallet_handle_cleanup):
-    wallet_handle_gen = x_wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, wallet_handle_cleanup)
+    wallet_handle_gen = \
+        x_wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, None, wallet_handle_cleanup)
     yield next(wallet_handle_gen)
     next(wallet_handle_gen)
 
