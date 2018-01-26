@@ -95,7 +95,7 @@ impl CommandMetadataBuilder {
         self
     }
 
-    pub fn add_param(mut self,
+    pub fn add_required_param(mut self,
                      name: &'static str,
                      help: &'static str) -> CommandMetadataBuilder {
         self.params.push(ParamMetadata::new(name, false, false, help));
@@ -110,8 +110,8 @@ impl CommandMetadataBuilder {
     }
 
     pub fn add_optional_deferred_param(mut self,
-                                 name: &'static str,
-                                 help: &'static str) -> CommandMetadataBuilder {
+                                       name: &'static str,
+                                       help: &'static str) -> CommandMetadataBuilder {
         self.params.push(ParamMetadata::new(name, true, true, help));
         self
     }
@@ -636,10 +636,26 @@ impl CommandExecutor {
 
         for param in deffered_params {
             println!("Enter value for {}:", param);
-            let val = rpassword::read_password().unwrap_or_else(|err| err.description().to_string());
+            let val;
+            loop {
+                match rpassword::read_password() {
+                    Ok(v) => {
+                        if v.is_empty() {
+                            println!("Please enter value for {}:", param);
+                        } else {
+                            val = v;
+                            break;
+                        }
+                    }
+                    Err(err) => {
+                        println_err!("{}", err.description().to_string());
+                        println!("Please enter value for {}:", param);
+                    }
+                }
+            }
+
             res.insert(param, val);
         }
-
         Ok(res)
     }
 
@@ -753,7 +769,7 @@ mod tests {
 
         command!(CommandMetadata::build("test_command", "Test command help")
                     .add_main_param("main_param", "Main param help")
-                    .add_param("param1", "Param1 help")
+                    .add_required_param("param1", "Param1 help")
                     .add_optional_param("param2", "Param2 help")
                     .finalize());
 
