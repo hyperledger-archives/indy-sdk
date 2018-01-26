@@ -19,9 +19,10 @@ pub mod create_command {
 
     command!(CommandMetadata::build("create", "Create new wallet with specified name")
                 .add_main_param("name", "The name of new wallet")
-                .add_param("pool_name", false, "The name of associated Indy pool")
-                .add_param("key", true, "Auth key for the wallet")
+                .add_param("pool_name", "The name of associated Indy pool")
+                .add_optional_deferred_param("key", "Auth key for the wallet")
                 .add_example("wallet create wallet1 pool_name=pool1")
+                .add_example("wallet create name=wallet1 pool_name=pool1 key")
                 .add_example("wallet create name=wallet1 pool_name=pool1 key=AAAAB3NzaC1yc2EA")
                 .finalize()
     );
@@ -62,9 +63,11 @@ pub mod open_command {
 
     command_with_cleanup!(CommandMetadata::build("open", "Open wallet with specified name. Also close previously opened.")
                             .add_main_param("name", "The name of wallet")
-                            .add_param("key", true, "Auth key for the wallet")
-                            .add_param("rekey", true, "New auth key for the wallet (will replace previous one).")
+                            .add_optional_deferred_param("key", "Auth key for the wallet")
+                            .add_optional_deferred_param("rekey", "New auth key for the wallet (will replace previous one).")
                             .add_example("wallet open wallet1")
+                            .add_example("wallet open name=wallet1 key")
+                            .add_example("wallet open name=wallet1 key rekey")
                             .add_example("wallet open name=wallet1 key=AAAAB3NzaC1yc2EA rekey=BBBAB3NzaC1AS4AC")
                             .finalize());
 
