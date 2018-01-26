@@ -84,7 +84,7 @@ impl ToErrorCode for WalletError {
             WalletError::IncorrectPool(ref err) => ErrorCode::WalletIncompatiblePoolError,
             WalletError::PluggedWallerError(err_code) => err_code,
             WalletError::AlreadyOpened(ref err) => ErrorCode::WalletAlreadyOpenedError,
-            WalletError::AccessFailed(ref err) => ErrorCode::WalletAccessFailedError,
+            WalletError::AccessFailed(ref err) => ErrorCode::WalletAccessFailed,
             WalletError::CommonError(ref err) => err.to_error_code()
         }
     }

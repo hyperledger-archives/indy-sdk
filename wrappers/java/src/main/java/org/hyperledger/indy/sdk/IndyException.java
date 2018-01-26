@@ -82,7 +82,7 @@ public class IndyException extends Exception {
 				return new WrongWalletForPoolException();
 			case WalletAlreadyOpenedError:
 				return new WalletAlreadyOpenedException();
-			case WalletAccessFailedError:
+			case WalletAccessFailed:
 				return new WalletAccessFailedException();
 			case PoolLedgerNotCreatedError:
 				return new PoolConfigNotCreatedException();

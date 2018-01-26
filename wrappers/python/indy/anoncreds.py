@@ -541,7 +541,7 @@ async def prover_get_claims_for_proof_req(wallet_handle: int,
                  wallet_handle,
                  proof_request_json)
 
-    if not hasattr(prover_get_claims, "cb"):
+    if not hasattr(prover_get_claims_for_proof_req, "cb"):
         logger.debug("prover_get_claims_for_proof_req: Creating callback")
         prover_get_claims_for_proof_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 

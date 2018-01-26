@@ -456,7 +456,7 @@ mod medium_cases {
             let wallet_name = "indy_open_wallet_works_for_encrypted_wallet_with_invalid_credentials";
             WalletUtils::create_wallet(POOL, wallet_name, None, None, Some(CREDENTIALS)).unwrap();
             let res = WalletUtils::open_wallet(wallet_name, None, Some(r#"{"key":"otherkey"}"#));
-            assert_eq!(ErrorCode::WalletAccessFailedError, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletAccessFailed, res.unwrap_err());
 
             TestUtils::cleanup_storage();
         }

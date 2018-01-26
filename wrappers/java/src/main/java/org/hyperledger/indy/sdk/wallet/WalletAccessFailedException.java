@@ -16,6 +16,6 @@ public class WalletAccessFailedException extends IndyException
 	 */
 	public WalletAccessFailedException()
     {
-    	super(message, ErrorCode.WalletAccessFailedError.value());
+    	super(message, ErrorCode.WalletAccessFailed.value());
     }
 }

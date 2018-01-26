@@ -84,7 +84,7 @@ pub enum ErrorCode
     WalletAlreadyOpenedError = 206,
 
     // Attempt to open encrypted wallet with invalid credentials
-    WalletAccessFailedError = 207,
+    WalletAccessFailed = 207,
 
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
@@ -162,7 +162,7 @@ impl ErrorCode {
             WalletAlreadyExistsError => "Attempt to create wallet with name used for another exists wallet",
             WalletNotFoundError => "Requested entity id isn't present in wallet",
             WalletIncompatiblePoolError => "Trying to use wallet with pool that has different name",
-            WalletAccessFailedError => "Trying to open wallet encrypted wallet with invalid credentials",
+            WalletAccessFailed => "Trying to open wallet encrypted wallet with invalid credentials",
             WalletAlreadyOpenedError => "Trying to open wallet that was opened already",
             PoolLedgerNotCreatedError => "Trying to open pool ledger that wasn't created before",
             PoolLedgerInvalidPoolHandle => "Caller passed invalid pool ledger handle",

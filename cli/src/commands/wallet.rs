@@ -111,7 +111,7 @@ pub mod open_command {
                         match err {
                             ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid wallet config")),
                             ErrorCode::WalletAlreadyOpenedError => Err(println_err!("Wallet \"{}\" already opened", name)),
-                            ErrorCode::WalletAccessFailedError => Err(println_err!("Cannot open encrypted wallet \"{}\"", name)),
+                            ErrorCode::WalletAccessFailed => Err(println_err!("Cannot open encrypted wallet \"{}\"", name)),
                             ErrorCode::CommonIOError => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
                             err => Err(println_err!("Indy SDK error occurred {:?}", err)),
                         }
