@@ -248,13 +248,13 @@ mod high_cases {
             DidUtils::set_endpoint_for_did(wallet_handle, DID, ENDPOINT, VERKEY).unwrap();
             let (endpoint, key) = DidUtils::get_endpoint_for_did(wallet_handle, pool_handle, DID).unwrap();
             assert_eq!(ENDPOINT, endpoint);
-            assert_eq!(VERKEY, key);
+            assert_eq!(VERKEY, key.unwrap());
 
             let new_endpoint = "10.10.10.1:9710";
             DidUtils::set_endpoint_for_did(wallet_handle, DID, new_endpoint, VERKEY_MY2).unwrap();
             let (updated_endpoint, updated_key) = DidUtils::get_endpoint_for_did(wallet_handle, pool_handle, DID).unwrap();
             assert_eq!(new_endpoint, updated_endpoint);
-            assert_eq!(VERKEY_MY2, updated_key);
+            assert_eq!(VERKEY_MY2, updated_key.unwrap());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
             PoolUtils::close(pool_handle).unwrap();
@@ -321,7 +321,7 @@ mod high_cases {
 
             let (endpoint, key) = DidUtils::get_endpoint_for_did(wallet_handle, -1, DID).unwrap();
             assert_eq!(ENDPOINT, endpoint);
-            assert_eq!(VERKEY, key);
+            assert_eq!(VERKEY, key.unwrap());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -348,7 +348,32 @@ mod high_cases {
 
             let (endpoint, key) = DidUtils::get_endpoint_for_did(wallet_handle, pool_handle, &trustee_did).unwrap();
             assert_eq!(ENDPOINT, endpoint);
-            assert_eq!(VERKEY_TRUSTEE, key);
+            assert_eq!(VERKEY_TRUSTEE, key.unwrap());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            PoolUtils::close(pool_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_get_endpoint_for_did_works_from_ledger_for_address_only() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+
+            let attrib_data = format!(r#"{{"endpoint":{{"ha":"{}"}}}}"#, ENDPOINT);
+            let attrib_request = LedgerUtils::build_attrib_request(&trustee_did, &trustee_did,
+                                                                   None, Some(&attrib_data), None).unwrap();
+
+            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
+
+            let (endpoint, key) = DidUtils::get_endpoint_for_did(wallet_handle, pool_handle, &trustee_did).unwrap();
+            assert_eq!(ENDPOINT, endpoint);
+            assert_eq!(None, key);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
             PoolUtils::close(pool_handle).unwrap();
