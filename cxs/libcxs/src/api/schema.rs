@@ -189,7 +189,7 @@ mod tests {
                                        CString::new("Test Source ID").unwrap().into_raw(),
                                        CString::new("Test Claim Def").unwrap().into_raw(),
                                        schema_seq_no,
-                                       CString::new("").unwrap().into_raw(),
+                                       ptr::null(),
                                        false,
                                        Some(create_cb)),
                    error::SUCCESS.code_num);

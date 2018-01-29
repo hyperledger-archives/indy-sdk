@@ -179,8 +179,9 @@ impl CreateClaimDef {
             Ok(x) => x,
             Err(_) => return false,
         };
-        match ClaimDefinition::from_str(&claim_def_str) {
-            Ok(x) => true,
+
+        match serde_json::from_str(&claim_def_str) {
+            Ok(ClaimDefinition {..}) => true,
             Err(_) => false,
         }
     }
@@ -458,7 +459,7 @@ pub mod tests {
         let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_ISSUER_PW_SEED)).unwrap();
         SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_AGENT_PW_SEED)).unwrap();
         assert_eq!(Err(error::CLAIM_DEF_ALREADY_CREATED.code_num),
-                   create_new_claimdef("1".to_string(), "name".to_string(), 22, my_did, false));
+                   create_new_claimdef("1".to_string(), "name".to_string(), 263, my_did, false));
         delete_wallet("a_test_wallet").unwrap();
     }
 
