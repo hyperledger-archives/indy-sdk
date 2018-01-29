@@ -22,7 +22,8 @@ use cxs::utils::libindy::pool::open_sandbox_pool;
 
 static CLAIM_DATA: &str = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
 static CLAIM_DEF_ISSUER_DID: &str = "2hoqvcwupRTUNkXn6ArYzs";
-static CLAIM_DEF_SCHEMA_SEQ_NUM: u32 = 36;
+// STAGING is 245, SANDBOX is 35, DEV is 38
+static CLAIM_DEF_SCHEMA_SEQ_NUM: u32 = 38;
 
 #[test]
 fn test_demo(){
@@ -41,6 +42,24 @@ fn demo(){
     let random_int: u32 = rand::random();
     let logo_url = format!("https://robohash.org/{}?set=set3", random_int);
 
+    /*
+    // Init STAGING ENV
+    let config_string: String = json!({
+        "enterprise_verkey": "3W9WGtRowAanh5q6giQrGncZVMvRwPedB9fJAJkAN5Gk",
+        "enterprise_name": "Evernym",
+        "agency_pairwise_verkey": "z8bokfTeuSGjygosTZmjo9XnHGsRhiTcnhV5Dp6xxsL",
+        "agent_endpoint": "https://eas.pstg.evernym.com",
+        "agent_pairwise_verkey": "FqBMwDobDQNjHCMyVBJG8hUY4Fq5XcgqqRdj89dTBZwL",
+        "agency_pairwise_did": "2opd29fJoE7UJwtVn6QDhd",
+        "wallet_name": "my_real_wallet",
+        "genesis_path":self::cxs::utils::constants::GENESIS_PATH,
+        "logo_url":logo_url,
+        "agent_pairwise_did": "UDDEoTTzUG7vmcEq6meesq",
+        "enterprise_did": "5bJqPo8aCWyBwLQosZkJcB",
+        "agent_enterprise_verkey": "EA7bVoYwFs8Y8aA5oCR5aEbVWZDxUfYmMqHjSLf1D16t",
+        "enterprise_did_agent": "R9835umcd7E8sMa9qqxpmq"
+    }).to_string();
+
     // Init SANDBOX ENV  *********************************************************************
     let config_string: String = json!({
         "enterprise_verkey": "Be94ugTMAj88qgZ66jvchHhZ2rNtRumq9EG46LasbSUd",
@@ -57,8 +76,8 @@ fn demo(){
         "agent_enterprise_verkey": "DAXynBiuhRHQyy2nmJR7kRwiNGiYJqQvefem3p5V1BND",
         "enterprise_did_agent": "PKUgbNXcBKWsgnpbM6ZSn6"
     }).to_string();
+    */
 
-    /*
     // Init DEV ENV  *********************************************************************
     let config_string: String = json!({
        "agent_endpoint": "https://enym-eagency.pdev.evernym.com",
@@ -75,7 +94,6 @@ fn demo(){
        "agent_pairwise_verkey": "Chj1oQYdmbTXKG96Fpo8C2sd6fRrt9UyCrbmuo4vzroK",
        "genesis_path":self::cxs::utils::constants::GENESIS_PATH
       }).to_string();
-      */
 
     let mut file = NamedTempFileOptions::new()
         .suffix(".json")
