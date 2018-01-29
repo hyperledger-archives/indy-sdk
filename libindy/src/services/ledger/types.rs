@@ -430,11 +430,11 @@ impl<'a> JsonDecodable<'a> for AttribData {}
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Endpoint {
     pub ha: String,
-    pub verkey: String
+    pub verkey: Option<String>
 }
 
 impl Endpoint {
-    pub fn new(ha: String, verkey: String) -> Endpoint {
+    pub fn new(ha: String, verkey: Option<String>) -> Endpoint {
         Endpoint {
             ha,
             verkey
