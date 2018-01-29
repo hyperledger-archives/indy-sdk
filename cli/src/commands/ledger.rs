@@ -468,7 +468,7 @@ pub mod node_command {
     use super::*;
 
     command!(CommandMetadata::build("node", "Send Node transaction to the Ledger.")
-                .add_required_param("target", "Node identifier'")
+                .add_required_param("target", "Node identifier")
                 .add_required_param("alias", "Node alias (can't be changed in case of update)")
                 .add_optional_param("node_ip", "Node Ip. Note that it is mandatory for adding node case")
                 .add_optional_param("node_port", "Node port. Note that it is mandatory for adding node case")
