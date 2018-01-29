@@ -107,14 +107,14 @@ mod tests {
         "2018-01-24 22:35:09"
         ],
         [
-        "my_did::CEWFNS4tCtW5ryPjhnsD1j",
-        r#"{"did":"CEWFNS4tCtW5ryPjhnsD1j","verkey":"786LPteH851RLmanwd1EPGQLcZqiSFhP919JUaWAHhcq"}"#,
-        "2018-01-24 22:35:09"
+        "my_did::GfW11C5VZT2nddzf7fECVU",
+        r#"{"did":"GfW11C5VZT2nddzf7fECVU","verkey":"9YAUcPGbRgu8GGnsMacT4xwHZJTVQAe1g9xUUj7t1iZh"}"#,
+        "2018-01-29 15:29:34"
         ],
         [
-        "key::786LPteH851RLmanwd1EPGQLcZqiSFhP919JUaWAHhcq",
-        r#"{"verkey":"786LPteH851RLmanwd1EPGQLcZqiSFhP919JUaWAHhcq","signkey":"xt19s1sp2UZCGhy9rNyb1FtxdKiDGZZPPWbEpqU41NCgQ4dy4G3KUJvQYouVNYPNVcqhvTaUtjJuH4Kg1R8ybdF"}"#,
-        "2018-01-24 22:35:09"
+        "key::9YAUcPGbRgu8GGnsMacT4xwHZJTVQAe1g9xUUj7t1iZh",
+        r#"{"verkey":"9YAUcPGbRgu8GGnsMacT4xwHZJTVQAe1g9xUUj7t1iZh","signkey":"23vQen1HgJbRUa8MZzNWhQ5NbxfGPbmiKddAwceVrFZf18Q6Q4tyLMu2RK65Y9Bj57Mmu91UcV1qcRur35cKLADh"}"#,
+        "2018-01-29 15:29:34"
         ],
         [
         "my_did::4fUDR9R7fjwELRvH9JT6HH",

@@ -22,8 +22,8 @@ use cxs::utils::libindy::pool::open_sandbox_pool;
 
 static CLAIM_DATA: &str = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
 static CLAIM_DEF_ISSUER_DID: &str = "2hoqvcwupRTUNkXn6ArYzs";
-// STAGING is 245, SANDBOX is 35, DEV is 38
-static CLAIM_DEF_SCHEMA_SEQ_NUM: u32 = 38;
+// STAGING is 245, SANDBOX is 36, DEV is 22
+static CLAIM_DEF_SCHEMA_SEQ_NUM: u32 = 22;
 
 #[test]
 fn test_demo(){
@@ -62,20 +62,20 @@ fn demo(){
 
     // Init SANDBOX ENV  *********************************************************************
     let config_string: String = json!({
-        "enterprise_verkey": "Be94ugTMAj88qgZ66jvchHhZ2rNtRumq9EG46LasbSUd",
+        "enterprise_verkey": "D2RTm2HZFBLMhrCp43ZowDMuxVHGUVe49pgM6cHhkj6L",
         "enterprise_name": "Evernym",
-        "agency_pairwise_verkey": "VCNhKASjLU5tVWnZpjcyEsoV1QC3adrPVMCCjeKMobn",
-        "agent_endpoint": "https://agency-sandbox.evernym.com",
-        "agent_pairwise_verkey": "EQonerPq75ydehS4b1hzqPy2rb1MCJws51BMK9mckcTa",
-        "agency_pairwise_did": "tjVxL8raUsG5s5ZzGhYV1",
-        "wallet_name": "my_real_wallet",
+        "agency_pairwise_verkey": "BtGUVLVKQGbiLDPz8kg56vjHWjzMmcMsr65cMa2zwCZm",
+        "agent_endpoint": "https://agency-ea-sandbox.evernym.com",
+        "agent_pairwise_verkey": "En9myzhuLRqLAw6zPwVFaSmiNtVwZDDYazvuBLHD6Hin",
+        "agency_pairwise_did": "LyDVoajwQ6skcGSf6DKay9",
         "genesis_path":self::cxs::utils::constants::GENESIS_PATH,
         "logo_url":logo_url,
-        "agent_pairwise_did": "Rc5bTajTodgXWyF7o3L8Ve",
-        "enterprise_did": "LXJ6LpV6kyFCQd9J843Abx",
-        "agent_enterprise_verkey": "DAXynBiuhRHQyy2nmJR7kRwiNGiYJqQvefem3p5V1BND",
-        "enterprise_did_agent": "PKUgbNXcBKWsgnpbM6ZSn6"
-    }).to_string();
+        "wallet_name":"my_real_wallet",
+        "agent_pairwise_did": "SHEzUMX56jxo9BPU8Rsmnc",
+        "enterprise_did": "2hoqvcwupRTUNkXn6ArYzs",
+        "agent_enterprise_verkey": "9YAUcPGbRgu8GGnsMacT4xwHZJTVQAe1g9xUUj7t1iZh",
+        "enterprise_did_agent": "GfW11C5VZT2nddzf7fECVU"
+        }).to_string();
     */
 
     // Init DEV ENV  *********************************************************************
