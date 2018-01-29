@@ -434,7 +434,9 @@ async def get_endpoint_for_did(wallet_handle: int,
                                            c_did,
                                            get_endpoint_for_did.cb)
 
-    res = (endpoint.decode(), transport_vk.decode())
+    endpoint = endpoint.decode()
+    transport_vk = transport_vk.decode() if transport_vk else None
+    res = (endpoint, transport_vk)
 
     logger.debug("get_endpoint_for_did: <<< res: %r", res)
     return res

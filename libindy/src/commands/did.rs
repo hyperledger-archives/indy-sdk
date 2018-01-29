@@ -69,7 +69,7 @@ pub enum DidCommand {
         i32, // wallet handle
         i32, // pool handle
         String, // did
-        Box<Fn(Result<(String, String), IndyError>) + Send>),
+        Box<Fn(Result<(String, Option<String>), IndyError>) + Send>),
     SetDidMetadata(
         i32, // wallet handle
         String, // did
@@ -359,7 +359,7 @@ impl DidCommandExecutor {
         self.crypto_service.validate_did(&did)?;
         self.crypto_service.validate_key(&transport_key)?;
 
-        let endpoint = Endpoint::new(address.to_string(), transport_key.to_string());
+        let endpoint = Endpoint::new(address.to_string(), Some(transport_key.to_string()));
 
         self._wallet_set_did_endpoint(wallet_handle, &did, &endpoint)?;
         Ok(())
@@ -369,7 +369,7 @@ impl DidCommandExecutor {
                             wallet_handle: i32,
                             pool_handle: i32,
                             did: String,
-                            cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+                            cb: Box<Fn(Result<(String, Option<String>), IndyError>) + Send>) {
         try_cb!(self.crypto_service.validate_did(&did), cb);
 
         match self._wallet_get_did_endpoint(wallet_handle, &did) {

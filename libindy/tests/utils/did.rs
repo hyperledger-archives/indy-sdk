@@ -279,7 +279,7 @@ impl DidUtils {
         Ok(())
     }
 
-    pub fn get_endpoint_for_did(wallet_handle: i32, pool_handle: i32, did: &str) -> Result<(String, String), ErrorCode> {
+    pub fn get_endpoint_for_did(wallet_handle: i32, pool_handle: i32, did: &str) -> Result<(String, Option<String>), ErrorCode> {
         let (sender, receiver) = channel();
         let cb = Box::new(move |err, endpoint, transport_vk| {
             sender.send((err, endpoint, transport_vk)).unwrap();
