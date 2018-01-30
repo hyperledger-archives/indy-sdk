@@ -42,8 +42,10 @@ S->L: Send Nym for "Sovrin Steward Government Pairwise" DID
 S->G: Connection request with "Sovrin Steward Government Pairwise" DID and nonce
 G->GW: Create "Government" wallet
 G->GW: Create and store "Government Sovrin Steward Pairwise" DID
-G->S: Anoncrypted connection response with "Government Sovrin Steward Pairwise" DID, verkey and nonce
-S->L: Send Nym for "Government Sovrin Steward Pairwise" DID with Trust Anchor Role
+G->S: Send anoncrypted connection response with "Government Sovrin Steward Pairwise" DID, verkey and nonce
+G->GW: Create and store "Government" DID
+G->S: Send authcrypted "Government" DID Info
+S->L: Send Nym for "Government" DID with Trust Anchor Role
 
 == Getting Trust Anchor credentials - Faber Onboarding  ==
 S->SW: Create and store "Sovrin Steward Faber Pairwise" DID
@@ -51,8 +53,10 @@ S->L: Send Nym for "Sovrin Steward Faber Pairwise" DID
 S->F: Connection request with "Sovrin Steward Faber Pairwise" DID and nonce
 F->FW: Create "Faber" wallet
 F->FW: Create and store "Faber Sovrin Steward Pairwise" DID
-F->S: Anoncrypted connection response with "Faber Sovrin Steward Pairwise" DID, verkey and nonce
-S->L: Send Nym for "Faber Sovrin Steward Pairwise" DID with Trust Anchor Role
+F->S: Send anoncrypted connection response with "Faber Sovrin Steward Pairwise" DID, verkey and nonce
+F->FW: Create and store "Faber" DID
+F->S: Send authcrypted "Faber" DID Info
+S->L: Send Nym for "Faber" DID with Trust Anchor Role
 
 == Getting Trust Anchor credentials - Acme Onboarding  ==
 S->SW: Create and store "Sovrin Steward Acme Pairwise" DID
@@ -60,8 +64,10 @@ S->L: Send Nym for "Sovrin Steward Acme Pairwise" DID
 S->AC: Connection request with "Sovrin Steward Acme Pairwise" DID and nonce
 AC->ACW: Create "Acme" wallet
 AC->ACW: Create and store "Acme Sovrin Steward Pairwise" DID
-AC->S: Anoncrypted connection response with "Acme Sovrin Steward Pairwise" DID, verkey and nonce
-S->L: Send Nym for "Acme Sovrin Steward Pairwise" DID with Trust Anchor Role
+AC->S: Send anoncrypted connection response with "Acme Sovrin Steward Pairwise" DID, verkey and nonce
+AC->ACW: Create and store "Acme" DID
+AC->S: Send authcrypted "Acme" DID Info
+S->L: Send Nym for "Acme" DID with Trust Anchor Role
 
 == Getting Trust Anchor credentials - Thrift Onboarding  ==
 S->SW: Create and store "Sovrin Steward Thrift Pairwise" DID
@@ -69,8 +75,10 @@ S->L: Send Nym for "Sovrin Steward Thrift Pairwise" DID
 S->T: Connection request with "Sovrin Steward Thrift Pairwise" DID and nonce
 T->TW: Create "Thrift" wallet
 T->TW: Create and store "Thrift Sovrin Steward Pairwise" DID
-T->S: Anoncrypted connection response with "Thrift Sovrin Steward Pairwise" DID, verkey and nonce
-S->L: Send Nym for "Thrift Sovrin Steward Pairwise" DID with Trust Anchor Role
+T->S: Send anoncrypted connection response with "Thrift Sovrin Steward Pairwise" DID, verkey and nonce
+T->TW: Create and store "Thrift" DID
+T->S: Send authcrypted "Thrift" DID Info
+S->L: Send Nym for "Thrift" DID with Trust Anchor Role
 
 === Claim Schemas Setup ==
 G->GW: Create and store "Government Schema Issuer" DID
@@ -100,7 +108,9 @@ F->A: Connection request with "Faber Alice Pairwise" DID and nonce
 A->AW: Create "Alice" wallet
 A->AW: Create and store "Alice Faber Pairwise" DID
 A->F: Anoncrypted connection response with "Alice Faber Pairwise" DID, verkey and nonce
-F->L: Send Nym for "Alice Faber Pairwise" DID
+A->AW: Create and store "Alice" DID
+A->F: Send authcrypted "Alice" DID Info
+F->L: Send Nym for "Alice" DID
 
 == Getting HE Diploma with Faber - Getting HE Diploma Claim ==
 F->A: Send authcrypted "Alice Faber HE Diploma" Claim Offer

@@ -37,39 +37,53 @@ async def run():
     logger.info("== Getting Trust Anchor credentials - Government Onboarding  ==")
     logger.info("------------------------------")
 
-    government_wallet, government_wallet_name, _, _, government_steward_did, _, _ = \
-        await onboarding(pool_handle, pool_name, "Sovrin Steward", steward_wallet, steward_did, "Government", None,
-                         'government_wallet', 'TRUST_ANCHOR')
+    government_wallet, government_wallet_name, _, steward_government_key, _, government_steward_key, _ = \
+        await onboarding_establish_connection(pool_handle, pool_name, "Sovrin Steward", steward_wallet, steward_did,
+                                              "Government", None, 'government_wallet')
+
+    government_did, government_key, _ = \
+        await onboarding_create_nym(pool_handle, "Sovrin Steward", steward_wallet, steward_did, steward_government_key,
+                                    "Government", government_wallet, government_steward_key, 'TRUST_ANCHOR')
 
     logger.info("==============================")
     logger.info("== Getting Trust Anchor credentials - Faber Onboarding  ==")
     logger.info("------------------------------")
+    faber_wallet, faber_wallet_name, _, steward_faber_key, _, faber_steward_key, _ = \
+        await onboarding_establish_connection(pool_handle, pool_name, "Sovrin Steward", steward_wallet, steward_did,
+                                              "Faber", None, 'faber_wallet')
 
-    faber_wallet, faber_wallet_name, _, _, faber_steward_did, _, _ = \
-        await onboarding(pool_handle, pool_name, "Sovrin Steward", steward_wallet, steward_did, "Faber", None,
-                         'faber_wallet', 'TRUST_ANCHOR')
+    faber_did, faber_key, _ = \
+        await onboarding_create_nym(pool_handle, "Sovrin Steward", steward_wallet, steward_did, steward_faber_key,
+                                    "Faber", faber_wallet, faber_steward_key, 'TRUST_ANCHOR')
 
     logger.info("==============================")
     logger.info("== Getting Trust Anchor credentials - Acme Onboarding  ==")
     logger.info("------------------------------")
 
-    acme_wallet, acme_wallet_name, _, _, acme_steward_did, _, _ = \
-        await onboarding(pool_handle, pool_name, "Sovrin Steward", steward_wallet, steward_did, "Acme", None,
-                         'acme_wallet', 'TRUST_ANCHOR')
+    acme_wallet, acme_wallet_name, _, steward_acme_key, _, acme_steward_key, _ = \
+        await onboarding_establish_connection(pool_handle, pool_name, "Sovrin Steward", steward_wallet, steward_did,
+                                              "Acme", None, 'acme_wallet')
+
+    acme_did, acme_key, _ = \
+        await onboarding_create_nym(pool_handle, "Sovrin Steward", steward_wallet, steward_did, steward_acme_key,
+                                    "Acme", acme_wallet, acme_steward_key, 'TRUST_ANCHOR')
 
     logger.info("==============================")
     logger.info("== Getting Trust Anchor credentials - Thrift Onboarding  ==")
     logger.info("------------------------------")
 
-    thrift_wallet, thrift_wallet_name, _, _, thrift_steward_did, _, _ = \
-        await onboarding(pool_handle, pool_name, "Sovrin Steward", steward_wallet, steward_did, "Thrift", None,
-                         'thrift_wallet', 'TRUST_ANCHOR')
+    thrift_wallet, thrift_wallet_name, _, steward_thrift_key, _, thrift_steward_key, _ = \
+        await onboarding_establish_connection(pool_handle, pool_name, "Sovrin Steward", steward_wallet, steward_did,
+                                              "Thrift", None, ' thrift_wallet')
+
+    thrift_did, thrift_key, _ = \
+        await onboarding_create_nym(pool_handle, "Sovrin Steward", steward_wallet, steward_did, steward_thrift_key,
+                                    "Thrift", thrift_wallet, thrift_steward_key, 'TRUST_ANCHOR')
 
     logger.info("==============================")
     logger.info("=== Claim Schemas Setup ==")
     logger.info("------------------------------")
 
-    government_did = government_steward_did
     logger.info("\"Government\" -> Create and store in Wallet \"Government Issuer\" DID")
     (government_issuer_did, government_issuer_key) = await did.create_and_store_my_did(government_wallet, "{}")
 
@@ -106,7 +120,6 @@ async def run():
     logger.info("=== Faber Claim Definition Setup ==")
     logger.info("------------------------------")
 
-    faber_did = faber_steward_did
     logger.info("\"Faber\" -> Create and store in Wallet \"Faber Issuer\" DID")
     (faber_issuer_did, faber_issuer_key) = await did.create_and_store_my_did(faber_wallet, "{}")
 
@@ -129,7 +142,6 @@ async def run():
     logger.info("=== Acme Claim Definition Setup ==")
     logger.info("------------------------------")
 
-    acme_did = acme_steward_did
     logger.info("\"Acme\" -> Create and store in Wallet \"Acme Issuer\" DID")
     (acme_issuer_did, acme_issuer_key) = await did.create_and_store_my_did(acme_wallet, "{}")
 
@@ -154,8 +166,12 @@ async def run():
     logger.info("== Getting HE Diploma with Faber - Onboarding ==")
     logger.info("------------------------------")
 
-    alice_wallet, alice_wallet_name, _, _, alice_faber_did, alice_faber_key, faber_alice_connection_response = \
-        await onboarding(pool_handle, pool_name, "Faber", faber_wallet, faber_did, "Alice", None, 'alice_wallet', None)
+    alice_wallet, alice_wallet_name, _, faber_alice_key, _, alice_faber_key, faber_alice_connection_response = \
+        await onboarding_establish_connection(pool_handle, pool_name, "Faber", faber_wallet, faber_did,
+                                              "Alice", None, ' alice_wallet')
+    alice_did, alice_key, _ = \
+        await onboarding_create_nym(pool_handle, "Faber", faber_wallet, faber_did, faber_alice_key,
+                                    "Alice", alice_wallet, alice_faber_key, None)
 
     logger.info("==============================")
     logger.info("== Getting HE Diploma with Faber - Getting HE Diploma Claim ==")
@@ -167,12 +183,9 @@ async def run():
         'schema_key': he_diploma_schema_key
     }
 
-    logger.info("\"Faber\" -> Get key for Alice did")
-    alice_faber_verkey = await did.key_for_did(pool_handle, faber_wallet, faber_alice_connection_response['did'])
-
     logger.info("\"Faber\" -> Authcrypt \"HE Diploma\" Claim Offer for Alice")
     authcrypted_faber_alice_he_diploma_claim_offer = \
-        await crypto.auth_crypt(faber_wallet, faber_issuer_key, alice_faber_verkey,
+        await crypto.auth_crypt(faber_wallet, faber_issuer_key, faber_alice_connection_response['verkey'],
                                 json.dumps(faber_alice_he_diploma_claim_offer).encode('utf-8'))
 
     logger.info("\"Faber\" -> Send authcrypted \"HE Diploma\" Claim Offer to Alice")
@@ -190,7 +203,6 @@ async def run():
     await anoncreds.prover_create_master_secret(alice_wallet, alice_master_secret_name)
 
     logger.info("\"Alice\" -> Get \"HE Diploma\" Schema from Ledger")
-    alice_did = alice_faber_did
     received_he_diploma_schema = \
         await get_schema(pool_handle, alice_did, authdecrypted_faber_alice_he_diploma_claim_offer['schema_key'])
 
@@ -253,8 +265,8 @@ async def run():
     logger.info("------------------------------")
 
     alice_wallet, alice_wallet_name, _, acme_alice_key, _, alice_acme_key, acme_alice_connection_response = \
-        await onboarding(pool_handle, pool_name, "Acme", acme_wallet, acme_did,
-                         "Alice", alice_wallet, 'alice_wallet', None)
+        await onboarding_establish_connection(pool_handle, pool_name, "Acme", acme_wallet, acme_did,
+                                              "Alice", alice_wallet, ' alice_wallet')
 
     logger.info("==============================")
     logger.info("== Apply for the job with Acme - HE Diploma proving ==")
@@ -462,10 +474,9 @@ async def run():
     logger.info("== Apply for the loan with Thrift - Onboarding ==")
     logger.info("------------------------------")
 
-    thrift_did = thrift_steward_did
     alice_wallet, alice_wallet_name, _, thrift_alice_key, _, alice_thrift_key, thrift_alice_connection_response = \
-        await onboarding(pool_handle, pool_name, "Thrift", thrift_wallet, thrift_did, "Alice", alice_wallet,
-                         'alice_wallet', None)
+        await onboarding_establish_connection(pool_handle, pool_name, "Thrift", thrift_wallet, thrift_did,
+                                              "Alice", alice_wallet, ' alice_wallet')
 
     logger.info("==============================")
     logger.info("== Apply for the loan with Thrift - HE Diploma and Employment History proving  ==")
@@ -635,8 +646,9 @@ async def run():
     logger.info("Getting started -> done")
 
 
-async def onboarding(pool_handle, pool_name, _from, from_wallet, from_did, to, to_wallet: Optional[str],
-                     to_wallet_name: Optional[str], role):
+async def onboarding_establish_connection(pool_handle, pool_name, _from, from_wallet, from_did, to,
+                                          to_wallet: Optional[str],
+                                          to_wallet_name: Optional[str]):
     logger.info("\"{}\" -> Create and store in Wallet \"{} {}\" DID".format(_from, _from, to))
     (from_to_did, from_to_key) = await did.create_and_store_my_did(from_wallet, "{}")
 
@@ -676,11 +688,36 @@ async def onboarding(pool_handle, pool_name, _from, from_wallet, from_did, to, t
         json.loads((await crypto.anon_decrypt(from_wallet, from_to_key,
                                               anoncrypted_connection_response)).decode("utf-8"))
 
-    logger.info("\"{}\" -> Send Nym to Ledger for \"{} {}\" DID with {} Role".format(_from, to, _from, role))
-    await send_nym(pool_handle, from_wallet, from_did, decrypted_connection_response['did'],
-                   decrypted_connection_response['verkey'], role)
-
+    await did.store_their_did(from_wallet, json.dumps(decrypted_connection_response))
     return to_wallet, to_wallet_name, from_to_did, from_to_key, to_from_did, to_from_key, decrypted_connection_response
+
+
+async def onboarding_create_nym(pool_handle, _from, from_wallet, from_did, from_to_key, to, to_wallet,
+                                to_from_key, role):
+    logger.info("\"{}\" -> Create and store in Wallet \"{}\" new DID".format(to, to))
+    (to_did, to_key) = await did.create_and_store_my_did(to_wallet, "{}")
+
+    logger.info("\"{}\" -> Authcrypt \"{} DID info\" for \"{}\"".format(to, to, _from))
+    did_info_json = json.dumps({
+        'did': to_did,
+        'verkey': to_key
+    })
+    authcrypted_did_info_json = \
+        await crypto.auth_crypt(to_wallet, to_from_key, from_to_key, did_info_json.encode('utf-8'))
+
+    logger.info("\"{}\" -> Send authcrypted \"{} DID info\" to {}".format(to, to, _from))
+
+    logger.info("\"{}\" -> Authdecrypted \"{} DID info\" from {}".format(_from, to, to))
+    _, authdecrypted_did_info_json, authdecrypted_did_info = \
+        await auth_decrypt(from_wallet, from_to_key, authcrypted_did_info_json)
+
+    await did.store_their_did(from_wallet, authdecrypted_did_info_json)
+
+    logger.info("\"{}\" -> Send Nym to Ledger for \"{} DID\" with {} Role".format(_from, to, role))
+    await send_nym(pool_handle, from_wallet, from_did, authdecrypted_did_info['did'],
+                   authdecrypted_did_info['verkey'], role)
+
+    return to_did, to_key, authdecrypted_did_info
 
 
 async def send_nym(pool_handle, wallet_handle, _did, new_did, new_key, role):
