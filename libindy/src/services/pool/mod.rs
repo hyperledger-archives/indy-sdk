@@ -529,7 +529,12 @@ impl RemoteNode {
         }
         let msg: String = self.zsock.as_ref()
             .ok_or(CommonError::InvalidState("Try to receive msg for unconnected RemoteNode".to_string()))?
-            .recv_string(zmq::DONTWAIT)??;
+            .recv_string(zmq::DONTWAIT)
+            .map_err(map_err_trace!())?
+            .map_err(|err| {
+                trace!("Can't parse UTF-8 string from bytes {:?}", err);
+                err
+            })?;
         info!("RemoteNode::recv_msg {} {}", self.name, msg);
 
         Ok(Some(msg))
@@ -539,7 +544,8 @@ impl RemoteNode {
         info!("Sending {:?}", str);
         self.zsock.as_ref()
             .ok_or(CommonError::InvalidState("Try to send str for unconnected RemoteNode".to_string()))?
-            .send(str, zmq::DONTWAIT)?;
+            .send(str, zmq::DONTWAIT)
+            .map_err(map_err_trace!())?;
         Ok(())
     }
 
