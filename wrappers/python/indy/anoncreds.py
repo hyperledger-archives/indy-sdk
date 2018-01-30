@@ -109,7 +109,7 @@ async def issuer_create_claim(wallet_handle: int,
     The corresponding claim definition and revocation registry must be already created
     an stored into the wallet.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param claim_req_json: a claim request with a blinded secret
         from the user (returned by prover_create_and_store_claim_req).
         Also contains schema_key and issuer_did
