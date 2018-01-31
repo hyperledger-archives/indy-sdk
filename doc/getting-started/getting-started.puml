@@ -165,6 +165,22 @@ A->AW: Create and store "Alice Thrift Pairwise" DID
 A->T: Anoncrypted connection response with "Alice Thrift Pairwise" DID, verkey and nonce
 T->L: Send Nym for "Alice Thrift Pairwise" DID
 
+== Apply for the loan with Thrift - Employment History proving  ==
+T->A: Send authcrypted "HE Diploma and Employment History" Proof Request
+A->AW: Get claims for "HE Diploma and Employment History" Proof Request
+AW->A: "Alice Faber HE Diploma and Alice Acme Employment History" Claim
+A->L: Send GetSchema for "HE Diploma" Schema
+A->L: Send GetClaimDef for "Faber HE Diploma" Claim Definition
+A->L: Send GetSchema for "Employment History" Schema
+A->L: Send GetClaimDef for "Acme Employment History" Claim Definition
+A->A: Create "Alice Faber HE Diploma and Alice Acme Employment History" Proof
+A->T: Send "Alice Faber HE Diploma and Alice Acme Employment History" Proof
+T->L: Send GetSchema for "HE Diploma" Schema
+T->L: Send GetClaimDef for "Faber HE Diploma" Claim Definition
+T->L: Send GetSchema for "Employment History" Schema
+T->L: Send GetClaimDef for "Acme Employment History" Claim Definition
+T->T: Verify "Alice Faber HE Diploma and Alice Acme Employment History" Proof
+
 == Apply for the loan with Thrift - HE Diploma and Employment History proving  ==
 T->A: Send authcrypted "HE Diploma and Employment History" Proof Request
 A->AW: Get claims for "HE Diploma and Employment History" Proof Request
