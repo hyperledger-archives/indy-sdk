@@ -109,7 +109,7 @@ async def issuer_create_claim(wallet_handle: int,
     The corresponding claim definition and revocation registry must be already created
     an stored into the wallet.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
+    :param wallet_handle: wallet handle (created by open_wallet).
     :param claim_req_json: a claim request with a blinded secret
         from the user (returned by prover_create_and_store_claim_req).
         Also contains schema_key and issuer_did
@@ -327,8 +327,7 @@ async def prover_create_and_store_claim_req(wallet_handle: int,
                                             master_secret_name: str) -> str:
     """
     Creates a clam request json for the given claim offer and stores it in a secure wallet.
-    The claim offer contains the information about Issuer (DID, schema_seq_no),
-    and the schema (schema_key).
+    The claim offer contains the information about Issuer DID and the schema (schema_key).
     The method gets public key and schema from the ledger, stores them in a wallet,
     and creates a blinded master secret for a master secret identified by a provided name.
     The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
@@ -503,7 +502,7 @@ async def prover_get_claims_for_proof_req(wallet_handle: int,
                         "issuer_did": string (Optional)
                     }
                 ]  (Optional) - if specified, claim must be created for one of the given
-                                schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
+                                schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
             }
         predicate_info:
             {
@@ -519,7 +518,7 @@ async def prover_get_claims_for_proof_req(wallet_handle: int,
                                 schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
             }
     :return: json with claims for the given pool request.
-        Claim consists of uuid, human-readable attributes (key-value map), schema_key, issuer_did and revoc_reg_seq_no.
+        Claim consists of referent, human-readable attributes (key-value map), schema_key, issuer_did and revoc_reg_seq_no.
             {
                 "requested_attr1_referent": [claim1, claim2],
                 "requested_attr2_referent": [],
@@ -593,7 +592,7 @@ async def prover_create_proof(wallet_handle: int,
                         "issuer_did": string (Optional)
                     }
                 ]  (Optional) - if specified, claim must be created for one of the given
-                                schema_seq_no/issuer_did pairs, or just schema_seq_no, or just issuer_did.
+                                schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
             }
         predicate_info:
             {
@@ -641,7 +640,7 @@ async def prover_create_proof(wallet_handle: int,
     :return: Proof json
         For each requested attribute either a proof (with optionally revealed attribute value) or
         self-attested attribute value is provided.
-        Each proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.
+        Each proof is associated with a claim and corresponding schema_key, issuer_did and revoc_reg_seq_no.
         There ais also aggregated proof part common for all claim proofs.
         {
             "requested": {
@@ -724,7 +723,7 @@ async def verifier_verify_proof(proof_request_json: str,
     :param proof_json: proof json
         For each requested attribute either a proof (with optionally revealed attribute value) or
         self-attested attribute value is provided.
-        Each proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.
+        Each proof is associated with a claim and corresponding schema_key, issuer_did and revoc_reg_seq_no.
         There ais also aggregated proof part common for all claim proofs.
             {
                 "requested": {
