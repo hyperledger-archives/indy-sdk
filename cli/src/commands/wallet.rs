@@ -22,8 +22,8 @@ pub mod create_command {
                 .add_required_param("pool_name", "The name of associated Indy pool")
                 .add_optional_deferred_param("key", "Auth key for the wallet")
                 .add_example("wallet create wallet1 pool_name=pool1")
-                .add_example("wallet create name=wallet1 pool_name=pool1 key")
-                .add_example("wallet create name=wallet1 pool_name=pool1 key=AAAAB3NzaC1yc2EA")
+                .add_example("wallet create wallet1 pool_name=pool1 key")
+                .add_example("wallet create wallet1 pool_name=pool1 key=AAAAB3NzaC1yc2EA")
                 .finalize()
     );
 
@@ -66,9 +66,9 @@ pub mod open_command {
                             .add_optional_deferred_param("key", "Auth key for the wallet")
                             .add_optional_deferred_param("rekey", "New auth key for the wallet (will replace previous one).")
                             .add_example("wallet open wallet1")
-                            .add_example("wallet open name=wallet1 key")
-                            .add_example("wallet open name=wallet1 key rekey")
-                            .add_example("wallet open name=wallet1 key=AAAAB3NzaC1yc2EA rekey=BBBAB3NzaC1AS4AC")
+                            .add_example("wallet open wallet1 key")
+                            .add_example("wallet open wallet1 key rekey")
+                            .add_example("wallet open wallet1 key=AAAAB3NzaC1yc2EA rekey=BBBAB3NzaC1AS4AC")
                             .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
