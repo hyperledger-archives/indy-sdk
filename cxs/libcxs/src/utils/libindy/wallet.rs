@@ -3,11 +3,12 @@ extern crate libc;
 use self::libc::c_char;
 use std::ffi::CString;
 use settings;
-use utils::error;
 use std::ptr::null;
-use utils::callback::CallbackUtils;
+use utils::libindy::{indy_function_eval};
+use utils::libindy::return_types::{ Return_I32, Return_I32_I32, receive};
+use utils::libindy::error_codes::{map_indy_error_code, map_string_error};
 use utils::timeout::TimeoutUtils;
-use std::sync::mpsc::channel;
+use utils::error;
 
 pub static mut WALLET_HANDLE: i32 = 0;
 
@@ -65,178 +66,119 @@ pub fn init_wallet(wallet_name: &str) -> Result<i32, u32> {
         Ok(x) => x,
         Err(_) => "default".to_owned(),
     };
-
-    let (sender, receiver) = channel();
-    let (open_sender, open_receiver) = channel();
-
-    let cb = Box::new(move |err| {
-        sender.send(err).unwrap();
-    });
-    let open_cb = Box::new(move |err, handle| {
-        open_sender.send((err, handle)).unwrap();
-    });
-
-    let (command_handle, cb) = CallbackUtils::closure_to_create_wallet_cb(cb);
-    let (open_command_handle, open_cb) = CallbackUtils::closure_to_open_wallet_cb(open_cb);
-
-    let pool_name = CString::new(pool_name).unwrap();
-    let xtype = CString::new("default").unwrap();
-    let wallet_name = CString::new(wallet_name).unwrap();
     let mut use_key = false;
     let credentials = match settings::get_wallet_credentials() {
-        Some(x) => {info!("using key for indy wallet"); use_key = true; CString::new(x).unwrap() },
-        None => CString::new("").unwrap(),
+        Some(x) => {info!("using key for indy wallet"); use_key = true; CString::new(x).map_err(map_string_error)? },
+        None => CString::new("").map_err(map_string_error)?,
     };
 
+    let create_obj = Return_I32::new()?;
+    let open_obj = Return_I32_I32::new()?;
+    let pool_name = CString::new(pool_name).map_err(map_string_error)?;
+    let xtype = CString::new("default").map_err(map_string_error)?;
+    let wallet_name = CString::new(wallet_name).map_err(map_string_error)?;
+
     unsafe {
-        let err =
-            indy_create_wallet(command_handle,
-                               pool_name.as_ptr(),
-                               wallet_name.as_ptr(),
-                               xtype.as_ptr(),
-                               null(),
-                               if use_key { credentials.as_ptr() } else { null() },
-                               cb);
+        let err = indy_create_wallet(create_obj.command_handle,
+                                 pool_name.as_ptr(),
+                                 wallet_name.as_ptr(),
+                                 xtype.as_ptr(),
+                                 null(),
+                                 if use_key { credentials.as_ptr() } else { null() },
+                                 Some(create_obj.get_callback()));
 
         // ignore 203 - wallet already exists
         if err != 203 && err != 0 {
             warn!("libindy create wallet returned: {}", err);
             return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
         }
+        match receive(&create_obj.receiver, TimeoutUtils::some_long()) {
+            Ok(_) => {
+                if err != 203 && err != 0 {
+                    warn!("libindy open wallet returned: {}", err);
+                    return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
+                }
+            },
+            Err(err) => return Err(error::UNKNOWN_LIBINDY_ERROR.code_num),
+        };
 
-        let err = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+        // Open Wallet
+        let err = indy_open_wallet(open_obj.command_handle,
+                               wallet_name.as_ptr(),
+                               null(),
+                               if use_key { credentials.as_ptr() } else { null() },
+                               Some(open_obj.get_callback()));
 
-        if err != 203 && err != 0 {
-            warn!("libindy create wallet returned: {}", err);
+        if err != 206 && err != 0 {
+            warn!("libindy open wallet returned: {}", err);
             return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
         }
 
-        let err =
-            indy_open_wallet(open_command_handle,
-                             wallet_name.as_ptr(),
-                             null(),
-                             if use_key { credentials.as_ptr() } else { null() },
-                             open_cb);
-
-        if err != 206 && err != 0 {
-            warn!("libindy open wallet returned: {}", err);
-            return Err(err as u32);
-        }
-
-        let (err, wallet_handle) = open_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != 206 && err != 0 {
-            warn!("libindy open wallet returned: {}", err);
-            return Err(err as u32);
-        }
+        let wallet_handle = match receive(&open_obj.receiver, TimeoutUtils::some_long()) {
+            Ok((err, handle)) => {
+                if err != 206 && err != 0 {
+                    warn!("libindy open wallet returned: {}", err);
+                    return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
+                }
+                handle
+            },
+            Err(err) => return Err(error::UNKNOWN_LIBINDY_ERROR.code_num),
+        };
 
         WALLET_HANDLE = wallet_handle;
         Ok(wallet_handle)
     }
 }
 
-pub fn delete_wallet(wallet_name: &str) -> Result<(), i32> {
+pub fn close_wallet(wallet_handle: i32) -> Result<(), u32> {
+    let rtn_obj = Return_I32::new()?;
+
+    unsafe {
+        indy_function_eval(
+            indy_close_wallet(rtn_obj.command_handle,
+                              wallet_handle,
+                             Some(rtn_obj.get_callback()))
+        ).map_err(map_indy_error_code)?;
+    }
+    rtn_obj.receive(TimeoutUtils::some_long())
+}
+
+pub fn delete_wallet(wallet_name: &str) -> Result<(), u32> {
     if settings::test_indy_mode_enabled() {
         unsafe { WALLET_HANDLE = 0;}
         return Ok(())
     }
 
-    let (sender, receiver) = channel();
-
-    let cb = Box::new(move |err| {
-        sender.send(err).unwrap();
-    });
-
-    let (command_handle, cb) = CallbackUtils::closure_to_delete_wallet_cb(cb);
-
-    let wallet_name = CString::new(wallet_name).unwrap();
+    let rtn_obj = Return_I32::new()?;
+    let wallet_name = CString::new(wallet_name).map_err(map_string_error)?;
 
     unsafe {
-        let err =
-            indy_delete_wallet(command_handle,
-                               wallet_name.as_ptr(),
-                               null(),
-                               cb);
-
-        if err != 0 {
-            return Err(err);
-        }
-
-        let err = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != 0 {
-            return Err(err);
-        }
-
-        WALLET_HANDLE = 0;
-
-        Ok(())
+        indy_function_eval(
+            indy_delete_wallet(rtn_obj.command_handle,
+                              wallet_name.as_ptr(),
+                              null(),
+                              Some(rtn_obj.get_callback()))
+        ).map_err(map_indy_error_code)?;
     }
-}
-
-pub fn close_wallet(wallet_handle: i32) -> Result<(), i32> {
-    let (sender, receiver) = channel();
-
-    let cb = Box::new(move |err| {
-        sender.send(err).unwrap();
-    });
-
-    let (command_handle, cb) = CallbackUtils::closure_to_delete_wallet_cb(cb);
-
-    unsafe {
-        let err =
-            indy_close_wallet(command_handle,
-                              wallet_handle,
-                              cb);
-
-        if err != 0 {
-            return Err(err);
-        }
-
-        let err = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != 0 {
-            return Err(err);
-        }
-
-        WALLET_HANDLE = 0;
-
-        Ok(())
-    }
+    rtn_obj.receive(TimeoutUtils::some_long())
 }
 
 pub fn store_their_did(identity_json: &str) -> Result<(), u32> {
-    let (sender, receiver) = channel();
 
-    let cb = Box::new(move |err| {
-        sender.send((err)).unwrap();
-    });
-
-    let (command_handle, cb) = CallbackUtils::closure_to_store_their_did_cb(cb);
-
-    let identity_json = CString::new(identity_json).unwrap();
-
+    let identity_json = CString::new(identity_json.to_string()).map_err(map_string_error)?;
     let wallet_handle = get_wallet_handle();
 
+    let rtn_obj = Return_I32::new()?;
+
     unsafe {
-        let err =
-            indy_store_their_did(command_handle,
+        indy_function_eval(
+            indy_store_their_did(rtn_obj.command_handle,
                                  wallet_handle,
                                  identity_json.as_ptr(),
-                                 cb);
-
-        if err != 0 {
-            return Err(err as u32);
-        }
-
-        let err = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != 0 {
-            return Err(err as u32);
-        }
+                                 Some(rtn_obj.get_callback()))
+        ).map_err(map_indy_error_code)?;
     }
-
-    Ok(())
+    rtn_obj.receive(TimeoutUtils::some_long())
 }
 
 #[cfg(test)]
@@ -245,21 +187,23 @@ pub mod tests {
     use utils::error;
     use std::thread;
     use std::time::Duration;
-    use utils::signus::SignusUtils;
+    use utils::libindy::signus::SignusUtils;
 
     #[test]
     fn test_wallet() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         let wallet_name = String::from("walletUnique");
-        assert!(init_wallet(&wallet_name).unwrap() > 0);
+        let mut wallet_handle = init_wallet(&wallet_name).unwrap();
+        assert!( wallet_handle > 0);
         assert_eq!(error::UNKNOWN_LIBINDY_ERROR.code_num, init_wallet(&String::from("")).unwrap_err());
 
         thread::sleep(Duration::from_secs(1));
         delete_wallet("walletUnique").unwrap();
         let handle = get_wallet_handle();
         let wallet_name2 = String::from("wallet2");
-        assert!(init_wallet(&wallet_name2).unwrap() > 0);
+        wallet_handle = init_wallet(&wallet_name2).unwrap();
+        assert!(wallet_handle > 0);
 
         thread::sleep(Duration::from_secs(1));
         assert_ne!(handle, get_wallet_handle());

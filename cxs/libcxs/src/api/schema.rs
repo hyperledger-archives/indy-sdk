@@ -149,9 +149,9 @@ mod tests {
     use std::time::Duration;
     use settings;
     use utils::libindy::pool;
-    use utils::signus::SignusUtils;
+    use utils::libindy::signus::SignusUtils;
     use utils::constants::{ DEMO_AGENT_PW_SEED, DEMO_ISSUER_PW_SEED };
-    use utils::wallet::{init_wallet, get_wallet_handle};
+    use utils::libindy::wallet::{init_wallet, get_wallet_handle};
 
     extern "C" fn create_cb(command_handle: u32, err: u32, schema_handle: u32) {
         assert_eq!(err, 0);
@@ -273,6 +273,19 @@ mod tests {
                                      CString::new(data).unwrap().into_raw(),
                                      Some(create_schema_and_claimdef_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_secs(60));
+    }
+
+    #[ignore]
+    #[test]
+    fn test_cxs_schema_get_attrs_with_pool() {
+        set_default_and_enable_test_mode();
+        let data = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#.to_string();
+        assert_eq!(cxs_schema_create(0,
+                                     CString::new("Test Source ID").unwrap().into_raw(),
+                                     CString::new("Test Schema").unwrap().into_raw(),
+                                     CString::new(data).unwrap().into_raw(),
+                                     Some(create_and_serialize_cb)), error::SUCCESS.code_num);
+        thread::sleep(Duration::from_millis(200));
     }
 
     #[test]

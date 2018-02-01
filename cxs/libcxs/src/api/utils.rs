@@ -66,7 +66,7 @@ mod tests {
     use super::*;
     use settings;
     use std::ffi::CString;
-    use utils::wallet;
+    use utils::libindy::wallet;
 
     #[test]
     fn test_provision_agent() {

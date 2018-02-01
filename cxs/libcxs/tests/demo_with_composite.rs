@@ -36,10 +36,10 @@ static CLAIM_DEF_ISSUER_DID3: &str = "EmapZ8H9S2qPp3JKyfr5z1";
 static CLAIM_DEF_ISSUER_DID4: &str = "2hoqvcwupRTUNkXn6ArYzs";
 #[allow(dead_code)]
 static CLAIM_DEF_ISSUER_DID5: &str = "2hoqvcwupRTUNkXn6ArYzs";
-static CLAIM_DEF_SCHEMA_SEQ_NUM1: u32 = 38;
-static CLAIM_DEF_SCHEMA_SEQ_NUM2: u32 = 72;
-static CLAIM_DEF_SCHEMA_SEQ_NUM3: u32 = 74;
-static CLAIM_DEF_SCHEMA_SEQ_NUM4: u32 = 22;
+static CLAIM_DEF_SCHEMA_SEQ_NUM1: u32 = 296;
+static CLAIM_DEF_SCHEMA_SEQ_NUM2: u32 = 294;
+static CLAIM_DEF_SCHEMA_SEQ_NUM3: u32 = 302;
+static CLAIM_DEF_SCHEMA_SEQ_NUM4: u32 = 300;
 
 #[test]
 fn test_demo_full(){

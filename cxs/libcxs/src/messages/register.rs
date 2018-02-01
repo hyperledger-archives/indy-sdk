@@ -6,8 +6,8 @@ use self::rmp_serde::encode;
 use self::rmp_serde::Deserializer;
 use serde::Deserialize;
 use settings;
-use utils::wallet;
-use utils::signus;
+use utils::libindy::wallet;
+use utils::libindy::signus::SignusUtils;
 use utils::httpclient;
 use messages::{Bundled, MsgType, bundle_for_agency, unbundle_from_agency};
 
@@ -78,7 +78,7 @@ pub fn connect_register_provision(endpoint: &str,
     };
 
     let seed_opt = if seed.len() > 0 {Some(seed.as_ref())} else {None};
-    let (my_did, my_vk) = signus::SignusUtils::create_and_store_my_did(wallet::get_wallet_handle(), seed_opt).unwrap();
+    let (my_did, my_vk) = SignusUtils::create_and_store_my_did(wallet::get_wallet_handle(), seed_opt).unwrap();
 
     let issuer_seed = match issuer_seed {
         Some(x) => x,
@@ -86,7 +86,7 @@ pub fn connect_register_provision(endpoint: &str,
     };
 
     let issuer_seed_opt = if issuer_seed.len() > 0 {Some(issuer_seed.as_ref())} else {None};
-    let (issuer_did, issuer_vk) = signus::SignusUtils::create_and_store_my_did(wallet::get_wallet_handle(), issuer_seed_opt).unwrap();
+    let (issuer_did, issuer_vk) = SignusUtils::create_and_store_my_did(wallet::get_wallet_handle(), issuer_seed_opt).unwrap();
 
     settings::set_config_value(settings::CONFIG_ENTERPRISE_DID,&my_did);
     settings::set_config_value(settings::CONFIG_ENTERPRISE_VERKEY,&my_vk);

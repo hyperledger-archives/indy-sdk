@@ -4,12 +4,9 @@ pub mod ccallback;
 #[macro_use]
 pub mod cstring;
 
-pub mod wallet;
 pub mod error;
 pub mod httpclient;
 pub mod callback;
-pub mod crypto;
-pub mod signus;
 pub mod constants;
 pub mod timeout;
 pub mod openssl;

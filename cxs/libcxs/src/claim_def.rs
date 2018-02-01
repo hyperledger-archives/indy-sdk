@@ -10,7 +10,7 @@ use utils::error;
 use settings;
 use schema::LedgerSchema;
 use utils::constants::{ SCHEMAS_JSON, CLAIM_DEF_JSON, STORE_CLAIM_DEF_RESULT };
-use utils::wallet::{ get_wallet_handle };
+use utils::libindy::wallet::{ get_wallet_handle };
 use utils::libindy::SigTypes;
 use utils::libindy::anoncreds::{libindy_create_and_store_claim_def};
 use utils::libindy::ledger::{libindy_submit_request,
@@ -336,8 +336,8 @@ pub fn release(handle: u32) -> u32 {
 
 #[cfg(test)]
 pub mod tests {
-    use utils::signus::SignusUtils;
-    use utils::wallet::{ init_wallet, delete_wallet, get_wallet_handle };
+    use utils::libindy::signus::SignusUtils;
+    use utils::libindy::wallet::{ init_wallet, delete_wallet, get_wallet_handle };
     use utils::constants::{ DEMO_AGENT_PW_SEED, DEMO_ISSUER_PW_SEED };
     use super::*;
 

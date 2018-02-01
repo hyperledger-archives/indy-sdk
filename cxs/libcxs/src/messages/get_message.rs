@@ -8,7 +8,7 @@ use utils::httpclient;
 use utils::error;
 use messages::*;
 use messages::MessageResponseCode::{ MessageAccepted, MessagePending };
-use utils::crypto;
+use utils::libindy::crypto;
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]

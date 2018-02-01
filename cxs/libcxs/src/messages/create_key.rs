@@ -158,9 +158,9 @@ pub fn parse_create_keys_response(response: Vec<u8>) -> Result<(String, String),
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::signus::SignusUtils;
+    use utils::libindy::signus::SignusUtils;
     use messages::create_keys;
-    use utils::wallet;
+    use utils::libindy::wallet;
 
     #[test]
     fn test_create_key_returns_message_with_create_key_as_payload() {

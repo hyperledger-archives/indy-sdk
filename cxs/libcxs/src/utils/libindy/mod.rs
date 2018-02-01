@@ -1,9 +1,12 @@
 pub mod ledger;
 pub mod anoncreds;
+pub mod signus;
+pub mod wallet;
 pub mod callback;
 //pub mod call;
 pub mod return_types;
 pub mod pool;
+pub mod crypto;
 mod error_codes;
 
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};

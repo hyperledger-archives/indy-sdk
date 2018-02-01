@@ -4,10 +4,10 @@ extern crate rmp_serde;
 extern crate serde;
 extern crate libc;
 
-use utils::wallet;
+use utils::libindy::wallet;
 use utils::error;
-use utils::signus::SignusUtils;
-use utils::crypto;
+use utils::libindy::signus::SignusUtils;
+use utils::libindy::crypto;
 use api::CxsStateType;
 use rand::Rng;
 use std::sync::Mutex;

@@ -308,8 +308,8 @@ pub fn parse_invitation_acceptance_details(payload: Vec<u8>) -> Result<SenderDet
 mod tests {
     use super::*;
     use messages::send_invite;
-    use utils::wallet;
-    use utils::signus::SignusUtils;
+    use utils::libindy::wallet;
+    use utils::libindy::signus::SignusUtils;
 
     #[test]
     fn test_send_invite_set_values_and_post(){

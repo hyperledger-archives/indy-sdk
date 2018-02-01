@@ -120,8 +120,8 @@ mod tests {
     use std::time::Duration;
     use settings;
     use utils::libindy::pool;
-    use utils::wallet::{ init_wallet, get_wallet_handle };
-    use utils::signus::SignusUtils;
+    use utils::libindy::wallet::{ init_wallet, get_wallet_handle };
+    use utils::libindy::signus::SignusUtils;
     use utils::constants::{ DEMO_AGENT_PW_SEED, DEMO_ISSUER_PW_SEED };
 
     extern "C" fn create_cb(command_handle: u32, err: u32, claimdef_handle: u32) {

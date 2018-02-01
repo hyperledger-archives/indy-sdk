@@ -146,8 +146,8 @@ fn parse_update_profile_response(response: Vec<u8>) -> Result<String, u32> {
 mod tests {
     use super::*;
     use messages::update_data;
-    use utils::wallet;
-    use utils::signus::SignusUtils;
+    use utils::libindy::wallet;
+    use utils::libindy::signus::SignusUtils;
 
     #[test]
     fn test_update_data_post() {
