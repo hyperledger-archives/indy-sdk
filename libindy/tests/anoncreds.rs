@@ -2093,7 +2093,8 @@ mod demos {
                                    "version":"0.1",
                                    "requested_attrs":{{
                                         "attr1_referent":{{"name":"name"}},
-                                        "attr2_referent":{{"name":"sex"}}
+                                        "attr2_referent":{{"name":"sex"}},
+                                        "attr3_referent":{{"name":"phone"}}
                                    }},
                                    "requested_predicates":{{
                                         "predicate1_referent":{{"attr_name":"age","p_type":">=","value":18}}
@@ -2104,9 +2105,9 @@ mod demos {
         let claim = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
         // 8. Prover create Proof
-        let self_attested_value = "value";
+        let self_attested_value = "8-800-300";
         let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{"self1":"{}"}},
+                                          "self_attested_attributes":{{"attr3_referent":"{}"}},
                                           "requested_attrs":{{
                                                 "attr1_referent":["{}",true],
                                                 "attr2_referent":["{}", false]
@@ -2133,7 +2134,7 @@ mod demos {
 
         proof.requested_proof.unrevealed_attrs.get("attr2_referent").unwrap();
 
-        let value = proof.requested_proof.self_attested_attrs.get("self1").unwrap();
+        let value = proof.requested_proof.self_attested_attrs.get("attr3_referent").unwrap();
         assert_eq!(value, self_attested_value);
 
         // 9. Verifier verify proof
@@ -2434,7 +2435,8 @@ mod demos {
                                             }},
                                             "attr2_referent":{{
                                                 "name":"sex", "restrictions":[{{"schema_key":{}}}]
-                                            }}
+                                            }},
+                                            "attr3_referent":{{"name":"phone"}}
                                         }},
                                        "requested_predicates":{{
                                             "predicate1_referent":{{"attr_name":"age","p_type":">=","value":18}}
@@ -2445,9 +2447,9 @@ mod demos {
         let claim = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
         // 11. Prover creates Proof
-        let self_attested_value = "value";
+        let self_attested_value = "8-800-300";
         let requested_claims_json = format!(r#"{{
-                                              "self_attested_attributes":{{"self1":"{}"}},
+                                              "self_attested_attributes":{{"attr3_referent":"{}"}},
                                               "requested_attrs":{{
                                                     "attr1_referent":["{}", true],
                                                     "attr2_referent":["{}", false]
@@ -2476,7 +2478,7 @@ mod demos {
 
         proof.requested_proof.unrevealed_attrs.get("attr2_referent").unwrap();
 
-        let value = proof.requested_proof.self_attested_attrs.get("self1").unwrap();
+        let value = proof.requested_proof.self_attested_attrs.get("attr3_referent").unwrap();
         assert_eq!(value, self_attested_value);
 
         // 12. Verifier verifies proof
