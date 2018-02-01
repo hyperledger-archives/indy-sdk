@@ -324,8 +324,8 @@ The same way **Acme** creates and publishes Claim Definition for known **Job-Cer
   await ledger.sign_and_submit_request(pool_handle, acme_wallet, acme_issuer_did, claim_def_request)
 ```
 
-At this point we have **Claim Definition** for **Employment History** Claim Schema published by **Acme** and
- **Claim Definition** for **HE Diploma** Claim Schema published by **Faber**. 
+At this point we have **Claim Definition** for **Job-Certificate** Claim Schema published by **Acme** and
+ **Claim Definition** for **Transcript** Claim Schema published by **Faber**. 
 
 ## Alice Gets a Transcript
 
@@ -339,7 +339,7 @@ For Alice to self-issue a claim that she likes chocolate ice cream may be perfec
 
 As we mentioned in [Involving of Alice](#involving-of-alice) **Alice** graduate **Faber College**.
 After Alice had established connection with **Faber College** and had got Verinym, she got Claim Offer about the issuance of **Transcript** Claim.
-Alice stores it in her wallet by calling `anoncreds.prover_store_claim_offer`.
+Alice stores it in her wallet.
 ```python
   transcript_claim_offer = {
       'issuer_did': faber_issuer_did,
@@ -349,7 +349,7 @@ Alice stores it in her wallet by calling `anoncreds.prover_store_claim_offer`.
 ```
 Note: All messages sent between actors are encrypted using `Authenticated-encryption` scheme.
 
-The value of this Transcript Claim is that it is provably issued by **Faber College**.
+The value of this **Transcript** Claim is that it is provably issued by **Faber College**.
  
 **Alice** wants to see the attributes the **Transcript** Claim contains. 
 These attributes are known because a Claim Schema for **Transcript** has been written to the Ledger.
@@ -362,7 +362,7 @@ These attributes are known because a Claim Schema for **Transcript** has been wr
   get_schema_response = await ledger.submit_request(pool_handle, get_schema_request)
   transcript_schema = json.loads(get_schema_response)['result']
   
-  print(transcript_schema['data']['attr_names'])
+  print(transcript_schema['data'])
   # Transcript Schema:
   {
       'name': 'Transcript',
@@ -373,25 +373,25 @@ These attributes are known because a Claim Schema for **Transcript** has been wr
 
 However, **Transcript** Claim has not been delivered to Alice yet in a usable form.
 Alice wants to use that Claim. 
-To get it, Alice needs to request it, but first she must create`Master Secret.
+To get it, Alice needs to request it, but first she must create Master Secret.
    
 Note: Master Secret is an item of Private Data used by a Prover to guarantee that a claim uniquely applies to them. 
 The Master Secret is an input that combine data from multiple Claims in order to prove that the Claims have a common subject (the Prover). 
 A Master Secret should be known only to the Prover. 
-Alice creates Master Secret in her wallet by calling `anoncreds.prover_create_master_secret`.
+Alice creates Master Secret in her wallet.
 ```python
   alice_master_secret = 'alice_master_secret'
   await anoncreds.prover_create_master_secret(alice_wallet, alice_master_secret_name)
 ```
 
-Also Alice needs to get Claim Definition corresponded to issuer_did and schema_key in Claim Offer.
+Also Alice needs to get Claim Definition corresponded to issuer_did and schema_key in **Transcript** Claim Offer.
 ```python
   get_claim_def_request = await ledger.build_get_claim_def_txn(alice_did, transcript_schema['seqNo'], 'CL', faber_issuer_did)
   get_claim_def_response = await ledger.submit_request(pool_handle, get_claim_def_request)
   transcript_claim_def = json.loads(get_claim_def_response)['result']
 ```
 
-Now Alice has everything to create Claim Request by calling `anoncreds.prover_create_and_store_claim_req`.
+Now Alice has everything to create Claim Request of issuance of **Faber Transcript** Claim.
 ```python    
   transcript_claim_request_json = \
           await anoncreds.prover_create_and_store_claim_req(alice_wallet, alice_did, transcript_claim_offer,
@@ -399,7 +399,7 @@ Now Alice has everything to create Claim Request by calling `anoncreds.prover_cr
 ```
 
 **Faber** prepares Raw and Encoded values for each attribute in **Transcript** Claim Schema.
-**Faber** creates **Transcript** Claim for Alice by calling `anoncreds.issuer_create_claim`.
+**Faber** creates **Transcript** Claim for Alice.
 ```python
   transcript_claim_values = json.dumps({
       'first_name': ['Alice', '1139481716457488690172217916278103335'], # 
@@ -415,7 +415,7 @@ Now Alice has everything to create Claim Request by calling `anoncreds.prover_cr
       await anoncreds.issuer_create_claim(faber_wallet, transcript_claim_request_json, transcript_claim_values, -1)
 ```
 
-Now **Transcript** Claim has been issued. Alice stores it in Wallet by calling `anoncreds.prover_store_claim`.
+Now **Transcript** Claim has been issued. Alice stores it in her wallet.
 ```python
   await anoncreds.prover_store_claim(alice_wallet, transcript_claim_json, None)
 ```
@@ -526,9 +526,9 @@ For **Job-Application** Proof Request Alice divided attributes as follows:
   })
 ```
 
-In addition, Alice must get Claim Schema and corresponded Claim Definition for each used Claim, the same way, as on the step of Claim Request creating.
+In addition, Alice must get Claim Schema and corresponded Claim Definition for each used Claim, the same way, as on the step creation of Claim Request.
 
-Now Alice has everything to create Proof for **Acme Job-Application** Proof Request by calling `anoncreds.prover_create_proof`.
+Now Alice has everything to create Proof for **Acme Job-Application** Proof Request.
 ```python
   apply_job_proof_json = \
       await anoncreds.prover_create_proof(alice_wallet, job_application_proof_request_json, job_application_requested_claims_json,
@@ -557,7 +557,7 @@ When **Acme** inspects received Proof he will see following structure:
       'proof' : {} # Validity Proof that Acme can check
       'identifiers' : { # Identifiers of claims were used for Proof building
           'Transcript Claim Referent': {
-              'issuer_did': 'JnJokhmdtewNwpcx1mayrB', 
+              'issuer_did': faber_issuer_did, 
               'rev_reg_seq_no': None, 
               'schema_key': transcript_schema_key
           }
@@ -566,10 +566,9 @@ When **Acme** inspects received Proof he will see following structure:
 ```
 
 **Acme** got all requested attributes.
-Now **Acme** wants check Validity Proof.
-To do it **Acme** firstly must get all Claim Schema and corresponded Claim Definition for each identifier presented in Proof, the same way, as it was doing Alice.
- 
-Now **Acme** has everything to check **Job-Application** Proof from Alice by calling `anoncreds.verifier_verify_proof`.
+Now **Acme** wants to check Validity Proof.
+To do it **Acme** firstly must get every Claim Schema and corresponded Claim Definition for each identifier presented in Proof, the same way, as it was doing Alice. 
+Now **Acme** has everything to check **Job-Application** Proof from Alice.
  ```python
   assert await anoncreds.verifier_verify_proof(job_application_proof_request_json, apply_job_proof_json, 
                                                schemas_json, claim_defs_json, revoc_regs_json)
@@ -587,17 +586,17 @@ When Alice inspects her connection with Acme a week later, she sees that a new C
 ## Apply for a Loan 
 
 Now that Alice has a job, she’d like to apply for a loan. That will require proof of employment. 
-She can get this from the **Job-Certificate** claim offered by Acme. 
+She can get this from the **Job-Certificate** Claim offered by Acme. 
 Alice goes through a familiar sequence of interactions. 
 
-First she creates Claim Request:
+First she creates Claim Request.
  ```python    
- job_certificate_claim_request_json = \
-         await anoncreds.prover_create_and_store_claim_req(alice_wallet, alice_did, job_certificate_claim_offer,
-                                                           json.dumps(job_certificate_claim_def), alice_master_secret)
+  job_certificate_claim_request_json = \
+      await anoncreds.prover_create_and_store_claim_req(alice_wallet, alice_did, job_certificate_claim_offer,
+                                                        json.dumps(job_certificate_claim_def), alice_master_secret)
  ```
  
- Acme issues **Job-Certificate** Claim for Alice
+ Acme issues **Job-Certificate** Claim for Alice.
  ```python
   job_certificate_claim_values_json = json.dumps({
       'first_name': ['Alice', '245712572474217942457235975012103335'],
@@ -610,8 +609,8 @@ First she creates Claim Request:
       await anoncreds.issuer_create_claim(acme_wallet, job_certificate_claim_request_json, job_certificate_claim_values_json, -1)
 ```
 
-Now the **Job-Certificate** Claim has been issued, and she now has it in her possession. 
-Alice stores **Job-Certificate** Claim in Wallet.
+Now the **Job-Certificate** Claim has been issued, and Alice now has it in her possession. 
+Alice stores **Job-Certificate** Claim in her wallet.
 ```python
   await anoncreds.prover_store_claim(alice_wallet, job_certificate_claim_json, None)
 ```
@@ -682,7 +681,7 @@ For **Loan-Application-Basic** Proof Request Alice divided attributes as follows
   })
 ```
 
-Alice creates Proof for **Loan-Application-Basic** Proof.
+Alice creates Proof for **Loan-Application-Basic** Proof Request.
 ```python
   apply_loan_proof_json = \
       await anoncreds.prover_create_proof(alice_wallet, apply_loan_proof_request_json, apply_loan_requested_claims_json, 
@@ -692,7 +691,7 @@ Alice creates Proof for **Loan-Application-Basic** Proof.
 Alice sends just the **Loan-Application-Basic** proof to the bank. 
 This allows her to minimize the PII (personally identifiable information) that she has to share when all she's trying to do right now is prove basic eligibility.
 
-When **Acme** inspects received Proof he will see following structure:
+When **Thrift** inspects received Proof he will see following structure:
 ```
   {
       'requested_proof': {
@@ -706,7 +705,7 @@ When **Acme** inspects received Proof he will see following structure:
               'predicate2_referent': 'Job-Certificate Claim Referent'
           }
       },
-      'proof' : {} # Validity Proof that Acme can check
+      'proof' : {} # Validity Proof that Thrift can check
       'identifiers' : { # Identifiers of claims were used for Proof building
           'Transcript Claim Referent': {
               'issuer_did': acme_issuer_did, 
@@ -717,7 +716,7 @@ When **Acme** inspects received Proof he will see following structure:
   }
 ```
 
-Thrift Bank successfully verified **Loan-Application-Basic** Proof from Alice.
+**Thrift Bank** successfully verified **Loan-Application-Basic** Proof from Alice.
 ```python
     assert await anoncreds.verifier_verify_proof(apply_loan_proof_request_json, apply_loan_proof_json,
                                                  schemas_json, claim_defs_json, revoc_regs_json)
@@ -738,7 +737,7 @@ Thrift Bank sends the second Proof Request where Alice needs to share her person
   })
 ```
 
-Alice has two claim that meets proof requirements for this **Loan-Application-KYC**.
+Alice has two claim that meets proof requirements for this **Loan-Application-KYC** Proof Request.
 ```python
   {
     'referent': 'Transcript Claim Referent',
@@ -770,35 +769,36 @@ Alice has two claim that meets proof requirements for this **Loan-Application-KY
   }
 ```
 
-For **Loan-Application-KYC** Alice divided attributes as follows: 
+For **Loan-Application-KYC** Proof Request Alice divided attributes as follows: 
 ```python
-    apply_loan_kyc_requested_claims_json = json.dumps({
-        'self_attested_attributes': {},
-        'requested_attrs': {
-            'attr1_referent': ['Job-Certificate Claim Referent', True],
-            'attr2_referent': ['Job-Certificate Claim Referent', True],
-            'attr3_referent': ['Transcript Claim Referent', True]
-        },
-        'requested_predicates': {}
-    })
+  apply_loan_kyc_requested_claims_json = json.dumps({
+      'self_attested_attributes': {},
+      'requested_attrs': {
+          'attr1_referent': ['Job-Certificate Claim Referent', True],
+          'attr2_referent': ['Job-Certificate Claim Referent', True],
+          'attr3_referent': ['Transcript Claim Referent', True]
+      },
+      'requested_predicates': {}
+  })
 ```
 
-Alice creates Proof for **Loan-Application-KYC** Proof.
+Alice creates Proof for **Loan-Application-KYC** Proof Request.
 ```python
-    apply_loan_kyc_proof_json = \
-        await anoncreds.prover_create_proof(alice_wallet, apply_loan_kyc_proof_request_json, apply_loan_kyc_requested_claims_json, 
-                                            schemas_json, alice_master_secret_name, claim_defs_json, revoc_regs_json)
+  apply_loan_kyc_proof_json = \
+      await anoncreds.prover_create_proof(alice_wallet, apply_loan_kyc_proof_request_json, apply_loan_kyc_requested_claims_json, 
+                                          schemas_json, alice_master_secret_name, claim_defs_json, revoc_regs_json)
 ```
 
-Thrift Bank successfully validate **Loan-Application-KYC** Proof from Alice.
+**Thrift Bank** successfully validate **Loan-Application-KYC** Proof from Alice.
 ```python
-    assert await anoncreds.verifier_verify_proof(apply_loan_kyc_proof_request_json, apply_loan_kyc_proof_json,
-                                                 schemas_json, claim_defs_json, revoc_regs_json)
+  assert await anoncreds.verifier_verify_proof(apply_loan_kyc_proof_request_json, apply_loan_kyc_proof_json,
+                                               schemas_json, claim_defs_json, revoc_regs_json)
 ```
 
 Both Alice Proofs have been successfully verified and she got loan from **Thrift Bank**.
      
 ## Explore the Code
 Now that you've had a chance to see how the Libindy implementation works from the outside, perhaps you'd like to see how it works underneath, from code? 
-If so, please run [Simulating Getting Started in the Jupiter](#what-well-cover).
-You may need to be signed into GitHub to view this link.
+If so, please run [Simulating Getting Started in the Jupiter](run-getting-started.md). 
+You may need to be signed into GitHub to view this link. 
+Also you can found source code here: https://github.com/hyperledger/indy-sdk/blob/master/samples/python/src/getting_started.py

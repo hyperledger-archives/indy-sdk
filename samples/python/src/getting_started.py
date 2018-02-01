@@ -1,4 +1,4 @@
-from indy import anoncreds, crypto, did, ledger, pool, wallet, pairwise
+from indy import anoncreds, crypto, did, ledger, pool, wallet
 
 import json
 import logging
@@ -37,48 +37,61 @@ async def run():
     logger.info("== Getting Trust Anchor credentials - Government Onboarding  ==")
     logger.info("------------------------------")
 
-    government_wallet, government_wallet_name, _, steward_government_key, government_steward_did, \
-    government_steward_key, _ = await onboarding(pool_handle, pool_name, "Sovrin Steward", steward_wallet,
-                                                 steward_did, "Government", None, 'government_wallet')
+    government_wallet, government_wallet_name, steward_government_key, government_steward_did, government_steward_key, _ \
+        = await onboarding(pool_handle, pool_name, "Sovrin Steward", steward_wallet,
+                           steward_did, "Government", None, 'government_wallet')
 
-    government_did, _, _ = \
-        await get_verinym(pool_handle, "Sovrin Steward", steward_wallet, steward_did, steward_government_key,
-                          "Government", government_wallet, government_steward_did, government_steward_key, 'TRUST_ANCHOR')
+    logger.info("==============================")
+    logger.info("== Getting Trust Anchor credentials - Government getting Verinym  ==")
+    logger.info("------------------------------")
+
+    government_did = await get_verinym(pool_handle, "Sovrin Steward", steward_wallet, steward_did,
+                                       steward_government_key, "Government", government_wallet, government_steward_did,
+                                       government_steward_key, 'TRUST_ANCHOR')
 
     logger.info("==============================")
     logger.info("== Getting Trust Anchor credentials - Faber Onboarding  ==")
     logger.info("------------------------------")
-    faber_wallet, faber_wallet_name, _, steward_faber_key, faber_steward_did, faber_steward_key, _ = \
+    faber_wallet, faber_wallet_name, steward_faber_key, faber_steward_did, faber_steward_key, _ = \
         await onboarding(pool_handle, pool_name, "Sovrin Steward", steward_wallet, steward_did,
                          "Faber", None, 'faber_wallet')
 
-    faber_did, _, _ = \
-        await get_verinym(pool_handle, "Sovrin Steward", steward_wallet, steward_did, steward_faber_key,
-                          "Faber", faber_wallet, faber_steward_did, faber_steward_key, 'TRUST_ANCHOR')
+    logger.info("==============================")
+    logger.info("== Getting Trust Anchor credentials - Faber getting Verinym  ==")
+    logger.info("------------------------------")
+
+    faber_did = await get_verinym(pool_handle, "Sovrin Steward", steward_wallet, steward_did, steward_faber_key,
+                                  "Faber", faber_wallet, faber_steward_did, faber_steward_key, 'TRUST_ANCHOR')
 
     logger.info("==============================")
     logger.info("== Getting Trust Anchor credentials - Acme Onboarding  ==")
     logger.info("------------------------------")
 
-    acme_wallet, acme_wallet_name, _, steward_acme_key, acme_steward_did, acme_steward_key, _ = \
+    acme_wallet, acme_wallet_name, steward_acme_key, acme_steward_did, acme_steward_key, _ = \
         await onboarding(pool_handle, pool_name, "Sovrin Steward", steward_wallet, steward_did,
                          "Acme", None, 'acme_wallet')
 
-    acme_did, _, _ = \
-        await get_verinym(pool_handle, "Sovrin Steward", steward_wallet, steward_did, steward_acme_key,
-                          "Acme", acme_wallet, acme_steward_did, acme_steward_key, 'TRUST_ANCHOR')
+    logger.info("==============================")
+    logger.info("== Getting Trust Anchor credentials - Acme getting Verinym  ==")
+    logger.info("------------------------------")
+
+    acme_did = await get_verinym(pool_handle, "Sovrin Steward", steward_wallet, steward_did, steward_acme_key,
+                                 "Acme", acme_wallet, acme_steward_did, acme_steward_key, 'TRUST_ANCHOR')
 
     logger.info("==============================")
     logger.info("== Getting Trust Anchor credentials - Thrift Onboarding  ==")
     logger.info("------------------------------")
 
-    thrift_wallet, thrift_wallet_name, _, steward_thrift_key, thrift_steward_did, thrift_steward_key, _ = \
+    thrift_wallet, thrift_wallet_name, steward_thrift_key, thrift_steward_did, thrift_steward_key, _ = \
         await onboarding(pool_handle, pool_name, "Sovrin Steward", steward_wallet, steward_did,
                          "Thrift", None, ' thrift_wallet')
 
-    thrift_did, _, _ = \
-        await get_verinym(pool_handle, "Sovrin Steward", steward_wallet, steward_did, steward_thrift_key,
-                          "Thrift", thrift_wallet, thrift_steward_did, thrift_steward_key, 'TRUST_ANCHOR')
+    logger.info("==============================")
+    logger.info("== Getting Trust Anchor credentials - Thrift getting Verinym  ==")
+    logger.info("------------------------------")
+
+    thrift_did = await get_verinym(pool_handle, "Sovrin Steward", steward_wallet, steward_did, steward_thrift_key,
+                                   "Thrift", thrift_wallet, thrift_steward_did, thrift_steward_key, 'TRUST_ANCHOR')
 
     logger.info("==============================")
     logger.info("=== Claim Schemas Setup ==")
@@ -164,12 +177,15 @@ async def run():
     logger.info("== Getting Transcript with Faber - Onboarding ==")
     logger.info("------------------------------")
 
-    alice_wallet, alice_wallet_name, _, faber_alice_key, alice_faber_did, alice_faber_key, \
-    faber_alice_connection_response = \
-        await onboarding(pool_handle, pool_name, "Faber", faber_wallet, faber_did, "Alice", None, ' alice_wallet')
-    alice_did, _, _ = \
-        await get_verinym(pool_handle, "Faber", faber_wallet, faber_did, faber_alice_key,
-                          "Alice", alice_wallet, alice_faber_did, alice_faber_key, None)
+    alice_wallet, alice_wallet_name, faber_alice_key, alice_faber_did, alice_faber_key, faber_alice_connection_response \
+        = await onboarding(pool_handle, pool_name, "Faber", faber_wallet, faber_did, "Alice", None, ' alice_wallet')
+
+    logger.info("==============================")
+    logger.info("==  Getting Transcript with Faber - Alice getting Verinym  ==")
+    logger.info("------------------------------")
+
+    alice_did = await get_verinym(pool_handle, "Faber", faber_wallet, faber_did, faber_alice_key,
+                                  "Alice", alice_wallet, alice_faber_did, alice_faber_key, None)
 
     logger.info("==============================")
     logger.info("== Getting Transcript with Faber - Getting Transcript Claim ==")
@@ -181,19 +197,21 @@ async def run():
         'schema_key': transcript_schema_key
     }
 
+    logger.info("\"Faber\" -> Get key for Alice did")
+    alice_faber_verkey = await did.key_for_did(pool_handle, acme_wallet, faber_alice_connection_response['did'])
+
     logger.info("\"Faber\" -> Authcrypt \"Transcript\" Claim Offer for Alice")
-    authcrypted_transcript_claim_offer = \
-        await crypto.auth_crypt(faber_wallet, faber_issuer_key, faber_alice_connection_response['verkey'],
-                                json.dumps(transcript_claim_offer).encode('utf-8'))
+    authcrypted_transcript_claim_offer = await crypto.auth_crypt(faber_wallet, faber_alice_key, alice_faber_verkey,
+                                                                 json.dumps(transcript_claim_offer).encode('utf-8'))
 
     logger.info("\"Faber\" -> Send authcrypted \"Transcript\" Claim Offer to Alice")
 
     logger.info("\"Alice\" -> Authdecrypted \"Transcript\" Claim Offer from Faber")
-    faber_verkey, authdecrypted_transcript_claim_offer_json, authdecrypted_transcript_claim_offer = \
+    faber_alice_verkey, authdecrypted_transcript_claim_offer_json, authdecrypted_transcript_claim_offer = \
         await auth_decrypt(alice_wallet, alice_faber_key, authcrypted_transcript_claim_offer)
 
     logger.info("\"Alice\" -> Store \"Transcript\" Claim Offer in Wallet from Faber")
-    await anoncreds.prover_store_claim_offer(alice_wallet, json.dumps(transcript_claim_offer))
+    await anoncreds.prover_store_claim_offer(alice_wallet, authdecrypted_transcript_claim_offer_json)
 
     logger.info("\"Alice\" -> Create and store \"Alice\" Master Secret in Wallet")
     alice_master_secret_name = 'alice_master_secret'
@@ -214,14 +232,14 @@ async def run():
                                                           alice_master_secret_name)
 
     logger.info("\"Alice\" -> Authcrypt \"Transcript\" Claim Request for Faber")
-    authcrypted_transcript_claim_request = await crypto.auth_crypt(alice_wallet, alice_faber_key, faber_verkey,
+    authcrypted_transcript_claim_request = await crypto.auth_crypt(alice_wallet, alice_faber_key, faber_alice_verkey,
                                                                    transcript_claim_request_json.encode('utf-8'))
 
     logger.info("\"Alice\" -> Send authcrypted \"Transcript\" Claim Request to Faber")
 
     logger.info("\"Faber\" -> Authdecrypt \"Transcript\" Claim Request from Alice")
-    alice_verkey, authdecrypted_transcript_claim_request_json, _ = \
-        await auth_decrypt(faber_wallet, faber_issuer_key, authcrypted_transcript_claim_request)
+    alice_faber_verkey, authdecrypted_transcript_claim_request_json, _ = \
+        await auth_decrypt(faber_wallet, faber_alice_key, authcrypted_transcript_claim_request)
 
     logger.info("\"Faber\" -> Create \"Transcript\" Claim for Alice")
     transcript_claim_values = json.dumps({
@@ -234,13 +252,13 @@ async def run():
         'average': ['5', '5']
     })
 
-    _, transcript_claim_json = await anoncreds.issuer_create_claim(faber_wallet,
-                                                                   authdecrypted_transcript_claim_request_json,
-                                                                   transcript_claim_values, -1)
+    _, transcript_claim_json = \
+        await anoncreds.issuer_create_claim(faber_wallet, authdecrypted_transcript_claim_request_json,
+                                            transcript_claim_values, -1)
 
     logger.info("\"Faber\" -> Authcrypt \"Transcript\" Claim for Alice")
-    authcrypted_transcript_claim_json = \
-        await crypto.auth_crypt(faber_wallet, faber_issuer_key, alice_verkey, transcript_claim_json.encode('utf-8'))
+    authcrypted_transcript_claim_json = await crypto.auth_crypt(faber_wallet, faber_alice_key, alice_faber_verkey,
+                                                                transcript_claim_json.encode('utf-8'))
 
     logger.info("\"Faber\" -> Send authcrypted \"Transcript\" Claim to Alice")
 
@@ -257,9 +275,8 @@ async def run():
     logger.info("== Apply for the job with Acme - Onboarding ==")
     logger.info("------------------------------")
 
-    alice_wallet, alice_wallet_name, _, acme_alice_key, _, alice_acme_key, acme_alice_connection_response = \
-        await onboarding(pool_handle, pool_name, "Acme", acme_wallet, acme_did,
-                         "Alice", alice_wallet, ' alice_wallet')
+    alice_wallet, alice_wallet_name, acme_alice_key, _, alice_acme_key, acme_alice_connection_response = \
+        await onboarding(pool_handle, pool_name, "Acme", acme_wallet, acme_did, "Alice", alice_wallet, ' alice_wallet')
 
     logger.info("==============================")
     logger.info("== Apply for the job with Acme - Transcript proving ==")
@@ -304,17 +321,17 @@ async def run():
     })
 
     logger.info("\"Acme\" -> Get key for Alice did")
-    alice_verkey = await did.key_for_did(pool_handle, acme_wallet, acme_alice_connection_response['did'])
+    alice_acme_verkey = await did.key_for_did(pool_handle, acme_wallet, acme_alice_connection_response['did'])
 
     logger.info("\"Acme\" -> Authcrypt \"Job-Application\" Proof Request for Alice")
     authcrypted_job_application_proof_request_json = \
-        await crypto.auth_crypt(acme_wallet, acme_alice_key, alice_verkey,
+        await crypto.auth_crypt(acme_wallet, acme_alice_key, alice_acme_verkey,
                                 job_application_proof_request_json.encode('utf-8'))
 
     logger.info("\"Acme\" -> Sentd authcrypted \"Job-Application\" Proof Request to Alice")
 
     logger.info("\"Alice\" -> Authdecrypt \"Job-Application\" Proof Request from Acme")
-    acme_verkey, authdecrypted_job_application_proof_request_json, _ = \
+    acme_alice_verkey, authdecrypted_job_application_proof_request_json, _ = \
         await auth_decrypt(alice_wallet, alice_acme_key, authcrypted_job_application_proof_request_json)
 
     logger.info("\"Alice\" -> Get claims for \"Job-Application\" Proof Request")
@@ -359,7 +376,7 @@ async def run():
                                             alice_master_secret_name, claim_defs_json, revoc_regs_json)
 
     logger.info("\"Alice\" -> Authcrypt \"Job-Application\" Proof for Acme")
-    authcrypted_job_application_proof_json = await crypto.auth_crypt(alice_wallet, alice_acme_key, acme_alice_key,
+    authcrypted_job_application_proof_json = await crypto.auth_crypt(alice_wallet, alice_acme_key, acme_alice_verkey,
                                                                      job_application_proof_json.encode('utf-8'))
 
     logger.info("\"Alice\" -> Send authcrypted \"Job-Application\" Proof to Acme")
@@ -391,22 +408,24 @@ async def run():
     logger.info("== Apply for the job with Acme - Getting Job-Certificate Claim ==")
     logger.info("------------------------------")
 
-    logger.info("\"Acme\" -> Get key for Alice did")
-    alice_acme_verkey = await did.key_for_did(pool_handle, acme_wallet, acme_alice_connection_response['did'])
-
     logger.info("\"Acme\" -> Authcrypt \"Job-Certificate\" Claim Offer for Alice")
     job_certificate_claim_offer = {
         'issuer_did': acme_issuer_did,
         'schema_key': job_certificate_schema_key
     }
+
+    logger.info("\"Acme\" -> Get key for Alice did")
+    alice_acme_verkey = await did.key_for_did(pool_handle, acme_wallet, acme_alice_connection_response['did'])
+
+    logger.info("\"Acme\" -> Authcrypt \"Job-Certificate\" Claim Offer for Alice")
     authcrypted_job_certificate_claim_offer = \
-        await crypto.auth_crypt(acme_wallet, acme_issuer_key, alice_acme_verkey,
+        await crypto.auth_crypt(acme_wallet, acme_alice_key, alice_acme_verkey,
                                 json.dumps(job_certificate_claim_offer).encode('utf-8'))
 
     logger.info("\"Acme\" -> Send authcrypted \"Job-Certificate\" Claim Offer to Alice")
 
     logger.info("\"Alice\" -> Authdecrypted \"Job-Certificate\" Claim Offer from Acme")
-    acme_verkey, authdecrypted_job_certificate_claim_offer_json, authdecrypted_job_certificate_claim_offer = \
+    acme_alice_verkey, authdecrypted_job_certificate_claim_offer_json, authdecrypted_job_certificate_claim_offer = \
         await auth_decrypt(alice_wallet, alice_acme_key, authcrypted_job_certificate_claim_offer)
 
     logger.info("\"Alice\" -> Store \"Job-Certificate\" Claim Offer in Wallet")
@@ -429,14 +448,14 @@ async def run():
 
     logger.info("\"Alice\" -> Authcrypt \"Job-Certificate\" Claim Request for Acme")
     authcrypted_job_certificate_claim_request_json = \
-        await crypto.auth_crypt(alice_wallet, alice_acme_key, acme_verkey,
+        await crypto.auth_crypt(alice_wallet, alice_acme_key, acme_alice_verkey,
                                 job_certificate_claim_request_json.encode('utf-8'))
 
     logger.info("\"Alice\" -> Send authcrypted \"Job-Certificate\" Claim Request to Acme")
 
     logger.info("\"Acme\" -> Authdecrypt \"Job-Certificate\" Claim Request from Alice")
-    alice_verkey, authdecrypted_job_certificate_claim_request_json, _ = \
-        await auth_decrypt(acme_wallet, acme_issuer_key, authcrypted_job_certificate_claim_request_json)
+    alice_acme_verkey, authdecrypted_job_certificate_claim_request_json, _ = \
+        await auth_decrypt(acme_wallet, acme_alice_key, authcrypted_job_certificate_claim_request_json)
 
     logger.info("\"Acme\" -> Create \"Job-Certificate\" Claim for Alice")
     alice_job_certificate_claim_values_json = json.dumps({
@@ -447,12 +466,14 @@ async def run():
         'experience': ['10', '10']
     })
 
-    _, job_certificate_claim_json = await anoncreds.issuer_create_claim(acme_wallet, job_certificate_claim_request_json,
-                                                                        alice_job_certificate_claim_values_json, -1)
+    _, job_certificate_claim_json = \
+        await anoncreds.issuer_create_claim(acme_wallet, authdecrypted_job_certificate_claim_request_json,
+                                            alice_job_certificate_claim_values_json, -1)
 
     logger.info("\"Acme\" ->  Authcrypt \"Job-Certificate\" Claim for Alice")
     authcrypted_job_certificate_claim_json = \
-        await crypto.auth_crypt(acme_wallet, acme_issuer_key, alice_verkey, job_certificate_claim_json.encode('utf-8'))
+        await crypto.auth_crypt(acme_wallet, acme_issuer_key, alice_acme_verkey,
+                                job_certificate_claim_json.encode('utf-8'))
 
     logger.info("\"Acme\" ->  Send authcrypted \"Job-Certificate\" Claim to Alice")
 
@@ -469,7 +490,7 @@ async def run():
     logger.info("== Apply for the loan with Thrift - Onboarding ==")
     logger.info("------------------------------")
 
-    alice_wallet, alice_wallet_name, _, thrift_alice_key, _, alice_thrift_key, thrift_alice_connection_response = \
+    alice_wallet, alice_wallet_name, thrift_alice_key, _, alice_thrift_key, thrift_alice_connection_response = \
         await onboarding(pool_handle, pool_name, "Thrift", thrift_wallet, thrift_did,
                          "Alice", alice_wallet, ' alice_wallet')
 
@@ -480,7 +501,7 @@ async def run():
     logger.info("\"Thrift\" -> Create \"Loan-Application-Basic\" Proof Request")
     apply_loan_proof_request_json = json.dumps({
         'nonce': '123432421212',
-        'name': 'Loan-Application-Basic-Basic',
+        'name': 'Loan-Application-Basic',
         'version': '0.1',
         'requested_attrs': {
             'attr1_referent': {
@@ -505,17 +526,17 @@ async def run():
     })
 
     logger.info("\"Thrift\" -> Get key for Alice did")
-    alice_verkey = await did.key_for_did(pool_handle, thrift_wallet, thrift_alice_connection_response['did'])
+    alice_thrift_verkey = await did.key_for_did(pool_handle, thrift_wallet, thrift_alice_connection_response['did'])
 
     logger.info("\"Thrift\" -> Authcrypt \"Loan-Application-Basic\" Proof Request for Alice")
     authcrypted_apply_loan_proof_request_json = \
-        await crypto.auth_crypt(thrift_wallet, thrift_alice_key, alice_verkey,
+        await crypto.auth_crypt(thrift_wallet, thrift_alice_key, alice_thrift_verkey,
                                 apply_loan_proof_request_json.encode('utf-8'))
 
     logger.info("\"Thrift\" -> Sentd authcrypted \"Loan-Application-Basic\" Proof Request to Alice")
 
     logger.info("\"Alice\" -> Authdecrypt \"Loan-Application-Basic\" Proof Request from Thrift")
-    thrift_verkey, authdecrypted_apply_loan_proof_request_json, _ = \
+    thrift_alice_verkey, authdecrypted_apply_loan_proof_request_json, _ = \
         await auth_decrypt(alice_wallet, alice_thrift_key, authcrypted_apply_loan_proof_request_json)
 
     logger.info("\"Alice\" -> Get claims for \"Loan-Application-Basic\" Proof Request")
@@ -552,7 +573,7 @@ async def run():
 
     logger.info("\"Alice\" -> Authcrypt \"Loan-Application-Basic\" Proof for Thrift")
     authcrypted_alice_apply_loan_proof_json = \
-        await crypto.auth_crypt(alice_wallet, alice_thrift_key, thrift_verkey,
+        await crypto.auth_crypt(alice_wallet, alice_thrift_key, thrift_alice_verkey,
                                 alice_apply_loan_proof_json.encode('utf-8'))
 
     logger.info("\"Alice\" -> Send authcrypted \"Loan-Application-Basic\" Proof to Thrift")
@@ -569,8 +590,7 @@ async def run():
                                        authdecrypted_alice_apply_loan_proof['identifiers'], 'Thrift')
 
     logger.info("\"Thrift\" -> Verify \"Loan-Application-Basic\" Proof from Alice")
-    assert 'Permanent' == \
-           authdecrypted_alice_apply_loan_proof['requested_proof']['revealed_attrs']['attr1_referent'][1]
+    assert 'Permanent' == authdecrypted_alice_apply_loan_proof['requested_proof']['revealed_attrs']['attr1_referent'][1]
 
     assert await anoncreds.verifier_verify_proof(apply_loan_proof_request_json,
                                                  authdecrypted_alice_apply_loan_proof_json,
@@ -596,17 +616,17 @@ async def run():
     })
 
     logger.info("\"Thrift\" -> Get key for Alice did")
-    alice_verkey = await did.key_for_did(pool_handle, thrift_wallet, thrift_alice_connection_response['did'])
+    alice_thrift_verkey = await did.key_for_did(pool_handle, thrift_wallet, thrift_alice_connection_response['did'])
 
     logger.info("\"Thrift\" -> Authcrypt \"Loan-Application-KYC\" Proof Request for Alice")
     authcrypted_apply_loan_kyc_proof_request_json = \
-        await crypto.auth_crypt(thrift_wallet, thrift_alice_key, alice_verkey,
+        await crypto.auth_crypt(thrift_wallet, thrift_alice_key, alice_thrift_verkey,
                                 apply_loan_kyc_proof_request_json.encode('utf-8'))
 
     logger.info("\"Thrift\" -> Sentd authcrypted \"Loan-Application-KYC\" Proof Request to Alice")
 
     logger.info("\"Alice\" -> Authdecrypt \"Loan-Application-KYC\" Proof Request from Thrift")
-    thrift_verkey, authdecrypted_apply_loan_kyc_proof_request_json, _ = \
+    thrift_alice_verkey, authdecrypted_apply_loan_kyc_proof_request_json, _ = \
         await auth_decrypt(alice_wallet, alice_thrift_key, authcrypted_apply_loan_kyc_proof_request_json)
 
     logger.info("\"Alice\" -> Get claims for \"Loan-Application-KYC\" Proof Request")
@@ -644,7 +664,7 @@ async def run():
 
     logger.info("\"Alice\" -> Authcrypt \"Loan-Application-KYC\" Proof for Thrift")
     authcrypted_alice_apply_loan_kyc_proof_json = \
-        await crypto.auth_crypt(alice_wallet, alice_thrift_key, thrift_verkey,
+        await crypto.auth_crypt(alice_wallet, alice_thrift_key, thrift_alice_verkey,
                                 alice_apply_loan_kyc_proof_json.encode('utf-8'))
 
     logger.info("\"Alice\" -> Send authcrypted \"Loan-Application-KYC\" Proof to Thrift")
@@ -661,12 +681,9 @@ async def run():
                                        authdecrypted_alice_apply_loan_kyc_proof['identifiers'], 'Thrift')
 
     logger.info("\"Thrift\" -> Verify \"Loan-Application-KYC\" Proof from Alice")
-    assert 'Alice' == \
-           authdecrypted_alice_apply_loan_kyc_proof['requested_proof']['revealed_attrs']['attr1_referent'][1]
-
+    assert 'Alice' == authdecrypted_alice_apply_loan_kyc_proof['requested_proof']['revealed_attrs']['attr1_referent'][1]
     assert 'Garcia' == \
            authdecrypted_alice_apply_loan_kyc_proof['requested_proof']['revealed_attrs']['attr2_referent'][1]
-
     assert '123-45-6789' == \
            authdecrypted_alice_apply_loan_kyc_proof['requested_proof']['revealed_attrs']['attr3_referent'][1]
 
@@ -755,7 +772,7 @@ async def onboarding(pool_handle, pool_name, _from, from_wallet, from_did, to,
     logger.info("\"{}\" -> Send Nym to Ledger for \"{} {}\" DID".format(_from, to, _from))
     await send_nym(pool_handle, from_wallet, from_did, to_from_did, to_from_key, None)
 
-    return to_wallet, to_wallet_name, from_to_did, from_to_key, to_from_did, to_from_key, decrypted_connection_response
+    return to_wallet, to_wallet_name, from_to_key, to_from_did, to_from_key, decrypted_connection_response
 
 
 async def get_verinym(pool_handle, _from, from_wallet, from_did, from_to_key,
@@ -784,7 +801,7 @@ async def get_verinym(pool_handle, _from, from_wallet, from_did, from_to_key,
     await send_nym(pool_handle, from_wallet, from_did, authdecrypted_did_info['did'],
                    authdecrypted_did_info['verkey'], role)
 
-    return to_did, to_key, authdecrypted_did_info
+    return to_did
 
 
 async def send_nym(pool_handle, wallet_handle, _did, new_did, new_key, role):
