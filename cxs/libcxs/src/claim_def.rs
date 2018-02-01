@@ -172,6 +172,7 @@ impl CreateClaimDef {
                            issuer_did: &str,
                            sig_type: Option<SigTypes>) -> bool {
         if settings::test_indy_mode_enabled() { return false }
+        info!("checking to see if claimdef is already on the ledger");
         let claim_def_str = match self.retrieve_claim_def(submitter_did.unwrap_or(""),
                                                           schema_no,
                                                           sig_type,
@@ -234,7 +235,6 @@ pub fn create_new_claimdef(source_id: String,
                            schema_seq_no: u32,
                            issuer_did: String,
                            create_non_revoc: bool) -> Result<u32, u32> {
-
     let mut new_claimdef = Box::new(CreateClaimDef::new());
     let schema_data = get_schema_data(schema_seq_no)?;
     //Todo: Libindy should provide ways to manage duplicate claim_defs and access to wallet
@@ -245,11 +245,11 @@ pub fn create_new_claimdef(source_id: String,
         warn!("Claim Definition already on Ledger");
         return Err(error::CLAIM_DEF_ALREADY_CREATED.code_num)
     }
+    info!("creating claimdef with source_id: {}, name: {}, issuer_did: {}, sequence_no: {}", source_id, claimdef_name, issuer_did, schema_seq_no);
     let claim_def_json = create_and_store_claim_def(&schema_data,
                                                     &issuer_did,
                                                     Some(SigTypes::CL),
                                                     create_non_revoc)?;
-    info!("stored new claim def in wallet");
     new_claimdef.set_claim_def(ClaimDefinition::from_str(&claim_def_json)?);
 
     let claim_def_txn = new_claimdef.build_create_txn(&new_claimdef
@@ -259,7 +259,7 @@ pub fn create_new_claimdef(source_id: String,
     )?;
 
     new_claimdef.sign_and_send_request(&claim_def_txn)?;
-    info!("stored new claim def on ledger");
+    info!("created new claim def on ledger and stored in wallet");
 
     let new_handle = rand::thread_rng().gen::<u32>();
     new_claimdef.set_name(claimdef_name);

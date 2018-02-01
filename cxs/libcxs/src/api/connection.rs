@@ -30,7 +30,7 @@ pub extern fn cxs_connection_create(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
-
+    info!("cxs create connection called");
     thread::spawn(move|| {
         match build_connection(source_id) {
             Ok(handle) => cb(command_handle, error::SUCCESS.code_num, handle),
@@ -63,6 +63,7 @@ pub extern fn cxs_connection_connect(command_handle:u32,
                                      cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+    info!("cxs connection connect called");
 
     if !is_valid_handle(connection_handle) {
         return error::INVALID_CONNECTION_HANDLE.code_num;

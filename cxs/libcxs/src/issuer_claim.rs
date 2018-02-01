@@ -135,6 +135,7 @@ impl IssuerClaim {
             Ok(response) => {
                 self.msg_uid = get_offer_details(&response[0])?;
                 self.state = CxsStateType::CxsStateOfferSent;
+                info!("sent claim offer for: {}", self.handle);
                 return Ok(error::SUCCESS.code_num);
             }
         }
@@ -192,6 +193,7 @@ impl IssuerClaim {
             Ok(response) => {
                 self.msg_uid = get_offer_details(&response[0])?;
                 self.state = CxsStateType::CxsStateAccepted;
+                info!("issued claim: {}", self.handle);
                 return Ok(error::SUCCESS.code_num);
             }
         }
@@ -256,6 +258,7 @@ impl IssuerClaim {
         let payload = messages::get_message::get_ref_msg(&self.msg_uid, &self.issued_did, &self.issued_vk, &self.agent_did, &self.agent_vk)?;
 
         self.claim_request = Some(parse_claim_req_payload(&payload)?);
+        info!("received claim request for claim offer: {}", self.handle);
         self.state = CxsStateType::CxsStateRequestReceived;
         Ok(error::SUCCESS.code_num)
     }

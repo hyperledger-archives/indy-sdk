@@ -69,6 +69,7 @@ pub trait Schema: ToString {
                 Err(_) => return Err(error::INVALID_JSON.code_num)
             };
         }
+        info!("retrieving schema_no {} from ledger", sequence_num);
         let txn = Self::retrieve_from_ledger(sequence_num)?;
         match Self::process_ledger_txn(txn){
             Ok(data) => Ok(data),

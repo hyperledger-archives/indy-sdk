@@ -54,7 +54,7 @@ pub extern fn cxs_proof_create(command_handle: u32,
             Ok(x) => (error::SUCCESS.code_num, x),
             Err(x) => (x, 0),
         };
-
+        info!("proof creation had return code: {}", rc);
         cb(command_handle, rc, handle);
     });
 

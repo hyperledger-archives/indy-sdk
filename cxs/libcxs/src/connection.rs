@@ -496,7 +496,6 @@ pub fn parse_invite_detail(response: &str) -> Result<InviteDetail, u32> {
 }
 
 pub fn generate_encrypted_payload(my_vk: &str, their_vk: &str, data: &str, msg_type: &str) -> Result<Vec<u8>, u32> {
-
     let my_payload = messages::Payload {
         msg_info: messages::MsgInfo { name: msg_type.to_string(), ver: "1.0".to_string(), fmt: "json".to_string(), },
         msg: data.to_string(),

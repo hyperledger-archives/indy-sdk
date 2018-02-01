@@ -7,6 +7,7 @@ pub fn proof_compliance(request: &ProofRequestData, proof: &ProofMessage) -> Res
     let proof_revealed_attrs = &proof.requested_proof.revealed_attrs;
     let proofs = &proof.proofs;
     let requested_attrs = &request.requested_attrs;
+    info!("starting cxs proof verification");
     for (key, val) in requested_attrs.iter() {
         let name = &val.name;
         let issuer_did = val.issuer_did.clone();

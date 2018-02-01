@@ -103,6 +103,7 @@ impl SendMessage{
         };
 
         let mut result = Vec::new();
+        info!("sending secure message to agency");
         match httpclient::post_u8(&data, &url) {
             Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
             Ok(response) => {
@@ -114,7 +115,7 @@ impl SendMessage{
                 result.push(string);
             },
         };
-
+        info!("sent message to agency");
         Ok(result.to_owned())
     }
 }

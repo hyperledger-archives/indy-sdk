@@ -28,7 +28,7 @@ pub extern fn cxs_schema_create(command_handle: u32,
                                                                  issuer_did,
                                                                  schema_data) {
             Ok(x) => (error::SUCCESS.code_num, x),
-            Err(x) => (x, 0),
+            Err(x) => { info!("create schema returned error: {}", x); (x, 0) },
         };
 
         cb(command_handle, rc, handle);
@@ -117,6 +117,7 @@ pub extern fn cxs_schema_get_attributes(command_handle: u32,
                                         cb: Option<extern fn(xcommand_handle: u32, err: u32, schema_attrs: *const c_char)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
+    info!("cxs call to get schema attributes");
 
     thread::spawn( move|| {
         match schema::get_schema_attrs(source_id, sequence_no) {

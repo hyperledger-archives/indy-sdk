@@ -1,8 +1,10 @@
 extern crate env_logger;
 extern crate log;
+extern crate chrono;
 
 use self::env_logger::LogBuilder;
 use self::log::{LogRecord, LogLevelFilter};
+use self::chrono::prelude::Utc;
 use std::env;
 use std::sync::{Once, ONCE_INIT};
 
@@ -14,7 +16,13 @@ impl LoggerUtils {
     pub fn init() {
         LOGGER_INIT.call_once(|| {
             let format = |record: &LogRecord| {
-                format!("{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.location().file(), record.location().line(), record.args())
+                format!("{:>5}|{:<30}|{:>35}:{:<4}|{:<22}| {}",
+                        record.level(),
+                        record.target(),
+                        record.location().file(),
+                        record.location().line(),
+                        Utc::now(),
+                        record.args())
             };
             let mut builder = LogBuilder::new();
             builder.format(format).filter(None, LogLevelFilter::Info);

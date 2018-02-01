@@ -19,7 +19,7 @@ pub extern fn cxs_claimdef_create(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(claimdef_name, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
-
+    info!("cxs create claimdef called");
     let issuer_did: String = if !issuer_did.is_null() {
         check_useful_c_str!(issuer_did, error::INVALID_OPTION.code_num);
         issuer_did.to_owned()
@@ -36,8 +36,14 @@ pub extern fn cxs_claimdef_create(command_handle: u32,
                                                                  schema_seq_no,
                                                                  issuer_did,
                                                                  create_non_revoc) {
-            Ok(x) => (error::SUCCESS.code_num, x),
-            Err(x) => (x, 0),
+            Ok(x) => {
+                info!("claimdef created with handle: {}", x);
+                (error::SUCCESS.code_num, x)
+            },
+            Err(x) => {
+                info!("create claimdef returned error: {}", x);
+                (x, 0)
+            },
         };
         cb(command_handle, rc, handle);
     });
