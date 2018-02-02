@@ -361,6 +361,12 @@ impl CommandExecutor {
             .collect::<Vec<(String, char)>>()
     }
 
+    fn is_subcommand(grouped_commands: &HashMap<&'static str, (CommandGroup, HashMap<&'static str, Command>)>,
+                     command: &str, sub_command: &str) -> bool {
+        let (_, ref commands) = grouped_commands[command];
+        commands.contains_key(sub_command)
+    }
+
     pub fn complete(&self, line: &str, word: &str, _start: usize, _end: usize) -> Vec<(String, char)> {
         let mut completes: Vec<(String, char)> = vec![];
 
@@ -397,10 +403,8 @@ impl CommandExecutor {
             }
             (Some(first_word), Some(second_word), None) => {
                 match (first_word, second_word) {
-                    (command, sub_command) if self.grouped_commands.contains_key(command) && {
-                        let (_, ref commands) = self.grouped_commands[command];
-                        commands.contains_key(sub_command)
-                    } => {
+                    (command, sub_command) if self.grouped_commands.contains_key(command) &&
+                        CommandExecutor::is_subcommand(&self.grouped_commands, command, sub_command) => {
                         let (_, ref commands) = self.grouped_commands[command];
                         let sub_command = &commands[sub_command];
                         completes.extend(CommandExecutor::command_params(&sub_command, word));
@@ -408,10 +412,8 @@ impl CommandExecutor {
                     (_, _) if word.is_empty() => {
                         completes = Vec::new();
                     }
-                    (command, sub_command) if self.grouped_commands.contains_key(command) && {
-                        let (_, ref commands) = self.grouped_commands[command];
-                        !commands.contains_key(sub_command)
-                    } => {
+                    (command, sub_command) if self.grouped_commands.contains_key(command) &&
+                        !CommandExecutor::is_subcommand(&self.grouped_commands, command, sub_command) => {
                         let (_, ref commands) = self.grouped_commands[command];
                         completes.extend(CommandExecutor::command_names(&commands, word));
                     }
@@ -425,10 +427,8 @@ impl CommandExecutor {
                             completes.push(("help".to_owned(), ' '));
                         }
                     }
-                    (command, sub_command, ref params) if self.grouped_commands.contains_key(command) && {
-                        let (_, ref commands) = self.grouped_commands[command];
-                        commands.contains_key(sub_command)
-                    } => {
+                    (command, sub_command, ref params) if self.grouped_commands.contains_key(command) &&
+                        CommandExecutor::is_subcommand(&self.grouped_commands, command, sub_command) => {
                         let (_, ref commands) = self.grouped_commands[command];
                         let sub_command = commands.get(sub_command).unwrap();
                         let command_params = sub_command
