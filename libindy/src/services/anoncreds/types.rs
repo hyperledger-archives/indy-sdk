@@ -19,12 +19,25 @@ impl<'a> JsonDecodable<'a> for AttributeInfo {}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimOffer {
     pub issuer_did: String,
-    pub schema_key: SchemaKey
+    pub schema_key: SchemaKey,
+    pub key_correctness_proof: KeyCorrectnessProof,
+    pub nonce: Nonce,
+    pub prover_did: String
 }
 
 impl JsonEncodable for ClaimOffer {}
 
 impl<'a> JsonDecodable<'a> for ClaimOffer {}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaimOfferInfo {
+    pub issuer_did: String,
+    pub schema_key: SchemaKey
+}
+
+impl JsonEncodable for ClaimOfferInfo {}
+
+impl<'a> JsonDecodable<'a> for ClaimOfferInfo {}
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
 pub struct Filter {
@@ -57,12 +70,25 @@ pub struct ClaimRequest {
     pub prover_did: String,
     pub issuer_did: String,
     pub schema_key: SchemaKey,
-    pub blinded_ms: BlindedMasterSecret
+    pub blinded_ms: BlindedMasterSecret,
+    pub blinded_ms_correctness_proof: BlindedMasterSecretProofCorrectness,
+    pub nonce: Nonce,
 }
 
 impl JsonEncodable for ClaimRequest {}
 
 impl<'a> JsonDecodable<'a> for ClaimRequest {}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClaimRequestMetadata {
+    pub master_secret_blinding_data: MasterSecretBlindingData,
+    pub nonce: Nonce,
+    pub master_secret: MasterSecret
+}
+
+impl JsonEncodable for ClaimRequestMetadata {}
+
+impl<'a> JsonDecodable<'a> for ClaimRequestMetadata {}
 
 #[derive(Deserialize, Debug, Serialize, PartialEq, Clone)]
 pub enum SignatureTypes {
@@ -118,6 +144,7 @@ pub struct Claim {
     pub values: HashMap<String, Vec<String>>,
     pub schema_key: SchemaKey,
     pub signature: ClaimSignature,
+    pub signature_correctness_proof: SignatureCorrectnessProof,
     pub issuer_did: String,
     pub rev_reg_seq_no: Option<i32>,
 }

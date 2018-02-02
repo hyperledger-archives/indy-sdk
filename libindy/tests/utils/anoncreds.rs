@@ -92,6 +92,40 @@ impl AnoncredsUtils {
         Ok(())
     }
 
+    pub fn issuer_create_claim_offer(wallet_handle: i32, schema: &str, issuer_did: &str, prover_did: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, claim_def_json| {
+            sender.send((err, claim_def_json)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_and_store_claim_offer_cb(cb);
+
+        let schema = CString::new(schema).unwrap();
+        let issuer_did = CString::new(issuer_did).unwrap();
+        let prover_did = CString::new(prover_did).unwrap();
+
+        let err =
+            indy_issuer_create_and_store_claim_offer(command_handle,
+                                                   wallet_handle,
+                                                   schema.as_ptr(),
+                                                     issuer_did.as_ptr(),
+                                                     prover_did.as_ptr(),
+                                                   cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, claim_offer_json) = receiver.recv().unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(claim_offer_json)
+    }
+
     pub fn prover_store_claim_offer(wallet_handle: i32, claim_offer_json: &str) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 

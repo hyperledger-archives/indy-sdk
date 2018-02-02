@@ -2319,39 +2319,42 @@ mod demos {
     fn verifier_verify_proof_works_for_proof_does_not_correspond_proof_request_attr_and_predicate() {
         TestUtils::cleanup_storage();
 
-        //1. Creates wallet, gets wallet handle
+        // 1. Creates wallet, gets wallet handle
         let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //2. Issuer creates claim definition
+        // 2. Issuer creates claim definition
         let schema_json = AnoncredsUtils::gvt_schema_json();
         let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &ISSUER_DID, &schema_json, None, false).unwrap();
 
-        //3. Prover creates Master Secret
+        // 3. Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //4. Prover creates Claim Request
+        // 4. Issuer creates Claim Offer
+        let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle, &schema_json, ISSUER_DID, DID_MY1).unwrap();
+
+        // 5. Prover creates Claim Request
         let claim_req_json = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                                DID_MY1,
-                                                                               &AnoncredsUtils::gvt_claim_offer(),
+                                                                               &claim_offer_json,
                                                                                &claim_def_json,
                                                                                COMMON_MASTER_SECRET).unwrap();
 
-        //5. Issuer creates Claim
+        // 6. Issuer creates Claim
         let (_, claim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle,
                                                                   &claim_req_json,
                                                                   &AnoncredsUtils::gvt_claim_values_json(),
                                                                   None).unwrap();
 
-        // 6. Prover stores received Claim
+        // 7. Prover stores received Claim
         AnoncredsUtils::prover_store_claim(wallet_handle, &claim_json, None).unwrap();
 
-        // 7. Prover gets Claims for Proof Request
+        // 8. Prover gets Claims for Proof Request
 
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle,
                                                                           &AnoncredsUtils::proof_request_attr()).unwrap();
         let claim = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
-        // 8. Prover creates Proof
+        // 9. Prover creates Proof
         let requested_claims_json = format!(r#"{{
                                                           "self_attested_attributes":{{}},
                                                           "requested_attrs":{{"attr1_referent":["{}",true]}},
@@ -2370,7 +2373,7 @@ mod demos {
                                                              &claim_defs_json,
                                                              &revoc_regs_json).unwrap();
 
-        // 9. Verifier verifies proof
+        // 10. Verifier verifies proof
         let res = AnoncredsUtils::verifier_verify_proof(&AnoncredsUtils::proof_request_attr_and_predicate(),
                                                         &proof_json,
                                                         &schemas_json,
@@ -2400,31 +2403,34 @@ mod demos {
         //4. Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //5. Prover stores Claim Offer received from Issuer
-        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &AnoncredsUtils::gvt_claim_offer()).unwrap();
+        //5. Issuer creates Claim Offer
+        let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle, &schema_json, ISSUER_DID, DID_MY1).unwrap();
 
-        //6. Prover get Claim Offers
+        //6. Prover stores Claim Offer received from Issuer
+        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
+
+        //7. Prover get Claim Offers
         let claim_offers_json = AnoncredsUtils::prover_get_claim_offers(prover_wallet_handle, "{}").unwrap();
         let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers_json).unwrap();
         let claim_offer_json = serde_json::to_string(&claim_offers[0]).unwrap();
 
-        //7. Prover creates Claim Request
+        //8. Prover creates Claim Request
         let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                           DID_MY1,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
                                                                           COMMON_MASTER_SECRET).unwrap();
 
-        //8. Issuer creates Claim
+        //9. Issuer creates Claim
         let (_, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                   &claim_req,
                                                                   &AnoncredsUtils::gvt_claim_values_json(),
                                                                   None).unwrap();
 
-        // 9. Prover stores received Claim
+        // 10. Prover stores received Claim
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &claim_json, None).unwrap();
 
-        // 10. Prover gets Claims for Proof Request
+        // 11. Prover gets Claims for Proof Request
         let proof_req_json = format!(r#"{{
                                        "nonce":"123432421212",
                                        "name":"proof_req_1",
@@ -2446,7 +2452,7 @@ mod demos {
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
         let claim = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
-        // 11. Prover creates Proof
+        // 12. Prover creates Proof
         let self_attested_value = "8-800-300";
         let requested_claims_json = format!(r#"{{
                                               "self_attested_attributes":{{"attr3_referent":"{}"}},
@@ -2481,7 +2487,7 @@ mod demos {
         let value = proof.requested_proof.self_attested_attrs.get("attr3_referent").unwrap();
         assert_eq!(value, self_attested_value);
 
-        // 12. Verifier verifies proof
+        // 13. Verifier verifies proof
         let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
                                                           &proof_json,
                                                           &schemas_json,
@@ -2528,47 +2534,55 @@ mod demos {
         //6. Prover creates Master Secret for Issuer1
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //8. Prover stores Claim Offer received from Issuer1
-        let gvt_claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, &AnoncredsUtils::gvt_schema_key());
-        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &AnoncredsUtils::gvt_claim_offer()).unwrap();
+        //7. Issuer1 creates Claim Offer
+        let gvt_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle,
+                                                                         &AnoncredsUtils::gvt_schema_json(),
+                                                                         ISSUER_DID, DID_MY1).unwrap();
 
-        //9. Prover stores Claim Offer received from Issuer2
-        let xyz_claim_offer_json = AnoncredsUtils::get_claim_offer(DID_MY2, &AnoncredsUtils::xyz_schema_key());
+        //8. Prover stores Claim Offer received from Issuer1
+        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &gvt_claim_offer_json).unwrap();
+
+        //9. Issuer2 creates Claim Offer
+        let xyz_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle,
+                                                                             &AnoncredsUtils::xyz_schema_json(),
+                                                                             DID_MY2, DID_MY1).unwrap();
+
+        //10. Prover stores Claim Offer received from Issuer2
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &xyz_claim_offer_json).unwrap();
 
-        //10. Prover creates Claim Request for gvt claim offer
+        //11. Prover creates Claim Request for gvt claim offer
         let gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                               DID_MY1,
                                                                               &gvt_claim_offer_json,
                                                                               &gvt_claim_def_json,
                                                                               COMMON_MASTER_SECRET).unwrap();
 
-        //11. Issuer creates GVT Claim
+        //12. Issuer creates GVT Claim
         let (_, gvt_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_gvt_wallet_handle,
                                                                       &gvt_claim_req,
                                                                       &AnoncredsUtils::gvt_claim_values_json(),
                                                                       None).unwrap();
 
-        //12. Prover stores received GVT Claim
+        //13. Prover stores received GVT Claim
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &gvt_claim_json, None).unwrap();
 
-        //13. Prover creates Claim Request for xyz claim offer
+        //14. Prover creates Claim Request for xyz claim offer
         let xyz_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                               DID_MY1,
                                                                               &xyz_claim_offer_json,
                                                                               &xyz_claim_def_json,
                                                                               COMMON_MASTER_SECRET).unwrap();
 
-        //14. Issuer creates XYZ Claim
+        //15. Issuer creates XYZ Claim
         let (_, xyz_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_xyz_wallet_handle,
                                                                       &xyz_claim_req,
                                                                       &AnoncredsUtils::xyz_claim_values_json(),
                                                                       None).unwrap();
 
-        // 15. Prover stores received XYZ Claim
+        //16. Prover stores received XYZ Claim
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xyz_claim_json, None).unwrap();
 
-        // 16. Prover gets Claims for Proof Request
+        //17. Prover gets Claims for Proof Request
         let proof_req_json = format!(r#"{{
                                        "nonce":"123432421212",
                                        "name":"proof_req_1",
@@ -2595,7 +2609,7 @@ mod demos {
         let claim_for_predicate_1 = AnoncredsUtils::get_claim_for_predicate_referent(&claims_json, "predicate1_referent");
         let claim_for_predicate_2 = AnoncredsUtils::get_claim_for_predicate_referent(&claims_json, "predicate2_referent");
 
-        // 17. Prover creates Proof
+        //18. Prover creates Proof
         let requested_claims_json = format!(r#"{{
                                               "self_attested_attributes":{{}},
                                               "requested_attrs":{{
@@ -2641,7 +2655,7 @@ mod demos {
         let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr2_referent").unwrap();
         assert_eq!(value, "partial");
 
-        // 18. Verifier verifies proof
+        //19. Verifier verifies proof
         let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
                                                           &proof_json,
                                                           &schemas_json,
@@ -2686,15 +2700,23 @@ mod demos {
         //5. Prover creates Master Secret for Issuer1
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //6. Prover stores GVT Claim Offer received from Issuer
-        let gvt_claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, &AnoncredsUtils::gvt_schema_key());
+        //6. Issuer1 creates Claim Offer
+        let gvt_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle,
+                                                                             &AnoncredsUtils::gvt_schema_json(),
+                                                                             ISSUER_DID, DID_MY1).unwrap();
+
+        //7. Prover stores GVT Claim Offer received from Issuer
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &gvt_claim_offer_json).unwrap();
 
-        //7. Prover stores XYZ Claim Offer received from Issuer
-        let xyz_claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, &AnoncredsUtils::xyz_schema_key());
+        //8. Issuer1 creates Claim Offer
+        let xyz_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle,
+                                                                             &AnoncredsUtils::xyz_schema_json(),
+                                                                             ISSUER_DID, DID_MY1).unwrap();
+
+        //9. Prover stores XYZ Claim Offer received from Issuer
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &xyz_claim_offer_json).unwrap();
 
-        //8. Prover creates Claim Request for gvt claim offer
+        //10. Prover creates Claim Request for gvt claim offer
         let gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                               DID_MY1,
                                                                               &gvt_claim_offer_json,
@@ -2702,32 +2724,32 @@ mod demos {
                                                                               COMMON_MASTER_SECRET).unwrap();
 
 
-        //9. Issuer creates GVT Claim
+        //11. Issuer creates GVT Claim
         let (_, gvt_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                       &gvt_claim_req,
                                                                       &AnoncredsUtils::gvt_claim_values_json(),
                                                                       None).unwrap();
 
-        //10. Prover stores received GVT Claim
+        //12. Prover stores received GVT Claim
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &gvt_claim_json, None).unwrap();
 
-        //11. Prover creates Claim Request for xyz claim offer
+        //13. Prover creates Claim Request for xyz claim offer
         let xyz_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                               DID_MY1,
                                                                               &xyz_claim_offer_json,
                                                                               &xyz_claim_def_json,
                                                                               COMMON_MASTER_SECRET).unwrap();
 
-        //12. Issuer creates XYZ Claim
+        //14. Issuer creates XYZ Claim
         let (_, xyz_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                       &xyz_claim_req,
                                                                       &AnoncredsUtils::xyz_claim_values_json(),
                                                                       None).unwrap();
 
-        //13. Prover stores received XYZ Claim
+        //15. Prover stores received XYZ Claim
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xyz_claim_json, None).unwrap();
 
-        //14. Prover gets Claims for Proof Request
+        //16. Prover gets Claims for Proof Request
         let proof_req_json = r#"{
                                        "nonce":"123432421212",
                                        "name":"proof_req_1",
@@ -2747,7 +2769,7 @@ mod demos {
         let claim_for_predicate_1 = AnoncredsUtils::get_claim_for_predicate_referent(&claims_json, "predicate1_referent");
         let claim_for_predicate_2 = AnoncredsUtils::get_claim_for_predicate_referent(&claims_json, "predicate2_referent");
 
-        //15. Prover creates Proof
+        //17. Prover creates Proof
         let requested_claims_json = format!(r#"{{
                                               "self_attested_attributes":{{}},
                                               "requested_attrs":{{"attr1_referent":["{}",true]}},
@@ -2785,7 +2807,7 @@ mod demos {
         let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap();
         assert_eq!(value, "Alex");
 
-        //17. Verifier verifies proof
+        //18. Verifier verifies proof
         let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
                                                           &proof_json,
                                                           &schemas_json,
@@ -2820,31 +2842,36 @@ mod demos {
         //4. Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //5. Prover stores Claim Offer received from Issuer
-        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &AnoncredsUtils::gvt_claim_offer()).unwrap();
+        //5. Issuer creates Claim Offer
+        let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle,
+                                                                             &AnoncredsUtils::gvt_schema_json(),
+                                                                             ISSUER_DID, DID_MY1).unwrap();
 
-        //6. Prover creates Claim Request
+        //6. Prover stores Claim Offer received from Issuer
+        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
+
+        //7. Prover creates Claim Request
         let claim_req_json = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                                DID_MY1,
                                                                                &AnoncredsUtils::gvt_claim_offer(),
                                                                                &claim_def_json,
                                                                                COMMON_MASTER_SECRET).unwrap();
 
-        //7. Issuer creates Claim
+        //8. Issuer creates Claim
         let (revoc_reg_update_json, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                                       &claim_req_json,
                                                                                       &AnoncredsUtils::gvt_claim_values_json(),
                                                                                       Some(SEQ_NO)).unwrap();
 
-        //8. Prover store received Claim
+        //9. Prover store received Claim
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &claim_json, Some(&revoc_reg_update_json)).unwrap();
 
-        //9. Prover gets Claims for Proof Request
+        //10. Prover gets Claims for Proof Request
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle,
                                                                           &AnoncredsUtils::proof_request_attr()).unwrap();
         let claim = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
-        //10. Prover creates Proof
+        //11. Prover creates Proof
         let requested_claims_json = format!(r#"{{
                                               "self_attested_attributes":{{}},
                                               "requested_attrs":{{"attr1_referent":["{}", true]}},
@@ -2863,7 +2890,7 @@ mod demos {
                                                              &claim_defs_json,
                                                              &revoc_regs_json).unwrap();
 
-        //11. Verifier verifies proof
+        //12. Verifier verifies proof
         let valid = AnoncredsUtils::verifier_verify_proof(&AnoncredsUtils::proof_request_attr(),
                                                           &proof_json,
                                                           &schemas_json,
@@ -2898,34 +2925,39 @@ mod demos {
         //5. Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //6. Prover stores Claim Offer received from Issuer
-        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &AnoncredsUtils::gvt_claim_offer()).unwrap();
+        //6. Issuer creates Claim Offer
+        let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle,
+                                                                         &AnoncredsUtils::gvt_schema_json(),
+                                                                         ISSUER_DID, DID_MY1).unwrap();
 
-        //7. Prover creates Claim Request
+        //7. Prover stores Claim Offer received from Issuer
+        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
+
+        //8. Prover creates Claim Request
         let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                           DID_MY1,
                                                                           &AnoncredsUtils::gvt_claim_offer(),
                                                                           &claim_def_json,
                                                                           COMMON_MASTER_SECRET).unwrap();
 
-        //8. Issuer creates Claim
+        //9. Issuer creates Claim
         let (revoc_reg_update_json, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                                       &claim_req,
                                                                                       &AnoncredsUtils::gvt_claim_values_json(),
                                                                                       Some(SEQ_NO)).unwrap();
 
-        //9. Prover stores received Claim
+        //10. Prover stores received Claim
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &claim_json, Some(&revoc_reg_update_json)).unwrap();
 
-        //10. Issuer revokes claim
+        //11. Issuer revokes claim
         let revoc_reg_update_json = AnoncredsUtils::issuer_revoke_claim(issuer_wallet_handle, &ISSUER_DID, &schema, SEQ_NO as u32).unwrap();
 
-        //11. Prover gets Claims for Proof Request
+        //12. Prover gets Claims for Proof Request
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle,
                                                                           &AnoncredsUtils::proof_request_attr()).unwrap();
         let claim = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
-        //12. Prover creates Proof
+        //13. Prover creates Proof
         let requested_claims_json = format!(r#"{{
                                               "self_attested_attributes":{{}},
                                               "requested_attrs":{{"attr1_referent":["{}", true]}},
@@ -2972,31 +3004,36 @@ mod demos {
         //5. Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //6. Prover stores Claim Offer received from Issuer
-        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &AnoncredsUtils::gvt_claim_offer()).unwrap();
+        //6. Issuer creates Claim Offer
+        let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle,
+                                                                         &AnoncredsUtils::gvt_schema_json(),
+                                                                         ISSUER_DID, DID_MY1).unwrap();
 
-        //7. Prover creates Claim Request
+        //7. Prover stores Claim Offer received from Issuer
+        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
+
+        //8. Prover creates Claim Request
         let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                           DID_MY1,
                                                                           &AnoncredsUtils::gvt_claim_offer(),
                                                                           &claim_def_json,
                                                                           COMMON_MASTER_SECRET).unwrap();
 
-        //8. Issuer creates Claim
+        //9. Issuer creates Claim
         let (revoc_reg_update_json, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                                       &claim_req,
                                                                                       &AnoncredsUtils::gvt_claim_values_json(),
                                                                                       Some(SEQ_NO)).unwrap();
 
-        //9. Prover stores received Claim
+        //10. Prover stores received Claim
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &claim_json, Some(&revoc_reg_update_json)).unwrap();
 
-        //10. Prover gets Claims for Proof Request
+        //11. Prover gets Claims for Proof Request
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle,
                                                                           &AnoncredsUtils::proof_request_attr()).unwrap();
         let claim = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
-        //11. Prover create Proof
+        //12. Prover create Proof
         let requested_claims_json = format!(r#"{{
                                               "self_attested_attributes":{{}},
                                               "requested_attrs":{{"attr1_referent":["{}", true]}},
@@ -3015,11 +3052,11 @@ mod demos {
                                                              &claim_defs_json,
                                                              &revoc_regs_json).unwrap();
 
-        //12. Issuer revokes prover claim
+        //13. Issuer revokes prover claim
         let revoc_reg_update_json = AnoncredsUtils::issuer_revoke_claim(issuer_wallet_handle, ISSUER_DID, &schema_json, SEQ_NO as u32).unwrap();
         revoc_regs_json = format!("{{\"{}\":{}}}", claim.referent, revoc_reg_update_json);
 
-        //13. Verifier verifies proof
+        //14. Verifier verifies proof
         let valid = AnoncredsUtils::verifier_verify_proof(&AnoncredsUtils::proof_request_attr(),
                                                           &proof_json,
                                                           &schemas_json,

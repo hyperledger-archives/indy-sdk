@@ -139,9 +139,9 @@ impl ProverCommandExecutor {
 
         let claim_offer_jsons: Vec<(String, String)> = self.wallet_service.list(wallet_handle, &format!("claim_offer::"))?;
 
-        let mut claim_offers: Vec<ClaimOffer> = Vec::new();
+        let mut claim_offers: Vec<ClaimOfferInfo> = Vec::new();
         for &(ref id, ref claim_offer_json) in claim_offer_jsons.iter() {
-            claim_offers.push(ClaimOffer::from_json(claim_offer_json)
+            claim_offers.push(ClaimOfferInfo::from_json(claim_offer_json)
                 .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim offer: {:?}", err)))?);
         }
 
@@ -168,7 +168,7 @@ impl ProverCommandExecutor {
         });
 
         let claim_offers_json = serde_json::to_string(&claim_offers)
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of claim offers: {:?}", err)))?;
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of claim offer: {:?}", err)))?;
 
         info!("get_claim_offers <<< claim_offers_json: {:?}", claim_offers_json);
 
@@ -221,14 +221,14 @@ impl ProverCommandExecutor {
                 format!("ClaimOffer issuer_did {:?} does not correspond to ClaimDef issuer_did {:?}", claim_offer.issuer_did, claim_def.issuer_did))));
         }
 
-        let (claim_request, master_secret_blinding_data) =
-            self.anoncreds_service.prover.new_claim_request(&claim_def.data, &master_secret, &claim_offer, prover_did)?;
+        let (claim_request, claim_request_metadata) =
+            self.anoncreds_service.prover.new_claim_request(&claim_def.data, master_secret, &claim_offer, prover_did)?;
 
-        let master_secret_blinding_data_json = master_secret_blinding_data.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize master secret blinding data: {:?}", err)))?;
+        let claim_request_metadata_json = claim_request_metadata.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claim request metadata {:?}", err)))?;
 
         let id = get_composite_id(&claim_offer.issuer_did, &claim_offer.schema_key);
-        self.wallet_service.set(wallet_handle, &format!("master_secret_blinding_data::{}", id), &master_secret_blinding_data_json)?;
+        self.wallet_service.set(wallet_handle, &format!("claim_request_metadata::{}", id), &claim_request_metadata_json)?;
 
         let claim_request_json = claim_request.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claim request: {:?}", err)))?;
@@ -256,16 +256,16 @@ impl ProverCommandExecutor {
             None => None
         };
 
-        let master_secret_blinding_data_json = self.wallet_service.get(wallet_handle, &format!("master_secret_blinding_data::{}", &id))?;
-        let master_secret_blinding_data = MasterSecretBlindingData::from_json(&master_secret_blinding_data_json)
-            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize master secret blinding data: {:?}", err)))?;
+        let claim_request_metadata_json = self.wallet_service.get(wallet_handle, &format!("claim_request_metadata::{}", &id))?;
+        let claim_request_metadata = ClaimRequestMetadata::from_json(&claim_request_metadata_json)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim request metadata: {:?}", err)))?;
 
         let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", id))?;
         let claim_def: ClaimDefinition = ClaimDefinition::from_json(&claim_def_json)
             .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim definition: {:?}", err)))?;
 
         self.anoncreds_service.prover.process_claim(&mut claim,
-                                                    &master_secret_blinding_data,
+                                                    &claim_request_metadata,
                                                     &claim_def.data,
                                                     rev_reg_pub.as_ref())?;
 

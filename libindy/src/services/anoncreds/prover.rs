@@ -21,36 +21,57 @@ impl Prover {
         Ok(CryptoProver::new_master_secret()?)
     }
 
-    pub fn new_claim_request(&self, claim_def_data: &ClaimDefinitionData, master_secret: &MasterSecret, claim_offer: &ClaimOffer,
-                             prover_did: &str) -> Result<(ClaimRequest, MasterSecretBlindingData), CommonError> {
+    pub fn new_claim_request(&self, claim_def_data: &ClaimDefinitionData, master_secret: MasterSecret, claim_offer: &ClaimOffer,
+                             prover_did: &str) -> Result<(ClaimRequest, ClaimRequestMetadata), CommonError> {
         info!("new_claim_request >>> claim_def_data: {:?}, master_secret: {:?}, prover_did: {:?}",
               claim_def_data, master_secret, prover_did);
 
         let issuer_pub_key = IssuerPublicKey::build_from_parts(&claim_def_data.primary, claim_def_data.revocation.as_ref())?;
-        let (blinded_ms, master_secret_blinding_data) = CryptoProver::blind_master_secret(&issuer_pub_key, master_secret)?;
+
+        let (blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof) =
+            CryptoProver::blind_master_secret(&issuer_pub_key,
+                                              &claim_offer.key_correctness_proof,
+                                              &master_secret,
+                                              &claim_offer.nonce)?;
+
+        let nonce = new_nonce()?;
 
         let claim_request = ClaimRequest {
             prover_did: prover_did.to_owned(),
             issuer_did: claim_offer.issuer_did.clone(),
             schema_key: claim_offer.schema_key.clone(),
-            blinded_ms
+            blinded_ms,
+            blinded_ms_correctness_proof,
+            nonce: nonce.clone()?
         };
 
-        info!("new_claim_request <<< claim_request: {:?}, master_secret_blinding_data: {:?}",
-              claim_request, master_secret_blinding_data);
+        let claim_request_metadata = ClaimRequestMetadata {
+            master_secret_blinding_data,
+            nonce,
+            master_secret
+        };
 
-        Ok((claim_request, master_secret_blinding_data))
+        info!("new_claim_request <<< claim_request: {:?}, claim_request_metadata: {:?}", claim_request, claim_request_metadata);
+
+        Ok((claim_request, claim_request_metadata))
     }
 
-    pub fn process_claim(&self, claim: &mut Claim, master_secret_blinding_data: &MasterSecretBlindingData,
+    pub fn process_claim(&self, claim: &mut Claim, claim_request_metadata: &ClaimRequestMetadata,
                          claim_def_data: &ClaimDefinitionData, rev_reg_pub: Option<&RevocationRegistryPublic>) -> Result<(), CommonError> {
-        info!("process_claim >>> claim: {:?}, master_secret_blinding_data: {:?}, claim_def_data: {:?}, rev_reg_pub: {:?}",
-              claim, master_secret_blinding_data, claim_def_data, rev_reg_pub);
+        info!("process_claim >>> claim: {:?}, claim_request_metadata: {:?}, claim_def_data: {:?}, rev_reg_pub: {:?}",
+              claim, claim_request_metadata, claim_def_data, rev_reg_pub);
 
         let issuer_pub_key = IssuerPublicKey::build_from_parts(&claim_def_data.primary, claim_def_data.revocation.as_ref())?;
+
+        let claim_values = build_claim_values(&claim.values)?;
+
         CryptoProver::process_claim_signature(&mut claim.signature,
-                                              &master_secret_blinding_data,
+                                              &claim_values,
+                                              &claim.signature_correctness_proof,
+                                              &claim_request_metadata.master_secret_blinding_data,
+                                              &claim_request_metadata.master_secret,
                                               &issuer_pub_key,
+                                              &claim_request_metadata.nonce,
                                               rev_reg_pub)?;
 
         info!("process_claim <<<");
