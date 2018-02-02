@@ -117,7 +117,6 @@ impl Proof {
     }
 
     fn build_schemas_json(&mut self, claim_data:&Vec<ClaimData>) -> Result<String, u32> {
-//        if settings::test_indy_mode_enabled() { return Ok("{}".to_string()); }
         info!("building schemas json for proof validation");
 
         let mut schema_json: HashMap<String, SchemaTransaction> = HashMap::new();
@@ -259,8 +258,13 @@ impl Proof {
                 }
             }
             Err(x) => {
-                info!("Proof {} had invalid format with err {}", self.handle, x);
-                self.proof_state = ProofStateType::ProofInvalid;
+                if x == error::TIMEOUT_LIBINDY_ERROR.code_num {
+                    info!("Proof {} unable to be validated", self.handle);
+                    self.proof_state = ProofStateType::ProofUndefined;
+                } else {
+                    info!("Proof {} had invalid format with err {}", self.handle, x);
+                    self.proof_state = ProofStateType::ProofInvalid;
+                }
             }
         };
 

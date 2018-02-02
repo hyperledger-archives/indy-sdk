@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use rand::Rng;
 use utils::libindy::pool;
 use utils::error;
+use utils::error::{map_libindy_err};
 use settings;
 use schema::LedgerSchema;
 use utils::constants::{ SCHEMAS_JSON, CLAIM_DEF_JSON, STORE_CLAIM_DEF_RESULT };
@@ -76,11 +77,11 @@ pub trait ClaimDefCommon {
         let request = self.build_get_txn(submitter_did, schema_num, sig_type, issuer_did)?;
         match self.send_request(&request) {
             Ok(x) => {
-                info!("Retrieved claim_def from the ledger");
+                info!("Retrieved claim_def from the ledger with issuer_did: {}, schema_no: {}", issuer_did, schema_num);
                 self.extract_result(&x)
             },
             Err(y) => {
-                warn!("Indy send request for claim_def failed");
+                warn!("Indy send request for claim_def failed with err: {}", y);
                 return Err(y)
             },
         }
@@ -94,15 +95,15 @@ pub trait ClaimDefCommon {
         libindy_build_get_claim_def_txn(submitter_did.to_string(),
                                         schema_num as i32,
                                         sig_type,
-                                        issuer_did.to_string())
-            .or(Err(error::BUILD_CLAIM_DEF_REQ_ERR.code_num))
+                                        issuer_did.to_string()).map_err(
+            |x| map_libindy_err(x, error::BUILD_CLAIM_DEF_REQ_ERR.code_num))
     }
 
     fn send_request(&self, request: &str) ->  Result<String, u32> {
         if settings::test_indy_mode_enabled() { return Ok(STORE_CLAIM_DEF_RESULT.to_string()); }
         let pool_handle = pool::get_pool_handle()?;
-        libindy_submit_request(pool_handle, request.to_string())
-            .or(Err(error::INDY_SUBMIT_REQUEST_ERR.code_num))
+        libindy_submit_request(pool_handle, request.to_string()).map_err(
+            |x| map_libindy_err(x, error::INDY_SUBMIT_REQUEST_ERR.code_num))
     }
 
     fn extract_result(&self, msg: &str) -> Result<String, u32> {
@@ -154,16 +155,16 @@ impl CreateClaimDef {
         libindy_sign_and_submit_request(pool_handle,
                                         wallet_handle,
                                         self.claim_def.issuer_did.to_string(),
-                                        request.to_string())
-            .or(Err(error::CREATE_CLAIM_DEF_ERR.code_num))
+                                        request.to_string()).map_err(
+            |x| map_libindy_err(x, error::CREATE_CLAIM_DEF_ERR.code_num))
     }
 
     pub fn build_create_txn(&self, claim_def_json: &str) -> Result<String, u32> {
         libindy_build_create_claim_def_txn(self.claim_def.issuer_did.clone(),
                                            self.claim_def.schema_seq_no as i32,
                                            Some(SigTypes::CL),
-                                           claim_def_json.to_string())
-            .or(Err(error::CREATE_CLAIM_DEF_ERR.code_num))
+                                           claim_def_json.to_string()).map_err(
+            |x| map_libindy_err(x, error::CREATE_CLAIM_DEF_ERR.code_num))
     }
 
     fn claim_def_on_ledger(&mut self,
@@ -401,7 +402,7 @@ pub mod tests {
         let wallet_handle = get_wallet_handle();
         let mut retrieve_claim_def = RetrieveClaimDef::new();
         let claim_def = retrieve_claim_def.retrieve_claim_def("GGBDg1j8bsKmr4h5T9XqYf",
-                                                  22,
+                                                              22,
                                                   Some(SigTypes::CL),
                                                   "2hoqvcwupRTUNkXn6ArYzs").unwrap();
         delete_wallet("test_wallet").unwrap();

@@ -548,6 +548,7 @@ mod tests {
     #[test]
     fn test_from_ledger_without_pool(){
         settings::set_defaults();
+        pool::change_pool_handle(None);
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let test = LedgerSchema::new_from_ledger(22);
         assert!(test.is_err());

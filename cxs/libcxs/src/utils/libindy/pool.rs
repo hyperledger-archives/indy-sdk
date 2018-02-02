@@ -21,7 +21,7 @@ lazy_static! {
     static ref POOL_HANDLE: RwLock<Option<i32>> = RwLock::new(None);
 }
 
-fn change_pool_handle(handle: Option<i32>){
+pub fn change_pool_handle(handle: Option<i32>){
     let mut h = POOL_HANDLE.write().unwrap();
     *h = handle;
 }
