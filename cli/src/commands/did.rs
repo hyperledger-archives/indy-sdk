@@ -260,22 +260,19 @@ pub mod list_command {
                 let mut dids: Vec<serde_json::Value> = serde_json::from_str(&dids)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                if dids.len() > 0 {
-                    for did_info in dids.iter_mut() {
-                        match Did::abbreviate_verkey(did_info["did"].as_str().unwrap_or(""),
-                                                     did_info["verkey"].as_str().unwrap_or("")) {
-                            Ok(vk) => did_info["verkey"] = serde_json::Value::String(vk),
-                            Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err))
-                        }
+                for did_info in dids.iter_mut() {
+                    match Did::abbreviate_verkey(did_info["did"].as_str().unwrap_or(""),
+                                                 did_info["verkey"].as_str().unwrap_or("")) {
+                        Ok(vk) => did_info["verkey"] = serde_json::Value::String(vk),
+                        Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err))
                     }
-
-                    print_list_table(&dids,
-                                     &vec![("did", "Did"),
-                                           ("verkey", "Verkey"),
-                                           ("metadata", "Metadata")]);
-                } else {
-                    println_succ!("There are no dids");
                 }
+
+                print_list_table(&dids,
+                                 &vec![("did", "Did"),
+                                       ("verkey", "Verkey"),
+                                       ("metadata", "Metadata")],
+                                 "There are no dids");
                 if let Some(cur_did) = get_active_did(ctx) {
                     println_succ!("Current did \"{}\"", cur_did);
                 }
