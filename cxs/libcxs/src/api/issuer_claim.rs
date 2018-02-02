@@ -46,6 +46,7 @@ pub extern fn cxs_issuer_create_claim(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(claim_data, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(claim_name, error::INVALID_OPTION.code_num);
 
     let issuer_did: String = if !issuer_did.is_null() {
         check_useful_c_str!(issuer_did, error::INVALID_OPTION.code_num);
@@ -64,7 +65,7 @@ pub extern fn cxs_issuer_create_claim(command_handle: u32,
     } else { None };
 
     thread::spawn(move|| {
-        let (rc, handle) = match issuer_claim::issuer_claim_create(schema_seq_no, source_id_opt, issuer_did, claim_data) {
+        let (rc, handle) = match issuer_claim::issuer_claim_create(schema_seq_no, source_id_opt, issuer_did, claim_name, claim_data) {
             Ok(x) => (error::SUCCESS.code_num, x),
             Err(x) => (x, 0),
         };

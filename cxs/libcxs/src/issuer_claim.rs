@@ -318,6 +318,7 @@ fn parse_claim_req_payload(payload: &Vec<u8>) -> Result<ClaimRequest, u32> {
 pub fn issuer_claim_create(schema_seq_no: u32,
                            source_id: Option<String>,
                            issuer_did: String,
+                           claim_name: String,
                            claim_data: String) -> Result<u32, u32> {
 
     let new_handle = rand::thread_rng().gen::<u32>();
@@ -333,7 +334,7 @@ pub fn issuer_claim_create(schema_seq_no: u32,
         state: CxsStateType::CxsStateNone,
         schema_seq_no,
         claim_request: None,
-        claim_name: String::from("Claim"),
+        claim_name,
         claim_id: new_handle.to_string(),
         ref_msg_id: String::new(),
         issued_did: String::new(),
@@ -580,6 +581,7 @@ pub mod tests {
         match issuer_claim_create(0,
                                   None,
                                   "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+                                  "claim_name".to_string(),
                                   "{\"attr\":\"value\"}".to_owned()) {
             Ok(x) => assert!(x > 0),
             Err(_) => assert_eq!(0, 1), //fail if we get here
@@ -593,6 +595,7 @@ pub mod tests {
         let handle = issuer_claim_create(0,
                                          None,
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+                                         "claim_name".to_string(),
                                          "{\"attr\":\"value\"}".to_owned()).unwrap();
         let string = to_string(handle).unwrap();
         assert!(!string.is_empty());
@@ -610,6 +613,7 @@ pub mod tests {
         let handle = issuer_claim_create(0,
                                          None,
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+                                         "claim_name".to_string(),
                                          "{\"attr\":\"value\"}".to_owned()).unwrap();
 
         assert_eq!(send_claim_offer(handle, connection_handle).unwrap(), error::SUCCESS.code_num);
@@ -652,6 +656,7 @@ pub mod tests {
         let handle = issuer_claim_create(0,
                                          None,
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+                                         "claim_name".to_string(),
                                          "{\"attr\":\"value\"}".to_owned()).unwrap();
         let string = to_string(handle).unwrap();
         assert!(!string.is_empty());
@@ -710,6 +715,7 @@ pub mod tests {
         let handle = issuer_claim_create(0,
                                          None,
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+                                         "claim_name".to_string(),
                                          "{\"att\":\"value\"}".to_owned()).unwrap();
         let string = to_string(handle).unwrap();
         fn get_state_from_string(s: String) -> u32 {
