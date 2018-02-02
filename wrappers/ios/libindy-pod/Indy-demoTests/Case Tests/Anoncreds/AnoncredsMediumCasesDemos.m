@@ -287,7 +287,11 @@
                              "             {\"attr1_referent\":"\
                              "                        {"\
                              "                          \"name\":\"name\",\"restrictions\":[{\"schema_key\":%@}]"\
-                             "                        }"\
+                             "                        },"
+                             "              \"attr2_referent\":"
+                             "                        {"
+                             "                          \"name\":\"phone\""
+                             "                        }"
                              "             },"\
                              " \"requested_predicates\":"\
                              "             {"\
@@ -308,7 +312,7 @@
     
     // 11. Prover create Proof
     NSString* requestedClaimsJson = [ NSString stringWithFormat:@"{"\
-                                     "  \"self_attested_attributes\":{\"self1\":\"value\"},"\
+                                     "  \"self_attested_attributes\":{\"attr2_referent\":\"value\"},"\
                                      "  \"requested_attrs\":{\"attr1_referent\":[\"%@\",true]},"\
                                      "  \"requested_predicates\":{\"predicate1_referent\":\"%@\"}"\
                                      "}", claimUUID, claimUUID];
@@ -334,7 +338,7 @@
     NSString *revealedAttrUUID = proof[@"requested_proof"][@"revealed_attrs"][@"attr1_referent"][1];
     XCTAssertTrue([revealedAttrUUID isEqualToString:@"Alex"]);
     
-    NSString *attestedAttrUUID = proof[@"requested_proof"][@"self_attested_attrs"][@"self1"];
+    NSString *attestedAttrUUID = proof[@"requested_proof"][@"self_attested_attrs"][@"attr2_referent"];
     XCTAssertTrue([attestedAttrUUID isEqualToString:@"value"]);
     
     // 12. Verifier verify proof
