@@ -158,14 +158,11 @@ pub mod list_command {
                 let wallets: Vec<serde_json::Value> = serde_json::from_str(&wallets)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                if wallets.len() > 0 {
-                    print_list_table(&wallets,
-                                     &vec![("name", "Name"),
-                                           ("associated_pool_name", "Associated pool name"),
-                                           ("type", "Type")]);
-                } else {
-                    println_succ!("There are no wallets");
-                }
+                print_list_table(&wallets,
+                                 &vec![("name", "Name"),
+                                       ("associated_pool_name", "Associated pool name"),
+                                       ("type", "Type")],
+                                 "There are no wallets");
 
                 if let Some((_, cur_wallet)) = get_opened_wallet(ctx) {
                     println_succ!("Current wallet \"{}\"", cur_wallet);
