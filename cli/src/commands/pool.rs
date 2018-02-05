@@ -130,11 +130,7 @@ pub mod list_command {
                 let pools: Vec<serde_json::Value> = serde_json::from_str(&pools)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                if pools.len() > 0 {
-                    print_list_table(&pools, &vec![("pool", "Pool")]);
-                } else {
-                    println_succ!("There are no pool");
-                }
+                print_list_table(&pools, &vec![("pool", "Pool")], "There are no pool");
 
                 if let Some((_, cur_pool)) = get_connected_pool(ctx) {
                     println_succ!("Current pool \"{}\"", cur_pool);

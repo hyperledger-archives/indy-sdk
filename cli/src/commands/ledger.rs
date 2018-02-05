@@ -62,14 +62,15 @@ pub mod nym_command {
             result["role"] = get_role_title(&result["role"]);
         }
 
-        let res = handle_transaction_response(response,
-                                              "Nym request has been sent to Ledger.",
-                                              &[("reqId", "Request ID"),
-                                                  ("txnTime", "Transaction time")],
-                                              None,
-                                              &mut vec![("dest", "Did"),
-                                                        ("verkey", "Verkey"),
-                                                        ("role", "Role")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Nym request has been sent to Ledger.",
+                                                     &[("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     None,
+                                                     &mut vec![("dest", "Did"),
+                                                               ("verkey", "Verkey"),
+                                                               ("role", "Role")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -114,16 +115,17 @@ pub mod get_nym_command {
             };
         };
 
-        let res = handle_transaction_response(response,
-                                              "Following NYM has been received.",
-                                              &[("seqNo", "Sequence Number"),
-                                                  ("reqId", "Request ID"),
-                                                  ("txnTime", "Transaction time")],
-                                              Some("data"),
-                                              &[("identifier", "Identifier"),
-                                                  ("dest", "Dest"),
-                                                  ("verkey", "Verkey"),
-                                                  ("role", "Role")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Following NYM has been received.",
+                                                     &[("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     Some("data"),
+                                                     &[("identifier", "Identifier"),
+                                                         ("dest", "Dest"),
+                                                         ("verkey", "Verkey"),
+                                                         ("role", "Role")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -171,14 +173,15 @@ pub mod attrib_command {
                 ("hash", "Hashed value")
             } else { ("enc", "Encrypted value") };
 
-        let res = handle_transaction_response(response,
-                                              "Attrib request has been sent to Ledger.",
-                                              &[("dest", "Dest"),
-                                                  ("seqNo", "Sequence Number"),
-                                                  ("reqId", "Request ID"),
-                                                  ("txnTime", "Transaction time")],
-                                              None,
-                                              &[attribute]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Attrib request has been sent to Ledger.",
+                                                     &[("dest", "Dest"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     None,
+                                                     &[attribute]));
 
         trace!("execute << {:?}", res);
         res
@@ -225,14 +228,15 @@ pub mod get_attrib_command {
             };
         };
 
-        let res = handle_transaction_response(response,
-                                              "Following NYM has been received.",
-                                              &[("dest", "Did"),
-                                                  ("seqNo", "Sequence Number"),
-                                                  ("reqId", "Request ID"),
-                                                  ("txnTime", "Transaction time")],
-                                              None,
-                                              &[("data", "Data")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Following NYM has been received.",
+                                                     &[("dest", "Did"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     None,
+                                                     &[("data", "Data")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -279,16 +283,17 @@ pub mod schema_command {
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = handle_transaction_response(response,
-                                              "NodeConfig request has been sent to Ledger.",
-                                              &[("identifier", "Identifier"),
-                                                  ("seqNo", "Sequence Number"),
-                                                  ("reqId", "Request ID"),
-                                                  ("txnTime", "Transaction time")],
-                                              Some("data"),
-                                              &[("name", "Name"),
-                                                  ("version", "Version"),
-                                                  ("attr_names", "Attributes")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "NodeConfig request has been sent to Ledger.",
+                                                     &[("identifier", "Identifier"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     Some("data"),
+                                                     &[("name", "Name"),
+                                                         ("version", "Version"),
+                                                         ("attr_names", "Attributes")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -340,16 +345,17 @@ pub mod get_schema_command {
             }
         };
 
-        let res = handle_transaction_response(response,
-                                              "Following Schema has been received.",
-                                              &[("dest", "Did"),
-                                                  ("seqNo", "Sequence Number"),
-                                                  ("reqId", "Request ID"),
-                                                  ("txnTime", "Transaction time")],
-                                              Some("data"),
-                                              &[("name", "Name"),
-                                                  ("version", "Version"),
-                                                  ("attr_names", "Attributes")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Following Schema has been received.",
+                                                     &[("dest", "Did"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     Some("data"),
+                                                     &[("name", "Name"),
+                                                         ("version", "Version"),
+                                                         ("attr_names", "Attributes")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -397,15 +403,16 @@ pub mod claim_def_command {
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = handle_transaction_response(response,
-                                              "NodeConfig request has been sent to Ledger.",
-                                              &[("identifier", "Identifier"),
-                                                  ("seqNo", "Sequence Number"),
-                                                  ("reqId", "Request ID"),
-                                                  ("txnTime", "Transaction time")],
-                                              Some("data"),
-                                              &[("primary", "Primary Key"),
-                                                  ("revocation", "Revocation Key")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "NodeConfig request has been sent to Ledger.",
+                                                     &[("identifier", "Identifier"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     Some("data"),
+                                                     &[("primary", "Primary Key"),
+                                                         ("revocation", "Revocation Key")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -450,15 +457,16 @@ pub mod get_claim_def_command {
             }
         };
 
-        let res = handle_transaction_response(response,
-                                              "Following Claim Definition has been received.",
-                                              &[("identifier", "Identifier"),
-                                                  ("seqNo", "Sequence Number"),
-                                                  ("reqId", "Request ID"),
-                                                  ("txnTime", "Transaction time")],
-                                              Some("data"),
-                                              &[("primary", "Primary Key"),
-                                                  ("revocation", "Revocation Key")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Following Claim Definition has been received.",
+                                                     &[("identifier", "Identifier"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     Some("data"),
+                                                     &[("primary", "Primary Key"),
+                                                         ("revocation", "Revocation Key")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -522,20 +530,21 @@ pub mod node_command {
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = handle_transaction_response(response,
-                                              "NodeConfig request has been sent to Ledger.",
-                                              &[("identifier", "Identifier"),
-                                                  ("seqNo", "Sequence Number"),
-                                                  ("reqId", "Request ID"),
-                                                  ("txnTime", "Transaction time")],
-                                              Some("data"),
-                                              &[("alias", "Alias"),
-                                                  ("node_ip", "Node Ip"),
-                                                  ("node_port", "Node Port"),
-                                                  ("client_ip", "Client Ip"),
-                                                  ("client_port", "Client Port"),
-                                                  ("services", "Services"),
-                                                  ("blskey", "Blskey")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "NodeConfig request has been sent to Ledger.",
+                                                     &[("identifier", "Identifier"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     Some("data"),
+                                                     &[("alias", "Alias"),
+                                                         ("node_ip", "Node Ip"),
+                                                         ("node_port", "Node Port"),
+                                                         ("client_ip", "Client Ip"),
+                                                         ("client_port", "Client Port"),
+                                                         ("services", "Services"),
+                                                         ("blskey", "Blskey")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -573,15 +582,16 @@ pub mod pool_config_command {
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = handle_transaction_response(response,
-                                              "NodeConfig request has been sent to Ledger.",
-                                              &[("identifier", "Identifier"),
-                                                  ("seqNo", "Sequence Number"),
-                                                  ("reqId", "Request ID"),
-                                                  ("txnTime", "Transaction time")],
-                                              None,
-                                              &[("writes", "Writes"),
-                                                  ("force", "Force Apply")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "NodeConfig request has been sent to Ledger.",
+                                                     &[("identifier", "Identifier"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     None,
+                                                     &[("writes", "Writes"),
+                                                         ("force", "Force Apply")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -651,21 +661,21 @@ pub mod pool_upgrade_command {
             hash = res["sha256"].as_str().map(|h| h.to_string());
         };
 
-        let res = handle_transaction_response(response,
-                                              "NodeConfig request has been sent to Ledger.",
-                                              &[("identifier", "Identifier"),
-                                                  ("seqNo", "Sequence Number"),
-                                                  ("reqId", "Request ID"),
-                                                  ("txnTime", "Transaction time")],
-                                              None,
-                                              &[("name", "Name"),
-                                                  ("action", "Action"),
-                                                  ("version", "Version"),
-                                                  ("timeout", "Timeout"),
-                                                  ("justification", "Justification"),
-                                                  ("reinstall", "Reinstall"),
-                                                  ("force", "Force Apply")]);
-
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "NodeConfig request has been sent to Ledger.",
+                                                     &[("identifier", "Identifier"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     None,
+                                                     &[("name", "Name"),
+                                                         ("action", "Action"),
+                                                         ("version", "Version"),
+                                                         ("timeout", "Timeout"),
+                                                         ("justification", "Justification"),
+                                                         ("reinstall", "Reinstall"),
+                                                         ("force", "Force Apply")]));
         if let Some(h) = hash {
             println_succ!("Hash:");
             println!("{}", h);
@@ -735,30 +745,29 @@ pub mod custom_command {
     }
 }
 
-fn handle_transaction_response(mut response: Response<serde_json::Value>, title: &str,
-                               metadata_headers: &[(&str, &str)],
-                               data_field: Option<&str>,
-                               data_headers: &[(&str, &str)]) -> Result<(), ()> {
-    if let Some(result) = response.result.as_mut() {
-        if let Some(txn_time) = result["txnTime"].as_i64() {
-            result["txnTime"] = serde_json::Value::String(timestamp_to_datetime(txn_time))
-        }
+fn print_transaction_response(mut result: serde_json::Value, title: &str,
+                              metadata_headers: &[(&str, &str)],
+                              data_field: Option<&str>,
+                              data_headers: &[(&str, &str)]) {
+    if let Some(txn_time) = result["txnTime"].as_i64() {
+        result["txnTime"] = serde_json::Value::String(timestamp_to_datetime(txn_time))
     }
 
+    println_succ!("{}", title);
+    println_succ!("Metadata:");
+    print_table(&result, metadata_headers);
+    println_succ!("Data:");
+
+    let data = if data_field.is_some() { &result[data_field.unwrap()] } else { &result };
+    let mut data_headers = data_headers.to_vec();
+    data_headers.retain(|&(ref key, _)| !data[key].is_null());
+
+    print_table(data, &data_headers);
+}
+
+pub fn handle_transaction_response(response: Response<serde_json::Value>) -> Result<serde_json::Value, ()> {
     match response {
-        Response { op: ResponseType::REPLY, result: Some(result), reason: None } => {
-            println_succ!("{}", title);
-            println_succ!("Metadata:");
-            print_table(&result, metadata_headers);
-            println_succ!("Data:");
-
-            let data = if data_field.is_some() { &result[data_field.unwrap()] } else { &result };
-            let mut data_headers = data_headers.to_vec();
-            data_headers.retain(|&(ref key, _)| !data[key].is_null());
-
-            print_table(data, &data_headers);
-            Ok(())
-        }
+        Response { op: ResponseType::REPLY, result: Some(result), reason: None } => Ok(result),
         Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
         Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
             Err(println_err!("Transaction has been rejected: {}", extract_error_message(&reason))),
