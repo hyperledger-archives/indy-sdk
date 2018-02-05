@@ -70,7 +70,7 @@ impl IssuerCommandExecutor {
     pub fn execute(&self, command: IssuerCommand) {
         match command {
             IssuerCommand::CreateAndStoreClaimDefinition(wallet_handle, issuer_did, schema_json, signature_type, create_non_revoc, cb) => {
-                info!(target: "issuer_command_executor", "CreateAndStoreClaim command received");
+                info!(target: "issuer_command_executor", "CreateAndStoreClaimDef command received");
                 cb(self.create_and_store_claim_definition(wallet_handle, &issuer_did, &schema_json,
                                                           signature_type.as_ref().map(String::as_str), create_non_revoc));
             }

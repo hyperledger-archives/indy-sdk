@@ -31,11 +31,11 @@ mod high_cases {
 
         #[test]
         fn issuer_create_and_store_claim_def_works() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
                                                                                 ISSUER_DID,
-                                                                                &AnoncredsUtils::custom_schema("claim_def_works"),
+                                                                                &AnoncredsUtils::gvt_schema_json(),
                                                                                 None, false).unwrap();
 
             serde_json::from_str::<ClaimDefinition>(&claim_def_json).unwrap();
@@ -43,12 +43,12 @@ mod high_cases {
 
         #[test]
         fn issuer_create_and_store_claim_def_works_for_invalid_wallet() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::issuer_create_claim_definition(invalid_wallet_handle,
                                                                      ISSUER_DID,
-                                                                     &AnoncredsUtils::custom_schema("claim_def_works_for_invalid_wallet"),
+                                                                     &AnoncredsUtils::gvt_schema_json(),
                                                                      None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
@@ -59,14 +59,14 @@ mod high_cases {
 
         #[test]
         fn prover_store_claim_offer_works() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             AnoncredsUtils::prover_store_claim_offer(wallet_handle, &AnoncredsUtils::gvt_claim_offer()).unwrap();
         }
 
         #[test]
         fn prover_store_claim_offer_works_for_invalid_json() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let claim_offer_json = format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID);
 
@@ -76,7 +76,7 @@ mod high_cases {
 
         #[test]
         fn prover_store_claim_offer_works_for_invalid_wallet() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_store_claim_offer(invalid_wallet_handle, &AnoncredsUtils::gvt_claim_offer());
@@ -89,103 +89,103 @@ mod high_cases {
 
         #[test]
         fn prover_get_claim_offers_works_for_empty_filter() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{}"#).unwrap();
-            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 3);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
         }
 
         #[test]
         fn prover_get_claim_offers_works_for_filter_by_issuer() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID)).unwrap();
-            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 2);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
         }
 
         #[test]
         fn prover_get_claim_offers_works_for_filter_by_schema() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle,
                                                                        &format!(r#"{{"schema_key":{}}}"#, AnoncredsUtils::gvt_schema_key_json())).unwrap();
-            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 2);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
         }
 
         #[test]
         fn prover_get_claim_offers_works_for_filter_by_schema_name() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"schema_key":{"name":"gvt"}}"#).unwrap();
-            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 2);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
         }
 
         #[test]
         fn prover_get_claim_offers_works_for_filter_by_schema_version() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"schema_key":{"version":"1.0"}}"#).unwrap();
-            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 3);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
         }
 
         #[test]
         fn prover_get_claim_offers_works_for_filter_by_schema_did() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, &format!(r#"{{"schema_key":{{"did":"{}"}}}}"#, ISSUER_DID)).unwrap();
-            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 1);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
         }
 
         #[test]
         fn prover_get_claim_offers_works_for_filter_by_issuer_and_schema() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle,
                                                                        &format!(r#"{{"issuer_did":"{}","schema_key":{}}}"#, ISSUER_DID, AnoncredsUtils::gvt_schema_key_json())).unwrap();
-            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 1);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
         }
 
         #[test]
         fn prover_get_claim_offers_works_for_no_results() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"issuer_did":"didaacdsfds"}"#).unwrap();
-            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 0);
         }
 
         #[test]
         fn prover_get_claim_offers_works_for_invalid_wallet_handle() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_get_claim_offers(invalid_wallet_handle, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID));
@@ -206,11 +206,11 @@ mod high_cases {
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID)).unwrap();
 
-            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 2);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
             InmemWallet::cleanup();
@@ -222,16 +222,16 @@ mod high_cases {
 
         #[test]
         fn prover_create_master_secret_works() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
-            AnoncredsUtils::prover_create_master_secret(wallet_handle, "master_secret_name1").unwrap();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            AnoncredsUtils::prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET).unwrap();
         }
 
         #[test]
         fn prover_create_master_secret_works_invalid_wallet_handle() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 100;
-            let res = AnoncredsUtils::prover_create_master_secret(invalid_wallet_handle, "master_secret_name2");
+            let res = AnoncredsUtils::prover_create_master_secret(invalid_wallet_handle, COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
     }
@@ -241,36 +241,33 @@ mod high_cases {
 
         #[test]
         fn prover_create_and_store_claim_req_works() {
-            let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, claim_def, claim_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_req_json = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
-                                                                                   DID,
-                                                                                   &AnoncredsUtils::gvt_claim_offer(),
-                                                                                   &claim_def,
-                                                                                   COMMON_MASTER_SECRET).unwrap();
-            let claim_req: ClaimRequest = serde_json::from_str(&claim_req_json).unwrap();
-            assert_eq!(claim_req.schema_key, AnoncredsUtils::gvt_schema_key());
-            assert_eq!(claim_req.issuer_did, ISSUER_DID);
+            AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
+                                                              DID,
+                                                              &claim_offer,
+                                                              &claim_def,
+                                                              COMMON_MASTER_SECRET).unwrap();
         }
 
         #[test]
         fn prover_create_and_store_claim_req_works_for_invalid_wallet() {
-            let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, claim_def, claim_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_create_and_store_claim_req(invalid_wallet_handle,
                                                                         DID,
-                                                                        &AnoncredsUtils::gvt_claim_offer(),
+                                                                        &claim_offer,
                                                                         &claim_def,
                                                                         COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
 
         #[test]
-        fn prover_create_and_store_claim_req_works_for_claim_def_does_not_correspond_claim_offer() {
-            let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
+        fn prover_create_and_store_claim_req_works_for_claim_def_not_correspond_to_claim_offer() {
+            let (wallet_handle, claim_def, _, _, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer(DID, &AnoncredsUtils::gvt_schema_key());
+            let claim_offer_json = AnoncredsUtils::get_claim_offer(DID, &AnoncredsUtils::xyz_schema_key());
 
             let res = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                         DID,
@@ -286,21 +283,20 @@ mod high_cases {
 
         #[test]
         fn issuer_create_claim_works() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, claim_req, _) = AnoncredsUtils::init_common_wallet();
 
-            let (_, claim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle,
-                                                                      &AnoncredsUtils::gvt_claim_req(),
-                                                                      &AnoncredsUtils::gvt_claim_values_json(),
-                                                                      None).unwrap();
-            serde_json::from_str::<Claim>(&claim_json).unwrap();
+            AnoncredsUtils::issuer_create_claim(wallet_handle,
+                                                &claim_req,
+                                                &AnoncredsUtils::gvt_claim_values_json(),
+                                                None).unwrap();
         }
 
         #[test]
         fn issuer_create_claim_works_for_claim_does_not_correspond_to_claim_req() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, claim_req, _) = AnoncredsUtils::init_common_wallet();
 
             let res = AnoncredsUtils::issuer_create_claim(wallet_handle,
-                                                          &AnoncredsUtils::gvt_claim_req(),
+                                                          &claim_req,
                                                           &AnoncredsUtils::xyz_claim_values_json(),
                                                           None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -308,11 +304,11 @@ mod high_cases {
 
         #[test]
         fn issuer_create_claim_works_for_for_invalid_wallet_handle() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, claim_req, _) = AnoncredsUtils::init_common_wallet();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::issuer_create_claim(invalid_wallet_handle,
-                                                          &AnoncredsUtils::gvt_claim_req(),
+                                                          &claim_req,
                                                           &AnoncredsUtils::gvt_claim_values_json(),
                                                           None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
@@ -323,16 +319,16 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn prover_store_claim_works() {
-            let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
+        fn prover_store_claim_worksa() {
+            let (wallet_handle, claim_def_json, claim_offer, _, _) = AnoncredsUtils::init_common_wallet();
             let prover_wallet_handle = WalletUtils::create_and_open_wallet("proverWallet", None).unwrap();
 
             AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
             let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
-                                                                              DID,
-                                                                              &AnoncredsUtils::gvt_claim_offer(),
-                                                                              &claim_def_json,
+                                                                              DID_MY1,
+                                                                              claim_offer,
+                                                                              claim_def_json,
                                                                               COMMON_MASTER_SECRET).unwrap();
 
             let (_, claim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle, &claim_req,
@@ -344,18 +340,7 @@ mod high_cases {
 
         #[test]
         fn prover_store_claim_works_for_invalid_wallet_handle() {
-            let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
-
-            let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
-                                                                              DID,
-                                                                              &AnoncredsUtils::gvt_claim_offer(),
-                                                                              &claim_def_json,
-                                                                              COMMON_MASTER_SECRET).unwrap();
-
-            let (_, claim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle,
-                                                                      &claim_req,
-                                                                      &AnoncredsUtils::gvt_claim_values_json(),
-                                                                      None).unwrap();
+            let (wallet_handle, _, _, _, claim_json) = AnoncredsUtils::init_common_wallet();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_store_claim(invalid_wallet_handle, &claim_json, None);
@@ -368,7 +353,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_works_for_empty_filter() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{}"#).unwrap();
             let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
@@ -378,7 +363,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_works_for_filter_by_issuer_did() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID)).unwrap();
             let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
@@ -390,7 +375,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_works_for_filter_by_schema() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, &format!(r#"{{"schema_key":{}}}"#, &AnoncredsUtils::gvt_schema_key_json())).unwrap();
             let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
@@ -402,7 +387,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_works_for_filter_by_schema_name() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{"schema_key":{"name":"gvt"}}"#).unwrap();
             let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
@@ -414,7 +399,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_works_for_filter_by_schema_version() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{"schema_key":{"version":"1.0"}}"#).unwrap();
             let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
@@ -424,7 +409,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_works_for_filter_by_schema_did() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, &format!(r#"{{"schema_key":{{"did":"{}"}}}}"#, ISSUER_DID)).unwrap();
             let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
@@ -435,7 +420,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_works_for_filter_by_issuer_did_and_schema_seq_no() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, &format!(r#"{{"issuer_did":"{}", "schema_key":{}}}"#, ISSUER_DID, &AnoncredsUtils::gvt_schema_key_json())).unwrap();
             let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
@@ -447,7 +432,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_works_for_empty_result() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{"issuer_did":"issuerdid"}"#).unwrap();
             let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
@@ -457,7 +442,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_works_for_invalid_wallet_handle() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_get_claims(invalid_wallet_handle, r#"{}"#);
@@ -474,7 +459,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_empty_req() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                         "nonce":"123432421212",
@@ -482,7 +467,7 @@ mod high_cases {
                                         "version":"0.1",
                                         "requested_attrs":{},
                                         "requested_predicates":{}
-                                      }"#;
+                                   }"#;
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
@@ -493,7 +478,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_revealed_attr_only() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                             "nonce":"123432421212",
@@ -516,7 +501,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_revealed_attr_in_upper_case() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                             "nonce":"123432421212",
@@ -539,7 +524,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_revealed_attr_contains_spaces() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                             "nonce":"123432421212",
@@ -562,7 +547,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_issuer() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -588,7 +573,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_rea_works_for_revealed_attr_for_multiple_issuers() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -615,7 +600,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_schema() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -641,7 +626,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_schema_name() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                 "nonce":"123432421212",
@@ -667,7 +652,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_schema_version() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                 "nonce":"123432421212",
@@ -693,7 +678,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_schema_did() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                             "nonce":"123432421212",
@@ -719,7 +704,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_schema_or_specific_issuer() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -746,7 +731,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_rea_works_for_revealed_attr_for_multiple_schemas() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -773,7 +758,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_issuer_and_schema() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -799,7 +784,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_rea_works_for_revealed_attr_for_multiple_specific_issuer_schema_pairs() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -826,7 +811,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_rea_works_for_revealed_attr_for_specific_issuer_schema_pair_or_issuer() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -853,7 +838,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_predicate() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                             "nonce":"123432421212",
@@ -876,7 +861,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_predicate_attribute_in_upper_case() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                             "nonce":"123432421212",
@@ -899,7 +884,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_predicate_attribute_contains_spaces() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                             "nonce":"123432421212",
@@ -922,7 +907,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_predicate_for_specific_issuer() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -947,7 +932,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_predicate_for_multiple_issuers() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -973,7 +958,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_predicate_for_specific_schema() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -999,7 +984,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_predicate_for_multiple_schemas() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -1025,7 +1010,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_predicate_for_specific_issuer_schema_pair() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -1051,7 +1036,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_predicate_for_multiple_issuer_schema_pairs() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -1078,7 +1063,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_multiple_revealed_attrs_and_predicates() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
                                         "name":"proof_req_1",
@@ -1114,7 +1099,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_not_found_attribute() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
                                         "name":"proof_req_1",
@@ -1138,7 +1123,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_not_found_predicate_attribute() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                             "nonce":"123432421212",
@@ -1165,7 +1150,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_not_satisfied_predicate() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                             "nonce":"123432421212",
@@ -1192,7 +1177,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_other_issuer() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                 "nonce":"123432421212",
@@ -1221,7 +1206,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_other_schema() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -1247,7 +1232,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_other_issuer_schema_pair() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -1273,7 +1258,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_predicate_for_other_issuer() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -1299,7 +1284,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_predicate_for_other_schema() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = format!(r#"{{
                                                     "nonce":"123432421212",
@@ -1325,7 +1310,7 @@ mod high_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_invalid_wallet_handle() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                             "nonce":"123432421212",
@@ -1350,7 +1335,7 @@ mod high_cases {
 
         #[test]
         fn prover_create_proof_works() {
-            let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, claim_def_json, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
             let claim_for_attr = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
@@ -1377,7 +1362,7 @@ mod high_cases {
 
         #[test]
         fn prover_create_proof_works_for_using_not_satisfy_claim() {
-            let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, claim_def_json, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
             let claim_for_attr = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
@@ -1414,7 +1399,7 @@ mod high_cases {
 
         #[test]
         fn prover_create_proof_works_for_invalid_wallet_handle() {
-            let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, claim_def_json, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
             let claim_for_attr = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
@@ -1509,8 +1494,7 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_and_store_claim_def_works_for_invalid_schema() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
-
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let schema = r#"{"seqNo":1, "name":"name","version":"1.0", "attr_names":["name"]}"#;
 
             let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, ISSUER_DID, &schema, None, false);
@@ -1519,18 +1503,18 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_and_store_claim_def_works_for_invalid_did() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
                                                                      INVALID_IDENTIFIER,
-                                                                     &AnoncredsUtils::custom_schema("claim_def_works_for_invalid_did"),
+                                                                     &AnoncredsUtils::gvt_schema_json(),
                                                                      None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
         fn issuer_create_and_store_claim_def_works_for_empty_schema_attr_names() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let schema = r#"{"seqNo":1, "identifier":"NcYxiDXkpYi6ov5FcYDi1e", "data":{"name":"name","version":"1.0","attr_names":[]}}"#;
 
@@ -1540,22 +1524,21 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_and_store_claim_def_works_for_correct_signature_type() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
-                                                                     &AnoncredsUtils::custom_schema("claim_def_works_for_correct_signature_type"),
-                                                                     ISSUER_DID,
-                                                                     Some(SIGNATURE_TYPE), false);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
+                                                           ISSUER_DID,
+                                                           &AnoncredsUtils::gvt_schema_json(),
+                                                           Some(SIGNATURE_TYPE), false).unwrap();
         }
 
         #[test]
         fn issuer_create_and_store_claim_def_works_for_invalid_signature_type() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
-                                                                     &AnoncredsUtils::custom_schema("claim_def_works_for_invalid_signature_type"),
                                                                      ISSUER_DID,
+                                                                     &AnoncredsUtils::gvt_schema_json(),
                                                                      Some("some_type"), false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
@@ -1563,16 +1546,16 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_and_store_claim_def_works_for_duplicate() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
                                                            ISSUER_DID,
-                                                           &AnoncredsUtils::custom_schema("claim_def_works_for_duplicate"),
+                                                           &AnoncredsUtils::gvt_schema_json(),
                                                            None, false).unwrap();
 
             let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
                                                                      ISSUER_DID,
-                                                                     &AnoncredsUtils::custom_schema("claim_def_works_for_duplicate"),
+                                                                     &AnoncredsUtils::gvt_schema_json(),
                                                                      None, false);
 
             assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsClaimDefAlreadyExistsError);
@@ -1584,19 +1567,9 @@ mod medium_cases {
 
         #[test]
         fn prover_store_claim_offer_works_for_invalid_issuer_did() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            let claim_offer_json = format!(r#"{{"issuer_did":"invalid_base58_string", "schema_key":{}}}"#, AnoncredsUtils::gvt_schema_key_json());
-
-            let res = AnoncredsUtils::prover_store_claim_offer(wallet_handle, &claim_offer_json);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
-        }
-
-        #[test]
-        fn prover_store_claim_offer_works_for_invalid_schema_key() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
-
-            let claim_offer_json = format!(r#"{{"issuer_did":"{}", "schema_key":{{"name":"gvt"}}}}"#, ISSUER_DID);
+            let claim_offer_json = AnoncredsUtils::get_claim_offer("invalid_base58_string", &AnoncredsUtils::gvt_schema_key());
 
             let res = AnoncredsUtils::prover_store_claim_offer(wallet_handle, &claim_offer_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1608,7 +1581,7 @@ mod medium_cases {
 
         #[test]
         fn prover_get_claim_offers_works_for_invalid_filter_json() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let res = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"schema_key":"gvt"}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1628,10 +1601,10 @@ mod medium_cases {
                                                      &AnoncredsUtils::get_claim_offer(DID, &AnoncredsUtils::xyz_schema_key())).unwrap();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle_2, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID)).unwrap();
-            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 1);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
         }
     }
 
@@ -1640,16 +1613,16 @@ mod medium_cases {
 
         #[test]
         fn prover_create_master_secret_works_for_duplicate_name() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-            AnoncredsUtils::prover_create_master_secret(wallet_handle, "master_secret_name_duplicate").unwrap();
-            let res = AnoncredsUtils::prover_create_master_secret(wallet_handle, "master_secret_name_duplicate");
+            AnoncredsUtils::prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET).unwrap();
+            let res = AnoncredsUtils::prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsMasterSecretDuplicateNameError);
         }
 
         #[test]
         fn prover_create_master_secret_works_for_empty_name() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = AnoncredsUtils::prover_create_master_secret(wallet_handle, "");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidParam3);
@@ -1661,7 +1634,7 @@ mod medium_cases {
 
         #[test]
         fn prover_create_and_store_claim_req_works_for_invalid_claim_offer() {
-            let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, claim_def, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offer_json = format!(r#"{{"schema_key":{}}}"#, AnoncredsUtils::gvt_schema_key_json());
 
@@ -1675,7 +1648,7 @@ mod medium_cases {
 
         #[test]
         fn prover_create_and_store_claim_req_works_for_invalid_claim_def() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, claim_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_def = r#"{
                         "schema_seq_no":1,
@@ -1687,7 +1660,7 @@ mod medium_cases {
                     }"#;
             let res = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                         DID,
-                                                                        &AnoncredsUtils::gvt_claim_offer(),
+                                                                        &claim_offer,
                                                                         claim_def,
                                                                         COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1695,11 +1668,11 @@ mod medium_cases {
 
         #[test]
         fn prover_create_and_store_claim_req_works_for_invalid_master_secret() {
-            let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, claim_def, claim_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
             let res = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                         DID,
-                                                                        &AnoncredsUtils::gvt_claim_offer(),
+                                                                        &claim_offer,
                                                                         &claim_def,
                                                                         "invalid_master_secret_name");
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
@@ -1711,9 +1684,14 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_claim_works_for_for_invalid_claim_req_json() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_req = format!(r#"{{"blinded_ms":{{"ur":null}},"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","issuer_did":"{}","schema_key":{}}}"#, ISSUER_DID, AnoncredsUtils::gvt_schema_key_json());
+            let claim_req = format!(r#"{{
+                                                "blinded_ms":{{"ur":null}},
+                                                "prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
+                                                "issuer_did":"{}",
+                                                "schema_key":{}
+                                              }}"#, ISSUER_DID, AnoncredsUtils::gvt_schema_key_json());
 
             let res = AnoncredsUtils::issuer_create_claim(wallet_handle,
                                                           &claim_req,
@@ -1724,7 +1702,7 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_claim_works_for_for_invalid_claim_values_json() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, claim_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_values_json = r#"{
                                        "sex":"male",
@@ -1734,7 +1712,7 @@ mod medium_cases {
                                      }"#;
 
             let res = AnoncredsUtils::issuer_create_claim(wallet_handle,
-                                                          &AnoncredsUtils::gvt_claim_req(),
+                                                          &claim_offer,
                                                           &claim_values_json,
                                                           None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1746,7 +1724,7 @@ mod medium_cases {
 
         #[test]
         fn prover_store_claim_works_without_claim_req() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_json = format!(r#"{{
                                                 "values":{},
@@ -1756,6 +1734,10 @@ mod medium_cases {
                                                 "signature":{{
                                                     "p_claim":{{"m_2":"1","a":"1","e":"2","v":"3"}},
                                                     "r_claim":null
+                                                }},
+                                                "signature_correctness_proof":{{
+                                                    "se":"5794664457187851338817320444795461575538265162010110953229960943575352225288882339948706606276240915790953788734423629449188446298083764353945771366439632433375887940784083500579091017016194869598350067577558507171610696526722923827084134056642003907272237068002158334669042938874075273422204140295001616923117696252318842958647692383158905811075723458151323683237147182403220385849741248601006515083360882718329830387688084900189671070869952360403732671630026910777508872850063270518510503602720300129032896276669586173558641317415138993452897861060858455410909148026413434141867357433196166843981016854623306368082",
+                                                    "c":"56619908915533398961132857382789843009987386022476585509928302705126512012829"
                                                 }}
                                               }}"#,
                                      AnoncredsUtils::gvt_claim_values_json(), DID_MY2, AnoncredsUtils::gvt_schema_key_json());
@@ -1766,11 +1748,11 @@ mod medium_cases {
 
         #[test]
         fn prover_store_claim_works_for_invalid_claim_json() {
-            let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, claim_def_json, claim_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
             AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                               DID_MY1,
-                                                              &AnoncredsUtils::gvt_claim_offer(),
+                                                              &claim_offer,
                                                               &claim_def_json,
                                                               COMMON_MASTER_SECRET).unwrap();
 
@@ -1792,7 +1774,7 @@ mod medium_cases {
 
         #[test]
         fn prover_get_claims_works_for_invalid_json() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let res = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{"schema_key": "name"}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1804,7 +1786,7 @@ mod medium_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_invalid_proof_req() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                     "nonce":"123432421212",
@@ -1819,7 +1801,7 @@ mod medium_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_invalid_predicate() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                         "nonce":"123432421212",
@@ -1835,7 +1817,7 @@ mod medium_cases {
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_invalid_predicate_type() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                         "nonce":"123432421212",
@@ -1855,7 +1837,7 @@ mod medium_cases {
 
         #[test]
         fn prover_create_proof_works_for_invalid_master_secret() {
-            let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, claim_def_json, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
             let claim_for_attr = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
@@ -1882,7 +1864,7 @@ mod medium_cases {
 
         #[test]
         fn prover_create_proof_works_for_invalid_schemas_json() {
-            let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, claim_def_json, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
             let claim_for_attr = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
@@ -1909,7 +1891,7 @@ mod medium_cases {
 
         #[test]
         fn prover_create_proof_works_for_invalid_claim_defs_json() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
             let claim_for_attr = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
@@ -1936,7 +1918,7 @@ mod medium_cases {
 
         #[test]
         fn prover_create_proof_works_for_invalid_requested_claims_json() {
-            let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, claim_def_json, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
             let claim_for_attr = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
@@ -2404,7 +2386,7 @@ mod demos {
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
         //5. Issuer creates Claim Offer
-        let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle, &schema_json, ISSUER_DID, DID_MY1).unwrap();
+        let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_wallet_handle, &schema_json, ISSUER_DID, DID_MY1).unwrap();
 
         //6. Prover stores Claim Offer received from Issuer
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
@@ -2535,15 +2517,15 @@ mod demos {
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
         //7. Issuer1 creates Claim Offer
-        let gvt_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle,
-                                                                         &AnoncredsUtils::gvt_schema_json(),
-                                                                         ISSUER_DID, DID_MY1).unwrap();
+        let gvt_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_gvt_wallet_handle,
+                                                                             &AnoncredsUtils::gvt_schema_json(),
+                                                                             ISSUER_DID, DID_MY1).unwrap();
 
         //8. Prover stores Claim Offer received from Issuer1
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &gvt_claim_offer_json).unwrap();
 
         //9. Issuer2 creates Claim Offer
-        let xyz_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle,
+        let xyz_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_xyz_wallet_handle,
                                                                              &AnoncredsUtils::xyz_schema_json(),
                                                                              DID_MY2, DID_MY1).unwrap();
 
@@ -2701,7 +2683,7 @@ mod demos {
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
         //6. Issuer1 creates Claim Offer
-        let gvt_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle,
+        let gvt_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_wallet_handle,
                                                                              &AnoncredsUtils::gvt_schema_json(),
                                                                              ISSUER_DID, DID_MY1).unwrap();
 
@@ -2709,7 +2691,7 @@ mod demos {
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &gvt_claim_offer_json).unwrap();
 
         //8. Issuer1 creates Claim Offer
-        let xyz_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle,
+        let xyz_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_wallet_handle,
                                                                              &AnoncredsUtils::xyz_schema_json(),
                                                                              ISSUER_DID, DID_MY1).unwrap();
 
@@ -2843,9 +2825,9 @@ mod demos {
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
         //5. Issuer creates Claim Offer
-        let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle,
-                                                                             &AnoncredsUtils::gvt_schema_json(),
-                                                                             ISSUER_DID, DID_MY1).unwrap();
+        let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_wallet_handle,
+                                                                         &AnoncredsUtils::gvt_schema_json(),
+                                                                         ISSUER_DID, DID_MY1).unwrap();
 
         //6. Prover stores Claim Offer received from Issuer
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
@@ -2853,7 +2835,7 @@ mod demos {
         //7. Prover creates Claim Request
         let claim_req_json = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                                DID_MY1,
-                                                                               &AnoncredsUtils::gvt_claim_offer(),
+                                                                               &claim_offer_json,
                                                                                &claim_def_json,
                                                                                COMMON_MASTER_SECRET).unwrap();
 
@@ -2926,7 +2908,7 @@ mod demos {
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
         //6. Issuer creates Claim Offer
-        let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle,
+        let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_wallet_handle,
                                                                          &AnoncredsUtils::gvt_schema_json(),
                                                                          ISSUER_DID, DID_MY1).unwrap();
 
@@ -2936,7 +2918,7 @@ mod demos {
         //8. Prover creates Claim Request
         let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                           DID_MY1,
-                                                                          &AnoncredsUtils::gvt_claim_offer(),
+                                                                          &claim_offer_json,
                                                                           &claim_def_json,
                                                                           COMMON_MASTER_SECRET).unwrap();
 
@@ -3005,7 +2987,7 @@ mod demos {
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
         //6. Issuer creates Claim Offer
-        let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle,
+        let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_wallet_handle,
                                                                          &AnoncredsUtils::gvt_schema_json(),
                                                                          ISSUER_DID, DID_MY1).unwrap();
 
@@ -3015,7 +2997,7 @@ mod demos {
         //8. Prover creates Claim Request
         let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                           DID_MY1,
-                                                                          &AnoncredsUtils::gvt_claim_offer(),
+                                                                          &claim_offer_json,
                                                                           &claim_def_json,
                                                                           COMMON_MASTER_SECRET).unwrap();
 

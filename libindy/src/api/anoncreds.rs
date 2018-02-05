@@ -118,11 +118,18 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// command_handle: command handle to map callback to user context.
 /// schema_json: schema as a json
 /// issuer_did: a DID of the issuer created Claim definition
-/// prover_did: a DID of the destination prover
+/// prover_did: a DID of the target user
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// claim offer json: { issued DID, schema_key, nonce, key correctness proof, prover_did }
+/// claim offer json:
+///        {
+///            "issuer_did": string,
+///            "schema_key" : {name: string, version: string, did: string},
+///            "nonce": string,
+///            "key_correctness_proof" : <key_correctness_proof>,
+///            "prover_did": string
+///        }
 ///
 /// #Errors
 /// Common*
@@ -172,9 +179,11 @@ pub extern fn indy_issuer_create_and_store_claim_offer(command_handle: i32,
 ///     {
 ///      "blinded_ms" : <blinded_master_secret>,
 ///      "schema_key" : {name: string, version: string, did: string},
-///      "issuer_did" : string
-///      "prover_did" : string
-///     }
+///      "issuer_did" : string,
+///      "prover_did" : string,
+///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+///      "nonce": string
+///    }
 /// claim_values_json: a claim containing attribute values for each of requested attribute names.
 ///     Example:
 ///     {
@@ -193,7 +202,8 @@ pub extern fn indy_issuer_create_and_store_claim_offer(command_handle: i32,
 ///         "signature": <signature>,
 ///         "revoc_reg_seq_no": int,
 ///         "issuer_did", string,
-///         "schema_key" : {name: string, version: string, did: string}
+///         "schema_key" : {name: string, version: string, did: string},
+///         "signature_correctness_proof": <signature_correctness_proof>
 ///     }
 ///
 /// #Errors
@@ -289,12 +299,11 @@ pub extern fn indy_issuer_revoke_claim(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// claim_offer_json: claim offer as a json containing information about the issuer and a claim:
-///        { issued DID, schema_key, nonce, key correctness proof, prover_did }
 ///        {
 ///            "issuer_did": string,
 ///            "schema_key" : {name: string, version: string, did: string},
 ///            "nonce": string,
-///            "key_correctness_proof" : { ... },
+///            "key_correctness_proof" : <key_correctness_proof>,
 ///            "prover_did": string
 ///        }
 /// #Returns
@@ -342,8 +351,11 @@ pub extern fn indy_prover_store_claim_offer(command_handle: i32,
 /// A json with a list of claim offers for the filter.
 ///        {
 ///            [{
-///                 "issuer_did": string,
-///                 "schema_key" : {name: string, version: string, did: string}
+///            "issuer_did": string,
+///            "schema_key" : {name: string, version: string, did: string},
+///            "nonce": string,
+///            "key_correctness_proof" : <key_correctness_proof>,
+///            "prover_did": string
 ///            }]
 ///        }
 ///
@@ -427,7 +439,10 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 /// claim_offer_json: claim offer as a json containing information about the issuer and a claim:
 ///        {
 ///            "issuer_did": string,
-///            "schema_key" : {name: string, version: string, did: string}
+///            "schema_key" : {name: string, version: string, did: string},
+///            "nonce": string,
+///            "key_correctness_proof" : <key_correctness_proof>,
+///            "prover_did": string
 ///        }
 /// claim_def_json: claim definition json associated with issuer_did and schema_seq_no in the claim_offer
 /// master_secret_name: the name of the master secret stored in the wallet
@@ -439,8 +454,10 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 ///      "blinded_ms" : <blinded_master_secret>,
 ///      "schema_key" : {name: string, version: string, did: string},
 ///      "issuer_did" : string,
-///      "prover_did" : string
-///     }
+///      "prover_did" : string,
+///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+///      "nonce": string
+///    }
 ///
 /// #Errors
 /// Annoncreds*
@@ -491,11 +508,12 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
 /// command_handle: command handle to map callback to user context.
 /// claims_json: claim json:
 ///     {
-///         "claim": {attr1:[value, value_as_int]}
+///         "values": <see claim_values_json above>,
 ///         "signature": <signature>,
+///         "revoc_reg_seq_no": int,
+///         "issuer_did", string,
 ///         "schema_key" : {name: string, version: string, did: string},
-///         "revoc_reg_seq_no", int
-///         "issuer_did", string
+///         "signature_correctness_proof": <signature_correctness_proof>
 ///     }
 /// rev_reg_json: revocation registry json
 /// cb: Callback that takes command result as parameter.

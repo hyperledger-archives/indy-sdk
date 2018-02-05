@@ -139,9 +139,9 @@ impl ProverCommandExecutor {
 
         let claim_offer_jsons: Vec<(String, String)> = self.wallet_service.list(wallet_handle, &format!("claim_offer::"))?;
 
-        let mut claim_offers: Vec<ClaimOfferInfo> = Vec::new();
+        let mut claim_offers: Vec<ClaimOffer> = Vec::new();
         for &(ref id, ref claim_offer_json) in claim_offer_jsons.iter() {
-            claim_offers.push(ClaimOfferInfo::from_json(claim_offer_json)
+            claim_offers.push(ClaimOffer::from_json(claim_offer_json)
                 .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim offer: {:?}", err)))?);
         }
 
@@ -222,7 +222,7 @@ impl ProverCommandExecutor {
         }
 
         let (claim_request, claim_request_metadata) =
-            self.anoncreds_service.prover.new_claim_request(&claim_def.data, master_secret, &claim_offer, prover_did)?;
+            self.anoncreds_service.prover.new_claim_request(&claim_def.data, &master_secret, &claim_offer, prover_did)?;
 
         let claim_request_metadata_json = claim_request_metadata.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claim request metadata {:?}", err)))?;

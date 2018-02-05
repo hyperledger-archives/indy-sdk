@@ -21,7 +21,7 @@ impl Prover {
         Ok(CryptoProver::new_master_secret()?)
     }
 
-    pub fn new_claim_request(&self, claim_def_data: &ClaimDefinitionData, master_secret: MasterSecret, claim_offer: &ClaimOffer,
+    pub fn new_claim_request(&self, claim_def_data: &ClaimDefinitionData, master_secret: &MasterSecret, claim_offer: &ClaimOffer,
                              prover_did: &str) -> Result<(ClaimRequest, ClaimRequestMetadata), CommonError> {
         info!("new_claim_request >>> claim_def_data: {:?}, master_secret: {:?}, prover_did: {:?}",
               claim_def_data, master_secret, prover_did);
@@ -48,7 +48,7 @@ impl Prover {
         let claim_request_metadata = ClaimRequestMetadata {
             master_secret_blinding_data,
             nonce,
-            master_secret
+            master_secret: master_secret.clone()?
         };
 
         info!("new_claim_request <<< claim_request: {:?}, claim_request_metadata: {:?}", claim_request, claim_request_metadata);

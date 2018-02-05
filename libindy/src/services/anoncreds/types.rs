@@ -29,16 +29,6 @@ impl JsonEncodable for ClaimOffer {}
 
 impl<'a> JsonDecodable<'a> for ClaimOffer {}
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ClaimOfferInfo {
-    pub issuer_did: String,
-    pub schema_key: SchemaKey
-}
-
-impl JsonEncodable for ClaimOfferInfo {}
-
-impl<'a> JsonDecodable<'a> for ClaimOfferInfo {}
-
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
 pub struct Filter {
     pub issuer_did: Option<String>,
