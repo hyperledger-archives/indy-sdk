@@ -35,7 +35,7 @@ endnote
 === Create Claim Definition ==
 I -> IW: <b>1. indy_issuer_create_and_store_claim_def
 IW -[#green]> IW: store keys
-IW -> I: <claim_def, claim_def_uuid>
+IW -> I: <claim_def, claim_def_referent>
 
 I-[#blue]>L: send CLAIM_DEF txn
 L-[#blue]>I: <claim definitions's seq_no>
@@ -48,7 +48,7 @@ IW -[#green]> IW: update claim_def seq_no
 I -> IW: <b>3. indy_issuer_create_and_store_revoc_reg
 IW -[#green]> IW: get keys
 IW -[#green]> IW: store revoc reg
-IW -> I: <revoc_reg, revoc_reg_uuid>
+IW -> I: <revoc_reg, revoc_reg_referent>
 
 I-[#blue]>L: send REVOC_REG txn
 L-[#blue]>I: <revoc_reg's seq_no>

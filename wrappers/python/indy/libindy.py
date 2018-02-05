@@ -65,19 +65,22 @@ def _indy_loop_callback(command_handle: int, err, *args):
 
     (event_loop, future) = _futures.pop(command_handle)
 
-    if err != ErrorCode.Success:
-        logger.warning("_indy_loop_callback: Function returned error %i", err)
-        future.set_exception(IndyError(ErrorCode(err)))
+    if future.cancelled():
+        logger.debug("_indy_loop_callback: Future was cancelled earlier")
     else:
-        if len(args) == 0:
-            res = None
-        elif len(args) == 1:
-            (res,) = args
+        if err != ErrorCode.Success:
+            logger.warning("_indy_loop_callback: Function returned error %i", err)
+            future.set_exception(IndyError(ErrorCode(err)))
         else:
-            res = args
+            if len(args) == 0:
+                res = None
+            elif len(args) == 1:
+                (res,) = args
+            else:
+                res = args
 
-        logger.warning("_indy_loop_callback: Function returned %s", res)
-        future.set_result(res)
+            logger.debug("_indy_loop_callback: Function returned %s", res)
+            future.set_result(res)
 
     logger.debug("_indy_loop_callback <<<")
 

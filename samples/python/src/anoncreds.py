@@ -12,15 +12,24 @@ async def demo():
     logger.info("Anoncreds sample -> started")
 
     pool_name = 'pool1'
-    wallet_name = 'wallet1'
+    issuer_wallet_name = 'issuer_wallet'
+    prover_wallet_name = 'prover_wallet'
+    seq_no = 1
+    issuer_did = 'NcYxiDXkpYi6ov5FcYDi1e'
+    prover_did = 'VsKV7grR1BUE29mG2Fm2kX'
 
-    # 1. Create My Wallet and Get Wallet Handle
-    await wallet.create_wallet(pool_name, wallet_name, None, None, None)
-    wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+    # 1. Create Issuer Wallet and Get Wallet Handle
+    await wallet.create_wallet(pool_name, issuer_wallet_name, None, None, None)
+    issuer_wallet = await wallet.open_wallet(issuer_wallet_name, None, None)
 
-    # 2. Issuer create Claim Definition for Schema
+    # 2. Create Prover Wallet and Get Wallet Handle
+    await wallet.create_wallet(pool_name, prover_wallet_name, None, None, None)
+    prover_wallet = await wallet.open_wallet(prover_wallet_name, None, None)
+
+    # 3. Issuer create Claim Definition for Schema
     schema = {
-        'seqNo': 1,
+        'seqNo': seq_no,
+        'dest': issuer_did,
         'data': {
             'name': 'gvt',
             'version': '1.0',
@@ -28,24 +37,29 @@ async def demo():
         }
     }
     schema_json = json.dumps(schema)
+    schema_key = {
+        'name': schema['data']['name'],
+        'version': schema['data']['version'],
+        'did': schema['dest'],
+    }
 
     claim_def_json = \
-        await anoncreds.issuer_create_and_store_claim_def(wallet_handle,
-                                                          'NcYxiDXkpYi6ov5FcYDi1e', schema_json, 'CL', False)
+        await anoncreds.issuer_create_and_store_claim_def(issuer_wallet, issuer_did, schema_json, 'CL', False)
 
-    # 3. Prover create Master Secret
-    await anoncreds.prover_create_master_secret(wallet_handle, 'master_secret')
+    # 4. Prover create Master Secret
+    master_secret_name = 'master_secret'
+    await anoncreds.prover_create_master_secret(prover_wallet, master_secret_name)
 
-    # 4. Prover create Claim Request
+    # 5. Prover create Claim Request
     claim_offer_json = json.dumps({
-        'issuer_did': 'NcYxiDXkpYi6ov5FcYDi1e',
-        'schema_seq_no': 1
+        'issuer_did': issuer_did,
+        'schema_key': schema_key
     })
 
-    claim_req_json = await anoncreds.prover_create_and_store_claim_req(wallet_handle, 'BzfFCYk', claim_offer_json,
-                                                                       claim_def_json, 'master_secret')
+    claim_req_json = await anoncreds.prover_create_and_store_claim_req(prover_wallet, prover_did, claim_offer_json,
+                                                                       claim_def_json, master_secret_name)
 
-    # 5. Issuer create Claim for Claim Request
+    # 6. Issuer create Claim for Claim Request
     claim_json = json.dumps({
         'sex': ['male', '5944657099558967239210949258394887428692050081607692519917050011144233115103'],
         'name': ['Alex', '1139481716457488690172217916278103335'],
@@ -53,55 +67,68 @@ async def demo():
         'age': ['28', '28']
     })
 
-    (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req_json, claim_json, -1)
+    (_, claim_json) = await anoncreds.issuer_create_claim(issuer_wallet, claim_req_json, claim_json, -1)
 
-    # 6. Prover process and store Claim
-    await anoncreds.prover_store_claim(wallet_handle, claim_json)
+    # 7. Prover process and store Claim
+    await anoncreds.prover_store_claim(prover_wallet, claim_json, None)
 
-    # 7. Prover gets Claims for Proof Request
+    # 8. Prover gets Claims for Proof Request
     proof_req_json = json.dumps({
         'nonce': '123432421212',
         'name': 'proof_req_1',
         'version': '0.1',
         'requested_attrs': {
-            'attr1_uuid': {'schema_seq_no': 1, 'name': 'name'}
+            'attr1_referent': {
+                'name': 'name',
+                'restrictions': [{
+                    'issuer_did': issuer_did,
+                    'schema_key': schema_key
+                }]
+            }
         },
         'requested_predicates': {
-            'predicate1_uuid': {'attr_name': 'age', 'p_type': 'GE', 'value': 18}
+            'predicate1_referent': {
+                'attr_name': 'age',
+                'p_type': '>=',
+                'value': 18,
+                'restrictions': [{'issuer_did': issuer_did}]
+            }
         }
     })
 
-    claim_for_proof_json = await anoncreds.prover_get_claims_for_proof_req(wallet_handle, proof_req_json)
-    claims_for_proof = json.loads(claim_for_proof_json)
+    claim_for_proof_request_json = await anoncreds.prover_get_claims_for_proof_req(prover_wallet, proof_req_json)
+    claims_for_proof = json.loads(claim_for_proof_request_json)
 
-    claim_for_attr1 = claims_for_proof['attrs']['attr1_uuid']
-    claim_uuid = claim_for_attr1[0]['claim_uuid']
+    claim_for_attr1 = claims_for_proof['attrs']['attr1_referent']
+    referent = claim_for_attr1[0]['referent']
 
-    # 8. Prover create Proof for Proof Request
+    # 9. Prover create Proof for Proof Request
     requested_claims_json = json.dumps({
         'self_attested_attributes': {},
-        'requested_attrs': {'attr1_uuid': [claim_uuid, True]},
-        'requested_predicates': {'predicate1_uuid': claim_uuid}
+        'requested_attrs': {'attr1_referent': [referent, True]},
+        'requested_predicates': {'predicate1_referent': referent}
     })
 
-    schemas_json = json.dumps({claim_uuid: schema})
-    claim_defs_json = json.dumps({claim_uuid: json.loads(claim_def_json)})
+    schemas_json = json.dumps({referent: schema})
+    claim_defs_json = json.dumps({referent: json.loads(claim_def_json)})
     revoc_regs_json = json.dumps({})
 
-    proof_json = await anoncreds.prover_create_proof(wallet_handle, proof_req_json, requested_claims_json, schemas_json,
+    proof_json = await anoncreds.prover_create_proof(prover_wallet, proof_req_json, requested_claims_json, schemas_json,
                                                      'master_secret', claim_defs_json, revoc_regs_json)
     proof = json.loads(proof_json)
 
-    assert 'Alex' == proof['requested_proof']['revealed_attrs']['attr1_uuid'][1]
+    assert 'Alex' == proof['requested_proof']['revealed_attrs']['attr1_referent'][1]
 
-    # 9. Verifier verify proof
+    # 10. Verifier verify proof
     assert await anoncreds.verifier_verify_proof(proof_req_json, proof_json, schemas_json, claim_defs_json,
                                                  revoc_regs_json)
 
-    # 10. Close wallet
-    await wallet.close_wallet(wallet_handle)
+    # 11. Close and delete Issuer wallet
+    await wallet.close_wallet(issuer_wallet)
+    await wallet.delete_wallet(issuer_wallet_name, None)
 
-    # 11. Delete wallet
-    await wallet.delete_wallet(wallet_name, None)
+    # 12. Close and delete Prover wallet
+    await wallet.close_wallet(prover_wallet)
+    await wallet.delete_wallet(prover_wallet_name, None)
 
     logger.info("Anoncreds sample -> completed")

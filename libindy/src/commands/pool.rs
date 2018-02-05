@@ -19,7 +19,9 @@ pub enum PoolCommand {
          Option<String>, // config
          Box<Fn(Result<i32, IndyError>) + Send>),
     OpenAck(i32, // cmd id
-            Result<i32 /* pool handle */, PoolError>),
+            i32, // pool handle
+            Result<() /* pool handle */, PoolError>),
+    List(Box<Fn(Result<String, IndyError>) + Send>),
     Close(i32, // pool handle
           Box<Fn(Result<(), IndyError>) + Send>),
     CloseAck(i32,
@@ -40,7 +42,7 @@ pub struct PoolCommandExecutor {
 impl PoolCommandExecutor {
     pub fn new(pool_service: Rc<PoolService>) -> PoolCommandExecutor {
         PoolCommandExecutor {
-            pool_service: pool_service,
+            pool_service,
             close_callbacks: RefCell::new(HashMap::new()),
             refresh_callbacks: RefCell::new(HashMap::new()),
             open_callbacks: RefCell::new(HashMap::new()),
@@ -62,20 +64,30 @@ impl PoolCommandExecutor {
                 info!(target: "pool_command_executor", "Open command received");
                 self.open(&name, config.as_ref().map(String::as_str), cb);
             }
-            PoolCommand::OpenAck(handle, result) => {
-                info!("OpenAck handle {:?}, result {:?}", handle, result);
+            PoolCommand::OpenAck(handle, pool_id, result) => {
+                info!("OpenAck handle {:?}, pool_id {:?}, result {:?}", handle, pool_id, result);
                 match self.open_callbacks.try_borrow_mut() {
                     Ok(mut cbs) => {
                         match cbs.remove(&handle) {
-                            Some(cb) => cb(result.map_err(IndyError::from)),
+                            Some(cb) => {
+                                cb(result
+                                    .and_then(|_|
+                                        self.pool_service.add_open_pool(pool_id)
+                                            .map_err(PoolError::from))
+                                    .map_err(IndyError::from))
+                            }
                             None => {
                                 error!("Can't process PoolCommand::OpenAck for handle {} with result {:?} - appropriate callback not found!",
-                                handle, result);
+                                       handle, result);
                             }
                         }
                     }
                     Err(err) => { error!("{:?}", err); }
                 }
+            }
+            PoolCommand::List(cb) => {
+                info!(target: "pool_command_executor", "List command received");
+                self.list(cb);
             }
             PoolCommand::Close(handle, cb) => {
                 info!(target: "pool_command_executor", "Close command received");
@@ -89,7 +101,7 @@ impl PoolCommandExecutor {
                             Some(cb) => cb(result.map_err(IndyError::from)),
                             None => {
                                 error!("Can't process PoolCommand::CloseAck for handle {} with result {:?} - appropriate callback not found!",
-                                handle, result);
+                                       handle, result);
                             }
                         }
                     }
@@ -108,7 +120,7 @@ impl PoolCommandExecutor {
                             Some(cb) => cb(result.map_err(IndyError::from)),
                             None => {
                                 error!("Can't process PoolCommand::RefreshAck for handle {} with result {:?} - appropriate callback not found!",
-                                handle, result);
+                                       handle, result);
                             }
                         }
                     }
@@ -139,6 +151,14 @@ impl PoolCommandExecutor {
             Err(err) => { cb(Err(err)); }
             Ok((mut cbs, handle)) => { cbs.insert(handle, cb); /* TODO check if map contains same key */ }
         };
+    }
+
+    fn list(&self, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        let res = self.pool_service.list()
+            .and_then(|pools| ::serde_json::to_string(&pools).map_err(|err|
+                PoolError::CommonError(CommonError::InvalidState(format!("Can't serialize pools list {}", err)))))
+            .map_err(IndyError::from);
+        cb(res)
     }
 
     fn close(&self, handle: i32, cb: Box<Fn(Result<(), IndyError>) + Send>) {

@@ -1,20 +1,14 @@
+extern crate serde;
 extern crate serde_json;
+extern crate indy_crypto;
 
-use services::anoncreds::types::{PublicKey, RevocationPublicKey};
-use utils::json::{JsonEncodable, JsonDecodable};
-use services::ledger::constants::{
-    NODE,
-    NYM,
-    ATTRIB,
-    SCHEMA,
-    GET_ATTR,
-    GET_DDO,
-    GET_NYM,
-    GET_SCHEMA,
-    CLAIM_DEF,
-    GET_CLAIM_DEF,
-    GET_TXN
-};
+use services::ledger::constants::*;
+
+use self::indy_crypto::cl::*;
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+
+use std::collections::HashMap;
+
 
 #[derive(Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -30,10 +24,10 @@ pub struct Request<T: serde::Serialize> {
 impl<T: serde::Serialize> Request<T> {
     fn new(req_id: u64, identifier: String, operation: T, protocol_version: u64) -> Request<T> {
         Request {
-            req_id: req_id,
-            identifier: identifier,
-            operation: operation,
-            protocol_version: protocol_version,
+            req_id,
+            identifier,
+            operation,
+            protocol_version,
             signature: None
         }
     }
@@ -62,10 +56,10 @@ impl NymOperation {
                alias: Option<String>, role: Option<String>) -> NymOperation {
         NymOperation {
             _type: NYM.to_string(),
-            dest: dest,
-            verkey: verkey,
-            alias: alias,
-            role: role
+            dest,
+            verkey,
+            alias,
+            role
         }
     }
 }
@@ -83,7 +77,7 @@ impl GetNymOperation {
     pub fn new(dest: String) -> GetNymOperation {
         GetNymOperation {
             _type: GET_NYM.to_string(),
-            dest: dest
+            dest
         }
     }
 }
@@ -108,10 +102,10 @@ impl AttribOperation {
                enc: Option<String>) -> AttribOperation {
         AttribOperation {
             _type: ATTRIB.to_string(),
-            dest: dest,
-            hash: hash,
-            raw: raw,
-            enc: enc,
+            dest,
+            hash,
+            raw,
+            enc,
         }
     }
 }
@@ -131,8 +125,8 @@ impl GetAttribOperation {
     pub fn new(dest: String, raw: String) -> GetAttribOperation {
         GetAttribOperation {
             _type: GET_ATTR.to_string(),
-            dest: dest,
-            raw: raw
+            dest,
+            raw
         }
     }
 }
@@ -149,7 +143,7 @@ pub struct SchemaOperation {
 impl SchemaOperation {
     pub fn new(data: SchemaOperationData) -> SchemaOperation {
         SchemaOperation {
-            data: data,
+            data,
             _type: SCHEMA.to_string()
         }
     }
@@ -167,8 +161,8 @@ pub struct SchemaOperationData {
 impl SchemaOperationData {
     pub fn new(name: String, version: String, keys: Vec<String>) -> SchemaOperationData {
         SchemaOperationData {
-            name: name,
-            version: version,
+            name,
+            version,
             attr_names: keys
         }
     }
@@ -190,8 +184,8 @@ impl GetSchemaOperation {
     pub fn new(dest: String, data: GetSchemaOperationData) -> GetSchemaOperation {
         GetSchemaOperation {
             _type: GET_SCHEMA.to_string(),
-            dest: dest,
-            data: data
+            dest,
+            data
         }
     }
 }
@@ -219,8 +213,8 @@ pub struct GetSchemaOperationData {
 impl GetSchemaOperationData {
     pub fn new(name: String, version: String) -> GetSchemaOperationData {
         GetSchemaOperationData {
-            name: name,
-            version: version
+            name,
+            version
         }
     }
 }
@@ -242,9 +236,9 @@ pub struct ClaimDefOperation {
 impl ClaimDefOperation {
     pub fn new(_ref: i32, signature_type: String, data: ClaimDefOperationData) -> ClaimDefOperation {
         ClaimDefOperation {
-            _ref: _ref,
-            signature_type: signature_type,
-            data: data,
+            _ref,
+            signature_type,
+            data,
             _type: CLAIM_DEF.to_string()
         }
     }
@@ -254,35 +248,19 @@ impl JsonEncodable for ClaimDefOperation {}
 
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct ClaimDefOperationData {
-    pub primary: PublicKey,
-    #[serde(serialize_with = "empty_map_instead_of_null")] //FIXME
-    pub revocation: Option<RevocationPublicKey>
+    pub primary: IssuerPrimaryPublicKey,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub revocation: Option<IssuerRevocationPublicKey>
 }
 
 impl ClaimDefOperationData {
-    pub fn new(primary: PublicKey, revocation: Option<RevocationPublicKey>) -> ClaimDefOperationData {
+    pub fn new(primary: IssuerPrimaryPublicKey, revocation: Option<IssuerRevocationPublicKey>) -> ClaimDefOperationData {
         ClaimDefOperationData {
-            primary: primary,
-            revocation: revocation
+            primary,
+            revocation
         }
     }
 }
-
-//FIXME workaround for ledger: serialize required dictionary as empty instead of using null
-extern crate serde;
-
-use self::serde::Serializer;
-use self::serde::ser::SerializeMap;
-
-fn empty_map_instead_of_null<S>(x: &Option<RevocationPublicKey>, s: S) -> Result<S::Ok, S::Error>
-    where S: Serializer {
-    if let &Some(ref x) = x {
-        s.serialize_some(&x)
-    } else {
-        s.serialize_map(None)?.end()
-    }
-}
-//FIXME
 
 impl JsonEncodable for ClaimDefOperationData {}
 
@@ -302,9 +280,9 @@ impl GetClaimDefOperation {
     pub fn new(_ref: i32, signature_type: String, origin: String) -> GetClaimDefOperation {
         GetClaimDefOperation {
             _type: GET_CLAIM_DEF.to_string(),
-            _ref: _ref,
-            signature_type: signature_type,
-            origin: origin
+            _ref,
+            signature_type,
+            origin
         }
     }
 }
@@ -323,8 +301,8 @@ impl NodeOperation {
     pub fn new(dest: String, data: NodeOperationData) -> NodeOperation {
         NodeOperation {
             _type: NODE.to_string(),
-            dest: dest,
-            data: data
+            dest,
+            data
         }
     }
 }
@@ -339,27 +317,19 @@ pub enum Services {
 
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct NodeOperationData {
-    pub node_ip: String,
-    pub node_port: i32,
-    pub client_ip: String,
-    pub client_port: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub node_ip: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub node_port: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_ip: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_port: Option<i32>,
     pub alias: String,
-    pub services: Vec<Services>,
-    pub blskey: String
-}
-
-impl NodeOperationData {
-    pub fn new(node_ip: String, node_port: i32, client_ip: String, client_port: i32, alias: String, services: Vec<Services>, blskey: String) -> NodeOperationData {
-        NodeOperationData {
-            node_ip: node_ip,
-            node_port: node_port,
-            client_ip: client_ip,
-            client_port: client_port,
-            alias: alias,
-            services: services,
-            blskey: blskey
-        }
-    }
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub services: Option<Vec<Services>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blskey: Option<String>
 }
 
 impl JsonEncodable for NodeOperationData {}
@@ -377,7 +347,7 @@ impl GetDdoOperation {
     pub fn new(dest: String) -> GetDdoOperation {
         GetDdoOperation {
             _type: GET_DDO.to_string(),
-            dest: dest
+            dest
         }
     }
 }
@@ -395,7 +365,7 @@ impl GetTxnOperation {
     pub fn new(data: i32) -> GetTxnOperation {
         GetTxnOperation {
             _type: GET_TXN.to_string(),
-            data: data
+            data
         }
     }
 }
@@ -460,14 +430,14 @@ impl<'a> JsonDecodable<'a> for AttribData {}
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Endpoint {
     pub ha: String,
-    pub verkey: String
+    pub verkey: Option<String>
 }
 
 impl Endpoint {
-    pub fn new(ha: String, verkey: String) -> Endpoint {
+    pub fn new(ha: String, verkey: Option<String>) -> Endpoint {
         Endpoint {
-            ha: ha,
-            verkey: verkey
+            ha,
+            verkey
         }
     }
 }
@@ -476,3 +446,61 @@ impl JsonEncodable for Endpoint {}
 
 impl<'a> JsonDecodable<'a> for Endpoint {}
 
+#[derive(Serialize, PartialEq, Debug)]
+pub struct PoolConfigOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub writes: bool,
+    pub force: bool
+}
+
+impl PoolConfigOperation {
+    pub fn new(writes: bool, force: bool) -> PoolConfigOperation {
+        PoolConfigOperation {
+            _type: POOL_CONFIG.to_string(),
+            writes,
+            force
+        }
+    }
+}
+
+impl JsonEncodable for PoolConfigOperation {}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct PoolUpgradeOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub name: String,
+    pub version: String,
+    pub action: String,
+    //start, cancel
+    pub sha256: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timeout: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub schedule: Option<HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub justification: Option<String>,
+    pub reinstall: bool,
+    pub force: bool
+}
+
+impl PoolUpgradeOperation {
+    pub fn new(name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<HashMap<String, String>>,
+               justification: Option<&str>, reinstall: bool, force: bool) -> PoolUpgradeOperation {
+        PoolUpgradeOperation {
+            _type: POOL_UPGRADE.to_string(),
+            name: name.to_string(),
+            version: version.to_string(),
+            action: action.to_string(),
+            sha256: sha256.to_string(),
+            timeout,
+            schedule,
+            justification: justification.map(String::from),
+            reinstall,
+            force
+        }
+    }
+}
+
+impl JsonEncodable for PoolUpgradeOperation {}

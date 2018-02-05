@@ -13,7 +13,6 @@ use self::libc::c_char;
 
 /// Create keys (both primary and revocation) for the given schema and signature type (currently only CL signature type is supported).
 /// Store the keys together with signature type and schema in a secure wallet as a claim definition.
-/// The claim definition in the wallet is identifying by a returned unique key.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
@@ -26,7 +25,6 @@ use self::libc::c_char;
 ///
 /// #Returns
 /// claim definition json containing information about signature type, schema and issuer's public key.
-/// Unique number identifying the public key in the wallet
 ///
 /// #Errors
 /// Common*
@@ -65,19 +63,18 @@ pub extern fn indy_issuer_create_and_store_claim_def(command_handle: i32,
 }
 
 /// Create a new revocation registry for the given claim definition.
-/// Stores it in a secure wallet identifying by the returned key.
+/// Stores it in a secure wallet.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing revoc_reg transaction to the Ledger
-/// schema_seq_no: seq no of a schema transaction in Ledger
+/// schema_json: schema as a json
 /// max_claim_num: maximum number of claims the new registry can process.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Revoc registry json
-/// Unique number identifying the revocation registry in the wallet
+/// Revocation registry json
 ///
 /// #Errors
 /// Common*
@@ -87,12 +84,13 @@ pub extern fn indy_issuer_create_and_store_claim_def(command_handle: i32,
 pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                                                      wallet_handle: i32,
                                                      issuer_did: *const c_char,
-                                                     schema_seq_no: i32,
-                                                     max_claim_num: i32,
+                                                     schema_json: *const c_char,
+                                                     max_claim_num: u32,
                                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                           revoc_reg_json: *const c_char
                                                      )>) -> ErrorCode {
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
@@ -101,7 +99,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                 IssuerCommand::CreateAndStoreRevocationRegistry(
                     wallet_handle,
                     issuer_did,
-                    schema_seq_no,
+                    schema_json,
                     max_claim_num,
                     Box::new(move |result| {
                         let (err, revoc_reg_json) = result_to_err_code_1!(result, String::new());
@@ -113,7 +111,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Signs a given claim for the given user by a given key (claim ef).
+/// Signs a given claim values for the given user by a given key (claim def).
 /// The corresponding claim definition and revocation registry must be already created
 /// an stored into the wallet.
 ///
@@ -121,15 +119,16 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// claim_req_json: a claim request with a blinded secret
-///     from the user (returned by prover_create_and_store_claim_req).
-///     Also contains schema_seq_no and issuer_did
+/// from the user (returned by prover_create_and_store_claim_req).
+/// Also contains schema_key and issuer_did
 ///     Example:
 ///     {
 ///      "blinded_ms" : <blinded_master_secret>,
-///      "schema_seq_no" : <schema_seq_no>,
-///      "issuer_did" : <issuer_did>
+///      "schema_key" : {name: string, version: string, did: string},
+///      "issuer_did" : string
+///      "prover_did" : string
 ///     }
-/// claim_json: a claim containing attribute values for each of requested attribute names.
+/// claim_values_json: a claim containing attribute values for each of requested attribute names.
 ///     Example:
 ///     {
 ///      "attr1" : ["value1", "value1_as_int"],
@@ -140,14 +139,14 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 ///
 /// #Returns
 /// Revocation registry update json with a newly issued claim
-/// Claim json containing issued claim, issuer_did, schema_seq_no, and revoc_reg_seq_no
+/// Claim json containing signed claim values, issuer_did, schema_key, and revoc_reg_seq_no
 /// used for issuance
 ///     {
-///         "claim": <see claim_json above>,
+///         "values": <see claim_values_json above>,
 ///         "signature": <signature>,
-///         "revoc_reg_seq_no", string,
+///         "revoc_reg_seq_no": int,
 ///         "issuer_did", string,
-///         "schema_seq_no", string,
+///         "schema_key" : {name: string, version: string, did: string}
 ///     }
 ///
 /// #Errors
@@ -158,36 +157,36 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 pub extern fn indy_issuer_create_claim(command_handle: i32,
                                        wallet_handle: i32,
                                        claim_req_json: *const c_char,
-                                       claim_json: *const c_char,
+                                       claim_values_json: *const c_char,
                                        user_revoc_index: i32,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             revoc_reg_update_json: *const c_char, //TODO must be OPTIONAL
-                                                            xclaim_json: *const c_char
+                                                            claim_json: *const c_char
                                        )>) -> ErrorCode {
     check_useful_c_str!(claim_req_json, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(claim_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(claim_values_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    let user_revoc_index = if user_revoc_index != -1 { Some(user_revoc_index) } else { None };
+    let user_revoc_index = if user_revoc_index != -1 { Some(user_revoc_index as u32) } else { None };
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateClaim(
             wallet_handle,
             claim_req_json,
-            claim_json,
+            claim_values_json,
             user_revoc_index,
             Box::new(move |result| {
-                let (err, revoc_reg_update_json, xclaim_json) = result_to_err_code_2!(result, String::new(), String::new());
+                let (err, revoc_reg_update_json, claim_json) = result_to_err_code_2!(result, String::new(), String::new());
                 let revoc_reg_update_json = CStringUtils::string_to_cstring(revoc_reg_update_json);
-                let xclaim_json = CStringUtils::string_to_cstring(xclaim_json);
-                cb(command_handle, err, revoc_reg_update_json.as_ptr(), xclaim_json.as_ptr())
+                let claim_json = CStringUtils::string_to_cstring(claim_json);
+                cb(command_handle, err, revoc_reg_update_json.as_ptr(), claim_json.as_ptr())
             })
         ))));
 
     result_to_err_code!(result)
 }
 
-/// Revokes a user identified by a revoc_id in a given revoc-registry.
+/// Revokes a user identified by a user_revoc_index in a given revoc-registry.
 /// The corresponding claim definition and revocation registry must be already
 /// created an stored into the wallet.
 ///
@@ -195,7 +194,7 @@ pub extern fn indy_issuer_create_claim(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// issuer_did: a DID of the issuer signing claim_def transaction to the Ledger
-/// schema_seq_no: seq no of a schema transaction in Ledger
+/// schema_json: schema as a json
 /// user_revoc_index: index of the user in the revocation registry
 /// cb: Callback that takes command result as parameter.
 ///
@@ -210,12 +209,13 @@ pub extern fn indy_issuer_create_claim(command_handle: i32,
 pub extern fn indy_issuer_revoke_claim(command_handle: i32,
                                        wallet_handle: i32,
                                        issuer_did: *const c_char,
-                                       schema_seq_no: i32,
-                                       user_revoc_index: i32,
+                                       schema_json: *const c_char,
+                                       user_revoc_index: u32,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             revoc_reg_update_json: *const c_char,
                                        )>) -> ErrorCode {
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
@@ -224,7 +224,7 @@ pub extern fn indy_issuer_revoke_claim(command_handle: i32,
                 IssuerCommand::RevokeClaim(
                     wallet_handle,
                     issuer_did,
-                    schema_seq_no,
+                    schema_json,
                     user_revoc_index,
                     Box::new(move |result| {
                         let (err, revoc_reg_update_json) = result_to_err_code_1!(result, String::new());
@@ -244,7 +244,7 @@ pub extern fn indy_issuer_revoke_claim(command_handle: i32,
 /// claim_offer_json: claim offer as a json containing information about the issuer and a claim:
 ///        {
 ///            "issuer_did": string,
-///            "schema_seq_no": string
+///            "schema_key" : {name: string, version: string, did: string}
 ///        }
 ///
 /// #Returns
@@ -284,15 +284,17 @@ pub extern fn indy_prover_store_claim_offer(command_handle: i32,
 /// filter_json: optional filter to get claim offers for specific Issuer, claim_def or schema only only
 ///     Each of the filters is optional and can be combines
 ///        {
-///            "issuer_did": string,
-///            "schema_seq_no": string
+///            "issuer_did": string, (Optional)
+///            "schema_key" : {name: string (Optional), version: string (Optional), did: string(Optional) }  (Optional)
 ///        }
 ///
 /// #Returns
 /// A json with a list of claim offers for the filter.
 ///        {
-///            [{"issuer_did": string,
-///            "schema_seq_no": string}]
+///            [{
+///                 "issuer_did": string,
+///                 "schema_key" : {name: string, version: string, did: string}
+///            }]
 ///        }
 ///
 /// #Errors
@@ -363,9 +365,8 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 
 /// Creates a clam request json for the given claim offer and stores it in a secure wallet.
 /// The claim offer contains the information about Issuer (DID, schema_seq_no),
-/// and the schema (schema_seq_no).
-/// The method gets public key and schema from the ledger, stores them in a wallet,
-/// and creates a blinded master secret for a master secret identified by a provided name.
+/// and the schema (schema_key).
+/// The method creates a blinded master secret for a master secret identified by a provided name.
 /// The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
 /// The blinded master secret is a part of the claim request.
 ///
@@ -376,7 +377,7 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 /// claim_offer_json: claim offer as a json containing information about the issuer and a claim:
 ///        {
 ///            "issuer_did": string,
-///            "schema_seq_no": string
+///            "schema_key" : {name: string, version: string, did: string}
 ///        }
 /// claim_def_json: claim definition json associated with issuer_did and schema_seq_no in the claim_offer
 /// master_secret_name: the name of the master secret stored in the wallet
@@ -386,8 +387,9 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 /// Claim request json.
 ///     {
 ///      "blinded_ms" : <blinded_master_secret>,
-///      "schema_seq_no" : <schema_seq_no>,
-///      "issuer_did" : <issuer_did>
+///      "schema_key" : {name: string, version: string, did: string},
+///      "issuer_did" : string,
+///      "prover_did" : string
 ///     }
 ///
 /// #Errors
@@ -429,7 +431,7 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
 
 /// Updates the claim by a master secret and stores in a secure wallet.
 /// The claim contains the information about
-/// schema_seq_no, issuer_did, revoc_reg_seq_no (see issuer_create_claim).
+/// schema_key, issuer_did, revoc_reg_seq_no (see issuer_create_claim).
 /// Seq_no is a sequence number of the corresponding transaction in the ledger.
 /// The method loads a blinded secret for this key from the wallet,
 /// updates the claim and stores it in a wallet.
@@ -441,10 +443,11 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
 ///     {
 ///         "claim": {attr1:[value, value_as_int]}
 ///         "signature": <signature>,
-///         "schema_seq_no": string,
-///         "revoc_reg_seq_no", string
+///         "schema_key" : {name: string, version: string, did: string},
+///         "revoc_reg_seq_no", int
 ///         "issuer_did", string
 ///     }
+/// rev_reg_json: revocation registry json
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -458,16 +461,19 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
 pub extern fn indy_prover_store_claim(command_handle: i32,
                                       wallet_handle: i32,
                                       claims_json: *const c_char,
+                                      rev_reg_json: *const c_char,
                                       cb: Option<extern fn(
                                           xcommand_handle: i32, err: ErrorCode
                                       )>) -> ErrorCode {
     check_useful_c_str!(claims_json, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(rev_reg_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::StoreClaim(
             wallet_handle,
             claims_json,
+            rev_reg_json,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
                 cb(command_handle, err)
@@ -486,19 +492,19 @@ pub extern fn indy_prover_store_claim(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// filter_json: filter for claims
 ///     {
-///         "issuer_did": string,
-///         "schema_seq_no": string
+///         "issuer_did": string (Optional),
+///         "schema_key" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
 /// claims json
 ///     [{
-///         "claim_uuid": <string>,
-///         "attrs": [{"attr_name" : "attr_value"}],
-///         "schema_seq_no": string,
+///         "referent": <string>,
+///         "attrs": [{"attr_name" : "attr_raw_value"}],
+///         "schema_key" : {name: string, version: string, did: string},
 ///         "issuer_did": string,
-///         "revoc_reg_seq_no": string,
+///         "revoc_reg_seq_no": int,
 ///     }]
 /// #Errors
 /// Annoncreds*
@@ -538,30 +544,54 @@ pub extern fn indy_prover_get_claims(command_handle: i32,
 ///         "name": string,
 ///         "version": string,
 ///         "nonce": string,
-///         "requested_attr1_uuid": <attr_info>,
-///         "requested_attr2_uuid": <attr_info>,
-///         "requested_attr3_uuid": <attr_info>,
-///         "requested_predicate_1_uuid": <predicate_info>,
-///         "requested_predicate_2_uuid": <predicate_info>,
+///         "requested_attr1_referent": <attr_info>,
+///         "requested_attr2_referent": <attr_info>,
+///         "requested_attr3_referent": <attr_info>,
+///         "requested_predicate_1_referent": <predicate_info>,
+///         "requested_predicate_2_referent": <predicate_info>,
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
+/// where attr_info:
+///     {
+///         "name": attribute name, (case insensitive and ignore spaces)
+///         "restrictions": [
+///             {
+///                 "schema_key" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)
+///                 "issuer_did": string (Optional)
+///             }
+///         ]  (Optional) - if specified, claim must be created for one of the given
+///                         schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
+///     }
+/// predicate_info:
+///     {
+///         "attr_name": attribute name, (case insensitive and ignore spaces)
+///         "p_type": predicate type (Currently >= only)
+///         "value": requested value of attribute
+///         "restrictions": [
+///             {
+///                 "schema_key" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)
+///                 "issuer_did": string (Optional)
+///             }
+///         ]  (Optional) - if specified, claim must be created for one of the given
+///                         schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
+///     }
 /// #Returns
 /// json with claims for the given pool request.
-/// Claim consists of uuid, human-readable attributes (key-value map), schema_seq_no, issuer_did and revoc_reg_seq_no.
+/// Claim consists of referent, human-readable attributes (key-value map), schema_key, issuer_did and revoc_reg_seq_no.
 ///     {
-///         "requested_attr1_uuid": [claim1, claim2],
-///         "requested_attr2_uuid": [],
-///         "requested_attr3_uuid": [claim3],
-///         "requested_predicate_1_uuid": [claim1, claim3],
-///         "requested_predicate_2_uuid": [claim2],
+///         "requested_attr1_referent": [claim1, claim2],
+///         "requested_attr2_referent": [],
+///         "requested_attr3_referent": [claim3],
+///         "requested_predicate_1_referent": [claim1, claim3],
+///         "requested_predicate_2_referent": [claim2],
 ///     }, where claim is
 ///     {
-///         "claim_uuid": <string>,
-///         "attrs": [{"attr_name" : "attr_value"}],
-///         "schema_seq_no": string,
+///         "referent": <string>,
+///         "attrs": [{"attr_name" : "attr_raw_value"}],
+///         "schema_key" : {name: string, version: string, did: string},
 ///         "issuer_did": string,
-///         "revoc_reg_seq_no": string,
+///         "revoc_reg_seq_no": int
 ///     }
 ///
 /// #Errors
@@ -607,42 +637,65 @@ pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
 /// proof_req_json: proof request json as come from the verifier
 ///     {
 ///         "nonce": string,
-///         "requested_attr1_uuid": <attr_info>,
-///         "requested_attr2_uuid": <attr_info>,
-///         "requested_attr3_uuid": <attr_info>,
-///         "requested_predicate_1_uuid": <predicate_info>,
-///         "requested_predicate_2_uuid": <predicate_info>,
+///         "requested_attr1_referent": <attr_info>,
+///         "requested_attr2_referent": <attr_info>,
+///         "requested_attr3_referent": <attr_info>,
+///         "requested_predicate_1_referent": <predicate_info>,
+///         "requested_predicate_2_referent": <predicate_info>,
 ///     }
 /// requested_claims_json: either a claim or self-attested attribute for each requested attribute
 ///     {
-///         "requested_attr1_uuid": [claim1_uuid_in_wallet, true <reveal_attr>],
-///         "requested_attr2_uuid": [self_attested_attribute],
-///         "requested_attr3_uuid": [claim2_seq_no_in_wallet, false]
-///         "requested_attr4_uuid": [claim2_seq_no_in_wallet, true]
-///         "requested_predicate_1_uuid": [claim2_seq_no_in_wallet],
-///         "requested_predicate_2_uuid": [claim3_seq_no_in_wallet],
+///         "requested_attr1_referent": [claim1_referent_in_wallet, true <reveal_attr>],
+///         "requested_attr2_referent": [self_attested_attribute],
+///         "requested_attr3_referent": [claim2_seq_no_in_wallet, false]
+///         "requested_attr4_referent": [claim2_seq_no_in_wallet, true]
+///         "requested_predicate_1_referent": [claim2_seq_no_in_wallet],
+///         "requested_predicate_2_referent": [claim3_seq_no_in_wallet],
 ///     }
 /// schemas_jsons: all schema jsons participating in the proof request
 ///     {
-///         "claim1_uuid_in_wallet": <schema1>,
-///         "claim2_uuid_in_wallet": <schema2>,
-///         "claim3_uuid_in_wallet": <schema3>,
+///         "claim1_referent_in_wallet": <schema1>,
+///         "claim2_referent_in_wallet": <schema2>,
+///         "claim3_referent_in_wallet": <schema3>,
 ///     }
 ///
 /// master_secret_name: the name of the master secret stored in the wallet
 /// claim_def_jsons: all claim definition jsons participating in the proof request
 ///     {
-///         "claim1_uuid_in_wallet": <claim_def1>,
-///         "claim2_uuid_in_wallet": <claim_def2>,
-///         "claim3_uuid_in_wallet": <claim_def3>,
+///         "claim1_referent_in_wallet": <claim_def1>,
+///         "claim2_referent_in_wallet": <claim_def2>,
+///         "claim3_referent_in_wallet": <claim_def3>,
 ///     }
 /// revoc_regs_jsons: all revocation registry jsons participating in the proof request
 ///     {
-///         "claim1_uuid_in_wallet": <revoc_reg1>,
-///         "claim2_uuid_in_wallet": <revoc_reg2>,
-///         "claim3_uuid_in_wallet": <revoc_reg3>,
+///         "claim1_referent_in_wallet": <revoc_reg1>,
+///         "claim2_referent_in_wallet": <revoc_reg2>,
+///         "claim3_referent_in_wallet": <revoc_reg3>,
 ///     }
 /// cb: Callback that takes command result as parameter.
+///
+/// where attr_info:
+///     {
+///         "name": attribute name, (case insensitive and ignore spaces)
+///         "restrictions": [
+///             {
+///                 "schema_key": {name (Optional), version (Optional), did (Optional)}, (Optional)
+///                 "issuer_did": string (Optional)
+///             }
+///         ]  (Optional)
+///     }
+/// predicate_info:
+///     {
+///         "attr_name": attribute name, (case insensitive and ignore spaces)
+///         "p_type": predicate type (Currently >= only)
+///         "value": requested value of attribute
+///         "restrictions": [
+///             {
+///                 "schema_key": {name (Optional), version (Optional), did (Optional)}, (Optional)
+///                 "issuer_did": string (Optional)
+///             }
+///         ]  (Optional)
+///     }
 ///
 /// #Returns
 /// Proof json
@@ -652,19 +705,22 @@ pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
 /// There ais also aggregated proof part common for all claim proofs.
 ///     {
 ///         "requested": {
-///             "requested_attr1_id": [claim_proof1_uuid, revealed_attr1, revealed_attr1_as_int],
+///             "requested_attr1_id": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
 ///             "requested_attr2_id": [self_attested_attribute],
-///             "requested_attr3_id": [claim_proof2_uuid]
-///             "requested_attr4_id": [claim_proof2_uuid, revealed_attr4, revealed_attr4_as_int],
-///             "requested_predicate_1_uuid": [claim_proof2_uuid],
-///             "requested_predicate_2_uuid": [claim_proof3_uuid],
+///             "requested_attr3_id": [claim_proof2_referent]
+///             "requested_attr4_id": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
+///             "requested_predicate_1_referent": [claim_proof2_referent],
+///             "requested_predicate_2_referent": [claim_proof3_referent],
 ///         }
-///         "claim_proofs": {
-///             "claim_proof1_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-///             "claim_proof2_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-///             "claim_proof3_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
-///         },
-///         "aggregated_proof": <aggregated_proof>
+///         "proof": {
+///             "proofs": {
+///                 "claim_proof1_referent": <claim_proof>,
+///                 "claim_proof2_referent": <claim_proof>,
+///                 "claim_proof3_referent": <claim_proof>
+///             },
+///             "aggregated_proof": <aggregated_proof>
+///         }
+///         "identifiers": {"claim_proof1_referent":{issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}}
 ///     }
 ///
 /// #Errors
@@ -718,11 +774,11 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
 /// proof_request_json: initial proof request as sent by the verifier
 ///     {
 ///         "nonce": string,
-///         "requested_attr1_uuid": <attr_info>,
-///         "requested_attr2_uuid": <attr_info>,
-///         "requested_attr3_uuid": <attr_info>,
-///         "requested_predicate_1_uuid": <predicate_info>,
-///         "requested_predicate_2_uuid": <predicate_info>,
+///         "requested_attr1_referent": <attr_info>,
+///         "requested_attr2_referent": <attr_info>,
+///         "requested_attr3_referent": <attr_info>,
+///         "requested_predicate_1_referent": <predicate_info>,
+///         "requested_predicate_2_referent": <predicate_info>,
 ///     }
 /// proof_json: proof json
 /// For each requested attribute either a proof (with optionally revealed attribute value) or
@@ -731,37 +787,40 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
 /// There ais also aggregated proof part common for all claim proofs.
 ///     {
 ///         "requested": {
-///             "requested_attr1_id": [claim_proof1_uuid, revealed_attr1, revealed_attr1_as_int],
+///             "requested_attr1_id": [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
 ///             "requested_attr2_id": [self_attested_attribute],
-///             "requested_attr3_id": [claim_proof2_uuid]
-///             "requested_attr4_id": [claim_proof2_uuid, revealed_attr4, revealed_attr4_as_int],
-///             "requested_predicate_1_uuid": [claim_proof2_uuid],
-///             "requested_predicate_2_uuid": [claim_proof3_uuid],
+///             "requested_attr3_id": [claim_proof2_referent]
+///             "requested_attr4_id": [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
+///             "requested_predicate_1_referent": [claim_proof2_referent],
+///             "requested_predicate_2_referent": [claim_proof3_referent],
 ///         }
-///         "claim_proofs": {
-///             "claim_proof1_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-///             "claim_proof2_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
-///             "claim_proof3_uuid": [<claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
-///         },
-///         "aggregated_proof": <aggregated_proof>
+///         "proof": {
+///             "proofs": {
+///                 "claim_proof1_referent": <claim_proof>,
+///                 "claim_proof2_referent": <claim_proof>,
+///                 "claim_proof3_referent": <claim_proof>
+///             },
+///             "aggregated_proof": <aggregated_proof>
+///         }
+///         "identifiers": {"claim_proof1_referent":{issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}}
 ///     }
 /// schemas_jsons: all schema jsons participating in the proof
 ///         {
-///             "claim_proof1_uuid": <schema>,
-///             "claim_proof2_uuid": <schema>,
-///             "claim_proof3_uuid": <schema>
+///             "claim_proof1_referent": <schema>,
+///             "claim_proof2_referent": <schema>,
+///             "claim_proof3_referent": <schema>
 ///         }
 /// claim_defs_jsons: all claim definition jsons participating in the proof
 ///         {
-///             "claim_proof1_uuid": <claim_def>,
-///             "claim_proof2_uuid": <claim_def>,
-///             "claim_proof3_uuid": <claim_def>
+///             "claim_proof1_referent": <claim_def>,
+///             "claim_proof2_referent": <claim_def>,
+///             "claim_proof3_referent": <claim_def>
 ///         }
 /// revoc_regs_jsons: all revocation registry jsons participating in the proof
 ///         {
-///             "claim_proof1_uuid": <revoc_reg>,
-///             "claim_proof2_uuid": <revoc_reg>,
-///             "claim_proof3_uuid": <revoc_reg>
+///             "claim_proof1_referent": <revoc_reg>,
+///             "claim_proof2_referent": <revoc_reg>,
+///             "claim_proof3_referent": <revoc_reg>
 ///         }
 /// cb: Callback that takes command result as parameter.
 ///

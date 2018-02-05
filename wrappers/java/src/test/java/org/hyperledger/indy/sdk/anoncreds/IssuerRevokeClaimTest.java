@@ -10,156 +10,104 @@ import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.*;
+
 import static org.hamcrest.CoreMatchers.isA;
 
-public class IssuerRevokeClaimTest extends AnoncredsIntegrationTest
-{
-    private Wallet issuerWallet;
-    private final String walletName = "issuerWallet";
-    private final int userRevocIndex = 1;
-    private final String proofReqJson = "{" +
-                                   "\"nonce\":\"123432421212\"," +
-                                   "\"name\":\"proof_req_1\"," +
-                                   "\"version\":\"0.1\"," +
-                                   "\"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"}}," +
-                                   "\"requested_predicates\":{}" +
-                                "}";    
-    
-    private final String requestedClaimsJsonTemplate = "{" +
-                                                  "\"self_attested_attributes\":{}," +
-                                                  "\"requested_attrs\":{\"attr1_uuid\":[\"%s\", true]}," +
-                                                  "\"requested_predicates\":{}" +
-                                                "}";
-    private String claimDefJson;
-    private IssuerCreateClaimResult claimResult;
+public class IssuerRevokeClaimTest extends AnoncredsIntegrationTest {
+	private Wallet issuerWallet;
 
-    @Before
-    public void before() throws Exception  {
-    	 StorageUtils.cleanupStorage();
-    	 
-        //1. Create Issuer wallet, get wallet handle
-         Wallet.createWallet("default", walletName, "default", null, null).get();
-        issuerWallet = Wallet.openWallet(walletName, null, null).get();
+	private String claimDefJson;
+	private IssuerCreateClaimResult claimResult;
 
-        //2. Issuer create claim definition
-        claimDefJson = Anoncreds.issuerCreateAndStoreClaimDef(issuerWallet, issuerDid, schema, null, true).get();
+	@Before
+	public void before() throws Exception {
+		StorageUtils.cleanupStorage();
 
-        //3. Issuer create revocation registry
-        Anoncreds.issuerCreateAndStoreRevocReg(issuerWallet, issuerDid, 1, 5).get();
+		//1. Create Issuer wallet, get wallet handle
+		String walletName = "issuerWallet";
+		Wallet.createWallet("default", walletName, "default", null, null).get();
+		issuerWallet = Wallet.openWallet(walletName, null, null).get();
 
-        //4. Prover create Master Secret
-        Anoncreds.proverCreateMasterSecret(issuerWallet, masterSecretName).get();
+		//2. Issuer create claim definition
+		claimDefJson = Anoncreds.issuerCreateAndStoreClaimDef(issuerWallet, issuerDid, gvtSchemaJson, null, true).get();
 
-        //5. Prover store Claim Offer received from Issuer
-        String claimOfferJson = String.format(claimOfferTemplate, issuerDid, 1);
-        Anoncreds.proverStoreClaimOffer(issuerWallet, claimOfferJson).get();
+		//3. Issuer create revocation registry
+		Anoncreds.issuerCreateAndStoreRevocReg(issuerWallet, issuerDid, gvtSchemaJson, 5).get();
 
-        //6. Prover create Claim Request
-        String proverDid = "BzfFCYk";
-        String claimReq = Anoncreds.proverCreateAndStoreClaimReq(
-            issuerWallet,
-            proverDid,
-            claimOfferJson,
-            claimDefJson,
-            masterSecretName).get();
+		//4. Prover create Master Secret
+		Anoncreds.proverCreateMasterSecret(issuerWallet, masterSecretName).get();
 
-        //7. Issuer create Claim
-        String claimJson = "{" +
-            "\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"]," +
-           "\"name\":[\"Alex\",\"1139481716457488690172217916278103335\"]," +
-           "\"height\":[\"175\",\"175\"]," +
-           "\"age\":[\"28\",\"28\"]" +
-        "}";
+		//5. Prover store Claim Offer received from Issuer
+		String claimOfferJson = String.format(claimOfferTemplate, issuerDid, gvtSchemaKey);
+		Anoncreds.proverStoreClaimOffer(issuerWallet, claimOfferJson).get();
 
-        
-        claimResult = Anoncreds.issuerCreateClaim(issuerWallet, claimReq, claimJson, userRevocIndex).get();
+		//6. Prover create Claim Request
+		String claimReq = Anoncreds.proverCreateAndStoreClaimReq(issuerWallet, proverDid, claimOfferJson, claimDefJson, masterSecretName).get();
 
-        //8. Prover store received Claim
-        Anoncreds.proverStoreClaim(issuerWallet, claimResult.getClaimJson()).get();
-    }
+		//7. Issuer create Claim
+		int userRevocIndex = 1;
+		claimResult = Anoncreds.issuerCreateClaim(issuerWallet, claimReq, gvtClaimValuesJson, userRevocIndex).get();
 
-    @After
-    public void after() throws Exception {
-         issuerWallet.closeWallet().get();
-        StorageUtils.cleanupStorage();
-    }
+		//8. Prover store received Claim
+		Anoncreds.proverStoreClaim(issuerWallet, claimResult.getClaimJson(), null).get();
+	}
 
-    @Test
-    public void testAnoncredsWorksForClaimRevokedBeforeProofCreated() throws Exception {
-    	thrown.expect(ExecutionException.class);
+	@After
+	public void after() throws Exception {
+		issuerWallet.closeWallet().get();
+		StorageUtils.cleanupStorage();
+	}
+
+	@Test
+	public void testAnoncredsWorksForClaimRevokedBeforeProofCreated() throws Exception {
+		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(ClaimRevokedException.class));
-		
-        //9. Issuer revoke claim
-        String revocRegUpdateJson =  Anoncreds.issuerRevokeClaim(
-            issuerWallet,
-            issuerDid,
-            1,
-            1).get();
 
-        //10. Prover gets Claims for Proof Request
-        String claimsJson =  Anoncreds.proverGetClaimsForProofReq(issuerWallet, proofReqJson).get();
-        JSONObject claims = new JSONObject(claimsJson);
-        JSONArray claimsForAttr1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid"); 
-        String claimUuid = claimsForAttr1.getJSONObject(0).getString("claim_uuid");
+		//9. Issuer revoke claim
+		String revocRegUpdateJson = Anoncreds.issuerRevokeClaim(issuerWallet, issuerDid, gvtSchemaJson, 1).get();
 
-        //11. Prover create Proof
-        String requestedClaimsJson = String.format(requestedClaimsJsonTemplate, claimUuid);
+		//10. Prover gets Claims for Proof Request
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(issuerWallet, proofRequest).get();
+		JSONObject claims = new JSONObject(claimsJson);
+		JSONArray claimsForAttr1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
+		String claimUuid = claimsForAttr1.getJSONObject(0).getString("referent");
 
-        String schemasJson = String.format("{\"%s\":%s}", claimUuid, schema);
-        String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDefJson);
-        String revocRegsJsons = String.format("{\"%s\":%s}", claimUuid, revocRegUpdateJson);
+		//11. Prover create Proof
+		String requestedClaimsJson = String.format(this.requestedClaimsJsonTemplate, claimUuid, claimUuid);
 
-        Anoncreds.proverCreateProof(
-            issuerWallet,
-            proofReqJson,
-            requestedClaimsJson,
-            schemasJson,
-            masterSecretName,
-            claimDefsJson,
-            revocRegsJsons).get();
-    }
+		String schemasJson = String.format("{\"%s\":%s}", claimUuid, gvtSchemaJson);
+		String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDefJson);
+		String revocRegsJsons = String.format("{\"%s\":%s}", claimUuid, revocRegUpdateJson);
 
-    @Test
-    public void testAnoncredsWorksForClaimRevokedAfterProofCreated() throws Exception {
-        //9. Prover gets Claims for Proof Request
-        String claimsJson =  Anoncreds.proverGetClaimsForProofReq(issuerWallet, proofReqJson).get();
-        JSONObject claims = new JSONObject(claimsJson);
-        JSONArray claimsForAttr1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid"); 
-        String claimUuid = claimsForAttr1.getJSONObject(0).getString("claim_uuid");
+		Anoncreds.proverCreateProof(issuerWallet, proofRequest, requestedClaimsJson, schemasJson, masterSecretName, claimDefsJson, revocRegsJsons).get();
+	}
 
-        //10. Prover create Proof
-        String requestedClaimsJson = String.format(requestedClaimsJsonTemplate, claimUuid);
+	@Test
+	public void testAnoncredsWorksForClaimRevokedAfterProofCreated() throws Exception {
+		//9. Prover gets Claims for Proof Request
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(issuerWallet, proofRequest).get();
+		JSONObject claims = new JSONObject(claimsJson);
+		JSONArray claimsForAttr1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
+		String claimUuid = claimsForAttr1.getJSONObject(0).getString("referent");
 
-        String schemasJson = String.format("{\"%s\":%s}", claimUuid, schema);
-        String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDefJson);
-        String revocRegsJsons = String.format("{\"%s\":%s}", claimUuid, claimResult.getRevocRegUpdateJson());
+		//10. Prover create Proof
+		String requestedClaimsJson = String.format(this.requestedClaimsJsonTemplate, claimUuid, claimUuid);
 
-        String proofJson =  Anoncreds.proverCreateProof(
-            issuerWallet,
-            proofReqJson,
-            requestedClaimsJson,
-            schemasJson,
-            masterSecretName,
-            claimDefsJson,
-            revocRegsJsons).get();
+		String schemasJson = String.format("{\"%s\":%s}", claimUuid, gvtSchemaJson);
+		String claimDefsJson = String.format("{\"%s\":%s}", claimUuid, claimDefJson);
+		String revocRegsJsons = String.format("{\"%s\":%s}", claimUuid, claimResult.getRevocRegUpdateJson());
 
-        //11. Issuer revoke prover claim
-        String revocRegUpdateJson =  Anoncreds.issuerRevokeClaim(
-            issuerWallet,
-            issuerDid,
-            1,
-            1).get();
+		String proofJson = Anoncreds.proverCreateProof(issuerWallet, proofRequest, requestedClaimsJson, schemasJson, masterSecretName,
+				claimDefsJson, revocRegsJsons).get();
 
-        //12. Verifier verify proof
-        String updatedRevocRegsJsons = String.format("{\"%s\":%s}", claimUuid, revocRegUpdateJson);
+		//11. Issuer revoke prover claim
+		String revocRegUpdateJson = Anoncreds.issuerRevokeClaim(issuerWallet, issuerDid, gvtSchemaJson, 1).get();
 
-        boolean valid =  Anoncreds.verifierVerifyProof(
-            proofReqJson,
-            proofJson,
-            schemasJson,
-            claimDefsJson,
-            updatedRevocRegsJsons).get();
+		//12. Verifier verify proof
+		String updatedRevocRegsJsons = String.format("{\"%s\":%s}", claimUuid, revocRegUpdateJson);
 
-        assertFalse(valid);
-    }
+		boolean valid = Anoncreds.verifierVerifyProof(proofRequest, proofJson, schemasJson, claimDefsJson, updatedRevocRegsJsons).get();
+
+		assertFalse(valid);
+	}
 }

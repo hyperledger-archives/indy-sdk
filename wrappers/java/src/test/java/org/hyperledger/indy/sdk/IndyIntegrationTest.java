@@ -2,7 +2,7 @@ package org.hyperledger.indy.sdk;
 
 import org.hyperledger.indy.sdk.crypto.CryptoJSONParameters;
 import org.hyperledger.indy.sdk.pool.Pool;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
+import org.hyperledger.indy.sdk.did.DidJSONParameters;
 import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
 import org.hyperledger.indy.sdk.wallet.InMemWalletType;
@@ -42,16 +42,26 @@ public class IndyIntegrationTest {
 	protected static final String METADATA = "some metadata";
 	protected static final String ENDPOINT = "127.0.0.1:9700";
 	protected static final String CRYPTO_TYPE = "ed25519";
-	protected byte[] SIGNATURE = {20, -65, 100, -43, 101, 12, -59, -58, -53, 49, 89, -36, -51, -64, -32, -35, 97, 77, -36, -66, 90, 60, -114, 23, 16, -16, -67, -127, 45, -108, -11, 8, 102, 95, 95, -7, 100, 89, 41, -29, -43, 25, 100, 1, -24, -68, -11, -21, -70, 21, 52, -80, -20, 11, 99, 70, -101, -97, 89, -41, -59, -17, -118, 5};
+	protected byte[] SIGNATURE = {20, - 65, 100, - 43, 101, 12, - 59, - 58, - 53, 49, 89, - 36, - 51, - 64, - 32, - 35, 97, 77, - 36, - 66, 90, 60, - 114, 23, 16, - 16, - 67, - 127, 45, - 108, - 11, 8, 102, 95, 95, - 7, 100, 89, 41, - 29, - 43, 25, 100, 1, - 24, - 68, - 11, - 21, - 70, 21, 52, - 80, - 20, 11, 99, 70, - 101, - 97, 89, - 41, - 59, - 17, - 118, 5};
 	protected byte[] ENCRYPTED_MESSAGE = {- 105, 30, 89, 75, 76, 28, - 59, - 45, 105, - 46, 20, 124, - 85, - 13, 109, 29, - 88, - 82, - 8, - 6, - 50, - 84, - 53, - 48, - 49, 56, 124, 114, 82, 126, 74, 99, - 72, - 78, - 117, 96, 60, 119, 50, - 40, 121, 21, 57, - 68, 89};
 	protected byte[] NONCE = {- 14, 102, - 41, - 57, 1, 4, 75, - 46, - 91, 87, 14, 41, - 39, 48, 42, - 126, - 121, 84, - 58, 59, - 27, 51, - 32, - 23};
-
+	protected String SCHEMA_KEY_TEMPLATE = "{\"name\":\"%s\",\"version\":\"1.0\",\"did\":\"%s\"}";
+	protected String CLAIM_OFFER_TEMPLATE = "{\"issuer_did\":\"%s\", \"schema_key\":%s}";
+	protected String SCHEMA_TEMPLATE = "{\n" +
+			"                    \"seqNo\":%d,\n" +
+			"                    \"dest\":\"%s\",\n" +
+			"                    \"data\": {\n" +
+			"                        \"name\":\"%s\",\n" +
+			"                        \"version\":\"1.0\",\n" +
+			"                        \"attr_names\":%s\n" +
+			"                    }\n" +
+			"                }";
 
 	protected static final String TRUSTEE_IDENTITY_JSON =
-			new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null).toJson();
+			new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null).toJson();
 
 	protected static final String MY1_IDENTITY_JSON =
-			new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, null, null).toJson();
+			new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, MY1_SEED, null, null).toJson();
 
 	protected static final String MY1_IDENTITY_KEY_JSON =
 			new CryptoJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();

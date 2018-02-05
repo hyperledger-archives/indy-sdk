@@ -38,7 +38,7 @@ namespace Hyperledger.Indy.Samples
                             "   \"data\": {\n" +
                             "       \"name\":\"gvt\",\n" +
                             "       \"version\":\"1.0\",\n" +
-                            "       \"keys\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
+                            "       \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
                             "   }\n" +
                             "}";
                     var issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
@@ -87,31 +87,31 @@ namespace Hyperledger.Indy.Samples
                             "   \"nonce\":\"123432421212\",\n" +
                             "   \"name\":\"proof_req_1\",\n" +
                             "   \"version\":\"0.1\",\n" +
-                            "   \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"},\n" +
-                            "       \"attr2_uuid\":{\"schema_seq_no\":1,\"name\":\"sex\"}},\n" +
-                            "   \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+                            "   \"requested_attrs\":{\"attr1_referent\":{\"schema_seq_no\":[1],\"name\":\"name\"},\n" +
+                            "       \"attr2_referent\":{\"schema_seq_no\":[1],\"name\":\"sex\"}},\n" +
+                            "   \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
                             "   }";
 
                     var claimsForProofJson = await AnonCreds.ProverGetClaimsForProofReqAsync(proverWallet, proofRequestJson);
 
                     var claimsForProof = JObject.Parse(claimsForProofJson);
-                    var claimsForAttribute1 = (JArray)claimsForProof["attrs"]["attr1_uuid"];
-                    var claimsForAttribute2 = (JArray)claimsForProof["attrs"]["attr1_uuid"];
-                    var claimsForPredicate = (JArray)claimsForProof["predicates"]["predicate1_uuid"];
+                    var claimsForAttribute1 = (JArray)claimsForProof["attrs"]["attr1_referent"];
+                    var claimsForAttribute2 = (JArray)claimsForProof["attrs"]["attr1_referent"];
+                    var claimsForPredicate = (JArray)claimsForProof["predicates"]["predicate1_referent"];
 
                     Debug.Assert(claimsForAttribute1.Count == 1);
                     Debug.Assert(claimsForAttribute2.Count == 1);
                     Debug.Assert(claimsForPredicate.Count == 1);
 
-                    var claimUuid = claimsForAttribute1[0].Value<string>("claim_uuid");
+                    var claimUuid = claimsForAttribute1[0].Value<string>("referent");
 
                     //13. Prover create Proof
                     var selfAttestedValue = "yes";
                     var requestedClaimsJson = string.Format("{{\n" +
                             "   \"self_attested_attributes\":{{\"self1\":\"{0}\"}},\n" +
-                            "   \"requested_attrs\":{{\"attr1_uuid\":[\"{1}\", true],\n" +
-                            "   \"attr2_uuid\":[\"{2}\", false]}},\n" +
-                            "   \"requested_predicates\":{{\"predicate1_uuid\":\"{3}\"}}\n" +
+                            "   \"requested_attrs\":{{\"attr1_referent\":[\"{1}\", true],\n" +
+                            "   \"attr2_referent\":[\"{2}\", false]}},\n" +
+                            "   \"requested_predicates\":{{\"predicate1_referent\":\"{3}\"}}\n" +
                             "}}", selfAttestedValue, claimUuid, claimUuid, claimUuid);
 
                     var schemasJson = string.Format("{{\"{0}\":{1}}}", claimUuid, schemaJson);
@@ -125,8 +125,8 @@ namespace Hyperledger.Indy.Samples
                     var proof = JObject.Parse(proofJson);
 
                     //14. Verifier verify Proof
-                    Debug.Assert(string.Equals("Alex", proof["requested_proof"]["revealed_attrs"]["attr1_uuid"][1].ToString()));
-                    Debug.Assert(proof["requested_proof"]["unrevealed_attrs"].Value<string>("attr2_uuid") != null);
+                    Debug.Assert(string.Equals("Alex", proof["requested_proof"]["revealed_attrs"]["attr1_referent"][1].ToString()));
+                    Debug.Assert(proof["requested_proof"]["unrevealed_attrs"].Value<string>("attr2_referent") != null);
                     Debug.Assert(string.Equals(selfAttestedValue, proof["requested_proof"]["self_attested_attrs"].Value<string>("self1")));
 
                     var valid = await AnonCreds.VerifierVerifyProofAsync(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson);

@@ -40,10 +40,10 @@
 }
 
 + (void)issuerCreateAndStoreRevocRegForIssuerDid:(NSString *)issuerDID
-                                     schemaSeqNo:(NSNumber *)schemaSeqNo
+                                      schemaJSON:(NSString *)schemaJSON
                                      maxClaimNum:(NSNumber *)maxClaimNum
                                     walletHandle:(IndyHandle)walletHandle
-                                      completion:(void (^)(NSError *error, NSString *revocRegJSON, NSString *revocRegUUID)) completion
+                                      completion:(void (^)(NSError *error, NSString *revocRegJSON)) completion
 {
     indy_error_t ret;
     
@@ -52,15 +52,15 @@
     ret = indy_issuer_create_and_store_revoc_reg(handle,
                                                  walletHandle,
                                                  [issuerDID UTF8String],
-                                                 [schemaSeqNo intValue],
+                                                 [schemaJSON UTF8String],
                                                  [maxClaimNum intValue],
-                                                 IndyWrapperCommon4PCallback);
+                                                 IndyWrapperCommon3PSCallback);
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];
         
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError: ret], nil, nil);
+            completion([NSError errorFromIndyError: ret], nil);
         });
     }
 }
@@ -93,7 +93,7 @@
 }
 
 + (void)issuerRevokeClaimForIssuerDID:(NSString *)issuerDID
-                          schemaSeqNo:(NSNumber *)schemaSeqNo
+                           schemaJSON:(NSString *)schemaJSON
                        userRevocIndex:(NSNumber *)userRevocIndex
                          walletHandle:(IndyHandle)walletHandle
                            completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) completion
@@ -105,7 +105,7 @@
     ret = indy_issuer_revoke_claim(handle,
                                    walletHandle,
                                    [issuerDID UTF8String],
-                                   schemaSeqNo ? [schemaSeqNo intValue] : -1,
+                                   [schemaJSON UTF8String],
                                    userRevocIndex ? [userRevocIndex intValue] : -1,
                                    IndyWrapperCommon3PSCallback);
     
@@ -222,6 +222,7 @@
 }
 
 + (void)proverStoreClaim:(NSString *)claimsJson
+              revRegJSON:(NSString *)revRegJSON
             walletHandle:(IndyHandle)walletHandle
               completion:(void (^)(NSError *error)) completion
 {
@@ -232,8 +233,9 @@
     ret = indy_prover_store_claim(handle,
                                   walletHandle,
                                   [claimsJson UTF8String],
+                                  [revRegJSON UTF8String],
                                   IndyWrapperCommon2PCallback
-                                  );
+                                );
     if( ret != Success )
     {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor: handle];

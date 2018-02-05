@@ -2,8 +2,9 @@ package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
-import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusResults;
+import org.hyperledger.indy.sdk.did.Did;
+import org.hyperledger.indy.sdk.did.DidResults;
+import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.*;
 import org.junit.rules.Timeout;
@@ -12,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.isA;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {
@@ -44,10 +46,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 
 	@Test
 	public void testBuildClaimDefRequestWorks() throws Exception {
-		String dataTemplate = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"},\"rctxt\":\"1\",\"z\":\"1\"}%s}";
-		String data = String.format(dataTemplate, "");
-
-		String expectedData = String.format(dataTemplate, ",\"revocation\":{}");
+		String data = "{\"primary\":{\"n\":\"1\",\"s\":\"2\",\"rms\":\"3\",\"r\":{\"name\":\"1\"},\"rctxt\":\"1\",\"z\":\"1\"}}";
 
 		String expectedResult = String.format("\"identifier\":\"%s\"," +
 				"\"operation\":{" +
@@ -55,7 +54,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 				"\"data\":%s," +
 				"\"type\":\"102\"," +
 				"\"signature_type\":\"%s\"" +
-				"}", DID, seqNo, expectedData, signatureType);
+				"}", DID, seqNo, data, signatureType);
 
 		String claimDefRequest = Ledger.buildClaimDefTxn(DID, seqNo, signatureType, data).get();
 
@@ -87,12 +86,12 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 		Ledger.buildClaimDefTxn(DID, seqNo, signatureType, data).get();
 	}
 
-	@Test
+	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testClaimDefRequestsWorks() throws Exception {
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
-		SignusResults.CreateAndStoreMyDidResult myDidResult = Signus.createAndStoreMyDid(wallet, "{}").get();
+		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
 		String myDid = myDidResult.getDid();
 		String myVerkey = myDidResult.getVerkey();
 
@@ -108,30 +107,28 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 		Ledger.signAndSubmitRequest(pool, wallet, myDid, claimDefRequest).get();
 
 		String getClaimDefRequest = Ledger.buildGetClaimDefTxn(myDid, seqNo, signatureType, myDid).get();
-		String getClaimDefResponse = Ledger.submitRequest(pool, getClaimDefRequest).get();
+		String getClaimDefResponse = PoolUtils.ensurePreviousRequestApplied(pool, getClaimDefRequest, response -> {
+			JSONObject getClaimDefResponseObj = new JSONObject(response);
 
-		JSONObject getClaimDefResponseObj = new JSONObject(getClaimDefResponse);
+			JSONObject expectedClaimDef = claimDefObj.getJSONObject("data").getJSONObject("primary");
+			JSONObject actualClaimDef = getClaimDefResponseObj.getJSONObject("result").getJSONObject("data").getJSONObject("primary");
 
-		JSONObject expectedClaimDef = claimDefObj.getJSONObject("data").getJSONObject("primary");
-		JSONObject actualClaimDef = getClaimDefResponseObj.getJSONObject("result").getJSONObject("data").getJSONObject("primary");
-
-		Assert.assertEquals(expectedClaimDef.getString("n"), actualClaimDef.getString("n"));
-		Assert.assertEquals(expectedClaimDef.getString("rms"), actualClaimDef.getString("rms"));
-		Assert.assertEquals(expectedClaimDef.getString("rctxt"), actualClaimDef.getString("rctxt"));
-		Assert.assertEquals(expectedClaimDef.getString("z"), actualClaimDef.getString("z"));
-		Assert.assertEquals(expectedClaimDef.getString("n"), actualClaimDef.getString("n"));
-		Assert.assertEquals(expectedClaimDef.getJSONObject("r").toString(), actualClaimDef.getJSONObject("r").toString());
+			return expectedClaimDef.getString("n").equals(actualClaimDef.getString("n")) &&
+					expectedClaimDef.getString("rms").equals(actualClaimDef.getString("rms")) &&
+					expectedClaimDef.getString("rctxt").equals(actualClaimDef.getString("rctxt")) &&
+					expectedClaimDef.getString("z").equals(actualClaimDef.getString("z")) &&
+					expectedClaimDef.getString("n").equals(actualClaimDef.getString("n")) &&
+					expectedClaimDef.getJSONObject("r").toString().equals(actualClaimDef.getJSONObject("r").toString());
+		});
+		assertNotNull(getClaimDefResponse);
 	}
 
 	@Test
 	public void testClaimDefRequestWorksWithoutSignature() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
-
-		SignusResults.CreateAndStoreMyDidResult trusteeDidResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String trusteeDid = trusteeDidResult.getDid();
 
-		SignusResults.CreateAndStoreMyDidResult myDidResult = Signus.createAndStoreMyDid(wallet, "{}").get();
+		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
 		String myDid = myDidResult.getDid();
 		String myVerkey = myDidResult.getVerkey();
 
@@ -144,6 +141,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 		String claimDefJson = String.format("%s", claimDefObj.getJSONObject("data"));
 
 		String claimDefRequest = Ledger.buildClaimDefTxn(myDid, seqNo, signatureType, claimDefJson).get();
-		Ledger.submitRequest(pool, claimDefRequest).get();
+		String response = Ledger.submitRequest(pool, claimDefRequest).get();
+		checkResponseType(response, "REQNACK");
 	}
 }

@@ -170,9 +170,6 @@ extern "C" {
     /// That shared secret key can be used to verify that the encrypted message was not tampered with,
     /// before eventually decrypting it.
     ///
-    /// Recipient only needs Sender's public key, the nonce and the ciphertext to peform decryption.
-    /// The nonce doesn't have to be confidential.
-    ///
     /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     /// for specific DID.
     ///
@@ -186,27 +183,25 @@ extern "C" {
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// an encrypted message and nonce
+    /// an encrypted message
     ///
     /// #Errors
     /// Common*
     /// Wallet*
     /// Ledger*
     /// Crypto*
-    extern indy_error_t indy_crypto_box(indy_handle_t      command_handle,
-                                        indy_handle_t      wallet_handle,
-                                        const char *       my_vk,
-                                        const char *       their_vk,
-                                        const indy_u8_t *  message_raw,
-                                        indy_u32_t         message_len,
+    extern indy_error_t indy_crypto_auth_crypt(indy_handle_t      command_handle,
+                                               indy_handle_t      wallet_handle,
+                                               const char *       my_vk,
+                                               const char *       their_vk,
+                                               const indy_u8_t *  message_raw,
+                                               indy_u32_t         message_len,
 
-                                        void           (*cb)(indy_handle_t     xcommand_handle,
-                                                             indy_error_t      err,
-                                                             const indy_u8_t*  encrypted_msg_raw,
-                                                             indy_u32_t        encrypted_msg_len,
-                                                             const indy_u8_t*  nonce_raw,
-                                                             indy_u32_t        nonce_len)
-                                       );
+                                               void           (*cb)(indy_handle_t     xcommand_handle,
+                                                                    indy_error_t      err,
+                                                                    const indy_u8_t*  encrypted_msg_raw,
+                                                                    indy_u32_t        encrypted_msg_len)
+                                              );
 
     /// Decrypt a message by authenticated-encryption scheme.
     ///
@@ -216,9 +211,6 @@ extern "C" {
     /// That shared secret key can be used to verify that the encrypted message was not tampered with,
     /// before eventually decrypting it.
     ///
-    /// Recipient only needs Sender's public key, the nonce and the ciphertext to peform decryption.
-    /// The nonce doesn't have to be confidential.
-    ///
     /// Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     /// for specific DID.
     ///
@@ -226,34 +218,29 @@ extern "C" {
     /// command_handle: command handle to map callback to user context.
     /// wallet_handle: wallet handler (created by open_wallet).
     /// my_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
-    /// their_vk: id (verkey) of their key
     /// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
     /// encrypted_msg_len: a message length
-    /// nonce_raw: a pointer to first byte of nonce that encrypted message
-    /// nonce_len: a nonce length
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
-    /// decrypted message
+    /// sender verkey and decrypted message
     ///
     /// #Errors
     /// Common*
     /// Wallet*
     /// Crypto*
-    extern indy_error_t indy_crypto_box_open(indy_handle_t      command_handle,
-                                             indy_handle_t      wallet_handle,
-                                             const char *       my_vk,
-                                             const char *       their_vk,
-                                             const indy_u8_t*   encrypted_msg_raw,
-                                             indy_u32_t         encrypted_msg_len,
-                                             const indy_u8_t*   nonce_raw,
-                                             indy_u32_t         nonce_len,
+    extern indy_error_t indy_crypto_auth_decrypt(indy_handle_t      command_handle,
+                                                 indy_handle_t      wallet_handle,
+                                                 const char *       my_vk,
+                                                 const indy_u8_t*   encrypted_msg_raw,
+                                                 indy_u32_t         encrypted_msg_len,
 
-                                             void           (*cb)(indy_handle_t     xcommand_handle,
-                                                                  indy_error_t      err,
-                                                                  const indy_u8_t*  decrypted_msg_raw,
-                                                                  indy_u32_t        decrypted_msg_len)
-                                            );
+                                                 void           (*cb)(indy_handle_t     xcommand_handle,
+                                                                      indy_error_t      err,
+                                                                      const char *      their_vk,
+                                                                      const indy_u8_t*  decrypted_msg_raw,
+                                                                      indy_u32_t        decrypted_msg_len)
+                                                );
 
 
     /// Encrypts a message by anonymous-encryption scheme.
@@ -280,16 +267,16 @@ extern "C" {
     /// Wallet*
     /// Ledger*
     /// Crypto*
-    extern indy_error_t indy_crypto_box_seal(indy_handle_t      command_handle,
-                                             const char *       their_vk,
-                                             const indy_u8_t *  message_raw,
-                                             indy_u32_t         message_len,
+    extern indy_error_t indy_crypto_anon_crypt(indy_handle_t      command_handle,
+                                               const char *       their_vk,
+                                               const indy_u8_t *  message_raw,
+                                               indy_u32_t         message_len,
 
-                                             void           (*cb)(indy_handle_t     xcommand_handle,
-                                                                  indy_error_t      err,
-                                                                  const indy_u8_t*  encrypted_msg_raw,
-                                                                  indy_u32_t        encrypted_msg_len)
-                                            );
+                                               void           (*cb)(indy_handle_t     xcommand_handle,
+                                                                    indy_error_t      err,
+                                                                    const indy_u8_t*  encrypted_msg_raw,
+                                                                    indy_u32_t        encrypted_msg_len)
+                                               );
 
     /// Decrypts a message by anonymous-encryption scheme.
     ///
@@ -315,16 +302,16 @@ extern "C" {
     /// Common*
     /// Wallet*
     /// Crypto*
-    extern indy_error_t indy_crypto_box_seal_open(indy_handle_t      command_handle,
-                                                  indy_handle_t      wallet_handle,
-                                                  const char *       my_vk,
-                                                  const indy_u8_t*   encrypted_msg_raw,
-                                                  indy_u32_t         encrypted_msg_len,
+    extern indy_error_t indy_crypto_anon_decrypt(indy_handle_t      command_handle,
+                                                 indy_handle_t      wallet_handle,
+                                                 const char *       my_vk,
+                                                 const indy_u8_t*   encrypted_msg,
+                                                 indy_u32_t         encrypted_len,
 
-                                                  void           (*cb)(indy_handle_t     xcommand_handle,
-                                                                       indy_error_t      err,
-                                                                       const indy_u8_t*  decrypted_msg_raw,
-                                                                       indy_u32_t        decrypted_msg_len)
+                                                 void           (*cb)(indy_handle_t     xcommand_handle,
+                                                                      indy_error_t      err,
+                                                                      const indy_u8_t*  decrypted_msg_raw,
+                                                                      indy_u32_t        decrypted_msg_len)
                                                  );
 
 #ifdef __cplusplus

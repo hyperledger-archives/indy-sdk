@@ -59,11 +59,12 @@
     NSNumber *schemaSeqNo = @(1);
     NSString *schema = [ NSString stringWithFormat:@"{"
                         "\"seqNo\":%@,"
+                        "\"dest\":\"%@\","
                         "\"data\":{"
                             "\"name\":\"gvt\","
                             "\"version\":\"1.0\","
                             "\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}"
-                        "}", schemaSeqNo ];
+                        "}", schemaSeqNo, [TestUtils issuerDid] ];
     
     __block NSString *claimDefJSON = nil;
     
@@ -93,9 +94,10 @@
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     NSString *proverDiD = @"BzfFCYk";
+    NSString *schemaKey = @"{\"name\":\"gvt\",\"version\":\"1.0\",\"did\":\"NcYxiDXkpYi6ov5FcYDi1e\"}";
     NSString *claimOfferJSON =  [NSString stringWithFormat: @"{"\
                                  "\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\","\
-                                 "\"schema_seq_no\": %@}", schemaSeqNo ];
+                                 "\"schema_key\": %@}", schemaKey ];
     __block NSString *claimReqJSON = nil;
     
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:[NSDictionary toString:claimDef]
@@ -128,7 +130,8 @@
     
     // 8. Prover process and store Claim
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
-                                                                 claimsJson:xClaimJSON];
+                                                                 claimsJson:xClaimJSON
+                                                                 revRegJSON:nil];
     XCTAssertEqual( ret.code, Success, @"proverStoreClaim() failed!");
     
     // 9. Prover gets Claims for Proof Request
@@ -140,19 +143,19 @@
                               "\"name\":\"proof_req_1\","
                               "\"version\":\"0.1\","
                               "\"requested_attrs\":{\
-                                    \"attr1_uuid\":{\
-                                        \"schema_seq_no\":%@,\
-                                        \"name\":\"name\"\
+                                    \"attr1_referent\":{\
+                                        \"name\":\"name\",\
+                                        \"restrictions\":[{\"schema_key\":%@}]\
                                     }\
                               },\
                               \"requested_predicates\":{\
-                                    \"predicate1_uuid\":{\
+                                    \"predicate1_referent\":{\
                                         \"attr_name\":\"age\",\
-                                        \"p_type\":\"GE\",\
+                                        \"p_type\":\">=\",\
                                         \"value\":18\
                                     }\
                               }\
-                            }", schemaSeqNo ];
+                            }", schemaKey ];
     
     __block NSString *claimsJson = nil;
     
@@ -164,17 +167,17 @@
     NSDictionary *claims = [ NSDictionary fromString: claimsJson];
     XCTAssertTrue(claims, @"serialization failed");
     
-    NSDictionary *claims_for_attr_1 = [[ [claims objectForKey: @"attrs" ] objectForKey: @"attr1_uuid"] objectAtIndex: 0 ];
-    XCTAssertTrue( claims_for_attr_1, @"no object for key \"attr1_uuid\"");
-    NSString *claimUUID = [claims_for_attr_1 objectForKey:@"claim_uuid"];
+    NSDictionary *claims_for_attr_1 = [[ [claims objectForKey: @"attrs" ] objectForKey: @"attr1_referent"] objectAtIndex: 0 ];
+    XCTAssertTrue( claims_for_attr_1, @"no object for key \"attr1_referent\"");
+    NSString *claimUUID = [claims_for_attr_1 objectForKey:@"referent"];
     
     // 10. Prover create Proof for Proof Request
     completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     NSString* requestedClaimsJSON = [ NSString stringWithFormat: @"{\
                                      \"self_attested_attributes\":{},\
-                                     \"requested_attrs\":{\"attr1_uuid\":[\"%@\",true]},\
-                                     \"requested_predicates\":{\"predicate1_uuid\":\"%@\"}\
+                                     \"requested_attrs\":{\"attr1_referent\":[\"%@\",true]},\
+                                     \"requested_predicates\":{\"predicate1_referent\":\"%@\"}\
                                      }", claimUUID, claimUUID ];
     
     NSString *schemas_json = [NSString stringWithFormat: @"{\"%@\":%@}", claimUUID, schema];
@@ -247,13 +250,15 @@
     // 3. Issuer create Claim Definition for Schema
     
     NSNumber *schemaSeqNo = @(1);
+    NSString *schemaKey = @"{\"name\":\"gvt\",\"version\":\"1.0\",\"did\":\"NcYxiDXkpYi6ov5FcYDi1e\"}";
     NSString *schema = [ NSString stringWithFormat:@"{"
                         "\"seqNo\":%@,"
+                        "\"dest\":\"%@\","
                         "\"data\":{"
                         "\"name\":\"gvt\","
                         "\"version\":\"1.0\","
                         "\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}"
-                        "}", schemaSeqNo ];
+                        "}", schemaSeqNo, [TestUtils issuerDid] ];
     
     __block NSString *claimDefJSON = nil;
     
@@ -284,7 +289,7 @@
     NSString *proverDiD = @"BzfFCYk";
     NSString *claimOfferJSON =  [NSString stringWithFormat: @"{"\
                                  "\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\","\
-                                 "\"schema_seq_no\": %@}", schemaSeqNo ];
+                                 "\"schema_key\": %@}", schemaKey ];
     __block NSString *claimReqJSON = nil;
     
     ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:[NSDictionary toString:claimDef]
@@ -315,7 +320,8 @@
     
     // 8. Prover process and store Claim
     ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
-                                                                 claimsJson:xClaimJSON];
+                                                                 claimsJson:xClaimJSON
+                                                                 revRegJSON:nil];
     XCTAssertEqual( ret.code, Success, @"proverStoreClaim() failed!");
     
     // 9. Prover gets Claims for Proof Request
@@ -327,19 +333,19 @@
                               "\"name\":\"proof_req_1\","
                               "\"version\":\"0.1\","
                               "\"requested_attrs\":{\
-                              \"attr1_uuid\":{\
-                              \"schema_seq_no\":%@,\
-                              \"name\":\"name\"\
+                              \"attr1_referent\":{\
+                              \"name\":\"name\",\
+                              \"restrictions\":[{\"schema_key\":%@}]\
                               }\
                               },\
                               \"requested_predicates\":{\
-                              \"predicate1_uuid\":{\
+                              \"predicate1_referent\":{\
                               \"attr_name\":\"age\",\
-                              \"p_type\":\"GE\",\
+                              \"p_type\":\">=\",\
                               \"value\":18\
                               }\
                               }\
-                              }", schemaSeqNo ];
+                              }", schemaKey ];
     
     __block NSString *claimsJson = nil;
     
@@ -351,16 +357,16 @@
     NSDictionary *claims = [ NSDictionary fromString: claimsJson];
     XCTAssertTrue(claims, @"serialization failed");
     
-    NSDictionary *claims_for_attr_1 = [[ [claims objectForKey: @"attrs" ] objectForKey: @"attr1_uuid"] objectAtIndex: 0 ];
-    XCTAssertTrue( claims_for_attr_1, @"no object for key \"attr1_uuid\"");
-    NSString *claimUUID = [claims_for_attr_1 objectForKey:@"claim_uuid"];
+    NSDictionary *claims_for_attr_1 = [[ [claims objectForKey: @"attrs" ] objectForKey: @"attr1_referent"] objectAtIndex: 0 ];
+    XCTAssertTrue( claims_for_attr_1, @"no object for key \"attr1_referent\"");
+    NSString *claimUUID = [claims_for_attr_1 objectForKey:@"referent"];
     
     // 10. Prover create Proof for Proof Request
     
     NSString* requestedClaimsJSON = [ NSString stringWithFormat: @"{\
                                      \"self_attested_attributes\":{},\
-                                     \"requested_attrs\":{\"attr1_uuid\":[\"%@\",true]},\
-                                     \"requested_predicates\":{\"predicate1_uuid\":\"%@\"}\
+                                     \"requested_attrs\":{\"attr1_referent\":[\"%@\",true]},\
+                                     \"requested_predicates\":{\"predicate1_referent\":\"%@\"}\
                                      }", claimUUID, claimUUID ];
     
     NSString *schemas_json = [NSString stringWithFormat: @"{\"%@\":%@}", claimUUID, schema];

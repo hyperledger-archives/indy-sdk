@@ -33,16 +33,6 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 		Wallet.deleteWallet(walletName, null).get();
 	}
 
-	private String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
-	private String gvtSchemaJson = "{\n" +
-			"                    \"seqNo\":1,\n" +
-			"                    \"data\": {\n" +
-			"                        \"name\":\"gvt\",\n" +
-			"                        \"version\":\"1.0\",\n" +
-			"                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
-			"                    }\n" +
-			"                 }";
-
 	@Test
 	public void testIssuerCreateAndStoreClaimDefWorks() throws Exception {
 
@@ -66,7 +56,11 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String schema = "{\"seqNo\":1, \"name\":\"name\",\"version\":\"1.0\", \"attr_names\":[\"name\"]}";
+		String schema = "{" +
+				"                   \"seqNo\":1, " +
+				"                   \"name\":\"name\"," +
+				"                   \"version\":\"1.0\"," +
+				"                   \"attr_names\":[\"name\"]}";
 
 		Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, schema, null, false).get();
 	}
@@ -79,6 +73,7 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 
 		String schema = "{\n" +
 				"                    \"seqNo\":1,\n" +
+				"                    \"dest\":\"NcYxiDXkpYi6ov5FcYDi1e\",\n" +
 				"                    \"data\": {\n" +
 				"                        \"name\":\"gvt\",\n" +
 				"                        \"version\":\"1.0\",\n" +
@@ -113,5 +108,15 @@ public class IssuerCreateAndStoreClaimDefinitionTest extends AnoncredsIntegratio
 		thrown.expectCause(isA(InvalidStructureException.class));
 
 		Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, gvtSchemaJson, "type", false).get();
+	}
+
+	@Test
+	public void testIssuerCreateAndStoreClaimDefWorksForDuplicate() throws Exception {
+		Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, gvtSchemaJson, null, false).get();
+
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(isA(ClaimDefAlreadyExistsException.class));
+
+		Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, gvtSchemaJson, null, false).get();
 	}
 }

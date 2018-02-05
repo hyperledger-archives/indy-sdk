@@ -195,10 +195,10 @@ async def crypto_verify(their_vk: str,
     return res
 
 
-async def crypto_box(wallet_handle: int,
+async def auth_crypt(wallet_handle: int,
                      my_vk: str,
                      their_vk: str,
-                     msg: bytes) -> (bytes, bytes):
+                     msg: bytes) -> bytes:
     """
     Encrypt a message by authenticated-encryption scheme.
 
@@ -208,9 +208,6 @@ async def crypto_box(wallet_handle: int,
     That shared secret key can be used to verify that the encrypted message was not tampered with,
     before eventually decrypting it.
 
-    Recipient only needs Sender's public key, the nonce and the ciphertext to peform decryption.
-    The nonce doesn't have to be confidential.
-
     Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     for specific DID.
 
@@ -219,48 +216,43 @@ async def crypto_box(wallet_handle: int,
     indy_create_and_store_my_did
     :param their_vk: id (verkey) of their key
     :param msg: a message to be signed
-    :return: an encrypted message and nonce
+    :return: an encrypted message
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("crypto_box: >>> wallet_handle: %r,my_vk: %r, their_vk: %r, msg: %r",
+    logger.debug("auth_crypt: >>> wallet_handle: %r,my_vk: %r, their_vk: %r, msg: %r",
                  wallet_handle,
                  my_vk,
                  their_vk,
                  msg)
 
-    def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32, arr_ptr2: POINTER(c_uint8), arr_len2: c_uint32):
-        return bytes(arr_ptr[:arr_len]), bytes(arr_ptr2[:arr_len2])
+    def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
+        return bytes(arr_ptr[:arr_len])
 
-    if not hasattr(crypto_box, "cb"):
-        logger.debug("crypto_box: Creating callback")
-        crypto_box.cb = create_cb(
-            CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32, POINTER(c_uint8),
-                      c_uint32), transform_cb)
+    if not hasattr(auth_crypt, "cb"):
+        logger.debug("auth_crypt: Creating callback")
+        auth_crypt.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
 
     c_wallet_handle = c_int32(wallet_handle)
     c_my_vk = c_char_p(my_vk.encode('utf-8'))
     c_their_vk = c_char_p(their_vk.encode('utf-8'))
     c_msg_len = c_uint32(len(msg))
 
-    encrypted_message, nonce = await do_call('indy_crypto_box',
-                                             c_wallet_handle,
-                                             c_my_vk,
-                                             c_their_vk,
-                                             msg,
-                                             c_msg_len,
-                                             crypto_box.cb)
-    res = (encrypted_message, nonce)
+    res = await do_call('indy_crypto_auth_crypt',
+                        c_wallet_handle,
+                        c_my_vk,
+                        c_their_vk,
+                        msg,
+                        c_msg_len,
+                        auth_crypt.cb)
 
-    logger.debug("crypto_box: <<< res: %r", res)
+    logger.debug("auth_crypt: <<< res: %r", res)
     return res
 
 
-async def crypto_box_open(wallet_handle: int,
-                          my_vk: str,
-                          their_vk: str,
-                          encrypted_msg: bytes,
-                          nonce: bytes) -> bytes:
+async def auth_decrypt(wallet_handle: int,
+                       my_vk: str,
+                       encrypted_msg: bytes) -> (str, bytes):
     """
     Decrypt a message by authenticated-encryption scheme.
 
@@ -270,59 +262,50 @@ async def crypto_box_open(wallet_handle: int,
     That shared secret key can be used to verify that the encrypted message was not tampered with,
     before eventually decrypting it.
 
-    Recipient only needs Sender's public key, the nonce and the ciphertext to peform decryption.
-    Еhe nonce doesn't have to be confidential.
-
     Note to use DID keys with this function you can call indy_key_for_did to get key id (verkey)
     for specific DID.
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param my_vk: id (verkey) of my key. The key must be created by calling indy_create_key or
     indy_create_and_store_my_did
-    :param their_vk: id (verkey) of their key
     :param encrypted_msg: encrypted message
-    :param nonce: nonce that encrypted message
-    :return: decrypted message
+    :return: sender verkey and decrypted message
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("crypto_box_open: >>> wallet_handle: %r, my_did: %r, did: %r, encrypted_msg: %r, nonce: %r",
+    logger.debug("auth_decrypt: >>> wallet_handle: %r, my_vk: %r, encrypted_msg: %r",
                  wallet_handle,
                  my_vk,
-                 their_vk,
-                 encrypted_msg,
-                 nonce)
+                 encrypted_msg)
 
-    def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
-        return bytes(arr_ptr[:arr_len]),
+    def transform_cb(key: c_char_p, arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
+        return key, bytes(arr_ptr[:arr_len]),
 
-    if not hasattr(crypto_box_open, "cb"):
+    if not hasattr(auth_decrypt, "cb"):
         logger.debug("crypto_box_open: Creating callback")
-        crypto_box_open.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32),
-                                       transform_cb)
+        auth_decrypt.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, POINTER(c_uint8), c_uint32),
+                                    transform_cb)
 
     c_wallet_handle = c_int32(wallet_handle)
     c_my_vk = c_char_p(my_vk.encode('utf-8'))
-    c_their_vk = c_char_p(their_vk.encode('utf-8'))
     c_encrypted_msg_len = c_uint32(len(encrypted_msg))
-    c_nonce_len = c_uint32(len(nonce))
 
-    decrypted_message = await do_call('indy_crypto_box_open',
-                                      c_wallet_handle,
-                                      c_my_vk,
-                                      c_their_vk,
-                                      bytes(encrypted_msg),
-                                      c_encrypted_msg_len,
-                                      bytes(nonce),
-                                      c_nonce_len,
-                                      crypto_box_open.cb)
+    (sender_vk, msg) = await do_call('indy_crypto_auth_decrypt',
+                                     c_wallet_handle,
+                                     c_my_vk,
+                                     bytes(encrypted_msg),
+                                     c_encrypted_msg_len,
+                                     auth_decrypt.cb)
 
-    logger.debug("crypto_box_open: <<< res: %r", decrypted_message)
-    return decrypted_message
+    sender_vk = sender_vk.decode()
+    res = (sender_vk, msg)
+
+    logger.debug("auth_decrypt: <<< res: %r", res)
+    return res
 
 
-async def crypto_box_seal(their_vk: str,
-                          msg: bytes) -> (bytes, bytes):
+async def anon_crypt(their_vk: str,
+                     msg: bytes) -> bytes:
     """
     Encrypts a message by anonymous-encryption scheme.
 
@@ -335,37 +318,37 @@ async def crypto_box_seal(their_vk: str,
 
     :param their_vk: id (verkey) of their key
     :param msg: a message to be signed
-    :return: an encrypted message and nonce
+    :return: an encrypted message
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("crypto_box_seal: >>> their_vk: %r, msg: %r",
+    logger.debug("anon_crypt: >>> their_vk: %r, msg: %r",
                  their_vk,
                  msg)
 
     def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
         return bytes(arr_ptr[:arr_len])
 
-    if not hasattr(crypto_box_seal, "cb"):
-        logger.debug("crypto_box_seal: Creating callback")
-        crypto_box_seal.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
+    if not hasattr(anon_crypt, "cb"):
+        logger.debug("anon_crypt: Creating callback")
+        anon_crypt.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
 
     c_their_vk = c_char_p(their_vk.encode('utf-8'))
     c_msg_len = c_uint32(len(msg))
 
-    encrypted_message = await do_call('indy_crypto_box_seal',
+    encrypted_message = await do_call('indy_crypto_anon_crypt',
                                       c_their_vk,
                                       msg,
                                       c_msg_len,
-                                      crypto_box_seal.cb)
+                                      anon_crypt.cb)
     res = encrypted_message
-    logger.debug("crypto_box_seal: <<< res: %r", res)
+    logger.debug("anon_crypt: <<< res: %r", res)
     return res
 
 
-async def crypto_box_seal_open(wallet_handle: int,
-                               my_vk: str,
-                               encrypted_msg: bytes) -> bytes:
+async def anon_decrypt(wallet_handle: int,
+                       my_vk: str,
+                       encrypted_msg: bytes) -> bytes:
     """
     Decrypts a message by anonymous-encryption scheme.
 
@@ -384,7 +367,7 @@ async def crypto_box_seal_open(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("crypto_box_seal_open: >>> wallet_handle: %r, my_vk: %r, encrypted_msg: %r",
+    logger.debug("anon_decrypt: >>> wallet_handle: %r, my_vk: %r, encrypted_msg: %r",
                  wallet_handle,
                  my_vk,
                  encrypted_msg)
@@ -392,18 +375,19 @@ async def crypto_box_seal_open(wallet_handle: int,
     def transform_cb(arr_ptr: POINTER(c_uint8), arr_len: c_uint32):
         return bytes(arr_ptr[:arr_len]),
 
-    if not hasattr(crypto_box_seal_open, "cb"):
-        logger.debug("crypto_box_seal_open: Creating callback")
-        crypto_box_seal_open.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
+    if not hasattr(anon_decrypt, "cb"):
+        logger.debug("anon_decrypt: Creating callback")
+        anon_decrypt.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, POINTER(c_uint8), c_uint32), transform_cb)
 
     c_wallet_handle = c_int32(wallet_handle)
     c_my_vk = c_char_p(my_vk.encode('utf-8'))
     c_encrypted_msg_len = c_uint32(len(encrypted_msg))
-    decrypted_message = await do_call('indy_crypto_box_seal_open',
+    decrypted_message = await do_call('indy_crypto_anon_decrypt',
                                       c_wallet_handle,
                                       c_my_vk,
                                       bytes(encrypted_msg),
                                       c_encrypted_msg_len,
-                                      crypto_box_seal_open.cb)
+                                      anon_decrypt.cb)
+
     logger.debug("crypto_box_seal_open: <<< res: %r", decrypted_message)
     return decrypted_message

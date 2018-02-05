@@ -8,8 +8,6 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
-#[macro_use]
-extern crate log;
 
 #[macro_use]
 mod utils;
@@ -19,20 +17,11 @@ use utils::anoncreds::AnoncredsUtils;
 use utils::anoncreds::COMMON_MASTER_SECRET;
 use utils::test::TestUtils;
 use std::collections::HashMap;
-use utils::types::{
-    ClaimDefinition,
-    ClaimOffer,
-    ProofClaimsJson,
-    ClaimRequestJson,
-    ClaimInfo,
-    ClaimJson,
-    ProofJson
-};
+use utils::types::*;
 
 use indy::api::ErrorCode;
 use utils::inmem_wallet::InmemWallet;
 use utils::constants::*;
-
 
 mod high_cases {
     use super::*;
@@ -44,28 +33,23 @@ mod high_cases {
         fn issuer_create_and_store_claim_def_works() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let schema = AnoncredsUtils::get_gvt_schema_json(SEQ_NO);
+            let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
+                                                                                ISSUER_DID,
+                                                                                &AnoncredsUtils::custom_schema("claim_def_works"),
+                                                                                None, false).unwrap();
 
-            let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, ISSUER_DID, &schema, None, false).unwrap();
-
-            let claim_def: ClaimDefinition = serde_json::from_str(&claim_def_json).unwrap();
-
-            assert!(claim_def.data.public_key.r.len() == 4);
-            assert!(claim_def.data.public_key.n.len() > 0);
-            assert!(claim_def.data.public_key.s.len() > 0);
-            assert!(claim_def.data.public_key.rms.len() > 0);
-            assert!(claim_def.data.public_key.z.len() > 0);
-            assert!(claim_def.data.public_key.rctxt.len() > 0);
+            serde_json::from_str::<ClaimDefinition>(&claim_def_json).unwrap();
         }
 
         #[test]
         fn issuer_create_and_store_claim_def_works_for_invalid_wallet() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let schema = AnoncredsUtils::get_gvt_schema_json(SEQ_NO);
-
             let invalid_wallet_handle = wallet_handle + 100;
-            let res = AnoncredsUtils::issuer_create_claim_definition(invalid_wallet_handle, ISSUER_DID, &schema, None, false);
+            let res = AnoncredsUtils::issuer_create_claim_definition(invalid_wallet_handle,
+                                                                     ISSUER_DID,
+                                                                     &AnoncredsUtils::custom_schema("claim_def_works_for_invalid_wallet"),
+                                                                     None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
     }
@@ -77,9 +61,7 @@ mod high_cases {
         fn prover_store_claim_offer_works() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, SEQ_NO);
-
-            AnoncredsUtils::prover_store_claim_offer(wallet_handle, &claim_offer_json).unwrap();
+            AnoncredsUtils::prover_store_claim_offer(wallet_handle, &AnoncredsUtils::gvt_claim_offer()).unwrap();
         }
 
         #[test]
@@ -96,10 +78,8 @@ mod high_cases {
         fn prover_store_claim_offer_works_for_invalid_wallet() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, SEQ_NO);
-
             let invalid_wallet_handle = wallet_handle + 100;
-            let res = AnoncredsUtils::prover_store_claim_offer(invalid_wallet_handle, &claim_offer_json);
+            let res = AnoncredsUtils::prover_store_claim_offer(invalid_wallet_handle, &AnoncredsUtils::gvt_claim_offer());
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
     }
@@ -115,6 +95,9 @@ mod high_cases {
             let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 3);
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
         }
 
         #[test]
@@ -125,38 +108,76 @@ mod high_cases {
             let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 2);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_seq_no: 1 }));
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_seq_no: 2 }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
         }
 
         #[test]
         fn prover_get_claim_offers_works_for_filter_by_schema() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"schema_seq_no":2}"#).unwrap();
+            let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle,
+                                                                       &format!(r#"{{"schema_key":{}}}"#, AnoncredsUtils::gvt_schema_key_json())).unwrap();
             let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 2);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_seq_no: 2 }));
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: DID.to_string(), schema_seq_no: 2 }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+        }
+
+        #[test]
+        fn prover_get_claim_offers_works_for_filter_by_schema_name() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"schema_key":{"name":"gvt"}}"#).unwrap();
+            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+
+            assert_eq!(claim_offers.len(), 2);
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+        }
+
+        #[test]
+        fn prover_get_claim_offers_works_for_filter_by_schema_version() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"schema_key":{"version":"1.0"}}"#).unwrap();
+            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+
+            assert_eq!(claim_offers.len(), 3);
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
+        }
+
+        #[test]
+        fn prover_get_claim_offers_works_for_filter_by_schema_did() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, &format!(r#"{{"schema_key":{{"did":"{}"}}}}"#, ISSUER_DID)).unwrap();
+            let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
+
+            assert_eq!(claim_offers.len(), 1);
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
         }
 
         #[test]
         fn prover_get_claim_offers_works_for_filter_by_issuer_and_schema() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, &format!(r#"{{"issuer_did":"{}","schema_seq_no":1}}"#, ISSUER_DID)).unwrap();
+            let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle,
+                                                                       &format!(r#"{{"issuer_did":"{}","schema_key":{}}}"#, ISSUER_DID, AnoncredsUtils::gvt_schema_key_json())).unwrap();
             let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 1);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_seq_no: SEQ_NO }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
         }
 
         #[test]
         fn prover_get_claim_offers_works_for_no_results() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"schema_seq_no":4}"#).unwrap();
+            let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"issuer_did":"didaacdsfds"}"#).unwrap();
             let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 0);
@@ -167,7 +188,7 @@ mod high_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let invalid_wallet_handle = wallet_handle + 100;
-            let res = AnoncredsUtils::prover_get_claim_offers(invalid_wallet_handle, r#"{"schema_seq_no":"1"}"#);
+            let res = AnoncredsUtils::prover_get_claim_offers(invalid_wallet_handle, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID));
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
 
@@ -176,24 +197,20 @@ mod high_cases {
             InmemWallet::cleanup();
 
             WalletUtils::register_wallet_type(INMEM_TYPE, false).unwrap();
-            WalletUtils::create_wallet(POOL, WALLET, Some(INMEM_TYPE), None).unwrap();
-            let wallet_handle = WalletUtils::open_wallet(WALLET, None).unwrap();
+            WalletUtils::create_wallet(POOL, WALLET, Some(INMEM_TYPE), None, None).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(WALLET, None, None).unwrap();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, 1);
-            let claim_offer_json2 = AnoncredsUtils::get_claim_offer(ISSUER_DID, 2);
-            let claim_offer_json3 = AnoncredsUtils::get_claim_offer(DID, 2);
-
-            AnoncredsUtils::prover_store_claim_offer(wallet_handle, &claim_offer_json).unwrap();
-            AnoncredsUtils::prover_store_claim_offer(wallet_handle, &claim_offer_json2).unwrap();
-            AnoncredsUtils::prover_store_claim_offer(wallet_handle, &claim_offer_json3).unwrap();
+            AnoncredsUtils::prover_store_claim_offer(wallet_handle, &AnoncredsUtils::gvt_claim_offer()).unwrap();
+            AnoncredsUtils::prover_store_claim_offer(wallet_handle, &AnoncredsUtils::xyz_claim_offer()).unwrap();
+            AnoncredsUtils::prover_store_claim_offer(wallet_handle, &AnoncredsUtils::get_claim_offer(DID, &AnoncredsUtils::gvt_schema_key())).unwrap();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID)).unwrap();
 
             let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 2);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_seq_no: 1 }));
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_seq_no: 2 }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
             InmemWallet::cleanup();
@@ -226,48 +243,40 @@ mod high_cases {
         fn prover_create_and_store_claim_req_works() {
             let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, SEQ_NO);
-
-            let claim_req_json = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle, DID, &claim_offer_json,
-                                                                                   &claim_def, COMMON_MASTER_SECRET).unwrap();
-            let claim_req: ClaimRequestJson = serde_json::from_str(&claim_req_json).unwrap();
-
-            assert_eq!(claim_req.schema_seq_no, SEQ_NO);
+            let claim_req_json = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
+                                                                                   DID,
+                                                                                   &AnoncredsUtils::gvt_claim_offer(),
+                                                                                   &claim_def,
+                                                                                   COMMON_MASTER_SECRET).unwrap();
+            let claim_req: ClaimRequest = serde_json::from_str(&claim_req_json).unwrap();
+            assert_eq!(claim_req.schema_key, AnoncredsUtils::gvt_schema_key());
             assert_eq!(claim_req.issuer_did, ISSUER_DID);
-            assert!(claim_req.blinded_ms.u.len() > 0);
         }
 
         #[test]
         fn prover_create_and_store_claim_req_works_for_invalid_wallet() {
             let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, SEQ_NO);
-
             let invalid_wallet_handle = wallet_handle + 100;
-            let res = AnoncredsUtils::prover_create_and_store_claim_req(invalid_wallet_handle, DID, &claim_offer_json,
-                                                                        &claim_def, COMMON_MASTER_SECRET);
+            let res = AnoncredsUtils::prover_create_and_store_claim_req(invalid_wallet_handle,
+                                                                        DID,
+                                                                        &AnoncredsUtils::gvt_claim_offer(),
+                                                                        &claim_def,
+                                                                        COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
 
         #[test]
-        fn prover_create_and_store_claim_req_works_for_claim_def_does_not_correspond_offer_different_issuer_did() {
+        fn prover_create_and_store_claim_req_works_for_claim_def_does_not_correspond_claim_offer() {
             let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer(DID, 2);
+            let claim_offer_json = AnoncredsUtils::get_claim_offer(DID, &AnoncredsUtils::gvt_schema_key());
 
-            let res = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle, DID, &claim_offer_json,
-                                                                        &claim_def, COMMON_MASTER_SECRET);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
-        }
-
-        #[test]
-        fn prover_create_and_store_claim_req_works_for_claim_def_does_not_correspond_offer_different_schema_seq_no() {
-            let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
-
-            let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, 2);
-
-            let res = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle, DID, &claim_offer_json,
-                                                                        &claim_def, COMMON_MASTER_SECRET);
+            let res = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
+                                                                        DID,
+                                                                        &claim_offer_json,
+                                                                        &claim_def,
+                                                                        COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
     }
@@ -279,27 +288,21 @@ mod high_cases {
         fn issuer_create_claim_works() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_req = format!(r#"{{"blinded_ms":{{"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","u":"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038","ur":null}},"issuer_did":"{}","schema_seq_no":1}}"#, ISSUER_DID);
-
-            let claim_json = AnoncredsUtils::get_gvt_claim_json();
-
-            let (_, claim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle, &claim_req, &claim_json, None).unwrap();
-            let claim_json: ClaimJson = serde_json::from_str(&claim_json).unwrap();
-            assert!(claim_json.signature.primary_claim.a.len() > 0);
-            assert!(claim_json.signature.primary_claim.m2.len() > 0);
-            assert!(claim_json.signature.primary_claim.e.len() > 0);
-            assert!(claim_json.signature.primary_claim.v.len() > 0);
+            let (_, claim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle,
+                                                                      &AnoncredsUtils::gvt_claim_req(),
+                                                                      &AnoncredsUtils::gvt_claim_values_json(),
+                                                                      None).unwrap();
+            serde_json::from_str::<Claim>(&claim_json).unwrap();
         }
 
         #[test]
         fn issuer_create_claim_works_for_claim_does_not_correspond_to_claim_req() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_req = format!(r#"{{"blinded_ms"{{"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","u":"78642009183061519681642949186511883517561213024253007693605674585288964920641017651779407190325620073544451273313223865970730324882004218654708785143702626337327148875137393101464687794953218753005927492179012286511197396945795208681795313939767499444933139277315113356530041684437761038663276793040349557294620223093906897574215436647703667891052762523022326049857738264833807472302707972331207200720216038057270470116611478516211732505056236404960175670287081433670657644042478872537481050085523491110773623684416797190117083084618649667528194409150615774512701755156055570554349550169869411668543258825800016015079","ur":null}},"issuer_did":"{}","schema_seq_no":1}}"#, ISSUER_DID);
-
-            let claim_json = AnoncredsUtils::get_xyz_claim_json();
-
-            let res = AnoncredsUtils::issuer_create_claim(wallet_handle, &claim_req, &claim_json, None);
+            let res = AnoncredsUtils::issuer_create_claim(wallet_handle,
+                                                          &AnoncredsUtils::gvt_claim_req(),
+                                                          &AnoncredsUtils::xyz_claim_values_json(),
+                                                          None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -307,12 +310,11 @@ mod high_cases {
         fn issuer_create_claim_works_for_for_invalid_wallet_handle() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_req = format!(r#"{{"blinded_ms":{{"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","u":"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038","ur":null}},"issuer_did":"{}","schema_seq_no":1}}"#, ISSUER_DID);
-
-            let claim_json = AnoncredsUtils::get_gvt_claim_json();
-
             let invalid_wallet_handle = wallet_handle + 100;
-            let res = AnoncredsUtils::issuer_create_claim(invalid_wallet_handle, &claim_req, &claim_json, None);
+            let res = AnoncredsUtils::issuer_create_claim(invalid_wallet_handle,
+                                                          &AnoncredsUtils::gvt_claim_req(),
+                                                          &AnoncredsUtils::gvt_claim_values_json(),
+                                                          None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
     }
@@ -325,36 +327,38 @@ mod high_cases {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
             let prover_wallet_handle = WalletUtils::create_and_open_wallet("proverWallet", None).unwrap();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, SEQ_NO);
-
             AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-            let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle, DID, &claim_offer_json,
-                                                                              &claim_def_json, COMMON_MASTER_SECRET).unwrap();
+            let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
+                                                                              DID,
+                                                                              &AnoncredsUtils::gvt_claim_offer(),
+                                                                              &claim_def_json,
+                                                                              COMMON_MASTER_SECRET).unwrap();
 
-            let claim_json = AnoncredsUtils::get_gvt_claim_json();
-            let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle, &claim_req, &claim_json, None).unwrap();
+            let (_, claim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle, &claim_req,
+                                                                      &AnoncredsUtils::gvt_claim_values_json(),
+                                                                      None).unwrap();
 
-            AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xclaim_json).unwrap();
+            AnoncredsUtils::prover_store_claim(prover_wallet_handle, &claim_json, None).unwrap();
         }
 
         #[test]
         fn prover_store_claim_works_for_invalid_wallet_handle() {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, 1);
-
             let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                               DID,
-                                                                              &claim_offer_json,
+                                                                              &AnoncredsUtils::gvt_claim_offer(),
                                                                               &claim_def_json,
                                                                               COMMON_MASTER_SECRET).unwrap();
 
-            let claim_json = AnoncredsUtils::get_gvt_claim_json();
-            let (_, claim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle, &claim_req, &claim_json, None).unwrap();
+            let (_, claim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle,
+                                                                      &claim_req,
+                                                                      &AnoncredsUtils::gvt_claim_values_json(),
+                                                                      None).unwrap();
 
             let invalid_wallet_handle = wallet_handle + 100;
-            let res = AnoncredsUtils::prover_store_claim(invalid_wallet_handle, &claim_json);
+            let res = AnoncredsUtils::prover_store_claim(invalid_wallet_handle, &claim_json, None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
     }
@@ -369,7 +373,7 @@ mod high_cases {
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{}"#).unwrap();
             let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
 
-            assert_eq!(claims.len(), 1);
+            assert_eq!(claims.len(), 3);
         }
 
         #[test]
@@ -379,24 +383,73 @@ mod high_cases {
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID)).unwrap();
             let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
 
+            assert_eq!(claims.len(), 2);
+            assert_eq!(claims[0].issuer_did, ISSUER_DID);
+            assert_eq!(claims[1].issuer_did, ISSUER_DID);
+        }
+
+        #[test]
+        fn prover_get_claims_works_for_filter_by_schema() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let claims = AnoncredsUtils::prover_get_claims(wallet_handle, &format!(r#"{{"schema_key":{}}}"#, &AnoncredsUtils::gvt_schema_key_json())).unwrap();
+            let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
+
+            assert_eq!(claims.len(), 2);
+            assert_eq!(claims[0].schema_key, AnoncredsUtils::gvt_schema_key());
+            assert_eq!(claims[1].schema_key, AnoncredsUtils::gvt_schema_key());
+        }
+
+        #[test]
+        fn prover_get_claims_works_for_filter_by_schema_name() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{"schema_key":{"name":"gvt"}}"#).unwrap();
+            let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
+
+            assert_eq!(claims.len(), 2);
+            assert_eq!(claims[0].schema_key, AnoncredsUtils::gvt_schema_key());
+            assert_eq!(claims[1].schema_key, AnoncredsUtils::gvt_schema_key());
+        }
+
+        #[test]
+        fn prover_get_claims_works_for_filter_by_schema_version() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{"schema_key":{"version":"1.0"}}"#).unwrap();
+            let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
+
+            assert_eq!(claims.len(), 3);
+        }
+
+        #[test]
+        fn prover_get_claims_works_for_filter_by_schema_did() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let claims = AnoncredsUtils::prover_get_claims(wallet_handle, &format!(r#"{{"schema_key":{{"did":"{}"}}}}"#, ISSUER_DID)).unwrap();
+            let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
+
             assert_eq!(claims.len(), 1);
+            assert_eq!(claims[0].schema_key, AnoncredsUtils::xyz_schema_key());
         }
 
         #[test]
         fn prover_get_claims_works_for_filter_by_issuer_did_and_schema_seq_no() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claims = AnoncredsUtils::prover_get_claims(wallet_handle, &format!(r#"{{"issuer_did":"{}", "schema_seq_no":1}}"#, ISSUER_DID)).unwrap();
+            let claims = AnoncredsUtils::prover_get_claims(wallet_handle, &format!(r#"{{"issuer_did":"{}", "schema_key":{}}}"#, ISSUER_DID, &AnoncredsUtils::gvt_schema_key_json())).unwrap();
             let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
 
             assert_eq!(claims.len(), 1);
+            assert_eq!(claims[0].issuer_did, ISSUER_DID);
+            assert_eq!(claims[0].schema_key, AnoncredsUtils::gvt_schema_key());
         }
 
         #[test]
         fn prover_get_claims_works_for_empty_result() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{"schema_seq_no":10}"#).unwrap();
+            let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{"issuer_did":"issuerdid"}"#).unwrap();
             let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
 
             assert_eq!(claims.len(), 0);
@@ -412,29 +465,651 @@ mod high_cases {
         }
     }
 
+    //NOTE: There are following claim stored in wallet:
+    // {"issuer_did": ISSUER_DID, "schema_seq_no": GVT_SEQ_NO}
+    // {"issuer_did": ISSUER_DID, "schema_seq_no": XYZ_SEQ_NO}
+    // {"issuer_did": DID, "schema_seq_no": GVT_SEQ_NO}
     mod prover_get_claims_for_proof_req {
         use super::*;
 
         #[test]
-        fn prover_get_claims_for_proof_req_works_for_revealed_attr() {
+        fn prover_get_claims_for_proof_req_works_for_empty_req() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
-                                "requested_predicates":{}
-                              }"#;
+            let proof_req = r#"{
+                                        "nonce":"123432421212",
+                                        "name":"proof_req_1",
+                                        "version":"0.1",
+                                        "requested_attrs":{},
+                                        "requested_predicates":{}
+                                      }"#;
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-            assert_eq!(claims.attrs.len(), 1);
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 0);
             assert_eq!(claims.predicates.len(), 0);
+        }
 
-            let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_only() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = r#"{
+                                            "nonce":"123432421212",
+                                            "name":"proof_req_1",
+                                            "version":"0.1",
+                                            "requested_attrs":{
+                                                "attr1_referent":{"name":"name"}
+                                            },
+                                            "requested_predicates":{}
+                                       }"#;
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_in_upper_case() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = r#"{
+                                            "nonce":"123432421212",
+                                            "name":"proof_req_1",
+                                            "version":"0.1",
+                                            "requested_attrs":{
+                                                "attr1_referent":{"name":"NAME"}
+                                            },
+                                            "requested_predicates":{}
+                                       }"#;
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_contains_spaces() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = r#"{
+                                            "nonce":"123432421212",
+                                            "name":"proof_req_1",
+                                            "version":"0.1",
+                                            "requested_attrs":{
+                                                "attr1_referent":{"name":" name "}
+                                            },
+                                            "requested_predicates":{}
+                                       }"#;
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_issuer() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{
+                                                        "attr1_referent":{{
+                                                            "name":"name",
+                                                            "restrictions":[{{"issuer_did":"{}"}}]
+                                                        }}
+                                                    }},
+                                                    "requested_predicates":{{}}
+                                                 }}"#, ISSUER_DID);
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
             assert_eq!(claims_for_attr_1.len(), 1);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_rea_works_for_revealed_attr_for_multiple_issuers() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{
+                                                        "attr1_referent":{{
+                                                            "name":"name",
+                                                            "restrictions":[{{"issuer_did":"{}"}},
+                                                                            {{"issuer_did":"{}"}}]
+                                                        }}
+                                                    }},
+                                                    "requested_predicates":{{}}
+                                                 }}"#, ISSUER_DID, DID);
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_schema() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{
+                                                        "attr1_referent":{{
+                                                            "name":"name",
+                                                            "restrictions":[{{"schema_key":{}}}]
+                                                        }}
+                                                    }},
+                                                    "requested_predicates":{{}}
+                                                 }}"#, AnoncredsUtils::gvt_schema_key_json());
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_schema_name() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = r#"{
+                                "nonce":"123432421212",
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "requested_attrs":{
+                                    "attr1_referent":{
+                                        "name":"name",
+                                        "restrictions":[{"schema_key":{"name":"gvt"}}]
+                                    }
+                                },
+                                "requested_predicates":{}
+                             }"#;
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_schema_version() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = r#"{
+                                "nonce":"123432421212",
+                                "name":"proof_req_1",
+                                "version":"0.1",
+                                "requested_attrs":{
+                                    "attr1_referent":{
+                                        "name":"name",
+                                        "restrictions":[{"schema_key":{"version":"1.0"}}]
+                                    }
+                                },
+                                "requested_predicates":{}
+                             }"#;
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_schema_did() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                            "nonce":"123432421212",
+                                            "name":"proof_req_1",
+                                            "version":"0.1",
+                                            "requested_attrs":{{
+                                                "attr1_referent":{{
+                                                    "name":"name",
+                                                    "restrictions":[{{"schema_key":{{"did":"{}"}}}}]
+                                                }}
+                                            }},
+                                            "requested_predicates":{{}}
+                                        }}"#, DID_TRUSTEE);
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_schema_or_specific_issuer() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{
+                                                        "attr1_referent":{{
+                                                            "name":"name",
+                                                            "restrictions":[{{"schema_key":{}}},
+                                                                            {{"issuer_did":"{}"}}]
+                                                        }}
+                                                    }},
+                                                    "requested_predicates":{{}}
+                                                 }}"#, AnoncredsUtils::gvt_schema_key_json(), ISSUER_DID);
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_rea_works_for_revealed_attr_for_multiple_schemas() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{
+                                                        "attr1_referent":{{
+                                                            "name":"name",
+                                                            "restrictions":[{{"schema_key":{}}},
+                                                                            {{"schema_key":{}}}]
+                                                        }}
+                                                    }},
+                                                    "requested_predicates":{{}}
+                                                 }}"#, AnoncredsUtils::gvt_schema_key_json(), AnoncredsUtils::xyz_schema_key_json());
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_issuer_and_schema() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{
+                                                        "attr1_referent":{{
+                                                            "name":"name",
+                                                            "restrictions":[{{"issuer_did":"{}", "schema_key":{}}}]
+                                                        }}
+                                                    }},
+                                                    "requested_predicates":{{}}
+                                                 }}"#, ISSUER_DID, AnoncredsUtils::gvt_schema_key_json());
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 1);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_rea_works_for_revealed_attr_for_multiple_specific_issuer_schema_pairs() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{
+                                                        "attr1_referent":{{
+                                                            "name":"name",
+                                                            "restrictions":[{{"issuer_did":"{}", "schema_key":{}}},
+                                                                            {{"issuer_did":"{}", "schema_key":{}}}]
+                                                        }}
+                                                    }},
+                                                    "requested_predicates":{{}}
+                                                 }}"#, ISSUER_DID, AnoncredsUtils::gvt_schema_key_json(), DID, AnoncredsUtils::gvt_schema_key_json());
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_rea_works_for_revealed_attr_for_specific_issuer_schema_pair_or_issuer() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{
+                                                        "attr1_referent":{{
+                                                            "name":"name",
+                                                            "restrictions":[{{"issuer_did":"{}", "schema_key":{}}},
+                                                                            {{"issuer_did":"{}"}}]
+                                                        }}
+                                                    }},
+                                                    "requested_predicates":{{}}
+                                                 }}"#, ISSUER_DID, AnoncredsUtils::gvt_schema_key_json(), DID);
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_predicate() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = r#"{
+                                            "nonce":"123432421212",
+                                            "name":"proof_req_1",
+                                            "version":"0.1",
+                                            "requested_attrs":{},
+                                            "requested_predicates":{
+                                                "predicate1_referent":{"attr_name":"age","p_type":">=","value":18}
+                                            }
+                                       }"#;
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.predicates.len(), 1);
+
+            let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
+            assert_eq!(claims_for_predicate_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_predicate_attribute_in_upper_case() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = r#"{
+                                            "nonce":"123432421212",
+                                            "name":"proof_req_1",
+                                            "version":"0.1",
+                                            "requested_attrs":{},
+                                            "requested_predicates":{
+                                                "predicate1_referent":{"attr_name":"AGE","p_type":">=","value":18}
+                                            }
+                                       }"#;
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.predicates.len(), 1);
+
+            let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
+            assert_eq!(claims_for_predicate_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_predicate_attribute_contains_spaces() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = r#"{
+                                            "nonce":"123432421212",
+                                            "name":"proof_req_1",
+                                            "version":"0.1",
+                                            "requested_attrs":{},
+                                            "requested_predicates":{
+                                                "predicate1_referent":{"attr_name":" age ","p_type":">=","value":18}
+                                            }
+                                       }"#;
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.predicates.len(), 1);
+
+            let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
+            assert_eq!(claims_for_predicate_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_predicate_for_specific_issuer() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{}},
+                                                    "requested_predicates":{{
+                                                        "predicate1_referent":{{
+                                                            "attr_name":"age","p_type":">=","value":18,"restrictions":[{{"issuer_did":"{}"}}]
+                                                        }}
+                                                    }}
+                                                 }}"#, ISSUER_DID);
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.predicates.len(), 1);
+
+            let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
+            assert_eq!(claims_for_predicate_1.len(), 1);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_predicate_for_multiple_issuers() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{}},
+                                                    "requested_predicates":{{
+                                                        "predicate1_referent":{{
+                                                            "attr_name":"age","p_type":">=","value":18,
+                                                            "restrictions":[{{"issuer_did":"{}"}},{{"issuer_did":"{}"}}]
+                                                        }}
+                                                    }}
+                                                 }}"#, ISSUER_DID, DID);
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.predicates.len(), 1);
+
+            let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
+            assert_eq!(claims_for_predicate_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_predicate_for_specific_schema() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{}},
+                                                    "requested_predicates":{{
+                                                        "predicate1_referent":{{
+                                                            "attr_name":"age","p_type":">=","value":18,
+                                                            "restrictions":[{{"schema_key":{}}}]
+                                                        }}
+                                                    }}
+                                                 }}"#, AnoncredsUtils::gvt_schema_key_json());
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.predicates.len(), 1);
+
+            let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
+            assert_eq!(claims_for_predicate_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_predicate_for_multiple_schemas() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{}},
+                                                    "requested_predicates":{{
+                                                        "predicate1_referent":{{
+                                                            "attr_name":"age","p_type":">=","value":18,
+                                                            "restrictions":[{{"schema_key":{}}},{{"schema_key":{}}}]
+                                                        }}
+                                                    }}
+                                                 }}"#, AnoncredsUtils::gvt_schema_key_json(), AnoncredsUtils::xyz_schema_key_json());
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.predicates.len(), 1);
+
+            let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
+            assert_eq!(claims_for_predicate_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_predicate_for_specific_issuer_schema_pair() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{}},
+                                                    "requested_predicates":{{
+                                                        "predicate1_referent":{{
+                                                            "attr_name":"age","p_type":">=","value":18,
+                                                            "restrictions":[{{"issuer_did":"{}", "schema_key":{}}}]
+                                                        }}
+                                                    }}
+                                                 }}"#, ISSUER_DID, AnoncredsUtils::gvt_schema_key_json());
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.predicates.len(), 1);
+
+            let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
+            assert_eq!(claims_for_predicate_1.len(), 1);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_predicate_for_multiple_issuer_schema_pairs() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{}},
+                                                    "requested_predicates":{{
+                                                        "predicate1_referent":{{
+                                                            "attr_name":"age","p_type":">=","value":18,
+                                                            "restrictions":[{{"issuer_did":"{}", "schema_key":{}}},
+                                                                            {{"issuer_did":"{}", "schema_key":{}}}]
+                                                        }}
+                                                    }}
+                                                 }}"#, ISSUER_DID, AnoncredsUtils::gvt_schema_key_json(), DID, AnoncredsUtils::gvt_schema_key_json());
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.predicates.len(), 1);
+
+            let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
+            assert_eq!(claims_for_predicate_1.len(), 2);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_multiple_revealed_attrs_and_predicates() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = r#"{"nonce":"123432421212",
+                                        "name":"proof_req_1",
+                                        "version":"0.1",
+                                        "requested_attrs":{
+                                            "attr1_referent":{"name":"name"},
+                                            "attr2_referent":{"name":"status"}
+                                        },
+                                        "requested_predicates":{
+                                            "predicate1_referent":{"attr_name":"age","p_type":">=","value":18},
+                                            "predicate2_referent":{"attr_name":"height","p_type":">=","value":160}
+                                        }}"#;
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+
+            assert_eq!(claims.attrs.len(), 2);
+            assert_eq!(claims.predicates.len(), 2);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 2);
+
+            let claims_for_attr_2 = claims.attrs.get("attr2_referent").unwrap();
+            assert_eq!(claims_for_attr_2.len(), 1);
+
+            let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
+            assert_eq!(claims_for_predicate_1.len(), 2);
+
+            let claims_for_predicate_2 = claims.predicates.get("predicate2_referent").unwrap();
+            assert_eq!(claims_for_predicate_2.len(), 2);
         }
 
         #[test]
@@ -442,120 +1117,233 @@ mod high_cases {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"some_attr"}},
-                                "requested_predicates":{}
-                               }"#;
+                                        "name":"proof_req_1",
+                                        "version":"0.1",
+                                        "requested_attrs":{
+                                            "attr1_referent":{
+                                                "name":"some_attr"
+                                            }
+                                        },
+                                        "requested_predicates":{}
+                                       }"#;
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
-            assert_eq!(claims.predicates.len(), 0);
 
-            let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
             assert_eq!(claims_for_attr_1.len(), 0);
         }
 
         #[test]
-        fn prover_get_claims_for_proof_req_works_for_satisfy_predicate() {
+        fn prover_get_claims_for_proof_req_works_for_not_found_predicate_attribute() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{},
-                                "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":18}}
-                              }"#;
+            let proof_req = r#"{
+                                            "nonce":"123432421212",
+                                            "name":"proof_req_1",
+                                            "version":"0.1",
+                                            "requested_attrs":{},
+                                            "requested_predicates":{
+                                                "predicate1_referent":{
+                                                    "attr_name":"weight","p_type":">=","value":58
+                                                }
+                                            }
+                                        }"#;
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
 
             assert_eq!(claims.attrs.len(), 0);
             assert_eq!(claims.predicates.len(), 1);
 
-            let claims_for_predicate_1 = claims.predicates.get("predicate1_uuid").unwrap();
-            assert_eq!(claims_for_predicate_1.len(), 1);
-        }
-
-        #[test]
-        fn prover_get_claims_for_proof_req_works_for_not_satisfy_predicate() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
-
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{},
-                                "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":58}}
-                              }"#;
-
-            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-            assert_eq!(claims.attrs.len(), 0);
-            assert_eq!(claims.predicates.len(), 1);
-
-            let claims_for_predicate_1 = claims.predicates.get("predicate1_uuid").unwrap();
+            let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
             assert_eq!(claims_for_predicate_1.len(), 0);
         }
 
         #[test]
-        fn prover_get_claims_for_proof_req_works_for_multiply_attribute_and_predicates() {
+        fn prover_get_claims_for_proof_req_works_for_not_satisfied_predicate() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{
-                                    "attr1_uuid":{"schema_seq_no":1, "name":"name"},
-                                    "attr2_uuid":{"schema_seq_no":1, "name":"sex"}
-                                },
-                                "requested_predicates":{
-                                    "predicate1_uuid":{"attr_name":"age","p_type":"GE","value":18},
-                                    "predicate2_uuid":{"attr_name":"height","p_type":"GE","value":160}
-                                }}"#;
+            let proof_req = r#"{
+                                            "nonce":"123432421212",
+                                            "name":"proof_req_1",
+                                            "version":"0.1",
+                                            "requested_attrs":{},
+                                            "requested_predicates":{
+                                                "predicate1_referent":{
+                                                    "attr_name":"age","p_type":">=","value":58
+                                                }
+                                            }
+                                        }"#;
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
 
-            assert_eq!(claims.attrs.len(), 2);
-            assert_eq!(claims.predicates.len(), 2);
+            assert_eq!(claims.attrs.len(), 0);
+            assert_eq!(claims.predicates.len(), 1);
 
-            let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
-            assert_eq!(claims_for_attr_1.len(), 1);
+            let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
+            assert_eq!(claims_for_predicate_1.len(), 0);
+        }
 
-            let claims_for_attr_2 = claims.attrs.get("attr2_uuid").unwrap();
-            assert_eq!(claims_for_attr_2.len(), 1);
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_other_issuer() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claims_for_predicate_1 = claims.predicates.get("predicate1_uuid").unwrap();
-            assert_eq!(claims_for_predicate_1.len(), 1);
+            let proof_req = format!(r#"{{
+                                                "nonce":"123432421212",
+                                                "name":"proof_req_1",
+                                                "version":"0.1",
+                                                "requested_attrs":{{
+                                                    "attr1_referent":{{
+                                                        "name":"name",
+                                                        "restrictions":[{{"issuer_did":"{}"}}]
+                                                    }}
+                                                }},
+                                                "requested_predicates":{{}}
+                                             }}"#, DID_TRUSTEE);
 
-            let claims_for_predicate_2 = claims.predicates.get("predicate2_uuid").unwrap();
-            assert_eq!(claims_for_predicate_2.len(), 1);
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 0);
+        }
+
+
+        pub const OTHER_SCHEMA_KEY_JSON: &'static str = r#"{"name":"name", "version":"1.0", "did":"didasasdvcxvzc"}"#;
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_other_schema() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{
+                                                        "attr1_referent":{{
+                                                            "name":"name",
+                                                            "restrictions":[{{"schema_key":{}}}]
+                                                        }}
+                                                    }},
+                                                    "requested_predicates":{{}}
+                                                 }}"#, OTHER_SCHEMA_KEY_JSON);
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 0);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_other_issuer_schema_pair() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{
+                                                        "attr1_referent":{{
+                                                            "name":"name",
+                                                            "restrictions":[{{"issuer_did":"{}", "schema_key":{}}}]
+                                                        }}
+                                                    }},
+                                                    "requested_predicates":{{}}
+                                                 }}"#, DID_TRUSTEE, AnoncredsUtils::gvt_schema_key_json());
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.attrs.len(), 1);
+
+            let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
+            assert_eq!(claims_for_attr_1.len(), 0);
+        }
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_predicate_for_other_issuer() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{}},
+                                                    "requested_predicates":{{
+                                                        "predicate1_referent":{{
+                                                            "attr_name":"age","p_type":">=","value":18,"restrictions":[{{"issuer_did":"{}"}}]
+                                                        }}
+                                                    }}
+                                                 }}"#, DID_MY2);
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.predicates.len(), 1);
+
+            let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
+            assert_eq!(claims_for_predicate_1.len(), 0);
+        }
+
+
+        #[test]
+        fn prover_get_claims_for_proof_req_works_for_predicate_for_other_schema() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let proof_req = format!(r#"{{
+                                                    "nonce":"123432421212",
+                                                    "name":"proof_req_1",
+                                                    "version":"0.1",
+                                                    "requested_attrs":{{}},
+                                                    "requested_predicates":{{
+                                                        "predicate1_referent":{{
+                                                            "attr_name":"age","p_type":">=","value":18,
+                                                            "restrictions":[{{"schema_key":{}}}]
+                                                        }}
+                                                    }}
+                                                 }}"#, OTHER_SCHEMA_KEY_JSON);
+
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            assert_eq!(claims.predicates.len(), 1);
+
+            let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
+            assert_eq!(claims_for_predicate_1.len(), 0);
         }
 
         #[test]
         fn prover_get_claims_for_proof_req_works_for_invalid_wallet_handle() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{},
-                                "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":58}}
-                                }"#;
+            let proof_req = r#"{
+                                            "nonce":"123432421212",
+                                            "name":"proof_req_1",
+                                            "version":"0.1",
+                                            "requested_attrs":{},
+                                            "requested_predicates":{
+                                                "predicate1_referent":{
+                                                    "attr_name":"age","p_type":">=","value":58
+                                                }
+                                            }
+                                        }"#;
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_get_claims_for_proof_req(invalid_wallet_handle, &proof_req);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
     }
-
 
     mod prover_create_proof_works {
         use super::*;
@@ -564,65 +1352,55 @@ mod high_cases {
         fn prover_create_proof_works() {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
-                                "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":18}}
-                              }"#;
-
-            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-            let claims_for_attr = claims.attrs.get("attr1_uuid").unwrap();
-            let claim_for_attr = claims_for_attr[0].clone();
-
-            let claims_for_predicate = claims.predicates.get("predicate1_uuid").unwrap();
-            let claim_for_predicate = claims_for_predicate[0].clone();
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
+            let claim_for_attr = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
+            let claim_for_predicate = AnoncredsUtils::get_claim_for_predicate_referent(&claims_json, "predicate1_referent");
 
             let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_uuid":["{}",true]}},
-                                          "requested_predicates":{{"predicate1_uuid":"{}"}}
-                                        }}"#, claim_for_attr.claim_uuid, claim_for_predicate.claim_uuid);
+                                                  "self_attested_attributes":{{}},
+                                                  "requested_attrs":{{"attr1_referent":["{}",true]}},
+                                                  "requested_predicates":{{"predicate1_referent":"{}"}}
+                                                }}"#, claim_for_attr.referent, claim_for_predicate.referent);
 
-            let schemas_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, AnoncredsUtils::get_gvt_schema_json(1));
-            let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, claim_def_json);
-            let revoc_regs_jsons = "{}";
+            let schemas_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.referent, AnoncredsUtils::gvt_schema_json());
+            let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.referent, claim_def_json);
+            let revoc_regs_json = "{}";
 
             AnoncredsUtils::prover_create_proof(wallet_handle,
-                                                &proof_req,
+                                                AnoncredsUtils::proof_request_attr_and_predicate(),
                                                 &requested_claims_json,
                                                 &schemas_json,
                                                 COMMON_MASTER_SECRET,
                                                 &claim_defs_json,
-                                                &revoc_regs_jsons).unwrap();
+                                                &revoc_regs_json).unwrap();
         }
 
         #[test]
         fn prover_create_proof_works_for_using_not_satisfy_claim() {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
-            let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{}"#).unwrap();
-            let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
-            let claim_uuid = claims[0].clone().claim_uuid;
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
+            let claim_for_attr = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"some_attr"}},
-                                "requested_predicates":{}
-                              }"#;
+            let proof_req = r#"{
+                                        "nonce":"123432421212",
+                                        "name":"proof_req_1",
+                                        "version":"0.1",
+                                        "requested_attrs":{
+                                            "attr1_referent":{"name":"some_attr"}
+                                        },
+                                        "requested_predicates":{}
+                                    }"#;
 
             let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_uuid":["{}",true]}},
-                                          "requested_predicates":{{}}
-                                        }}"#, claim_uuid);
+                                                  "self_attested_attributes":{{}},
+                                                  "requested_attrs":{{"attr1_referent":["{}",true]}},
+                                                  "requested_predicates":{{}}
+                                                }}"#, claim_for_attr.referent);
 
-            let schemas_json = format!(r#"{{"{}":{}}}"#, claim_uuid, AnoncredsUtils::get_gvt_schema_json(1));
-            let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_uuid, claim_def_json);
-            let revoc_regs_jsons = "{}";
+            let schemas_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.referent, AnoncredsUtils::gvt_schema_json());
+            let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.referent, claim_def_json);
+            let revoc_regs_json = "{}";
 
             let res = AnoncredsUtils::prover_create_proof(wallet_handle,
                                                           &proof_req,
@@ -630,7 +1408,7 @@ mod high_cases {
                                                           &schemas_json,
                                                           COMMON_MASTER_SECRET,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons);
+                                                          &revoc_regs_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -638,32 +1416,22 @@ mod high_cases {
         fn prover_create_proof_works_for_invalid_wallet_handle() {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
-                                "requested_predicates":{}
-                                }"#;
-
-            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-            let claims_for_attr = claims.attrs.get("attr1_uuid").unwrap();
-            let claim_for_attr = claims_for_attr[0].clone();
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
+            let claim_for_attr = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
             let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_uuid":["{}",true]}},
-                                          "requested_predicates":{{}}
-                                        }}"#, claim_for_attr.claim_uuid);
+                                                  "self_attested_attributes":{{}},
+                                                  "requested_attrs":{{"attr1_referent":["{}",true]}},
+                                                  "requested_predicates":{{}}
+                                                }}"#, claim_for_attr.referent);
 
-            let schemas_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, AnoncredsUtils::get_gvt_schema_json(1));
-            let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, claim_def_json);
+            let schemas_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.referent, AnoncredsUtils::gvt_schema_json());
+            let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.referent, claim_def_json);
             let revoc_regs_jsons = "{}";
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_create_proof(invalid_wallet_handle,
-                                                          &proof_req,
+                                                          AnoncredsUtils::proof_request_attr_and_predicate(),
                                                           &requested_claims_json,
                                                           &schemas_json,
                                                           COMMON_MASTER_SECRET,
@@ -678,86 +1446,57 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_works_for_correct_proof() {
-            AnoncredsUtils::init_common_wallet();
+            let schemas_json = format!(r#"{{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{}}}"#, AnoncredsUtils::gvt_schema_json());
+            let claim_defs_json = format!(r#"{{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{}}}"#, AnoncredsUtils::claim_def_json());
+            let revoc_regs_json = "{}";
 
-            let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                    "name":"proof_req_1",
-                                    "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
-                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
-                                }}"#);
-
-            let claim_def = format!(r#"{{"ref":1,"signature_type":"CL","origin":"{}", "data":{{"primary":{{"n":"94759924268422840873493186881483285628376767714620627055233230078254863658476446487556117977593248501523199451418346650764648601684276437772084327637083000213497377603495837360299641742248892290843802071224822481683143989223918276185323177379400413928352871249494885563503003839960930062341074783742062464846448855510814252519824733234277681749977392772900212293652238651538092092030867161752390937372967233462027620699196724949212432236376627703446877808405786247217818975482797381180714523093913559060716447170497587855871901716892114835713057965087473682457896508094049813280368069805661739141591558517233009123957","s":"3589207374161609293256840431433442367968556468254553005135697551692970564853243905310862234226531556373974144223993822323573625466428920716249949819187529684239371465431718456502388533731367046146704547241076626874082510133130124364613881638153345624380195335138152993132904167470515345775215584510356780117368593105284564368954871044494967246738070895990267205643985529060025311535539534155086912661927003271053443110788963970349858709526217650537936123121324492871282397691771309596632805099306241616501610166028401599243350835158479028294769235556557248339060399322556412171888114265194198405765574333538019124846","rms":"57150374376895616256492932008792437185713712934712117819417607831438470701645904776986426606717466732609284990796923331049549544903261623636958698296956103821068569714644825742048584174696465882627177060166162341112552851798863535031243458188976013190131935905789786836375734914391914349188643340535242562896244661798678234667651641013894284156416773868299435641426810968290584996112925365638881750944407842890875840705650290814965768221299488400872767679122749231050406680432079499973527780212310700022178178822528199576164498116369689770884051691678056831493476045361227274839673581033532995523269047577973637307053","r":{{"age":"94304485801056920773231824603827244147437820123357994068540328541540143488826838939836897544389872126768239056314698953816072289663428273075648246498659039419931054256171488371404693243192741923382499918184822032756852725234903892700640856294525441486319095181804549558538523888770076173572615957495813339649470619615099181648313548341951673407624414494737018574238782648822189142664108450534642272145962844003886059737965854042074083374478426875684184904488545593139633653407062308621502392373426120986761417580127895634822264744063122368296502161439648408926687989964483291459079738447940651025900007635890755686910","sex":"29253365609829921413347591854991689007250272038394995372767401325848195298844802462252851926995846503104090589196060683329875231216529049681648909174047403783834364995363938741001507091534282239210301727771803410513303526378812888571225762557471133950393342500638551458868147905023198508660460641434022020257614450354085808398293279060446966692082427506909617283562394303716193372887306176319841941848888379308208426966697446699225783646634631703732019477632822374479322570142967559738439193417309205283438893083349863592921249218168590490390313109776446516881569691499831380592661740653935515397472059631417493981532","name":"25134437486609445980011967476486104706321061312022352268621323694861467756181853100693555519614894168921947814126694858839278103549577703105305116890325322098078409416441750313062396467567140699008203113519528887729951138845002409659317083029073793314514377377412805387401717457417895322600145580639449003584446356048213839274172751441145076183734269045919984853749007476629365146654240675320041155618450449041510280560040162429566008590065069477149918088087715269037925211599101597422023202484497946662159070023999719865939258557778022770035320019440597702090334486792710436579355608406897769514395306079855023848170","height":"59326960517737425423547279838932030505937927873589489863081026714907925093402287263487670945897247474465655528290016645774365383046524346223348261262488616342337864633104758662753452450299389775751012589698563659277683974188553993694220606310980581680471280640591973543996299789038056921309016983827578247477799948667666717056420270448516049047961099547588510086600581628091290215485826514170097211360599793229701811672966818089371089216189744274422526431130783428589346341196561742409198605034972210917502326180305735092988639850309253190875578501020679137562856724998821945605494355779034135306337094344532980411836"}},"rctxt":"9641986614889199796257508700106896585587271615330980339636468819377346498767697681332046156705231986464570206666984343024200482683981302064613556104594051003956610353281701880542337665385482309134369756144345334575765116656633321636736946947493150642615481313285221467998414924865943067790561494301461899025374692884841352282256044388512875752628313052128404892424405230961678931620525106856624692942373538946467902799339061714326383378018581568876147181355325663707572429090278505823900491548970098691127791086305310899642155499128171811034581730190877600697624903963241473287185133286356124371104261592694271730029","z":"77594127026421654059198621152153180600664927707984020918609426112642522289621323453889995053400171879296098965678384769043918218957929606187082395048777546641833348694470081024386996548890150355901703252426977094536933434556202865213941384425538749866521536494046548509344678288447175898173634381514948562261015286492185924659638474376885655055568341574638453213864956407243206035973349529545863886325462867413885904072942842465859476940638839087894582648849969332663627779378998245133055807038199937421971988505911494931665143822588532097754480882750243126847177560978100527491344463525107644125030963904001009159559"}},"revocation":null}}}}"#, ISSUER_DID);
-
-            let schemas_json = format!(r#"{{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{}}}"#, AnoncredsUtils::get_gvt_schema_json(1));
-            let claim_defs_json = format!(r#"{{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{}}}"#, claim_def);
-            let revoc_regs_jsons = "{}";
-
-            let proof_json = r#"{"proofs":{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"name":"1139481716457488690172217916278103335"},"a_prime":"47629821806628155353444789773246165920681315271529392722265555946090524267165563309836167110610840740533588118152308411732923636370660640410661034994521654033599863817144282118006097899736622728860229305231675970853294584911572355833537271010861501353858292189045263114095480601737776505186511389129055847562085611741257601964074827979121349153316235245772819207422031038042586202074331681302501661153569340935741290924699468188826629478130140797677338573924284871118002193526319478550852287453975107498037063076866410320160118555629090040954555043934303307652160345244864713226315470541231435958298648179413077988340","e":"13427639393364185909415877973872458621259927563729922146828001652769380799419438410309469022979920689628523901764614163117469683925816443","v":"852136445143816932026946294488424887907102968158908948827421962603492187508454543239422067899916472317305416590471170842186669606584356963437132366711335927890209765986844538775191207999204354235774464468525274918097404114453069375363594310105209141774763909570100638835926337238009617444858777301355087706167735590386774813901740600054753028260344014744801229032610106838480523182317262113911183640784111960909501662169298536941919854667754097841344375972975021196106884215734228415868248724905018661498061287694439466570946597514142085096419985189064172035527690786158872698717583830848410994616274586162550376126607414773916066374234063208380831144157533076866210628625236440222547584539349936639548061601416341705483504386186280800509889531835172071717956251546280392606775903107774727736794828168898273891724336881907672405328368540895104468091907771325910937575557566831844131159128453840354307814975621978196047820","m":{"age":"1117601261519431120446925325460734824239475567013636538481947258329666056692767097795046086413732472111811628751812987521644198549167671875326968410921589186689138994171774838662","height":"7064132689652704067914104576495132313294680087958177180391515757079548676035445873279966783996928425154050462229933823707574545166617858646442019030600136959459527533262821184869","sex":"16084497853957041205729191269508720470626311156190485518484640641677445098603656354458362520541393995692536218820724164533958162674375198846036330444513484319280148335515891811530"},"m1":"154906224259819061652290487122980839849626068919893070220438585977323162319993111920906032317552959103520053742608858935542877608981244065301675821390065831113115709272412144796159984624494428122971995557415296140268002332169405587907128359886810433617416529821500995701094400375272097687818064435577784795275","m2":"13805395408072590464827983892588030341708765524663545700917462089376137940485022437657208204460048097312372685954050370540389593952001973312378647790917367330461398089529292217752"},"ge_proofs":[{"u":{"1":"7698818972783845439601187851976452936638792889455287252542709653271706844173743185409084669157965935169942655008606334521674712818637940377261656468700786810566551698412412949418","0":"11703047052430512223413711314521545616119146623040600935686474696241801697819280425232876917607198335376453682738553665221410353412906194951254558355994401995990233992518110582450","3":"13210777821918317858818819091924507295018522783042111457450035423463340571245465760486275059291363621513532153389441883097799049597687545496359999443320001567152794884095192951040","2":"15219471780524079156861690098171693383497641272226737821992208834301871102152362116211452788300889697214391366996966539871625433480959011635688106136537800706217506402845296449689"},"r":{"1":"46043242109380749151527145850513330956077996622769158245225343392397735706292106535150958053995712629189143692293204979798837951212291825184346767969751978730000071952944305252032332015837054475531407691352179423131405515518588355918925056889302269768343499864256747177988825578647189563088068257214198650437730618330249172716051559993880468542083352885474175039320848153156858562341041960950299312991459780503345784440261679263045723337629951517601461685539857683027034345542399365706329805317943096391758978877658949910614447086409173234155028671453929715706057153381022697673192590033507204548864311227048268516889390503318015295207078022755834130221198717787608473222789491216667698651180077661375273569115943192","0":"135472587547410377947826119498467634347118057359097899596599164976338466445104141784869016998150489852448547539824768048351359572626675997498079394825940306636285481821620973655797996638210760710325933304918452142858879806106214845499670718704532018129553348815327362843246706518826311676917538452317818631484884032929252959289913274829848084561421467966320595980172006456003183536232790787521924655750157145207798486087511869939940023266736153366338179116840490184005332351004990854691988404031259910319601383696749511809898297656135548118786342107367065232798999979296280467063561892962526945512167505847049907450058650930480352253243357594344686769208712964458923557777584158831146374282687397585726706489164423632","DELTA":"93540839493959971552865423901789226093328763011922445919928571946113703515842729132879472109395228387208764738970926484618949870591214627692618668077375153559192701474693025462226656116549337248146652482501255820930607033869432220667968682424554711616471973627651716863421554516577716366331699848682958681216261888139409101603059124344125075525791543312721162515584942523419876134808829569829529457617639955678189490257208141837196965948342373022812790844435050648360150869293836349223060722858500537182872294143846213258360218898475766641125493477502149553491502593654061863323857297998048614447925371606038801933864960337435890254277043261512846682042139570000962051463878026338583242360548041329046695667868842400","3":"1227675452527605924725300993571504188580051470857656204064614533296779844072852823820754766175236321050062349182891221840452517985644028521499240739391613871973822807731772613052644168369405390658793869751915172749739844553410726807277698347769400977274750672880389943392076308065414059539317340070691852044062594715307024113666759844200606183662256825096857658837519571386467051003466014468855293015652584667669998830524947537781865745830650392641812221679438090257444660715937570193098993118585554478799821072396238689063767016402460690760792908977364175126682041704095200572282644311025594681667826054722587271200221036938804846621444065128275082392082327596239358623150786484106872933657139420542280145197712634108","2":"596248147592834822582469335300585333722415132713749620075902332764163096347819006925876158892694742461036531935093982309708492066217459300117157420442081698140277277546563570823996272914068575482008392971932777453900260626542725308060927710122631763045025742980634216666560934260634907599194353151523256914796667535940073668465664206971169038864484235442207811974981191879443614478897291543702607764944403808380921189291059195014621592027660463072969363556421687131446107696579365265893962197300447027501604372738056016734644378437907931412654753728514905671605635291285742886484416973884856055084605172305967034292646171874483670469193852404511746786039743401185954843446037600121496137915619789351744485264614840070"},"mj":"1117601261519431120446925325460734824239475567013636538481947258329666056692767097795046086413732472111811628751812987521644198549167671875326968410921589186689138994171774838662","alpha":"76727612740067576380015106087224381023260815407331375101920043509817863645705120013304683427627332447210083684516403565749916480947649443674885388155460323163682547865307733144184097845709556309570345707127872162476432029772452433292049079349274445907295491125915363620615679995457134810061392296263970553630102299601689685622244925494554558218277670233361938142224820526392365740420502452466959099546877778248089664282581792213376636587293479012783947088070052463503335266180110771978445892744225891676396288437005847308189508347446490710626231658457908472341606549292437553353163031111068977301305043175839949352742711874426231072729977019365761072816602400121302646283352164756787266537474728685656685493249314400351742964904006326192403855909148605656818024621453179832395687665671245528217931951331393482249182516107670379946496778373","t":{"1":"37203689290881948278188715497642400459048942241931994079434400288578680362970117779048886269388440270597283202033458042171954610700745461571112086648991639439510380585728148682202768590972068041537531136529323260832899360551065706810590032715173070285762675403853992183366951113799098912676809373169763887110420539387555392787590966452796271491986622992160642135480293110112269570862265489120557014181468118619500321000966443141863893743211690388599242584469856365803370202569641902205925191670838354052104480074127555862332399641076324738839120815544432811566503174551735326387678621283249883091766325861497740614317","3":"58486787977689017034592833190899828017343431922483563651969628402499947729293364026001243898136737211851089198526360764391403150763769829047179796728616126204105160762333590343947446892105646111520243793053992399512412375936746396187319527051818920531870855183738837254656664620975569939859368862778444291640228229744805843388153451336792379036403300211151424879060241580540910888241769468335914016289938374111481091198264912969768783884602931940994543804730631920434719776196148182987249363641941951160704928605829395517074202388967815738516252602903999010405305463910751219873354588685197134114358234107748126140977","0":"60771874648036182010335841594233428920565254732600738082343398028553347795361460295011584446745121430144172025428394361648540904134739046923992231536160801306934272250969829886396340824213814702904457884984387666505055153957942221822193548673145705543973635530652570436109428474727638128773540793530691399549837156239786231362112148914687724325416768262058486101761972044802628459748878200584371058300150212485731451700436345975266860685549673168984700174294811561393162860595319582236734968601457003780816977537443267217411297266600994916897237305128142313335280264655603445636393371224354539882875937093696844430903","DELTA":"32816484171372208266594641116109072545171919234551585018140151846920408763078147655907777031259225522515086979967895258126318315788662577171150780535509410112003001556402222994276811926864642497249250763185467678044678144507739529818566125668667424447792097244624010084189629269472698722402896445274092470014229247479740671263651727480322483037149584904549203417226525624083290572692241241259382947122018271686649224741832992966652878170311798126004447080305528487720923103595513611363001766063956060990267107048028416069435287244770875463867263571308182619338433913487209319707428378896314619624990311543563016697299","2":"36428320569485697540634597755814766104888687488985202673924762266313135133244610404742081973550848160712054769198012193456278135847215508952327879544434490828380496286187725750283788811367824465072001959950807751252194618152990469069074061195618692339915840384087350671392595652921761835083158086795163935060896053332506433434451836095710383871272788002621913967538399141417857031787255744141437237474972197102809365346359345477248611632307159641948507043668113827177494748159094045928919209335044052792843664865311991178972383241855607627188111601119780878072683890170539599447876998109080150992209773901144245398001"},"predicate":{"attr_name":"age","p_type":"GE","value":18}}]},"non_revoc_proof":null},"schema_seq_no":1,"revoc_reg_seq_no":null,"issuer_did":"did"}},"aggregated_proof":{"c_hash":"33103550379681684069592829341967479618752165928802550870585275205292715916069","c_list":[[1,121,77,5,144,154,14,192,190,190,145,180,128,71,22,60,168,20,46,163,139,194,71,165,220,188,121,76,25,146,231,114,65,54,69,68,19,200,250,192,47,123,157,132,74,50,28,69,226,195,243,118,45,63,237,197,216,202,206,101,33,56,225,200,128,3,89,12,182,38,113,221,165,119,228,201,156,201,172,136,59,64,51,72,164,198,49,228,223,117,80,64,166,226,37,8,29,146,186,80,210,119,76,252,4,255,62,218,112,163,164,147,247,190,108,76,140,191,76,217,214,184,152,179,193,149,15,70,197,46,90,60,255,247,197,219,252,73,76,0,125,104,114,22,182,161,110,36,162,103,27,42,88,18,161,237,198,43,177,189,181,86,135,207,71,114,0,26,175,12,199,125,25,124,178,87,36,208,251,15,191,127,202,148,152,43,142,92,191,7,89,153,130,195,223,248,176,109,97,164,126,162,181,124,237,130,155,197,66,59,40,197,72,84,32,100,64,55,227,60,214,143,200,200,89,115,236,172,145,56,100,73,20,242,233,95,130,58,112,153,120,115,119,42,199,30,205,88,223,42,196,184,41,19,100,19,244],[1,225,103,238,42,147,91,191,110,69,154,53,57,156,124,43,174,155,76,202,193,98,128,38,207,126,66,70,161,96,109,127,174,44,203,198,177,238,118,117,89,227,170,155,44,251,35,119,219,29,100,173,26,144,95,50,177,4,40,234,117,174,210,192,172,57,160,198,42,199,212,243,240,114,59,91,207,68,57,38,198,2,73,18,16,209,182,145,206,71,17,69,222,49,36,120,72,117,169,107,238,208,235,216,24,183,201,81,15,83,242,45,136,184,166,26,142,136,228,58,229,235,88,169,238,134,205,96,85,9,122,53,147,100,183,114,92,54,125,178,125,75,127,116,50,88,109,152,22,4,121,252,190,18,190,130,143,138,59,231,38,131,176,54,19,194,218,67,144,122,91,43,86,73,233,48,193,30,183,183,191,238,216,167,101,28,185,43,118,64,242,16,62,239,177,27,109,144,67,221,175,202,4,92,130,74,24,20,151,15,227,225,142,71,145,46,192,248,87,57,183,142,253,52,20,56,153,220,234,25,67,116,225,179,211,116,161,37,64,34,48,155,1,1,159,157,37,31,202,19,229,152,23,138,183,126,55],[1,38,181,193,191,72,2,239,34,83,49,36,179,160,82,112,172,98,255,63,60,22,177,249,67,215,220,198,181,7,49,254,133,243,221,214,47,64,229,82,11,94,175,57,86,152,229,192,184,96,136,116,226,123,128,217,23,244,19,204,36,44,123,208,88,24,217,120,145,139,25,233,227,5,119,90,47,147,1,115,92,39,119,194,167,17,229,39,163,167,237,14,116,234,106,252,216,54,33,233,21,54,183,130,144,161,177,142,177,240,51,73,21,202,188,103,244,153,204,219,123,231,139,135,189,155,143,28,4,180,44,148,0,27,103,26,13,203,31,32,166,67,84,87,23,72,234,236,20,1,84,70,86,76,192,164,235,124,86,128,78,230,119,155,95,121,125,20,244,181,121,250,169,9,67,85,213,177,139,111,187,183,114,165,249,177,161,181,175,46,226,66,86,84,124,86,69,143,217,158,161,30,107,133,44,239,89,209,24,150,1,238,122,144,138,179,121,114,90,13,212,209,60,126,37,62,177,180,131,222,168,2,201,156,169,220,224,53,8,203,220,215,163,104,195,184,73,35,241,182,177,80,41,253,230,90,173],[1,32,145,96,219,241,190,19,195,129,219,50,148,152,107,12,189,225,103,171,149,252,193,243,136,132,195,44,19,20,247,140,160,91,230,78,31,242,85,213,65,185,1,91,12,69,118,80,26,135,102,131,4,108,130,230,83,91,176,249,196,56,128,127,82,72,106,49,211,94,133,40,86,72,42,187,199,216,191,223,208,206,121,118,15,167,255,228,57,206,158,217,64,205,212,178,8,248,129,183,221,98,70,54,37,55,47,81,120,59,186,238,165,0,70,173,137,193,232,180,125,211,237,182,249,191,173,107,129,164,148,231,116,225,66,66,71,156,39,248,164,253,234,140,205,177,140,117,47,21,15,242,31,113,118,91,143,89,213,86,143,135,21,46,35,199,214,107,111,65,65,19,26,171,130,16,19,102,145,210,210,61,51,169,148,169,118,182,106,107,253,100,214,232,52,103,180,96,249,254,71,6,11,119,48,129,213,223,205,93,20,117,26,187,32,151,212,137,203,17,237,208,150,72,23,225,235,122,188,34,105,115,0,160,168,251,191,22,242,238,207,74,142,154,66,94,149,191,215,194,134,6,165,244,167,233,241],[1,207,77,250,146,127,242,229,44,172,182,201,183,242,32,242,182,129,233,10,8,180,23,191,163,21,238,158,5,27,216,146,253,173,127,99,95,168,209,132,242,196,242,34,25,25,249,211,51,236,164,153,175,61,65,150,82,251,174,102,186,47,195,82,44,90,252,184,74,89,251,177,254,108,151,136,230,220,93,224,173,247,244,116,132,59,170,215,194,30,87,84,166,147,57,156,201,207,132,203,222,191,253,15,19,228,173,81,156,4,51,121,227,159,50,18,148,129,205,42,42,227,252,138,62,176,115,227,253,52,125,110,178,167,132,244,14,116,195,194,172,44,45,63,38,121,215,136,68,230,21,108,133,159,197,179,94,78,233,107,236,114,92,165,248,22,124,161,23,142,236,224,175,233,134,25,97,150,131,61,220,203,104,154,199,247,146,47,205,56,209,0,133,132,18,103,136,8,202,37,29,100,105,12,232,74,33,6,255,202,96,170,52,229,244,4,235,2,201,125,86,168,179,224,130,81,54,221,185,184,187,141,0,114,98,38,70,225,228,60,157,53,210,238,60,216,215,154,48,73,3,157,192,245,81,170,49],[1,3,244,229,158,71,18,146,198,202,27,2,231,37,13,145,243,84,112,220,61,174,4,175,104,200,64,146,193,20,174,126,42,157,168,76,165,21,50,216,82,211,180,73,244,54,227,200,19,157,25,228,81,37,64,201,19,138,175,50,246,169,11,45,74,194,131,236,127,177,41,242,130,55,112,182,98,22,99,48,153,83,161,250,65,89,3,97,6,5,171,54,223,87,98,103,23,200,212,177,140,155,151,252,125,45,176,55,92,41,56,2,252,32,149,60,3,168,209,193,23,168,230,182,72,193,230,224,5,15,58,63,93,196,33,93,76,188,30,70,31,136,64,204,223,2,230,210,243,255,135,193,52,132,248,160,22,18,164,71,77,80,112,229,120,116,210,225,2,19,139,35,0,214,5,246,9,106,136,204,0,148,97,21,222,153,57,177,162,11,243,252,7,242,34,239,245,50,104,74,221,92,73,13,142,10,184,250,246,167,240,46,230,86,207,181,12,133,81,119,143,164,88,114,223,243,179,208,175,84,161,27,11,225,36,37,177,112,85,81,184,163,223,159,36,9,247,20,13,230,215,108,117,35,99,117,211]]},"requested_proof":{"revealed_attrs":{"attr1_uuid":["claim::277478db-bf57-42c3-8530-b1b13cfe0bfd","Alex","1139481716457488690172217916278103335"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{"predicate1_uuid":"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd"}}}"#;
-
-            let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
-                                                              &proof_json,
+            let valid = AnoncredsUtils::verifier_verify_proof(AnoncredsUtils::proof_request_attr_and_predicate(),
+                                                              AnoncredsUtils::proof_json(),
                                                               &schemas_json,
                                                               &claim_defs_json,
-                                                              &revoc_regs_jsons).unwrap();
+                                                              &revoc_regs_json).unwrap();
             assert!(valid);
         }
 
         #[test]
         fn verifier_verify_proof_works_for_proof_does_not_correspond_to_request() {
-            AnoncredsUtils::init_common_wallet();
+            let schemas_json = format!(r#"{{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{}}}"#, AnoncredsUtils::gvt_schema_json());
+            let claim_defs_json = format!(r#"{{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{}}}"#, AnoncredsUtils::claim_def_json());
+            let revoc_regs_json = "{}";
 
-            let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                    "name":"proof_req_1",
-                                    "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"sex"}}}},
-                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"height","p_type":"GE","value":180}}}}
-                                }}"#);
+            let other_proof_req_json = r#"{
+                                                      "nonce":"123432421212",
+                                                      "name":"proof_req_1",
+                                                      "version":"0.1",
+                                                      "requested_attrs":{
+                                                        "attr1_referent":{"name":"sex"}
+                                                      },
+                                                      "requested_predicates":{
+                                                        "predicate1_referent":{"attr_name":"age","p_type":">=","value":18}
+                                                      }
+                                                  }"#;
 
-            let claim_def = r#"{"public_key":{"n":"94759924268422840873493186881483285628376767714620627055233230078254863658476446487556117977593248501523199451418346650764648601684276437772084327637083000213497377603495837360299641742248892290843802071224822481683143989223918276185323177379400413928352871249494885563503003839960930062341074783742062464846448855510814252519824733234277681749977392772900212293652238651538092092030867161752390937372967233462027620699196724949212432236376627703446877808405786247217818975482797381180714523093913559060716447170497587855871901716892114835713057965087473682457896508094049813280368069805661739141591558517233009123957","s":"3589207374161609293256840431433442367968556468254553005135697551692970564853243905310862234226531556373974144223993822323573625466428920716249949819187529684239371465431718456502388533731367046146704547241076626874082510133130124364613881638153345624380195335138152993132904167470515345775215584510356780117368593105284564368954871044494967246738070895990267205643985529060025311535539534155086912661927003271053443110788963970349858709526217650537936123121324492871282397691771309596632805099306241616501610166028401599243350835158479028294769235556557248339060399322556412171888114265194198405765574333538019124846","rms":"57150374376895616256492932008792437185713712934712117819417607831438470701645904776986426606717466732609284990796923331049549544903261623636958698296956103821068569714644825742048584174696465882627177060166162341112552851798863535031243458188976013190131935905789786836375734914391914349188643340535242562896244661798678234667651641013894284156416773868299435641426810968290584996112925365638881750944407842890875840705650290814965768221299488400872767679122749231050406680432079499973527780212310700022178178822528199576164498116369689770884051691678056831493476045361227274839673581033532995523269047577973637307053","r":{"age":"94304485801056920773231824603827244147437820123357994068540328541540143488826838939836897544389872126768239056314698953816072289663428273075648246498659039419931054256171488371404693243192741923382499918184822032756852725234903892700640856294525441486319095181804549558538523888770076173572615957495813339649470619615099181648313548341951673407624414494737018574238782648822189142664108450534642272145962844003886059737965854042074083374478426875684184904488545593139633653407062308621502392373426120986761417580127895634822264744063122368296502161439648408926687989964483291459079738447940651025900007635890755686910","sex":"29253365609829921413347591854991689007250272038394995372767401325848195298844802462252851926995846503104090589196060683329875231216529049681648909174047403783834364995363938741001507091534282239210301727771803410513303526378812888571225762557471133950393342500638551458868147905023198508660460641434022020257614450354085808398293279060446966692082427506909617283562394303716193372887306176319841941848888379308208426966697446699225783646634631703732019477632822374479322570142967559738439193417309205283438893083349863592921249218168590490390313109776446516881569691499831380592661740653935515397472059631417493981532","name":"25134437486609445980011967476486104706321061312022352268621323694861467756181853100693555519614894168921947814126694858839278103549577703105305116890325322098078409416441750313062396467567140699008203113519528887729951138845002409659317083029073793314514377377412805387401717457417895322600145580639449003584446356048213839274172751441145076183734269045919984853749007476629365146654240675320041155618450449041510280560040162429566008590065069477149918088087715269037925211599101597422023202484497946662159070023999719865939258557778022770035320019440597702090334486792710436579355608406897769514395306079855023848170","height":"59326960517737425423547279838932030505937927873589489863081026714907925093402287263487670945897247474465655528290016645774365383046524346223348261262488616342337864633104758662753452450299389775751012589698563659277683974188553993694220606310980581680471280640591973543996299789038056921309016983827578247477799948667666717056420270448516049047961099547588510086600581628091290215485826514170097211360599793229701811672966818089371089216189744274422526431130783428589346341196561742409198605034972210917502326180305735092988639850309253190875578501020679137562856724998821945605494355779034135306337094344532980411836"},"rctxt":"9641986614889199796257508700106896585587271615330980339636468819377346498767697681332046156705231986464570206666984343024200482683981302064613556104594051003956610353281701880542337665385482309134369756144345334575765116656633321636736946947493150642615481313285221467998414924865943067790561494301461899025374692884841352282256044388512875752628313052128404892424405230961678931620525106856624692942373538946467902799339061714326383378018581568876147181355325663707572429090278505823900491548970098691127791086305310899642155499128171811034581730190877600697624903963241473287185133286356124371104261592694271730029","z":"77594127026421654059198621152153180600664927707984020918609426112642522289621323453889995053400171879296098965678384769043918218957929606187082395048777546641833348694470081024386996548890150355901703252426977094536933434556202865213941384425538749866521536494046548509344678288447175898173634381514948562261015286492185924659638474376885655055568341574638453213864956407243206035973349529545863886325462867413885904072942842465859476940638839087894582648849969332663627779378998245133055807038199937421971988505911494931665143822588532097754480882750243126847177560978100527491344463525107644125030963904001009159559"},"public_key_revocation":null,"schema_seq_no":1,"signature_type":"CL"}"#;
-
-            let schemas_json = format!(r#"{{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{}}}"#, AnoncredsUtils::get_gvt_schema_json(1));
-            let claim_defs_json = format!(r#"{{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{}}}"#, claim_def);
-            let revoc_regs_jsons = "{}";
-
-            let proof_json = r#"{"proofs":{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"name":"1139481716457488690172217916278103335"},"a_prime":"47629821806628155353444789773246165920681315271529392722265555946090524267165563309836167110610840740533588118152308411732923636370660640410661034994521654033599863817144282118006097899736622728860229305231675970853294584911572355833537271010861501353858292189045263114095480601737776505186511389129055847562085611741257601964074827979121349153316235245772819207422031038042586202074331681302501661153569340935741290924699468188826629478130140797677338573924284871118002193526319478550852287453975107498037063076866410320160118555629090040954555043934303307652160345244864713226315470541231435958298648179413077988340","e":"13427639393364185909415877973872458621259927563729922146828001652769380799419438410309469022979920689628523901764614163117469683925816443","v":"852136445143816932026946294488424887907102968158908948827421962603492187508454543239422067899916472317305416590471170842186669606584356963437132366711335927890209765986844538775191207999204354235774464468525274918097404114453069375363594310105209141774763909570100638835926337238009617444858777301355087706167735590386774813901740600054753028260344014744801229032610106838480523182317262113911183640784111960909501662169298536941919854667754097841344375972975021196106884215734228415868248724905018661498061287694439466570946597514142085096419985189064172035527690786158872698717583830848410994616274586162550376126607414773916066374234063208380831144157533076866210628625236440222547584539349936639548061601416341705483504386186280800509889531835172071717956251546280392606775903107774727736794828168898273891724336881907672405328368540895104468091907771325910937575557566831844131159128453840354307814975621978196047820","m":{"age":"1117601261519431120446925325460734824239475567013636538481947258329666056692767097795046086413732472111811628751812987521644198549167671875326968410921589186689138994171774838662","height":"7064132689652704067914104576495132313294680087958177180391515757079548676035445873279966783996928425154050462229933823707574545166617858646442019030600136959459527533262821184869","sex":"16084497853957041205729191269508720470626311156190485518484640641677445098603656354458362520541393995692536218820724164533958162674375198846036330444513484319280148335515891811530"},"m1":"154906224259819061652290487122980839849626068919893070220438585977323162319993111920906032317552959103520053742608858935542877608981244065301675821390065831113115709272412144796159984624494428122971995557415296140268002332169405587907128359886810433617416529821500995701094400375272097687818064435577784795275","m2":"13805395408072590464827983892588030341708765524663545700917462089376137940485022437657208204460048097312372685954050370540389593952001973312378647790917367330461398089529292217752"},"ge_proofs":[{"u":{"1":"7698818972783845439601187851976452936638792889455287252542709653271706844173743185409084669157965935169942655008606334521674712818637940377261656468700786810566551698412412949418","0":"11703047052430512223413711314521545616119146623040600935686474696241801697819280425232876917607198335376453682738553665221410353412906194951254558355994401995990233992518110582450","3":"13210777821918317858818819091924507295018522783042111457450035423463340571245465760486275059291363621513532153389441883097799049597687545496359999443320001567152794884095192951040","2":"15219471780524079156861690098171693383497641272226737821992208834301871102152362116211452788300889697214391366996966539871625433480959011635688106136537800706217506402845296449689"},"r":{"1":"46043242109380749151527145850513330956077996622769158245225343392397735706292106535150958053995712629189143692293204979798837951212291825184346767969751978730000071952944305252032332015837054475531407691352179423131405515518588355918925056889302269768343499864256747177988825578647189563088068257214198650437730618330249172716051559993880468542083352885474175039320848153156858562341041960950299312991459780503345784440261679263045723337629951517601461685539857683027034345542399365706329805317943096391758978877658949910614447086409173234155028671453929715706057153381022697673192590033507204548864311227048268516889390503318015295207078022755834130221198717787608473222789491216667698651180077661375273569115943192","0":"135472587547410377947826119498467634347118057359097899596599164976338466445104141784869016998150489852448547539824768048351359572626675997498079394825940306636285481821620973655797996638210760710325933304918452142858879806106214845499670718704532018129553348815327362843246706518826311676917538452317818631484884032929252959289913274829848084561421467966320595980172006456003183536232790787521924655750157145207798486087511869939940023266736153366338179116840490184005332351004990854691988404031259910319601383696749511809898297656135548118786342107367065232798999979296280467063561892962526945512167505847049907450058650930480352253243357594344686769208712964458923557777584158831146374282687397585726706489164423632","DELTA":"93540839493959971552865423901789226093328763011922445919928571946113703515842729132879472109395228387208764738970926484618949870591214627692618668077375153559192701474693025462226656116549337248146652482501255820930607033869432220667968682424554711616471973627651716863421554516577716366331699848682958681216261888139409101603059124344125075525791543312721162515584942523419876134808829569829529457617639955678189490257208141837196965948342373022812790844435050648360150869293836349223060722858500537182872294143846213258360218898475766641125493477502149553491502593654061863323857297998048614447925371606038801933864960337435890254277043261512846682042139570000962051463878026338583242360548041329046695667868842400","3":"1227675452527605924725300993571504188580051470857656204064614533296779844072852823820754766175236321050062349182891221840452517985644028521499240739391613871973822807731772613052644168369405390658793869751915172749739844553410726807277698347769400977274750672880389943392076308065414059539317340070691852044062594715307024113666759844200606183662256825096857658837519571386467051003466014468855293015652584667669998830524947537781865745830650392641812221679438090257444660715937570193098993118585554478799821072396238689063767016402460690760792908977364175126682041704095200572282644311025594681667826054722587271200221036938804846621444065128275082392082327596239358623150786484106872933657139420542280145197712634108","2":"596248147592834822582469335300585333722415132713749620075902332764163096347819006925876158892694742461036531935093982309708492066217459300117157420442081698140277277546563570823996272914068575482008392971932777453900260626542725308060927710122631763045025742980634216666560934260634907599194353151523256914796667535940073668465664206971169038864484235442207811974981191879443614478897291543702607764944403808380921189291059195014621592027660463072969363556421687131446107696579365265893962197300447027501604372738056016734644378437907931412654753728514905671605635291285742886484416973884856055084605172305967034292646171874483670469193852404511746786039743401185954843446037600121496137915619789351744485264614840070"},"mj":"1117601261519431120446925325460734824239475567013636538481947258329666056692767097795046086413732472111811628751812987521644198549167671875326968410921589186689138994171774838662","alpha":"76727612740067576380015106087224381023260815407331375101920043509817863645705120013304683427627332447210083684516403565749916480947649443674885388155460323163682547865307733144184097845709556309570345707127872162476432029772452433292049079349274445907295491125915363620615679995457134810061392296263970553630102299601689685622244925494554558218277670233361938142224820526392365740420502452466959099546877778248089664282581792213376636587293479012783947088070052463503335266180110771978445892744225891676396288437005847308189508347446490710626231658457908472341606549292437553353163031111068977301305043175839949352742711874426231072729977019365761072816602400121302646283352164756787266537474728685656685493249314400351742964904006326192403855909148605656818024621453179832395687665671245528217931951331393482249182516107670379946496778373","t":{"1":"37203689290881948278188715497642400459048942241931994079434400288578680362970117779048886269388440270597283202033458042171954610700745461571112086648991639439510380585728148682202768590972068041537531136529323260832899360551065706810590032715173070285762675403853992183366951113799098912676809373169763887110420539387555392787590966452796271491986622992160642135480293110112269570862265489120557014181468118619500321000966443141863893743211690388599242584469856365803370202569641902205925191670838354052104480074127555862332399641076324738839120815544432811566503174551735326387678621283249883091766325861497740614317","3":"58486787977689017034592833190899828017343431922483563651969628402499947729293364026001243898136737211851089198526360764391403150763769829047179796728616126204105160762333590343947446892105646111520243793053992399512412375936746396187319527051818920531870855183738837254656664620975569939859368862778444291640228229744805843388153451336792379036403300211151424879060241580540910888241769468335914016289938374111481091198264912969768783884602931940994543804730631920434719776196148182987249363641941951160704928605829395517074202388967815738516252602903999010405305463910751219873354588685197134114358234107748126140977","0":"60771874648036182010335841594233428920565254732600738082343398028553347795361460295011584446745121430144172025428394361648540904134739046923992231536160801306934272250969829886396340824213814702904457884984387666505055153957942221822193548673145705543973635530652570436109428474727638128773540793530691399549837156239786231362112148914687724325416768262058486101761972044802628459748878200584371058300150212485731451700436345975266860685549673168984700174294811561393162860595319582236734968601457003780816977537443267217411297266600994916897237305128142313335280264655603445636393371224354539882875937093696844430903","DELTA":"32816484171372208266594641116109072545171919234551585018140151846920408763078147655907777031259225522515086979967895258126318315788662577171150780535509410112003001556402222994276811926864642497249250763185467678044678144507739529818566125668667424447792097244624010084189629269472698722402896445274092470014229247479740671263651727480322483037149584904549203417226525624083290572692241241259382947122018271686649224741832992966652878170311798126004447080305528487720923103595513611363001766063956060990267107048028416069435287244770875463867263571308182619338433913487209319707428378896314619624990311543563016697299","2":"36428320569485697540634597755814766104888687488985202673924762266313135133244610404742081973550848160712054769198012193456278135847215508952327879544434490828380496286187725750283788811367824465072001959950807751252194618152990469069074061195618692339915840384087350671392595652921761835083158086795163935060896053332506433434451836095710383871272788002621913967538399141417857031787255744141437237474972197102809365346359345477248611632307159641948507043668113827177494748159094045928919209335044052792843664865311991178972383241855607627188111601119780878072683890170539599447876998109080150992209773901144245398001"},"predicate":{"attr_name":"age","p_type":"GE","value":18}}]},"non_revoc_proof":null},"schema_seq_no":1,"revoc_reg_seq_no":null,"issuer_did":"did"}},"aggregated_proof":{"c_hash":"33103550379681684069592829341967479618752165928802550870585275205292715916069","c_list":[[1,121,77,5,144,154,14,192,190,190,145,180,128,71,22,60,168,20,46,163,139,194,71,165,220,188,121,76,25,146,231,114,65,54,69,68,19,200,250,192,47,123,157,132,74,50,28,69,226,195,243,118,45,63,237,197,216,202,206,101,33,56,225,200,128,3,89,12,182,38,113,221,165,119,228,201,156,201,172,136,59,64,51,72,164,198,49,228,223,117,80,64,166,226,37,8,29,146,186,80,210,119,76,252,4,255,62,218,112,163,164,147,247,190,108,76,140,191,76,217,214,184,152,179,193,149,15,70,197,46,90,60,255,247,197,219,252,73,76,0,125,104,114,22,182,161,110,36,162,103,27,42,88,18,161,237,198,43,177,189,181,86,135,207,71,114,0,26,175,12,199,125,25,124,178,87,36,208,251,15,191,127,202,148,152,43,142,92,191,7,89,153,130,195,223,248,176,109,97,164,126,162,181,124,237,130,155,197,66,59,40,197,72,84,32,100,64,55,227,60,214,143,200,200,89,115,236,172,145,56,100,73,20,242,233,95,130,58,112,153,120,115,119,42,199,30,205,88,223,42,196,184,41,19,100,19,244],[1,225,103,238,42,147,91,191,110,69,154,53,57,156,124,43,174,155,76,202,193,98,128,38,207,126,66,70,161,96,109,127,174,44,203,198,177,238,118,117,89,227,170,155,44,251,35,119,219,29,100,173,26,144,95,50,177,4,40,234,117,174,210,192,172,57,160,198,42,199,212,243,240,114,59,91,207,68,57,38,198,2,73,18,16,209,182,145,206,71,17,69,222,49,36,120,72,117,169,107,238,208,235,216,24,183,201,81,15,83,242,45,136,184,166,26,142,136,228,58,229,235,88,169,238,134,205,96,85,9,122,53,147,100,183,114,92,54,125,178,125,75,127,116,50,88,109,152,22,4,121,252,190,18,190,130,143,138,59,231,38,131,176,54,19,194,218,67,144,122,91,43,86,73,233,48,193,30,183,183,191,238,216,167,101,28,185,43,118,64,242,16,62,239,177,27,109,144,67,221,175,202,4,92,130,74,24,20,151,15,227,225,142,71,145,46,192,248,87,57,183,142,253,52,20,56,153,220,234,25,67,116,225,179,211,116,161,37,64,34,48,155,1,1,159,157,37,31,202,19,229,152,23,138,183,126,55],[1,38,181,193,191,72,2,239,34,83,49,36,179,160,82,112,172,98,255,63,60,22,177,249,67,215,220,198,181,7,49,254,133,243,221,214,47,64,229,82,11,94,175,57,86,152,229,192,184,96,136,116,226,123,128,217,23,244,19,204,36,44,123,208,88,24,217,120,145,139,25,233,227,5,119,90,47,147,1,115,92,39,119,194,167,17,229,39,163,167,237,14,116,234,106,252,216,54,33,233,21,54,183,130,144,161,177,142,177,240,51,73,21,202,188,103,244,153,204,219,123,231,139,135,189,155,143,28,4,180,44,148,0,27,103,26,13,203,31,32,166,67,84,87,23,72,234,236,20,1,84,70,86,76,192,164,235,124,86,128,78,230,119,155,95,121,125,20,244,181,121,250,169,9,67,85,213,177,139,111,187,183,114,165,249,177,161,181,175,46,226,66,86,84,124,86,69,143,217,158,161,30,107,133,44,239,89,209,24,150,1,238,122,144,138,179,121,114,90,13,212,209,60,126,37,62,177,180,131,222,168,2,201,156,169,220,224,53,8,203,220,215,163,104,195,184,73,35,241,182,177,80,41,253,230,90,173],[1,32,145,96,219,241,190,19,195,129,219,50,148,152,107,12,189,225,103,171,149,252,193,243,136,132,195,44,19,20,247,140,160,91,230,78,31,242,85,213,65,185,1,91,12,69,118,80,26,135,102,131,4,108,130,230,83,91,176,249,196,56,128,127,82,72,106,49,211,94,133,40,86,72,42,187,199,216,191,223,208,206,121,118,15,167,255,228,57,206,158,217,64,205,212,178,8,248,129,183,221,98,70,54,37,55,47,81,120,59,186,238,165,0,70,173,137,193,232,180,125,211,237,182,249,191,173,107,129,164,148,231,116,225,66,66,71,156,39,248,164,253,234,140,205,177,140,117,47,21,15,242,31,113,118,91,143,89,213,86,143,135,21,46,35,199,214,107,111,65,65,19,26,171,130,16,19,102,145,210,210,61,51,169,148,169,118,182,106,107,253,100,214,232,52,103,180,96,249,254,71,6,11,119,48,129,213,223,205,93,20,117,26,187,32,151,212,137,203,17,237,208,150,72,23,225,235,122,188,34,105,115,0,160,168,251,191,22,242,238,207,74,142,154,66,94,149,191,215,194,134,6,165,244,167,233,241],[1,207,77,250,146,127,242,229,44,172,182,201,183,242,32,242,182,129,233,10,8,180,23,191,163,21,238,158,5,27,216,146,253,173,127,99,95,168,209,132,242,196,242,34,25,25,249,211,51,236,164,153,175,61,65,150,82,251,174,102,186,47,195,82,44,90,252,184,74,89,251,177,254,108,151,136,230,220,93,224,173,247,244,116,132,59,170,215,194,30,87,84,166,147,57,156,201,207,132,203,222,191,253,15,19,228,173,81,156,4,51,121,227,159,50,18,148,129,205,42,42,227,252,138,62,176,115,227,253,52,125,110,178,167,132,244,14,116,195,194,172,44,45,63,38,121,215,136,68,230,21,108,133,159,197,179,94,78,233,107,236,114,92,165,248,22,124,161,23,142,236,224,175,233,134,25,97,150,131,61,220,203,104,154,199,247,146,47,205,56,209,0,133,132,18,103,136,8,202,37,29,100,105,12,232,74,33,6,255,202,96,170,52,229,244,4,235,2,201,125,86,168,179,224,130,81,54,221,185,184,187,141,0,114,98,38,70,225,228,60,157,53,210,238,60,216,215,154,48,73,3,157,192,245,81,170,49],[1,3,244,229,158,71,18,146,198,202,27,2,231,37,13,145,243,84,112,220,61,174,4,175,104,200,64,146,193,20,174,126,42,157,168,76,165,21,50,216,82,211,180,73,244,54,227,200,19,157,25,228,81,37,64,201,19,138,175,50,246,169,11,45,74,194,131,236,127,177,41,242,130,55,112,182,98,22,99,48,153,83,161,250,65,89,3,97,6,5,171,54,223,87,98,103,23,200,212,177,140,155,151,252,125,45,176,55,92,41,56,2,252,32,149,60,3,168,209,193,23,168,230,182,72,193,230,224,5,15,58,63,93,196,33,93,76,188,30,70,31,136,64,204,223,2,230,210,243,255,135,193,52,132,248,160,22,18,164,71,77,80,112,229,120,116,210,225,2,19,139,35,0,214,5,246,9,106,136,204,0,148,97,21,222,153,57,177,162,11,243,252,7,242,34,239,245,50,104,74,221,92,73,13,142,10,184,250,246,167,240,46,230,86,207,181,12,133,81,119,143,164,88,114,223,243,179,208,175,84,161,27,11,225,36,37,177,112,85,81,184,163,223,159,36,9,247,20,13,230,215,108,117,35,99,117,211]]},"requested_proof":{"revealed_attrs":{"attr1_uuid":["claim::277478db-bf57-42c3-8530-b1b13cfe0bfd","Alex","1139481716457488690172217916278103335"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{"predicate1_uuid":"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd"}}}"#;
-
-            let res = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
-                                                            &proof_json,
+            let res = AnoncredsUtils::verifier_verify_proof(&other_proof_req_json,
+                                                            AnoncredsUtils::proof_json(),
                                                             &schemas_json,
                                                             &claim_defs_json,
-                                                            &revoc_regs_jsons);
+                                                            &revoc_regs_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
         fn verifier_verify_proof_works_for_wrong_proof() {
-            AnoncredsUtils::init_common_wallet();
+            let schemas_json = format!(r#"{{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{}}}"#, AnoncredsUtils::gvt_schema_json());
+            let claim_defs_json = format!(r#"{{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{}}}"#, AnoncredsUtils::claim_def_json());
+            let revoc_regs_json = "{}";
+            let proof_json = r#"{"proof":{"proofs":{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{"primary_proof":{"eq_proof":{"revealed_attrs":{"name":"1139481716457488690172217916278103335"},"a_prime":"80401564260558483983794628158664845806393125691167675024527906210615204776868092566789307767601325086260531777605457298059939671624755239928848057947875953445797869574854365751051663611984607735255307096920094357120779812375573500489773454634756645206823074153240319316758529163584251907107473703779754778699279153037094140428648169418133281187947677937472972061954089873405836249023133445286756991574802740614183730141450546881449500189789970102133738133443822618072337620343825908790734460412932921199267304555521397418007577171242880211812703320270140386219809818196744216958369397014610013338422295772654405475023","e":"31151798717381512709903464053695613005379725796031086912986270617392167764097422442809244590980303622977555221812111085160553241592792901","v":"524407431684833626723631303096063196973911986967748096669183384949467719053669910411426601230736351335262754473490498825342793551112426427823428399937548938048089615644972537564428344526295733169691240937176356626523864731701111189536269488496019586818879697981955044502664124964896796783428945944075084807859935155837238670987272778459356531608865162828109489758902085206073584532002909678902616210042778963974064479140826712481297584040209095459963718975102750913306565864485279810056629704077428898739021040190774575868853629858297299392839284660771662690107106553362040805152261505268111067408422298806905178826507224233050991301274817252924123120887017757639206512015559321675322509820081151404696713509158685022511201565062671933414307463988209696457343022378430051265752251403461414881325357657438328740471164157220698425309006894962942640219890219594168419276308074677144722217081026358892787770650248878952483621","m":{"age":"10477979077744818183854012231360633424177093192344587159214818537659704987539982653663361680650769087122324965941845552897155693994859927792964720675888893623940580527766661802170","sex":"15368219775809326116045200104269422566086585069798988383076685221700842794654771075432385446820819836777771517356551059931242867733879324915651894894695726945279462946826404864068","height":"268172143999991481637372321419290603042446269013750825098514042757459298040087626745653681785038933035820421862976371452111736537699176931068992453946771945552540798204580069806"},"m1":"119095745403940293668103184388411799541118279558928018597628509118163496000813590825371995586347826189221837428823000332905316924389185590810015031744029496470545254805993327676570037596326743185389101389800942263689809725968264069601565478411709555274081560719927118853299543998608664701485475703881376151770","m2":"3166313665375815600922385342096456465402430622944571045536207479553790085339726549928012930073803465171492637049498407367742103524723152099973753540483894420905314750248333232361"},"ge_proofs":[{"u":{"2":"6494171529848192644197417834173236605253723188808961394289041396341136802965710957759175642924978223517091081898946519122412445399638640485278379079647638538597635045303985779767","0":"7739508859260491061487569748588091139318989278758566530899756574128579312557203413565436003310787878172471425996601979342157451689172171025305431595131816910273398879776841751855","3":"9424758820140378077609053635383940574362083113571024891496206162696034958494400871955445981458978146571146602763357500412840538526390475379772903513687358736287298159312524034159","1":"9011979414559555265454106061917684716953356440811838475257096756618761731111646531136628099710567973381801256908067529269805992222342928842825929421929485785888403149296320711642"},"r":{"DELTA":"2119857977629302693157808821351328058251440215802746362450951329352726877165815663955490999790457576333458830301801261754696823614762123890412904169206391143688952648566814660498520188221060505840151491403269696751525874990487604723445355651918681212361562384420233903265612599812725766212744963540390806334870022328290970137051148373040320927100063898502086531019924715927190306801273252711777648467224661735618842887006436195147540705753550974655689586750013569294343535843195025962867299786380033532422131203367401906988124836294104501525520053613392691214421562815044433237816093079784307397782961917892254668290115653012265908717124278607660504580036193346698672079435538219972121355893074219968755049500875222141","2":"879097501989202140886939888802566536179834329508897124489020677433754766947767937608431979796722207676629625451150104784909666168153917345813160237337412296010679353735699663083287427507870244565918756969618964144516025526404618052053542009438548457492400344119561349471929199757453154204191407620539220514897529346602664135146454509169680801061111878075145734123580343470361019624175036825631373890661124315134340427076598351080893567995392248394683875116715114577054906406649006122102488431184007790011073389768061904597267545895265921673106871142463561948479668876241841045522543174660428236658891636170119227855493059358614089146415798861053408542832475696099851160385105386001523305465829676723036394820593263477","0":"1724016272047416140958096373304304971004826284109046259544344355102178044512441391364907122486655755929044720001281832600729467778103556397960700809066582436321515744527550472324028227472294258045699756170293405547851344921626775854114063087070898499913846456795761213291925373770081490280103876827479351849800210782799381740073719081199000612284788683993320623339686128531187019125095700122135094060470612862911102824801065698176788174959069186600426519872015152034176356923049531650418553748519941342115963599848111324793380438600664408464987023646615003553912544410140730587797458882329021327455905737414352355326238028222782957735440607899424838572541602600159016542488644761584240884783618700311735467659132540546","3":"2317535203964314926167241523636020444600002667629517624482931328850422196008281300859516069440995466415138723103558631951648519232327284208990029010060986032518946759289078833125920310350676484457972303378558158127406345804560689086460633931717939234025886786468170219981598030245042011840614339386724945679531091642132820284896626191109974537171662283750959028046143650291367908660204201563611944187723824430780626387525165408619587771059635528553832034409311888615502905143628507219523591091412192645348525327725381323865648645828460581593542176351568614465903523790649219812666979685223535464526901006270478687017672202058914176692964406859722580270696925877498058525086810338471380117323227744481903228027847825795","1":"1119193929864813751243160041764170298897380522230946444206167281178657213260394833843687899872857393015947283159245092452814155776571829885921814072299525859857844030379558685168895306445277750249341844789101670896570226707650318347992386244538723699686941887792682779028216548922683313576597384354842537728667739985216662699631842296096507821667149950956179957306177525178260912379909156360834120816956949271530622510333943914411903103069247646327625753995178999023427645468623522280255892736633780185163496867644317005801241786702434621502492159672660131289312665511793827552317714835658019088880972220344126692027952749318018900669839090109361161616086319604439015851316798257015063653414161203599184730094765941653"},"mj":"10477979077744818183854012231360633424177093192344587159214818537659704987539982653663361680650769087122324965941845552897155693994859927792964720675888893623940580527766661802170","alpha":"46280660038407959140964701167450659223532556136388451390393713283900546119670373626221864441898929302821705811144923685080534692512705456699843367809872982836890616398604933641265111106644805368974824737276965928297120628041257593166650593538539384316563258781595629888673792430276007730792093088812056156937735120078929629310611907731935101448992312370312134173482115524436767558802102266208152808607480693236511858269018733175523724309089010048330044458187371675333889670055578652283806685440133357512406700879353713629795062705271430695988191782837658895477702634883214188598350625843489120361660836956958750828038278027538830855628653513539929730230905015331221220017847248793929813230252015802389329428995718799619565984669228143200627972926117282688854152516298117476837960100343260648687249027349308513966440386556698667484082658689","t":{"DELTA":"46814992964714978733007076702016837564951956529003697497847838781899848384824991374342901164708655443686022921583406187082133141084994843502230809550055933825660668160300304112671478218513259983054489597176651737200716259733573469298437873515151377206364940530308167934399245072298875358347931404742292788785586833114480704138718996633638362933821933388459210678374952072108333767698704767907612549860590824123780096225591372365712106060039646448181221691765233478768574198237963457485496438076793333937013217675591500849193742006533651525421426481898699626618796271544860105422331629265388419155909716261466161258430","2":"59423006413504086085782234600502410213751379553855471973440165009200961757474676407242673622935614782362911290590560535490636029324125251850583605745046201217673654522625983661578962623803698461459190578519097656221453474955879823750445359506290522280566225253310030053812918275525607874059407284653434046369835156477189219911810464401689041140506062300317020407969423270374033482533711564673658146930272487464489365713112043565257807490520178903336328210031106311280471651300486164966423437275272281777742004535722142265580037959473078313965482591454009972765788975683031385823798895914265841131145707278751512534120","0":"56510878078818710798555570103060159621941668074271797077206591818472978018558098567975838757566260370093327989369045722406190165972775356924844244889146946158949660988214890388299203816110339909687790860564719380865809705044646711632599987968183128514431910561478715003212633874423067294596323864121737000450543142072142652163818450299889830999149821558252183477517484127000480272695698860647674027831262149565273068850774090998356019534296579838685977022988536930596918054160990243868372150609770079720240227817149126735182138479851227052696211125454858584118346950878092387488482897777914362341820607560926173967363","3":"63511079416489489495396586813126304469185174450150717746314545118902972011091412254834718868134635251731510764117528579641756327883640004345178347120290107941107152421856942264968771810665927914509411385404403747487862696526824127219640807008235054362138760656969613951620938020257273816713908815343872804442748694361381399025862438391456307852482826748664499083370705834755863016895566228300904018909174673301643617543662527772400085378252706897979609427451977654028887889811453690146157824251379525221390697200211891556653698308665831075787991412401737090471273439878635073797691350863566834141222438011402987450926","1":"30348838247529448929141877305241172943867610065951047292188826263950046630912426030349276970628525991007036685038199133783991618544554063310358191845473212966131475853690378885426974792306638181168558731807811629973716711132134244797541560013139884391800841941607502149630914097258613821336239993125960064136287579351403225717114920758719152701696123905042695943045383536065833292374624566478931465135875411483860059753175449604448434619593495399051968638830805689355610877075130302742512428461286121237297212174164897833936610857614962734658136750299346971377383141235020438750748045568800723867413392427848651081274"},"predicate":{"attr_name":"age","p_type":"GE","value":18}}]},"non_revoc_proof":null}},"aggregated_proof":{"c_hash":"81135772044295974649282368084258333955993271555081206390568996949836231116301","c_list":[[240,104,187,71,84,144,129,123,12,181,215,233,27,55,56,54,94,57,17,42,111,42,112,234,192,23,226,103,118,198,189,175,175,1,102,64,128,100,221,201,134,106,83,239,69,43,150,172,95,206,145,224,207,239,39,193,30,200,90,125,175,125,59,47,250,224,193,21,64,112,101,131,128,249,96,165,73,33,174,64,69,252,209,158,130,53,23,158,217,173,69,51,12,145,70,174,15,206,13,181,50,246,50,110,223,65,250,44,39,33,8,47,169,242,147,3,190,164,110,20,68,5,142,133,38,198,151,161,167,0,219,128,126,120,190,23,153,22,250,78,114,241,252,181,74,142,65,123,225,153,75,159,78,84,28,110,203,105,231,238,75,138,121,233,75,163,221,69,106,143,1,217,251,43,147,252,189,122,19,124,189,180,206,91,165,199,41,172,233,102,14,91,162,254,16,142,60,230,39,200,208,236,101,69,101,152,233,217,100,206,31,120,211,191,90,56,205,40,180,120,47,210,224,86,153,34,86,237,204,11,183,227,0,224,15,201,32,228,4,210,43,156,68,246,137,150,103,197,191,150,155,181,78,5,134,58],[1,214,184,139,205,251,132,131,8,186,140,58,211,242,134,120,121,253,128,192,10,252,172,101,44,26,119,56,212,8,248,71,19,96,59,12,233,191,63,187,217,35,191,160,127,247,189,247,229,111,252,101,126,10,142,252,238,215,211,137,137,164,114,186,255,199,183,50,103,9,158,63,134,140,162,154,188,109,52,31,92,78,38,228,0,60,225,100,239,88,114,95,48,71,7,117,168,45,45,177,178,62,87,197,98,174,123,249,26,237,179,12,63,182,46,218,183,148,163,222,179,159,146,56,142,190,122,100,211,6,86,237,10,7,111,186,27,66,95,252,108,247,203,1,111,60,13,218,104,63,128,125,197,11,201,138,33,122,37,31,163,123,120,132,65,122,208,60,80,87,113,183,28,31,74,106,18,79,52,245,113,184,94,202,72,223,8,128,209,43,77,237,119,208,255,144,26,76,223,77,177,131,237,49,150,251,53,150,115,33,254,237,185,15,140,234,205,99,248,252,171,245,192,104,151,194,190,186,249,180,246,9,169,165,0,221,7,107,39,67,58,178,176,99,212,40,247,49,127,7,94,5,170,65,154,28,104],[1,247,26,202,244,120,131,95,151,52,56,38,141,232,178,50,61,45,235,61,12,68,11,180,174,222,110,211,141,253,198,204,248,192,40,99,237,1,45,170,79,208,3,13,135,89,195,65,3,228,224,146,181,198,14,79,78,237,168,81,108,151,68,12,88,242,120,200,120,193,253,51,167,140,43,175,59,18,160,190,233,21,213,135,162,76,38,48,163,110,155,197,97,93,211,183,95,42,172,249,98,59,161,136,70,39,142,48,242,44,154,103,186,161,214,215,0,254,166,150,111,71,242,102,209,125,25,65,144,223,211,137,223,239,50,96,185,171,120,155,171,98,204,23,102,253,68,141,91,240,127,170,199,249,217,165,164,37,174,212,159,232,140,196,216,140,205,102,84,104,220,223,9,249,75,245,78,157,245,203,235,154,73,34,77,12,227,138,93,105,178,114,255,210,88,216,202,64,69,128,220,211,113,51,15,185,103,236,52,187,49,29,162,20,35,21,65,188,33,46,11,172,59,15,221,36,33,213,14,121,36,218,76,80,97,197,83,64,145,73,194,43,233,144,251,86,112,209,230,67,234,116,172,219,123,50,46],[1,114,216,159,37,214,198,117,230,153,15,176,95,20,29,134,179,207,209,35,101,193,47,54,130,141,78,213,54,167,31,73,105,177,129,135,6,135,45,107,103,16,133,187,74,217,42,40,1,214,60,70,78,245,86,82,150,75,91,235,181,249,129,147,202,15,86,250,222,240,203,236,102,39,53,147,79,178,124,184,97,73,65,136,74,29,219,182,83,167,221,203,32,200,243,130,65,234,133,181,203,35,86,21,123,170,74,174,5,132,1,149,77,141,158,193,249,130,37,53,253,234,228,144,66,152,232,246,26,193,6,53,139,45,231,173,115,87,89,61,197,9,96,73,229,189,49,44,203,214,156,139,58,153,77,13,90,35,157,130,184,150,161,69,145,157,4,206,52,216,227,233,113,202,54,154,153,100,83,97,135,88,197,227,42,52,28,221,91,117,56,183,198,102,231,37,232,226,136,142,115,218,175,45,221,143,130,215,184,39,102,172,126,253,152,108,254,241,17,98,70,223,191,138,251,227,243,32,180,190,223,69,135,0,97,105,115,189,221,134,26,159,32,210,172,233,7,65,238,77,203,159,181,188,203,159,190]]}},"requested_proof":{"revealed_attrs":{"attr1_referent":["claim::58479554-187f-40d9-b0a5-a95cfb0338c3","Alex","1139481716457488690172217916278103335"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{"predicate1_referent":"claim::58479554-187f-40d9-b0a5-a95cfb0338c3"}},"identifiers":{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_key":{"name":"gvt","version":"1.0","did":"NcYxiDXkpYi6ov5FcYDi1e"}}}}"#;
 
-            let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                    "name":"proof_req_1",
-                                    "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
-                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
-                                }}"#);
-
-            let claim_def = format!(r#"{{"ref":1,"signature_type":"CL","origin":"{}", "data":{{"primary":{{"n":"94759924268422840873493186881483285628376767714620627055233230078254863658476446487556117977593248501523199451418346650764648601684276437772084327637083000213497377603495837360299641742248892290843802071224822481683143989223918276185323177379400413928352871249494885563503003839960930062341074783742062464846448855510814252519824733234277681749977392772900212293652238651538092092030867161752390937372967233462027620699196724949212432236376627703446877808405786247217818975482797381180714523093913559060716447170497587855871901716892114835713057965087473682457896508094049813280368069805661739141591558517233009123957","s":"3589207374161609293256840431433442367968556468254553005135697551692970564853243905310862234226531556373974144223993822323573625466428920716249949819187529684239371465431718456502388533731367046146704547241076626874082510133130124364613881638153345624380195335138152993132904167470515345775215584510356780117368593105284564368954871044494967246738070895990267205643985529060025311535539534155086912661927003271053443110788963970349858709526217650537936123121324492871282397691771309596632805099306241616501610166028401599243350835158479028294769235556557248339060399322556412171888114265194198405765574333538019124846","rms":"57150374376895616256492932008792437185713712934712117819417607831438470701645904776986426606717466732609284990796923331049549544903261623636958698296956103821068569714644825742048584174696465882627177060166162341112552851798863535031243458188976013190131935905789786836375734914391914349188643340535242562896244661798678234667651641013894284156416773868299435641426810968290584996112925365638881750944407842890875840705650290814965768221299488400872767679122749231050406680432079499973527780212310700022178178822528199576164498116369689770884051691678056831493476045361227274839673581033532995523269047577973637307053","r":{{"age":"94304485801056920773231824603827244147437820123357994068540328541540143488826838939836897544389872126768239056314698953816072289663428273075648246498659039419931054256171488371404693243192741923382499918184822032756852725234903892700640856294525441486319095181804549558538523888770076173572615957495813339649470619615099181648313548341951673407624414494737018574238782648822189142664108450534642272145962844003886059737965854042074083374478426875684184904488545593139633653407062308621502392373426120986761417580127895634822264744063122368296502161439648408926687989964483291459079738447940651025900007635890755686910","sex":"29253365609829921413347591854991689007250272038394995372767401325848195298844802462252851926995846503104090589196060683329875231216529049681648909174047403783834364995363938741001507091534282239210301727771803410513303526378812888571225762557471133950393342500638551458868147905023198508660460641434022020257614450354085808398293279060446966692082427506909617283562394303716193372887306176319841941848888379308208426966697446699225783646634631703732019477632822374479322570142967559738439193417309205283438893083349863592921249218168590490390313109776446516881569691499831380592661740653935515397472059631417493981532","name":"25134437486609445980011967476486104706321061312022352268621323694861467756181853100693555519614894168921947814126694858839278103549577703105305116890325322098078409416441750313062396467567140699008203113519528887729951138845002409659317083029073793314514377377412805387401717457417895322600145580639449003584446356048213839274172751441145076183734269045919984853749007476629365146654240675320041155618450449041510280560040162429566008590065069477149918088087715269037925211599101597422023202484497946662159070023999719865939258557778022770035320019440597702090334486792710436579355608406897769514395306079855023848170","height":"59326960517737425423547279838932030505937927873589489863081026714907925093402287263487670945897247474465655528290016645774365383046524346223348261262488616342337864633104758662753452450299389775751012589698563659277683974188553993694220606310980581680471280640591973543996299789038056921309016983827578247477799948667666717056420270448516049047961099547588510086600581628091290215485826514170097211360599793229701811672966818089371089216189744274422526431130783428589346341196561742409198605034972210917502326180305735092988639850309253190875578501020679137562856724998821945605494355779034135306337094344532980411836"}},"rctxt":"9641986614889199796257508700106896585587271615330980339636468819377346498767697681332046156705231986464570206666984343024200482683981302064613556104594051003956610353281701880542337665385482309134369756144345334575765116656633321636736946947493150642615481313285221467998414924865943067790561494301461899025374692884841352282256044388512875752628313052128404892424405230961678931620525106856624692942373538946467902799339061714326383378018581568876147181355325663707572429090278505823900491548970098691127791086305310899642155499128171811034581730190877600697624903963241473287185133286356124371104261592694271730029","z":"77594127026421654059198621152153180600664927707984020918609426112642522289621323453889995053400171879296098965678384769043918218957929606187082395048777546641833348694470081024386996548890150355901703252426977094536933434556202865213941384425538749866521536494046548509344678288447175898173634381514948562261015286492185924659638474376885655055568341574638453213864956407243206035973349529545863886325462867413885904072942842465859476940638839087894582648849969332663627779378998245133055807038199937421971988505911494931665143822588532097754480882750243126847177560978100527491344463525107644125030963904001009159559"}},"revocation":null}}}}"#, ISSUER_DID);
-
-            let schemas_json = format!(r#"{{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{}}}"#, AnoncredsUtils::get_gvt_schema_json(1));
-            let claim_defs_json = format!(r#"{{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{}}}"#, claim_def);
-            let revoc_regs_jsons = "{}";
-
-            let proof_json = r#"{"proofs":{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"name":"1139481716457488690172217916278103335"},"a_prime":"47629821806628155353444789773246165920681315271529392722265555946090524267165563309836167110610840740533588118152308411732923636370660640410661034994521654033599863817144282118006097899736622728860229305231675970853294584911572355833537271010861501353858292189045263114095480601737776505186511389129055847562085611741257601964074827979121349153316235245772819207422031038042586202074331681302501661153569340935741290924699468188826629478130140797677338573924284871118002193526319478550852287453975107498037063076866410320160118555629090040954555043934303307652160345244864713226315470541231435958298648179413077988326","e":"13427639393364185909415877973872458621256927563729922146828001652769380799419438410309469022979920689628523901764614163117469683925816443","v":"852136445143816932026946294488424887907102968158908948827421962603492187508454543239422067899916472317305416590471170842186669606584356963437132366711335927890209765986844538775191207999204354235774464468525274918097404114453069375363594310105209141774763909570100638835926337238009617444858777301355087706167735590386774813901740600054753028260344014744801229032610106838480523182317262113911183640784111960909501662169298536941919854667754097841344375972975021196106884215734228415868248724905018661498061287694439466570946597514142085096419985189064172035527690786158872698717583830848410994616274746162550376126607414773916066374234063208380831144157533076866210628625236440222547584539349936639548061601416341705483504386186280800509889531835172071717956251546280392606775903107774727736794828168898273891724336881907672405328368540895104468091907771325910937575557566831844131159128453840354307814975621978196047820","m":{"age":"1117601261519431120446925325460734824239475567013636538481947258329666056692767097795046086413732472111811628751812987521644198549167671875326968410921589186689138994171774838662","height":"7064132689652704067914104576495132313294680087958177180391515757079548676035445873279966783996928425154050462229933823707574545166617858646442019030600136959459527533262821184869","sex":"16084497853957041205729191269508720470626311156190485518484640641677445098603656354458362520541393995692536218820724164533958162674375198846036330444513484319280148335515891811530"},"m1":"154906224259819061652290487122980839849626068919893070220438585977323162319993111920906032317552959103520053742608858935542877608981244065301675821390065831113115709272412144796159984624494428122971995557415296140268002332169405587907128359886810433617416529821500995701094400375272097687818064435577784795275","m2":"13805395408072590464827983892588030341708765524663545700917462089376137940485022437657208204460048097312372685954050370540389593952001973312378647790917367330461398089529292217752"},"ge_proofs":[{"u":{"1":"7698818972783845439601187851976452936638792889455287252542709653271706844173743185409084669157965935169942655008606334521674712818637940377261656468700786810566551698412412949418","0":"11703047052430512223413711314521545616119146623040600935686474696241801697819280425232876917607198335376453682738553665221410353412906194951254558355994401995990233992518110582450","3":"13210777821918317858818819091924507295018522783042111457450035423463340571245465760486275059291363621513532153389441883097799049597687545496359999443320001567152794884095192951040","2":"15219471780524079156861690098171693383497641272226737821992208834301871102152362116211452788300889697214391366996966539871625433480959011635688106136537800706217506402845296449689"},"r":{"1":"46043242109380749151527145850513330956077996622769158245225343392397735706292106535150958053995712629189143692293204979798837951212291825184346767969751978730000071952944305252032332015837054475531407691352179423131405515518588355918925056889302269768343499864256747177988825578647189563088068257214198650437730618330249172716051559993880468542083352885474175039320848153156858562341041960950299312991459780503345784440261679263045723337629951517601461685539857683027034345542399365706329805317943096391758978877658949910614447086409173234155028671453929715706057153381022697673192590033507204548864311227048268516889390503318015295207078022755834130221198717787608473222789491216667698651180077661375273569115943192","0":"135472587547410377947826119498467634347118057359097899596599164976338466445104141784869016998150489852448547539824768048351359572626675997498079394825940306636285481821620973655797996638210760710325933304918452142858879806106214845499670718704532018129553348815327362843246706518826311676917538452317818631484884032929252959289913274829848084561421467966320595980172006456003183536232790787521924655750157145207798486087511869939940023266736153366338179116840490184005332351004990854691988404031259910319601383696749511809898297656135548118786342107367065232798999979296280467063561892962526945512167505847049907450058650930480352253243357594344686769208712964458923557777584158831146374282687397585726706489164423632","DELTA":"93540839493959971552865423901789226093328763011922445919928571946113703515842729132879472109395228387208764738970926484618949870591214627692618668077375153559192701474693025462226656116549337248146652482501255820930607033869432220667968682424554711616471973627651716863421554516577716366331699848682958681216261888139409101603059124344125075525791543312721162515584942523419876134808829569829529457617639955678189490257208141837196965948342373022812790844435050648360150869293836349223060722858500537182872294143846213258360218898475766641125493477502149553491502593654061863323857297998048614447925371606038801933864960337435890254277043261512846682042139570000962051463878026338583242360548041329046695667868842400","3":"1227675452527605924725300993571504188580051470857656204064614533296779844072852823820754766175236321050062349182891221840452517985644028521499240739391613871973822807731772613052644168369405390658793869751915172749739844553410726807277698347769400977274750672880389943392076308065414059539317340070691852044062594715307024113666759844200606183662256825096857658837519571386467051003466014468855293015652584667669998830524947537781865745830650392641812221679438090257444660715937570193098993118585554478799821072396238689063767016402460690760792908977364175126682041704095200572282644311025594681667826054722587271200221036938804846621444065128275082392082327596239358623150786484106872933657139420542280145197712634108","2":"596248147592834822582469335300585333722415132713749620075902332764163096347819006925876158892694742461036531935093982309708492066217459300117157420442081698140277277546563570823996272914068575482008392971932777453900260626542725308060927710122631763045025742980634216666560934260634907599194353151523256914796667535940073668465664206971169038864484235442207811974981191879443614478897291543702607764944403808380921189291059195014621592027660463072969363556421687131446107696579365265893962197300447027501604372738056016734644378437907931412654753728514905671605635291285742886484416973884856055084605172305967034292646171874483670469193852404511746786039743401185954843446037600121496137915619789351744485264614840070"},"mj":"1117601261519431120446925325460734824239475567013636538481947258329666056692767097795046086413732472111811628751812987521644198549167671875326968410921589186689138994171774838662","alpha":"76727612740067576380015106087224381023260815407331375101920043509817863645705120013304683427627332447210083684516403565749916480947649443674885388155460323163682547865307733144184097845709556309570345707127872162476432029772452433292049079349274445907295491125915363620615679995457134810061392296263970553630102299601689685622244925494554558218277670233361938142224820526392365740420502452466959099546877778248089664282581792213376636587293479012783947088070052463503335266180110771978445892744225891676396288437005847308189508347446490710626231658457908472341606549292437553353163031111068977301305043175839949352742711874426231072729977019365761072816602400121302646283352164756787266537474728685656685493249314400351742964904006326192403855909148605656818024621453179832395687665671245528217931951331393482249182516107670379946496778373","t":{"1":"37203689290881948278188715497642400459048942241931994079434400288578680362970117779048886269388440270597283202033458042171954610700745461571112086648991639439510380585728148682202768590972068041537531136529323260832899360551065706810590032715173070285762675403853992183366951113799098912676809373169763887110420539387555392787590966452796271491986622992160642135480293110112269570862265489120557014181468118619500321000966443141863893743211690388599242584469856365803370202569641902205925191670838354052104480074127555862332399641076324738839120815544432811566503174551735326387678621283249883091766325861497740614317","3":"58486787977689017034592833190899828017343431922483563651969628402499947729293364026001243898136737211851089198526360764391403150763769829047179796728616126204105160762333590343947446892105646111520243793053992399512412375936746396187319527051818920531870855183738837254656664620975569939859368862778444291640228229744805843369153451336792379036403300211151424879060241580540910888241769468335914016289938374111481091198264912969768783884602931940994543804730631920434719776196148182987249363641941951160704928605829395517074202388967815738516252602903999010405305463910751219873354588685197134114358234107748126140977","0":"60771874648036182010335841594233428920565254732600738082343398028553347795361460295011584446745121430144172025428394361648540904134739046923992231536160801306934272250969829886396340824213814702904457884984387666505055153957942221822193548673145705543973635530652570436109428474727638128773540793530691399549837156239786231362112148914687724325416768262058486101761972044802628459748878200584371058300150212485731451700436345975266860685549673168984700174294811561393162860595319582236734968601457003780816977537443267217411297266600994916897237305128142313335280264655603445636393371224354539882875937093696844430903","DELTA":"32816484171372208266594641116109072545171919234551585018140151846920408763078147655907777031259225522515086979967895258126318315788662577171150780535509410112003001556402222994276811926864642497249250763185467678044678144507739529818566125668667424447792097244624010084189629269472698722402896445274092470014229247479740671263651727480322483037149584904549203417226525624083290572692241241259382947122018271686649224741832992966652878170311798126004447080305528487720923103595513611363001766063956060990267107048028416069435287244770875463867263571308182619338433913487209319707428378896314619624990311543563016697299","2":"36428320569485697540634597755814766104888687488985202673924762266313135133244610404742081973550848160712054769198012193456278135847215508952327879544434490828380496286187725750283788811367824465072001959950807751252194618152990469069074061195618692339915840384087350671392595652921761835083158086795163935060896053332506433434451836095710383871272788002621913967538399141417857031787255744141437237474972197102809365346359345477248611632307159641948507043668113827177494748159094045928919209335044052792843664865311991178972383241855607627188111601119780878072683890170539599447876998109080150992209773901144245398001"},"predicate":{"attr_name":"age","p_type":"GE","value":18}}]},"non_revoc_proof":null},"schema_seq_no":1,"revoc_reg_seq_no":null,"issuer_did":"did"}},"aggregated_proof":{"c_hash":"33103550379681684069592829341967479618752165928802550870585275205292715916069","c_list":[[1,121,77,5,144,154,14,192,190,190,145,180,128,71,22,60,168,20,46,163,139,194,71,165,220,188,121,76,25,146,231,114,65,54,69,68,19,200,250,192,47,123,157,132,74,50,28,69,226,195,243,118,45,63,237,197,216,202,206,101,33,56,225,200,128,3,89,12,182,38,113,221,165,119,228,201,156,201,172,136,59,64,51,72,164,198,49,228,223,117,80,64,166,226,37,8,29,146,186,80,210,119,76,252,4,255,62,218,112,163,164,147,247,190,108,76,140,191,76,217,214,184,152,179,193,149,15,70,197,46,90,60,255,247,197,219,252,73,76,0,125,104,114,22,182,161,110,36,162,103,27,42,88,18,161,237,198,43,177,189,181,86,135,207,71,114,0,26,175,12,199,125,25,124,178,87,36,208,251,15,191,127,202,148,152,43,142,92,191,7,89,153,130,195,223,248,176,109,97,164,126,162,181,124,237,130,155,197,66,59,40,197,72,84,32,100,64,55,227,60,214,143,200,200,89,115,236,172,145,56,100,73,20,242,233,95,130,58,112,153,120,115,119,42,199,30,205,88,223,42,196,184,41,19,100,19,244],[1,225,103,238,42,147,91,191,110,69,154,53,57,156,124,43,174,155,76,202,193,98,128,38,207,126,66,70,161,96,109,127,174,44,203,198,177,238,118,117,89,227,170,155,44,251,35,119,219,29,100,173,26,144,95,50,177,4,40,234,117,174,210,192,172,57,160,198,42,199,212,243,240,114,59,91,207,68,57,38,198,2,73,18,16,209,182,145,206,71,17,69,222,49,36,120,72,117,169,107,238,208,235,216,24,183,201,81,15,83,242,45,136,184,166,26,142,136,228,58,229,235,88,169,238,134,205,96,85,9,122,53,147,100,183,114,92,54,125,178,125,75,127,116,50,88,109,152,22,4,121,252,190,18,190,130,143,138,59,231,38,131,176,54,19,194,218,67,144,122,91,43,86,73,233,48,193,30,183,183,191,238,216,167,101,28,185,43,118,64,242,16,62,239,177,27,109,144,67,221,175,202,4,92,130,74,24,20,151,15,227,225,142,71,145,46,192,248,87,57,183,142,253,52,20,56,153,220,234,25,67,116,225,179,211,116,161,37,64,34,48,155,1,1,159,157,37,31,202,19,229,152,23,138,183,126,55],[1,38,181,193,191,72,2,239,34,83,49,36,179,160,82,112,172,98,255,63,60,22,177,249,67,215,220,198,181,7,49,254,133,243,221,214,47,64,229,82,11,94,175,57,86,152,229,192,184,96,136,116,226,123,128,217,23,244,19,204,36,44,123,208,88,24,217,120,145,139,25,233,227,5,119,90,47,147,1,115,92,39,119,194,167,17,229,39,163,167,237,14,116,234,106,252,216,54,33,233,21,54,183,130,144,161,177,142,177,240,51,73,21,202,188,103,244,153,204,219,123,231,139,135,189,155,143,28,4,180,44,148,0,27,103,26,13,203,31,32,166,67,84,87,23,72,234,236,20,1,84,70,86,76,192,164,235,124,86,128,78,230,119,155,95,121,125,20,244,181,121,250,169,9,67,85,213,177,139,111,187,183,114,165,249,177,161,181,175,46,226,66,86,84,124,86,69,143,217,158,161,30,107,133,44,239,89,209,24,150,1,238,122,144,138,179,121,114,90,13,212,209,60,126,37,62,177,180,131,222,168,2,201,156,169,220,224,53,8,203,220,215,163,104,195,184,73,35,241,182,177,80,41,253,230,90,173],[1,32,145,96,219,241,190,19,195,129,219,50,148,152,107,12,189,225,103,171,149,252,193,243,136,132,195,44,19,20,247,140,160,91,230,78,31,242,85,213,65,185,1,91,12,69,118,80,26,135,102,131,4,108,130,230,83,91,176,249,196,56,128,127,82,72,106,49,211,94,133,40,86,72,42,187,199,216,191,223,208,206,121,118,15,167,255,228,57,206,158,217,64,205,212,178,8,248,129,183,221,98,70,54,37,55,47,81,120,59,186,238,165,0,70,173,137,193,232,180,125,211,237,182,249,191,173,107,129,164,148,231,116,225,66,66,71,156,39,248,164,253,234,140,205,177,140,117,47,21,15,242,31,113,118,91,143,89,213,86,143,135,21,46,35,199,214,107,111,65,65,19,26,171,130,16,19,102,145,210,210,61,51,169,148,169,118,182,106,107,253,100,214,232,52,103,180,96,249,254,71,6,11,119,48,129,213,223,205,93,20,117,26,187,32,151,212,137,203,17,237,208,150,72,23,225,235,122,188,34,105,115,0,160,168,251,191,22,242,238,207,74,142,154,66,94,149,191,215,194,134,6,165,244,167,233,241],[1,207,77,250,146,127,242,229,44,172,182,201,183,242,32,242,182,129,233,10,8,180,23,191,163,21,238,158,5,27,216,146,253,173,127,99,95,168,209,132,242,196,242,34,25,25,249,211,51,236,164,153,175,61,65,150,82,251,174,102,186,47,195,82,44,90,252,184,74,89,251,177,254,108,151,136,230,220,93,224,173,247,244,116,132,59,170,215,194,30,87,84,166,147,57,156,201,207,132,203,222,191,253,15,19,228,173,81,156,4,51,121,227,159,50,18,148,129,205,42,42,227,252,138,62,176,115,227,253,52,125,110,178,167,132,244,14,116,195,194,172,44,45,63,38,121,215,136,68,230,21,108,133,159,197,179,94,78,233,107,236,114,92,165,248,22,124,161,23,142,236,224,175,233,134,25,97,150,131,61,220,203,104,154,199,247,146,47,205,56,209,0,133,132,18,103,136,8,202,37,29,100,105,12,232,74,33,6,255,202,96,170,52,229,244,4,235,2,201,125,86,168,179,224,130,81,54,221,185,184,187,141,0,114,98,38,70,225,228,60,157,53,210,238,60,216,215,154,48,73,3,157,192,245,81,170,49],[1,3,244,229,158,71,18,146,198,202,27,2,231,37,13,145,243,84,112,220,61,174,4,175,104,200,64,146,193,20,174,126,42,157,168,76,165,21,50,216,82,211,180,73,244,54,227,200,19,157,25,228,81,37,64,201,19,138,175,50,246,169,11,45,74,194,131,236,127,177,41,242,130,55,112,182,98,22,99,48,153,83,161,250,65,89,3,97,6,5,171,54,223,87,98,103,23,200,212,177,140,155,151,252,125,45,176,55,92,41,56,2,252,32,149,60,3,168,209,193,23,168,230,182,72,193,230,224,5,15,58,63,93,196,33,93,76,188,30,70,31,136,64,204,223,2,230,210,243,255,135,193,52,132,248,160,22,18,164,71,77,80,112,229,120,116,210,225,2,19,139,35,0,214,5,246,9,106,136,204,0,148,97,21,222,153,57,177,162,11,243,252,7,242,34,239,245,50,104,74,221,92,73,13,142,10,184,250,246,167,240,46,230,86,207,181,12,133,81,119,143,164,88,114,223,243,179,208,175,84,161,27,11,225,36,37,177,112,85,81,184,163,223,159,36,9,247,20,13,230,215,108,117,35,99,117,211]]},"requested_proof":{"revealed_attrs":{"attr1_uuid":["claim::277478db-bf57-42c3-8530-b1b13cfe0bfd","Alex","1139481716457488690172217916278103335"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{"predicate1_uuid":"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd"}}}"#;
-
-            let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
+            let valid = AnoncredsUtils::verifier_verify_proof(AnoncredsUtils::proof_request_attr_and_predicate(),
                                                               &proof_json,
                                                               &schemas_json,
                                                               &claim_defs_json,
-                                                              &revoc_regs_jsons).unwrap();
-            assert_eq!(valid, false);
+                                                              &revoc_regs_json).unwrap();
+            assert!(!valid);
         }
     }
 }
@@ -782,9 +1521,10 @@ mod medium_cases {
         fn issuer_create_and_store_claim_def_works_for_invalid_did() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let schema = r#"{"seqNo":1, "data":{"name":"name","version":"1.0","attr_names":[]}}"#;
-
-            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, INVALID_IDENTIFIER, &schema, None, false);
+            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
+                                                                     INVALID_IDENTIFIER,
+                                                                     &AnoncredsUtils::custom_schema("claim_def_works_for_invalid_did"),
+                                                                     None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -792,7 +1532,7 @@ mod medium_cases {
         fn issuer_create_and_store_claim_def_works_for_empty_schema_attr_names() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let schema = r#"{"seqNo":1, "data":{"name":"name","version":"1.0","attr_names":[]}}"#;
+            let schema = r#"{"seqNo":1, "identifier":"NcYxiDXkpYi6ov5FcYDi1e", "data":{"name":"name","version":"1.0","attr_names":[]}}"#;
 
             let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, ISSUER_DID, None, false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -802,9 +1542,10 @@ mod medium_cases {
         fn issuer_create_and_store_claim_def_works_for_correct_signature_type() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let schema = AnoncredsUtils::get_gvt_schema_json(1);
-
-            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, ISSUER_DID, Some(SIGNATURE_TYPE), false);
+            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
+                                                                     &AnoncredsUtils::custom_schema("claim_def_works_for_correct_signature_type"),
+                                                                     ISSUER_DID,
+                                                                     Some(SIGNATURE_TYPE), false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -812,10 +1553,29 @@ mod medium_cases {
         fn issuer_create_and_store_claim_def_works_for_invalid_signature_type() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let schema = AnoncredsUtils::get_gvt_schema_json(1);
-
-            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &schema, ISSUER_DID, Some("some_type"), false);
+            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
+                                                                     &AnoncredsUtils::custom_schema("claim_def_works_for_invalid_signature_type"),
+                                                                     ISSUER_DID,
+                                                                     Some("some_type"), false);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+        }
+
+
+        #[test]
+        fn issuer_create_and_store_claim_def_works_for_duplicate() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
+                                                           ISSUER_DID,
+                                                           &AnoncredsUtils::custom_schema("claim_def_works_for_duplicate"),
+                                                           None, false).unwrap();
+
+            let res = AnoncredsUtils::issuer_create_claim_definition(wallet_handle,
+                                                                     ISSUER_DID,
+                                                                     &AnoncredsUtils::custom_schema("claim_def_works_for_duplicate"),
+                                                                     None, false);
+
+            assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsClaimDefAlreadyExistsError);
         }
     }
 
@@ -826,7 +1586,17 @@ mod medium_cases {
         fn prover_store_claim_offer_works_for_invalid_issuer_did() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = r#"{"issuer_did":"invalid_base58_string", "schema_seq_no":1}"#;
+            let claim_offer_json = format!(r#"{{"issuer_did":"invalid_base58_string", "schema_key":{}}}"#, AnoncredsUtils::gvt_schema_key_json());
+
+            let res = AnoncredsUtils::prover_store_claim_offer(wallet_handle, &claim_offer_json);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+        }
+
+        #[test]
+        fn prover_store_claim_offer_works_for_invalid_schema_key() {
+            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
+
+            let claim_offer_json = format!(r#"{{"issuer_did":"{}", "schema_key":{{"name":"gvt"}}}}"#, ISSUER_DID);
 
             let res = AnoncredsUtils::prover_store_claim_offer(wallet_handle, &claim_offer_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -840,7 +1610,7 @@ mod medium_cases {
         fn prover_get_claim_offers_works_for_invalid_filter_json() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let res = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"schema_seq_no":"1"}"#);
+            let res = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"schema_key":"gvt"}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -851,19 +1621,17 @@ mod medium_cases {
             let wallet_handle_1 = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
             let wallet_handle_2 = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
-            let claim_offer_json_1 = AnoncredsUtils::get_claim_offer(ISSUER_DID, 1);
-            let claim_offer_json_2 = AnoncredsUtils::get_claim_offer(ISSUER_DID, 2);
-            let claim_offer_json_3 = AnoncredsUtils::get_claim_offer(DID, 2);
 
-            AnoncredsUtils::prover_store_claim_offer(wallet_handle_1, &claim_offer_json_1).unwrap();
-            AnoncredsUtils::prover_store_claim_offer(wallet_handle_2, &claim_offer_json_2).unwrap();
-            AnoncredsUtils::prover_store_claim_offer(wallet_handle_2, &claim_offer_json_3).unwrap();
+            AnoncredsUtils::prover_store_claim_offer(wallet_handle_1, &AnoncredsUtils::gvt_claim_offer()).unwrap();
+            AnoncredsUtils::prover_store_claim_offer(wallet_handle_2, &AnoncredsUtils::xyz_claim_offer()).unwrap();
+            AnoncredsUtils::prover_store_claim_offer(wallet_handle_2,
+                                                     &AnoncredsUtils::get_claim_offer(DID, &AnoncredsUtils::xyz_schema_key())).unwrap();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle_2, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID)).unwrap();
             let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 1);
-            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_seq_no: 2 }));
+            assert!(claim_offers.contains(&ClaimOffer { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
         }
     }
 
@@ -895,11 +1663,11 @@ mod medium_cases {
         fn prover_create_and_store_claim_req_works_for_invalid_claim_offer() {
             let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = r#"{"schema_seq_no":1}"#;
+            let claim_offer_json = format!(r#"{{"schema_key":{}}}"#, AnoncredsUtils::gvt_schema_key_json());
 
             let res = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                         DID,
-                                                                        claim_offer_json,
+                                                                        &claim_offer_json,
                                                                         &claim_def,
                                                                         COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -909,19 +1677,17 @@ mod medium_cases {
         fn prover_create_and_store_claim_req_works_for_invalid_claim_def() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, 1);
             let claim_def = r#"{
                         "schema_seq_no":1,
                         "signature_type":"CL",
-                        "public_key":{
+                        "primary":{
                             "n":"121212",
                             "s":"432192"
                         }
                     }"#;
-
             let res = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                         DID,
-                                                                        &claim_offer_json,
+                                                                        &AnoncredsUtils::gvt_claim_offer(),
                                                                         claim_def,
                                                                         COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -931,11 +1697,9 @@ mod medium_cases {
         fn prover_create_and_store_claim_req_works_for_invalid_master_secret() {
             let (wallet_handle, claim_def) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, 1);
-
             let res = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                         DID,
-                                                                        &claim_offer_json,
+                                                                        &AnoncredsUtils::gvt_claim_offer(),
                                                                         &claim_def,
                                                                         "invalid_master_secret_name");
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
@@ -949,28 +1713,30 @@ mod medium_cases {
         fn issuer_create_claim_works_for_for_invalid_claim_req_json() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_req = format!(r#"{{"blinded_ms"{{"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"","ur":null}},"issuer_did":"{}","schema_seq_no":1}}"#, ISSUER_DID);
+            let claim_req = format!(r#"{{"blinded_ms":{{"ur":null}},"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","issuer_did":"{}","schema_key":{}}}"#, ISSUER_DID, AnoncredsUtils::gvt_schema_key_json());
 
-            let claim_json = AnoncredsUtils::get_gvt_claim_json();
-
-            let res = AnoncredsUtils::issuer_create_claim(wallet_handle, &claim_req, &claim_json, None);
+            let res = AnoncredsUtils::issuer_create_claim(wallet_handle,
+                                                          &claim_req,
+                                                          &AnoncredsUtils::gvt_claim_values_json(),
+                                                          None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
-        fn issuer_create_claim_works_for_for_invalid_claim_json() {
+        fn issuer_create_claim_works_for_for_invalid_claim_values_json() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_req = format!(r#"{{"blinded_ms":{{"prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW","u":"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038","ur":null}},"issuer_did":"{}","schema_seq_no":1}}"#, ISSUER_DID);
+            let claim_values_json = r#"{
+                                       "sex":"male",
+                                       "name":"Alex",
+                                       "height":"175",
+                                       "age":"28"
+                                     }"#;
 
-            let claim_json = r#"{
-                               "sex":"male",
-                               "name":"Alex",
-                               "height":"175",
-                               "age":"28"
-                             }"#;
-
-            let res = AnoncredsUtils::issuer_create_claim(wallet_handle, &claim_req, &claim_json, None);
+            let res = AnoncredsUtils::issuer_create_claim(wallet_handle,
+                                                          &AnoncredsUtils::gvt_claim_req(),
+                                                          &claim_values_json,
+                                                          None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
     }
@@ -982,13 +1748,19 @@ mod medium_cases {
         fn prover_store_claim_works_without_claim_req() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let claim_json = format!(r#"{{"claim":{{"sex":["male","1"],"age":["28","28"],"name":["Alex","1"],"height":["175","175"]}},
-                                "issuer_did":"{}",
-                                "revoc_reg_seq_no":null,
-                                "schema_seq_no":10,
-                                "signature":{{"primary_claim":{{"m2":"1","a":"1","e":"2","v":"3"}},"non_revocation_claim":null}}}}"#, ISSUER_DID);
+            let claim_json = format!(r#"{{
+                                                "values":{},
+                                                "issuer_did":"{}",
+                                                "revoc_reg_seq_no":null,
+                                                "schema_key":{},
+                                                "signature":{{
+                                                    "p_claim":{{"m_2":"1","a":"1","e":"2","v":"3"}},
+                                                    "r_claim":null
+                                                }}
+                                              }}"#,
+                                     AnoncredsUtils::gvt_claim_values_json(), DID_MY2, AnoncredsUtils::gvt_schema_key_json());
 
-            let res = AnoncredsUtils::prover_store_claim(wallet_handle, &claim_json);
+            let res = AnoncredsUtils::prover_store_claim(wallet_handle, &claim_json, None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
         }
 
@@ -996,19 +1768,21 @@ mod medium_cases {
         fn prover_store_claim_works_for_invalid_claim_json() {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
-            let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, SEQ_NO);
             AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
-                                                              "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
-                                                              &claim_offer_json,
+                                                              DID_MY1,
+                                                              &AnoncredsUtils::gvt_claim_offer(),
                                                               &claim_def_json,
                                                               COMMON_MASTER_SECRET).unwrap();
 
-            let claim_json = r#"{"claim":{"sex":["male","1"],"age":["28","28"],"name":["Alex","1"],"height":["175","175"]},
-                                "issuer_did":1,"
-                                revoc_reg_seq_no":null,
-                                "schema_seq_no":1}"#;
+            let claim_json = format!(r#"{{
+                                                   "values":{},
+                                                   "issuer_did":"{}",
+                                                   "revoc_reg_seq_no":null,
+                                                   "schema_key":{}
+                                               }}"#,
+                                     AnoncredsUtils::gvt_claim_values_json(), ISSUER_DID, AnoncredsUtils::gvt_schema_key_json());
 
-            let res = AnoncredsUtils::prover_store_claim(wallet_handle, &claim_json);
+            let res = AnoncredsUtils::prover_store_claim(wallet_handle, &claim_json, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
     }
@@ -1020,7 +1794,7 @@ mod medium_cases {
         fn prover_get_claims_works_for_invalid_json() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let res = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{"schema_seq_no": "1"}"#);
+            let res = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{"schema_key": "name"}"#);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
     }
@@ -1029,32 +1803,14 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        fn prover_get_claims_for_proof_req_works_for_empty_req() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
-
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{},
-                                "requested_predicates":{}
-                              }"#;
-
-            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-            assert_eq!(claims.attrs.len(), 0);
-            assert_eq!(claims.predicates.len(), 0);
-        }
-
-        #[test]
         fn prover_get_claims_for_proof_req_works_for_invalid_proof_req() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_predicates":{}
+            let proof_req = r#"{
+                                    "nonce":"123432421212",
+                                    "name":"proof_req_1",
+                                    "version":"0.1",
+                                    "requested_predicates":{}
                               }"#;
 
             let res = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req);
@@ -1062,103 +1818,16 @@ mod medium_cases {
         }
 
         #[test]
-        fn prover_get_claims_for_proof_req_works_for_revealed_attr_with_other_schema_seq_no() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
-
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":2, "name":"name"}},
-                                "requested_predicates":{}
-                              }"#;
-
-            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-            assert_eq!(claims.attrs.len(), 1);
-            assert_eq!(claims.predicates.len(), 0);
-
-            let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
-            assert_eq!(claims_for_attr_1.len(), 0);
-        }
-
-        #[test]
-        fn prover_get_claims_for_proof_req_works_for_revealed_attr_for_specific_issuer() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
-
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{"attr1_uuid":{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e", "name":"name"}},
-                                "requested_predicates":{}
-                              }"#;
-
-            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-            assert_eq!(claims.attrs.len(), 1);
-            assert_eq!(claims.predicates.len(), 0);
-
-            let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
-            assert_eq!(claims_for_attr_1.len(), 1);
-        }
-
-        #[test]
-        fn prover_get_claims_for_proof_req_works_for_revealed_attr_with_other_issuer() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
-
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{"attr1_uuid":{"issuer_did":"Ac23dAXkpYi6ov5FcYDi1e", "name":"name"}},
-                                "requested_predicates":{}
-                              }"#;
-
-            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-            assert_eq!(claims.attrs.len(), 1);
-            assert_eq!(claims.predicates.len(), 0);
-
-            let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
-            assert_eq!(claims_for_attr_1.len(), 0);
-        }
-
-        #[test]
-        fn prover_get_claims_for_proof_req_works_for_satisfy_predicate_by_specific_issuer_and_schema() {
-            let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
-
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{},
-                                "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"GE","value":18,"schema_seq_no":1,"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e"}}
-                              }"#;
-
-            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-            assert_eq!(claims.attrs.len(), 0);
-            assert_eq!(claims.predicates.len(), 1);
-
-            let claims_for_predicate_1 = claims.predicates.get("predicate1_uuid").unwrap();
-            assert_eq!(claims_for_predicate_1.len(), 1);
-        }
-
-        #[test]
         fn prover_get_claims_for_proof_req_works_for_invalid_predicate() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{},
-                                "requested_predicates":{"predicate1_uuid":{"attr_name":"age"}}
-                              }"#;
+            let proof_req = r#"{
+                                        "nonce":"123432421212",
+                                        "name":"proof_req_1",
+                                        "version":"0.1",
+                                        "requested_attrs":{},
+                                        "requested_predicates":{"predicate1_referent":{"attr_name":"age"}}
+                                    }"#;
 
             let res = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1168,12 +1837,13 @@ mod medium_cases {
         fn prover_get_claims_for_proof_req_works_for_invalid_predicate_type() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{},
-                                "requested_predicates":{"predicate1_uuid":{"attr_name":"age","p_type":"LE","value":58}}
-                              }"#;
+            let proof_req = r#"{
+                                        "nonce":"123432421212",
+                                        "name":"proof_req_1",
+                                        "version":"0.1",
+                                        "requested_attrs":{},
+                                        "requested_predicates":{"predicate1_referent":{"attr_name":"age","p_type":"<=","value":58}}
+                                    }"#;
 
             let res = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1187,36 +1857,26 @@ mod medium_cases {
         fn prover_create_proof_works_for_invalid_master_secret() {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
-                                "requested_predicates":{}
-                              }"#;
-
-            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-            let claims_for_attr = claims.attrs.get("attr1_uuid").unwrap();
-            let claim_for_attr = claims_for_attr[0].clone();
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
+            let claim_for_attr = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
             let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_uuid":["{}",true]}},
-                                          "requested_predicates":{{}}
-                                        }}"#, claim_for_attr.claim_uuid);
+                                                  "self_attested_attributes":{{}},
+                                                  "requested_attrs":{{"attr1_referent":["{}",true]}},
+                                                  "requested_predicates":{{}}
+                                                }}"#, claim_for_attr.referent);
 
-            let schemas_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, AnoncredsUtils::get_gvt_schema_json(1));
-            let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, claim_def_json);
-            let revoc_regs_jsons = "{}";
+            let schemas_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.referent, AnoncredsUtils::gvt_schema_json());
+            let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.referent, claim_def_json);
+            let revoc_regs_json = "{}";
 
             let res = AnoncredsUtils::prover_create_proof(wallet_handle,
-                                                          &proof_req,
+                                                          AnoncredsUtils::proof_request_attr_and_predicate(),
                                                           &requested_claims_json,
                                                           &schemas_json,
                                                           "invalid_master_secret_name",
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons);
+                                                          &revoc_regs_json);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
         }
 
@@ -1224,36 +1884,26 @@ mod medium_cases {
         fn prover_create_proof_works_for_invalid_schemas_json() {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
-                                "requested_predicates":{}
-                             }"#;
-
-            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-            let claims_for_attr = claims.attrs.get("attr1_uuid").unwrap();
-            let claim_for_attr = claims_for_attr[0].clone();
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
+            let claim_for_attr = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
             let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_uuid":["{}",true]}},
-                                          "requested_predicates":{{}}
-                                        }}"#, claim_for_attr.claim_uuid);
+                                                  "self_attested_attributes":{{}},
+                                                  "requested_attrs":{{"attr1_referent":["{}",true]}},
+                                                  "requested_predicates":{{}}
+                                                }}"#, claim_for_attr.referent);
 
             let schemas_json = r#"{}"#;
-            let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, claim_def_json);
-            let revoc_regs_jsons = "{}";
+            let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.referent, claim_def_json);
+            let revoc_regs_json = "{}";
 
             let res = AnoncredsUtils::prover_create_proof(wallet_handle,
-                                                          &proof_req,
+                                                          AnoncredsUtils::proof_request_attr_and_predicate(),
                                                           &requested_claims_json,
                                                           &schemas_json,
                                                           COMMON_MASTER_SECRET,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons);
+                                                          &revoc_regs_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -1261,36 +1911,26 @@ mod medium_cases {
         fn prover_create_proof_works_for_invalid_claim_defs_json() {
             let (wallet_handle, _) = AnoncredsUtils::init_common_wallet();
 
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
-                                "requested_predicates":{}
-                             }"#;
-
-            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-            let claims_for_attr = claims.attrs.get("attr1_uuid").unwrap();
-            let claim_for_attr = claims_for_attr[0].clone();
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
+            let claim_for_attr = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
             let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_uuid":["{}",true]}},
-                                          "requested_predicates":{{}}
-                                        }}"#, claim_for_attr.claim_uuid);
+                                                  "self_attested_attributes":{{}},
+                                                  "requested_attrs":{{"attr1_referent":["{}",true]}},
+                                                  "requested_predicates":{{}}
+                                                }}"#, claim_for_attr.referent);
 
-            let schemas_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, AnoncredsUtils::get_gvt_schema_json(1));
+            let schemas_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.referent, AnoncredsUtils::gvt_schema_json());
             let claim_defs_json = r#"{}"#;
-            let revoc_regs_jsons = "{}";
+            let revoc_regs_json = "{}";
 
             let res = AnoncredsUtils::prover_create_proof(wallet_handle,
-                                                          &proof_req,
+                                                          AnoncredsUtils::proof_request_attr_and_predicate(),
                                                           &requested_claims_json,
                                                           &schemas_json,
                                                           COMMON_MASTER_SECRET,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons);
+                                                          &revoc_regs_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -1298,120 +1938,72 @@ mod medium_cases {
         fn prover_create_proof_works_for_invalid_requested_claims_json() {
             let (wallet_handle, claim_def_json) = AnoncredsUtils::init_common_wallet();
 
-            let proof_req = r#"{"nonce":"123432421212",
-                                "name":"proof_req_1",
-                                "version":"0.1",
-                                "requested_attrs":{"attr1_uuid":{"schema_seq_no":1, "name":"name"}},
-                                "requested_predicates":{}
-                             }"#;
-
-            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
-            let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-            let claims_for_attr = claims.attrs.get("attr1_uuid").unwrap();
-            let claim_for_attr = claims_for_attr[0].clone();
+            let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
+            let claim_for_attr = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
             let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_predicates":{{}}
-                                        }}"#);
+                                                  "self_attested_attributes":{{}},
+                                                  "requested_predicates":{{}}
+                                                }}"#);
 
-            let schemas_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, AnoncredsUtils::get_gvt_schema_json(1));
-            let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.claim_uuid, claim_def_json);
-            let revoc_regs_jsons = "{}";
+            let schemas_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.referent, AnoncredsUtils::gvt_schema_json());
+            let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim_for_attr.referent, claim_def_json);
+            let revoc_regs_json = "{}";
 
             let res = AnoncredsUtils::prover_create_proof(wallet_handle,
-                                                          &proof_req,
+                                                          AnoncredsUtils::proof_request_attr_and_predicate(),
                                                           &requested_claims_json,
                                                           &schemas_json,
                                                           COMMON_MASTER_SECRET,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons);
+                                                          &revoc_regs_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
     }
-
 
     mod verifier_verify_proof {
         use super::*;
 
         #[test]
-        fn verifier_verify_proof_works_for_invalid_proof_json() {
-            AnoncredsUtils::init_common_wallet();
+        fn verifier_verify_proof_works_for_invalid_proof_json_format() {
+            let schemas_json = format!(r#"{{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{}}}"#, AnoncredsUtils::gvt_schema_json());
+            let claim_defs_json = format!(r#"{{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{}}}"#, AnoncredsUtils::claim_def_json());
+            let revoc_regs_json = "{}";
+            let proof_json = r#"{"proof":{"proofs":{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{"primary_proof":{"eq_proof":{"revealed_attrs":{"name":"1139481716457488690172217916278103335"},"a_prime":"80401564260558483983794628158664845806393125691167675024527906210615204776868092566789307767601325086260531777605457298059939671624755239928848057947875953445797869574854365751051663611984607735255307096920094357120779812375573500489773454634756645206823074153240319316758529163584251907107473703779754778699279153037094140428648169418133281187947677937472972061954089873405836249023133445286756991574802740614183730141450546881449500189789970102133738133443822618072337620343825908790734460412932921199267304555521397418007577171242880211812703320270140386219809818196744216958369397014610013338422295772654405475023","e":"31151798717381512709903464053695613005379725796031086912986270617392167764097422442809244590980303622977555221812111085160553241592792901","v":"524407431684833626723631303096063196973911986967748096669183384949467719053669910411426601230736351335262754473490498825342793551112426427823428399937548938048089615644972537564428344526295733169691240937176356626523864731701111189536269488496019586818879697981955044502664124964896796783428945944075084807859935155837238670987272778459356531608865162828109489758902085206073584532002909678902616210042778963974064479140826712481297584040209095459963718975102750913306565864485279810056629704077428898739021040190774575868853629858297299392839284660771662690107106553362040805152261505268111067408422298806905178826507224233050991301274817252924123120887017757639206512015559321675322509820081151404696713509158685022511201565062671933414307463988209696457343022378430051265752251403461414881325357657438328740471164157220698425309006894962942640219890219594168419276308074677144722217081026358892787770650248878952483621","m":{"age":"10477979077744818183854012231360633424177093192344587159214818537659704987539982653663361680650769087122324965941845552897155693994859927792964720675888893623940580527766661802170","sex":"15368219775809326116045200104269422566086585069798988383076685221700842794654771075432385446820819836777771517356551059931242867733879324915651894894695726945279462946826404864068","height":"268172143999991481637372321419290603042446269013750825098514042757459298040087626745653681785038933035820421862976371452111736537699176931068992453946771945552540798204580069806"},"m1":"119095745403940293668103184388411799541118279558928018597628509118163496000813590825371995586347826189221837428823000332905316924389185590810015031744029496470545254805993327676570037596326743185389101389800942263689809725968264069601565478411709555274081560719927118853299543998608664701485475703881376151770","m2":"3166313665375815600922385342096456465402430622944571045536207479553790085339726549928012930073803465171492637049498407367742103524723152099973753540483894420905314750248333232361"},"ge_proofs":[{"u":{"2":"6494171529848192644197417834173236605253723188808961394289041396341136802965710957759175642924978223517091081898946519122412445399638640485278379079647638538597635045303985779767","0":"7739508859260491061487569748588091139318989278758566530899756574128579312557203413565436003310787878172471425996601979342157451689172171025305431595131816910273398879776841751855","3":"9424758820140378077609053635383940574362083113571024891496206162696034958494400871955445981458978146571146602763357500412840538526390475379772903513687358736287298159312524034159","1":"9011979414559555265454106061917684716953356440811838475257096756618761731111646531136628099710567973381801256908067529269805992222342928842825929421929485785888403149296320711642"},"r":{"DELTA":"2119857977629302693157808821351328058251440215802746362450951329352726877165815663955490999790457576333458830301801261754696823614762123890412904169206391143688952648566814660498520188221060505840151491403269696751525874990487604723445355651918681212361562384420233903265612599812725766212744963540390806334870022328290970137051148373040320927100063898502086531019924715927190306801273252711777648467224661735618842887006436195147540705753550974655689586750013569294343535843195025962867299786380033532422131203367401906988124836294104501525520053613392691214421562815044433237816093079784307397782961917892254668290115653012265908717124278607660504580036193346698672079435538219972121355893074219968755049500875222141","2":"879097501989202140886939888802566536179834329508897124489020677433754766947767937608431979796722207676629625451150104784909666168153917345813160237337412296010679353735699663083287427507870244565918756969618964144516025526404618052053542009438548457492400344119561349471929199757453154204191407620539220514897529346602664135146454509169680801061111878075145734123580343470361019624175036825631373890661124315134340427076598351080893567995392248394683875116715114577054906406649006122102488431184007790011073389768061904597267545895265921673106871142463561948479668876241841045522543174660428236658891636170119227855493059358614089146415798861053408542832475696099851160385105386001523305465829676723036394820593263477","0":"1724016272047416140958096373304304971004826284109046259544344355102178044512441391364907122486655755929044720001281832600729467778103556397960700809066582436321515744527550472324028227472294258045699756170293405547851344921626775854114063087070898499913846456795761213291925373770081490280103876827479351849800210782799381740073719081199000612284788683993320623339686128531187019125095700122135094060470612862911102824801065698176788174959069186600426519872015152034176356923049531650418553748519941342115963599848111324793380438600664408464987023646615003553912544410140730587797458882329021327455905737414352355326238028222782957735440607899424838572541602600159016542488644761584240884783618700311735467659132540546","3":"2317535203964314926167241523636020444600002667629517624482931328850422196008281300859516069440995466415138723103558631951648519232327284208990029010060986032518946759289078833125920310350676484457972303378558158127406345804560689086460633931717939234025886786468170219981598030245042011840614339386724945679531091642132820284896626191109974537171662283750959028046143650291367908660204201563611944187723824430780626387525165408619587771059635528553832034409311888615502905143628507219523591091412192645348525327725381323865648645828460581593542176351568614465903523790649219812666979685223535464526901006270478687017672202058914176692964406859722580270696925877498058525086810338471380117323227744481903228027847825795","1":"1119193929864813751243160041764170298897380522230946444206167281178657213260394833843687899872857393015947283159245092452814155776571829885921814072299525859857844030379558685168895306445277750249341844789101670896570226707650318347992386244538723699686941887792682779028216548922683313576597384354842537728667739985216662699631842296096507821667149950956179957306177525178260912379909156360834120816956949271530622510333943914411903103069247646327625753995178999023427645468623522280255892736633780185163496867644317005801241786702434621502492159672660131289312665511793827552317714835658019088880972220344126692027952749318018900669839090109361161616086319604439015851316798257015063653414161203599184730094765941653"},"mj":"10477979077744818183854012231360633424177093192344587159214818537659704987539982653663361680650769087122324965941845552897155693994859927792964720675888893623940580527766661802170","alpha":"46280660038407959140964701167450659223532556136388451390393713283900546119670373626221864441898929302821705811144923685080534692512705456699843367809872982836890616398604933641265111106644805368974824737276965928297120628041257593166650593538539384316563258781595629888673792430276007730792093088812056156937735120078929629310611907731935101448992312370312134173482115524436767558802102266208152808607480693236511858269018733175523724309089010048330044458187371675333889670055578652283806685440133357512406700879353713629795062705271430695988191782837658895477702634883214188598350625843489120361660836956958750828038278027538830855628653513539929730230905015331221220017847248793929813230252015802389329428995718799619565984669228143200627972926117282688854152516298117476837960100343260648687249027349308513966440386556698667484082658689","t":{"DELTA":"46814992964714978733007076702016837564951956529003697497847838781899848384824991374342901164708655443686022921583406187082133141084994843502230809550055933825660668160300304112671478218513259983054489597176651737200716259733573469298437873515151377206364940530308167934399245072298875358347931404742292788785586833114480704138718996633638362933821933388459210678374952072108333767698704767907612549860590824123780096225591372365712106060039646448181221691765233478768574198237963457485496438076793333937013217675591500849193742006533651525421426481898699626618796271544860105422331629265388419155909716261466161258430","2":"59423006413504086085782234600502410213751379553855471973440165009200961757474676407242673622935614782362911290590560535490636029324125251850583605745046201217673654522625983661578962623803698461459190578519097656221453474955879823750445359506290522280566225253310030053812918275525607874059407284653434046369835156477189219911810464401689041140506062300317020407969423270374033482533711564673658146930272487464489365713112043565257807490520178903336328210031106311280471651300486164966423437275272281777742004535722142265580037959473078313965482591454009972765788975683031385823798895914265841131145707278751512534120","0":"56510878078818710798555570103060159621941668074271797077206591818472978018558098567975838757566260370093327989369045722406190165972775356924844244889146946158949660988214890388299203816110339909687790860564719380865809705044646711632599987968183128514431910561478715003212633874423067294596323864121737000450543142072142652163818450299889830999149821558252183477517484127000480272695698860647674027831262149565273068850774090998356019534296579838685977022988536930596918054160990243868372150609770079720240227817149126735182138479851227052696211125454858584118346950878092387488482897777914362341820607560926173967363","3":"63511079416489489495396586813126304469185174450150717746314545118902972011091412254834718868134635251731510764117528579641756327883640004345178347120290107941107152421856942264968771810665927914509411385404403747487862696526824127219640807008235054362138760656969613951620938020257273816713908815343872804442748694361381399025862438391456307852482826748664499083370705834755863016895566228300904018909174673301643617543662527772400085378252706897979609427451977654028887889811453690146157824251379525221390697200211891556653698308665831075787991412401737090471273439878635073797691350863566834141222438011402987450926","1":"30348838247529448929141877305241172943867610065951047292188826263950046630912426030349276970628525991007036685038199133783991618544554063310358191845473212966131475853690378885426974792306638181168558731807811629973716711132134244797541560013139884391800841941607502149630914097258613821336239993125960064136287579351403225717114920758719152701696123905042695943045383536065833292374624566478931465135875411483860059753175449604448434619593495399051968638830805689355610877075130302742512428461286121237297212174164897833936610857614962734658136750299346971377383141235020438750748045568800723867413392427848651081274"},"predicate":{"attr_name":"age","p_type":"GE","value":18}}]},"non_revoc_proof":null}},"aggregated_proof":{"c_hash":"81135772044295974649282368084258333955993271555081206390568996949836231116301","c_list":[[2,124,231,47,189,36,247,160,61,220,165,35,97,165,203,185,133,253,81,239,67,127,156,49,189,16,140,30,177,161,221,54,154,0,127,143,98,212,114,193,188,85,206,171,198,140,9,192,10,254,218,120,201,182,40,141,80,35,81,148,204,192,41,5,186,33,50,77,211,163,124,130,32,219,193,167,79,43,181,76,19,249,53,79,70,221,205,36,180,50,120,255,161,227,196,204,71,106,221,131,220,7,73,86,128,208,48,58,123,63,82,24,170,141,143,56,221,96,151,108,105,38,185,243,224,112,177,101,195,87,208,201,39,123,165,125,92,104,234,188,54,92,31,158,178,152,52,205,26,156,237,241,23,15,76,220,168,32,175,230,157,197,225,70,57,237,8,81,13,17,95,70,143,56,162,223,203,8,48,153,51,51,118,116,32,139,187,222,146,86,165,111,125,107,203,18,212,28,168,22,62,69,204,207,122,148,25,30,92,120,83,214,116,221,204,120,230,70,128,139,181,110,69,93,253,240,69,16,113,224,246,41,142,0,83,237,186,4,50,156,206,199,89,74,96,168,249,240,101,16,103,234,162,219,52,218,207],[1,191,167,2,151,36,61,136,184,172,120,86,127,88,109,119,56,21,167,171,217,221,24,64,246,237,255,152,81,183,201,191,59,234,213,101,254,91,33,205,120,71,215,144,160,243,145,109,19,151,241,46,135,132,50,143,219,207,197,35,89,103,83,212,96,83,222,101,55,57,220,161,252,115,39,62,46,160,30,138,221,89,125,66,114,150,5,95,63,10,55,107,102,73,40,69,41,6,57,0,64,226,152,66,181,149,251,50,28,53,18,26,221,5,188,67,125,184,190,200,56,92,132,201,242,211,37,2,43,6,146,88,228,120,204,190,4,118,134,106,118,110,249,145,175,165,116,197,200,183,207,215,197,79,207,203,29,182,231,151,248,233,107,41,79,234,250,27,33,33,107,102,240,47,37,230,243,185,93,192,52,31,73,211,11,173,150,92,194,154,172,247,221,206,129,85,193,105,172,140,201,40,240,200,28,94,1,96,204,175,113,170,46,134,229,111,215,208,237,252,84,50,249,41,214,79,38,194,23,212,7,164,153,217,23,252,32,114,145,58,189,118,104,131,84,184,115,175,199,227,219,117,23,113,113,180,3],[240,104,187,71,84,144,129,123,12,181,215,233,27,55,56,54,94,57,17,42,111,42,112,234,192,23,226,103,118,198,189,175,175,1,102,64,128,100,221,201,134,106,83,239,69,43,150,172,95,206,145,224,207,239,39,193,30,200,90,125,175,125,59,47,250,224,193,21,64,112,101,131,128,249,96,165,73,33,174,64,69,252,209,158,130,53,23,158,217,173,69,51,12,145,70,174,15,206,13,181,50,246,50,110,223,65,250,44,39,33,8,47,169,242,147,3,190,164,110,20,68,5,142,133,38,198,151,161,167,0,219,128,126,120,190,23,153,22,250,78,114,241,252,181,74,142,65,123,225,153,75,159,78,84,28,110,203,105,231,238,75,138,121,233,75,163,221,69,106,143,1,217,251,43,147,252,189,122,19,124,189,180,206,91,165,199,41,172,233,102,14,91,162,254,16,142,60,230,39,200,208,236,101,69,101,152,233,217,100,206,31,120,211,191,90,56,205,40,180,120,47,210,224,86,153,34,86,237,204,11,183,227,0,224,15,201,32,228,4,210,43,156,68,246,137,150,103,197,191,150,155,181,78,5,134,58],[1,214,184,139,205,251,132,131,8,186,140,58,211,242,134,120,121,253,128,192,10,252,172,101,44,26,119,56,212,8,248,71,19,96,59,12,233,191,63,187,217,35,191,160,127,247,189,247,229,111,252,101,126,10,142,252,238,215,211,137,137,164,114,186,255,199,183,50,103,9,158,63,134,140,162,154,188,109,52,31,92,78,38,228,0,60,225,100,239,88,114,95,48,71,7,117,168,45,45,177,178,62,87,197,98,174,123,249,26,237,179,12,63,182,46,218,183,148,163,222,179,159,146,56,142,190,122,100,211,6,86,237,10,7,111,186,27,66,95,252,108,247,203,1,111,60,13,218,104,63,128,125,197,11,201,138,33,122,37,31,163,123,120,132,65,122,208,60,80,87,113,183,28,31,74,106,18,79,52,245,113,184,94,202,72,223,8,128,209,43,77,237,119,208,255,144,26,76,223,77,177,131,237,49,150,251,53,150,115,33,254,237,185,15,140,234,205,99,248,252,171,245,192,104,151,194,190,186,249,180,246,9,169,165,0,221,7,107,39,67,58,178,176,99,212,40,247,49,127,7,94,5,170,65,154,28,104],[1,247,26,202,244,120,131,95,151,52,56,38,141,232,178,50,61,45,235,61,12,68,11,180,174,222,110,211,141,253,198,204,248,192,40,99,237,1,45,170,79,208,3,13,135,89,195,65,3,228,224,146,181,198,14,79,78,237,168,81,108,151,68,12,88,242,120,200,120,193,253,51,167,140,43,175,59,18,160,190,233,21,213,135,162,76,38,48,163,110,155,197,97,93,211,183,95,42,172,249,98,59,161,136,70,39,142,48,242,44,154,103,186,161,214,215,0,254,166,150,111,71,242,102,209,125,25,65,144,223,211,137,223,239,50,96,185,171,120,155,171,98,204,23,102,253,68,141,91,240,127,170,199,249,217,165,164,37,174,212,159,232,140,196,216,140,205,102,84,104,220,223,9,249,75,245,78,157,245,203,235,154,73,34,77,12,227,138,93,105,178,114,255,210,88,216,202,64,69,128,220,211,113,51,15,185,103,236,52,187,49,29,162,20,35,21,65,188,33,46,11,172,59,15,221,36,33,213,14,121,36,218,76,80,97,197,83,64,145,73,194,43,233,144,251,86,112,209,230,67,234,116,172,219,123,50,46],[1,114,216,159,37,214,198,117,230,153,15,176,95,20,29,134,179,207,209,35,101,193,47,54,130,141,78,213,54,167,31,73,105,177,129,135,6,135,45,107,103,16,133,187,74,217,42,40,1,214,60,70,78,245,86,82,150,75,91,235,181,249,129,147,202,15,86,250,222,240,203,236,102,39,53,147,79,178,124,184,97,73,65,136,74,29,219,182,83,167,221,203,32,200,243,130,65,234,133,181,203,35,86,21,123,170,74,174,5,132,1,149,77,141,158,193,249,130,37,53,253,234,228,144,66,152,232,246,26,193,6,53,139,45,231,173,115,87,89,61,197,9,96,73,229,189,49,44,203,214,156,139,58,153,77,13,90,35,157,130,184,150,161,69,145,157,4,206,52,216,227,233,113,202,54,154,153,100,83,97,135,88,197,227,42,52,28,221,91,117,56,183,198,102,231,37,232,226,136,142,115,218,175,45,221,143,130,215,184,39,102,172,126,253,152,108,254,241,17,98,70,223,191,138,251,227,243,32,180,190,223,69,135,0,97,105,115,189,221,134,26,159,32,210,172,233,7,65,238,77,203,159,181,188,203,159,190]]}},"requested_proof":{"revealed_attrs":{"attr1_referent":["claim::58479554-187f-40d9-b0a5-a95cfb0338c3","Alex","1139481716457488690172217916278103335"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{"predicate1_referent":"claim::58479554-187f-40d9-b0a5-a95cfb0338c3"}}}"#;
 
-            let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                   "name":"proof_req_1",
-                                   "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
-                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
-                                }}"#);
-
-            let claim_def = r#"{"public_key":{"n":"94759924268422840873493186881483285628376767714620627055233230078254863658476446487556117977593248501523199451418346650764648601684276437772084327637083000213497377603495837360299641742248892290843802071224822481683143989223918276185323177379400413928352871249494885563503003839960930062341074783742062464846448855510814252519824733234277681749977392772900212293652238651538092092030867161752390937372967233462027620699196724949212432236376627703446877808405786247217818975482797381180714523093913559060716447170497587855871901716892114835713057965087473682457896508094049813280368069805661739141591558517233009123957","s":"3589207374161609293256840431433442367968556468254553005135697551692970564853243905310862234226531556373974144223993822323573625466428920716249949819187529684239371465431718456502388533731367046146704547241076626874082510133130124364613881638153345624380195335138152993132904167470515345775215584510356780117368593105284564368954871044494967246738070895990267205643985529060025311535539534155086912661927003271053443110788963970349858709526217650537936123121324492871282397691771309596632805099306241616501610166028401599243350835158479028294769235556557248339060399322556412171888114265194198405765574333538019124846","rms":"57150374376895616256492932008792437185713712934712117819417607831438470701645904776986426606717466732609284990796923331049549544903261623636958698296956103821068569714644825742048584174696465882627177060166162341112552851798863535031243458188976013190131935905789786836375734914391914349188643340535242562896244661798678234667651641013894284156416773868299435641426810968290584996112925365638881750944407842890875840705650290814965768221299488400872767679122749231050406680432079499973527780212310700022178178822528199576164498116369689770884051691678056831493476045361227274839673581033532995523269047577973637307053","r":{"age":"94304485801056920773231824603827244147437820123357994068540328541540143488826838939836897544389872126768239056314698953816072289663428273075648246498659039419931054256171488371404693243192741923382499918184822032756852725234903892700640856294525441486319095181804549558538523888770076173572615957495813339649470619615099181648313548341951673407624414494737018574238782648822189142664108450534642272145962844003886059737965854042074083374478426875684184904488545593139633653407062308621502392373426120986761417580127895634822264744063122368296502161439648408926687989964483291459079738447940651025900007635890755686910","sex":"29253365609829921413347591854991689007250272038394995372767401325848195298844802462252851926995846503104090589196060683329875231216529049681648909174047403783834364995363938741001507091534282239210301727771803410513303526378812888571225762557471133950393342500638551458868147905023198508660460641434022020257614450354085808398293279060446966692082427506909617283562394303716193372887306176319841941848888379308208426966697446699225783646634631703732019477632822374479322570142967559738439193417309205283438893083349863592921249218168590490390313109776446516881569691499831380592661740653935515397472059631417493981532","name":"25134437486609445980011967476486104706321061312022352268621323694861467756181853100693555519614894168921947814126694858839278103549577703105305116890325322098078409416441750313062396467567140699008203113519528887729951138845002409659317083029073793314514377377412805387401717457417895322600145580639449003584446356048213839274172751441145076183734269045919984853749007476629365146654240675320041155618450449041510280560040162429566008590065069477149918088087715269037925211599101597422023202484497946662159070023999719865939258557778022770035320019440597702090334486792710436579355608406897769514395306079855023848170","height":"59326960517737425423547279838932030505937927873589489863081026714907925093402287263487670945897247474465655528290016645774365383046524346223348261262488616342337864633104758662753452450299389775751012589698563659277683974188553993694220606310980581680471280640591973543996299789038056921309016983827578247477799948667666717056420270448516049047961099547588510086600581628091290215485826514170097211360599793229701811672966818089371089216189744274422526431130783428589346341196561742409198605034972210917502326180305735092988639850309253190875578501020679137562856724998821945605494355779034135306337094344532980411836"},"rctxt":"9641986614889199796257508700106896585587271615330980339636468819377346498767697681332046156705231986464570206666984343024200482683981302064613556104594051003956610353281701880542337665385482309134369756144345334575765116656633321636736946947493150642615481313285221467998414924865943067790561494301461899025374692884841352282256044388512875752628313052128404892424405230961678931620525106856624692942373538946467902799339061714326383378018581568876147181355325663707572429090278505823900491548970098691127791086305310899642155499128171811034581730190877600697624903963241473287185133286356124371104261592694271730029","z":"77594127026421654059198621152153180600664927707984020918609426112642522289621323453889995053400171879296098965678384769043918218957929606187082395048777546641833348694470081024386996548890150355901703252426977094536933434556202865213941384425538749866521536494046548509344678288447175898173634381514948562261015286492185924659638474376885655055568341574638453213864956407243206035973349529545863886325462867413885904072942842465859476940638839087894582648849969332663627779378998245133055807038199937421971988505911494931665143822588532097754480882750243126847177560978100527491344463525107644125030963904001009159559"},"public_key_revocation":null,"schema_seq_no":1,"signature_type":"CL"}"#;
-            let schemas_json = format!(r#"{{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{}}}"#, AnoncredsUtils::get_gvt_schema_json(1));
-            let claim_defs_json = format!(r#"{{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{}}}"#, claim_def);
-            let revoc_regs_jsons = "{}";
-
-            let proof_json = r#"{"proofs":{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{"proof":{"primary_proof":{"eq_proof":"a_prime":"47629821806628155353444789773246165920681315271529392722265555946090524267165563309836167110610840740533588118152308411732923636370660640410661034994521654033599863817144282118006097899736622728860229305231675970853294584911572355833537271010861501353858292189045263114095480601737776505186511389129055847562085611741257601964074827979121349153316235245772819207422031038042586202074331681302501661153569340935741290924699468188826629478130140797677338573924284871118002193526319478550852287453975107498037063076866410320160118555629090040954555043934303307652160345244864713226315470541231435958298648179413077988340","e":"13427639393364185909415877973872458621259927563729922146828001652769380799419438410309469022979920689628523901764614163117469683925816443","v":"852136445143816932026946294488424887907102968158908948827421962603492187508454543239422067899916472317305416590471170842186669606584356963437132366711335927890209765986844538775191207999204354235774464468525274918097404114453069375363594310105209141774763909570100638835926337238009617444858777301355087706167735590386774813901740600054753028260344014744801229032610106838480523182317262113911183640784111960909501662169298536941919854667754097841344375972975021196106884215734228415868248724905018661498061287694439466570946597514142085096419985189064172035527690786158872698717583830848410994616274586162550376126607414773916066374234063208380831144157533076866210628625236440222547584539349936639548061601416341705483504386186280800509889531835172071717956251546280392606775903107774727736794828168898273891724336881907672405328368540895104468091907771325910937575557566831844131159128453840354307814975621978196047820","m":{"age":"1117601261519431120446925325460734824239475567013636538481947258329666056692767097795046086413732472111811628751812987521644198549167671875326968410921589186689138994171774838662","height":"7064132689652704067914104576495132313294680087958177180391515757079548676035445873279966783996928425154050462229933823707574545166617858646442019030600136959459527533262821184869","sex":"16084497853957041205729191269508720470626311156190485518484640641677445098603656354458362520541393995692536218820724164533958162674375198846036330444513484319280148335515891811530"},"m1":"154906224259819061652290487122980839849626068919893070220438585977323162319993111920906032317552959103520053742608858935542877608981244065301675821390065831113115709272412144796159984624494428122971995557415296140268002332169405587907128359886810433617416529821500995701094400375272097687818064435577784795275","m2":"13805395408072590464827983892588030341708765524663545700917462089376137940485022437657208204460048097312372685954050370540389593952001973312378647790917367330461398089529292217752"},"ge_proofs":[{"u":{"1":"7698818972783845439601187851976452936638792889455287252542709653271706844173743185409084669157965935169942655008606334521674712818637940377261656468700786810566551698412412949418","0":"11703047052430512223413711314521545616119146623040600935686474696241801697819280425232876917607198335376453682738553665221410353412906194951254558355994401995990233992518110582450","3":"13210777821918317858818819091924507295018522783042111457450035423463340571245465760486275059291363621513532153389441883097799049597687545496359999443320001567152794884095192951040","2":"15219471780524079156861690098171693383497641272226737821992208834301871102152362116211452788300889697214391366996966539871625433480959011635688106136537800706217506402845296449689"},"r":{"1":"46043242109380749151527145850513330956077996622769158245225343392397735706292106535150958053995712629189143692293204979798837951212291825184346767969751978730000071952944305252032332015837054475531407691352179423131405515518588355918925056889302269768343499864256747177988825578647189563088068257214198650437730618330249172716051559993880468542083352885474175039320848153156858562341041960950299312991459780503345784440261679263045723337629951517601461685539857683027034345542399365706329805317943096391758978877658949910614447086409173234155028671453929715706057153381022697673192590033507204548864311227048268516889390503318015295207078022755834130221198717787608473222789491216667698651180077661375273569115943192","0":"135472587547410377947826119498467634347118057359097899596599164976338466445104141784869016998150489852448547539824768048351359572626675997498079394825940306636285481821620973655797996638210760710325933304918452142858879806106214845499670718704532018129553348815327362843246706518826311676917538452317818631484884032929252959289913274829848084561421467966320595980172006456003183536232790787521924655750157145207798486087511869939940023266736153366338179116840490184005332351004990854691988404031259910319601383696749511809898297656135548118786342107367065232798999979296280467063561892962526945512167505847049907450058650930480352253243357594344686769208712964458923557777584158831146374282687397585726706489164423632","DELTA":"93540839493959971552865423901789226093328763011922445919928571946113703515842729132879472109395228387208764738970926484618949870591214627692618668077375153559192701474693025462226656116549337248146652482501255820930607033869432220667968682424554711616471973627651716863421554516577716366331699848682958681216261888139409101603059124344125075525791543312721162515584942523419876134808829569829529457617639955678189490257208141837196965948342373022812790844435050648360150869293836349223060722858500537182872294143846213258360218898475766641125493477502149553491502593654061863323857297998048614447925371606038801933864960337435890254277043261512846682042139570000962051463878026338583242360548041329046695667868842400","3":"1227675452527605924725300993571504188580051470857656204064614533296779844072852823820754766175236321050062349182891221840452517985644028521499240739391613871973822807731772613052644168369405390658793869751915172749739844553410726807277698347769400977274750672880389943392076308065414059539317340070691852044062594715307024113666759844200606183662256825096857658837519571386467051003466014468855293015652584667669998830524947537781865745830650392641812221679438090257444660715937570193098993118585554478799821072396238689063767016402460690760792908977364175126682041704095200572282644311025594681667826054722587271200221036938804846621444065128275082392082327596239358623150786484106872933657139420542280145197712634108","2":"596248147592834822582469335300585333722415132713749620075902332764163096347819006925876158892694742461036531935093982309708492066217459300117157420442081698140277277546563570823996272914068575482008392971932777453900260626542725308060927710122631763045025742980634216666560934260634907599194353151523256914796667535940073668465664206971169038864484235442207811974981191879443614478897291543702607764944403808380921189291059195014621592027660463072969363556421687131446107696579365265893962197300447027501604372738056016734644378437907931412654753728514905671605635291285742886484416973884856055084605172305967034292646171874483670469193852404511746786039743401185954843446037600121496137915619789351744485264614840070"},"mj":"1117601261519431120446925325460734824239475567013636538481947258329666056692767097795046086413732472111811628751812987521644198549167671875326968410921589186689138994171774838662","alpha":"76727612740067576380015106087224381023260815407331375101920043509817863645705120013304683427627332447210083684516403565749916480947649443674885388155460323163682547865307733144184097845709556309570345707127872162476432029772452433292049079349274445907295491125915363620615679995457134810061392296263970553630102299601689685622244925494554558218277670233361938142224820526392365740420502452466959099546877778248089664282581792213376636587293479012783947088070052463503335266180110771978445892744225891676396288437005847308189508347446490710626231658457908472341606549292437553353163031111068977301305043175839949352742711874426231072729977019365761072816602400121302646283352164756787266537474728685656685493249314400351742964904006326192403855909148605656818024621453179832395687665671245528217931951331393482249182516107670379946496778373","t":{"1":"37203689290881948278188715497642400459048942241931994079434400288578680362970117779048886269388440270597283202033458042171954610700745461571112086648991639439510380585728148682202768590972068041537531136529323260832899360551065706810590032715173070285762675403853992183366951113799098912676809373169763887110420539387555392787590966452796271491986622992160642135480293110112269570862265489120557014181468118619500321000966443141863893743211690388599242584469856365803370202569641902205925191670838354052104480074127555862332399641076324738839120815544432811566503174551735326387678621283249883091766325861497740614317","3":"58486787977689017034592833190899828017343431922483563651969628402499947729293364026001243898136737211851089198526360764391403150763769829047179796728616126204105160762333590343947446892105646111520243793053992399512412375936746396187319527051818920531870855183738837254656664620975569939859368862778444291640228229744805843388153451336792379036403300211151424879060241580540910888241769468335914016289938374111481091198264912969768783884602931940994543804730631920434719776196148182987249363641941951160704928605829395517074202388967815738516252602903999010405305463910751219873354588685197134114358234107748126140977","0":"60771874648036182010335841594233428920565254732600738082343398028553347795361460295011584446745121430144172025428394361648540904134739046923992231536160801306934272250969829886396340824213814702904457884984387666505055153957942221822193548673145705543973635530652570436109428474727638128773540793530691399549837156239786231362112148914687724325416768262058486101761972044802628459748878200584371058300150212485731451700436345975266860685549673168984700174294811561393162860595319582236734968601457003780816977537443267217411297266600994916897237305128142313335280264655603445636393371224354539882875937093696844430903","DELTA":"32816484171372208266594641116109072545171919234551585018140151846920408763078147655907777031259225522515086979967895258126318315788662577171150780535509410112003001556402222994276811926864642497249250763185467678044678144507739529818566125668667424447792097244624010084189629269472698722402896445274092470014229247479740671263651727480322483037149584904549203417226525624083290572692241241259382947122018271686649224741832992966652878170311798126004447080305528487720923103595513611363001766063956060990267107048028416069435287244770875463867263571308182619338433913487209319707428378896314619624990311543563016697299","2":"36428320569485697540634597755814766104888687488985202673924762266313135133244610404742081973550848160712054769198012193456278135847215508952327879544434490828380496286187725750283788811367824465072001959950807751252194618152990469069074061195618692339915840384087350671392595652921761835083158086795163935060896053332506433434451836095710383871272788002621913967538399141417857031787255744141437237474972197102809365346359345477248611632307159641948507043668113827177494748159094045928919209335044052792843664865311991178972383241855607627188111601119780878072683890170539599447876998109080150992209773901144245398001"},"predicate":{"attr_name":"age","p_type":"GE","value":18}}]},"non_revoc_proof":null},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","revoc_reg_seq_no":null}},"aggregated_proof":{"c_hash":"33103550379681684069592829341967479618752165928802550870585275205292715916069","c_list":[[1,121,77,5,144,154,14,192,190,190,145,180,128,71,22,60,168,20,46,163,139,194,71,165,220,188,121,76,25,146,231,114,65,54,69,68,19,200,250,192,47,123,157,132,74,50,28,69,226,195,243,118,45,63,237,197,216,202,206,101,33,56,225,200,128,3,89,12,182,38,113,221,165,119,228,201,156,201,172,136,59,64,51,72,164,198,49,228,223,117,80,64,166,226,37,8,29,146,186,80,210,119,76,252,4,255,62,218,112,163,164,147,247,190,108,76,140,191,76,217,214,184,152,179,193,149,15,70,197,46,90,60,255,247,197,219,252,73,76,0,125,104,114,22,182,161,110,36,162,103,27,42,88,18,161,237,198,43,177,189,181,86,135,207,71,114,0,26,175,12,199,125,25,124,178,87,36,208,251,15,191,127,202,148,152,43,142,92,191,7,89,153,130,195,223,248,176,109,97,164,126,162,181,124,237,130,155,197,66,59,40,197,72,84,32,100,64,55,227,60,214,143,200,200,89,115,236,172,145,56,100,73,20,242,233,95,130,58,112,153,120,115,119,42,199,30,205,88,223,42,196,184,41,19,100,19,244],[1,225,103,238,42,147,91,191,110,69,154,53,57,156,124,43,174,155,76,202,193,98,128,38,207,126,66,70,161,96,109,127,174,44,203,198,177,238,118,117,89,227,170,155,44,251,35,119,219,29,100,173,26,144,95,50,177,4,40,234,117,174,210,192,172,57,160,198,42,199,212,243,240,114,59,91,207,68,57,38,198,2,73,18,16,209,182,145,206,71,17,69,222,49,36,120,72,117,169,107,238,208,235,216,24,183,201,81,15,83,242,45,136,184,166,26,142,136,228,58,229,235,88,169,238,134,205,96,85,9,122,53,147,100,183,114,92,54,125,178,125,75,127,116,50,88,109,152,22,4,121,252,190,18,190,130,143,138,59,231,38,131,176,54,19,194,218,67,144,122,91,43,86,73,233,48,193,30,183,183,191,238,216,167,101,28,185,43,118,64,242,16,62,239,177,27,109,144,67,221,175,202,4,92,130,74,24,20,151,15,227,225,142,71,145,46,192,248,87,57,183,142,253,52,20,56,153,220,234,25,67,116,225,179,211,116,161,37,64,34,48,155,1,1,159,157,37,31,202,19,229,152,23,138,183,126,55],[1,38,181,193,191,72,2,239,34,83,49,36,179,160,82,112,172,98,255,63,60,22,177,249,67,215,220,198,181,7,49,254,133,243,221,214,47,64,229,82,11,94,175,57,86,152,229,192,184,96,136,116,226,123,128,217,23,244,19,204,36,44,123,208,88,24,217,120,145,139,25,233,227,5,119,90,47,147,1,115,92,39,119,194,167,17,229,39,163,167,237,14,116,234,106,252,216,54,33,233,21,54,183,130,144,161,177,142,177,240,51,73,21,202,188,103,244,153,204,219,123,231,139,135,189,155,143,28,4,180,44,148,0,27,103,26,13,203,31,32,166,67,84,87,23,72,234,236,20,1,84,70,86,76,192,164,235,124,86,128,78,230,119,155,95,121,125,20,244,181,121,250,169,9,67,85,213,177,139,111,187,183,114,165,249,177,161,181,175,46,226,66,86,84,124,86,69,143,217,158,161,30,107,133,44,239,89,209,24,150,1,238,122,144,138,179,121,114,90,13,212,209,60,126,37,62,177,180,131,222,168,2,201,156,169,220,224,53,8,203,220,215,163,104,195,184,73,35,241,182,177,80,41,253,230,90,173],[1,32,145,96,219,241,190,19,195,129,219,50,148,152,107,12,189,225,103,171,149,252,193,243,136,132,195,44,19,20,247,140,160,91,230,78,31,242,85,213,65,185,1,91,12,69,118,80,26,135,102,131,4,108,130,230,83,91,176,249,196,56,128,127,82,72,106,49,211,94,133,40,86,72,42,187,199,216,191,223,208,206,121,118,15,167,255,228,57,206,158,217,64,205,212,178,8,248,129,183,221,98,70,54,37,55,47,81,120,59,186,238,165,0,70,173,137,193,232,180,125,211,237,182,249,191,173,107,129,164,148,231,116,225,66,66,71,156,39,248,164,253,234,140,205,177,140,117,47,21,15,242,31,113,118,91,143,89,213,86,143,135,21,46,35,199,214,107,111,65,65,19,26,171,130,16,19,102,145,210,210,61,51,169,148,169,118,182,106,107,253,100,214,232,52,103,180,96,249,254,71,6,11,119,48,129,213,223,205,93,20,117,26,187,32,151,212,137,203,17,237,208,150,72,23,225,235,122,188,34,105,115,0,160,168,251,191,22,242,238,207,74,142,154,66,94,149,191,215,194,134,6,165,244,167,233,241],[1,207,77,250,146,127,242,229,44,172,182,201,183,242,32,242,182,129,233,10,8,180,23,191,163,21,238,158,5,27,216,146,253,173,127,99,95,168,209,132,242,196,242,34,25,25,249,211,51,236,164,153,175,61,65,150,82,251,174,102,186,47,195,82,44,90,252,184,74,89,251,177,254,108,151,136,230,220,93,224,173,247,244,116,132,59,170,215,194,30,87,84,166,147,57,156,201,207,132,203,222,191,253,15,19,228,173,81,156,4,51,121,227,159,50,18,148,129,205,42,42,227,252,138,62,176,115,227,253,52,125,110,178,167,132,244,14,116,195,194,172,44,45,63,38,121,215,136,68,230,21,108,133,159,197,179,94,78,233,107,236,114,92,165,248,22,124,161,23,142,236,224,175,233,134,25,97,150,131,61,220,203,104,154,199,247,146,47,205,56,209,0,133,132,18,103,136,8,202,37,29,100,105,12,232,74,33,6,255,202,96,170,52,229,244,4,235,2,201,125,86,168,179,224,130,81,54,221,185,184,187,141,0,114,98,38,70,225,228,60,157,53,210,238,60,216,215,154,48,73,3,157,192,245,81,170,49],[1,3,244,229,158,71,18,146,198,202,27,2,231,37,13,145,243,84,112,220,61,174,4,175,104,200,64,146,193,20,174,126,42,157,168,76,165,21,50,216,82,211,180,73,244,54,227,200,19,157,25,228,81,37,64,201,19,138,175,50,246,169,11,45,74,194,131,236,127,177,41,242,130,55,112,182,98,22,99,48,153,83,161,250,65,89,3,97,6,5,171,54,223,87,98,103,23,200,212,177,140,155,151,252,125,45,176,55,92,41,56,2,252,32,149,60,3,168,209,193,23,168,230,182,72,193,230,224,5,15,58,63,93,196,33,93,76,188,30,70,31,136,64,204,223,2,230,210,243,255,135,193,52,132,248,160,22,18,164,71,77,80,112,229,120,116,210,225,2,19,139,35,0,214,5,246,9,106,136,204,0,148,97,21,222,153,57,177,162,11,243,252,7,242,34,239,245,50,104,74,221,92,73,13,142,10,184,250,246,167,240,46,230,86,207,181,12,133,81,119,143,164,88,114,223,243,179,208,175,84,161,27,11,225,36,37,177,112,85,81,184,163,223,159,36,9,247,20,13,230,215,108,117,35,99,117,211]]},"requested_proof":{"revealed_attrs":{"attr1_uuid":["claim::277478db-bf57-42c3-8530-b1b13cfe0bfd","Alex","1139481716457488690172217916278103335"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{"predicate1_uuid":"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd"}}}"#;
-
-            let res = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
+            let res = AnoncredsUtils::verifier_verify_proof(AnoncredsUtils::proof_request_attr_and_predicate(),
                                                             &proof_json,
                                                             &schemas_json,
                                                             &claim_defs_json,
-                                                            &revoc_regs_jsons);
+                                                            &revoc_regs_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
         fn verifier_verify_proof_works_for_invalid_schemas() {
-            AnoncredsUtils::init_common_wallet();
+            let schemas_json = format!(r#"{{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{}}}"#, AnoncredsUtils::xyz_schema_json());
+            let claim_defs_json = format!(r#"{{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{}}}"#, AnoncredsUtils::claim_def_json());
+            let revoc_regs_json = "{}";
 
-            let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                   "name":"proof_req_1",
-                                   "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
-                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
-                                }}"#);
-
-            let claim_def = r#"{"public_key":{"n":"94759924268422840873493186881483285628376767714620627055233230078254863658476446487556117977593248501523199451418346650764648601684276437772084327637083000213497377603495837360299641742248892290843802071224822481683143989223918276185323177379400413928352871249494885563503003839960930062341074783742062464846448855510814252519824733234277681749977392772900212293652238651538092092030867161752390937372967233462027620699196724949212432236376627703446877808405786247217818975482797381180714523093913559060716447170497587855871901716892114835713057965087473682457896508094049813280368069805661739141591558517233009123957","s":"3589207374161609293256840431433442367968556468254553005135697551692970564853243905310862234226531556373974144223993822323573625466428920716249949819187529684239371465431718456502388533731367046146704547241076626874082510133130124364613881638153345624380195335138152993132904167470515345775215584510356780117368593105284564368954871044494967246738070895990267205643985529060025311535539534155086912661927003271053443110788963970349858709526217650537936123121324492871282397691771309596632805099306241616501610166028401599243350835158479028294769235556557248339060399322556412171888114265194198405765574333538019124846","rms":"57150374376895616256492932008792437185713712934712117819417607831438470701645904776986426606717466732609284990796923331049549544903261623636958698296956103821068569714644825742048584174696465882627177060166162341112552851798863535031243458188976013190131935905789786836375734914391914349188643340535242562896244661798678234667651641013894284156416773868299435641426810968290584996112925365638881750944407842890875840705650290814965768221299488400872767679122749231050406680432079499973527780212310700022178178822528199576164498116369689770884051691678056831493476045361227274839673581033532995523269047577973637307053","r":{"age":"94304485801056920773231824603827244147437820123357994068540328541540143488826838939836897544389872126768239056314698953816072289663428273075648246498659039419931054256171488371404693243192741923382499918184822032756852725234903892700640856294525441486319095181804549558538523888770076173572615957495813339649470619615099181648313548341951673407624414494737018574238782648822189142664108450534642272145962844003886059737965854042074083374478426875684184904488545593139633653407062308621502392373426120986761417580127895634822264744063122368296502161439648408926687989964483291459079738447940651025900007635890755686910","sex":"29253365609829921413347591854991689007250272038394995372767401325848195298844802462252851926995846503104090589196060683329875231216529049681648909174047403783834364995363938741001507091534282239210301727771803410513303526378812888571225762557471133950393342500638551458868147905023198508660460641434022020257614450354085808398293279060446966692082427506909617283562394303716193372887306176319841941848888379308208426966697446699225783646634631703732019477632822374479322570142967559738439193417309205283438893083349863592921249218168590490390313109776446516881569691499831380592661740653935515397472059631417493981532","name":"25134437486609445980011967476486104706321061312022352268621323694861467756181853100693555519614894168921947814126694858839278103549577703105305116890325322098078409416441750313062396467567140699008203113519528887729951138845002409659317083029073793314514377377412805387401717457417895322600145580639449003584446356048213839274172751441145076183734269045919984853749007476629365146654240675320041155618450449041510280560040162429566008590065069477149918088087715269037925211599101597422023202484497946662159070023999719865939258557778022770035320019440597702090334486792710436579355608406897769514395306079855023848170","height":"59326960517737425423547279838932030505937927873589489863081026714907925093402287263487670945897247474465655528290016645774365383046524346223348261262488616342337864633104758662753452450299389775751012589698563659277683974188553993694220606310980581680471280640591973543996299789038056921309016983827578247477799948667666717056420270448516049047961099547588510086600581628091290215485826514170097211360599793229701811672966818089371089216189744274422526431130783428589346341196561742409198605034972210917502326180305735092988639850309253190875578501020679137562856724998821945605494355779034135306337094344532980411836"},"rctxt":"9641986614889199796257508700106896585587271615330980339636468819377346498767697681332046156705231986464570206666984343024200482683981302064613556104594051003956610353281701880542337665385482309134369756144345334575765116656633321636736946947493150642615481313285221467998414924865943067790561494301461899025374692884841352282256044388512875752628313052128404892424405230961678931620525106856624692942373538946467902799339061714326383378018581568876147181355325663707572429090278505823900491548970098691127791086305310899642155499128171811034581730190877600697624903963241473287185133286356124371104261592694271730029","z":"77594127026421654059198621152153180600664927707984020918609426112642522289621323453889995053400171879296098965678384769043918218957929606187082395048777546641833348694470081024386996548890150355901703252426977094536933434556202865213941384425538749866521536494046548509344678288447175898173634381514948562261015286492185924659638474376885655055568341574638453213864956407243206035973349529545863886325462867413885904072942842465859476940638839087894582648849969332663627779378998245133055807038199937421971988505911494931665143822588532097754480882750243126847177560978100527491344463525107644125030963904001009159559"},"public_key_revocation":null,"schema_seq_no":1,"signature_type":"CL"}"#;
-            let schemas_json = format!(r#"{{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{}}}"#, AnoncredsUtils::get_xyz_schema_json(1));
-            let claim_defs_json = format!(r#"{{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{}}}"#, claim_def);
-            let revoc_regs_jsons = "{}";
-
-            let proof_json = r#"{"proofs":{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"name":"1139481716457488690172217916278103335"},"a_prime":"47629821806628155353444789773246165920681315271529392722265555946090524267165563309836167110610840740533588118152308411732923636370660640410661034994521654033599863817144282118006097899736622728860229305231675970853294584911572355833537271010861501353858292189045263114095480601737776505186511389129055847562085611741257601964074827979121349153316235245772819207422031038042586202074331681302501661153569340935741290924699468188826629478130140797677338573924284871118002193526319478550852287453975107498037063076866410320160118555629090040954555043934303307652160345244864713226315470541231435958298648179413077988340","e":"13427639393364185909415877973872458621259927563729922146828001652769380799419438410309469022979920689628523901764614163117469683925816443","v":"852136445143816932026946294488424887907102968158908948827421962603492187508454543239422067899916472317305416590471170842186669606584356963437132366711335927890209765986844538775191207999204354235774464468525274918097404114453069375363594310105209141774763909570100638835926337238009617444858777301355087706167735590386774813901740600054753028260344014744801229032610106838480523182317262113911183640784111960909501662169298536941919854667754097841344375972975021196106884215734228415868248724905018661498061287694439466570946597514142085096419985189064172035527690786158872698717583830848410994616274586162550376126607414773916066374234063208380831144157533076866210628625236440222547584539349936639548061601416341705483504386186280800509889531835172071717956251546280392606775903107774727736794828168898273891724336881907672405328368540895104468091907771325910937575557566831844131159128453840354307814975621978196047820","m":{"age":"1117601261519431120446925325460734824239475567013636538481947258329666056692767097795046086413732472111811628751812987521644198549167671875326968410921589186689138994171774838662","height":"7064132689652704067914104576495132313294680087958177180391515757079548676035445873279966783996928425154050462229933823707574545166617858646442019030600136959459527533262821184869","sex":"16084497853957041205729191269508720470626311156190485518484640641677445098603656354458362520541393995692536218820724164533958162674375198846036330444513484319280148335515891811530"},"m1":"154906224259819061652290487122980839849626068919893070220438585977323162319993111920906032317552959103520053742608858935542877608981244065301675821390065831113115709272412144796159984624494428122971995557415296140268002332169405587907128359886810433617416529821500995701094400375272097687818064435577784795275","m2":"13805395408072590464827983892588030341708765524663545700917462089376137940485022437657208204460048097312372685954050370540389593952001973312378647790917367330461398089529292217752"},"ge_proofs":[{"u":{"1":"7698818972783845439601187851976452936638792889455287252542709653271706844173743185409084669157965935169942655008606334521674712818637940377261656468700786810566551698412412949418","0":"11703047052430512223413711314521545616119146623040600935686474696241801697819280425232876917607198335376453682738553665221410353412906194951254558355994401995990233992518110582450","3":"13210777821918317858818819091924507295018522783042111457450035423463340571245465760486275059291363621513532153389441883097799049597687545496359999443320001567152794884095192951040","2":"15219471780524079156861690098171693383497641272226737821992208834301871102152362116211452788300889697214391366996966539871625433480959011635688106136537800706217506402845296449689"},"r":{"1":"46043242109380749151527145850513330956077996622769158245225343392397735706292106535150958053995712629189143692293204979798837951212291825184346767969751978730000071952944305252032332015837054475531407691352179423131405515518588355918925056889302269768343499864256747177988825578647189563088068257214198650437730618330249172716051559993880468542083352885474175039320848153156858562341041960950299312991459780503345784440261679263045723337629951517601461685539857683027034345542399365706329805317943096391758978877658949910614447086409173234155028671453929715706057153381022697673192590033507204548864311227048268516889390503318015295207078022755834130221198717787608473222789491216667698651180077661375273569115943192","0":"135472587547410377947826119498467634347118057359097899596599164976338466445104141784869016998150489852448547539824768048351359572626675997498079394825940306636285481821620973655797996638210760710325933304918452142858879806106214845499670718704532018129553348815327362843246706518826311676917538452317818631484884032929252959289913274829848084561421467966320595980172006456003183536232790787521924655750157145207798486087511869939940023266736153366338179116840490184005332351004990854691988404031259910319601383696749511809898297656135548118786342107367065232798999979296280467063561892962526945512167505847049907450058650930480352253243357594344686769208712964458923557777584158831146374282687397585726706489164423632","DELTA":"93540839493959971552865423901789226093328763011922445919928571946113703515842729132879472109395228387208764738970926484618949870591214627692618668077375153559192701474693025462226656116549337248146652482501255820930607033869432220667968682424554711616471973627651716863421554516577716366331699848682958681216261888139409101603059124344125075525791543312721162515584942523419876134808829569829529457617639955678189490257208141837196965948342373022812790844435050648360150869293836349223060722858500537182872294143846213258360218898475766641125493477502149553491502593654061863323857297998048614447925371606038801933864960337435890254277043261512846682042139570000962051463878026338583242360548041329046695667868842400","3":"1227675452527605924725300993571504188580051470857656204064614533296779844072852823820754766175236321050062349182891221840452517985644028521499240739391613871973822807731772613052644168369405390658793869751915172749739844553410726807277698347769400977274750672880389943392076308065414059539317340070691852044062594715307024113666759844200606183662256825096857658837519571386467051003466014468855293015652584667669998830524947537781865745830650392641812221679438090257444660715937570193098993118585554478799821072396238689063767016402460690760792908977364175126682041704095200572282644311025594681667826054722587271200221036938804846621444065128275082392082327596239358623150786484106872933657139420542280145197712634108","2":"596248147592834822582469335300585333722415132713749620075902332764163096347819006925876158892694742461036531935093982309708492066217459300117157420442081698140277277546563570823996272914068575482008392971932777453900260626542725308060927710122631763045025742980634216666560934260634907599194353151523256914796667535940073668465664206971169038864484235442207811974981191879443614478897291543702607764944403808380921189291059195014621592027660463072969363556421687131446107696579365265893962197300447027501604372738056016734644378437907931412654753728514905671605635291285742886484416973884856055084605172305967034292646171874483670469193852404511746786039743401185954843446037600121496137915619789351744485264614840070"},"mj":"1117601261519431120446925325460734824239475567013636538481947258329666056692767097795046086413732472111811628751812987521644198549167671875326968410921589186689138994171774838662","alpha":"76727612740067576380015106087224381023260815407331375101920043509817863645705120013304683427627332447210083684516403565749916480947649443674885388155460323163682547865307733144184097845709556309570345707127872162476432029772452433292049079349274445907295491125915363620615679995457134810061392296263970553630102299601689685622244925494554558218277670233361938142224820526392365740420502452466959099546877778248089664282581792213376636587293479012783947088070052463503335266180110771978445892744225891676396288437005847308189508347446490710626231658457908472341606549292437553353163031111068977301305043175839949352742711874426231072729977019365761072816602400121302646283352164756787266537474728685656685493249314400351742964904006326192403855909148605656818024621453179832395687665671245528217931951331393482249182516107670379946496778373","t":{"1":"37203689290881948278188715497642400459048942241931994079434400288578680362970117779048886269388440270597283202033458042171954610700745461571112086648991639439510380585728148682202768590972068041537531136529323260832899360551065706810590032715173070285762675403853992183366951113799098912676809373169763887110420539387555392787590966452796271491986622992160642135480293110112269570862265489120557014181468118619500321000966443141863893743211690388599242584469856365803370202569641902205925191670838354052104480074127555862332399641076324738839120815544432811566503174551735326387678621283249883091766325861497740614317","3":"58486787977689017034592833190899828017343431922483563651969628402499947729293364026001243898136737211851089198526360764391403150763769829047179796728616126204105160762333590343947446892105646111520243793053992399512412375936746396187319527051818920531870855183738837254656664620975569939859368862778444291640228229744805843388153451336792379036403300211151424879060241580540910888241769468335914016289938374111481091198264912969768783884602931940994543804730631920434719776196148182987249363641941951160704928605829395517074202388967815738516252602903999010405305463910751219873354588685197134114358234107748126140977","0":"60771874648036182010335841594233428920565254732600738082343398028553347795361460295011584446745121430144172025428394361648540904134739046923992231536160801306934272250969829886396340824213814702904457884984387666505055153957942221822193548673145705543973635530652570436109428474727638128773540793530691399549837156239786231362112148914687724325416768262058486101761972044802628459748878200584371058300150212485731451700436345975266860685549673168984700174294811561393162860595319582236734968601457003780816977537443267217411297266600994916897237305128142313335280264655603445636393371224354539882875937093696844430903","DELTA":"32816484171372208266594641116109072545171919234551585018140151846920408763078147655907777031259225522515086979967895258126318315788662577171150780535509410112003001556402222994276811926864642497249250763185467678044678144507739529818566125668667424447792097244624010084189629269472698722402896445274092470014229247479740671263651727480322483037149584904549203417226525624083290572692241241259382947122018271686649224741832992966652878170311798126004447080305528487720923103595513611363001766063956060990267107048028416069435287244770875463867263571308182619338433913487209319707428378896314619624990311543563016697299","2":"36428320569485697540634597755814766104888687488985202673924762266313135133244610404742081973550848160712054769198012193456278135847215508952327879544434490828380496286187725750283788811367824465072001959950807751252194618152990469069074061195618692339915840384087350671392595652921761835083158086795163935060896053332506433434451836095710383871272788002621913967538399141417857031787255744141437237474972197102809365346359345477248611632307159641948507043668113827177494748159094045928919209335044052792843664865311991178972383241855607627188111601119780878072683890170539599447876998109080150992209773901144245398001"},"predicate":{"attr_name":"age","p_type":"GE","value":18}}]},"non_revoc_proof":null},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","revoc_reg_seq_no":null}},"aggregated_proof":{"c_hash":"33103550379681684069592829341967479618752165928802550870585275205292715916069","c_list":[[1,121,77,5,144,154,14,192,190,190,145,180,128,71,22,60,168,20,46,163,139,194,71,165,220,188,121,76,25,146,231,114,65,54,69,68,19,200,250,192,47,123,157,132,74,50,28,69,226,195,243,118,45,63,237,197,216,202,206,101,33,56,225,200,128,3,89,12,182,38,113,221,165,119,228,201,156,201,172,136,59,64,51,72,164,198,49,228,223,117,80,64,166,226,37,8,29,146,186,80,210,119,76,252,4,255,62,218,112,163,164,147,247,190,108,76,140,191,76,217,214,184,152,179,193,149,15,70,197,46,90,60,255,247,197,219,252,73,76,0,125,104,114,22,182,161,110,36,162,103,27,42,88,18,161,237,198,43,177,189,181,86,135,207,71,114,0,26,175,12,199,125,25,124,178,87,36,208,251,15,191,127,202,148,152,43,142,92,191,7,89,153,130,195,223,248,176,109,97,164,126,162,181,124,237,130,155,197,66,59,40,197,72,84,32,100,64,55,227,60,214,143,200,200,89,115,236,172,145,56,100,73,20,242,233,95,130,58,112,153,120,115,119,42,199,30,205,88,223,42,196,184,41,19,100,19,244],[1,225,103,238,42,147,91,191,110,69,154,53,57,156,124,43,174,155,76,202,193,98,128,38,207,126,66,70,161,96,109,127,174,44,203,198,177,238,118,117,89,227,170,155,44,251,35,119,219,29,100,173,26,144,95,50,177,4,40,234,117,174,210,192,172,57,160,198,42,199,212,243,240,114,59,91,207,68,57,38,198,2,73,18,16,209,182,145,206,71,17,69,222,49,36,120,72,117,169,107,238,208,235,216,24,183,201,81,15,83,242,45,136,184,166,26,142,136,228,58,229,235,88,169,238,134,205,96,85,9,122,53,147,100,183,114,92,54,125,178,125,75,127,116,50,88,109,152,22,4,121,252,190,18,190,130,143,138,59,231,38,131,176,54,19,194,218,67,144,122,91,43,86,73,233,48,193,30,183,183,191,238,216,167,101,28,185,43,118,64,242,16,62,239,177,27,109,144,67,221,175,202,4,92,130,74,24,20,151,15,227,225,142,71,145,46,192,248,87,57,183,142,253,52,20,56,153,220,234,25,67,116,225,179,211,116,161,37,64,34,48,155,1,1,159,157,37,31,202,19,229,152,23,138,183,126,55],[1,38,181,193,191,72,2,239,34,83,49,36,179,160,82,112,172,98,255,63,60,22,177,249,67,215,220,198,181,7,49,254,133,243,221,214,47,64,229,82,11,94,175,57,86,152,229,192,184,96,136,116,226,123,128,217,23,244,19,204,36,44,123,208,88,24,217,120,145,139,25,233,227,5,119,90,47,147,1,115,92,39,119,194,167,17,229,39,163,167,237,14,116,234,106,252,216,54,33,233,21,54,183,130,144,161,177,142,177,240,51,73,21,202,188,103,244,153,204,219,123,231,139,135,189,155,143,28,4,180,44,148,0,27,103,26,13,203,31,32,166,67,84,87,23,72,234,236,20,1,84,70,86,76,192,164,235,124,86,128,78,230,119,155,95,121,125,20,244,181,121,250,169,9,67,85,213,177,139,111,187,183,114,165,249,177,161,181,175,46,226,66,86,84,124,86,69,143,217,158,161,30,107,133,44,239,89,209,24,150,1,238,122,144,138,179,121,114,90,13,212,209,60,126,37,62,177,180,131,222,168,2,201,156,169,220,224,53,8,203,220,215,163,104,195,184,73,35,241,182,177,80,41,253,230,90,173],[1,32,145,96,219,241,190,19,195,129,219,50,148,152,107,12,189,225,103,171,149,252,193,243,136,132,195,44,19,20,247,140,160,91,230,78,31,242,85,213,65,185,1,91,12,69,118,80,26,135,102,131,4,108,130,230,83,91,176,249,196,56,128,127,82,72,106,49,211,94,133,40,86,72,42,187,199,216,191,223,208,206,121,118,15,167,255,228,57,206,158,217,64,205,212,178,8,248,129,183,221,98,70,54,37,55,47,81,120,59,186,238,165,0,70,173,137,193,232,180,125,211,237,182,249,191,173,107,129,164,148,231,116,225,66,66,71,156,39,248,164,253,234,140,205,177,140,117,47,21,15,242,31,113,118,91,143,89,213,86,143,135,21,46,35,199,214,107,111,65,65,19,26,171,130,16,19,102,145,210,210,61,51,169,148,169,118,182,106,107,253,100,214,232,52,103,180,96,249,254,71,6,11,119,48,129,213,223,205,93,20,117,26,187,32,151,212,137,203,17,237,208,150,72,23,225,235,122,188,34,105,115,0,160,168,251,191,22,242,238,207,74,142,154,66,94,149,191,215,194,134,6,165,244,167,233,241],[1,207,77,250,146,127,242,229,44,172,182,201,183,242,32,242,182,129,233,10,8,180,23,191,163,21,238,158,5,27,216,146,253,173,127,99,95,168,209,132,242,196,242,34,25,25,249,211,51,236,164,153,175,61,65,150,82,251,174,102,186,47,195,82,44,90,252,184,74,89,251,177,254,108,151,136,230,220,93,224,173,247,244,116,132,59,170,215,194,30,87,84,166,147,57,156,201,207,132,203,222,191,253,15,19,228,173,81,156,4,51,121,227,159,50,18,148,129,205,42,42,227,252,138,62,176,115,227,253,52,125,110,178,167,132,244,14,116,195,194,172,44,45,63,38,121,215,136,68,230,21,108,133,159,197,179,94,78,233,107,236,114,92,165,248,22,124,161,23,142,236,224,175,233,134,25,97,150,131,61,220,203,104,154,199,247,146,47,205,56,209,0,133,132,18,103,136,8,202,37,29,100,105,12,232,74,33,6,255,202,96,170,52,229,244,4,235,2,201,125,86,168,179,224,130,81,54,221,185,184,187,141,0,114,98,38,70,225,228,60,157,53,210,238,60,216,215,154,48,73,3,157,192,245,81,170,49],[1,3,244,229,158,71,18,146,198,202,27,2,231,37,13,145,243,84,112,220,61,174,4,175,104,200,64,146,193,20,174,126,42,157,168,76,165,21,50,216,82,211,180,73,244,54,227,200,19,157,25,228,81,37,64,201,19,138,175,50,246,169,11,45,74,194,131,236,127,177,41,242,130,55,112,182,98,22,99,48,153,83,161,250,65,89,3,97,6,5,171,54,223,87,98,103,23,200,212,177,140,155,151,252,125,45,176,55,92,41,56,2,252,32,149,60,3,168,209,193,23,168,230,182,72,193,230,224,5,15,58,63,93,196,33,93,76,188,30,70,31,136,64,204,223,2,230,210,243,255,135,193,52,132,248,160,22,18,164,71,77,80,112,229,120,116,210,225,2,19,139,35,0,214,5,246,9,106,136,204,0,148,97,21,222,153,57,177,162,11,243,252,7,242,34,239,245,50,104,74,221,92,73,13,142,10,184,250,246,167,240,46,230,86,207,181,12,133,81,119,143,164,88,114,223,243,179,208,175,84,161,27,11,225,36,37,177,112,85,81,184,163,223,159,36,9,247,20,13,230,215,108,117,35,99,117,211]]},"requested_proof":{"revealed_attrs":{"attr1_uuid":["claim::277478db-bf57-42c3-8530-b1b13cfe0bfd","Alex","1139481716457488690172217916278103335"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{"predicate1_uuid":"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd"}}}"#;
-
-            let res = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
-                                                            &proof_json,
+            let res = AnoncredsUtils::verifier_verify_proof(AnoncredsUtils::proof_request_attr_and_predicate(),
+                                                            AnoncredsUtils::proof_json(),
                                                             &schemas_json,
                                                             &claim_defs_json,
-                                                            &revoc_regs_jsons);
+                                                            &revoc_regs_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
         fn verifier_verify_proof_works_for_invalid_claim_defs() {
-            AnoncredsUtils::init_common_wallet();
-
-            let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                   "name":"proof_req_1",
-                                   "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":1,"name":"name"}}}},
-                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
-                                }}"#);
-
-            let schemas_json = format!(r#"{{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{}}}"#, AnoncredsUtils::get_gvt_schema_json(1));
             let claim_defs_json = format!("{{}}");
-            let revoc_regs_jsons = "{}";
+            let schemas_json = format!(r#"{{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{}}}"#, AnoncredsUtils::xyz_schema_json());
+            let revoc_regs_json = "{}";
 
-            let proof_json = r#"{"proofs":{"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"name":"1139481716457488690172217916278103335"},"a_prime":"47629821806628155353444789773246165920681315271529392722265555946090524267165563309836167110610840740533588118152308411732923636370660640410661034994521654033599863817144282118006097899736622728860229305231675970853294584911572355833537271010861501353858292189045263114095480601737776505186511389129055847562085611741257601964074827979121349153316235245772819207422031038042586202074331681302501661153569340935741290924699468188826629478130140797677338573924284871118002193526319478550852287453975107498037063076866410320160118555629090040954555043934303307652160345244864713226315470541231435958298648179413077988340","e":"13427639393364185909415877973872458621259927563729922146828001652769380799419438410309469022979920689628523901764614163117469683925816443","v":"852136445143816932026946294488424887907102968158908948827421962603492187508454543239422067899916472317305416590471170842186669606584356963437132366711335927890209765986844538775191207999204354235774464468525274918097404114453069375363594310105209141774763909570100638835926337238009617444858777301355087706167735590386774813901740600054753028260344014744801229032610106838480523182317262113911183640784111960909501662169298536941919854667754097841344375972975021196106884215734228415868248724905018661498061287694439466570946597514142085096419985189064172035527690786158872698717583830848410994616274586162550376126607414773916066374234063208380831144157533076866210628625236440222547584539349936639548061601416341705483504386186280800509889531835172071717956251546280392606775903107774727736794828168898273891724336881907672405328368540895104468091907771325910937575557566831844131159128453840354307814975621978196047820","m":{"age":"1117601261519431120446925325460734824239475567013636538481947258329666056692767097795046086413732472111811628751812987521644198549167671875326968410921589186689138994171774838662","height":"7064132689652704067914104576495132313294680087958177180391515757079548676035445873279966783996928425154050462229933823707574545166617858646442019030600136959459527533262821184869","sex":"16084497853957041205729191269508720470626311156190485518484640641677445098603656354458362520541393995692536218820724164533958162674375198846036330444513484319280148335515891811530"},"m1":"154906224259819061652290487122980839849626068919893070220438585977323162319993111920906032317552959103520053742608858935542877608981244065301675821390065831113115709272412144796159984624494428122971995557415296140268002332169405587907128359886810433617416529821500995701094400375272097687818064435577784795275","m2":"13805395408072590464827983892588030341708765524663545700917462089376137940485022437657208204460048097312372685954050370540389593952001973312378647790917367330461398089529292217752"},"ge_proofs":[{"u":{"1":"7698818972783845439601187851976452936638792889455287252542709653271706844173743185409084669157965935169942655008606334521674712818637940377261656468700786810566551698412412949418","0":"11703047052430512223413711314521545616119146623040600935686474696241801697819280425232876917607198335376453682738553665221410353412906194951254558355994401995990233992518110582450","3":"13210777821918317858818819091924507295018522783042111457450035423463340571245465760486275059291363621513532153389441883097799049597687545496359999443320001567152794884095192951040","2":"15219471780524079156861690098171693383497641272226737821992208834301871102152362116211452788300889697214391366996966539871625433480959011635688106136537800706217506402845296449689"},"r":{"1":"46043242109380749151527145850513330956077996622769158245225343392397735706292106535150958053995712629189143692293204979798837951212291825184346767969751978730000071952944305252032332015837054475531407691352179423131405515518588355918925056889302269768343499864256747177988825578647189563088068257214198650437730618330249172716051559993880468542083352885474175039320848153156858562341041960950299312991459780503345784440261679263045723337629951517601461685539857683027034345542399365706329805317943096391758978877658949910614447086409173234155028671453929715706057153381022697673192590033507204548864311227048268516889390503318015295207078022755834130221198717787608473222789491216667698651180077661375273569115943192","0":"135472587547410377947826119498467634347118057359097899596599164976338466445104141784869016998150489852448547539824768048351359572626675997498079394825940306636285481821620973655797996638210760710325933304918452142858879806106214845499670718704532018129553348815327362843246706518826311676917538452317818631484884032929252959289913274829848084561421467966320595980172006456003183536232790787521924655750157145207798486087511869939940023266736153366338179116840490184005332351004990854691988404031259910319601383696749511809898297656135548118786342107367065232798999979296280467063561892962526945512167505847049907450058650930480352253243357594344686769208712964458923557777584158831146374282687397585726706489164423632","DELTA":"93540839493959971552865423901789226093328763011922445919928571946113703515842729132879472109395228387208764738970926484618949870591214627692618668077375153559192701474693025462226656116549337248146652482501255820930607033869432220667968682424554711616471973627651716863421554516577716366331699848682958681216261888139409101603059124344125075525791543312721162515584942523419876134808829569829529457617639955678189490257208141837196965948342373022812790844435050648360150869293836349223060722858500537182872294143846213258360218898475766641125493477502149553491502593654061863323857297998048614447925371606038801933864960337435890254277043261512846682042139570000962051463878026338583242360548041329046695667868842400","3":"1227675452527605924725300993571504188580051470857656204064614533296779844072852823820754766175236321050062349182891221840452517985644028521499240739391613871973822807731772613052644168369405390658793869751915172749739844553410726807277698347769400977274750672880389943392076308065414059539317340070691852044062594715307024113666759844200606183662256825096857658837519571386467051003466014468855293015652584667669998830524947537781865745830650392641812221679438090257444660715937570193098993118585554478799821072396238689063767016402460690760792908977364175126682041704095200572282644311025594681667826054722587271200221036938804846621444065128275082392082327596239358623150786484106872933657139420542280145197712634108","2":"596248147592834822582469335300585333722415132713749620075902332764163096347819006925876158892694742461036531935093982309708492066217459300117157420442081698140277277546563570823996272914068575482008392971932777453900260626542725308060927710122631763045025742980634216666560934260634907599194353151523256914796667535940073668465664206971169038864484235442207811974981191879443614478897291543702607764944403808380921189291059195014621592027660463072969363556421687131446107696579365265893962197300447027501604372738056016734644378437907931412654753728514905671605635291285742886484416973884856055084605172305967034292646171874483670469193852404511746786039743401185954843446037600121496137915619789351744485264614840070"},"mj":"1117601261519431120446925325460734824239475567013636538481947258329666056692767097795046086413732472111811628751812987521644198549167671875326968410921589186689138994171774838662","alpha":"76727612740067576380015106087224381023260815407331375101920043509817863645705120013304683427627332447210083684516403565749916480947649443674885388155460323163682547865307733144184097845709556309570345707127872162476432029772452433292049079349274445907295491125915363620615679995457134810061392296263970553630102299601689685622244925494554558218277670233361938142224820526392365740420502452466959099546877778248089664282581792213376636587293479012783947088070052463503335266180110771978445892744225891676396288437005847308189508347446490710626231658457908472341606549292437553353163031111068977301305043175839949352742711874426231072729977019365761072816602400121302646283352164756787266537474728685656685493249314400351742964904006326192403855909148605656818024621453179832395687665671245528217931951331393482249182516107670379946496778373","t":{"1":"37203689290881948278188715497642400459048942241931994079434400288578680362970117779048886269388440270597283202033458042171954610700745461571112086648991639439510380585728148682202768590972068041537531136529323260832899360551065706810590032715173070285762675403853992183366951113799098912676809373169763887110420539387555392787590966452796271491986622992160642135480293110112269570862265489120557014181468118619500321000966443141863893743211690388599242584469856365803370202569641902205925191670838354052104480074127555862332399641076324738839120815544432811566503174551735326387678621283249883091766325861497740614317","3":"58486787977689017034592833190899828017343431922483563651969628402499947729293364026001243898136737211851089198526360764391403150763769829047179796728616126204105160762333590343947446892105646111520243793053992399512412375936746396187319527051818920531870855183738837254656664620975569939859368862778444291640228229744805843388153451336792379036403300211151424879060241580540910888241769468335914016289938374111481091198264912969768783884602931940994543804730631920434719776196148182987249363641941951160704928605829395517074202388967815738516252602903999010405305463910751219873354588685197134114358234107748126140977","0":"60771874648036182010335841594233428920565254732600738082343398028553347795361460295011584446745121430144172025428394361648540904134739046923992231536160801306934272250969829886396340824213814702904457884984387666505055153957942221822193548673145705543973635530652570436109428474727638128773540793530691399549837156239786231362112148914687724325416768262058486101761972044802628459748878200584371058300150212485731451700436345975266860685549673168984700174294811561393162860595319582236734968601457003780816977537443267217411297266600994916897237305128142313335280264655603445636393371224354539882875937093696844430903","DELTA":"32816484171372208266594641116109072545171919234551585018140151846920408763078147655907777031259225522515086979967895258126318315788662577171150780535509410112003001556402222994276811926864642497249250763185467678044678144507739529818566125668667424447792097244624010084189629269472698722402896445274092470014229247479740671263651727480322483037149584904549203417226525624083290572692241241259382947122018271686649224741832992966652878170311798126004447080305528487720923103595513611363001766063956060990267107048028416069435287244770875463867263571308182619338433913487209319707428378896314619624990311543563016697299","2":"36428320569485697540634597755814766104888687488985202673924762266313135133244610404742081973550848160712054769198012193456278135847215508952327879544434490828380496286187725750283788811367824465072001959950807751252194618152990469069074061195618692339915840384087350671392595652921761835083158086795163935060896053332506433434451836095710383871272788002621913967538399141417857031787255744141437237474972197102809365346359345477248611632307159641948507043668113827177494748159094045928919209335044052792843664865311991178972383241855607627188111601119780878072683890170539599447876998109080150992209773901144245398001"},"predicate":{"attr_name":"age","p_type":"GE","value":18}}]},"non_revoc_proof":null},"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","revoc_reg_seq_no":null}},"aggregated_proof":{"c_hash":"33103550379681684069592829341967479618752165928802550870585275205292715916069","c_list":[[1,121,77,5,144,154,14,192,190,190,145,180,128,71,22,60,168,20,46,163,139,194,71,165,220,188,121,76,25,146,231,114,65,54,69,68,19,200,250,192,47,123,157,132,74,50,28,69,226,195,243,118,45,63,237,197,216,202,206,101,33,56,225,200,128,3,89,12,182,38,113,221,165,119,228,201,156,201,172,136,59,64,51,72,164,198,49,228,223,117,80,64,166,226,37,8,29,146,186,80,210,119,76,252,4,255,62,218,112,163,164,147,247,190,108,76,140,191,76,217,214,184,152,179,193,149,15,70,197,46,90,60,255,247,197,219,252,73,76,0,125,104,114,22,182,161,110,36,162,103,27,42,88,18,161,237,198,43,177,189,181,86,135,207,71,114,0,26,175,12,199,125,25,124,178,87,36,208,251,15,191,127,202,148,152,43,142,92,191,7,89,153,130,195,223,248,176,109,97,164,126,162,181,124,237,130,155,197,66,59,40,197,72,84,32,100,64,55,227,60,214,143,200,200,89,115,236,172,145,56,100,73,20,242,233,95,130,58,112,153,120,115,119,42,199,30,205,88,223,42,196,184,41,19,100,19,244],[1,225,103,238,42,147,91,191,110,69,154,53,57,156,124,43,174,155,76,202,193,98,128,38,207,126,66,70,161,96,109,127,174,44,203,198,177,238,118,117,89,227,170,155,44,251,35,119,219,29,100,173,26,144,95,50,177,4,40,234,117,174,210,192,172,57,160,198,42,199,212,243,240,114,59,91,207,68,57,38,198,2,73,18,16,209,182,145,206,71,17,69,222,49,36,120,72,117,169,107,238,208,235,216,24,183,201,81,15,83,242,45,136,184,166,26,142,136,228,58,229,235,88,169,238,134,205,96,85,9,122,53,147,100,183,114,92,54,125,178,125,75,127,116,50,88,109,152,22,4,121,252,190,18,190,130,143,138,59,231,38,131,176,54,19,194,218,67,144,122,91,43,86,73,233,48,193,30,183,183,191,238,216,167,101,28,185,43,118,64,242,16,62,239,177,27,109,144,67,221,175,202,4,92,130,74,24,20,151,15,227,225,142,71,145,46,192,248,87,57,183,142,253,52,20,56,153,220,234,25,67,116,225,179,211,116,161,37,64,34,48,155,1,1,159,157,37,31,202,19,229,152,23,138,183,126,55],[1,38,181,193,191,72,2,239,34,83,49,36,179,160,82,112,172,98,255,63,60,22,177,249,67,215,220,198,181,7,49,254,133,243,221,214,47,64,229,82,11,94,175,57,86,152,229,192,184,96,136,116,226,123,128,217,23,244,19,204,36,44,123,208,88,24,217,120,145,139,25,233,227,5,119,90,47,147,1,115,92,39,119,194,167,17,229,39,163,167,237,14,116,234,106,252,216,54,33,233,21,54,183,130,144,161,177,142,177,240,51,73,21,202,188,103,244,153,204,219,123,231,139,135,189,155,143,28,4,180,44,148,0,27,103,26,13,203,31,32,166,67,84,87,23,72,234,236,20,1,84,70,86,76,192,164,235,124,86,128,78,230,119,155,95,121,125,20,244,181,121,250,169,9,67,85,213,177,139,111,187,183,114,165,249,177,161,181,175,46,226,66,86,84,124,86,69,143,217,158,161,30,107,133,44,239,89,209,24,150,1,238,122,144,138,179,121,114,90,13,212,209,60,126,37,62,177,180,131,222,168,2,201,156,169,220,224,53,8,203,220,215,163,104,195,184,73,35,241,182,177,80,41,253,230,90,173],[1,32,145,96,219,241,190,19,195,129,219,50,148,152,107,12,189,225,103,171,149,252,193,243,136,132,195,44,19,20,247,140,160,91,230,78,31,242,85,213,65,185,1,91,12,69,118,80,26,135,102,131,4,108,130,230,83,91,176,249,196,56,128,127,82,72,106,49,211,94,133,40,86,72,42,187,199,216,191,223,208,206,121,118,15,167,255,228,57,206,158,217,64,205,212,178,8,248,129,183,221,98,70,54,37,55,47,81,120,59,186,238,165,0,70,173,137,193,232,180,125,211,237,182,249,191,173,107,129,164,148,231,116,225,66,66,71,156,39,248,164,253,234,140,205,177,140,117,47,21,15,242,31,113,118,91,143,89,213,86,143,135,21,46,35,199,214,107,111,65,65,19,26,171,130,16,19,102,145,210,210,61,51,169,148,169,118,182,106,107,253,100,214,232,52,103,180,96,249,254,71,6,11,119,48,129,213,223,205,93,20,117,26,187,32,151,212,137,203,17,237,208,150,72,23,225,235,122,188,34,105,115,0,160,168,251,191,22,242,238,207,74,142,154,66,94,149,191,215,194,134,6,165,244,167,233,241],[1,207,77,250,146,127,242,229,44,172,182,201,183,242,32,242,182,129,233,10,8,180,23,191,163,21,238,158,5,27,216,146,253,173,127,99,95,168,209,132,242,196,242,34,25,25,249,211,51,236,164,153,175,61,65,150,82,251,174,102,186,47,195,82,44,90,252,184,74,89,251,177,254,108,151,136,230,220,93,224,173,247,244,116,132,59,170,215,194,30,87,84,166,147,57,156,201,207,132,203,222,191,253,15,19,228,173,81,156,4,51,121,227,159,50,18,148,129,205,42,42,227,252,138,62,176,115,227,253,52,125,110,178,167,132,244,14,116,195,194,172,44,45,63,38,121,215,136,68,230,21,108,133,159,197,179,94,78,233,107,236,114,92,165,248,22,124,161,23,142,236,224,175,233,134,25,97,150,131,61,220,203,104,154,199,247,146,47,205,56,209,0,133,132,18,103,136,8,202,37,29,100,105,12,232,74,33,6,255,202,96,170,52,229,244,4,235,2,201,125,86,168,179,224,130,81,54,221,185,184,187,141,0,114,98,38,70,225,228,60,157,53,210,238,60,216,215,154,48,73,3,157,192,245,81,170,49],[1,3,244,229,158,71,18,146,198,202,27,2,231,37,13,145,243,84,112,220,61,174,4,175,104,200,64,146,193,20,174,126,42,157,168,76,165,21,50,216,82,211,180,73,244,54,227,200,19,157,25,228,81,37,64,201,19,138,175,50,246,169,11,45,74,194,131,236,127,177,41,242,130,55,112,182,98,22,99,48,153,83,161,250,65,89,3,97,6,5,171,54,223,87,98,103,23,200,212,177,140,155,151,252,125,45,176,55,92,41,56,2,252,32,149,60,3,168,209,193,23,168,230,182,72,193,230,224,5,15,58,63,93,196,33,93,76,188,30,70,31,136,64,204,223,2,230,210,243,255,135,193,52,132,248,160,22,18,164,71,77,80,112,229,120,116,210,225,2,19,139,35,0,214,5,246,9,106,136,204,0,148,97,21,222,153,57,177,162,11,243,252,7,242,34,239,245,50,104,74,221,92,73,13,142,10,184,250,246,167,240,46,230,86,207,181,12,133,81,119,143,164,88,114,223,243,179,208,175,84,161,27,11,225,36,37,177,112,85,81,184,163,223,159,36,9,247,20,13,230,215,108,117,35,99,117,211]]},"requested_proof":{"revealed_attrs":{"attr1_uuid":["claim::277478db-bf57-42c3-8530-b1b13cfe0bfd","Alex","1139481716457488690172217916278103335"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{"predicate1_uuid":"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd"}}}"#;
-
-            let res = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
-                                                            &proof_json,
+            let res = AnoncredsUtils::verifier_verify_proof(AnoncredsUtils::proof_request_attr_and_predicate(),
+                                                            AnoncredsUtils::proof_json(),
                                                             &schemas_json,
                                                             &claim_defs_json,
-                                                            &revoc_regs_jsons);
+                                                            &revoc_regs_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
     }
@@ -1435,33 +2027,21 @@ mod demos {
     fn interoperability_test_pyindy_is_issuer() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
-        let xtype = "default";
-
         //1. Create Prover wallet, get wallet handle
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, Some(xtype)).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, Some(TYPE)).unwrap();
 
-        let schema_seq_no = 1;
-        let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
+        let schema = AnoncredsUtils::gvt_schema_json();
 
         //2. Prover create Master Secret
-        let master_secret_name = "prover_master_secret";
-
-        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, master_secret_name).unwrap();
+        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
         //3. Prover store Claim Offer received from Issuer
-        let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, schema_seq_no);
-
+        let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, AnoncredsUtils::gvt_schema_key());
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
 
         //4. Prover get Claim Offers
         let filter_json = format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID);
-
         let claim_offers_json = AnoncredsUtils::prover_get_claim_offers(prover_wallet_handle, &filter_json).unwrap();
-
-        let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers_json).unwrap();
-        assert!(claim_offers.len() == 1);
-        let claim_offer_json = serde_json::to_string(&claim_offers[0]).unwrap();
 
         Command::new("python3")
             .arg("/home/indy/indy-anoncreds/anoncreds/test/test_interoperability_with_libindy_pyindy_is_issuer.py")
@@ -1480,19 +2060,18 @@ mod demos {
         let claim_def = ClaimDefinition {
             issuer_did: ISSUER_DID.to_string(),
             signature_type: "CL".to_string(),
-            schema_seq_no: schema_seq_no,
+            schema_seq_no: GVT_SEQ_NO,
             data: claim_def_data
         };
 
         let claim_def_json = serde_json::to_string(&claim_def).unwrap();
 
         //5. Prover create Claim Request
-        let prover_did = "BzfFCYk";
         let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
-                                                                          prover_did,
+                                                                          DID_MY1,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
-                                                                          master_secret_name).unwrap();
+                                                                          COMMON_MASTER_SECRET).unwrap();
 
         let _ = stream.write(format!(r#"{{"type":"issue_claim", "data": {}}}"#, claim_req).as_bytes());
         let mut buf = vec![0; 10240];
@@ -1500,59 +2079,62 @@ mod demos {
         let _ = stream.write(r#"{"type":"close"}"#.as_bytes());
         buf.retain(|&element| element != 0);
 
-        let mut claim_json: ClaimJson = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
+        let mut claim_json: Claim = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
         claim_json.schema_seq_no = Some(schema_seq_no);
         claim_json.issuer_did = Some(ISSUER_DID.to_string());
 
         // 6. Prover store received Claim
-        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &serde_json::to_string(&claim_json).unwrap()).unwrap();
+        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &serde_json::to_string(&claim_json).unwrap(), None).unwrap();
 
         // 7. Prover gets Claims for Proof Request
-        let proof_req_json = format!(r#"{{
-                               "nonce":"123432421212",
-                               "name":"proof_req_1",
-                               "version":"0.1",
-                               "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}},
-                                                   "attr2_uuid":{{"schema_seq_no":{},"name":"sex"}}}},
-                               "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
-                            }}"#, schema_seq_no, schema_seq_no);
+        let proof_req_json = r#"{{
+                                   "nonce":"123432421212",
+                                   "name":"proof_req_1",
+                                   "version":"0.1",
+                                   "requested_attrs":{{
+                                        "attr1_referent":{{"name":"name"}},
+                                        "attr2_referent":{{"name":"sex"}},
+                                        "attr3_referent":{{"name":"phone"}}
+                                   }},
+                                   "requested_predicates":{{
+                                        "predicate1_referent":{{"attr_name":"age","p_type":">=","value":18}}
+                                   }}
+                                }}"#;
 
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
-        let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-        info!("claims_json: {}", &claims_json);
-        let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
-        assert_eq!(1, claims_for_attr_1.len());
-        let claim = claims_for_attr_1[0].clone();
+        let claim = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
         // 8. Prover create Proof
-        let self_attested_value = "value";
+        let self_attested_value = "8-800-300";
         let requested_claims_json = format!(r#"{{
-                                      "self_attested_attributes":{{"self1":"{}"}},
-                                      "requested_attrs":{{"attr1_uuid":["{}",true],
-                                                          "attr2_uuid":["{}", false]}},
-                                      "requested_predicates":{{"predicate1_uuid":"{}"}}
-                                    }}"#, self_attested_value, claim.claim_uuid, claim.claim_uuid, claim.claim_uuid);
+                                          "self_attested_attributes":{{"attr3_referent":"{}"}},
+                                          "requested_attrs":{{
+                                                "attr1_referent":["{}",true],
+                                                "attr2_referent":["{}", false]
+                                          }},
+                                          "requested_predicates":{{"predicate1_referent":"{}"}}
+                                        }}"#, self_attested_value, claim.referent, claim.referent, claim.referent);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
-        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
+        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.referent, schema);
+        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.referent, claim_def_json);
         let revoc_regs_jsons = "{}";
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
                                                              &proof_req_json,
                                                              &requested_claims_json,
                                                              &schemas_json,
-                                                             &master_secret_name,
+                                                             COMMON_MASTER_SECRET,
                                                              &claim_defs_json,
                                                              &revoc_regs_jsons).unwrap();
 
-        let proof: ProofJson = serde_json::from_str(&proof_json).unwrap();
+        let proof: FullProof = serde_json::from_str(&proof_json).unwrap();
 
-        let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr1_uuid").unwrap();
+        let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap();
         assert_eq!(value, "Alex");
 
-        proof.requested_proof.unrevealed_attrs.get("attr2_uuid").unwrap();
+        proof.requested_proof.unrevealed_attrs.get("attr2_referent").unwrap();
 
-        let value = proof.requested_proof.self_attested_attrs.get("self1").unwrap();
+        let value = proof.requested_proof.self_attested_attrs.get("attr3_referent").unwrap();
         assert_eq!(value, self_attested_value);
 
         // 9. Verifier verify proof
@@ -1563,6 +2145,8 @@ mod demos {
                                                           &revoc_regs_jsons).unwrap();
         assert!(valid);
 
+        WalletUtils::close_wallet(prover_wallet_handle).unwrap();
+
         TestUtils::cleanup_storage();
     }
 
@@ -1571,18 +2155,14 @@ mod demos {
     fn interoperability_test_pyindy_is_verifier() {
         TestUtils::cleanup_storage();
 
-        let pool_name = "pool1";
-        let xtype = "default";
-
         //1. Create Issuer wallet, get wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, Some(xtype)).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, Some(TYPE)).unwrap();
 
         //2. Create Prover wallet, get wallet handle
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(pool_name, Some(xtype)).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, Some(TYPE)).unwrap();
 
         //3. Issuer create claim definition
-        let schema_seq_no = 1;
-        let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
+        let schema = AnoncredsUtils::gvt_schema_json();
 
         let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &ISSUER_DID, &schema, None, false).unwrap();
 
@@ -1596,40 +2176,27 @@ mod demos {
         let _ = stream.write(format!(r#"{{"type":"receive_claim_def", "data": {}}}"#, claim_def_json).as_bytes());
 
         //4. Prover create Master Secret
-        let master_secret_name = "prover_master_secret";
-
-        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, master_secret_name).unwrap();
+        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
         //5. Prover store Claim Offer received from Issuer
-        let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, schema_seq_no);
-
+        let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, GVT_SEQ_NO);
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
 
-        //6. Prover get Claim Offers
-        let filter_json = format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID);
-
-        let claim_offers_json = AnoncredsUtils::prover_get_claim_offers(prover_wallet_handle, &filter_json).unwrap();
-
-        let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers_json).unwrap();
-        assert!(claim_offers.len() == 1);
-        let claim_offer_json = serde_json::to_string(&claim_offers[0]).unwrap();
-
         //7. Prover create Claim Request
-        let prover_did = "BzfFCYk";
         let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
-                                                                          prover_did,
+                                                                          DID_MY1,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
-                                                                          master_secret_name).unwrap();
+                                                                          COMMON_MASTER_SECRET).unwrap();
 
         //8. Issuer create Claim
-        let claim_json = AnoncredsUtils::get_gvt_claim_json();
+        let claim_values_json = AnoncredsUtils::gvt_claim_values_json();
         let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                    &claim_req,
-                                                                   &claim_json, None).unwrap();
+                                                                   &claim_values_json, None).unwrap();
 
         // 9. Prover store received Claim
-        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xclaim_json).unwrap();
+        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xclaim_json, None).unwrap();
 
         let _ = stream.write(r#"{"type":"get_proof_request"}"#.as_bytes());
         let mut buf = vec![0; 10240];
@@ -1639,29 +2206,25 @@ mod demos {
         let proof_req_json = String::from_utf8(buf).unwrap();
 
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
-        let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-        let claims_for_attr = claims.attrs.get("attr_uuid").unwrap();
-        assert_eq!(1, claims_for_attr.len());
-        let claim = claims_for_attr[0].clone();
+        let claim = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr_referent");
 
         // 11. Prover create Proof
         let self_attested_value = "value";
         let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{"self1":"{}"}},
-                                          "requested_attrs":{{"attr_uuid":["{}",true]}},
-                                          "requested_predicates":{{"predicate_uuid":"{}"}}
-                                        }}"#, self_attested_value, claim.claim_uuid, claim.claim_uuid);
+                                              "self_attested_attributes":{{"self1":"{}"}},
+                                              "requested_attrs":{{"attr_referent":["{}",true]}},
+                                              "requested_predicates":{{"predicate_referent":"{}"}}
+                                            }}"#, self_attested_value, claim.referent, claim.referent);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
-        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
+        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.referent, schema);
+        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.referent, claim_def_json);
         let revoc_regs_jsons = "{}";
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
                                                              &proof_req_json,
                                                              &requested_claims_json,
                                                              &schemas_json,
-                                                             &master_secret_name,
+                                                             COMMON_MASTER_SECRET,
                                                              &claim_defs_json,
                                                              &revoc_regs_jsons).unwrap();
 
@@ -1674,6 +2237,9 @@ mod demos {
         let valid = String::from_utf8(buf).unwrap();
         assert_eq!("true", valid);
 
+        WalletUtils::close_wallet(prover_wallet_handle).unwrap();
+        WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
+
         TestUtils::cleanup_storage();
     }
 
@@ -1682,8 +2248,7 @@ mod demos {
     fn interoperability_test_pyindy_is_prover() {
         TestUtils::cleanup_storage();
 
-        let schema_seq_no = 1;
-        let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
+        let schema = AnoncredsUtils::gvt_schema_json();
 
         Command::new("python3")
             .arg("/home/indy/indy-anoncreds/anoncreds/test/test_interoperability_with_libindy_pyindy_is_prover.py")
@@ -1702,33 +2267,37 @@ mod demos {
         let claim_def = ClaimDefinition {
             issuer_did: ISSUER_DID.to_string(),
             signature_type: "CL".to_string(),
-            schema_seq_no: schema_seq_no,
+            schema_seq_no: GVT_SEQ_NO,
             data: claim_def_data
         };
 
         let claim_def_json = serde_json::to_string(&claim_def).unwrap();
 
         // 7. Prover gets Claims for Proof Request
-        let proof_req_json = format!(r#"{{
-                               "nonce":"123432421212",
-                               "name":"proof_req_1",
-                               "version":"0.1",
-                               "requested_attrs":{{"attr_uuid":{{"schema_seq_no":{},"name":"name"}}}},
-                               "requested_predicates":{{"predicate_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
-                            }}"#, schema_seq_no);
+        let proof_req_json = r#"{{
+                                           "nonce":"123432421212",
+                                           "name":"proof_req_1",
+                                           "version":"0.1",
+                                           "requested_attrs":{{
+                                                "attr_referent":{{"name":"name"}}
+                                           }},
+                                           "requested_predicates":{{
+                                                "predicate_referent":{{"attr_name":"age","p_type":">=","value":18}}
+                                           }}
+                                        }}"#;
 
         let _ = stream.write(format!(r#"{{"type":"get_proof", "data": {}}}"#, proof_req_json).as_bytes());
         let mut buf = vec![0; 102400];
         stream.read(&mut buf).unwrap();
         buf.retain(|&element| element != 0);
 
-        let proof: ProofJson = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
+        let proof: FullProof = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
         println!("proof: {:?}", proof);
 
         let _ = stream.write(r#"{"type":"close"}"#.as_bytes());
         let schemas_json = format!(r#"{{"{}":{}}}"#, 1, schema);
 
-        let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr_uuid").unwrap();
+        let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr_referent").unwrap();
         assert_eq!(value, "Alex");
 
         let proof_json = serde_json::to_string(&proof).unwrap();
@@ -1747,90 +2316,69 @@ mod demos {
     }
 
     #[test]
-    fn verifier_verify_proof_works_for_proof_does_not_correspond_proof_request() {
+    fn verifier_verify_proof_works_for_proof_does_not_correspond_proof_request_attr_and_predicate() {
         TestUtils::cleanup_storage();
 
-        //1. Create wallet, get wallet handle
-        let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+        //1. Creates wallet, gets wallet handle
+        let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //2. Issuer create claim definition
-        let schema_seq_no = 1;
-        let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
+        //2. Issuer creates claim definition
+        let schema_json = AnoncredsUtils::gvt_schema_json();
+        let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &ISSUER_DID, &schema_json, None, false).unwrap();
 
-        let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &ISSUER_DID, &schema, None, false).unwrap();
+        //3. Prover creates Master Secret
+        AnoncredsUtils::prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //3. Prover create Master Secret
-        let master_secret_name = "prover_master_secret";
+        //4. Prover creates Claim Request
+        let claim_req_json = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
+                                                                               DID_MY1,
+                                                                               &AnoncredsUtils::gvt_claim_offer(),
+                                                                               &claim_def_json,
+                                                                               COMMON_MASTER_SECRET).unwrap();
 
-        AnoncredsUtils::prover_create_master_secret(wallet_handle, master_secret_name).unwrap();
+        //5. Issuer creates Claim
+        let (_, claim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle,
+                                                                  &claim_req_json,
+                                                                  &AnoncredsUtils::gvt_claim_values_json(),
+                                                                  None).unwrap();
 
-        //4. Prover create Claim Request
-        let prover_did = "BzfFCYk";
-        let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, schema_seq_no);
-        let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
-                                                                          prover_did,
-                                                                          &claim_offer_json,
-                                                                          &claim_def_json,
-                                                                          master_secret_name).unwrap();
-
-        //5. Issuer create Claim
-        let claim_json = AnoncredsUtils::get_gvt_claim_json();
-        let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle,
-                                                                   &claim_req,
-                                                                   &claim_json, Some(1)).unwrap();
-
-        // 6. Prover store received Claim
-        AnoncredsUtils::prover_store_claim(wallet_handle, &xclaim_json).unwrap();
+        // 6. Prover stores received Claim
+        AnoncredsUtils::prover_store_claim(wallet_handle, &claim_json, None).unwrap();
 
         // 7. Prover gets Claims for Proof Request
-        let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                   "name":"proof_req_1",
-                                   "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
-                                   "requested_predicates":{{}}
-                                }}"#, schema_seq_no);
 
-        let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req_json).unwrap();
-        let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
+        let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle,
+                                                                          &AnoncredsUtils::proof_request_attr()).unwrap();
+        let claim = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
-        let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
-        let claim = claims_for_attr_1[0].clone();
-
-        // 8. Prover create Proof
+        // 8. Prover creates Proof
         let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_uuid":["{}",true]}},
-                                          "requested_predicates":{{}}
-                                        }}"#, claim.claim_uuid);
+                                                          "self_attested_attributes":{{}},
+                                                          "requested_attrs":{{"attr1_referent":["{}",true]}},
+                                                          "requested_predicates":{{}}
+                                                      }}"#, claim.referent);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
-        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
-        let revoc_regs_jsons = "{}";
+        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.referent, schema_json);
+        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.referent, claim_def_json);
+        let revoc_regs_json = "{}";
 
         let proof_json = AnoncredsUtils::prover_create_proof(wallet_handle,
-                                                             &proof_req_json,
+                                                             &AnoncredsUtils::proof_request_attr(),
                                                              &requested_claims_json,
                                                              &schemas_json,
-                                                             &master_secret_name,
+                                                             COMMON_MASTER_SECRET,
                                                              &claim_defs_json,
-                                                             &revoc_regs_jsons).unwrap();
+                                                             &revoc_regs_json).unwrap();
 
-        // 9. Verifier verify proof
-        let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                   "name":"proof_req_1",
-                                   "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
-                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
-                                }}"#, schema_seq_no);
-
-        let res = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
+        // 9. Verifier verifies proof
+        let res = AnoncredsUtils::verifier_verify_proof(&AnoncredsUtils::proof_request_attr_and_predicate(),
                                                         &proof_json,
                                                         &schemas_json,
                                                         &claim_defs_json,
-                                                        &revoc_regs_jsons);
+                                                        &revoc_regs_json);
         assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+        WalletUtils::close_wallet(wallet_handle).unwrap();
 
         TestUtils::cleanup_storage();
     }
@@ -1839,485 +2387,414 @@ mod demos {
     fn anoncreds_works_for_single_issuer_single_prover() {
         TestUtils::cleanup_storage();
 
-        //1. Create Issuer wallet, get wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+        //1. Create Issuer wallet, gets wallet handle
+        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //2. Create Prover wallet, get wallet handle
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+        //2. Create Prover wallet, gets wallet handle
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //3. Issuer create claim definition
-        let schema_seq_no = 1;
-        let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
+        //3. Issuer creates claim definition
+        let schema_json = AnoncredsUtils::gvt_schema_json();
+        let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, ISSUER_DID, &schema_json, None, false).unwrap();
 
-        let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &ISSUER_DID, &schema, None, false).unwrap();
+        //4. Prover creates Master Secret
+        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //4. Prover create Master Secret
-        let master_secret_name = "prover_master_secret";
-
-        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, master_secret_name).unwrap();
-
-        //5. Prover store Claim Offer received from Issuer
-        let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, schema_seq_no);
-
-        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
+        //5. Prover stores Claim Offer received from Issuer
+        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &AnoncredsUtils::gvt_claim_offer()).unwrap();
 
         //6. Prover get Claim Offers
-        let filter_json = format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID);
-
-        let claim_offers_json = AnoncredsUtils::prover_get_claim_offers(prover_wallet_handle, &filter_json).unwrap();
-
+        let claim_offers_json = AnoncredsUtils::prover_get_claim_offers(prover_wallet_handle, "{}").unwrap();
         let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers_json).unwrap();
-        assert!(claim_offers.len() == 1);
         let claim_offer_json = serde_json::to_string(&claim_offers[0]).unwrap();
 
-        //7. Prover create Claim Request
-        let prover_did = "BzfFCYk";
+        //7. Prover creates Claim Request
         let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
-                                                                          prover_did,
+                                                                          DID_MY1,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
-                                                                          master_secret_name).unwrap();
+                                                                          COMMON_MASTER_SECRET).unwrap();
 
-        //8. Issuer create Claim
-        let claim_json = AnoncredsUtils::get_gvt_claim_json();
-        let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
-                                                                   &claim_req,
-                                                                   &claim_json, None).unwrap();
+        //8. Issuer creates Claim
+        let (_, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
+                                                                  &claim_req,
+                                                                  &AnoncredsUtils::gvt_claim_values_json(),
+                                                                  None).unwrap();
 
-        // 9. Prover store received Claim
-        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xclaim_json).unwrap();
+        // 9. Prover stores received Claim
+        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &claim_json, None).unwrap();
 
         // 10. Prover gets Claims for Proof Request
         let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                   "name":"proof_req_1",
-                                   "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}},
-                                                       "attr2_uuid":{{"schema_seq_no":{},"name":"sex"}}}},
-                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}}}}
-                                }}"#, schema_seq_no, schema_seq_no);
+                                       "nonce":"123432421212",
+                                       "name":"proof_req_1",
+                                       "version":"0.1",
+                                       "requested_attrs":{{
+                                            "attr1_referent":{{
+                                                "name":"name", "restrictions":[{{"schema_key":{}}}]
+                                            }},
+                                            "attr2_referent":{{
+                                                "name":"sex", "restrictions":[{{"schema_key":{}}}]
+                                            }},
+                                            "attr3_referent":{{"name":"phone"}}
+                                        }},
+                                       "requested_predicates":{{
+                                            "predicate1_referent":{{"attr_name":"age","p_type":">=","value":18}}
+                                        }}
+                                    }}"#, AnoncredsUtils::gvt_schema_key_json(), AnoncredsUtils::gvt_schema_key_json());
 
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
-        let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-        info!("claims_json: {}", &claims_json);
-        let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
-        assert_eq!(1, claims_for_attr_1.len());
-        let claim = claims_for_attr_1[0].clone();
+        let claim = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
-        // 11. Prover create Proof
-        let self_attested_value = "value";
+        // 11. Prover creates Proof
+        let self_attested_value = "8-800-300";
         let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{"self1":"{}"}},
-                                          "requested_attrs":{{"attr1_uuid":["{}", true],
-                                                              "attr2_uuid":["{}", false]}},
-                                          "requested_predicates":{{"predicate1_uuid":"{}"}}
-                                        }}"#, self_attested_value, claim.claim_uuid, claim.claim_uuid, claim.claim_uuid);
+                                              "self_attested_attributes":{{"attr3_referent":"{}"}},
+                                              "requested_attrs":{{
+                                                    "attr1_referent":["{}", true],
+                                                    "attr2_referent":["{}", false]
+                                              }},
+                                              "requested_predicates":{{
+                                                    "predicate1_referent":"{}"
+                                              }}
+                                            }}"#, self_attested_value, claim.referent, claim.referent, claim.referent);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
-        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
-        let revoc_regs_jsons = "{}";
+        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.referent, schema_json);
+        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.referent, claim_def_json);
+        let revoc_regs_json = "{}";
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
                                                              &proof_req_json,
                                                              &requested_claims_json,
                                                              &schemas_json,
-                                                             &master_secret_name,
+                                                             COMMON_MASTER_SECRET,
                                                              &claim_defs_json,
-                                                             &revoc_regs_jsons).unwrap();
+                                                             &revoc_regs_json).unwrap();
 
-        let proof: ProofJson = serde_json::from_str(&proof_json).unwrap();
+        let proof: FullProof = serde_json::from_str(&proof_json).unwrap();
 
-        let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr1_uuid").unwrap();
+        let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap();
         assert_eq!(value, "Alex");
 
-        proof.requested_proof.unrevealed_attrs.get("attr2_uuid").unwrap();
+        proof.requested_proof.unrevealed_attrs.get("attr2_referent").unwrap();
 
-        let value = proof.requested_proof.self_attested_attrs.get("self1").unwrap();
+        let value = proof.requested_proof.self_attested_attrs.get("attr3_referent").unwrap();
         assert_eq!(value, self_attested_value);
 
-        // 12. Verifier verify proof
+        // 12. Verifier verifies proof
         let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
                                                           &proof_json,
                                                           &schemas_json,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons).unwrap();
+                                                          &revoc_regs_json).unwrap();
         assert!(valid);
+
+        WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
+        WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
         TestUtils::cleanup_storage();
     }
 
     #[test]
-    fn anoncreds_works_for_multiply_issuer_single_prover() {
+    fn anoncreds_works_for_multiple_issuer_single_prover() {
         TestUtils::cleanup_storage();
 
-        let issuer2_did = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-        let prover_did = "BzfFCYk";
+        //1. Issuer1 creates wallet, gets wallet handles
+        let issuer_gvt_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //1. Issuer1 create wallet, get wallet handles
-        let issuer_gvt_wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+        //2. Issuer2 creates wallet, gets wallet handles
+        let issuer_xyz_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //2. Issuer2 create wallet, get wallet handles
-        let issuer_xyz_wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+        //3. Prover creates wallet, gets wallet handles
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //3. Prover create wallet, get wallet handles
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+        let mut schemas: HashMap<SchemaKey, String> = HashMap::new();
+        let mut claim_defs: HashMap<SchemaKey, String> = HashMap::new();
 
-        let mut schemas: HashMap<i32, String> = HashMap::new();
-        let mut claim_defs: HashMap<String, String> = HashMap::new();
+        //4. Issuer1 creates claim definition by gvt schema
+        let gvt_schema = AnoncredsUtils::gvt_schema_json();
+        let gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_gvt_wallet_handle, ISSUER_DID, &gvt_schema, None, false).unwrap();
 
-        //4. Issuer1 create claim definition by gvt schema
-        let gvt_schema_seq_no = 1;
-        let gvt_schema = AnoncredsUtils::get_gvt_schema_json(gvt_schema_seq_no);
+        schemas.insert(AnoncredsUtils::gvt_schema_key(), gvt_schema.clone());
+        claim_defs.insert(AnoncredsUtils::gvt_schema_key(), gvt_claim_def_json.clone());
 
-        let gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_gvt_wallet_handle, &ISSUER_DID, &gvt_schema, None, false).unwrap();
+        //5. Issuer2 creates claim definition by xyz schema
+        let xyz_schema = AnoncredsUtils::xyz_schema_json();
+        let xyz_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_xyz_wallet_handle, DID_MY2, &xyz_schema, None, false).unwrap();
 
-        schemas.insert(gvt_schema_seq_no, gvt_schema.clone());
-        claim_defs.insert(ISSUER_DID.to_string(), gvt_claim_def_json.clone());
+        schemas.insert(AnoncredsUtils::xyz_schema_key(), xyz_schema.clone());
+        claim_defs.insert(AnoncredsUtils::xyz_schema_key(), xyz_claim_def_json.clone());
 
+        //6. Prover creates Master Secret for Issuer1
+        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //5. Issuer2 create claim definition by xyz schema
-        let xyz_schema_seq_no = 2;
-        let xyz_schema = AnoncredsUtils::get_xyz_schema_json(xyz_schema_seq_no);
+        //8. Prover stores Claim Offer received from Issuer1
+        let gvt_claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, &AnoncredsUtils::gvt_schema_key());
+        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &AnoncredsUtils::gvt_claim_offer()).unwrap();
 
-        let xyz_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_xyz_wallet_handle, &issuer2_did, &xyz_schema, None, false).unwrap();
+        //9. Prover stores Claim Offer received from Issuer2
+        let xyz_claim_offer_json = AnoncredsUtils::get_claim_offer(DID_MY2, &AnoncredsUtils::xyz_schema_key());
+        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &xyz_claim_offer_json).unwrap();
 
-        schemas.insert(xyz_schema_seq_no, xyz_schema.clone());
-        claim_defs.insert(issuer2_did.to_string(), xyz_claim_def_json.clone());
-
-        //6. Prover create Master Secret for Issuer1
-        let master_secret_name_1 = "prover_master_secret_issuer_1";
-
-        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, master_secret_name_1).unwrap();
-
-        //7. Prover create Master Secret for Issuer2
-        let master_secret_name_2 = "prover_master_secret_issuer_2";
-
-        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, master_secret_name_2).unwrap();
-
-        //8. Prover store Claim Offer received from Issuer1
-        let issuer1_claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, gvt_schema_seq_no);
-
-        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &issuer1_claim_offer_json).unwrap();
-
-        //9. Prover store Claim Offer received from Issuer2
-        let issuer2_claim_offer_json = AnoncredsUtils::get_claim_offer(issuer2_did, xyz_schema_seq_no);
-
-        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &issuer2_claim_offer_json).unwrap();
-
-        //10. Prover get Claim Offers
-        let filter_json = "{}";
-
-        let claim_offers_json = AnoncredsUtils::prover_get_claim_offers(prover_wallet_handle, &filter_json).unwrap();
-
-        let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers_json).unwrap();
-        assert_eq!(2, claim_offers.len());
-
-        let claim_offer_1 = claim_offers[0].clone();
-        let claim_offer_2 = claim_offers[1].clone();
-
-        let claim_offer_1_json = serde_json::to_string(&claim_offer_1).unwrap();
-        let claim_offer_2_json = serde_json::to_string(&claim_offer_2).unwrap();
-
-        //11. Prover create Claim Request for gvt claim offer
-        let claim_offer = if claim_offer_1.issuer_did == ISSUER_DID { claim_offer_1_json.clone() } else { claim_offer_2_json.clone() };
-
+        //10. Prover creates Claim Request for gvt claim offer
         let gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
-                                                                              prover_did,
-                                                                              &claim_offer,
+                                                                              DID_MY1,
+                                                                              &gvt_claim_offer_json,
                                                                               &gvt_claim_def_json,
-                                                                              master_secret_name_1).unwrap();
+                                                                              COMMON_MASTER_SECRET).unwrap();
 
-        //12. Issuer create GVT Claim
-        let gvt_claim_json = AnoncredsUtils::get_gvt_claim_json();
+        //11. Issuer creates GVT Claim
         let (_, gvt_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_gvt_wallet_handle,
                                                                       &gvt_claim_req,
-                                                                      &gvt_claim_json, None).unwrap();
+                                                                      &AnoncredsUtils::gvt_claim_values_json(),
+                                                                      None).unwrap();
 
-        //13. Prover store received GVT Claim
-        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &gvt_claim_json).unwrap();
+        //12. Prover stores received GVT Claim
+        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &gvt_claim_json, None).unwrap();
 
-        //14. Prover create Claim Request for xyz claim offer
-        let claim_offer = if claim_offer_2.issuer_did == issuer2_did { claim_offer_2_json.clone() } else { claim_offer_1_json.clone() };
+        //13. Prover creates Claim Request for xyz claim offer
         let xyz_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
-                                                                              prover_did,
-                                                                              &claim_offer,
+                                                                              DID_MY1,
+                                                                              &xyz_claim_offer_json,
                                                                               &xyz_claim_def_json,
-                                                                              master_secret_name_1).unwrap();
+                                                                              COMMON_MASTER_SECRET).unwrap();
 
-        //15. Issuer create XYZ Claim
-        let xyz_claim_json = AnoncredsUtils::get_xyz_claim_json();
+        //14. Issuer creates XYZ Claim
         let (_, xyz_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_xyz_wallet_handle,
                                                                       &xyz_claim_req,
-                                                                      &xyz_claim_json, None).unwrap();
+                                                                      &AnoncredsUtils::xyz_claim_values_json(),
+                                                                      None).unwrap();
 
-        // 16. Prover store received XYZ Claim
-        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xyz_claim_json).unwrap();
+        // 15. Prover stores received XYZ Claim
+        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xyz_claim_json, None).unwrap();
 
-        // 17. Prover gets Claims for Proof Request
+        // 16. Prover gets Claims for Proof Request
         let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                   "name":"proof_req_1",
-                                   "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}},
-                                                       "attr2_uuid":{{"schema_seq_no":{},"name":"status"}}}},
-                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}},
-                                                            "predicate2_uuid":{{"attr_name":"period","p_type":"GE","value":5}}}}
-                                }}"#, gvt_schema_seq_no, xyz_schema_seq_no);
+                                       "nonce":"123432421212",
+                                       "name":"proof_req_1",
+                                       "version":"0.1",
+                                       "requested_attrs":{{
+                                            "attr1_referent":{{
+                                                "name":"name", "restrictions":[{{"schema_key":{}}}]
+                                            }},
+                                            "attr2_referent":{{
+                                                "name":"status", "restrictions":[{{"schema_key":{}}}]
+                                            }}
+                                       }},
+                                       "requested_predicates":{{
+                                            "predicate1_referent":{{"attr_name":"age","p_type":">=","value":18}},
+                                            "predicate2_referent":{{"attr_name":"period","p_type":">=","value":5}}
+                                       }}
+                                    }}"#, AnoncredsUtils::gvt_schema_key_json(), AnoncredsUtils::xyz_schema_key_json());
 
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
 
-        let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
+        let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+        let claim_for_attr_1 = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
+        let claim_for_attr_2 = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr2_referent");
+        let claim_for_predicate_1 = AnoncredsUtils::get_claim_for_predicate_referent(&claims_json, "predicate1_referent");
+        let claim_for_predicate_2 = AnoncredsUtils::get_claim_for_predicate_referent(&claims_json, "predicate2_referent");
 
-        let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
-        let claims_for_attr_2 = claims.attrs.get("attr2_uuid").unwrap();
-        assert_eq!(1, claims_for_attr_1.len());
-        assert_eq!(1, claims_for_attr_2.len());
-
-        let claim_for_attr_1 = claims_for_attr_1[0].clone();
-        let claim_for_attr_2 = claims_for_attr_2[0].clone();
-
-        let claims_for_predicate_1 = claims.predicates.get("predicate1_uuid").unwrap();
-        let claims_for_predicate_2 = claims.predicates.get("predicate2_uuid").unwrap();
-        assert_eq!(1, claims_for_predicate_1.len());
-        assert_eq!(1, claims_for_predicate_2.len());
-
-        let claim_for_predicate_1 = claims_for_predicate_1[0].clone();
-        let claim_for_predicate_2 = claims_for_predicate_2[0].clone();
-
-
-        // 18. Prover create Proof
+        // 17. Prover creates Proof
         let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_uuid":["{}",true],
-                                                              "attr2_uuid":["{}",true]}},
-                                          "requested_predicates":{{"predicate1_uuid":"{}",
-                                                                   "predicate2_uuid":"{}"}}
-                                        }}"#,
-                                            claim_for_attr_1.claim_uuid, claim_for_attr_2.claim_uuid,
-                                            claim_for_predicate_1.claim_uuid, claim_for_predicate_2.claim_uuid);
+                                              "self_attested_attributes":{{}},
+                                              "requested_attrs":{{
+                                                    "attr1_referent":["{}",true],
+                                                    "attr2_referent":["{}",true]
+                                              }},
+                                              "requested_predicates":{{
+                                                    "predicate1_referent":"{}",
+                                                    "predicate2_referent":"{}"
+                                              }}
+                                            }}"#,
+                                            claim_for_attr_1.referent, claim_for_attr_2.referent,
+                                            claim_for_predicate_1.referent, claim_for_predicate_2.referent);
 
         let unique_claims = AnoncredsUtils::get_unique_claims(&claims);
 
         let schemas_json = format!(r#"{{"{}":{},"{}":{}}}"#,
-                                   unique_claims[0].claim_uuid,
-                                   schemas.get(&unique_claims[0].schema_seq_no).unwrap(),
-                                   unique_claims[1].claim_uuid,
-                                   schemas.get(&unique_claims[1].schema_seq_no).unwrap());
-
+                                   unique_claims[0].referent,
+                                   schemas.get(&unique_claims[0].schema_key).unwrap(),
+                                   unique_claims[1].referent,
+                                   schemas.get(&unique_claims[1].schema_key).unwrap());
 
         let claim_defs_json = format!(r#"{{"{}":{},"{}":{}}}"#,
-                                      unique_claims[0].claim_uuid,
-                                      claim_defs.get(&unique_claims[0].issuer_did).unwrap(),
-                                      unique_claims[1].claim_uuid,
-                                      claim_defs.get(&unique_claims[1].issuer_did).unwrap());
-        let revoc_regs_jsons = "{}";
-
+                                      unique_claims[0].referent,
+                                      claim_defs.get(&unique_claims[0].schema_key).unwrap(),
+                                      unique_claims[1].referent,
+                                      claim_defs.get(&unique_claims[1].schema_key).unwrap());
+        let revoc_regs_json = "{}";
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
                                                              &proof_req_json,
                                                              &requested_claims_json,
                                                              &schemas_json,
-                                                             &master_secret_name_1,
+                                                             COMMON_MASTER_SECRET,
                                                              &claim_defs_json,
-                                                             &revoc_regs_jsons).unwrap();
+                                                             &revoc_regs_json).unwrap();
 
-        let proof: ProofJson = serde_json::from_str(&proof_json).unwrap();
+        let proof: FullProof = serde_json::from_str(&proof_json).unwrap();
 
-        let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr1_uuid").unwrap();
+        let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap();
         assert_eq!(value, "Alex");
 
-        let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr2_uuid").unwrap();
+        let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr2_referent").unwrap();
         assert_eq!(value, "partial");
 
-        // 19. Verifier verify proof
+        // 18. Verifier verifies proof
         let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
                                                           &proof_json,
                                                           &schemas_json,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons).unwrap();
+                                                          &revoc_regs_json).unwrap();
         assert!(valid);
+
+        WalletUtils::close_wallet(prover_wallet_handle).unwrap();
+        WalletUtils::close_wallet(issuer_gvt_wallet_handle).unwrap();
+        WalletUtils::close_wallet(issuer_xyz_wallet_handle).unwrap();
 
         TestUtils::cleanup_storage();
     }
 
     #[test]
-    fn anoncreds_works_for_single_issuer_multiply_claims_single_prover() {
+    fn anoncreds_works_for_single_issuer_multiple_claims_single_prover() {
         TestUtils::cleanup_storage();
 
-        let issuer_did = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-        let prover_did = "BzfFCYk";
+        //1. Issuer creates wallet, gets wallet handles
+        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //1. Issuer create wallet, get wallet handles
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+        //2. Prover creates wallet, gets wallet handles
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //2. Prover create wallet, get wallet handles
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+        let mut schemas: HashMap<SchemaKey, String> = HashMap::new();
+        let mut claim_defs: HashMap<SchemaKey, String> = HashMap::new();
 
-        let mut schemas: HashMap<i32, String> = HashMap::new();
-        let mut claim_defs: HashMap<String, String> = HashMap::new();
+        //3. Issuer creates claim definition by gvt schema
+        let gvt_schema = AnoncredsUtils::gvt_schema_json();
+        let gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, ISSUER_DID, &gvt_schema, None, false).unwrap();
 
-        //3. Issuer create claim definition by gvt schema
-        let gvt_schema_seq_no = 1;
-        let gvt_schema = AnoncredsUtils::get_gvt_schema_json(gvt_schema_seq_no);
+        schemas.insert(AnoncredsUtils::gvt_schema_key(), gvt_schema.clone());
+        claim_defs.insert(AnoncredsUtils::gvt_schema_key(), gvt_claim_def_json.clone());
 
-        let gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &issuer_did, &gvt_schema, None, false).unwrap();
+        //4. Issuer creates claim definition by xyz schema
+        let xyz_schema = AnoncredsUtils::xyz_schema_json();
+        let xyz_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, ISSUER_DID, &xyz_schema, None, false).unwrap();
 
-        schemas.insert(gvt_schema_seq_no, gvt_schema.clone());
-        claim_defs.insert(AnoncredsUtils::get_composite_id(issuer_did, gvt_schema_seq_no), gvt_claim_def_json.clone());
+        schemas.insert(AnoncredsUtils::xyz_schema_key(), xyz_schema.clone());
+        claim_defs.insert(AnoncredsUtils::xyz_schema_key(), xyz_claim_def_json.clone());
 
-        //4. Issuer create claim definition by xyz schema
-        let xyz_schema_seq_no = 2;
-        let xyz_schema = AnoncredsUtils::get_xyz_schema_json(xyz_schema_seq_no);
+        //5. Prover creates Master Secret for Issuer1
+        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        let xyz_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &issuer_did, &xyz_schema, None, false).unwrap();
+        //6. Prover stores GVT Claim Offer received from Issuer
+        let gvt_claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, &AnoncredsUtils::gvt_schema_key());
+        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &gvt_claim_offer_json).unwrap();
 
-        schemas.insert(xyz_schema_seq_no, xyz_schema.clone());
-        claim_defs.insert(AnoncredsUtils::get_composite_id(issuer_did, xyz_schema_seq_no), xyz_claim_def_json.clone());
+        //7. Prover stores XYZ Claim Offer received from Issuer
+        let xyz_claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, &AnoncredsUtils::xyz_schema_key());
+        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &xyz_claim_offer_json).unwrap();
 
-        //5. Prover create Master Secret for Issuer1
-        let master_secret_name = "prover_master_secret_issuer";
-
-        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, master_secret_name).unwrap();
-
-        //6. Prover store GVT Claim Offer received from Issuer
-        let issuer_claim_offer_json = AnoncredsUtils::get_claim_offer(issuer_did, gvt_schema_seq_no);
-
-        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &issuer_claim_offer_json).unwrap();
-
-        //7. Prover store XYZ Claim Offer received from Issuer
-        let issuer_claim_offer_json = AnoncredsUtils::get_claim_offer(issuer_did, xyz_schema_seq_no);
-
-        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &issuer_claim_offer_json).unwrap();
-
-        //8. Prover get Claim Offers
-        let filter_json = format!(r#"{{"issuer_did":"{}"}}"#, issuer_did);
-
-        let claim_offers_json = AnoncredsUtils::prover_get_claim_offers(prover_wallet_handle, &filter_json).unwrap();
-
-        let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers_json).unwrap();
-        assert_eq!(2, claim_offers.len());
-
-        let claim_offer_1 = claim_offers[0].clone();
-        let claim_offer_2 = claim_offers[1].clone();
-
-        let claim_offer_1_json = serde_json::to_string(&claim_offer_1).unwrap();
-        let claim_offer_2_json = serde_json::to_string(&claim_offer_2).unwrap();
-
-        //9. Prover create Claim Request for gvt claim offer
-        let claim_offer = if claim_offer_1.schema_seq_no == gvt_schema_seq_no { claim_offer_1_json.clone() } else { claim_offer_2_json.clone() };
-
+        //8. Prover creates Claim Request for gvt claim offer
         let gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
-                                                                              prover_did,
-                                                                              &claim_offer,
+                                                                              DID_MY1,
+                                                                              &gvt_claim_offer_json,
                                                                               &gvt_claim_def_json,
-                                                                              master_secret_name).unwrap();
+                                                                              COMMON_MASTER_SECRET).unwrap();
 
 
-        //10. Issuer create GVT Claim
-        let gvt_claim_json = AnoncredsUtils::get_gvt_claim_json();
+        //9. Issuer creates GVT Claim
         let (_, gvt_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                       &gvt_claim_req,
-                                                                      &gvt_claim_json, None).unwrap();
+                                                                      &AnoncredsUtils::gvt_claim_values_json(),
+                                                                      None).unwrap();
 
-        //11. Prover store received GVT Claim
-        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &gvt_claim_json).unwrap();
+        //10. Prover stores received GVT Claim
+        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &gvt_claim_json, None).unwrap();
 
-        //12. Prover create Claim Request for xyz claim offer
-        let claim_offer = if claim_offer_2.schema_seq_no == xyz_schema_seq_no { claim_offer_2_json.clone() } else { claim_offer_1_json.clone() };
+        //11. Prover creates Claim Request for xyz claim offer
         let xyz_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
-                                                                              prover_did,
-                                                                              &claim_offer,
+                                                                              DID_MY1,
+                                                                              &xyz_claim_offer_json,
                                                                               &xyz_claim_def_json,
-                                                                              master_secret_name).unwrap();
+                                                                              COMMON_MASTER_SECRET).unwrap();
 
-        //13. Issuer create XYZ Claim
-        let xyz_claim_json = AnoncredsUtils::get_xyz_claim_json();
+        //12. Issuer creates XYZ Claim
         let (_, xyz_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                       &xyz_claim_req,
-                                                                      &xyz_claim_json, None).unwrap();
+                                                                      &AnoncredsUtils::xyz_claim_values_json(),
+                                                                      None).unwrap();
 
-        //14. Prover store received XYZ Claim
-        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xyz_claim_json).unwrap();
+        //13. Prover stores received XYZ Claim
+        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xyz_claim_json, None).unwrap();
 
-        //15. Prover gets Claims for Proof Request
-        let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                   "name":"proof_req_1",
-                                   "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
-                                   "requested_predicates":{{"predicate1_uuid":{{"attr_name":"age","p_type":"GE","value":18}},
-                                                            "predicate2_uuid":{{"attr_name":"period","p_type":"GE","value":5}}}}
-                                }}"#, gvt_schema_seq_no);
+        //14. Prover gets Claims for Proof Request
+        let proof_req_json = r#"{
+                                       "nonce":"123432421212",
+                                       "name":"proof_req_1",
+                                       "version":"0.1",
+                                       "requested_attrs":{
+                                            "attr1_referent":{"name":"name"}
+                                       },
+                                       "requested_predicates":{
+                                            "predicate1_referent":{"attr_name":"age","p_type":">=","value":18},
+                                            "predicate2_referent":{"attr_name":"period","p_type":">=","value":5}
+                                       }
+                                    }"#;
 
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
+        let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+        let claim_for_attr_1 = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
+        let claim_for_predicate_1 = AnoncredsUtils::get_claim_for_predicate_referent(&claims_json, "predicate1_referent");
+        let claim_for_predicate_2 = AnoncredsUtils::get_claim_for_predicate_referent(&claims_json, "predicate2_referent");
 
-        let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-
-        assert_eq!(1, claims.attrs.len());
-        assert_eq!(2, claims.predicates.len());
-
-        let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
-        assert_eq!(1, claims_for_attr_1.len());
-
-        let claim_for_attr_1 = claims_for_attr_1[0].clone();
-
-        let claims_for_predicate_1 = claims.predicates.get("predicate1_uuid").unwrap();
-        let claims_for_predicate_2 = claims.predicates.get("predicate2_uuid").unwrap();
-
-        assert_eq!(1, claims_for_predicate_1.len());
-        assert_eq!(1, claims_for_predicate_2.len());
-
-        let claim_for_predicate_1 = claims_for_predicate_1[0].clone();
-        let claim_for_predicate_2 = claims_for_predicate_2[0].clone();
-
-        //16. Prover create Proof
+        //15. Prover creates Proof
         let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_uuid":["{}",true]}},
-                                          "requested_predicates":{{"predicate1_uuid":"{}",
-                                                                   "predicate2_uuid":"{}"}}
-                                        }}"#,
-                                            claim_for_attr_1.claim_uuid,
-                                            claim_for_predicate_1.claim_uuid, claim_for_predicate_2.claim_uuid);
+                                              "self_attested_attributes":{{}},
+                                              "requested_attrs":{{"attr1_referent":["{}",true]}},
+                                              "requested_predicates":{{
+                                                    "predicate1_referent":"{}",
+                                                    "predicate2_referent":"{}"
+                                              }}
+                                            }}"#, claim_for_attr_1.referent, claim_for_predicate_1.referent, claim_for_predicate_2.referent);
 
         let unique_claims = AnoncredsUtils::get_unique_claims(&claims);
 
         let schemas_json = format!(r#"{{"{}":{},"{}":{}}}"#,
-                                   unique_claims[0].claim_uuid,
-                                   schemas.get(&unique_claims[0].schema_seq_no).unwrap(),
-                                   unique_claims[1].claim_uuid,
-                                   schemas.get(&unique_claims[1].schema_seq_no).unwrap());
-
-        let claim_def_id1 = AnoncredsUtils::get_composite_id(&unique_claims[0].issuer_did, unique_claims[0].schema_seq_no);
-        let claim_def_id2 = AnoncredsUtils::get_composite_id(&unique_claims[1].issuer_did, unique_claims[1].schema_seq_no);
+                                   unique_claims[0].referent,
+                                   schemas.get(&unique_claims[0].schema_key).unwrap(),
+                                   unique_claims[1].referent,
+                                   schemas.get(&unique_claims[1].schema_key).unwrap());
 
         let claim_defs_json = format!(r#"{{"{}":{},"{}":{}}}"#,
-                                      unique_claims[0].claim_uuid,
-                                      claim_defs.get(&claim_def_id1).unwrap(),
-                                      unique_claims[1].claim_uuid,
-                                      claim_defs.get(&claim_def_id2).unwrap());
-        let revoc_regs_jsons = "{}";
+                                      unique_claims[0].referent,
+                                      claim_defs.get(&unique_claims[0].schema_key).unwrap(),
+                                      unique_claims[1].referent,
+                                      claim_defs.get(&unique_claims[1].schema_key).unwrap());
+        let revoc_regs_json = "{}";
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
                                                              &proof_req_json,
                                                              &requested_claims_json,
                                                              &schemas_json,
-                                                             &master_secret_name,
+                                                             COMMON_MASTER_SECRET,
                                                              &claim_defs_json,
-                                                             &revoc_regs_jsons).unwrap();
+                                                             &revoc_regs_json).unwrap();
 
-        let proof: ProofJson = serde_json::from_str(&proof_json).unwrap();
+        let proof: FullProof = serde_json::from_str(&proof_json).unwrap();
 
-        let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr1_uuid").unwrap();
+        let &(_, ref value, _) = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap();
         assert_eq!(value, "Alex");
 
-        //17. Verifier verify proof
+        //17. Verifier verifies proof
         let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
                                                           &proof_json,
                                                           &schemas_json,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons).unwrap();
+                                                          &revoc_regs_json).unwrap();
         assert!(valid);
+
+        WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
+        WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
         TestUtils::cleanup_storage();
     }
@@ -2327,88 +2804,75 @@ mod demos {
     fn anoncreds_works_for_revocation_registry() {
         TestUtils::cleanup_storage();
 
-        //1. Create Issuer wallet, get wallet handle
-        let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+        //1. Issuer creates wallet, gets wallet handle
+        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //2. Issuer create claim definition
-        let schema_seq_no = 1;
-        let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
+        //2. Prover creates wallet, gets wallet handle
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &ISSUER_DID, &schema,
+        //2. Issuer creates claim definition
+        let schema_json = AnoncredsUtils::gvt_schema_json();
+        let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, ISSUER_DID, &schema_json,
                                                                             None, true).unwrap();
-        //3. Issuer create revocation registry
-        AnoncredsUtils::indy_issuer_create_and_store_revoc_reg(wallet_handle, &ISSUER_DID, schema_seq_no,
-                                                               5).unwrap();
+        //3. Issuer creates revocation registry
+        AnoncredsUtils::indy_issuer_create_and_store_revoc_reg(issuer_wallet_handle, &ISSUER_DID, &schema_json, 5).unwrap();
 
-        //4. Prover create Master Secret
-        let master_secret_name = "prover_master_secret";
-        AnoncredsUtils::prover_create_master_secret(wallet_handle, master_secret_name).unwrap();
+        //4. Prover creates Master Secret
+        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //5. Prover store Claim Offer received from Issuer
-        let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, schema_seq_no);
-        AnoncredsUtils::prover_store_claim_offer(wallet_handle, &claim_offer_json).unwrap();
+        //5. Prover stores Claim Offer received from Issuer
+        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &AnoncredsUtils::gvt_claim_offer()).unwrap();
 
-        //6. Prover create Claim Request
-        let prover_did = "BzfFCYk";
-        let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
-                                                                          prover_did,
-                                                                          &claim_offer_json,
-                                                                          &claim_def_json,
-                                                                          master_secret_name).unwrap();
+        //6. Prover creates Claim Request
+        let claim_req_json = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
+                                                                               DID_MY1,
+                                                                               &AnoncredsUtils::gvt_claim_offer(),
+                                                                               &claim_def_json,
+                                                                               COMMON_MASTER_SECRET).unwrap();
 
-        //7. Issuer create Claim
-        let claim_json = AnoncredsUtils::get_gvt_claim_json();
-        let user_revoc_index = 1;
-        let (revoc_reg_update_json, xclaim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle,
-                                                                                       &claim_req,
-                                                                                       &claim_json, Some(user_revoc_index)).unwrap();
-
-        println!("xclaim_json {:?}", xclaim_json);
+        //7. Issuer creates Claim
+        let (revoc_reg_update_json, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
+                                                                                      &claim_req_json,
+                                                                                      &AnoncredsUtils::gvt_claim_values_json(),
+                                                                                      Some(SEQ_NO)).unwrap();
 
         //8. Prover store received Claim
-        AnoncredsUtils::prover_store_claim(wallet_handle, &xclaim_json).unwrap();
+        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &claim_json, Some(&revoc_reg_update_json)).unwrap();
 
         //9. Prover gets Claims for Proof Request
-        let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                   "name":"proof_req_1",
-                                   "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
-                                   "requested_predicates":{{}}
-                                }}"#, schema_seq_no);
+        let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle,
+                                                                          &AnoncredsUtils::proof_request_attr()).unwrap();
+        let claim = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
-        let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req_json).unwrap();
-        let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-        info!("claims_json: {}", &claims_json);
-        let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
-        let claim = claims_for_attr_1[0].clone();
-
-        //1-. Prover create Proof
+        //10. Prover creates Proof
         let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_uuid":["{}", true]}},
-                                          "requested_predicates":{{}}
-                                        }}"#, claim.claim_uuid);
+                                              "self_attested_attributes":{{}},
+                                              "requested_attrs":{{"attr1_referent":["{}", true]}},
+                                              "requested_predicates":{{}}
+                                            }}"#, claim.referent);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
-        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
-        let revoc_regs_jsons = format!("{{\"{}\":{}}}", claim.claim_uuid, revoc_reg_update_json);
+        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.referent, schema_json);
+        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.referent, claim_def_json);
+        let revoc_regs_json = format!("{{\"{}\":{}}}", claim.referent, revoc_reg_update_json);
 
-        let proof_json = AnoncredsUtils::prover_create_proof(wallet_handle,
-                                                             &proof_req_json,
+        let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
+                                                             &AnoncredsUtils::proof_request_attr(),
                                                              &requested_claims_json,
                                                              &schemas_json,
-                                                             &master_secret_name,
+                                                             COMMON_MASTER_SECRET,
                                                              &claim_defs_json,
-                                                             &revoc_regs_jsons).unwrap();
+                                                             &revoc_regs_json).unwrap();
 
-        //11. Verifier verify proof
-        let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
+        //11. Verifier verifies proof
+        let valid = AnoncredsUtils::verifier_verify_proof(&AnoncredsUtils::proof_request_attr(),
                                                           &proof_json,
                                                           &schemas_json,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons).unwrap();
+                                                          &revoc_regs_json).unwrap();
         assert!(valid);
+
+        WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
+        WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
         TestUtils::cleanup_storage();
     }
@@ -2418,83 +2882,71 @@ mod demos {
     fn anoncreds_works_for_claim_revoked_before_proof_created() {
         TestUtils::cleanup_storage();
 
-        //1. Create Issuer wallet, get wallet handle
-        let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+        //1. Issuer creates wallet, gets wallet handle
+        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //2. Issuer create claim definition
-        let schema_seq_no = 1;
-        let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
+        //2. Prover creates wallet, gets wallet handle
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &ISSUER_DID, &schema,
+        //3. Issuer creates claim definition
+        let schema = AnoncredsUtils::gvt_schema_json();
+        let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &ISSUER_DID, &schema,
                                                                             None, true).unwrap();
-        //3. Issuer create revocation registry
-        AnoncredsUtils::indy_issuer_create_and_store_revoc_reg(wallet_handle, &ISSUER_DID, schema_seq_no,
-                                                               5).unwrap();
+        //4. Issuer creates revocation registry
+        AnoncredsUtils::indy_issuer_create_and_store_revoc_reg(issuer_wallet_handle, ISSUER_DID, &schema, 5).unwrap();
 
-        //4. Prover create Master Secret
-        let master_secret_name = "prover_master_secret";
-        AnoncredsUtils::prover_create_master_secret(wallet_handle, master_secret_name).unwrap();
+        //5. Prover creates Master Secret
+        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //5. Prover store Claim Offer received from Issuer
-        let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, schema_seq_no);
-        AnoncredsUtils::prover_store_claim_offer(wallet_handle, &claim_offer_json).unwrap();
+        //6. Prover stores Claim Offer received from Issuer
+        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &AnoncredsUtils::gvt_claim_offer()).unwrap();
 
-        //6. Prover create Claim Request
-        let prover_did = "BzfFCYk";
-        let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
-                                                                          prover_did,
-                                                                          &claim_offer_json,
+        //7. Prover creates Claim Request
+        let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
+                                                                          DID_MY1,
+                                                                          &AnoncredsUtils::gvt_claim_offer(),
                                                                           &claim_def_json,
-                                                                          master_secret_name).unwrap();
+                                                                          COMMON_MASTER_SECRET).unwrap();
 
-        //7. Issuer create Claim
-        let claim_json = AnoncredsUtils::get_gvt_claim_json();
-        let user_revoc_index = 1;
-        let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle,
-                                                                   &claim_req,
-                                                                   &claim_json, Some(user_revoc_index)).unwrap();
+        //8. Issuer creates Claim
+        let (revoc_reg_update_json, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
+                                                                                      &claim_req,
+                                                                                      &AnoncredsUtils::gvt_claim_values_json(),
+                                                                                      Some(SEQ_NO)).unwrap();
 
-        //8. Prover store received Claim
-        AnoncredsUtils::prover_store_claim(wallet_handle, &xclaim_json).unwrap();
+        //9. Prover stores received Claim
+        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &claim_json, Some(&revoc_reg_update_json)).unwrap();
 
-        //9. Issuer revoke claim
-        let revoc_reg_update_json = AnoncredsUtils::issuer_revoke_claim(wallet_handle, &ISSUER_DID, schema_seq_no, user_revoc_index).unwrap();
+        //10. Issuer revokes claim
+        let revoc_reg_update_json = AnoncredsUtils::issuer_revoke_claim(issuer_wallet_handle, &ISSUER_DID, &schema, SEQ_NO as u32).unwrap();
 
+        //11. Prover gets Claims for Proof Request
+        let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle,
+                                                                          &AnoncredsUtils::proof_request_attr()).unwrap();
+        let claim = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
-        //10. Prover gets Claims for Proof Request
-        let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                   "name":"proof_req_1",
-                                   "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
-                                   "requested_predicates":{{}}
-                                }}"#, schema_seq_no);
-
-        let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req_json).unwrap();
-        let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-        info!("claims_json: {}", &claims_json);
-        let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
-        let claim = claims_for_attr_1[0].clone();
-
-        //11. Prover create Proof
+        //12. Prover creates Proof
         let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_uuid":["{}", true]}},
-                                          "requested_predicates":{{}}
-                                        }}"#, claim.claim_uuid);
+                                              "self_attested_attributes":{{}},
+                                              "requested_attrs":{{"attr1_referent":["{}", true]}},
+                                              "requested_predicates":{{}}
+                                            }}"#, claim.referent);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
-        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
-        let revoc_regs_jsons = format!("{{\"{}\":{}}}", claim.claim_uuid, revoc_reg_update_json);
+        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.referent, schema);
+        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.referent, claim_def_json);
+        let revoc_regs_json = format!("{{\"{}\":{}}}", claim.referent, revoc_reg_update_json);
 
-        let res = AnoncredsUtils::prover_create_proof(wallet_handle,
-                                                      &proof_req_json,
+        let res = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
+                                                      &AnoncredsUtils::proof_request_attr(),
                                                       &requested_claims_json,
                                                       &schemas_json,
-                                                      &master_secret_name,
+                                                      COMMON_MASTER_SECRET,
                                                       &claim_defs_json,
-                                                      &revoc_regs_jsons);
+                                                      &revoc_regs_json);
         assert_eq!(res.unwrap_err(), ErrorCode::AnoncredsClaimRevoked);
+
+        WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
+        WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
         TestUtils::cleanup_storage();
     }
@@ -2504,90 +2956,79 @@ mod demos {
     fn anoncreds_works_for_claim_revoked_after_proof_created() {
         TestUtils::cleanup_storage();
 
-        //1. Create Issuer wallet, get wallet handle
-        let wallet_handle = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+        //1. Issuer creates wallet, get wallet handle
+        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        //2. Issuer create claim definition
-        let schema_seq_no = 1;
-        let schema = AnoncredsUtils::get_gvt_schema_json(schema_seq_no);
+        //2. Prover creates wallet, gets wallet handle
+        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
-        let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(wallet_handle, &ISSUER_DID, &schema,
+        //3. Issuer creates claim definition
+        let schema_json = AnoncredsUtils::gvt_schema_json();
+        let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(issuer_wallet_handle, &ISSUER_DID, &schema_json,
                                                                             None, true).unwrap();
-        //3. Issuer create revocation registry
-        AnoncredsUtils::indy_issuer_create_and_store_revoc_reg(wallet_handle, &ISSUER_DID, schema_seq_no,
-                                                               5).unwrap();
+        //4. Issuer creates revocation registry
+        AnoncredsUtils::indy_issuer_create_and_store_revoc_reg(issuer_wallet_handle, &ISSUER_DID, &schema_json, 5).unwrap();
 
-        //4. Prover create Master Secret
-        let master_secret_name = "prover_master_secret";
-        AnoncredsUtils::prover_create_master_secret(wallet_handle, master_secret_name).unwrap();
+        //5. Prover creates Master Secret
+        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //5. Prover store Claim Offer received from Issuer
-        let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, schema_seq_no);
-        AnoncredsUtils::prover_store_claim_offer(wallet_handle, &claim_offer_json).unwrap();
+        //6. Prover stores Claim Offer received from Issuer
+        AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &AnoncredsUtils::gvt_claim_offer()).unwrap();
 
-        //6. Prover create Claim Request
-        let prover_did = "BzfFCYk";
-        let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
-                                                                          prover_did,
-                                                                          &claim_offer_json,
+        //7. Prover creates Claim Request
+        let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
+                                                                          DID_MY1,
+                                                                          &AnoncredsUtils::gvt_claim_offer(),
                                                                           &claim_def_json,
-                                                                          master_secret_name).unwrap();
+                                                                          COMMON_MASTER_SECRET).unwrap();
 
-        //7. Issuer create Claim
-        let claim_json = AnoncredsUtils::get_gvt_claim_json();
-        let user_revoc_index = 1;
-        let (revoc_reg_update_json, xclaim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle,
-                                                                                       &claim_req,
-                                                                                       &claim_json, Some(user_revoc_index)).unwrap();
+        //8. Issuer creates Claim
+        let (revoc_reg_update_json, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
+                                                                                      &claim_req,
+                                                                                      &AnoncredsUtils::gvt_claim_values_json(),
+                                                                                      Some(SEQ_NO)).unwrap();
 
-        //8. Prover store received Claim
-        AnoncredsUtils::prover_store_claim(wallet_handle, &xclaim_json).unwrap();
+        //9. Prover stores received Claim
+        AnoncredsUtils::prover_store_claim(prover_wallet_handle, &claim_json, Some(&revoc_reg_update_json)).unwrap();
 
-        //9. Prover gets Claims for Proof Request
-        let proof_req_json = format!(r#"{{
-                                   "nonce":"123432421212",
-                                   "name":"proof_req_1",
-                                   "version":"0.1",
-                                   "requested_attrs":{{"attr1_uuid":{{"schema_seq_no":{},"name":"name"}}}},
-                                   "requested_predicates":{{}}
-                                }}"#, schema_seq_no);
+        //10. Prover gets Claims for Proof Request
+        let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle,
+                                                                          &AnoncredsUtils::proof_request_attr()).unwrap();
+        let claim = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
 
-        let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req_json).unwrap();
-        let claims: ProofClaimsJson = serde_json::from_str(&claims_json).unwrap();
-        info!("claims_json: {}", &claims_json);
-        let claims_for_attr_1 = claims.attrs.get("attr1_uuid").unwrap();
-        let claim = claims_for_attr_1[0].clone();
-
-        //10. Prover create Proof
+        //11. Prover create Proof
         let requested_claims_json = format!(r#"{{
-                                          "self_attested_attributes":{{}},
-                                          "requested_attrs":{{"attr1_uuid":["{}", true]}},
-                                          "requested_predicates":{{}}
-                                        }}"#, claim.claim_uuid);
+                                              "self_attested_attributes":{{}},
+                                              "requested_attrs":{{"attr1_referent":["{}", true]}},
+                                              "requested_predicates":{{}}
+                                            }}"#, claim.referent);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, schema);
-        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.claim_uuid, claim_def_json);
-        let mut revoc_regs_jsons = format!("{{\"{}\":{}}}", claim.claim_uuid, revoc_reg_update_json);
+        let schemas_json = format!(r#"{{"{}":{}}}"#, claim.referent, schema_json);
+        let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.referent, claim_def_json);
+        let mut revoc_regs_json = format!("{{\"{}\":{}}}", claim.referent, revoc_reg_update_json);
 
-        let proof_json = AnoncredsUtils::prover_create_proof(wallet_handle,
-                                                             &proof_req_json,
+        let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
+                                                             &AnoncredsUtils::proof_request_attr(),
                                                              &requested_claims_json,
                                                              &schemas_json,
-                                                             &master_secret_name,
+                                                             COMMON_MASTER_SECRET,
                                                              &claim_defs_json,
-                                                             &revoc_regs_jsons).unwrap();
+                                                             &revoc_regs_json).unwrap();
 
-        //11. Issuer revoke prover claim
-        let revoc_reg_update_json = AnoncredsUtils::issuer_revoke_claim(wallet_handle, &ISSUER_DID, schema_seq_no, user_revoc_index).unwrap();
-        revoc_regs_jsons = format!("{{\"{}\":{}}}", claim.claim_uuid, revoc_reg_update_json);
+        //12. Issuer revokes prover claim
+        let revoc_reg_update_json = AnoncredsUtils::issuer_revoke_claim(issuer_wallet_handle, ISSUER_DID, &schema_json, SEQ_NO as u32).unwrap();
+        revoc_regs_json = format!("{{\"{}\":{}}}", claim.referent, revoc_reg_update_json);
 
-        // 12. Verifier verify proof
-        let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
+        //13. Verifier verifies proof
+        let valid = AnoncredsUtils::verifier_verify_proof(&AnoncredsUtils::proof_request_attr(),
                                                           &proof_json,
                                                           &schemas_json,
                                                           &claim_defs_json,
-                                                          &revoc_regs_jsons).unwrap();
+                                                          &revoc_regs_json).unwrap();
         assert!(!valid);
+
+        WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
+        WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
         TestUtils::cleanup_storage();
     }

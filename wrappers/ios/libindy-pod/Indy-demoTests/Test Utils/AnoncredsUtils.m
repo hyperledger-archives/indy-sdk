@@ -39,26 +39,48 @@
 }
 
 // MARK: - Json configurators
+
+- (NSString *)getGvtSchemaKey
+{
+    return [NSString stringWithFormat:@"{"
+                "\"name\":\"gvt\","
+                "\"version\":\"1.0\","
+                "\"did\":\"%@\""
+            "}", [TestUtils issuerDid]];
+}
+
 - (NSString *)getGvtSchemaJson:(NSNumber *)seqNo
 {
     return [NSString stringWithFormat:@"{"
             "\"seqNo\":%@,"
+            "\"dest\":\"%@\","
             "\"data\":{"
                 "\"name\":\"gvt\","
                 "\"version\":\"1.0\","
                 "\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}"
-            "}", seqNo];
+            "}", seqNo, [TestUtils issuerDid]];
+}
+
+
+- (NSString *)getSchemaJson:(NSString *)schemaName
+{
+    return [NSString stringWithFormat:@"{"
+                                              "\"seqNo\":1,"
+                                              "\"dest\":\"%@\","
+                                              "\"data\":{"
+                                              "\"name\":\"%@\","
+                                              "\"version\":\"1.0\","
+                                              "\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}"
+                                              "}", schemaName, [TestUtils issuerDid]];
 }
 
 - (NSString *)getClaimOfferJson:(NSString *)issuerDid
-                    schemaSeqNo:(NSNumber *)schemaSeqNo
+                      schemaKey:(NSString *)schemaKey
 {
     return [NSString stringWithFormat:@"{"\
             "\"issuer_did\":\"%@\"," \
-            "\"schema_seq_no\":%d" \
-            "}", issuerDid,
-                [schemaSeqNo intValue]
-            ];
+            "\"schema_key\":%@" \
+            "}", issuerDid, schemaKey];
 }
 
 - (NSString *)getGvtClaimJson
@@ -71,15 +93,25 @@
             "}"];
 }
 
+- (NSString *)getXyzSchemaKey
+{
+    return [NSString stringWithFormat:@"{"
+                                              "\"name\":\"xyz\","
+                                              "\"version\":\"1.0\","
+                                              "\"did\":\"%@\""
+                                              "}", [TestUtils issuerDid]];
+}
+
 - (NSString *)getXyzSchemaJson:(NSNumber *)schemaSeqNo
 {
     return [NSString stringWithFormat:@"{"
             "\"seqNo\":%@,"
+            "\"dest\":\"%@\","
             "\"data\":{"
                 "\"name\":\"xyz\","
                 "\"version\":\"1.0\","
                 "\"attr_names\":[\"status\",\"period\"]}"
-            "}", schemaSeqNo];
+            "}", schemaSeqNo, [TestUtils issuerDid]];
 }
 
 - (NSString *)getXyzClaimJson
@@ -114,14 +146,14 @@
 
 - (NSString *)getGvtClaimRequest
 {
-    return @"{"\
+    return [NSString stringWithFormat:@"{"\
         "\"claim_request\":{"\
-            "\"prover_did\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\","\
             "\"u\":\"72052674960029442327236458752017934128206007798774128392572211954456711136771871346204637748253860917837147111221378456345006764308173447177933384497678611527908801900335623480700015849806575534757455484512742315652166882850683721692964547448843598104385874050447011820051099399087175505815748958014671544911179795524159951193233504921329404534187047046492036161628814022862661479869322137573048331473599346645871295570237032991261433025344456232326409789544299441933427561947291495434188942844516539974096858281005872862193803356400358925349350554630231733687344283622639185011395343616612151755685912869590344206893\","\
             "\"ur\":null\"},"\
+        "\"prover_did\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\","\
         "\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\","\
-        "\"claim_def_seq_no\":1"\
-    "}";
+        "\"schema_key\":%@"\
+    "}", [self getXyzSchemaKey]];
 }
 
 - (NSString *)getClaimDefIdForIssuerDid:(NSString *)issuerDid
@@ -284,11 +316,11 @@
 }
 
 - (NSError *)proverCreateAndStoreClaimReqWithDef:(NSString *)claimDefJSON
-                                proverDid:(NSString *)proverDid
-                           claimOfferJson:(NSString *)claimOfferJSON
-                         masterSecretName:(NSString *)name
-                             walletHandle:(IndyHandle)walletHandle
-                          outClaimReqJson:(NSString **)outJson
+                                       proverDid:(NSString *)proverDid
+                                  claimOfferJson:(NSString *)claimOfferJSON
+                                masterSecretName:(NSString *)name
+                                    walletHandle:(IndyHandle)walletHandle
+                                 outClaimReqJson:(NSString **)outJson
 {
     __block NSError *err = nil;
     __block NSString *json;
@@ -318,11 +350,13 @@
 
 - (NSError *) proverStoreClaimWithWalletHandle:(IndyHandle)walletHandle
                                     claimsJson:(NSString *)claimsJson
+                                    revRegJSON:(NSString *)revRegJSON
 {
     __block NSError *err = nil;
     XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
     
     [IndyAnoncreds proverStoreClaim:claimsJson
+                         revRegJSON:revRegJSON
                        walletHandle:walletHandle
                          completion:^(NSError *error)
      {
@@ -451,7 +485,7 @@
          [completionExpectation fulfill];
      }];
     
-    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils defaultTimeout]];
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
     return err;
     
 }
@@ -502,12 +536,15 @@
     XCTAssertTrue([tempClaimDefJson isValid], @"invalid tempClaimDefJson: %@", tempClaimDefJson);
     
     //3. Store three claim offers
+    NSString *gvtSchemaKey = [self getGvtSchemaKey];
+    NSString *xyzSchemaKey = [self getXyzSchemaKey];
+
     NSString *claimOfferJson1 = [self getClaimOfferJson:[TestUtils issuerDid]
-                                            schemaSeqNo:seqNo];
+            schemaKey:gvtSchemaKey];
     NSString *claimOfferJson2 = [self getClaimOfferJson:[TestUtils issuerDid]
-                                            schemaSeqNo:@(2)];
+            schemaKey:xyzSchemaKey];
     NSString *claimOfferJson3 = [self getClaimOfferJson:@"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
-                                            schemaSeqNo:@(2)];
+            schemaKey:xyzSchemaKey];
     
     ret = [self proverStoreClaimOffer:tempWalletHandle claimOfferJson:claimOfferJson1];
     XCTAssertEqual(ret.code, Success, @"proverStoreClaimOffer failed for claimOfferJson1");
@@ -553,7 +590,8 @@
     
     // 7. Store claim
     ret = [self proverStoreClaimWithWalletHandle:tempWalletHandle
-                                      claimsJson:xClaimJson];
+                                      claimsJson:xClaimJson
+                                      revRegJSON:nil];
     XCTAssertEqual(ret.code, Success, @"proverStoreClaimWithWalletHandle failed");
     
     if (walletHandle){ *walletHandle = tempWalletHandle;}

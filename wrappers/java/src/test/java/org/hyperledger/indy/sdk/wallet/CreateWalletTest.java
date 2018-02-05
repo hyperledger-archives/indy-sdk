@@ -31,6 +31,11 @@ public class CreateWalletTest extends IndyIntegrationTest {
 	}
 
 	@Test
+	public void testCreateWalletWorksForCredentialsJson() throws Exception {
+		Wallet.createWallet(POOL, WALLET, null, null, "{\"key\":\"testkey\"}").get();
+	}
+
+	@Test
 	public void testCreateWalletWorksForUnknowType() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(UnknownWalletTypeException.class));
