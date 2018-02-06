@@ -87,7 +87,6 @@ loglevel=trace\n'\
 USER indy
 
 ARG pool_ip=127.0.0.1
-ARG pool_ip=10.0.0.2
 
 RUN awk '{if (index($1, "NETWORK_NAME") != 0) {print("NETWORK_NAME = \"sandbox\"")} else print($0)}' /etc/indy/indy_config.py> /tmp/indy_config.py
 RUN mv /tmp/indy_config.py /etc/indy/indy_config.py
