@@ -1724,23 +1724,11 @@ mod medium_cases {
 
         #[test]
         fn prover_store_claim_works_without_claim_req() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, _, _, claim) = AnoncredsUtils::init_common_wallet();
 
-            let claim_json = format!(r#"{{
-                                                "values":{},
-                                                "issuer_did":"{}",
-                                                "revoc_reg_seq_no":null,
-                                                "schema_key":{},
-                                                "signature":{{
-                                                    "p_claim":{{"m_2":"1","a":"1","e":"2","v":"3"}},
-                                                    "r_claim":null
-                                                }},
-                                                "signature_correctness_proof":{{
-                                                    "se":"5794664457187851338817320444795461575538265162010110953229960943575352225288882339948706606276240915790953788734423629449188446298083764353945771366439632433375887940784083500579091017016194869598350067577558507171610696526722923827084134056642003907272237068002158334669042938874075273422204140295001616923117696252318842958647692383158905811075723458151323683237147182403220385849741248601006515083360882718329830387688084900189671070869952360403732671630026910777508872850063270518510503602720300129032896276669586173558641317415138993452897861060858455410909148026413434141867357433196166843981016854623306368082",
-                                                    "c":"56619908915533398961132857382789843009987386022476585509928302705126512012829"
-                                                }}
-                                              }}"#,
-                                     AnoncredsUtils::gvt_claim_values_json(), DID_MY2, AnoncredsUtils::gvt_schema_key_json());
+            let mut claim: Claim = serde_json::from_str(&claim).unwrap();
+            claim.issuer_did = DID_MY2.to_string();
+            let claim_json = serde_json::to_string(&claim).unwrap();
 
             let res = AnoncredsUtils::prover_store_claim(wallet_handle, &claim_json, None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);

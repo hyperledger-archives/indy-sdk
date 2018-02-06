@@ -192,7 +192,9 @@ pub struct Claim {
     pub values: HashMap<String, Vec<String>>,
     pub schema_key: SchemaKey,
     pub signature: ClaimSignature,
-    pub issuer_did: String
+    pub signature_correctness_proof: SignatureCorrectnessProof,
+    pub issuer_did: String,
+    pub rev_reg_seq_no: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
