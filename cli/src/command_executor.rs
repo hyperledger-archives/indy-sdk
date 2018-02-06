@@ -96,8 +96,8 @@ impl CommandMetadataBuilder {
     }
 
     pub fn add_required_param(mut self,
-                     name: &'static str,
-                     help: &'static str) -> CommandMetadataBuilder {
+                              name: &'static str,
+                              help: &'static str) -> CommandMetadataBuilder {
         self.params.push(ParamMetadata::new(name, false, false, help));
         self
     }
@@ -327,94 +327,126 @@ impl CommandExecutor {
         &self.ctx
     }
 
+    fn command_params(command: &Command, word: &str) -> Vec<(String, char)> {
+        let mut completes: Vec<(String, char)> = Vec::new();
+
+        if word == command.metadata.name {
+            completes.push((word.to_owned(), ' '));
+        }
+
+        completes.extend(command
+            .metadata()
+            .params()
+            .iter()
+            .filter(|param| param.name().starts_with(word))
+            .map(|param| (param.name().to_owned(), '='))
+            .collect::<Vec<(String, char)>>());
+
+        completes
+    }
+
+    fn command_names(commands: &HashMap<&'static str, Command>, word: &str) -> Vec<(String, char)> {
+        commands
+            .iter()
+            .filter(|name_meta| name_meta.0.starts_with(word))
+            .map(|name_meta| ((*name_meta.0).to_owned(), ' '))
+            .collect::<Vec<(String, char)>>()
+    }
+
+    fn group_names(grouped_commands: &HashMap<&'static str, (CommandGroup, HashMap<&'static str, Command>)>, word: &str) -> Vec<(String, char)> {
+        grouped_commands
+            .iter()
+            .filter(|name_meta| name_meta.0.starts_with(word))
+            .map(|name_meta| ((*name_meta.0).to_owned(), ' '))
+            .collect::<Vec<(String, char)>>()
+    }
+
+    fn is_subcommand(grouped_commands: &HashMap<&'static str, (CommandGroup, HashMap<&'static str, Command>)>,
+                     command: &str, sub_command: &str) -> bool {
+        let (_, ref commands) = grouped_commands[command];
+        commands.contains_key(sub_command)
+    }
+
     pub fn complete(&self, line: &str, word: &str, _start: usize, _end: usize) -> Vec<(String, char)> {
         let mut completes: Vec<(String, char)> = vec![];
 
-        let (cmd, params) = CommandExecutor::_split_first_word(line);
+        let (first_word, second_word, params) = CommandExecutor::_split_arguments(line);
 
-        if cmd == "help" {
-            // Top level help, no completion
-        } else if let Some(ref command) = self.commands.get(cmd) {
-            // Complete command params
+        if "help".starts_with(word) && !line.contains("help") && params.is_none() {
+            completes.push(("help".to_owned(), ' '));
+        }
 
-            if CommandExecutor::_split_first_word(params).0 == "help" {
-                // Command help, no completion
-            } else {
-                if "help".starts_with(word) {
-                    completes.push(("help".to_owned(), ' '));
-                }
-
-                let param_names: Vec<(String, char)> = command
-                    .metadata()
-                    .params()
-                    .iter()
-                    .filter(|param| param.name().starts_with(word))
-                    .map(|param| (param.name().to_owned(), '='))
-                    .collect();
-
-                completes.extend(param_names);
-            }
-        } else if let Some(&(ref _group, ref commands)) = self.grouped_commands.get(cmd) {
-            let (cmd, params) = CommandExecutor::_split_first_word(params);
-
-            if cmd == "help" {
-                // Group help, no completion
-            } else if let Some(ref command) = commands.get(cmd) {
-                // Complete command params
-
-                if CommandExecutor::_split_first_word(params).0 == "help" {
-                    // Command help, no completion
-                } else {
-                    if "help".starts_with(word) {
-                        completes.push(("help".to_owned(), ' '));
+        match (first_word, second_word, params) {
+            (Some(first_word), None, None) => {
+                match first_word {
+                    "help" => {}
+                    command if self.commands.contains_key(command) => {
+                        completes.extend(CommandExecutor::command_params(&self.commands[command], word));
                     }
+                    command if self.grouped_commands.contains_key(command) => {
+                        let (ref group, ref commands) = self.grouped_commands[command];
 
-                    let param_names: Vec<(String, char)> = command
-                        .metadata()
-                        .params()
-                        .iter()
-                        .filter(|param| param.name().starts_with(word))
-                        .map(|param| (param.name().to_owned(), '='))
-                        .collect();
+                        if word == group.metadata.name {
+                            completes.push((word.to_owned(), ' '));
+                        }
 
-                    completes.extend(param_names);
+                        completes.extend(CommandExecutor::command_names(commands, word));
+                    }
+                    _cmd if word.is_empty() => {
+                        completes = Vec::new();
+                    }
+                    _ => {
+                        completes.extend(CommandExecutor::command_names(&self.commands, word));
+                        completes.extend(CommandExecutor::group_names(&self.grouped_commands, word));
+                    }
                 }
-            } else {
-                // Complete group commands
-
-                if "help".starts_with(word) {
-                    completes.push(("help".to_owned(), ' '));
+            }
+            (Some(first_word), Some(second_word), None) => {
+                match (first_word, second_word) {
+                    (command, sub_command) if self.grouped_commands.contains_key(command) &&
+                        CommandExecutor::is_subcommand(&self.grouped_commands, command, sub_command) => {
+                        let (_, ref commands) = self.grouped_commands[command];
+                        let sub_command = &commands[sub_command];
+                        completes.extend(CommandExecutor::command_params(&sub_command, word));
+                    }
+                    (_, _) if word.is_empty() => {
+                        completes = Vec::new();
+                    }
+                    (command, sub_command) if self.grouped_commands.contains_key(command) &&
+                        !CommandExecutor::is_subcommand(&self.grouped_commands, command, sub_command) => {
+                        let (_, ref commands) = self.grouped_commands[command];
+                        completes.extend(CommandExecutor::command_names(&commands, word));
+                    }
+                    _ => {}
                 }
-
-                let command_names: Vec<(String, char)> = commands
-                    .iter()
-                    .filter(|name_meta| name_meta.0.starts_with(word))
-                    .map(|name_meta| ((*name_meta.0).to_owned(), ' '))
-                    .collect();
-
-                completes.extend(command_names);
             }
-        } else {
-            // Complete top level commands and groups
+            (Some(first_word), Some(second_word), Some(params)) => {
+                match (first_word, second_word, &params) {
+                    (_, _, ref params) if "help".starts_with(params[0]) => {
+                        if !line.contains("help") {
+                            completes.push(("help".to_owned(), ' '));
+                        }
+                    }
+                    (command, sub_command, ref params) if self.grouped_commands.contains_key(command) &&
+                        CommandExecutor::is_subcommand(&self.grouped_commands, command, sub_command) => {
+                        let (_, ref commands) = self.grouped_commands[command];
+                        let sub_command = commands.get(sub_command).unwrap();
+                        let command_params = sub_command
+                            .metadata()
+                            .params();
 
-            if "help".starts_with(word) {
-                completes.push(("help".to_owned(), ' '));
+                        let param_names: Vec<(String, char)> = command_params
+                            .iter()
+                            .filter(|param_meta| !params.contains(&param_meta.name) && param_meta.name.starts_with(word))
+                            .map(|param_meta| ((*param_meta.name).to_owned(), '='))
+                            .collect();
+
+                        completes.extend(param_names);
+                    }
+                    _ => {}
+                }
             }
-
-            let command_names: Vec<(String, char)> = self.commands
-                .iter()
-                .filter(|name_meta| name_meta.0.starts_with(word))
-                .map(|name_meta| ((*name_meta.0).to_owned(), ' '))
-                .collect();
-
-            let group_names: Vec<(String, char)> = self.grouped_commands
-                .iter()
-                .filter(|name_meta| name_meta.0.starts_with(word))
-                .map(|name_meta| ((*name_meta.0).to_owned(), ' '))
-                .collect();
-
-            completes.extend(command_names);
-            completes.extend(group_names);
+            _ => {}
         }
 
         completes
@@ -678,6 +710,18 @@ impl CommandExecutor {
 
         (s, "")
     }
+
+    fn _split_arguments(s: &str) -> (Option<&str>, Option<&str>, Option<Vec<&str>>) {
+        let mut parts = s.trim().split_whitespace();
+        let first_word = parts.next();
+        let second_word = parts.next();
+        let params = parts
+            .map(|s| s.split("=").collect::<Vec<&str>>()[0])
+            .collect::<Vec<&str>>();
+
+        (first_word, second_word, if params.is_empty() { None } else { Some(params) })
+    }
+
 
     fn _trim_quotes(s: &str) -> &str {
         if s.len() > 1 && s.starts_with("\"") && s.ends_with("\"") {
