@@ -18,7 +18,7 @@ pub mod create_command {
 
     command!(CommandMetadata::build("create", "Create new pool ledger config with specified name")
                 .add_main_param("name", "The name of new pool ledger config")
-                .add_param("gen_txn_file", false, "Path to file with genesis transactions")
+                .add_required_param("gen_txn_file", "Path to file with genesis transactions")
                 .add_example("pool create pool1 gen_txn_file=/home/pool_genesis_transactions")
                 .finalize()
     );
@@ -86,6 +86,7 @@ pub mod connect_command {
                         set_connected_pool(ctx, Some((handle, name.to_owned())));
                         Ok(println_succ!("Pool \"{}\" has been connected", name))
                     }
+                    Err(ErrorCode::CommonIOError) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                     Err(ErrorCode::PoolLedgerTerminated) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                     Err(ErrorCode::PoolLedgerTimeout) => Err(println_err!("Pool \"{}\" has not been connected.", name)),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
@@ -129,11 +130,7 @@ pub mod list_command {
                 let pools: Vec<serde_json::Value> = serde_json::from_str(&pools)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                if pools.len() > 0 {
-                    print_list_table(&pools, &vec![("pool", "Pool")]);
-                } else {
-                    println_succ!("There are no pool");
-                }
+                print_list_table(&pools, &vec![("pool", "Pool")], "There are no pool");
 
                 if let Some((_, cur_pool)) = get_connected_pool(ctx) {
                     println_succ!("Current pool \"{}\"", cur_pool);

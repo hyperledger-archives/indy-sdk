@@ -127,6 +127,11 @@ public enum ErrorCode {
 	 */
 	WalletAlreadyOpenedError(206),
 
+	/**
+	 * Attempt to open encrypted wallet with invalid credentials
+	 */
+	WalletAccessFailed(207),
+
 	// Ledger errors
 	
 	/**

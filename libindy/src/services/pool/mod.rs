@@ -172,7 +172,7 @@ impl PoolWorker {
         }
 
         let cnt = self.handler.nodes().len();
-        self.handler.set_f(PoolWorker::get_f(cnt)); //TODO set cnt to connect
+        self.handler.set_f(PoolWorker::get_f(cnt));
         if let PoolWorkerHandler::CatchupHandler(ref mut handler) = self.handler {
             handler.reset_nodes_votes();
         }
@@ -386,9 +386,7 @@ impl PoolWorker {
         Ok(mt)
     }
 
-    #[allow(unreachable_code)]
     fn get_f(cnt: usize) -> usize {
-        return cnt / 2; /* FIXME ugly hack to work with pool instability, remove after pool will be fixed */
         if cnt < 4 {
             return 0;
         }
@@ -531,7 +529,12 @@ impl RemoteNode {
         }
         let msg: String = self.zsock.as_ref()
             .ok_or(CommonError::InvalidState("Try to receive msg for unconnected RemoteNode".to_string()))?
-            .recv_string(zmq::DONTWAIT)??;
+            .recv_string(zmq::DONTWAIT)
+            .map_err(map_err_trace!())?
+            .map_err(|err| {
+                trace!("Can't parse UTF-8 string from bytes {:?}", err);
+                err
+            })?;
         info!("RemoteNode::recv_msg {} {}", self.name, msg);
 
         Ok(Some(msg))
@@ -541,7 +544,8 @@ impl RemoteNode {
         info!("Sending {:?}", str);
         self.zsock.as_ref()
             .ok_or(CommonError::InvalidState("Try to send str for unconnected RemoteNode".to_string()))?
-            .send(str, zmq::DONTWAIT)?;
+            .send(str, zmq::DONTWAIT)
+            .map_err(map_err_trace!())?;
         Ok(())
     }
 
@@ -965,7 +969,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] /* FIXME remove after get_f will be restored */
     fn pool_worker_get_f_works() {
         assert_eq!(PoolWorker::get_f(0), 0);
         assert_eq!(PoolWorker::get_f(3), 0);

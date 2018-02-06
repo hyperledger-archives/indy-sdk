@@ -123,7 +123,8 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"version\":\"0.1\", " +
 				"                    \"requested_attrs\": {" +
 				"                          \"attr1_referent\":{\"name\":\"name\"}," +
-				"                          \"attr2_referent\":{\"name\":\"sex\"}" +
+				"                          \"attr2_referent\":{\"name\":\"sex\"}," +
+				"                          \"attr3_referent\":{\"name\":\"phone\"}" +
 				"                     }," +
 				"                    \"requested_predicates\":{" +
 				"                         \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}" +
@@ -145,9 +146,9 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String claimUuid = claimsForAttribute1.getJSONObject(0).getString("referent");
 
 		//12. Prover create Proof
-		String selfAttestedValue = "yes";
+		String selfAttestedValue = "8-800-300";
 		String requestedClaimsJson = String.format("{\n" +
-				"                                          \"self_attested_attributes\":{\"self1\":\"%s\"},\n" +
+				"                                          \"self_attested_attributes\":{\"attr3_referent\":\"%s\"},\n" +
 				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true],\n" +
 				"                                                               \"attr2_referent\":[\"%s\", false]},\n" +
 				"                                          \"requested_predicates\":{\"predicate1_referent\":\"%s\"}\n" +
@@ -169,7 +170,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		assertNotNull(proof.getJSONObject("requested_proof").getJSONObject("unrevealed_attrs").getString("attr2_referent"));
 
-		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("self1"));
+		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("attr3_referent"));
 
 		Boolean valid = Anoncreds.verifierVerifyProof(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).get();
 		assertTrue(valid);
@@ -421,7 +422,8 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"name\":\"proof_req_1\",\n" +
 				"                    \"version\":\"0.1\", " +
 				"                    \"requested_attrs\": {" +
-				"                          \"attr1_referent\":{ \"name\":\"name\", \"restrictions\":[{\"schema_key\":%s}]}" +
+				"                          \"attr1_referent\":{ \"name\":\"name\", \"restrictions\":[{\"schema_key\":%s}]}," +
+				"                          \"attr2_referent\":{ \"name\":\"phone\"}" +
 				"                     }," +
 				"                    \"requested_predicates\":{}" +
 				"                  }", gvtSchemaKey);
@@ -437,9 +439,9 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String claimUuid = claimsForAttribute1.getJSONObject(0).getString("referent");
 
 		//9. Prover create Proof
-		String selfAttestedValue = "yes";
+		String selfAttestedValue = "8-800-300";
 		String requestedClaimsJson = String.format("{\n" +
-				"                                          \"self_attested_attributes\":{\"self1\":\"%s\"},\n" +
+				"                                          \"self_attested_attributes\":{\"attr2_referent\":\"%s\"},\n" +
 				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true]},\n" +
 				"                                          \"requested_predicates\":{}\n" +
 				"                                        }", selfAttestedValue, claimUuid);
@@ -458,7 +460,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		assertEquals("Alex",
 				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr1_referent").getString(1));
 
-		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("self1"));
+		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("attr2_referent"));
 
 
 		proofRequestJson = String.format("{" +

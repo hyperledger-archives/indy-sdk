@@ -13,6 +13,7 @@ use std::sync::mpsc::channel;
 pub struct LedgerUtils {}
 
 impl LedgerUtils {
+    const SUBMIT_RETRY_CNT: usize = 3;
     pub fn sign_and_submit_request(pool_handle: i32, wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
@@ -44,6 +45,12 @@ impl LedgerUtils {
         }
 
         Ok(request_result_json)
+    }
+
+    pub fn submit_request_with_retries(pool_handle: i32, request_json: &str, previous_response: &str) -> Result<String, ErrorCode> {
+        LedgerUtils::_submit_retry(LedgerUtils::_extract_seq_no_from_reply(previous_response).unwrap(), || {
+            LedgerUtils::submit_request(pool_handle, request_json)
+        })
     }
 
     pub fn submit_request(pool_handle: i32, request_json: &str) -> Result<String, ErrorCode> {
@@ -106,6 +113,32 @@ impl LedgerUtils {
         }
 
         Ok(request_result_json)
+    }
+
+    fn _extract_seq_no_from_reply(reply: &str) -> Result<u64, &'static str> {
+        ::serde_json::from_str::<::serde_json::Value>(reply).map_err(|_| "Reply isn't valid JSON")?
+            ["result"]["seqNo"]
+            .as_u64().ok_or("Missed seqNo in reply")
+    }
+
+    fn _submit_retry<F>(minimal_timestamp: u64, submit_action: F) -> Result<String, ErrorCode>
+        where F: Fn() -> Result<String, ErrorCode> {
+        let mut i = 0;
+        let action_result = loop {
+            let action_result = submit_action()?;
+
+            let retry = LedgerUtils::_extract_seq_no_from_reply(&action_result)
+                .map(|received_timestamp| received_timestamp < minimal_timestamp)
+                .unwrap_or(true);
+
+            if retry && i < LedgerUtils::SUBMIT_RETRY_CNT {
+                ::std::thread::sleep(TimeoutUtils::short_timeout());
+                i += 1;
+            } else {
+                break action_result;
+            }
+        };
+        Ok(action_result)
     }
 
     pub fn build_get_ddo_request(submitter_did: &str, target_did: &str) -> Result<String, ErrorCode> {

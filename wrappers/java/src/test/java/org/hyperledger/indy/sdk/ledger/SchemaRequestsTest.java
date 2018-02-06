@@ -4,6 +4,7 @@ import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.did.DidResults;
+import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.*;
 
@@ -54,10 +55,10 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 
 		String schemaRequest = Ledger.buildSchemaRequest(did, SCHEMA_DATA).get();
 		String response = Ledger.submitRequest(pool, schemaRequest).get();
-		checkResponseType(response,"REQNACK" );
+		checkResponseType(response, "REQNACK");
 	}
 
-	@Test
+	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testSchemaRequestsWorks() throws Exception {
 		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();
@@ -69,12 +70,14 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 
 		String getSchemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
 		String getSchemaRequest = Ledger.buildGetSchemaRequest(did, did, getSchemaData).get();
-		String getSchemaResponse = Ledger.submitRequest(pool, getSchemaRequest).get();
+		String getSchemaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaRequest, response -> {
 
-		JSONObject getSchemaResponseObject = new JSONObject(getSchemaResponse);
+			JSONObject getSchemaResponseObject = new JSONObject(response);
 
-		assertEquals("gvt2", getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("name"));
-		assertEquals("2.0", getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("version"));
+			return "gvt2".equals(getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("name")) &&
+					"2.0".equals(getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("version"));
+		});
+		assertNotNull(getSchemaResponse);
 	}
 
 	@Test

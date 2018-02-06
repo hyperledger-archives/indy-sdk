@@ -13,6 +13,8 @@ import java.util.concurrent.ExecutionException;
 
 public class OpenWalletTest extends IndyIntegrationTest {
 
+	String credentials = "{\"key\":\"testkey\"}";
+
 	@Test
 	public void testOpenWalletWorks() throws Exception {
 		Wallet.createWallet(POOL, "walletOpen", TYPE, null, null).get();
@@ -26,6 +28,33 @@ public class OpenWalletTest extends IndyIntegrationTest {
 		Wallet.createWallet(POOL, "openWalletWorksForConfig", TYPE, null, null).get();
 
 		Wallet wallet = Wallet.openWallet("openWalletWorksForConfig", "{\"freshness_time\":1000}", null).get();
+		assertNotNull(wallet);
+	}
+
+	@Test
+	public void testOpenWalletWorksForEbcryptedWalletCorrectCredentials() throws Exception {
+		Wallet.createWallet(POOL, "ForEbcryptedWalletCorrectCredentials", TYPE, null, credentials).get();
+
+		Wallet wallet = Wallet.openWallet("ForEbcryptedWalletCorrectCredentials", null, credentials).get();
+		assertNotNull(wallet);
+	}
+
+	@Test
+	public void testOpenWalletWorksForEbcryptedWalletInvalidCredentials() throws Exception {
+		Wallet.createWallet(POOL, "ForEbcryptedWalletInvalidCredentials", TYPE, null, credentials).get();
+
+		thrown.expect(ExecutionException.class);
+		thrown.expectCause(isA(WalletAccessFailedException.class));
+
+		Wallet.openWallet("ForEbcryptedWalletInvalidCredentials", null, "{\"key\":\"otherkey\"}").get();
+	}
+
+
+	@Test
+	public void testOpenWalletWorksForEbcryptedWalletChangingCredentials() throws Exception {
+		Wallet.createWallet(POOL, "ForEbcryptedWalletChangingCredentials", TYPE, null, credentials).get();
+
+		Wallet wallet = Wallet.openWallet("ForEbcryptedWalletChangingCredentials", null, "{\"key\":\"testkey\", \"rekey\":\"otherkey\"}").get();
 		assertNotNull(wallet);
 	}
 
