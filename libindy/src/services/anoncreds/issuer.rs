@@ -76,13 +76,13 @@ impl Issuer {
                      issuer_priv_key: &IssuerPrivateKey,
                      rev_reg: Option<&mut RevocationRegistry>,
                      rev_reg_priv: Option<&RevocationRegistryPrivate>,
-                     claim_offer: &ClaimOffer,
+                     nonce: &Nonce,
                      claim_request: &ClaimRequest,
                      claim_values: &HashMap<String, Vec<String>>,
                      rev_idx: Option<u32>) -> Result<(ClaimSignature, SignatureCorrectnessProof), AnoncredsError> {
         info!("new_claim >>> claim_def_data: {:?}, issuer_priv_key: {:?}, rev_reg: {:?}, rev_reg_priv: {:?},\
-                       claim_offer: {:?}, claim_request: {:?}, claim_values: {:?}, rev_idx: {:?}",
-              claim_def_data, issuer_priv_key, rev_reg, rev_reg_priv, claim_offer, claim_request, claim_values, rev_idx);
+                       nonce: {:?}, claim_request: {:?}, claim_values: {:?}, rev_idx: {:?}",
+              claim_def_data, issuer_priv_key, rev_reg, rev_reg_priv, nonce, claim_request, claim_values, rev_idx);
 
         let claim_values = build_claim_values(&claim_values)?;
         let issuer_pub_key = IssuerPublicKey::build_from_parts(&claim_def_data.primary, claim_def_data.revocation.as_ref())?;
@@ -90,7 +90,7 @@ impl Issuer {
         let (claim_signature, signature_correctness_proof) = CryptoIssuer::sign_claim(&claim_request.prover_did,
                                                                                       &claim_request.blinded_ms,
                                                                                       &claim_request.blinded_ms_correctness_proof,
-                                                                                      &claim_offer.nonce,
+                                                                                      nonce,
                                                                                       &claim_request.nonce,
                                                                                       &claim_values,
                                                                                       &issuer_pub_key,

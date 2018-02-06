@@ -164,8 +164,7 @@ pub struct ClaimOffer {
     pub issuer_did: String,
     pub schema_key: SchemaKey,
     pub key_correctness_proof: KeyCorrectnessProof,
-    pub nonce: Nonce,
-    pub prover_did: String
+    pub nonce: Nonce
 }
 
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]

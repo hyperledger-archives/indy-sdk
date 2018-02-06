@@ -77,7 +77,6 @@
                       schemaKey:(NSString *)schemaKey {
     return [NSString stringWithFormat:@"{"\
             "\"issuer_did\":\"%@\"," \
-            "\"prover_did\":\"%@\"," \
             "\"nonce\":\"12345678\"," \
             "\"key_correctness_proof\": {\"c\":\"1\",\"xz_cap\":\"1\",\"xr_cap\":{\"name\":\"1\"}}," \
             "\"schema_key\":%@" \
@@ -550,6 +549,9 @@
                                                                    claimOfferJson:&issuer1GvtClaimOfferJSON];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreClaimDef() failed!");
 
+    ret = [self proverStoreClaimOffer:tempWalletHandle claimOfferJson:issuer1GvtClaimOfferJSON];
+    XCTAssertEqual(ret.code, Success, @"proverStoreClaimOffer failed for issuer1GvtClaimOfferJSON");
+
 
     //4. Issuer1 Create XYZ ClaimDefinition
     NSString *xyzSchema = [self getXyzSchemaJson:@(1)];
@@ -574,6 +576,9 @@
                                                                    claimOfferJson:&issuer1XyzClaimOfferJSON];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreClaimDef() failed!");
 
+    ret = [self proverStoreClaimOffer:tempWalletHandle claimOfferJson:issuer1XyzClaimOfferJSON];
+    XCTAssertEqual(ret.code, Success, @"proverStoreClaimOffer failed for issuer1XyzClaimOfferJSON");
+
     //6. Issuer1 Create XYZ ClaimDefinition
     NSString *issuer2gvtClaimDefJson;
     ret = [self issuerCreateClaimDefinifionWithWalletHandle:tempWalletHandle
@@ -594,6 +599,9 @@
                                                                         proverDid:[TestUtils proverDid]
                                                                    claimOfferJson:&issuer2GvtClaimOfferJSON];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreClaimDef() failed!");
+
+    ret = [self proverStoreClaimOffer:tempWalletHandle claimOfferJson:issuer2GvtClaimOfferJSON];
+    XCTAssertEqual(ret.code, Success, @"proverStoreClaimOffer failed for issuer2GvtClaimOfferJSON");
 
     //6. Create MasterSecret
 

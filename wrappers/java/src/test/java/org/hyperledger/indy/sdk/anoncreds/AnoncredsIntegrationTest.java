@@ -112,6 +112,10 @@ public class AnoncredsIntegrationTest {
 		issuer1XyzClaimOffer = Anoncreds.issuerCreateAndStoreClaimOffer(wallet, xyzSchemaJson, issuerDid, proverDid).get();
 		issuer2GvtClaimOffer = Anoncreds.issuerCreateAndStoreClaimOffer(wallet, gvtSchemaJson, issuerDid2, proverDid).get();
 
+		Anoncreds.proverStoreClaimOffer(wallet, issuer1GvtClaimOffer).get();
+		Anoncreds.proverStoreClaimOffer(wallet, issuer1XyzClaimOffer).get();
+		Anoncreds.proverStoreClaimOffer(wallet, issuer2GvtClaimOffer).get();
+
 		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
 
 		claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, issuer1GvtClaimOffer, claimDef, masterSecretName).get();

@@ -21,8 +21,7 @@ pub struct ClaimOffer {
     pub issuer_did: String,
     pub schema_key: SchemaKey,
     pub key_correctness_proof: KeyCorrectnessProof,
-    pub nonce: Nonce,
-    pub prover_did: String
+    pub nonce: Nonce
 }
 
 impl JsonEncodable for ClaimOffer {}
@@ -73,7 +72,7 @@ impl<'a> JsonDecodable<'a> for ClaimRequest {}
 pub struct ClaimRequestMetadata {
     pub master_secret_blinding_data: MasterSecretBlindingData,
     pub nonce: Nonce,
-    pub master_secret: MasterSecret
+    pub master_secret_name: String
 }
 
 impl JsonEncodable for ClaimRequestMetadata {}

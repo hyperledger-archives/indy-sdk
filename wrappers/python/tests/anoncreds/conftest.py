@@ -131,11 +131,10 @@ def schema_key_json(schema_key):
     return json.dumps(schema_key)
 
 
-def claim_offer(issuer_did, schema_key, prover_did):
+def claim_offer(issuer_did, schema_key):
     return {
         "issuer_did": issuer_did,
         "schema_key": schema_key,
-        "prover_did": prover_did,
         "nonce": "12345678",
         "key_correctness_proof": {
             "c": "40983841062403114696351105468714473190092945361781922980284036284848255102181",
@@ -152,7 +151,7 @@ def claim_offer(issuer_did, schema_key, prover_did):
 
 @pytest.fixture(scope="module")
 def claim_offer_issuer_1_schema_1(issuer_did, schema_key, prover_did):
-    return claim_offer(issuer_did, schema_key, prover_did)
+    return claim_offer(issuer_did, schema_key)
 
 
 @pytest.fixture(scope="module")
@@ -162,7 +161,7 @@ def claim_offer_issuer_1_schema_1_json(claim_offer_issuer_1_schema_1):
 
 @pytest.fixture(scope="module")
 def claim_offer_issuer_1_schema_2(issuer_did, xyz_schema_key, prover_did):
-    return claim_offer(issuer_did, xyz_schema_key, prover_did)
+    return claim_offer(issuer_did, xyz_schema_key)
 
 
 @pytest.fixture(scope="module")
@@ -172,7 +171,7 @@ def claim_offer_issuer_1_schema_2_json(claim_offer_issuer_1_schema_2):
 
 @pytest.fixture(scope="module")
 def claim_offer_issuer_2_schema_1(issuer_did_2, schema_key, prover_did):
-    return claim_offer(issuer_did_2, schema_key, prover_did)
+    return claim_offer(issuer_did_2, schema_key)
 
 
 @pytest.fixture(scope="module")
@@ -353,6 +352,10 @@ async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, g
         await anoncreds.issuer_create_and_store_claim_offer(wallet_handle, xyz_schema_json, issuer_did, prover_did)
     issuer_2_gvt_claim_offer_json = \
         await anoncreds.issuer_create_and_store_claim_offer(wallet_handle, gvt_schema_json, issuer_did_2, prover_did)
+
+    await anoncreds.prover_store_claim_offer(wallet_handle, issuer_1_gvt_claim_offer_json)
+    await anoncreds.prover_store_claim_offer(wallet_handle, issuer_1_xyz_claim_offer_json)
+    await anoncreds.prover_store_claim_offer(wallet_handle, issuer_2_gvt_claim_offer_json)
 
     await anoncreds.prover_create_master_secret(wallet_handle, master_secret_name)
 

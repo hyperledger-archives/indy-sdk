@@ -221,8 +221,17 @@ impl ProverCommandExecutor {
                 format!("ClaimOffer issuer_did {:?} does not correspond to ClaimDef issuer_did {:?}", claim_offer.issuer_did, claim_def.issuer_did))));
         }
 
-        let (claim_request, claim_request_metadata) =
+        let (claim_request, master_secret_blinding_data) =
             self.anoncreds_service.prover.new_claim_request(&claim_def.data, &master_secret, &claim_offer, prover_did)?;
+
+        let nonce = claim_request.nonce.clone()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize nonce: {:?}", err)))?;
+
+        let claim_request_metadata = ClaimRequestMetadata {
+            master_secret_blinding_data,
+            nonce,
+            master_secret_name: master_secret_name.to_string()
+        };
 
         let claim_request_metadata_json = claim_request_metadata.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claim request metadata {:?}", err)))?;
@@ -260,12 +269,17 @@ impl ProverCommandExecutor {
         let claim_request_metadata = ClaimRequestMetadata::from_json(&claim_request_metadata_json)
             .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim request metadata: {:?}", err)))?;
 
+        let master_secret_json = self.wallet_service.get(wallet_handle, &format!("master_secret::{}", &claim_request_metadata.master_secret_name))?;
+        let master_secret = MasterSecret::from_json(&master_secret_json)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize master secret: {:?}", err)))?;
+
         let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", id))?;
         let claim_def: ClaimDefinition = ClaimDefinition::from_json(&claim_def_json)
             .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim definition: {:?}", err)))?;
 
         self.anoncreds_service.prover.process_claim(&mut claim,
                                                     &claim_request_metadata,
+                                                    &master_secret,
                                                     &claim_def.data,
                                                     rev_reg_pub.as_ref())?;
 

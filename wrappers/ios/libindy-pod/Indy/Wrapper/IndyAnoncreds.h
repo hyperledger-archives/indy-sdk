@@ -59,8 +59,7 @@
             "issuer_did": string,
             "schema_key" : {name: string, version: string, did: string},
             "nonce": string,
-            "key_correctness_proof" : <key_correctness_proof>,
-            "prover_did": string
+            "key_correctness_proof" : <key_correctness_proof>
        }
 */
 + (void)issuerCreateAndStoreClaimOfferForProverDID:(NSString *)proverDID

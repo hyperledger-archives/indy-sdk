@@ -562,7 +562,6 @@ impl AnoncredsUtils {
         format!(r#"{{
                     "issuer_did":"{}",
                     "schema_key":{{"name":"{}", "version":"{}", "did":"{}"}},
-                    "prover_did":"{}",
                     "nonce": "123456789",
                     "key_correctness_proof": {{
                         "c": "40983841062403114696351105468714473190092945361781922980284036284848255102181",
@@ -575,7 +574,7 @@ impl AnoncredsUtils {
                         }}
                     }}
                    }}"#,
-                issuer_did, schema_key.name, schema_key.version, schema_key.did, DID_MY1)
+                issuer_did, schema_key.name, schema_key.version, schema_key.did)
     }
 
     pub fn gvt_claim_offer() -> String {
@@ -779,21 +778,30 @@ impl AnoncredsUtils {
                                                                                         &AnoncredsUtils::gvt_schema_json(),
                                                                                         ISSUER_DID, DID_MY1).unwrap();
 
-                //6. Issuer1 Create XYZ ClaimOffer
+                //6. Prover store Issuer1 GVT ClaimOffer
+                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer1_gvt_claim_offer).unwrap();
+
+                //7. Issuer1 Create XYZ ClaimOffer
                 let issuer1_xyz_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
                                                                                         &AnoncredsUtils::xyz_schema_json(),
                                                                                         ISSUER_DID, DID_MY1).unwrap();
 
-                //7. Issuer2 Create GVT ClaimOffer
+                //8. Prover store Issuer1 XYZ ClaimOffer
+                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer1_xyz_claim_offer).unwrap();
+
+                //9. Issuer2 Create GVT ClaimOffer
                 let issuer2_gvt_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
                                                                                         &AnoncredsUtils::gvt_schema_json(),
                                                                                         DID, DID_MY1).unwrap();
 
-                //8. Create MasterSecret
+                //10. Prover store Issuer2 GVT ClaimOffer
+                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer2_gvt_claim_offer).unwrap();
+
+                //11. Create MasterSecret
                 AnoncredsUtils::prover_create_master_secret(WALLET_HANDLE, COMMON_MASTER_SECRET).unwrap();
 
                 // Issuer1 issue GVT Claim
-                //9. Create and Store Claim Request
+                //12. Create and Store Claim Request
                 let issuer1_gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
                                                                                               DID_MY1,
                                                                                               &issuer1_gvt_claim_offer,
@@ -801,14 +809,14 @@ impl AnoncredsUtils {
                                                                                               COMMON_MASTER_SECRET).unwrap();
                 let claim_values_json = AnoncredsUtils::gvt_claim_values_json();
 
-                //10. Issuer1 creates GVT Claim
+                //13. Issuer1 creates GVT Claim
                 let (_, claim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_gvt_claim_req, &claim_values_json, None).unwrap();
 
-                //11. Store Claim
+                //14. Store Claim
                 AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &claim_json, None).unwrap();
 
                 // Issuer1 issue XYZ Claim
-                //12. Create and Store Claim Request
+                //15. Create and Store Claim Request
                 let issuer1_xyz_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
                                                                                   DID_MY1,
                                                                                   &issuer1_xyz_claim_offer,
@@ -816,14 +824,14 @@ impl AnoncredsUtils {
                                                                                   COMMON_MASTER_SECRET).unwrap();
                 let claim_values_json = AnoncredsUtils::xyz_claim_values_json();
 
-                //13. Create XYZ Claim
+                //16. Create XYZ Claim
                 let (_, claim_2_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_xyz_claim_req, &claim_values_json, None).unwrap();
 
-                //14. Store Claim
+                //17. Store Claim
                 AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &claim_2_json, None).unwrap();
 
                 // Issuer2 issue GVT Claim
-                //15. Create and Store Claim Request
+                //18. Create and Store Claim Request
                 let issuer2_gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
                                                                                   DID_MY1,
                                                                                   &issuer2_gvt_claim_offer,
@@ -831,10 +839,10 @@ impl AnoncredsUtils {
                                                                                   COMMON_MASTER_SECRET).unwrap();
                 let claim_values_json = AnoncredsUtils::gvt2_claim_values_json();
 
-                //16. Create XYZ Claim
+                //19. Create XYZ Claim
                 let (_, claim_3_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer2_gvt_claim_req, &claim_values_json, None).unwrap();
 
-                //17. Store Claim
+                //20. Store Claim
                 AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &claim_3_json, None).unwrap();
 
                 let res = mem::transmute(&issuer1_gvt_claim_def_json as &str);

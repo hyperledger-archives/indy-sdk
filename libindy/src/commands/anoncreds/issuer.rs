@@ -207,18 +207,20 @@ impl IssuerCommandExecutor {
         let nonce = new_nonce()
             .map_err(|err| IndyError::AnoncredsError(AnoncredsError::from(err)))?;
 
+        let nonce_json = nonce.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannon serialize claim offer: {:?}", err)))?;
+
         let claim_offer = ClaimOffer {
             issuer_did: issuer_did.to_string(),
             schema_key,
             key_correctness_proof,
-            nonce,
-            prover_did: prover_did.to_string()
+            nonce
         };
 
         let claim_offer_json = claim_offer.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannon serialize claim offer: {:?}", err)))?;
 
-        self.wallet_service.set(wallet_handle, &format!("claim_offer::{}::{}", id, prover_did), &claim_offer_json)?;
+        self.wallet_service.set(wallet_handle, &format!("nonce::{}::{}", id, prover_did), &nonce_json)?;
 
         info!("create_and_store_claim_definition <<< claim_offer_json: {:?}", claim_offer_json);
 
@@ -260,9 +262,9 @@ impl IssuerCommandExecutor {
             Err(_) => None
         };
 
-        let claim_offer_json = self.wallet_service.get(wallet_handle, &format!("claim_offer::{}::{}", id, claim_request.prover_did))?;
-        let claim_offer: ClaimOffer = ClaimOffer::from_json(&claim_offer_json)
-            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim offer: {:?}", err)))?;
+        let nonce_json = self.wallet_service.get(wallet_handle, &format!("nonce::{}::{}", id, claim_request.prover_did))?;
+        let nonce = Nonce::from_json(&nonce_json)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize nonce: {:?}", err)))?;
 
         let claim_values: HashMap<String, Vec<String>> = serde_json::from_str(claim_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannon deserialize claim values: {:?}", err)))?;
@@ -271,7 +273,7 @@ impl IssuerCommandExecutor {
                                                                                                      &private_key,
                                                                                                      rev_reg_pub.as_mut(),
                                                                                                      rev_reg_priv.as_ref(),
-                                                                                                     &claim_offer,
+                                                                                                     &nonce,
                                                                                                      &claim_request,
                                                                                                      &claim_values,
                                                                                                      rev_idx)?;

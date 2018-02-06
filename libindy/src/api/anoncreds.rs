@@ -127,8 +127,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 ///            "issuer_did": string,
 ///            "schema_key" : {name: string, version: string, did: string},
 ///            "nonce": string,
-///            "key_correctness_proof" : <key_correctness_proof>,
-///            "prover_did": string
+///            "key_correctness_proof" : <key_correctness_proof>
 ///        }
 ///
 /// #Errors
@@ -303,8 +302,7 @@ pub extern fn indy_issuer_revoke_claim(command_handle: i32,
 ///            "issuer_did": string,
 ///            "schema_key" : {name: string, version: string, did: string},
 ///            "nonce": string,
-///            "key_correctness_proof" : <key_correctness_proof>,
-///            "prover_did": string
+///            "key_correctness_proof" : <key_correctness_proof>
 ///        }
 /// #Returns
 /// None.
@@ -354,8 +352,7 @@ pub extern fn indy_prover_store_claim_offer(command_handle: i32,
 ///            "issuer_did": string,
 ///            "schema_key" : {name: string, version: string, did: string},
 ///            "nonce": string,
-///            "key_correctness_proof" : <key_correctness_proof>,
-///            "prover_did": string
+///            "key_correctness_proof" : <key_correctness_proof>
 ///            }]
 ///        }
 ///
@@ -441,8 +438,7 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 ///            "issuer_did": string,
 ///            "schema_key" : {name: string, version: string, did: string},
 ///            "nonce": string,
-///            "key_correctness_proof" : <key_correctness_proof>,
-///            "prover_did": string
+///            "key_correctness_proof" : <key_correctness_proof>
 ///        }
 /// claim_def_json: claim definition json associated with issuer_did and schema_seq_no in the claim_offer
 /// master_secret_name: the name of the master secret stored in the wallet
