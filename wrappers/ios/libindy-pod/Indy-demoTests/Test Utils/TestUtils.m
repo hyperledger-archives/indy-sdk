@@ -114,6 +114,16 @@
     return @"NcYxiDXkpYi6ov5FcYDi1e";
 }
 
++ (NSString *)issuer2Did
+{
+    return @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
+}
+
++ (NSString *)proverDid
+{
+    return @"VsKV7grR1BUE29mG2Fm2kX";
+}
+
 + (IndyHandle)walletHandle
 {
     return 0;
