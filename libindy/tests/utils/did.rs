@@ -287,7 +287,7 @@ impl DidUtils {
         Ok(())
     }
 
-    pub fn get_endpoint_for_did(wallet_handle: i32, pool_handle: i32, did: &str) -> Result<(String, String), ErrorCode> {
+    pub fn get_endpoint_for_did(wallet_handle: i32, pool_handle: i32, did: &str) -> Result<(String, Option<String>), ErrorCode> {
         let (sender, receiver) = channel();
         let cb = Box::new(move |err, endpoint, transport_vk| {
             sender.send((err, endpoint, transport_vk)).unwrap();
@@ -360,5 +360,30 @@ impl DidUtils {
             return Err(err);
         }
         Ok(metadata)
+    }
+
+    pub fn abbreviate_verkey(did: &str, verkey: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err, metadata| {
+            sender.send((err, metadata)).unwrap();
+        });
+        let (command_handle, callback) = CallbackUtils::closure_to_get_abbr_verkey_cb(cb);
+
+        let did = CString::new(did).unwrap();
+        let verkey = CString::new(verkey).unwrap();
+
+        let err = indy_abbreviate_verkey(command_handle,
+                                         did.as_ptr(),
+                                         verkey.as_ptr(),
+                                         callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let (err, verkey) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok(verkey)
     }
 }

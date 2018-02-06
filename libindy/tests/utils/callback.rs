@@ -840,9 +840,9 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_encrypt_cb(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (i32,
-                                                                                              Option<extern fn(command_handle: i32,
-                                                                                                               err: ErrorCode,
-                                                                                                               encrypted_msg_raw: *const u8, encrypted_msg_len: u32)>) {
+                                                                                     Option<extern fn(command_handle: i32,
+                                                                                                      err: ErrorCode,
+                                                                                                      encrypted_msg_raw: *const u8, encrypted_msg_len: u32)>) {
         lazy_static! {
             static ref ENCRYPT_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Vec<u8>) + Send > >> = Default::default();
         }
@@ -862,10 +862,10 @@ impl CallbackUtils {
     }
 
     pub fn closure_to_decrypt_cb(closure: Box<FnMut(ErrorCode, String, Vec<u8>) + Send>) -> (i32,
-                                                                                     Option<extern fn(command_handle: i32,
-                                                                                                      err: ErrorCode,
-                                                                                                      sender_vk: *const c_char,
-                                                                                                      decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) {
+                                                                                             Option<extern fn(command_handle: i32,
+                                                                                                              err: ErrorCode,
+                                                                                                              sender_vk: *const c_char,
+                                                                                                              decrypted_msg_raw: *const u8, decrypted_msg_len: u32)>) {
         lazy_static! {
             static ref DECRYPT_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, Vec<u8>) + Send > >> = Default::default();
         }
@@ -1302,20 +1302,22 @@ impl CallbackUtils {
         (command_handle, Some(set_endpoint_for_did_callback))
     }
 
-    pub fn closure_to_get_endpoint_for_did_cb(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (i32,
-                                                                                                         Option<extern fn(command_handle: i32,
-                                                                                                                          err: ErrorCode,
-                                                                                                                          endpoint: *const c_char,
-                                                                                                                          transport_vk: *const c_char)>) {
+    pub fn closure_to_get_endpoint_for_did_cb(closure: Box<FnMut(ErrorCode, String, Option<String>) + Send>) -> (i32,
+                                                                                                                 Option<extern fn(command_handle: i32,
+                                                                                                                                  err: ErrorCode,
+                                                                                                                                  endpoint: *const c_char,
+                                                                                                                                  transport_vk: *const c_char)>) {
         lazy_static! {
-            static ref ENDPOINT_FOR_DID_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, String) + Send > >> = Default::default();
+            static ref ENDPOINT_FOR_DID_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String, Option<String>) + Send > >> = Default::default();
         }
 
         extern "C" fn endpoint_for_did_callback(command_handle: i32, err: ErrorCode, endpoint: *const c_char, transport_vk: *const c_char) {
             let mut callbacks = ENDPOINT_FOR_DID_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let endpoint = unsafe { CStr::from_ptr(endpoint).to_str().unwrap().to_string() };
-            let transport_vk = unsafe { CStr::from_ptr(transport_vk).to_str().unwrap().to_string() };
+            let transport_vk = if !transport_vk.is_null() {
+                unsafe { Some(CStr::from_ptr(transport_vk).to_str().unwrap().to_string()) }
+            } else { None };
             cb(err, endpoint, transport_vk)
         }
 
@@ -1366,5 +1368,27 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(get_key_metadata_callback))
+    }
+
+    pub fn closure_to_get_abbr_verkey_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                            Option<extern fn(command_handle: i32,
+                                                                                                             err: ErrorCode,
+                                                                                                             verkey: *const c_char)>) {
+        lazy_static! {
+            static ref GET_ABBR_VERKEY_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn get_abbr_verkey_callback(command_handle: i32, err: ErrorCode, verkey: *const c_char) {
+            let mut callbacks = GET_ABBR_VERKEY_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let verkey = unsafe { CStr::from_ptr(verkey).to_str().unwrap().to_string() };
+            cb(err, verkey)
+        }
+
+        let mut callbacks = GET_ABBR_VERKEY_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(get_abbr_verkey_callback))
     }
 }

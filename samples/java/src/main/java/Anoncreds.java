@@ -85,7 +85,8 @@ class Anoncreds {
 				"                          \"name\":\"proof_req_1\",\n" +
 				"                          \"version\":\"0.1\",\n" +
 				"                          \"requested_attrs\":{\"attr1_referent\":{\"schema_seq_no\":[1],\"name\":\"name\"},\n" +
-				"                                                \"attr2_referent\":{\"schema_seq_no\":[1],\"name\":\"sex\"}},\n" +
+				"                                               \"attr2_referent\":{\"schema_seq_no\":[1],\"name\":\"sex\"}," +
+				"                                               \"attr3_referent\":{\"name\":\"phone\"}},\n" +
 				"                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
 				"                  }";
 
@@ -103,9 +104,9 @@ class Anoncreds {
 		String claimUuid = claimsForAttribute1.getJSONObject(0).getString("referent");
 
 		//12. Prover create Proof
-		String selfAttestedValue = "yes";
+		String selfAttestedValue = "8-800-200";
 		String requestedClaimsJson = String.format("{\n" +
-				"                                          \"self_attested_attributes\":{\"self1\":\"%s\"},\n" +
+				"                                          \"self_attested_attributes\":{\"attr3_referent\":\"%s\"},\n" +
 				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true],\n" +
 				"                                                               \"attr2_referent\":[\"%s\", false]},\n" +
 				"                                          \"requested_predicates\":{\"predicate1_referent\":\"%s\"}\n" +
@@ -127,7 +128,7 @@ class Anoncreds {
 
 		assertNotNull(proof.getJSONObject("requested_proof").getJSONObject("unrevealed_attrs").getString("attr2_referent"));
 
-		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("self1"));
+		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("attr3_referent"));
 
 		Boolean valid = verifierVerifyProof(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).get();
 		assertTrue(valid);

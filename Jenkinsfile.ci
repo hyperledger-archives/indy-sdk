@@ -128,6 +128,7 @@ def iosTesting() {
                 checkout scm
 
                 echo "iOS Test: Running pool"
+                sh "docker rm -f indy_pool || true"
                 sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
                 sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
 
@@ -325,13 +326,13 @@ def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
 def dockerClean(env_name, network_name) {
     try {
         try {
-            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f"
+            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f || true" //TODO: FIXME
         } catch (error) {
             echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
         }
         try {
             echo "${env_name} Test: remove pool network ${network_name}"
-            sh "docker network rm ${network_name}"
+            sh "docker network rm ${network_name} || true" //TODO: FIXME
         } catch (error) {
             echo "${env_name} Test: error while delete ${network_name} - ${error}"
         }

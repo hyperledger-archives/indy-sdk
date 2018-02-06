@@ -19,10 +19,11 @@ pub mod create_command {
 
     command!(CommandMetadata::build("create", "Create new wallet with specified name")
                 .add_main_param("name", "The name of new wallet")
-                .add_param("pool_name", false, "The name of associated Indy pool")
-                .add_param("key", true, "Auth key for the wallet")
+                .add_required_param("pool_name", "The name of associated Indy pool")
+                .add_optional_deferred_param("key", "Auth key for the wallet")
                 .add_example("wallet create wallet1 pool_name=pool1")
-                .add_example("wallet create name=wallet1 pool_name=pool1 key=AAAAB3NzaC1yc2EA")
+                .add_example("wallet create wallet1 pool_name=pool1 key")
+                .add_example("wallet create wallet1 pool_name=pool1 key=AAAAB3NzaC1yc2EA")
                 .finalize()
     );
 
@@ -62,10 +63,12 @@ pub mod open_command {
 
     command_with_cleanup!(CommandMetadata::build("open", "Open wallet with specified name. Also close previously opened.")
                             .add_main_param("name", "The name of wallet")
-                            .add_param("key", true, "Auth key for the wallet")
-                            .add_param("rekey", true, "New auth key for the wallet (will replace previous one).")
+                            .add_optional_deferred_param("key", "Auth key for the wallet")
+                            .add_optional_deferred_param("rekey", "New auth key for the wallet (will replace previous one).")
                             .add_example("wallet open wallet1")
-                            .add_example("wallet open name=wallet1 key=AAAAB3NzaC1yc2EA rekey=BBBAB3NzaC1AS4AC")
+                            .add_example("wallet open wallet1 key")
+                            .add_example("wallet open wallet1 key rekey")
+                            .add_example("wallet open wallet1 key=AAAAB3NzaC1yc2EA rekey=BBBAB3NzaC1AS4AC")
                             .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
@@ -111,6 +114,7 @@ pub mod open_command {
                         match err {
                             ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid wallet config")),
                             ErrorCode::WalletAlreadyOpenedError => Err(println_err!("Wallet \"{}\" already opened", name)),
+                            ErrorCode::WalletAccessFailed => Err(println_err!("Cannot open encrypted wallet \"{}\"", name)),
                             ErrorCode::CommonIOError => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
                             err => Err(println_err!("Indy SDK error occurred {:?}", err)),
                         }
@@ -154,14 +158,11 @@ pub mod list_command {
                 let wallets: Vec<serde_json::Value> = serde_json::from_str(&wallets)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                if wallets.len() > 0 {
-                    print_list_table(&wallets,
-                                     &vec![("name", "Name"),
-                                           ("associated_pool_name", "Associated pool name"),
-                                           ("type", "Type")]);
-                } else {
-                    println_succ!("There are no wallets");
-                }
+                print_list_table(&wallets,
+                                 &vec![("name", "Name"),
+                                       ("associated_pool_name", "Associated pool name"),
+                                       ("type", "Type")],
+                                 "There are no wallets");
 
                 if let Some((_, cur_wallet)) = get_opened_wallet(ctx) {
                     println_succ!("Current wallet \"{}\"", cur_wallet);
