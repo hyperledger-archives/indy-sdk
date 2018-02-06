@@ -24,11 +24,11 @@ RUN echo "deb https://repo.sovrin.org/deb xenial $indy_stream" >> /etc/apt/sourc
 
 RUN useradd -ms /bin/bash -u $uid indy
 
-ARG indy_plenum_ver=1.2.173
+ARG indy_plenum_ver=1.2.215
 ARG indy_anoncreds_ver=1.0.32
-ARG indy_node_ver=1.2.214
-ARG python3_indy_crypto_ver=0.1.6
-ARG indy_crypto_ver=0.1.6
+ARG indy_node_ver=1.2.273
+ARG python3_indy_crypto_ver=0.2.0
+ARG indy_crypto_ver=0.2.0
 
 RUN apt-get update -y && apt-get install -y \
         indy-plenum=${indy_plenum_ver} \
