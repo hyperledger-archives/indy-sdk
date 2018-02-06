@@ -292,7 +292,7 @@ mod high_cases {
         }
 
         #[test]
-        fn issuer_create_claim_works_for_claim_does_not_correspond_to_claim_req() {
+        fn issuer_create_claim_works_for_claim_does_not_correspond_to_claim_val() {
             let (wallet_handle, _, _, claim_req, _) = AnoncredsUtils::init_common_wallet();
 
             let res = AnoncredsUtils::issuer_create_claim(wallet_handle,
