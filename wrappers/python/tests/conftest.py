@@ -443,6 +443,18 @@ async def identity_my1(wallet_handle, pool_handle, identity_trustee1, seed_my1, 
 
 
 @pytest.fixture
+async def identity_my(wallet_handle, pool_handle, identity_trustee1, seed_my1, ):
+    (trustee_did, trustee_verkey) = identity_trustee1
+
+    (my_did, my_verkey) = await did.create_and_store_my_did(wallet_handle, "{}")
+
+    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, None)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
+
+    return my_did, my_verkey
+
+
+@pytest.fixture
 async def identity_my2(wallet_handle, identity_trustee1, seed_my2, ):
     (trustee_did, trustee_verkey) = identity_trustee1
 

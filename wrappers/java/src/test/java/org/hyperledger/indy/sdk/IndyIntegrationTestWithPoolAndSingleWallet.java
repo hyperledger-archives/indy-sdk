@@ -1,5 +1,8 @@
 package org.hyperledger.indy.sdk;
 
+import org.hyperledger.indy.sdk.did.Did;
+import org.hyperledger.indy.sdk.did.DidResults;
+import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.hyperledger.indy.sdk.wallet.Wallet;
@@ -38,5 +41,19 @@ public class IndyIntegrationTestWithPoolAndSingleWallet extends IndyIntegrationT
 	protected boolean compareResponseType(String response, String expectedType) {
 		JSONObject res = new JSONObject(response);
 		return expectedType.equals(res.getString("op"));
+	}
+
+	protected String createStoreAndPublishDidFromTrustee() throws Exception {
+		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		String trusteeDid = trusteeDidResult.getDid();
+
+		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
+		String myDid = myDidResult.getDid();
+		String myVerkey = myDidResult.getVerkey();
+
+		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, myVerkey, null, null).get();
+		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
+
+		return myDid;
 	}
 }
