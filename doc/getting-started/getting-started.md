@@ -124,55 +124,78 @@ Let's look the process of connection establishment between **Steward** and **Fab
 1. **Faber** and **Steward** contact in a some way to initiate onboarding process. 
    It can be filling the form on web site or phone call.
 1. **Steward** creates new DID record in wallet by calling ``did.create_and_store_my_did`` that he will use for secure interactions with **Faber**.
+```python 
+   # Steward Agent
+   (steward_faber_did, steward_faber_key) = await did.create_and_store_my_did(steward_wallet, "{}")
+```
 1. **Steward** sends corresponding `NYM` transaction to the Ledger by calling consistently ``ledger.build_nym_request`` to build NYM request and ``ledger.sign_and_submit_request`` to send the created request.
+```python 
+   # Steward Agent
+   nym_request = await ledger.build_nym_request(steward_did, steward_faber_did, steward_faber_key, None, role)
+   await ledger.sign_and_submit_request(pool_handle, steward_wallet, steward_did, nym_request)
+```
 1. **Steward** creates connection request which contains created `DID` and `Nonce`. 
    This nonce is just a big random number generated to track the unique connection request. 
    A nonce is a random arbitrary number that can only be used one time.  
    When a connection request is accepted, the invitee digitally signs the nonce such that the inviter can match the response with a prior request.
-1. **Steward** sends connection request to **Faber**.
-1. **Faber** accepts connection request from **Steward**.
-1. **Faber** creates wallet if it does not exist yet.
-1. **Faber** creates new DID record in his wallet by calling ``did.create_and_store_my_did`` that he will use for secure interactions with **Steward**.
-1. **Faber** creates connection response which contains created `DID`, `Verkey` and `Nonce` from received connection request.
-1. **Faber** asks ledger for Verification key of **Steward's** DID by calling ``did.key_for_did``.
-1. **Faber** anonymous encrypts connection response by calling ``crypto.anon_crypt`` with **Steward** Verkey.
-   Anonymous-encryption schema is designed for sending of messages to a Recipient given its public key. 
-   Only the Recipient can decrypt these messages, using its private key. 
-   While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
-1. **Faber** sends anonymous encrypted connection response to **Steward**.
-1. **Steward** anonymous decrypts connection response by calling ``crypto.anon_decrypt``.
-1. **Steward** authenticates **Faber** by comparision of Nonce.
-1. **Steward** sends `NYM` transaction for **Faber's** DID to the Ledger. 
-Please note that despite Steward is sender of this transaction the owner of DID will be Faber as it uses Verkey provided by Faber.
-
-```python
-  (steward_faber_did, steward_faber_key) = await did.create_and_store_my_did(steward_wallet, "{}")
-  nym_request = await ledger.build_nym_request(steward_did, steward_faber_did, steward_faber_key, None, role)
-  await ledger.sign_and_submit_request(pool_handle, steward_wallet, steward_did, nym_request)
-   
+```python 
+   # Steward Agent
   connection_request = {
       'did': steward_faber_did,
       'nonce': 123456789
   }
-    
+```
+1. **Steward** sends connection request to **Faber**.
+1. **Faber** accepts connection request from **Steward**.
+1. **Faber** creates wallet if it does not exist yet.
+```python 
+   # Faber Agent
   await wallet.create_wallet(pool_name, 'faber_wallet', None, None, None)
   faber_wallet = await wallet.open_wallet('faber_wallet', None, None)
-    
+```
+1. **Faber** creates new DID record in his wallet by calling ``did.create_and_store_my_did`` that he will use for secure interactions with **Steward**.
+```python 
+  # Faber Agent
   (faber_steward_did, faber_steward_key) = await did.create_and_store_my_did(faber_wallet, "{}")
-  steward_faber_verkey = await did.key_for_did(pool_handle, faber_wallet, connection_request['did'])
-    
+```
+1. **Faber** creates connection response which contains created `DID`, `Verkey` and `Nonce` from received connection request.
+```python 
+  # Faber Agent
   connection_response = json.dumps({
       'did': faber_steward_did,
       'verkey': faber_steward_key,
       'nonce': connection_request['nonce']
   })
+```
+1. **Faber** asks ledger for Verification key of **Steward's** DID by calling ``did.key_for_did``.
+```python 
+  # Faber Agent
+  steward_faber_verkey = await did.key_for_did(pool_handle, faber_wallet, connection_request['did'])
+```
+1. **Faber** anonymous encrypts connection response by calling ``crypto.anon_crypt`` with **Steward** Verkey.
+   Anonymous-encryption schema is designed for sending of messages to a Recipient given its public key. 
+   Only the Recipient can decrypt these messages, using its private key. 
+   While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
+```python 
+  # Faber Agent
   anoncrypted_connection_response = await crypto.anon_crypt(steward_faber_verkey, connection_response.encode('utf-8'))
-    
-  decrypted_connection_response = \
-      (await crypto.anon_decrypt(steward_wallet, steward_faber_key, anoncrypted_connection_response)).decode("utf-8")
-      
+```
+1. **Faber** sends anonymous encrypted connection response to **Steward**.
+1. **Steward** anonymous decrypts connection response by calling ``crypto.anon_decrypt``.
+```python 
+   # Steward Agent
+    decrypted_connection_response = \
+        (await crypto.anon_decrypt(steward_wallet, steward_faber_key, anoncrypted_connection_response)).decode("utf-8")
+```
+1. **Steward** authenticates **Faber** by comparision of Nonce.
+```python 
+  # Steward Agent
   assert connection_request['nonce'] == decrypted_connection_response['nonce']
-        
+```
+1. **Steward** sends `NYM` transaction for **Faber's** DID to the Ledger. 
+Please note that despite Steward is sender of this transaction the owner of DID will be Faber as it uses Verkey provided by Faber.
+```python        
+  # Steward Agent 
   nym_request = await ledger.build_nym_request(steward_did, decrypted_connection_response['did'], decrypted_connection_response['verkey'], None, role)
   await ledger.sign_and_submit_request(pool_handle, steward_wallet, steward_did, nym_request)
 ```
@@ -191,34 +214,49 @@ It is important to understand that created early **Faber** DID is not, in and of
 This DID must be used only for secure interaction with **Steward**.
 After the connection is established **Faber** must create new DID record that he will use as Verinym in the Ledger.
 1. **Faber** creates new DID in his wallet by calling ``did.create_and_store_my_did``.
-1. **Faber** prepares the message that will contain created DID and Verkey.
-1. **Faber** authenticated encrypts the message by calling ``crypto.auth_crypt`` using Verkeys created for secure communication with **Steward**. 
-   Authenticated-encryption schema is designed for sending of a confidential message specifically for Recipient, using Sender's public key.
-   Using Recipient's public key, Sender can compute a shared secret key. Using Sender's public key and his secret key, Recipient can compute the exact same shared secret key.
-   That shared secret key can be used to verify that the encrypted message was not tampered with, before eventually decrypting it.
-1. **Faber** sends encrypted message to **Steward**.
-1. **Steward** decrypts received message by calling ``crypto.auth_decrypt``.
-1. **Steward** asks ledger for Verification key of **Faber's** DID by calling ``did.key_for_did``.
-1. **Steward** authenticates **Faber** by comparision of Message Sender Verkey and **Faber** Verkey received from the Ledger.
-1. **Steward** sends corresponded NYM transaction to the Ledger with `TRUST ANCHOR` role.
-Please note that despite Steward is sender of this transaction the owner of DID will be Faber as it uses Verkey provided by Faber.
-
-```python
+```python        
+  # Faber Agent 
   (faber_did, faber_key) = await did.create_and_store_my_did(faber_wallet, "{}")
-    
+```
+1. **Faber** prepares the message that will contain created DID and Verkey.
+```python        
+  # Faber Agent 
   faber_did_info_json = json.dumps({
       'did': faber_did,
       'verkey': faber_key
   })
+```
+1. **Faber** authenticated encrypts the message by calling ``crypto.auth_crypt`` using Verkeys created for secure communication with **Steward**. 
+   Authenticated-encryption schema is designed for sending of a confidential message specifically for Recipient, using Sender's public key.
+   Using Recipient's public key, Sender can compute a shared secret key. Using Sender's public key and his secret key, Recipient can compute the exact same shared secret key.
+   That shared secret key can be used to verify that the encrypted message was not tampered with, before eventually decrypting it.
+```python        
+  # Faber Agent 
   authcrypted_faber_did_info_json = \
       await crypto.auth_crypt(faber_wallet, faber_steward_key, steward_faber_key, faber_did_info_json.encode('utf-8'))
-        
+```
+1. **Faber** sends encrypted message to **Steward**.
+1. **Steward** decrypts received message by calling ``crypto.auth_decrypt``.
+```python        
+  # Steward Agent    
   sender_verkey, authdecrypted_faber_did_info_json = \
       await crypto.auth_decrypt(steward_handle, steward_faber_key, authcrypted_faber_did_info_json)
   faber_did_info = json.loads(authdecrypted_faber_did_info_json)
-  
-  assert sender_verkey == await did.key_for_did(pool_handle, from_wallet, faber_did_info['did'])
-        
+```
+1. **Steward** asks ledger for Verification key of **Faber's** DID by calling ``did.key_for_did``.
+```python        
+  # Steward Agent    
+  faber_verkey = await did.key_for_did(pool_handle, from_wallet, faber_did_info['did'])
+```
+1. **Steward** authenticates **Faber** by comparision of Message Sender Verkey and **Faber** Verkey received from the Ledger.
+```python        
+  # Steward Agent    
+  assert sender_verkey == faber_verkey
+```
+1. **Steward** sends corresponded NYM transaction to the Ledger with `TRUST ANCHOR` role.
+Please note that despite Steward is sender of this transaction the owner of DID will be Faber as it uses Verkey provided by Faber.
+```python    
+  # Steward Agen
   nym_request = await ledger.build_nym_request(steward_did, decrypted_faber_did_info_json['did'],
                                                decrypted_faber_did_info_json['verkey'], None, 'TRUST_ANCHOR')
   await ledger.sign_and_submit_request(pool_handle, steward_wallet, steward_did, nym_request)
@@ -239,6 +277,7 @@ Note: It's not possible to update existing Schema. So, if the Schema needs to be
 
 Here is **Government** creates and publishes **Transcript** Claim Schema to the Ledger:
 ```python
+  # Government Agent 
   (government_issuer_did, government_issuer_key) = await did.create_and_store_my_did(government_wallet, "{}")
   nym_request = await ledger.build_nym_request(government_did, government_issuer_did, government_issuer_key, None, None)
   await ledger.sign_and_submit_request(pool_handle, government_handle, government_did, nym_request)
@@ -254,6 +293,7 @@ Here is **Government** creates and publishes **Transcript** Claim Schema to the 
 
 The same way **Government** creates and publishes **Job-Certificate** Claim Schema to the Ledger:
 ```python    
+  # Government Agent 
   job_certificate_schema = {
       'name': 'Job-Certificate',
       'version': '0.2',
@@ -268,8 +308,6 @@ At this point we have **Transcript** and **Job-Certificate** Claim Schemas publi
 #### Claim Definition Setup
 Claim Definition is similar to keys that Issuer use for signing of Claims satisfied specific Claim Schema. 
 
-Note: One Issuer DID can create just one Claim Definition for the specific Claim Schema, but different Issuer DIDs can create numerous Claim Definitions for the same Claim Schema.
-
 Note: It's not possible to update data in existing Claim Def. So, if a ClaimDef needs to be evolved (for example, a key needs to be rotated), then a new Claim Def needs to be created by a new Issuer DID.
 
 **Claim Definition** can be created and saved in the Ledger by any **Trust Anchor** by following the next steps:
@@ -281,6 +319,7 @@ Note: It's not possible to update data in existing Claim Def. So, if a ClaimDef 
 
 Here is **Faber** creates and publishes Claim Definition for known **Transcript** Claim Schema to the Ledger:
 ```python
+  # Faber Agent 
   (faber_issuer_did, faber_issuer_key) = await did.create_and_store_my_did(faber_wallet, "{}")
   await send_nym(pool_handle, faber_wallet, faber_did, faber_issuer_did, faber_issuer_key, None)
     
@@ -303,6 +342,7 @@ Here is **Faber** creates and publishes Claim Definition for known **Transcript*
 ```
 The same way **Acme** creates and publishes Claim Definition for known **Job-Certificate** Claim Schema to the Ledger.
 ```python
+  # Acme Agent 
   (acme_issuer_did, acme_issuer_key) = await did.create_and_store_my_did(acme_wallet, "{}")
   await send_nym(pool_handle, acme_wallet, acme_did, acme_issuer_did, acme_issuer_key, None)
     
@@ -338,9 +378,10 @@ The usefulness and reliability of a claim are tied to the reputation of the issu
 For Alice to self-issue a claim that she likes chocolate ice cream may be perfectly reasonable, but for her to self-issue a claim that she graduated from Faber College should not impress anyone. 
 
 As we mentioned in [Involving of Alice](#involving-of-alice) **Alice** graduate **Faber College**.
-After Alice had established connection with **Faber College** and had got Verinym, she got Claim Offer about the issuance of **Transcript** Claim.
+After Alice had established connection with **Faber College**, she got Claim Offer about the issuance of **Transcript** Claim.
 Alice stores it in her wallet.
 ```python
+  # Alice Agent 
   transcript_claim_offer = {
       'issuer_did': faber_issuer_did,
       'schema_key': transcript_schema_key
@@ -354,11 +395,12 @@ The value of this **Transcript** Claim is that it is provably issued by **Faber 
 **Alice** wants to see the attributes the **Transcript** Claim contains. 
 These attributes are known because a Claim Schema for **Transcript** has been written to the Ledger.
 ```python
+  # Alice Agent 
   get_schema_data = json.dumps({
       'name': transcript_claim_offer['transcript_claim_offer']['name'],
       'version': transcript_claim_offer['transcript_claim_offer']['version']
   })
-  get_schema_request = await ledger.build_get_schema_request(alice_did, transcript_claim_offer['transcript_claim_offer']['did'], get_schema_data)
+  get_schema_request = await ledger.build_get_schema_request(alice_faber_did, transcript_claim_offer['transcript_claim_offer']['did'], get_schema_data)
   get_schema_response = await ledger.submit_request(pool_handle, get_schema_request)
   transcript_schema = json.loads(get_schema_response)['result']
   
@@ -380,27 +422,31 @@ The Master Secret is an input that combine data from multiple Claims in order to
 A Master Secret should be known only to the Prover. 
 Alice creates Master Secret in her wallet.
 ```python
-  alice_master_secret = 'alice_master_secret'
+  # Alice Agent 
+  alice_master_secret_name = 'alice_master_secret'
   await anoncreds.prover_create_master_secret(alice_wallet, alice_master_secret_name)
 ```
 
 Also Alice needs to get Claim Definition corresponded to issuer_did and schema_key in **Transcript** Claim Offer.
 ```python
-  get_claim_def_request = await ledger.build_get_claim_def_txn(alice_did, transcript_schema['seqNo'], 'CL', faber_issuer_did)
+  # Alice Agent 
+  get_claim_def_request = await ledger.build_get_claim_def_txn(alice_faber_did, transcript_schema['seqNo'], 'CL', faber_issuer_did)
   get_claim_def_response = await ledger.submit_request(pool_handle, get_claim_def_request)
   transcript_claim_def = json.loads(get_claim_def_response)['result']
 ```
 
 Now Alice has everything to create Claim Request of issuance of **Faber Transcript** Claim.
-```python    
+```python   
+  # Alice Agent 
   transcript_claim_request_json = \
-          await anoncreds.prover_create_and_store_claim_req(alice_wallet, alice_did, transcript_claim_offer,
+          await anoncreds.prover_create_and_store_claim_req(alice_wallet, alice_faber_did, transcript_claim_offer,
                                                             json.dumps(transcript_claim_def), alice_master_secret)
 ```
 
 **Faber** prepares Raw and Encoded values for each attribute in **Transcript** Claim Schema.
 **Faber** creates **Transcript** Claim for Alice.
 ```python
+  # Faber Agent 
   transcript_claim_values = json.dumps({
       'first_name': ['Alice', '1139481716457488690172217916278103335'], # 
       'last_name': ['Garcia', '5321642780241790123587902456789123452'],
@@ -417,6 +463,7 @@ Now Alice has everything to create Claim Request of issuance of **Faber Transcri
 
 Now **Transcript** Claim has been issued. Alice stores it in her wallet.
 ```python
+  # Alice Agent 
   await anoncreds.prover_store_claim(alice_wallet, transcript_claim_json, None)
 ```
 
@@ -436,6 +483,7 @@ In this case, Acme Corp is requesting that Alice provide a **Job Application**.
 The Job Application requires a name, degree, status, ssn and also the satisfaction of the condition about the average mark.
 In this case, **Job-Application** Proof Request looks like:
 ```
+  # Acme Agent 
   job_application_proof_request_json = json.dumps({
       'nonce': '1432422343242122312411212',
       'name': 'Job-Application',
@@ -481,12 +529,14 @@ By not tagging these claims with a verifiable status, Acme’s claim request is 
 
 To show Claims that Alice can use for creating of Proof for **Job-Application** Proof Request Alice calls `anoncreds.prover_get_claims_for_proof_req`.
 ```python
+  # Alice Agent 
   claims_for_proof_request = \
       json.loads(await anoncreds.prover_get_claims_for_proof_req(alice_wallet, job_application_proof_request_json))
 ```
 
 Alice has only one claim that meets proof requirements for this **Job Application**.
 ```python
+  # Alice Agent 
   {
     'referent': 'Transcript Claim Referent',
     'schema_key': transcript_schema_key, 
@@ -511,6 +561,7 @@ Now Alice can divide attributes into the three groups:
 
 For **Job-Application** Proof Request Alice divided attributes as follows: 
 ```python
+  # Alice Agent 
   job_application_requested_claims_json = json.dumps({
       'self_attested_attributes': {
           'attr1_referent': 'Alice',
@@ -530,6 +581,7 @@ In addition, Alice must get Claim Schema and corresponded Claim Definition for e
 
 Now Alice has everything to create Proof for **Acme Job-Application** Proof Request.
 ```python
+  # Alice Agent 
   apply_job_proof_json = \
       await anoncreds.prover_create_proof(alice_wallet, job_application_proof_request_json, job_application_requested_claims_json,
                                           schemas_json, alice_master_secret_name, claim_defs_json, revoc_regs_json)
@@ -537,6 +589,7 @@ Now Alice has everything to create Proof for **Acme Job-Application** Proof Requ
 
 When **Acme** inspects received Proof he will see following structure:
 ```
+  # Acme Agent 
   {
       'requested_proof': {
           'revealed_attrs': {
@@ -545,9 +598,9 @@ When **Acme** inspects received Proof he will see following structure:
               'attr3_referent': ['Transcript Claim Referent', 'Bachelor of Science, Marketing', '12434523576212321']
           },
           'self_attested_attrs': {
-              'attr6_referent': '123-45-6789', 
               'attr1_referent': 'Alice', 
-              'attr2_referent': 'Garcia'
+              'attr2_referent': 'Garcia',
+              'attr6_referent': '123-45-6789'
           }, 
           'unrevealed_attrs': {},
           'predicates': {
@@ -570,6 +623,7 @@ Now **Acme** wants to check Validity Proof.
 To do it **Acme** firstly must get every Claim Schema and corresponded Claim Definition for each identifier presented in Proof, the same way, as it was doing Alice. 
 Now **Acme** has everything to check **Job-Application** Proof from Alice.
  ```python
+  # Acme Agent 
   assert await anoncreds.verifier_verify_proof(job_application_proof_request_json, apply_job_proof_json, 
                                                schemas_json, claim_defs_json, revoc_regs_json)
 ```
@@ -577,10 +631,12 @@ Now **Acme** has everything to check **Job-Application** Proof from Alice.
 Here, we’ll assume the application is accepted, and Alice ends up getting the job.
 When Alice inspects her connection with Acme a week later, she sees that a new Claim Offer is available.
 ```python
+  # Alice Agent 
   job_certificate_claim_offer = {
       "issuer_did": acme_issuer_did,
       "schema_key": job_certificate_schema_key
   }
+  await anoncreds.prover_store_claim_offer(alice_wallet, job_certificate_claim_offer)
 ```
 
 ## Apply for a Loan 
@@ -590,14 +646,16 @@ She can get this from the **Job-Certificate** Claim offered by Acme.
 Alice goes through a familiar sequence of interactions. 
 
 First she creates Claim Request.
- ```python    
+ ```python  
+  # Alice Agent 
   job_certificate_claim_request_json = \
-      await anoncreds.prover_create_and_store_claim_req(alice_wallet, alice_did, job_certificate_claim_offer,
+      await anoncreds.prover_create_and_store_claim_req(alice_wallet, alice_acme_did, job_certificate_claim_offer,
                                                         json.dumps(job_certificate_claim_def), alice_master_secret)
  ```
  
  Acme issues **Job-Certificate** Claim for Alice.
  ```python
+  # Acme Agent 
   job_certificate_claim_values_json = json.dumps({
       'first_name': ['Alice', '245712572474217942457235975012103335'],
       'last_name': ['Garcia', '312643218496194691632153761283356127'],
@@ -612,6 +670,7 @@ First she creates Claim Request.
 Now the **Job-Certificate** Claim has been issued, and Alice now has it in her possession. 
 Alice stores **Job-Certificate** Claim in her wallet.
 ```python
+  # Alice Agent 
   await anoncreds.prover_store_claim(alice_wallet, job_certificate_claim_json, None)
 ```
  
@@ -623,6 +682,7 @@ Alice now establishes connection with Thrift Bank.
  
 Alice gets **Loan-Application-Basic** Proof Request from Thrift Bank that looks like:
 ```python
+  # Thrift Agent 
   apply_loan_proof_request_json = json.dumps({
       'nonce': '123432421212',
       'name': 'Loan-Application-Basic',
@@ -652,6 +712,7 @@ Alice gets **Loan-Application-Basic** Proof Request from Thrift Bank that looks 
 
 Alice has only one claim that meets proof requirements for this **Loan-Application-Basic** Proof Request.
 ```python
+  # Alice Agent 
   {
       'referent': 'Job-Certificate Claim Referent',
       'revoc_reg_seq_no': None, 
@@ -669,6 +730,7 @@ Alice has only one claim that meets proof requirements for this **Loan-Applicati
 
 For **Loan-Application-Basic** Proof Request Alice divided attributes as follows: 
 ```python
+  # Alice Agent 
   apply_loan_requested_claims_json = json.dumps({
       'self_attested_attributes': {},
       'requested_attrs': {
@@ -683,6 +745,7 @@ For **Loan-Application-Basic** Proof Request Alice divided attributes as follows
 
 Alice creates Proof for **Loan-Application-Basic** Proof Request.
 ```python
+  # Alice Agent 
   apply_loan_proof_json = \
       await anoncreds.prover_create_proof(alice_wallet, apply_loan_proof_request_json, apply_loan_requested_claims_json, 
                                           schemas_json, alice_master_secret_name, claim_defs_json, revoc_regs_json)
@@ -693,6 +756,7 @@ This allows her to minimize the PII (personally identifiable information) that s
 
 When **Thrift** inspects received Proof he will see following structure:
 ```
+  # Thrift Agent 
   {
       'requested_proof': {
           'revealed_attrs': {
@@ -708,9 +772,9 @@ When **Thrift** inspects received Proof he will see following structure:
       'proof' : {} # Validity Proof that Thrift can check
       'identifiers' : { # Identifiers of claims were used for Proof building
           'Transcript Claim Referent': {
-              'issuer_did': acme_issuer_did, 
+              'issuer_did': faber_issuer_did, 
               'rev_reg_seq_no': None, 
-              'schema_key': job_certificate_schema_key
+              'schema_key': transcript_schema_key
           }
       } 
   }
@@ -718,12 +782,14 @@ When **Thrift** inspects received Proof he will see following structure:
 
 **Thrift Bank** successfully verified **Loan-Application-Basic** Proof from Alice.
 ```python
+  # Thrift Agent 
     assert await anoncreds.verifier_verify_proof(apply_loan_proof_request_json, apply_loan_proof_json,
                                                  schemas_json, claim_defs_json, revoc_regs_json)
 ```
 
 Thrift Bank sends the second Proof Request where Alice needs to share her personal information with the bank.
 ```python
+  # Thrift Agent 
   apply_loan_kyc_proof_request_json = json.dumps({
       'nonce': '123432421212',
       'name': 'Loan-Application-KYC',
@@ -739,6 +805,7 @@ Thrift Bank sends the second Proof Request where Alice needs to share her person
 
 Alice has two claim that meets proof requirements for this **Loan-Application-KYC** Proof Request.
 ```python
+  # Alice Agent 
   {
     'referent': 'Transcript Claim Referent',
     'schema_key': transcript_schema_key, 
@@ -763,7 +830,7 @@ Alice has two claim that meets proof requirements for this **Loan-Application-KY
           'last_name': 'Garcia', 
           'experience': '10', 
           'first_name': 'Alice',
-           'salary': '2400'
+          'salary': '2400'
       }, 
       'issuer_did': acme_issuer_did
   }
@@ -771,6 +838,7 @@ Alice has two claim that meets proof requirements for this **Loan-Application-KY
 
 For **Loan-Application-KYC** Proof Request Alice divided attributes as follows: 
 ```python
+  # Alice Agent 
   apply_loan_kyc_requested_claims_json = json.dumps({
       'self_attested_attributes': {},
       'requested_attrs': {
@@ -784,13 +852,45 @@ For **Loan-Application-KYC** Proof Request Alice divided attributes as follows:
 
 Alice creates Proof for **Loan-Application-KYC** Proof Request.
 ```python
+  # Alice Agent 
   apply_loan_kyc_proof_json = \
       await anoncreds.prover_create_proof(alice_wallet, apply_loan_kyc_proof_request_json, apply_loan_kyc_requested_claims_json, 
                                           schemas_json, alice_master_secret_name, claim_defs_json, revoc_regs_json)
 ```
 
+When **Thrift** inspects received Proof he will see following structure:
+```
+  # Thrift Agent 
+  {
+      'requested_proof': {
+          'revealed_attrs': {
+              'attr1_referent': ['Transcript Claim Referent', '123-45-6789', '3124141231422543541'], 
+              'attr1_referent': ['Job-Certificate Claim Referent', 'Alice', '245712572474217942457235975012103335'], 
+              'attr1_referent': ['Job-Certificate Claim Referent', 'Garcia', '312643218496194691632153761283356127'], 
+          },
+          'self_attested_attrs': {}, 
+          'unrevealed_attrs': {},
+          'predicates': {}
+      },
+      'proof' : {} # Validity Proof that Thrift can check
+      'identifiers' : { # Identifiers of claims were used for Proof building
+          'Transcript Claim Referent': {
+              'issuer_did': faber_issuer_did, 
+              'rev_reg_seq_no': None, 
+              'schema_key': transcript_schema_key
+          },
+          'Job-Certificate Claim Referent': {
+              'issuer_did': acme_issuer_did, 
+              'rev_reg_seq_no': None, 
+              'schema_key': job_certificate_schema_key
+          }
+      } 
+  }
+```
+
 **Thrift Bank** successfully validate **Loan-Application-KYC** Proof from Alice.
 ```python
+  # Thrift Agent 
   assert await anoncreds.verifier_verify_proof(apply_loan_kyc_proof_request_json, apply_loan_kyc_proof_json,
                                                schemas_json, claim_defs_json, revoc_regs_json)
 ```
@@ -801,4 +901,4 @@ Both Alice Proofs have been successfully verified and she got loan from **Thrift
 Now that you've had a chance to see how the Libindy implementation works from the outside, perhaps you'd like to see how it works underneath, from code? 
 If so, please run [Simulating Getting Started in the Jupiter](run-getting-started.md). 
 You may need to be signed into GitHub to view this link. 
-Also you can found source code here: https://github.com/hyperledger/indy-sdk/blob/master/samples/python/src/getting_started.py
+Also you can found source code [here](https://github.com/hyperledger/indy-sdk/blob/master/samples/python/src/getting_started.py)

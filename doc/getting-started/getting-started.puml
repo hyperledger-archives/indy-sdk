@@ -122,11 +122,6 @@ A->AW: Create and store "Alice Faber Pairwise" DID
 A->F: Anoncrypted connection response with "Alice Faber Pairwise" DID, verkey and nonce
 F->L: Send Nym for "Alice Faber Pairwise" DID
 
-== Getting Transcript with Faber - Alice getting Verinym  ==
-A->AW: Create and store "Alice" DID
-A->F: Send authcrypted "Alice" DID
-F->L: Send Nym for "Alice" DID
-
 == Getting Transcript with Faber - Getting Transcript Claim ==
 F->A: Send authcrypted "Alice Faber Transcript" Claim Offer
 A->AW: Store "Alice Faber Transcript" Claim Offer
