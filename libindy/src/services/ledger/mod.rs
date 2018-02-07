@@ -287,6 +287,51 @@ mod tests {
     }
 
     #[test]
+    fn build_get_attrib_request_works_for_raw_value() {
+        let ledger_service = LedgerService::new();
+        let identifier = "identifier";
+        let dest = "dest";
+        let raw = "raw";
+
+        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","raw":"raw"},"protocolVersion":1"#;
+
+        let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, Some(raw), None, None);
+        assert!(get_attrib_request.is_ok());
+        let get_attrib_request = get_attrib_request.unwrap();
+        assert!(get_attrib_request.contains(expected_result));
+    }
+
+    #[test]
+    fn build_get_attrib_request_works_for_hash_value() {
+        let ledger_service = LedgerService::new();
+        let identifier = "identifier";
+        let dest = "dest";
+        let hash = "hash";
+
+        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","hash":"hash"},"protocolVersion":1"#;
+
+        let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, None, Some(hash), None);
+        assert!(get_attrib_request.is_ok());
+        let get_attrib_request = get_attrib_request.unwrap();
+        assert!(get_attrib_request.contains(expected_result));
+    }
+
+    #[test]
+    fn build_get_attrib_request_works_for_enc_value() {
+        let ledger_service = LedgerService::new();
+        let identifier = "identifier";
+        let dest = "dest";
+        let enc = "enc";
+
+        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","enc":"enc"},"protocolVersion":1"#;
+
+        let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, None, None, Some(enc));
+        assert!(get_attrib_request.is_ok());
+        let get_attrib_request = get_attrib_request.unwrap();
+        assert!(get_attrib_request.contains(expected_result));
+    }
+
+    #[test]
     fn build_get_attrib_request_works() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
@@ -295,7 +340,7 @@ mod tests {
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","raw":"raw"},"protocolVersion":1"#;
 
-        let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, raw);
+        let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, Some(raw), None, None);
         assert!(get_attrib_request.is_ok());
         let get_attrib_request = get_attrib_request.unwrap();
         assert!(get_attrib_request.contains(expected_result));
