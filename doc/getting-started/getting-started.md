@@ -124,81 +124,81 @@ Let's look the process of connection establishment between **Steward** and **Fab
 1. **Faber** and **Steward** contact in a some way to initiate onboarding process. 
    It can be filling the form on web site or phone call.
 1. **Steward** creates new DID record in wallet by calling ``did.create_and_store_my_did`` that he will use for secure interactions with **Faber**.
-```python 
-   # Steward Agent
-   (steward_faber_did, steward_faber_key) = await did.create_and_store_my_did(steward_wallet, "{}")
-```
+    ```python 
+    # Steward Agent
+    (steward_faber_did, steward_faber_key) = await did.create_and_store_my_did(steward_wallet, "{}")
+    ```
 1. **Steward** sends corresponding `NYM` transaction to the Ledger by calling consistently ``ledger.build_nym_request`` to build NYM request and ``ledger.sign_and_submit_request`` to send the created request.
-```python 
-   # Steward Agent
-   nym_request = await ledger.build_nym_request(steward_did, steward_faber_did, steward_faber_key, None, role)
-   await ledger.sign_and_submit_request(pool_handle, steward_wallet, steward_did, nym_request)
-```
+    ```python 
+    # Steward Agent
+    nym_request = await ledger.build_nym_request(steward_did, steward_faber_did, steward_faber_key, None, role)
+    await ledger.sign_and_submit_request(pool_handle, steward_wallet, steward_did, nym_request)
+    ```
 1. **Steward** creates connection request which contains created `DID` and `Nonce`. 
    This nonce is just a big random number generated to track the unique connection request. 
    A nonce is a random arbitrary number that can only be used one time.  
    When a connection request is accepted, the invitee digitally signs the nonce such that the inviter can match the response with a prior request.
-```python 
-   # Steward Agent
-  connection_request = {
-      'did': steward_faber_did,
-      'nonce': 123456789
-  }
-```
+    ```python 
+    # Steward Agent
+    connection_request = {
+        'did': steward_faber_did,
+        'nonce': 123456789
+    }
+    ```
 1. **Steward** sends connection request to **Faber**.
 1. **Faber** accepts connection request from **Steward**.
 1. **Faber** creates wallet if it does not exist yet.
-```python 
-   # Faber Agent
-  await wallet.create_wallet(pool_name, 'faber_wallet', None, None, None)
-  faber_wallet = await wallet.open_wallet('faber_wallet', None, None)
-```
+    ```python 
+    # Faber Agent
+    await wallet.create_wallet(pool_name, 'faber_wallet', None, None, None)
+    faber_wallet = await wallet.open_wallet('faber_wallet', None, None)
+    ```
 1. **Faber** creates new DID record in his wallet by calling ``did.create_and_store_my_did`` that he will use for secure interactions with **Steward**.
-```python 
-  # Faber Agent
-  (faber_steward_did, faber_steward_key) = await did.create_and_store_my_did(faber_wallet, "{}")
-```
+    ```python 
+    # Faber Agent
+    (faber_steward_did, faber_steward_key) = await did.create_and_store_my_did(faber_wallet, "{}")
+    ```
 1. **Faber** creates connection response which contains created `DID`, `Verkey` and `Nonce` from received connection request.
-```python 
-  # Faber Agent
-  connection_response = json.dumps({
-      'did': faber_steward_did,
-      'verkey': faber_steward_key,
-      'nonce': connection_request['nonce']
-  })
-```
+    ```python 
+    # Faber Agent
+    connection_response = json.dumps({
+        'did': faber_steward_did,
+        'verkey': faber_steward_key,
+        'nonce': connection_request['nonce']
+    })
+    ```
 1. **Faber** asks ledger for Verification key of **Steward's** DID by calling ``did.key_for_did``.
-```python 
-  # Faber Agent
-  steward_faber_verkey = await did.key_for_did(pool_handle, faber_wallet, connection_request['did'])
-```
+    ```python 
+    # Faber Agent
+    steward_faber_verkey = await did.key_for_did(pool_handle, faber_wallet, connection_request['did'])
+    ```
 1. **Faber** anonymous encrypts connection response by calling ``crypto.anon_crypt`` with **Steward** Verkey.
    Anonymous-encryption schema is designed for sending of messages to a Recipient given its public key. 
    Only the Recipient can decrypt these messages, using its private key. 
    While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
-```python 
-  # Faber Agent
-  anoncrypted_connection_response = await crypto.anon_crypt(steward_faber_verkey, connection_response.encode('utf-8'))
-```
+    ```python 
+    # Faber Agent
+    anoncrypted_connection_response = await crypto.anon_crypt(steward_faber_verkey, connection_response.encode('utf-8'))
+    ```
 1. **Faber** sends anonymous encrypted connection response to **Steward**.
 1. **Steward** anonymous decrypts connection response by calling ``crypto.anon_decrypt``.
-```python 
-   # Steward Agent
+    ```python 
+    # Steward Agent
     decrypted_connection_response = \
         (await crypto.anon_decrypt(steward_wallet, steward_faber_key, anoncrypted_connection_response)).decode("utf-8")
-```
+    ```
 1. **Steward** authenticates **Faber** by comparision of Nonce.
-```python 
-  # Steward Agent
-  assert connection_request['nonce'] == decrypted_connection_response['nonce']
-```
+    ```python 
+    # Steward Agent
+    assert connection_request['nonce'] == decrypted_connection_response['nonce']
+    ```
 1. **Steward** sends `NYM` transaction for **Faber's** DID to the Ledger. 
 Please note that despite Steward is sender of this transaction the owner of DID will be Faber as it uses Verkey provided by Faber.
-```python        
-  # Steward Agent 
-  nym_request = await ledger.build_nym_request(steward_did, decrypted_connection_response['did'], decrypted_connection_response['verkey'], None, role)
-  await ledger.sign_and_submit_request(pool_handle, steward_wallet, steward_did, nym_request)
-```
+    ```python        
+    # Steward Agent 
+    nym_request = await ledger.build_nym_request(steward_did, decrypted_connection_response['did'], decrypted_connection_response['verkey'], None, role)
+    await ledger.sign_and_submit_request(pool_handle, steward_wallet, steward_did, nym_request)
+    ```
 
 At this point **Faber** is connected to **Steward** and can interact in a secure way and can trust the response from **Steward** because 
 (1) he connects to the current endpoint, 
@@ -214,53 +214,53 @@ It is important to understand that created early **Faber** DID is not, in and of
 This DID must be used only for secure interaction with **Steward**.
 After the connection is established **Faber** must create new DID record that he will use as Verinym in the Ledger.
 1. **Faber** creates new DID in his wallet by calling ``did.create_and_store_my_did``.
-```python        
-  # Faber Agent 
-  (faber_did, faber_key) = await did.create_and_store_my_did(faber_wallet, "{}")
-```
+    ```python        
+    # Faber Agent 
+    (faber_did, faber_key) = await did.create_and_store_my_did(faber_wallet, "{}")
+    ```
 1. **Faber** prepares the message that will contain created DID and Verkey.
-```python        
-  # Faber Agent 
-  faber_did_info_json = json.dumps({
-      'did': faber_did,
-      'verkey': faber_key
-  })
-```
+    ```python        
+    # Faber Agent 
+    faber_did_info_json = json.dumps({
+        'did': faber_did,
+        'verkey': faber_key
+    })
+    ```
 1. **Faber** authenticated encrypts the message by calling ``crypto.auth_crypt`` using Verkeys created for secure communication with **Steward**. 
    Authenticated-encryption schema is designed for sending of a confidential message specifically for Recipient, using Sender's public key.
    Using Recipient's public key, Sender can compute a shared secret key. Using Sender's public key and his secret key, Recipient can compute the exact same shared secret key.
    That shared secret key can be used to verify that the encrypted message was not tampered with, before eventually decrypting it.
-```python        
-  # Faber Agent 
-  authcrypted_faber_did_info_json = \
-      await crypto.auth_crypt(faber_wallet, faber_steward_key, steward_faber_key, faber_did_info_json.encode('utf-8'))
-```
+    ```python        
+    # Faber Agent 
+    authcrypted_faber_did_info_json = \
+        await crypto.auth_crypt(faber_wallet, faber_steward_key, steward_faber_key, faber_did_info_json.encode('utf-8'))
+    ```
 1. **Faber** sends encrypted message to **Steward**.
 1. **Steward** decrypts received message by calling ``crypto.auth_decrypt``.
-```python        
-  # Steward Agent    
-  sender_verkey, authdecrypted_faber_did_info_json = \
-      await crypto.auth_decrypt(steward_handle, steward_faber_key, authcrypted_faber_did_info_json)
-  faber_did_info = json.loads(authdecrypted_faber_did_info_json)
-```
+    ```python        
+    # Steward Agent    
+    sender_verkey, authdecrypted_faber_did_info_json = \
+        await crypto.auth_decrypt(steward_handle, steward_faber_key, authcrypted_faber_did_info_json)
+    faber_did_info = json.loads(authdecrypted_faber_did_info_json)
+    ```
 1. **Steward** asks ledger for Verification key of **Faber's** DID by calling ``did.key_for_did``.
-```python        
-  # Steward Agent    
-  faber_verkey = await did.key_for_did(pool_handle, from_wallet, faber_did_info['did'])
-```
+    ```python        
+    # Steward Agent    
+    faber_verkey = await did.key_for_did(pool_handle, from_wallet, faber_did_info['did'])
+    ```
 1. **Steward** authenticates **Faber** by comparision of Message Sender Verkey and **Faber** Verkey received from the Ledger.
-```python        
-  # Steward Agent    
-  assert sender_verkey == faber_verkey
-```
+    ```python        
+    # Steward Agent    
+    assert sender_verkey == faber_verkey
+    ```
 1. **Steward** sends corresponded NYM transaction to the Ledger with `TRUST ANCHOR` role.
 Please note that despite Steward is sender of this transaction the owner of DID will be Faber as it uses Verkey provided by Faber.
-```python    
-  # Steward Agen
-  nym_request = await ledger.build_nym_request(steward_did, decrypted_faber_did_info_json['did'],
-                                               decrypted_faber_did_info_json['verkey'], None, 'TRUST_ANCHOR')
-  await ledger.sign_and_submit_request(pool_handle, steward_wallet, steward_did, nym_request)
-```
+    ```python    
+    # Steward Agen
+    nym_request = await ledger.build_nym_request(steward_did, decrypted_faber_did_info_json['did'],
+                                                 decrypted_faber_did_info_json['verkey'], None, 'TRUST_ANCHOR')
+    await ledger.sign_and_submit_request(pool_handle, steward_wallet, steward_did, nym_request)
+    ```
 At this point **Faber** has DID related to his identity in the Ledger. 
 
 **Acme**, **Thrift Bank**, and **Government** must pass the same Onboarding process connection establishment with **Steward**.
@@ -270,26 +270,30 @@ At this point **Faber** has DID related to his identity in the Ledger.
 
 Note: It's not possible to update existing Schema. So, if the Schema needs to be evolved, a new Schema with a new version or name needs to be created.
 
-**Claim Schema** can be created and saved in the Ledger by any **Trust Anchor** by following the next steps:
-1. **Trust Anchor** optionally creates new DID record in his wallet and sends corresponded NYM transaction to the Ledger.
-1. **Trust Anchor** prepares **Claim Schema**.
-1. **Trust Anchor** sends corresponded Schema transaction to the Ledger by calling consistently ``ledger.build_schema_request`` to build Schema request and ``ledger.sign_and_submit_request`` to send created request.
-
+**Claim Schema** can be created and saved in the Ledger by any **Trust Anchor**.
 Here is **Government** creates and publishes **Transcript** Claim Schema to the Ledger:
-```python
-  # Government Agent 
-  (government_issuer_did, government_issuer_key) = await did.create_and_store_my_did(government_wallet, "{}")
-  nym_request = await ledger.build_nym_request(government_did, government_issuer_did, government_issuer_key, None, None)
-  await ledger.sign_and_submit_request(pool_handle, government_handle, government_did, nym_request)
-        
-  transcript_schema = {
-      'name': 'Transcript',
-      'version': '1.2',
-      'attr_names': ['first_name', 'last_name', 'degree', 'status', 'year', 'average', 'ssn']
-  }
-  schema_request = await ledger.build_schema_request(government_issuer_did, json.dumps(transcript_schema))
-  await ledger.sign_and_submit_request(pool_handle, government_wallet, government_issuer_did, schema_request)
-```
+1. **Trust Anchor** optionally creates new DID record in his wallet and sends corresponded NYM transaction to the Ledger.
+    ```python
+    # Government Agent 
+    (government_issuer_did, government_issuer_key) = await did.create_and_store_my_did(government_wallet, "{}")
+    nym_request = await ledger.build_nym_request(government_did, government_issuer_did, government_issuer_key, None, None)
+    await ledger.sign_and_submit_request(pool_handle, government_handle, government_did, nym_request)
+    ```
+1. **Trust Anchor** prepares **Claim Schema**.
+    ```python
+    # Government Agent 
+    transcript_schema = {
+        'name': 'Transcript',
+        'version': '1.2',
+        'attr_names': ['first_name', 'last_name', 'degree', 'status', 'year', 'average', 'ssn']
+    }
+    ```
+1. **Trust Anchor** sends corresponded Schema transaction to the Ledger by calling consistently ``ledger.build_schema_request`` to build Schema request and ``ledger.sign_and_submit_request`` to send created request.
+    ```python
+    # Government Agent 
+    schema_request = await ledger.build_schema_request(government_issuer_did, json.dumps(transcript_schema))
+    await ledger.sign_and_submit_request(pool_handle, government_wallet, government_issuer_did, schema_request)
+    ```
 
 The same way **Government** creates and publishes **Job-Certificate** Claim Schema to the Ledger:
 ```python    
@@ -310,36 +314,43 @@ Claim Definition is similar to keys that Issuer use for signing of Claims satisf
 
 Note: It's not possible to update data in existing Claim Def. So, if a ClaimDef needs to be evolved (for example, a key needs to be rotated), then a new Claim Def needs to be created by a new Issuer DID.
 
-**Claim Definition** can be created and saved in the Ledger by any **Trust Anchor** by following the next steps:
+**Claim Definition** can be created and saved in the Ledger by any **Trust Anchor**.
+Here is **Faber** creates and publishes Claim Definition for known **Transcript** Claim Schema to the Ledger.
 1. **Trust Anchor** optionally creates new DID record in his wallet and sends corresponded NYM transaction to the Ledger.
+    ```python
+    # Faber Agent 
+    (faber_issuer_did, faber_issuer_key) = await did.create_and_store_my_did(faber_wallet, "{}")
+    nym_request = await ledger.build_nym_request(faber_did, faber_issuer_did, faber_issuer_key, None, None)
+    await ledger.sign_and_submit_request(pool_handle, faber_wallet, faber_did, nym_request)  
+    ```
 1. **Trust Anchor** gets specific **Claim Schema** from the Ledger by calling consistently ``ledger.build_get_schema_request`` to build GetSchema request and ``ledger.sign_and_submit_request`` to send created request.
+    ```python
+    # Faber Agent 
+    get_schema_data = json.dumps({
+        'name': 'Transcript',
+        'version': '1.2'
+    })
+    get_schema_request = await ledger.build_get_schema_request(faber_issuer_did, government_issuer_did, get_schema_data)
+    get_schema_response = await ledger.submit_request(pool_handle, get_schema_request)
+    transcript_schema = json.loads(get_schema_response)['result']
+    ```
 1. **Trust Anchor** creates **Claim Definition** related to received **Claim Schema** by calling ``anoncreds.issuer_create_and_store_claim_def``that returns generated public Claim Definition. 
    Private Claim Definition part for this **Claim Schema** will be stored in the wallet too, but it is impossible to read it directly. 
+    ```python
+    # Faber Agent 
+    faber_transcript_claim_def_json = \
+        await anoncreds.issuer_create_and_store_claim_def(faber_wallet, faber_issuer_did, json.dumps(transcript_schema), 'CL', False)
+    faber_transcript_claim_def = json.loads(faber_transcript_claim_def_json)
+    ```
 1. **Trust Anchor** sends corresponded ClaimDef transaction to the Ledger by calling consistently ``ledger.build_claim_def_txn`` to build ClaimDef request and ``ledger.sign_and_submit_request`` to send created request.
-
-Here is **Faber** creates and publishes Claim Definition for known **Transcript** Claim Schema to the Ledger:
-```python
-  # Faber Agent 
-  (faber_issuer_did, faber_issuer_key) = await did.create_and_store_my_did(faber_wallet, "{}")
-  await send_nym(pool_handle, faber_wallet, faber_did, faber_issuer_did, faber_issuer_key, None)
+    ```python
+    # Faber Agent     
+    claim_def_request = \
+        await ledger.build_claim_def_txn(faber_issuer_did, faber_transcript_claim_def['ref'], 
+                                         faber_transcript_claim_def['signature_type'], json.faber_transcript_claim_def(claim_def['data']))
+    await ledger.sign_and_submit_request(pool_handle, faber_wallet, faber_issuer_did, claim_def_request)
+    ```
     
-  get_schema_data = json.dumps({
-      'name': 'Transcript',
-      'version': '1.2'
-  })
-  get_schema_request = await ledger.build_get_schema_request(faber_issuer_did, government_issuer_did, get_schema_data)
-  get_schema_response = await ledger.submit_request(pool_handle, get_schema_request)
-  transcript_schema = json.loads(get_schema_response)['result']
-    
-  faber_transcript_claim_def_json = \
-      await anoncreds.issuer_create_and_store_claim_def(faber_wallet, faber_issuer_did, json.dumps(transcript_schema), 'CL', False)
-  faber_transcript_claim_def = json.loads(faber_transcript_claim_def_json)
-    
-  claim_def_request = \
-      await ledger.build_claim_def_txn(faber_issuer_did, faber_transcript_claim_def['ref'], 
-                                       faber_transcript_claim_def['signature_type'], json.faber_transcript_claim_def(claim_def['data']))
-  await ledger.sign_and_submit_request(pool_handle, faber_wallet, faber_issuer_did, claim_def_request)
-```
 The same way **Acme** creates and publishes Claim Definition for known **Job-Certificate** Claim Schema to the Ledger.
 ```python
   # Acme Agent 
