@@ -869,6 +869,7 @@ pub mod tests {
     use commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
     use commands::did::tests::{new_did, use_did, SEED_TRUSTEE, DID_TRUSTEE, SEED_MY1, DID_MY1, VERKEY_MY1, SEED_MY3, DID_MY3, VERKEY_MY3};
     use libindy::ledger::Ledger;
+    use libindy::did::Did;
 
     pub const ATTRIB_RAW_DATA: &'static str = r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#;
     pub const ATTRIB_HASH_DATA: &'static str = r#"83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#;
@@ -1368,8 +1369,7 @@ pub mod tests {
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
 
-            new_did(&ctx, SEED_TRUSTEE);
-            use_did(&ctx, DID_TRUSTEE);
+            let did = crate_send_and_use_new_nym(&ctx);
             {
                 let cmd = schema_command::new();
                 let mut params = CommandParams::new();
@@ -1378,7 +1378,7 @@ pub mod tests {
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_schema_added(&ctx, DID_TRUSTEE);
+            _ensure_schema_added(&ctx, &did);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1547,8 +1547,7 @@ pub mod tests {
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
 
-            new_did(&ctx, SEED_TRUSTEE);
-            use_did(&ctx, DID_TRUSTEE);
+            let did = crate_send_and_use_new_nym(&ctx);
             {
                 let cmd = claim_def_command::new();
                 let mut params = CommandParams::new();
@@ -1557,7 +1556,7 @@ pub mod tests {
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_claim_def_added(&ctx, DID_TRUSTEE);
+            _ensure_claim_def_added(&ctx, &did);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1978,6 +1977,16 @@ pub mod tests {
             params.insert("verkey", VERKEY_MY1.to_string());
             cmd.execute(&ctx, &params).unwrap();
         });
+    }
+
+    pub fn crate_send_and_use_new_nym(ctx: &CommandContext) -> String {
+        let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
+        new_did(&ctx, SEED_TRUSTEE);
+        use_did(&ctx, DID_TRUSTEE);
+        let (did, verkey) = Did::new(wallet_handle, "{}").unwrap();
+        send_nym(ctx, &did, &verkey, None);
+        use_did(&ctx, &did);
+        did
     }
 
     pub fn send_nym(ctx: &CommandContext, did: &str, verkey: &str, role: Option<&str>) {

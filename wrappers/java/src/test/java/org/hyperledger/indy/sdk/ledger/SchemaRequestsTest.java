@@ -50,8 +50,7 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 
 	@Test
 	public void testSchemaRequestWorksWithoutSignature() throws Exception {
-		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String did = didResult.getDid();
+		String did = createStoreAndPublishDidFromTrustee();
 
 		String schemaRequest = Ledger.buildSchemaRequest(did, SCHEMA_DATA).get();
 		String response = Ledger.submitRequest(pool, schemaRequest).get();
@@ -60,8 +59,7 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 
 	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testSchemaRequestsWorks() throws Exception {
-		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String did = didResult.getDid();
+		String did = createStoreAndPublishDidFromTrustee();
 
 		String schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"attr_names\": [\"name\", \"male\"]}";
 

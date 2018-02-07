@@ -1239,15 +1239,8 @@
 
 
     // 3. Obtain my did
-    NSString *myDid = nil;
-    NSString *myDidJson = [NSString stringWithFormat:@"{\"seed\":\"000000000000000000000000Trustee1\"}"];
-    ret = [[DidUtils sharedInstance] createMyDidWithWalletHandle:walletHandle
-                                                       myDidJson:myDidJson
-                                                        outMyDid:&myDid
-                                                     outMyVerkey:nil];
-    XCTAssertEqual(ret.code, Success, @"DidUtils::createMyDidWithWalletHandle() failed");
-
-    XCTAssertNotNil(myDid, @"myDid is nil!");
+    NSString *myDid = [[DidUtils sharedInstance] createStoreAndPublishMyDidWithWalletHandle:walletHandle
+                                                                                 poolHandle:poolHandle];
 
     // 4. Build schema request
 
@@ -2055,12 +2048,8 @@
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
 
     // 3. Create my did
-    NSString *myDid;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                    seed:@"000000000000000000000000Trustee1"
-                                                                outMyDid:&myDid
-                                                             outMyVerkey:nil];
-    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDid() failed for myDid");
+    NSString *myDid = [[DidUtils sharedInstance] createStoreAndPublishMyDidWithWalletHandle:walletHandle
+                                                                                 poolHandle:poolHandle];
 
     NSMutableArray *keys = [NSMutableArray new];
     [keys addObject:@"name"];
@@ -2128,13 +2117,12 @@
     // 10. Check getTxnResponse
     NSDictionary *getTxnResponse = [NSDictionary fromString:getTxnResponseJson];
 
-    NSDictionary *getTxnSchemaResult = [NSDictionary fromString:getTxnResponse[@"result"][@"data"]];
+    NSDictionary *getTxnSchemaResult = getTxnResponse[@"result"][@"data"];
     XCTAssertNotNil(getTxnSchemaResult[@"data"], @"getTxnSchemaResult[data] is nil");
-    XCTAssertTrue([getTxnSchemaResult[@"data"] length] > 0, @"getTxnResponse[result][data] is empty");
 
-    NSString *getTxnSchemaDataJson = getTxnSchemaResult[@"data"];
+    NSDictionary *getTxnSchemaData = getTxnSchemaResult[@"data"];
 
-    XCTAssertTrue([getTxnSchemaDataJson isEqualToString:schemaDataJson], @"getTxnSchemaDataJson is not equesl to schemaDataJson");
+    XCTAssertTrue([getTxnSchemaData isEqualToDictionary:schemaData], @"getTxnSchemaDataJson is not equesl to schemaData");
 
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
@@ -2160,12 +2148,8 @@
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWalletWithPoolName() failed");
 
     // 3. Create my did
-    NSString *myDid;
-    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
-                                                                    seed:@"000000000000000000000000Trustee1"
-                                                                outMyDid:&myDid
-                                                             outMyVerkey:nil];
-    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDid() failed for myDid");
+    NSString *myDid = [[DidUtils sharedInstance] createStoreAndPublishMyDidWithWalletHandle:walletHandle
+                                                                                 poolHandle:poolHandle];
 
     NSMutableArray *keys = [NSMutableArray new];
     [keys addObject:@"name"];

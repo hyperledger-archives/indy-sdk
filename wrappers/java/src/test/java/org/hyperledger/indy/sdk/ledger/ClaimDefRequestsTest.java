@@ -2,8 +2,6 @@ package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
-import org.hyperledger.indy.sdk.did.Did;
-import org.hyperledger.indy.sdk.did.DidResults;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.*;
@@ -88,15 +86,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 
 	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testClaimDefRequestsWorks() throws Exception {
-		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String trusteeDid = trusteeDidResult.getDid();
-
-		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
-		String myDid = myDidResult.getDid();
-		String myVerkey = myDidResult.getVerkey();
-
-		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, myVerkey, null, null).get();
-		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
+		String myDid = createStoreAndPublishDidFromTrustee();
 
 		String claimDef = String.format(claimDefTemplate, seqNo, myDid);
 
@@ -125,15 +115,7 @@ public class ClaimDefRequestsTest extends IndyIntegrationTestWithPoolAndSingleWa
 
 	@Test
 	public void testClaimDefRequestWorksWithoutSignature() throws Exception {
-		DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String trusteeDid = trusteeDidResult.getDid();
-
-		DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
-		String myDid = myDidResult.getDid();
-		String myVerkey = myDidResult.getVerkey();
-
-		String nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, myVerkey, null, null).get();
-		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
+		String myDid = createStoreAndPublishDidFromTrustee();
 
 		String claimDef = String.format(claimDefTemplate, seqNo, myDid);
 
