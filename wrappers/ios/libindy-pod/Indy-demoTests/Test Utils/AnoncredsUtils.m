@@ -80,7 +80,7 @@
             "\"nonce\":\"12345678\"," \
             "\"key_correctness_proof\": {\"c\":\"1\",\"xz_cap\":\"1\",\"xr_cap\":{\"name\":\"1\"}}," \
             "\"schema_key\":%@" \
-            "}", issuerDid, [TestUtils proverDid], schemaKey];
+            "}", issuerDid, schemaKey];
 }
 
 - (NSString *)getGvtClaimJson {
