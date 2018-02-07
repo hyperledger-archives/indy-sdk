@@ -349,6 +349,8 @@ mod high_cases {
             let get_attrib_req = LedgerUtils::build_get_attrib_request(&trustee_did, &trustee_did, "endpoint").unwrap();
             LedgerUtils::submit_request_with_retries(pool_handle, &get_attrib_req, &attrib_req_resp).unwrap();
 
+            thread::sleep(std::time::Duration::from_millis(1000));
+
             let (endpoint, key) = DidUtils::get_endpoint_for_did(wallet_handle, pool_handle, &trustee_did).unwrap();
             assert_eq!(ENDPOINT, endpoint);
             assert_eq!(VERKEY_TRUSTEE, key.unwrap());

@@ -4,13 +4,13 @@ import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStateException;
 import org.hyperledger.indy.sdk.ledger.Ledger;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 
 public class GetEndpointForDidTest extends IndyIntegrationTestWithPoolAndSingleWallet {
@@ -34,9 +34,10 @@ public class GetEndpointForDidTest extends IndyIntegrationTestWithPoolAndSingleW
 		String attribRequest = Ledger.buildAttribRequest(trusteeDid, trusteeDid, null, endpoint, null).get();
 		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, attribRequest).get();
 
-		assertTrue(PoolUtils.retryCheck(
-				() -> Did.getEndpointForDid(wallet, pool, trusteeDid).get().toString(),
-				didEndpoint -> didEndpoint.equals(new DidResults.EndpointForDidResult(ENDPOINT, trusteeVerkey).toString())));
+		Thread.sleep(1000);
+
+		DidResults.EndpointForDidResult res = Did.getEndpointForDid(wallet, pool, trusteeDid).get();
+		Assert.assertTrue(res.equals(new DidResults.EndpointForDidResult(ENDPOINT, trusteeVerkey)));
 	}
 
 	@Test
