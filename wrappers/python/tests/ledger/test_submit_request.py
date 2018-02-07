@@ -133,18 +133,14 @@ async def test_send_schema_request_works_without_signature(pool_handle, identity
 
 
 @pytest.mark.asyncio
-async def test_schema_requests_works(pool_handle, wallet_handle, identity_trustee1, identity_my1):
-    (trustee_did, _) = identity_trustee1
-    (my_did, my_ver_key) = identity_my1
+async def test_schema_requests_works(pool_handle, wallet_handle, identity_my):
+    (my_did, my_ver_key) = identity_my
 
     schema_data = {
         "name": "gvt2",
         "version": "2.0",
         "attr_names": ["name", "male"]
     }
-
-    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
     schema_request = await ledger.build_schema_request(my_did, json.dumps(schema_data))
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
@@ -181,18 +177,14 @@ async def test_send_node_request_works_without_signature(pool_handle, identity_m
 
 
 @pytest.mark.asyncio
-async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_trustee1, identity_my1):
-    (trustee_did, _) = identity_trustee1
-    (my_did, my_ver_key) = identity_my1
+async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_my):
+    (my_did, my_ver_key) = identity_my
 
     schema_data = {
         "name": "gvt2",
         "version": "2.0",
         "attr_names": ["name", "male"]
     }
-
-    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
     schema_request = await ledger.build_schema_request(my_did, json.dumps(schema_data))
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
@@ -236,8 +228,8 @@ async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_tru
 
 
 @pytest.mark.asyncio
-async def test_get_txn_request_works(pool_handle, wallet_handle, identity_trustee1):
-    (my_did, _) = identity_trustee1
+async def test_get_txn_request_works(pool_handle, wallet_handle, identity_my):
+    (my_did, _) = identity_my
 
     schema_data = json.dumps({
         "attr_names": ["name"],
@@ -263,8 +255,8 @@ async def test_get_txn_request_works(pool_handle, wallet_handle, identity_truste
 
 
 @pytest.mark.asyncio
-async def test_get_txn_request_works_for_invalid_seq_no(pool_handle, wallet_handle, identity_trustee1):
-    (my_did, _) = identity_trustee1
+async def test_get_txn_request_works_for_invalid_seq_no(pool_handle, wallet_handle, identity_my):
+    (my_did, _) = identity_my
 
     schema_data = json.dumps({
         "name": "gvt3",

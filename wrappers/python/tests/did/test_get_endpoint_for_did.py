@@ -25,7 +25,9 @@ async def test_get_endpoint_for_did_works_from_ledger(pool_handle, wallet_handle
     endpoint_json = json.dumps({"endpoint": {"ha": endpoint, "verkey": key}})
     attrib_request = await ledger.build_attrib_request(_did, _did, None, endpoint_json, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, _did, attrib_request)
+
     time.sleep(1)
+
     received_endpoint, received_key = await did.get_endpoint_for_did(wallet_handle, pool_handle, _did)
     assert endpoint == received_endpoint
     assert key == received_key

@@ -1,6 +1,6 @@
 package org.hyperledger.indy.sdk.ledger;
 
-import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
+import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.did.DidJSONParameters;
@@ -13,7 +13,7 @@ import java.util.concurrent.ExecutionException;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertTrue;
 
-public class SignRequestTest extends IndyIntegrationTestWithSingleWallet {
+public class SignRequestTest extends IndyIntegrationTestWithPoolAndSingleWallet {
 
 	private DidJSONParameters.CreateAndStoreMyDidJSONParameter didJson =
 			new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);

@@ -35,8 +35,8 @@ public class GetEndpointForDidTest extends IndyIntegrationTestWithPoolAndSingleW
 		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, attribRequest).get();
 
 		assertTrue(PoolUtils.retryCheck(
-				() -> Did.getEndpointForDid(wallet, pool, trusteeDid).get().toString(),
-				didEndpoint -> didEndpoint.equals(new DidResults.EndpointForDidResult(ENDPOINT, trusteeVerkey).toString())));
+						() -> Did.getEndpointForDid(wallet, pool, trusteeDid).get().toString(),
+						didEndpoint -> didEndpoint.equals(new DidResults.EndpointForDidResult(ENDPOINT, trusteeVerkey).toString())));
 	}
 
 	@Test

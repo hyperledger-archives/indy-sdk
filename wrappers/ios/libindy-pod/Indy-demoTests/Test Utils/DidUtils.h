@@ -47,4 +47,7 @@
                   walletHandle:(IndyHandle)walletHandle
                     poolHandle:(IndyHandle)poolHandle
                    outMyVerKey:(NSString **)myVerKey;
+
+- (NSString *)createStoreAndPublishMyDidWithWalletHandle:(IndyHandle)walletHandle
+                                              poolHandle:(IndyHandle)poolHandle;
 @end
