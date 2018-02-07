@@ -89,8 +89,11 @@ impl LedgerService {
             .map_err(|err| CommonError::InvalidState(format!("Invalid attrib request json: {:?}", err)))
     }
 
-    pub fn build_get_attrib_request(&self, identifier: &str, dest: &str, raw: &str) -> Result<String, CommonError> {
-        let operation = GetAttribOperation::new(dest.to_string(), raw.to_string());
+    pub fn build_get_attrib_request(&self, identifier: &str, dest: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, CommonError> {
+        if raw.is_none() && hash.is_none() && enc.is_none() {
+            return Err(CommonError::InvalidStructure(format!("Either raw or hash or enc must be specified")));
+        }
+        let operation = GetAttribOperation::new(dest.to_string(), raw, hash, enc);
         Request::build_request(identifier.to_string(), operation)
             .map_err(|err| CommonError::InvalidState(format!("Invalid get_attrib request json: {:?}", err)))
     }

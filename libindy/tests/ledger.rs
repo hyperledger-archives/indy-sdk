@@ -413,7 +413,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_build_attrib_requests_works_for_raw_data() {
+        fn indy_build_attrib_requests_works_for_raw_value() {
             let expected_result = format!(
                 "\"identifier\":\"{}\",\
                 \"operation\":{{\
@@ -429,6 +429,39 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_attrib_requests_works_for_hash_value() {
+            let expected_result = format!(
+                "\"identifier\":\"{}\",\
+                \"operation\":{{\
+                    \"type\":\"100\",\
+                    \"dest\":\"{}\",\
+                    \"hash\":\"{}\"\
+                }},\
+                \"protocolVersion\":1", IDENTIFIER, DEST, ATTRIB_HASH_DATA);
+
+            let attrib_request = LedgerUtils::build_attrib_request(&IDENTIFIER, &DEST, Some(ATTRIB_HASH_DATA), None, None).unwrap();
+
+            assert!(attrib_request.contains(&expected_result));
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_attrib_requests_works_for_enc_value() {
+            let expected_result = format!(
+                "\"identifier\":\"{}\",\
+                \"operation\":{{\
+                    \"type\":\"100\",\
+                    \"dest\":\"{}\",\
+                    \"enc\":\"{}\"\
+                }},\
+                \"protocolVersion\":1", IDENTIFIER, DEST, ATTRIB_ENC_DATA);
+
+            let attrib_request = LedgerUtils::build_attrib_request(&IDENTIFIER, &DEST, None, None, Some(ATTRIB_ENC_DATA)).unwrap();
+            assert!(attrib_request.contains(&expected_result));
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_attrib_requests_works_for_missed_attribute() {
             let res = LedgerUtils::build_attrib_request(&IDENTIFIER, &DEST, None, None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -436,7 +469,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_build_get_attrib_requests_works() {
+        fn indy_build_get_attrib_requests_works_for_raw_value() {
             let raw = "endpoint";
 
             let expected_result = format!(
@@ -448,7 +481,39 @@ mod high_cases {
                 }},\
                 \"protocolVersion\":1", IDENTIFIER, DEST, raw);
 
-            let get_attrib_request = LedgerUtils::build_get_attrib_request(&IDENTIFIER, &DEST, raw).unwrap();
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(&IDENTIFIER, &DEST, Some(raw), None, None).unwrap();
+            assert!(get_attrib_request.contains(&expected_result));
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_get_attrib_requests_works_for_hash_value() {
+            let expected_result = format!(
+                "\"identifier\":\"{}\",\
+                \"operation\":{{\
+                    \"type\":\"104\",\
+                    \"dest\":\"{}\",\
+                    \"hash\":\"{}\"\
+                }},\
+                \"protocolVersion\":1", IDENTIFIER, DEST, ATTRIB_HASH_DATA);
+
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(&IDENTIFIER, &DEST, None, Some(ATTRIB_HASH_DATA), None).unwrap();
+            assert!(get_attrib_request.contains(&expected_result));
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_get_attrib_requests_works_for_enc_value() {
+            let expected_result = format!(
+                "\"identifier\":\"{}\",\
+                \"operation\":{{\
+                    \"type\":\"104\",\
+                    \"dest\":\"{}\",\
+                    \"enc\":\"{}\"\
+                }},\
+                \"protocolVersion\":1", IDENTIFIER, DEST, ATTRIB_ENC_DATA);
+
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(&IDENTIFIER, &DEST, None, None, Some(ATTRIB_ENC_DATA)).unwrap();
             assert!(get_attrib_request.contains(&expected_result));
         }
 
@@ -475,7 +540,7 @@ mod high_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        fn indy_attrib_requests_works_for_raw() {
+        fn indy_attrib_requests_works_for_raw_value() {
             TestUtils::cleanup_storage();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
@@ -490,11 +555,11 @@ mod high_cases {
                                                                    None).unwrap();
             let attrib_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
 
-            let get_attrib_request = LedgerUtils::build_get_attrib_request(&trustee_did, &trustee_did, "endpoint").unwrap();
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(&trustee_did, &trustee_did, Some("endpoint"), None, None).unwrap();
             let get_attrib_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
 
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
-            assert!(get_attrib_response.result.data.is_some());
+            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), ATTRIB_RAW_DATA);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -503,7 +568,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] //TODO Delete after Indy-Node fixed
         #[cfg(feature = "local_nodes_pool")]
         fn indy_attrib_requests_works_for_hash_value() {
             TestUtils::cleanup_storage();
@@ -522,7 +586,13 @@ mod high_cases {
                                                                    Some(&hashed_attr),
                                                                    None,
                                                                    None).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
+            let attrib_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
+
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(&trustee_did, &trustee_did, None, Some(&hashed_attr), None).unwrap();
+            let get_attrib_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
+
+            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
+            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), hashed_attr.as_str());
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -531,7 +601,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] //TODO Delete after Indy-Node fixed
         #[cfg(feature = "local_nodes_pool")]
         fn indy_attrib_requests_works_for_encrypted_value() {
             TestUtils::cleanup_storage();
@@ -550,7 +619,13 @@ mod high_cases {
                                                                    None,
                                                                    None,
                                                                    Some(&encryted_attr)).unwrap();
-            LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
+            let attrib_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
+
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(&trustee_did, &trustee_did, None, None, Some(&encryted_attr)).unwrap();
+            let get_attrib_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
+
+            let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
+            assert_eq!(get_attrib_response.result.data.unwrap().as_str(), encryted_attr.as_str());
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -1337,7 +1412,7 @@ mod medium_cases {
 
             let (did, _) = DidUtils::create_my_did(wallet_handle, r#"{}"#).unwrap();
 
-            let get_attrib_request = LedgerUtils::build_get_attrib_request(&did, &did, "endpoint").unwrap();
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(&did, &did, Some("endpoint"), None, None).unwrap();
             let get_attrib_response = LedgerUtils::submit_request(pool_handle, &get_attrib_request).unwrap();
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
             assert!(get_attrib_response.result.data.is_none());
@@ -1358,7 +1433,7 @@ mod medium_cases {
 
             let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
-            let get_attrib_request = LedgerUtils::build_get_attrib_request(&did, &did, "some_attribute").unwrap();
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(&did, &did, Some("some_attribute"), None, None).unwrap();
             let get_attrib_response = LedgerUtils::submit_request(pool_handle, &get_attrib_request).unwrap();
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
             assert!(get_attrib_response.result.data.is_none());
@@ -1389,14 +1464,14 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_attrib_request_works_for_invalid_submitter_identifier() {
-            let res = LedgerUtils::build_get_attrib_request(INVALID_IDENTIFIER, IDENTIFIER, "endpoint");
+            let res = LedgerUtils::build_get_attrib_request(INVALID_IDENTIFIER, IDENTIFIER, Some("endpoint"), None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_attrib_request_works_for_invalid_target_identifier() {
-            let res = LedgerUtils::build_get_attrib_request(IDENTIFIER, INVALID_IDENTIFIER, "endpoint");
+            let res = LedgerUtils::build_get_attrib_request(IDENTIFIER, INVALID_IDENTIFIER, Some("endpoint"), None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
     }

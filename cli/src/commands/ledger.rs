@@ -193,7 +193,9 @@ pub mod get_attrib_command {
 
     command!(CommandMetadata::build("get-attrib", "Get ATTRIB from Ledger.")
                 .add_required_param("did", "DID of identity presented in Ledger")
-                .add_required_param("attr", "Name of attribute")
+                .add_optional_param("raw", "Name of attribute")
+                .add_optional_param("hash", "Hash of attribute data")
+                .add_optional_param("enc", "Encrypted value of attribute data")
                 .add_example("ledger get-attrib did=VsKV7grR1BUE29mG2Fm2kX attr=endpoint")
                 .finalize()
     );
@@ -205,9 +207,11 @@ pub mod get_attrib_command {
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
-        let attr = get_str_param("attr", params).map_err(error_err!())?;
+        let raw = get_opt_str_param("raw", params).map_err(error_err!())?;
+        let hash = get_opt_str_param("hash", params).map_err(error_err!())?;
+        let enc = get_opt_str_param("enc", params).map_err(error_err!())?;
 
-        let res = Ledger::build_get_attrib_request(&submitter_did, target_did, attr)
+        let res = Ledger::build_get_attrib_request(&submitter_did, target_did, raw, hash, enc)
             .and_then(|request| Ledger::submit_request(pool_handle, &request));
 
         let response = match res {
@@ -219,18 +223,16 @@ pub mod get_attrib_command {
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
         if let Some(result) = response.result.as_mut() {
-            let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or(""));
+            let data = result["data"].as_str().map(|data| serde_json::Value::String(data.to_string()));
             match data {
-                Ok(data) => {
-                    result["data"] = data;
-                }
-                Err(_) => return Err(println_err!("Attribute not found"))
+                Some(data) => { result["data"] = data; }
+                None => return Err(println_err!("Attribute not found"))
             };
         };
 
         let res = handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
-                                                     "Following NYM has been received.",
+                                                     "Following ATTRIB has been received.",
                                                      &[("dest", "Did"),
                                                          ("seqNo", "Sequence Number"),
                                                          ("reqId", "Request ID"),
@@ -1191,7 +1193,7 @@ pub mod tests {
         use super::*;
 
         #[test]
-        pub fn get_attrib_worksa() {
+        pub fn get_attrib_works_for_raw_value() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -1213,7 +1215,71 @@ pub mod tests {
                 let cmd = get_attrib_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY1.to_string());
-                params.insert("attr", "endpoint".to_string());
+                params.insert("raw", "endpoint".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn get_attrib_works_for_hash_value() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym_my1(&ctx);
+            use_did(&ctx, DID_MY1);
+
+            let hash = "83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3".to_string();
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("hash", hash.clone());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            {
+                let cmd = get_attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("hash", hash);
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn get_attrib_works_for_enc_value() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym_my1(&ctx);
+            use_did(&ctx, DID_MY1);
+
+            let enc = "aa3f41f619aa7e5e6b6d0de555e05331787f9bf9aa672b94b57ab65b9b66c3ea960b18a98e3834b1fc6cebf49f463b81fd6e3181".to_string();
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("enc", enc.clone());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            {
+                let cmd = get_attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("enc", enc);
                 cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);
@@ -1880,7 +1946,7 @@ pub mod tests {
     }
 
     fn _ensure_attrib_added(ctx: &CommandContext, did: &str) {
-        let request = Ledger::build_get_attrib_request(DID_MY1, did, "endpoint").unwrap();
+        let request = Ledger::build_get_attrib_request(DID_MY1, did, Some("endpoint"), None, None).unwrap();
         _submit_retry(ctx, &request, |response| {
             serde_json::from_str::<Response<ReplyResult<String>>>(&response)
                 .and_then(|response| serde_json::from_str::<AttribData>(&response.result.unwrap().data))

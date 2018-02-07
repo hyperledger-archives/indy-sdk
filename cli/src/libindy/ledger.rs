@@ -102,18 +102,23 @@ impl Ledger {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_attrib_request(submitter_did: &str, target_did: &str, data: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_attrib_request(submitter_did: &str, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
-        let data = CString::new(data).unwrap();
+
+        let raw_str = raw.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let hash_str = hash.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let enc_str = enc.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
             indy_build_get_attrib_request(command_handle,
                                           submitter_did.as_ptr(),
                                           target_did.as_ptr(),
-                                          data.as_ptr(),
+                                          if raw.is_some() { raw_str.as_ptr() } else { null() },
+                                          if hash.is_some() { hash_str.as_ptr() } else { null() },
+                                          if enc.is_some() { enc_str.as_ptr() } else { null() },
                                           cb)
         };
 
@@ -303,7 +308,9 @@ extern {
     fn indy_build_get_attrib_request(command_handle: i32,
                                      submitter_did: *const c_char,
                                      target_did: *const c_char,
-                                     data: *const c_char,
+                                     raw: *const c_char,
+                                     hash: *const c_char,
+                                     enc: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
