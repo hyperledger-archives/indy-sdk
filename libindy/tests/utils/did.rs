@@ -13,6 +13,14 @@ use utils::ledger::LedgerUtils;
 pub struct DidUtils {}
 
 impl DidUtils {
+    pub fn create_store_and_publish_my_did_from_trustee(wallet_handle: i32, pool_handle: i32) -> Result<(String, String), ErrorCode> {
+        let (trustee_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(::utils::constants::TRUSTEE_SEED))?;
+        let (my_did, my_vk) = DidUtils::create_and_store_my_did(wallet_handle, None)?;
+        let nym = LedgerUtils::build_nym_request(&trustee_did, &my_did, Some(&my_vk), None, None)?;
+        LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym)?; //TODO check response type
+        Ok((my_did, my_vk))
+    }
+
     pub fn create_and_store_my_did(wallet_handle: i32, seed: Option<&str>) -> Result<(String, String), ErrorCode> {
         let (create_and_store_my_did_sender, create_and_store_my_did_receiver) = channel();
         let create_and_store_my_did_cb = Box::new(move |err, did, verkey| {
