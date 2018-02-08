@@ -389,15 +389,18 @@ The usefulness and reliability of a claim are tied to the reputation of the issu
 For Alice to self-issue a claim that she likes chocolate ice cream may be perfectly reasonable, but for her to self-issue a claim that she graduated from Faber College should not impress anyone. 
 
 As we mentioned in [Involving of Alice](#involving-of-alice) **Alice** graduate **Faber College**.
-After Alice had established connection with **Faber College**, she got Claim Offer about the issuance of **Transcript** Claim.
-Alice stores it in her wallet.
+After **Faber College** had established a connection with Alice, he created for her Claim Offer about the issuance of **Transcript** Claim.
+```python
+  # Faber Agent 
+    transcript_claim_offer_json = \
+        await anoncreds.issuer_create_claim_offer(faber_wallet, json.dumps(transcript_schema),
+                                                  faber_issuer_did, alice_faber_did)
+``` 
+ 
+Alice stores **Transcript** Claim Offer in her wallet.
 ```python
   # Alice Agent 
-  transcript_claim_offer = {
-      'issuer_did': faber_issuer_did,
-      'schema_key': transcript_schema_key
-  }
-  await anoncreds.prover_store_claim_offer(alice_wallet, json.dumps(transcript_claim_offer))
+  await anoncreds.prover_store_claim_offer(alice_wallet, transcript_claim_offer_json)
 ```
 Note: All messages sent between actors are encrypted using `Authenticated-encryption` scheme.
 
@@ -640,14 +643,18 @@ Now **Acme** has everything to check **Job-Application** Proof from Alice.
 ```
 
 Here, we’ll assume the application is accepted, and Alice ends up getting the job.
-When Alice inspects her connection with Acme a week later, she sees that a new Claim Offer is available.
+**Acme** creates new Claim Offer for Alice.
+```python
+  # Acme Agent 
+    job_certificate_claim_offer_json = \
+        await anoncreds.issuer_create_claim_offer(acme_wallet, json.dumps(job_certificate_schema),
+                                                  acme_issuer_did, alice_acme_did)
+``` 
+
+When Alice inspects her connection with Acme, she sees that a new Claim Offer is available.
 ```python
   # Alice Agent 
-  job_certificate_claim_offer = {
-      "issuer_did": acme_issuer_did,
-      "schema_key": job_certificate_schema_key
-  }
-  await anoncreds.prover_store_claim_offer(alice_wallet, job_certificate_claim_offer)
+  await anoncreds.prover_store_claim_offer(alice_wallet, job_certificate_claim_offer_json)
 ```
 
 ## Apply for a Loan 
