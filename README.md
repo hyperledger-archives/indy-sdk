@@ -30,6 +30,9 @@ us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to
 ## Indy CLI documentation
 * [Indy CLI](cli/README.md)
 
+## Getting started
+* [Libindy Getting-Started Guide](doc/getting-started/getting-started.md)
+
 ## Binaries
 Pre-Built binaries can be downloaded from https://repo.sovrin.org/:
 * sdk/lib/apt/xenial/{master,stable,rc} - Ubuntu deb packages
