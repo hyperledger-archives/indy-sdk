@@ -15,6 +15,7 @@ pub mod about_command {
         println_succ!("which provides a distributed-ledger-based foundation for");
         println_succ!("self-sovereign identity (https://sovrin.org/).");
         println!();
+        println_succ!("Version: {}", env!("CARGO_PKG_VERSION"));
         println_succ!("Apache License Version 2.0");
         println_succ!("Copyright 2017 Sovrin Foundation");
         println!();
@@ -33,6 +34,7 @@ pub mod show_command {
 
     command!(CommandMetadata::build("show", "Print the content of text file")
                             .add_main_param("file", "The path to file to show")
+                            .add_example("show /home/file.txt")
                             .finalize());
 
     fn execute(_ctx: &CommandContext, params: &CommandParams) -> CommandResult {
@@ -65,6 +67,7 @@ pub mod prompt_command {
 
     command!(CommandMetadata::build("prompt", "Change command prompt")
                             .add_main_param("prompt", "New prompt string")
+                            .add_example("prompt new-prompt")
                             .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> CommandResult {

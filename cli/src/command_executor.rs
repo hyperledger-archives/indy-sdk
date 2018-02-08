@@ -1,21 +1,26 @@
+extern crate rpassword;
+
 use unescape::unescape;
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
+use std::error::Error;
 
 #[derive(Debug)]
 pub struct ParamMetadata {
     name: &'static str,
     is_optional: bool,
+    is_deferred: bool,
     help: &'static str,
 }
 
 impl ParamMetadata {
-    pub fn new(name: &'static str, is_optional: bool, help: &'static str) -> ParamMetadata {
+    pub fn new(name: &'static str, is_optional: bool, is_deferred: bool, help: &'static str) -> ParamMetadata {
         ParamMetadata {
             name,
             is_optional,
+            is_deferred,
             help
         }
     }
@@ -26,6 +31,10 @@ impl ParamMetadata {
 
     pub fn is_optional(&self) -> bool {
         self.is_optional
+    }
+
+    pub fn is_deferred(&self) -> bool {
+        self.is_deferred
     }
 
     pub fn help(&self) -> &'static str {
@@ -39,6 +48,7 @@ pub struct CommandMetadata {
     help: &'static str,
     main_param: Option<ParamMetadata>,
     params: Vec<ParamMetadata>,
+    examples: Vec<&'static str>
 }
 
 impl CommandMetadata {
@@ -48,6 +58,7 @@ impl CommandMetadata {
             help,
             main_param: None,
             params: Vec::new(),
+            examples: Vec::new(),
         }
     }
 
@@ -63,9 +74,9 @@ impl CommandMetadata {
         self.main_param.as_ref()
     }
 
-    pub fn params(&self) -> &[ParamMetadata] {
-        self.params.as_slice()
-    }
+    pub fn params(&self) -> &[ParamMetadata] { self.params.as_slice() }
+
+    pub fn examples(&self) -> &[&'static str] { self.examples.as_slice() }
 }
 
 pub struct CommandMetadataBuilder {
@@ -73,21 +84,41 @@ pub struct CommandMetadataBuilder {
     name: &'static str,
     main_param: Option<ParamMetadata>,
     params: Vec<ParamMetadata>,
+    examples: Vec<&'static str>
 }
 
 impl CommandMetadataBuilder {
     pub fn add_main_param(mut self,
                           name: &'static str,
                           help: &'static str) -> CommandMetadataBuilder {
-        self.main_param = Some(ParamMetadata::new(name, false, help));
+        self.main_param = Some(ParamMetadata::new(name, false, false, help));
         self
     }
 
-    pub fn add_param(mut self,
-                     name: &'static str,
-                     is_optional: bool,
-                     help: &'static str) -> CommandMetadataBuilder {
-        self.params.push(ParamMetadata::new(name, is_optional, help));
+    pub fn add_required_param(mut self,
+                              name: &'static str,
+                              help: &'static str) -> CommandMetadataBuilder {
+        self.params.push(ParamMetadata::new(name, false, false, help));
+        self
+    }
+
+    pub fn add_optional_param(mut self,
+                              name: &'static str,
+                              help: &'static str) -> CommandMetadataBuilder {
+        self.params.push(ParamMetadata::new(name, true, false, help));
+        self
+    }
+
+    pub fn add_optional_deferred_param(mut self,
+                                       name: &'static str,
+                                       help: &'static str) -> CommandMetadataBuilder {
+        self.params.push(ParamMetadata::new(name, true, true, help));
+        self
+    }
+
+    pub fn add_example(mut self,
+                       example: &'static str) -> CommandMetadataBuilder {
+        self.examples.push(example);
         self
     }
 
@@ -97,6 +128,7 @@ impl CommandMetadataBuilder {
             help: self.help,
             main_param: self.main_param,
             params: self.params,
+            examples: self.examples,
         }
     }
 }
@@ -295,6 +327,131 @@ impl CommandExecutor {
         &self.ctx
     }
 
+    fn command_params(command: &Command, word: &str) -> Vec<(String, char)> {
+        let mut completes: Vec<(String, char)> = Vec::new();
+
+        if word == command.metadata.name {
+            completes.push((word.to_owned(), ' '));
+        }
+
+        completes.extend(command
+            .metadata()
+            .params()
+            .iter()
+            .filter(|param| param.name().starts_with(word))
+            .map(|param| (param.name().to_owned(), '='))
+            .collect::<Vec<(String, char)>>());
+
+        completes
+    }
+
+    fn command_names(commands: &HashMap<&'static str, Command>, word: &str) -> Vec<(String, char)> {
+        commands
+            .iter()
+            .filter(|name_meta| name_meta.0.starts_with(word))
+            .map(|name_meta| ((*name_meta.0).to_owned(), ' '))
+            .collect::<Vec<(String, char)>>()
+    }
+
+    fn group_names(grouped_commands: &HashMap<&'static str, (CommandGroup, HashMap<&'static str, Command>)>, word: &str) -> Vec<(String, char)> {
+        grouped_commands
+            .iter()
+            .filter(|name_meta| name_meta.0.starts_with(word))
+            .map(|name_meta| ((*name_meta.0).to_owned(), ' '))
+            .collect::<Vec<(String, char)>>()
+    }
+
+    fn is_subcommand(grouped_commands: &HashMap<&'static str, (CommandGroup, HashMap<&'static str, Command>)>,
+                     command: &str, sub_command: &str) -> bool {
+        let (_, ref commands) = grouped_commands[command];
+        commands.contains_key(sub_command)
+    }
+
+    pub fn complete(&self, line: &str, word: &str, _start: usize, _end: usize) -> Vec<(String, char)> {
+        let mut completes: Vec<(String, char)> = vec![];
+
+        let (first_word, second_word, params) = CommandExecutor::_split_arguments(line);
+
+        if "help".starts_with(word) && !line.contains("help") && params.is_none() {
+            completes.push(("help".to_owned(), ' '));
+        }
+
+        match (first_word, second_word, params) {
+            (Some(first_word), None, None) => {
+                match first_word {
+                    "help" => {}
+                    command if self.commands.contains_key(command) => {
+                        completes.extend(CommandExecutor::command_params(&self.commands[command], word));
+                    }
+                    command if self.grouped_commands.contains_key(command) => {
+                        let (ref group, ref commands) = self.grouped_commands[command];
+
+                        if word == group.metadata.name {
+                            completes.push((word.to_owned(), ' '));
+                        }
+
+                        completes.extend(CommandExecutor::command_names(commands, word));
+                    }
+                    _cmd if word.is_empty() => {
+                        completes = Vec::new();
+                    }
+                    _ => {
+                        completes.extend(CommandExecutor::command_names(&self.commands, word));
+                        completes.extend(CommandExecutor::group_names(&self.grouped_commands, word));
+                    }
+                }
+            }
+            (Some(first_word), Some(second_word), None) => {
+                match (first_word, second_word) {
+                    (command, sub_command) if self.grouped_commands.contains_key(command) &&
+                        CommandExecutor::is_subcommand(&self.grouped_commands, command, sub_command) => {
+                        let (_, ref commands) = self.grouped_commands[command];
+                        let sub_command = &commands[sub_command];
+                        completes.extend(CommandExecutor::command_params(&sub_command, word));
+                    }
+                    (_, _) if word.is_empty() => {
+                        completes = Vec::new();
+                    }
+                    (command, sub_command) if self.grouped_commands.contains_key(command) &&
+                        !CommandExecutor::is_subcommand(&self.grouped_commands, command, sub_command) => {
+                        let (_, ref commands) = self.grouped_commands[command];
+                        completes.extend(CommandExecutor::command_names(&commands, word));
+                    }
+                    _ => {}
+                }
+            }
+            (Some(first_word), Some(second_word), Some(params)) => {
+                match (first_word, second_word, &params) {
+                    (_, _, ref params) if "help".starts_with(params[0]) => {
+                        if !line.contains("help") {
+                            completes.push(("help".to_owned(), ' '));
+                        }
+                    }
+                    (command, sub_command, ref params) if self.grouped_commands.contains_key(command) &&
+                        CommandExecutor::is_subcommand(&self.grouped_commands, command, sub_command) => {
+                        let (_, ref commands) = self.grouped_commands[command];
+                        let sub_command = commands.get(sub_command).unwrap();
+                        let command_params = sub_command
+                            .metadata()
+                            .params();
+
+                        let param_names: Vec<(String, char)> = command_params
+                            .iter()
+                            .filter(|param_meta| !params.contains(&param_meta.name) && param_meta.name.starts_with(word))
+                            .map(|param_meta| ((*param_meta.name).to_owned(), '='))
+                            .collect();
+
+                        completes.extend(param_names);
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
+
+        completes
+    }
+
     fn _execute_group_command(&self, group: &CommandGroup, commands: &HashMap<&'static str, Command>, line: &str) -> Result<(), ()> {
         let (cmd, params) = CommandExecutor::_split_first_word(line);
 
@@ -313,9 +470,9 @@ impl CommandExecutor {
     }
 
     fn _execute_command(&self, group: Option<&CommandGroup>, command: &Command, params: &str) -> Result<(), ()> {
-        let (main_param, _) = CommandExecutor::_split_first_word(params);
+        let (first_word, _) = CommandExecutor::_split_first_word(params);
 
-        if main_param == "help" {
+        if first_word == "help" {
             self._print_command_help(group, command);
             return Ok(());
         }
@@ -394,7 +551,6 @@ impl CommandExecutor {
         }
 
         println!();
-        println!();
         println_acc!("Usage:");
 
         if let Some(group) = group {
@@ -404,33 +560,50 @@ impl CommandExecutor {
         }
 
         if let Some(ref main_param) = command.metadata().main_param() {
-            print!(" [{}=]<{}-value>", main_param.name(), main_param.name())
+            print!(" <{}-value>", main_param.name());
         }
 
         for param in command.metadata().params() {
-            if param.is_optional() {
-                print!(" [{}=<{}-value>]", param.name(), param.name())
-            } else {
-                print!(" {}=<{}-value>", param.name(), param.name())
+            match (param.is_optional(), param.is_deferred()) {
+                (true, true) => print!(" [{}[=<{}-value>]]", param.name(), param.name()),
+                (true, false) => print!(" [{}=<{}-value>]", param.name(), param.name()),
+                (false, true) => print!(" {}[=<{}-value>]", param.name(), param.name()),
+                (false, false) => print!(" {}=<{}-value>", param.name(), param.name())
             }
         }
 
         println!();
-        println!();
-        println_acc!("Parameters are:");
 
-        if let Some(ref main_param) = command.metadata().main_param() {
-            println!("\t{} - {}", main_param.name(), main_param.help())
-        }
+        if command.metadata().main_param().is_some() || command.metadata().params().len() > 0 {
+            println!();
+            println_acc!("Parameters are:");
 
-        for param in command.metadata().params() {
-            print!("\t{} - ", param.name());
-
-            if param.is_optional() {
-                print!("(optional) ")
+            if let Some(ref main_param) = command.metadata().main_param() {
+                println!("\t{} - {}", main_param.name(), main_param.help())
             }
 
-            println!("{}", param.help());
+            for param in command.metadata().params() {
+                print!("\t{} - ", param.name());
+
+                if param.is_optional() {
+                    print!("(optional) ")
+                }
+
+                if param.is_deferred() {
+                    print!("(leave empty for deferred input) ")
+                }
+
+                println!("{}", param.help());
+            }
+        }
+
+        if command.metadata().examples().len() > 0 {
+            println!();
+            println_acc!("Examples:");
+
+            for example in command.metadata().examples() {
+                println!("\t{}", example);
+            }
         }
 
         println!();
@@ -456,6 +629,8 @@ impl CommandExecutor {
             }
         }
 
+        let mut deffered_params = Vec::new();
+
         // Read rest params
         loop {
             let (param, tail) = CommandExecutor::_split_first_word(params);
@@ -468,23 +643,51 @@ impl CommandExecutor {
             let mut split = param.splitn(2, '=');
             let param_name = split.next().unwrap();
             let param_value = split.next();
-            let param_metadata = command.params().iter().find(|p| p.name() == param_name);
 
-            if let Some(param_metadata) = param_metadata {
-                if let Some(param_value) = param_value {
-                    if let Some(param_value) = unescape(CommandExecutor::_trim_quotes(param_value)) {
-                        res.insert(param_metadata.name(), param_value);
-                    } else {
-                        return Err(format!("Invalid escape sequence for \"{}\" parameter present", param_metadata.name()));
+            if res.contains_key(param_name) {
+                return Err(format!("\"{}\" parameter presented multiple times", param_name));
+            }
+
+            match command.params().iter().find(|p| p.name() == param_name) {
+                Some(param_metadata) => {
+                    match param_value {
+                        Some(param_value) => {
+                            unescape(CommandExecutor::_trim_quotes(&param_value))
+                                .ok_or(format!("Invalid escape sequence for \"{}\" parameter present", param_name))
+                                .map(|param_value| res.insert(param_metadata.name(), param_value))?;
+                        }
+                        _ if param_metadata.is_deferred() => {
+                            deffered_params.push(param_metadata.name());
+                        }
+                        _ => return Err(format!("No value for \"{}\" parameter present", param_name))
                     }
-                } else {
-                    return Err(format!("No value for \"{}\" parameter present", param_name));
                 }
-            } else {
-                return Err(format!("Unknown \"{}\" parameter present", param_name));
+                None => return Err(format!("Unknown \"{}\" parameter present", param_name))
             }
         }
 
+        for param in deffered_params {
+            println!("Enter value for {}:", param);
+            let val;
+            loop {
+                match rpassword::read_password() {
+                    Ok(v) => {
+                        if v.is_empty() {
+                            println!("Please enter value for {}:", param);
+                        } else {
+                            val = v;
+                            break;
+                        }
+                    }
+                    Err(err) => {
+                        println_err!("{}", err.description().to_string());
+                        println!("Please enter value for {}:", param);
+                    }
+                }
+            }
+
+            res.insert(param, val);
+        }
         Ok(res)
     }
 
@@ -507,6 +710,18 @@ impl CommandExecutor {
 
         (s, "")
     }
+
+    fn _split_arguments(s: &str) -> (Option<&str>, Option<&str>, Option<Vec<&str>>) {
+        let mut parts = s.trim().split_whitespace();
+        let first_word = parts.next();
+        let second_word = parts.next();
+        let params = parts
+            .map(|s| s.split("=").collect::<Vec<&str>>()[0])
+            .collect::<Vec<&str>>();
+
+        (first_word, second_word, if params.is_empty() { None } else { Some(params) })
+    }
+
 
     fn _trim_quotes(s: &str) -> &str {
         if s.len() > 1 && s.starts_with("\"") && s.ends_with("\"") {
@@ -598,8 +813,8 @@ mod tests {
 
         command!(CommandMetadata::build("test_command", "Test command help")
                     .add_main_param("main_param", "Main param help")
-                    .add_param("param1", false, "Param1 help")
-                    .add_param("param2", true, "Param2 help")
+                    .add_required_param("param1", "Param1 help")
+                    .add_optional_param("param2", "Param2 help")
                     .finalize());
 
         fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {

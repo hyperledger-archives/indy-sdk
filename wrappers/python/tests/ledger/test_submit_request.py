@@ -1,4 +1,7 @@
+import datetime
 import json
+import logging
+import time
 
 import pytest
 
@@ -37,7 +40,6 @@ async def test_submit_request_works(pool_handle):
     assert response["result"]["type"] == expected_response["result"]["type"]
 
 
-
 @pytest.mark.asyncio
 async def test_submit_request_works_for_invalid_pool_handle(pool_handle, identity_my1):
     (my_did, _) = identity_my1
@@ -56,9 +58,8 @@ async def test_send_nym_request_works_without_signature(pool_handle, identity_my
 
     nym_request = await ledger.build_nym_request(my_did, my_did, None, None, None)
 
-    with pytest.raises(IndyError) as e:
-        await ledger.submit_request(pool_handle, nym_request)
-    assert ErrorCode.LedgerInvalidTransaction == e.value.error_code
+    response = await ledger.submit_request(pool_handle, nym_request)
+    assert json.loads(response)['op'] == 'REQNACK'
 
 
 @pytest.mark.asyncio
@@ -80,9 +81,10 @@ async def test_nym_requests_works(pool_handle, wallet_handle, identity_trustee1,
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
     get_nym_request = await ledger.build_get_nym_request(my_did, my_did)
-    response = json.loads(await ledger.submit_request(pool_handle, get_nym_request))
+    get_nym_response = await ensure_previous_request_applied(pool_handle, get_nym_request,
+                                                             lambda response: response['result']['data'] is not None)
 
-    assert response['result']['data'] is not None
+    assert get_nym_response
 
 
 @pytest.mark.asyncio
@@ -91,9 +93,8 @@ async def test_send_attrib_request_works_without_signature(pool_handle, identity
 
     attrib_request = await ledger.build_attrib_request(my_did, my_did, None,
                                                        "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}", None)
-    with pytest.raises(IndyError) as e:
-        await ledger.submit_request(pool_handle, attrib_request)
-    assert ErrorCode.LedgerInvalidTransaction == e.value.error_code
+    response = await ledger.submit_request(pool_handle, attrib_request)
+    assert json.loads(response)['op'] == 'REQNACK'
 
 
 @pytest.mark.asyncio
@@ -109,9 +110,10 @@ async def test_attrib_requests_works(pool_handle, wallet_handle, identity_truste
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, attrib_request)
 
     get_attrib_request = await ledger.build_get_attrib_request(my_did, my_did, "endpoint")
-    response = json.loads(await ledger.submit_request(pool_handle, get_attrib_request))
+    get_attrib_response = await ensure_previous_request_applied(pool_handle, get_attrib_request,
+                                                                lambda response: response['result']['data'] is not None)
 
-    assert response['result']['data'] is not None
+    assert get_attrib_response
 
 
 @pytest.mark.asyncio
@@ -126,24 +128,19 @@ async def test_send_schema_request_works_without_signature(pool_handle, identity
 
     schema_request = await ledger.build_schema_request(my_did, json.dumps(schema_data))
 
-    with pytest.raises(IndyError) as e:
-        await ledger.submit_request(pool_handle, schema_request)
-    assert ErrorCode.LedgerInvalidTransaction == e.value.error_code
+    response = await ledger.submit_request(pool_handle, schema_request)
+    assert json.loads(response)['op'] == 'REQNACK'
 
 
 @pytest.mark.asyncio
-async def test_schema_requests_works(pool_handle, wallet_handle, identity_trustee1, identity_my1):
-    (trustee_did, _) = identity_trustee1
-    (my_did, my_ver_key) = identity_my1
+async def test_schema_requests_works(pool_handle, wallet_handle, identity_my):
+    (my_did, my_ver_key) = identity_my
 
     schema_data = {
         "name": "gvt2",
         "version": "2.0",
         "attr_names": ["name", "male"]
     }
-
-    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
     schema_request = await ledger.build_schema_request(my_did, json.dumps(schema_data))
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
@@ -153,9 +150,10 @@ async def test_schema_requests_works(pool_handle, wallet_handle, identity_truste
         "version": "2.0"
     }
     get_schema_request = await ledger.build_get_schema_request(my_did, my_did, json.dumps(get_schema_data))
-    response = json.loads(await ledger.submit_request(pool_handle, get_schema_request))
+    get_schema_response = await ensure_previous_request_applied(pool_handle, get_schema_request,
+                                                                lambda response: response['result']['data'] is not None)
 
-    assert response['result']['data'] is not None
+    assert get_schema_response
 
 
 @pytest.mark.asyncio
@@ -174,24 +172,19 @@ async def test_send_node_request_works_without_signature(pool_handle, identity_m
 
     node_request = await ledger.build_node_request(my_did, my_did, json.dumps(node_data))
 
-    with pytest.raises(IndyError) as e:
-        await ledger.submit_request(pool_handle, node_request)
-    assert ErrorCode.LedgerInvalidTransaction == e.value.error_code
+    response = await ledger.submit_request(pool_handle, node_request)
+    assert json.loads(response)['op'] == 'REQNACK'
 
 
 @pytest.mark.asyncio
-async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_trustee1, identity_my1):
-    (trustee_did, _) = identity_trustee1
-    (my_did, my_ver_key) = identity_my1
+async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_my):
+    (my_did, my_ver_key) = identity_my
 
     schema_data = {
         "name": "gvt2",
         "version": "2.0",
         "attr_names": ["name", "male"]
     }
-
-    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
-    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
     schema_request = await ledger.build_schema_request(my_did, json.dumps(schema_data))
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, schema_request)
@@ -202,7 +195,9 @@ async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_tru
     }
 
     get_schema_request = await ledger.build_get_schema_request(my_did, my_did, json.dumps(get_schema_data))
-    get_schema_response = json.loads(await ledger.submit_request(pool_handle, get_schema_request))
+    get_schema_response = await ensure_previous_request_applied(pool_handle, get_schema_request,
+                                                                lambda response: response['result'][
+                                                                                     'seqNo'] is not None)
 
     claim_def = {
         "primary": {
@@ -217,8 +212,7 @@ async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_tru
             },
             "rctxt": "36378575722516953828830668112614685244571602424420162720244033008706985740860180373728219883172046821464173434592331868657297711725743060654773725561634332269874655603697872022630999786617840856366807034806938874090561725454026277048301648000835861491030368037108847175790943895107305383779598585532854170748970999977490244057635358075906501562932970296830906796719844887269636297064678777638050708353254894155336111384638276041851818109156194135995350001255928374102089400812445206030019103440866343736761861049159446083221399575945128480681798837648578166327164995640582517916904912672875184928940552983440410245037",
             "z": "65210811645114955910002482704691499297899796787292244564644467629838455625296674951468505972574512639263601600908664306008863647466643899294681985964775001929521624341158696866597713112430928402519124073453804861185882073381514901830347278653016300430179820703804228663001232136885036042101307423527913402600370741689559698469878576457899715687929448757963179899698951620405467976414716277505767979494596626867505828267832223147104774684678295400387894506425769550011471322118172087199519094477785389750318762521728398390891214426117908390767403438354009767291938975195751081032073309083309746656253788033721103313036"
-        },
-        "revocation": None
+        }
     }
 
     claim_def_request = await ledger.build_claim_def_txn(
@@ -227,15 +221,15 @@ async def test_claim_def_requests_works(pool_handle, wallet_handle, identity_tru
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, claim_def_request)
     get_claim_def_request = await ledger.build_get_claim_def_txn(
         my_did, get_schema_response['result']['seqNo'], "CL", get_schema_response['result']['dest'])
-    get_claim_def_response = json.loads(
-        (await ledger.submit_request(pool_handle, get_claim_def_request)))
-    claim_def["revocation"] = {}  # FIXME workaround for ledger
-    assert claim_def == get_claim_def_response['result']['data']
+    get_claim_def_response = await ensure_previous_request_applied(pool_handle, get_claim_def_request,
+                                                                   lambda response:
+                                                                   claim_def == response['result']['data'])
+    assert get_claim_def_response
 
 
 @pytest.mark.asyncio
-async def test_get_txn_request_works(pool_handle, wallet_handle, identity_trustee1):
-    (my_did, _) = identity_trustee1
+async def test_get_txn_request_works(pool_handle, wallet_handle, identity_my):
+    (my_did, _) = identity_my
 
     schema_data = json.dumps({
         "attr_names": ["name"],
@@ -261,8 +255,8 @@ async def test_get_txn_request_works(pool_handle, wallet_handle, identity_truste
 
 
 @pytest.mark.asyncio
-async def test_get_txn_request_works_for_invalid_seq_no(pool_handle, wallet_handle, identity_trustee1):
-    (my_did, _) = identity_trustee1
+async def test_get_txn_request_works_for_invalid_seq_no(pool_handle, wallet_handle, identity_my):
+    (my_did, _) = identity_my
 
     schema_data = json.dumps({
         "name": "gvt3",
@@ -279,3 +273,52 @@ async def test_get_txn_request_works_for_invalid_seq_no(pool_handle, wallet_hand
     get_txn_request = await ledger.build_get_txn_request(my_did, seq_no)
     get_txn_response = json.loads(await ledger.submit_request(pool_handle, get_txn_request))
     assert not get_txn_response['result']['data']
+
+
+@pytest.mark.asyncio
+async def test_pool_config_request_works(pool_handle, wallet_handle, identity_trustee1):
+    (did_trustee, _) = identity_trustee1
+
+    request = await ledger.build_pool_config_request(did_trustee, False, False)
+    response = json.loads(await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request))
+    assert not response['result']['writes']
+
+    request = await ledger.build_pool_config_request(did_trustee, True, False)
+    response = json.loads(await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request))
+    assert response['result']['writes']
+
+
+@pytest.mark.asyncio
+async def test_pool_upgrade_requests_works(pool_handle, wallet_handle, identity_trustee1):
+    (did_trustee, _) = identity_trustee1
+    next_year = datetime.datetime.now().year + 1
+
+    schedule = {
+        "Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv": str(next_year) + "-01-25T12:49:05.258870+00:00",
+        "8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb": str(next_year) + "-01-25T13:49:05.258870+00:00",
+        "DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya": str(next_year) + "-01-25T14:49:05.258870+00:00",
+        "4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA": str(next_year) + "-01-25T15:49:05.258870+00:00"
+    }
+
+    request = await ledger.build_pool_upgrade_request(did_trustee, 'upgrade-python', '2.0.0', 'start',
+                                                      'f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398',
+                                                      None, json.dumps(schedule), None, False, False)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request)
+
+    request = await ledger.build_pool_upgrade_request(did_trustee, 'upgrade-python', '2.0.0', 'cancel',
+                                                      'ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398',
+                                                      None, None, None, False, False)
+    json.loads(await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request))
+
+
+async def ensure_previous_request_applied(pool_handle, checker_request, checker):
+    for _ in range(3):
+        response = json.loads(await ledger.submit_request(pool_handle, checker_request))
+        try:
+            if checker(response):
+                return response
+        except TypeError as e:
+            logger = logging.getLogger(__name__)
+            logger.warning(e)
+            logger.warning(response)
+        time.sleep(5)

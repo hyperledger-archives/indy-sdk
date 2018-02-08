@@ -11,11 +11,14 @@
 
 + (AnoncredsUtils *)sharedInstance;
 
+- (NSString *)getGvtSchemaKey;
 - (NSString *)getGvtSchemaJson:(NSNumber *)seqNo;
+- (NSString *)getSchemaJson:(NSString *)schemaName;
 
 - (NSString *)getClaimOfferJson:(NSString *)issuerDid
-                    schemaSeqNo:(NSNumber *)schemaSeqNo;
+                    schemaKey:(NSString *)schemaKey;
 
+- (NSString *)getXyzSchemaKey;
 - (NSString *)getGvtClaimJson;
 - (NSString *)getXyzSchemaJson:(NSNumber *)schemaSeqNo;
 - (NSString *)getXyzClaimJson;
@@ -30,10 +33,10 @@
  
  @param proofClaims Dictionary with format:
  {
- "requested_attr1_uuid": [claim1, claim2],
- "requested_attr2_uuid": [],
- "requested_attr3_uuid": [claim3],
- "requested_predicate_1_uuid": [claim1, claim3],
+ "requested_attr1_referent": [claim1, claim2],
+ "requested_attr2_referent": [],
+ "requested_attr3_referent": [claim3],
+ "requested_predicate_1_referent": [claim1, claim3],
  }
  @return Array of unique claims
  */
@@ -51,9 +54,9 @@
                outClaimOffersJSON:(NSString **)outJson;
 
 - (NSError *)proverCreateAndStoreClaimReqWithDef:(NSString *)claimDefJSON
-                                proverDid:(NSString *)proverDid
-                           claimOfferJson:(NSString *)claimOfferJSON
-                         masterSecretName:(NSString *)name
+                                       proverDid:(NSString *)proverDid
+                                  claimOfferJson:(NSString *)claimOfferJSON
+                                masterSecretName:(NSString *)name
                              walletHandle:(IndyHandle)walletHandle
                           outClaimReqJson:(NSString **)outJson;
 
@@ -72,7 +75,8 @@
                                             claimDefJson:(NSString **)claimDefJson;
 
 - (NSError *)proverStoreClaimWithWalletHandle:(IndyHandle)walletHandle
-                                   claimsJson:(NSString *)str;
+                                   claimsJson:(NSString *)str
+                                   revRegJSON:(NSString *)revRegJSON;
 
 - (NSError *)proverGetClaimsForProofReqWithWalletHandle:(IndyHandle)walletHandle
                                        proofRequestJson:(NSString *)str

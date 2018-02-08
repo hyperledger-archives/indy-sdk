@@ -1,24 +1,14 @@
 use super::ErrorCode;
 
-use utils::timeout::TimeoutUtils;
-
 use libc::c_char;
-
 use std::ffi::CString;
 use std::ptr::null;
-use std::sync::mpsc::channel;
 
 pub struct Ledger {}
 
 impl Ledger {
     pub fn sign_and_submit_request(pool_handle: i32, wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, request_result_json| {
-            sender.send((err, request_result_json)).unwrap();
-        });
-
-        let (command_handle, cb) = Ledger::closure_to_sign_and_submit_request_cb(cb);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let request_json = CString::new(request_json).unwrap();
@@ -32,27 +22,11 @@ impl Ledger {
                                          cb)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, request_result_json) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(request_result_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn submit_request(pool_handle: i32, request_json: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, request_result_json| {
-            sender.send((err, request_result_json)).unwrap();
-        });
-
-        let (command_handle, cb) = Ledger::closure_to_submit_request_cb(cb);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let request_json = CString::new(request_json).unwrap();
 
@@ -63,28 +37,12 @@ impl Ledger {
                                 cb)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, request_result_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(request_result_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&str>,
                              data: Option<&str>, role: Option<&str>) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, request_json| {
-            sender.send((err, request_json)).unwrap();
-        });
-
-        let (command_handle, cb) = Ledger::closure_to_build_request_cb(cb);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
@@ -102,27 +60,11 @@ impl Ledger {
                                    cb)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, request_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(request_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn build_get_nym_request(submitter_did: &str, target_did: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, request_json| {
-            sender.send((err, request_json)).unwrap();
-        });
-
-        let (command_handle, cb) = Ledger::closure_to_build_request_cb(cb);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
@@ -134,27 +76,11 @@ impl Ledger {
                                        cb)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, request_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(request_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn build_attrib_request(submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, request_json| {
-            sender.send((err, request_json)).unwrap();
-        });
-
-        let (command_handle, cb) = Ledger::closure_to_build_request_cb(cb);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
@@ -173,27 +99,11 @@ impl Ledger {
                                       cb)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, request_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(request_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn build_get_attrib_request(submitter_did: &str, target_did: &str, data: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, request_json| {
-            sender.send((err, request_json)).unwrap();
-        });
-
-        let (command_handle, cb) = Ledger::closure_to_build_request_cb(cb);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
@@ -207,27 +117,11 @@ impl Ledger {
                                           cb)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, request_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(request_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn build_schema_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, request_json| {
-            sender.send((err, request_json)).unwrap();
-        });
-
-        let (command_handle, cb) = Ledger::closure_to_build_request_cb(cb);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let data = CString::new(data).unwrap();
@@ -239,27 +133,11 @@ impl Ledger {
                                       cb)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, request_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(request_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn build_get_schema_request(submitter_did: &str, dest: &str, data: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, request_json| {
-            sender.send((err, request_json)).unwrap();
-        });
-
-        let (command_handle, cb) = Ledger::closure_to_build_request_cb(cb);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let dest = CString::new(dest).unwrap();
@@ -273,27 +151,11 @@ impl Ledger {
                                           cb)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, request_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(request_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn build_claim_def_txn(submitter_did: &str, xref: i32, signature_type: &str, data: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, request_json| {
-            sender.send((err, request_json)).unwrap();
-        });
-
-        let (command_handle, cb) = Ledger::closure_to_build_request_cb(cb);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let signature_type = CString::new(signature_type).unwrap();
@@ -308,27 +170,11 @@ impl Ledger {
                                      cb)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, request_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(request_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn build_get_claim_def_txn(submitter_did: &str, xref: i32, signature_type: &str, origin: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, request_json| {
-            sender.send((err, request_json)).unwrap();
-        });
-
-        let (command_handle, cb) = Ledger::closure_to_build_request_cb(cb);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let signature_type = CString::new(signature_type).unwrap();
@@ -343,27 +189,11 @@ impl Ledger {
                                          cb)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, request_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(request_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn build_node_request(submitter_did: &str, target_did: &str, data: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, request_json| {
-            sender.send((err, request_json)).unwrap();
-        });
-
-        let (command_handle, cb) = Ledger::closure_to_build_request_cb(cb);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
@@ -377,37 +207,55 @@ impl Ledger {
                                     cb)
         };
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, request_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(request_json)
+        super::results::result_to_string(err, receiver)
     }
 
-    fn closure_to_sign_and_submit_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
-                                                                                                Option<extern fn(command_handle: i32,
-                                                                                                                 err: ErrorCode,
-                                                                                                                 request_result_json: *const c_char)>) {
-        super::callbacks::_closure_to_cb_ec_string(closure)
+    pub fn indy_build_pool_config_request(submitter_did: &str, writes: bool, force: bool) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+
+        let err = unsafe {
+            indy_build_pool_config_request(command_handle,
+                                           submitter_did.as_ptr(),
+                                           writes,
+                                           force,
+                                           cb)
+        };
+
+        super::results::result_to_string(err, receiver)
     }
 
-    fn closure_to_submit_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
-                                                                                       Option<extern fn(command_handle: i32,
-                                                                                                        err: ErrorCode,
-                                                                                                        request_result_json: *const c_char)>) {
-        super::callbacks::_closure_to_cb_ec_string(closure)
-    }
-    fn closure_to_build_request_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
-                                                                                      Option<extern fn(command_handle: i32,
-                                                                                                       err: ErrorCode,
-                                                                                                       request_json: *const c_char)>) {
-        super::callbacks::_closure_to_cb_ec_string(closure)
+    pub fn indy_build_pool_upgrade_request(submitter_did: &str, name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
+                                           justification: Option<&str>, reinstall: bool, force: bool) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let name = CString::new(name).unwrap();
+        let version = CString::new(version).unwrap();
+        let action = CString::new(action).unwrap();
+        let sha256 = CString::new(sha256).unwrap();
+        let timeout = timeout.map(|t| t as i32).unwrap_or(-1);
+
+        let schedule_str = schedule.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let justification_str = justification.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+
+        let err = unsafe {
+            indy_build_pool_upgrade_request(command_handle,
+                                            submitter_did.as_ptr(),
+                                            name.as_ptr(),
+                                            version.as_ptr(),
+                                            action.as_ptr(),
+                                            sha256.as_ptr(),
+                                            timeout,
+                                            if schedule.is_some() { schedule_str.as_ptr() } else { null() },
+                                            if justification.is_some() { justification_str.as_ptr() } else { null() },
+                                            reinstall,
+                                            force,
+                                            cb)
+        };
+
+        super::results::result_to_string(err, receiver)
     }
 }
 
@@ -493,4 +341,25 @@ extern {
                                target_did: *const c_char,
                                data: *const c_char,
                                cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
+
+    #[no_mangle]
+    fn indy_build_pool_config_request(command_handle: i32,
+                                      submitter_did: *const c_char,
+                                      writes: bool,
+                                      force: bool,
+                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
+
+    #[no_mangle]
+    fn indy_build_pool_upgrade_request(command_handle: i32,
+                                       submitter_did: *const c_char,
+                                       name: *const c_char,
+                                       version: *const c_char,
+                                       action: *const c_char,
+                                       sha256: *const c_char,
+                                       timeout: i32,
+                                       schedule: *const c_char,
+                                       justification: *const c_char,
+                                       reinstall: bool,
+                                       force: bool,
+                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
 }

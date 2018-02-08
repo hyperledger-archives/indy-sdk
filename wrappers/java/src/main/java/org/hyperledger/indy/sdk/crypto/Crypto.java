@@ -6,7 +6,7 @@ import org.hyperledger.indy.sdk.IndyException;
 import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.ParamGuard;
-import org.hyperledger.indy.sdk.crypto.CryptoResults.EncryptResult;
+import org.hyperledger.indy.sdk.crypto.CryptoResults.AuthDecryptResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import java.util.concurrent.CompletableFuture;
@@ -112,21 +112,17 @@ public class Crypto extends IndyJava.API {
 	/**
 	 * Callback used when cryptoBox completes.
 	 */
-	private static Callback cryptoBoxCb = new Callback() {
+	private static Callback authCrypCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, Pointer encrypted_msg_raw, int encrypted_msg_len, Pointer nonce_raw, int nonce_len) {
 
-			CompletableFuture<EncryptResult> future = (CompletableFuture<EncryptResult>) removeFuture(xcommand_handle);
+			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			byte[] encryptedMsg = new byte[encrypted_msg_len];
-			encrypted_msg_raw.read(0, encryptedMsg, 0, encrypted_msg_len);
+			byte[] result = new byte[encrypted_msg_len];
+			encrypted_msg_raw.read(0, result, 0, encrypted_msg_len);
 
-			byte[] nonce = new byte[nonce_len];
-			nonce_raw.read(0, nonce, 0, nonce_len);
-
-			EncryptResult result = new EncryptResult(encryptedMsg, nonce);
 			future.complete(result);
 		}
 	};
@@ -134,16 +130,19 @@ public class Crypto extends IndyJava.API {
 	/**
 	 * Callback used when cryptoBoxOpen completes.
 	 */
-	private static Callback cryptoBoxOpenCb = new Callback() {
+	private static Callback authDecryptCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, Pointer decrypted_msg_raw, int decrypted_msg_len) {
+		public void callback(int xcommand_handle, int err, String their_vk, Pointer decrypted_msg_raw, int decrypted_msg_len) {
 
-			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
+			CompletableFuture<AuthDecryptResult> future = (CompletableFuture<AuthDecryptResult>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			byte[] result = new byte[decrypted_msg_len];
-			decrypted_msg_raw.read(0, result, 0, decrypted_msg_len);
+			byte[] decryptedMsg = new byte[decrypted_msg_len];
+			decrypted_msg_raw.read(0, decryptedMsg, 0, decrypted_msg_len);
+
+			AuthDecryptResult result = new AuthDecryptResult(their_vk, decryptedMsg);
+
 			future.complete(result);
 		}
 	};
@@ -151,7 +150,7 @@ public class Crypto extends IndyJava.API {
 	/**
 	 * Callback used when cryptoBoxSeal encrypt completes.
 	 */
-	private static Callback cryptoBoxSealCb = new Callback() {
+	private static Callback anonCryptCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, Pointer encrypted_msg_raw, int encrypted_msg_len) {
@@ -169,7 +168,7 @@ public class Crypto extends IndyJava.API {
 	/**
 	 * Callback used when cryptoBoxSealOpen completes.
 	 */
-	private static Callback cryptoBoxSealOpenCb = new Callback() {
+	private static Callback anonDecryptCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, Pointer decrypted_msg_raw, int decrypted_msg_len) {
@@ -386,7 +385,7 @@ public class Crypto extends IndyJava.API {
 	 * @return A future that resolves to a JSON string containing an encrypted message and nonce.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<EncryptResult> cryptoBox(
+	public static CompletableFuture<byte[]> authCrypt(
 			Wallet wallet,
 			String myVk,
 			String theirVk,
@@ -397,19 +396,19 @@ public class Crypto extends IndyJava.API {
 		ParamGuard.notNullOrWhiteSpace(theirVk, "theirVk");
 		ParamGuard.notNull(message, "message");
 
-		CompletableFuture<EncryptResult> future = new CompletableFuture<EncryptResult>();
+		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibIndy.api.indy_crypto_box(
+		int result = LibIndy.api.indy_crypto_auth_crypt(
 				commandHandle,
 				walletHandle,
 				myVk,
 				theirVk,
 				message,
 				message.length,
-				cryptoBoxCb);
+				authCrypCb);
 
 		checkResult(result);
 
@@ -433,40 +432,31 @@ public class Crypto extends IndyJava.API {
 	 *
 	 * @param wallet       The wallet.
 	 * @param myVk         id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
-	 * @param theirVk      id (verkey) of their key
 	 * @param encryptedMsg encrypted message
-	 * @param nonce        nonce that encrypted message
 	 * @return A future that resolves to a JSON string containing the decrypted message.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<byte[]> cryptoBoxOpen(
+	public static CompletableFuture<AuthDecryptResult> authDecrypt(
 			Wallet wallet,
 			String myVk,
-			String theirVk,
-			byte[] encryptedMsg,
-			byte[] nonce) throws IndyException {
+			byte[] encryptedMsg) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
 		ParamGuard.notNullOrWhiteSpace(myVk, "myVk");
-		ParamGuard.notNullOrWhiteSpace(theirVk, "theirVk");
 		ParamGuard.notNull(encryptedMsg, "encryptedMsg");
-		ParamGuard.notNull(nonce, "nonce");
 
-		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
+		CompletableFuture<AuthDecryptResult> future = new CompletableFuture<AuthDecryptResult>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibIndy.api.indy_crypto_box_open(
+		int result = LibIndy.api.indy_crypto_auth_decrypt(
 				commandHandle,
 				walletHandle,
 				myVk,
-				theirVk,
 				encryptedMsg,
 				encryptedMsg.length,
-				nonce,
-				nonce.length,
-				cryptoBoxOpenCb);
+				authDecryptCb);
 
 		checkResult(result);
 
@@ -488,7 +478,7 @@ public class Crypto extends IndyJava.API {
 	 * @return A future that resolves to a JSON string containing an encrypted message and nonce.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<byte[]> cryptoBoxSeal(
+	public static CompletableFuture<byte[]> anonCrypt(
 			String theirVk,
 			byte[] message) throws IndyException {
 
@@ -497,14 +487,13 @@ public class Crypto extends IndyJava.API {
 
 		CompletableFuture<byte[]> future = new CompletableFuture<byte[]>();
 		int commandHandle = addFuture(future);
-
-
-		int result = LibIndy.api.indy_crypto_box_seal(
+		
+		int result = LibIndy.api.indy_crypto_anon_crypt(
 				commandHandle,
 				theirVk,
 				message,
 				message.length,
-				cryptoBoxSealCb);
+				anonCryptCb);
 
 		checkResult(result);
 
@@ -527,7 +516,7 @@ public class Crypto extends IndyJava.API {
 	 * @return A future that resolves to a JSON string containing the decrypted message.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<byte[]> cryptoBoxSealOpen(
+	public static CompletableFuture<byte[]> anonDecrypt(
 			Wallet wallet,
 			String myVk,
 			byte[] encryptedMsg) throws IndyException {
@@ -541,13 +530,13 @@ public class Crypto extends IndyJava.API {
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibIndy.api.indy_crypto_box_seal_open(
+		int result = LibIndy.api.indy_crypto_anon_decrypt(
 				commandHandle,
 				walletHandle,
 				myVk,
 				encryptedMsg,
 				encryptedMsg.length,
-				cryptoBoxSealOpenCb);
+				anonDecryptCb);
 
 		checkResult(result);
 

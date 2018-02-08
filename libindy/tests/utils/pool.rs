@@ -1,16 +1,16 @@
 extern crate time;
+extern crate indy_crypto;
+extern crate serde_json;
 
 use indy::api::ErrorCode;
 use indy::api::pool::{indy_create_pool_ledger_config, indy_delete_pool_ledger_config};
 #[cfg(feature = "local_nodes_pool")]
 use indy::api::pool::{indy_close_pool_ledger, indy_open_pool_ledger, indy_refresh_pool_ledger};
-use indy::api::ledger::indy_submit_request;
 
 use utils::callback::CallbackUtils;
 use utils::environment::EnvironmentUtils;
-use utils::json::JsonEncodable;
 use utils::timeout::TimeoutUtils;
-
+use self::indy_crypto::utils::json::JsonEncodable;
 
 use std::fs;
 use std::ffi::CString;
@@ -19,6 +19,7 @@ use std::io::Write;
 use std::ptr::null;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
+use utils::types::{Response, ResponseType};
 
 #[derive(Serialize, Deserialize)]
 struct PoolConfig {
@@ -78,6 +79,22 @@ impl PoolUtils {
             format!("{{\"data\":{{\"client_ip\":\"{}\",\"client_port\":9704,\"node_ip\":\"{}\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]}},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"EbP4aYNeTHL6q385GuVpRV\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip),
             format!("{{\"data\":{{\"client_ip\":\"{}\",\"client_port\":9706,\"node_ip\":\"{}\",\"node_port\":9705,\"services\":[\"VALIDATOR\"]}},\"dest\":\"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\",\"identifier\":\"4cU41vWW82ArfxJxHkzXPG\",\"txnId\":\"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip),
             format!("{{\"data\":{{\"client_ip\":\"{}\",\"client_port\":9708,\"node_ip\":\"{}\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]}},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"TWwCRQRZ2ZHMJFn9TzLp7W\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip)];
+
+        let txn_file_data = node_txns.join("\n");
+        PoolUtils::create_genesis_txn_file(pool_name, txn_file_data.as_str(), txn_file_path)
+    }
+
+    pub fn create_genesis_txn_file_for_empty_lines(pool_name: &str,
+                                                   txn_file_path: Option<&Path>) -> PathBuf {
+        let test_pool_ip = EnvironmentUtils::test_pool_ip();
+
+        let node_txns = vec![
+            format!("      \n"),
+            format!("\n"),
+            format!("{{\"data\":{{\"alias\":\"Node1\",\"blskey\":\"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba\",\"client_ip\":\"{}\",\"client_port\":9702,\"node_ip\":\"{}\",\"node_port\":9701,\"services\":[\"VALIDATOR\"]}},\"dest\":\"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv\",\"identifier\":\"Th7MpTaRZVRYnPiabds81Y\",\"txnId\":\"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip),
+            format!("      \n"),
+            format!("{{\"data\":{{\"alias\":\"Node2\",\"blskey\":\"37rAPpXVoxzKhz7d9gkUe52XuXryuLXoM6P6LbWDB7LSbG62Lsb33sfG7zqS8TK1MXwuCHj1FKNzVpsnafmqLG1vXN88rt38mNFs9TENzm4QHdBzsvCuoBnPH7rpYYDo9DZNJePaDvRvqJKByCabubJz3XXKbEeshzpz4Ma5QYpJqjk\",\"client_ip\":\"{}\",\"client_port\":9704,\"node_ip\":\"{}\",\"node_port\":9703,\"services\":[\"VALIDATOR\"]}},\"dest\":\"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb\",\"identifier\":\"EbP4aYNeTHL6q385GuVpRV\",\"txnId\":\"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc\",\"type\":\"0\"}}", test_pool_ip, test_pool_ip),
+            format!("      \n")];
 
         let txn_file_data = node_txns.join("\n");
         PoolUtils::create_genesis_txn_file(pool_name, txn_file_data.as_str(), txn_file_path)
@@ -227,33 +244,12 @@ impl PoolUtils {
         Ok(())
     }
 
-    pub fn send_request(pool_handle: i32, request: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-        let cb_send = Box::new(move |err, resp| {
-            sender.send((err, resp)).unwrap();
-        });
-        let req = CString::new(request).unwrap();
-        let (command_handle, callback) = CallbackUtils::closure_to_send_tx_cb(cb_send);
-
-        let err = indy_submit_request(command_handle,
-                                      pool_handle,
-                                      req.as_ptr(),
-                                      callback);
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, resp) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(resp)
-    }
-
     pub fn get_req_id() -> u64 {
         time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64
+    }
+
+    pub fn check_response_type(response: &str, _type: ResponseType) {
+        let response: Response = serde_json::from_str(&response).unwrap();
+        assert_eq!(response.op, _type);
     }
 }

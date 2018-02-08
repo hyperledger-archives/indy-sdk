@@ -20,13 +20,12 @@ extern "C" {
     extern indy_error_t indy_issuer_create_and_store_revoc_reg(indy_handle_t command_handle,
                                                                indy_handle_t wallet_handle,
                                                                const char *  issuer_did,
-                                                               indy_i32_t    schema_seq_no,
-                                                               indy_i32_t    max_claim_num,
+                                                               const char *  schema_json,
+                                                               indy_u32_t    max_claim_num,
 
                                                                void           (*cb)(indy_handle_t xcommand_handle,
                                                                                     indy_error_t  err,
-                                                                                    const char*   revoc_reg_json,
-                                                                                    const char*   revoc_reg_uuid   )
+                                                                                    const char*   revoc_reg_json)
                                                                );
     
     extern indy_error_t indy_issuer_create_claim(indy_handle_t command_handle,
@@ -45,8 +44,8 @@ extern "C" {
     extern indy_error_t indy_issuer_revoke_claim(indy_handle_t command_handle,
                                                  indy_handle_t wallet_handle,
                                                  const char *  issuer_did,
-                                                 indy_i32_t    schema_seq_no,
-                                                 indy_i32_t    user_revoc_index,
+                                                 const char *  schema_json,
+                                                 indy_u32_t    user_revoc_index,
 
                                                  void           (*cb)(indy_handle_t xcommand_handle,
                                                                       indy_error_t  err,
@@ -97,6 +96,7 @@ extern "C" {
     extern indy_error_t indy_prover_store_claim(indy_handle_t command_handle,
                                                 indy_handle_t wallet_handle,
                                                 const char *  claims_json,
+                                                const char *  rev_reg_json,
 
                                                 void           (*cb)(indy_handle_t xcommand_handle,
                                                                      indy_error_t  err)

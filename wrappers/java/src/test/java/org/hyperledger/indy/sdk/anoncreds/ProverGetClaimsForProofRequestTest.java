@@ -17,19 +17,68 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"              \"name\":\"proof_req_1\",\n" +
-				"              \"version\":\"0.1\",\n" +
-				"              \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"}},\n" +
-				"              \"requested_predicates\":{}\n" +
-				"             }";
+		String proofRequest = "{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{" +
+				"                   \"attr1_referent\":{\"name\":\"name\"}" +
+				"               }," +
+				"              \"requested_predicates\":{}" +
+				"          }";
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid");
-		assertEquals(1, claimsForAttribute1.length());
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, claimsForAttribute1.length());
+	}
+
+	@Test
+	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeInUpperCase() throws Exception {
+
+		initCommonWallet();
+
+		String proofRequest = "{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{" +
+				"                   \"attr1_referent\":{\"name\":\"NAME\"}" +
+				"               }," +
+				"              \"requested_predicates\":{}" +
+				"          }";
+
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+
+		JSONObject claims = new JSONObject(claimsJson);
+
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, claimsForAttribute1.length());
+	}
+
+	@Test
+	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeContainsSpaces() throws Exception {
+
+		initCommonWallet();
+
+		String proofRequest = "{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{" +
+				"                   \"attr1_referent\":{\"name\":\" name \"}" +
+				"               }," +
+				"              \"requested_predicates\":{}" +
+				"          }";
+
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+
+		JSONObject claims = new JSONObject(claimsJson);
+
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, claimsForAttribute1.length());
 	}
 
 	@Test
@@ -37,58 +86,121 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"              \"name\":\"proof_req_1\",\n" +
-				"              \"version\":\"0.1\",\n" +
-				"              \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"attribute\"}},\n" +
-				"              \"requested_predicates\":{}\n" +
-				"             }";
+		String proofRequest = "{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{" +
+				"                   \"attr1_referent\":{\"name\":\"attribute\"}" +
+				"              }," +
+				"              \"requested_predicates\":{}" +
+				"         }";
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid");
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
 		assertEquals(0, claimsForAttribute1.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForSatisfyPredicate() throws Exception {
+	public void testProverGetClaimsForProofRequestWorksForPredicate() throws Exception {
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"              \"name\":\"proof_req_1\",\n" +
-				"              \"version\":\"0.1\",\n" +
-				"              \"requested_attrs\":{},\n" +
-				"              \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
-				"             }";
+		String proofRequest = "{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{}," +
+				"              \"requested_predicates\":{" +
+				"                   \"predicate1_referent\":{" +
+				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18" +
+				"                   }" +
+				"              }" +
+				"          }";
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_uuid");
-		assertEquals(1, claimsForPredicate.length());
+		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(2, claimsForPredicate.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForNotSatisfyPredicate() throws Exception {
+	public void testProverGetClaimsForProofRequestWorksForPredicateAttrInUpperCase() throws Exception {
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"              \"name\":\"proof_req_1\",\n" +
-				"              \"version\":\"0.1\",\n" +
-				"              \"requested_attrs\":{},\n" +
-				"              \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":58}}\n" +
-				"             }";
+		String proofRequest = "{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{}," +
+				"              \"requested_predicates\":{" +
+				"                   \"predicate1_referent\":{" +
+				"                       \"attr_name\":\"AGE\",\"p_type\":\">=\",\"value\":18" +
+				"                   }" +
+				"              }" +
+				"          }";
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_uuid");
+		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(2, claimsForPredicate.length());
+	}
+
+	@Test
+	public void testProverGetClaimsForProofRequestWorksForPredicateAttrContainsSpaces() throws Exception {
+
+		initCommonWallet();
+
+		String proofRequest = "{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{}," +
+				"              \"requested_predicates\":{" +
+				"                   \"predicate1_referent\":{" +
+				"                       \"attr_name\":\" age \",\"p_type\":\">=\",\"value\":18" +
+				"                   }" +
+				"              }" +
+				"          }";
+
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+
+		JSONObject claims = new JSONObject(claimsJson);
+
+		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(2, claimsForPredicate.length());
+	}
+
+	@Test
+	public void testProverGetClaimsForProofRequestWorksForNotSatisfiedPredicate() throws Exception {
+
+		initCommonWallet();
+
+		String proofRequest = "{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{}," +
+				"              \"requested_predicates\":{" +
+				"                   \"predicate1_referent\":{" +
+				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":58" +
+				"                   }" +
+				"               }" +
+				"         }";
+
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+
+		JSONObject claims = new JSONObject(claimsJson);
+
+		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
 		assertEquals(0, claimsForPredicate.length());
 	}
 
@@ -97,33 +209,35 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"               \"name\":\"proof_req_1\",\n" +
-				"               \"version\":\"0.1\",\n" +
-				"               \"requested_attrs\":{\n" +
-				"                     \"attr1_uuid\":{\"schema_seq_no\":1, \"name\":\"name\"},\n" +
-				"                     \"attr2_uuid\":{\"schema_seq_no\":1, \"name\":\"sex\"}\n" +
-				"               },\n" +
-				"               \"requested_predicates\":{\n" +
-				"                     \"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18},\n" +
-				"                     \"predicate2_uuid\":{\"attr_name\":\"height\",\"p_type\":\"GE\",\"value\":160}\n" +
-				"               }}";
+		String proofRequest = "{" +
+				"               \"nonce\":\"123432421212\"," +
+				"               \"name\":\"proof_req_1\"," +
+				"               \"version\":\"0.1\"," +
+				"               \"requested_attrs\":{" +
+				"                     \"attr1_referent\":{ \"name\":\"name\"}," +
+				"                     \"attr2_referent\":{\"name\":\"sex\"}" +
+				"               }," +
+				"               \"requested_predicates\":{" +
+				"                     \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}," +
+				"                     \"predicate2_referent\":{\"attr_name\":\"height\",\"p_type\":\">=\",\"value\":160}" +
+				"               }" +
+				"            }";
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid");
-		assertEquals(1, claimsForAttribute1.length());
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, claimsForAttribute1.length());
 
-		JSONArray claimsForAttribute2 = claims.getJSONObject("attrs").getJSONArray("attr2_uuid");
-		assertEquals(1, claimsForAttribute2.length());
+		JSONArray claimsForAttribute2 = claims.getJSONObject("attrs").getJSONArray("attr2_referent");
+		assertEquals(2, claimsForAttribute2.length());
 
-		JSONArray claimsForPredicate1 = claims.getJSONObject("predicates").getJSONArray("predicate1_uuid");
-		assertEquals(1, claimsForPredicate1.length());
+		JSONArray claimsForPredicate1 = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(2, claimsForPredicate1.length());
 
-		JSONArray claimsForPredicate2 = claims.getJSONObject("predicates").getJSONArray("predicate2_uuid");
-		assertEquals(1, claimsForPredicate2.length());
+		JSONArray claimsForPredicate2 = claims.getJSONObject("predicates").getJSONArray("predicate2_referent");
+		assertEquals(2, claimsForPredicate2.length());
 	}
 
 	@Test
@@ -131,12 +245,13 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"              \"name\":\"proof_req_1\",\n" +
-				"              \"version\":\"0.1\",\n" +
-				"              \"requested_attrs\":{},\n" +
-				"              \"requested_predicates\":{}\n" +
-				"             }";
+		String proofRequest = "{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{}," +
+				"              \"requested_predicates\":{}" +
+				"         }";
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -147,63 +262,289 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeWithOtherSchema() throws Exception {
-
-		initCommonWallet();
-
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"              \"name\":\"proof_req_1\",\n" +
-				"              \"version\":\"0.1\",\n" +
-				"              \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":2, \"name\":\"name\"}},\n" +
-				"              \"requested_predicates\":{}\n" +
-				"             }";
-
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
-
-		JSONObject claims = new JSONObject(claimsJson);
-
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid");
-		assertEquals(0, claimsForAttribute1.length());
-	}
-
-	@Test
 	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeBySpecificIssuer() throws Exception {
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"              \"name\":\"proof_req_1\",\n" +
-				"              \"version\":\"0.1\",\n" +
-				"              \"requested_attrs\":{\"attr1_uuid\":{\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"name\":\"name\"}},\n" +
-				"              \"requested_predicates\":{}\n" +
-				"             }";
+		String proofRequest = String.format("{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{" +
+				"                   \"attr1_referent\":{" +
+				"                       \"name\":\"name\"," +
+				"                       \"restrictions\":[{\"issuer_did\":\"%s\"}]" +
+				"                   }" +
+				"               }," +
+				"              \"requested_predicates\":{}" +
+				"          }", issuerDid);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_uuid");
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
 		assertEquals(1, claimsForAttribute1.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForSatisfyPredicateByIssuerAndSchema() throws Exception {
+	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeBySpecificSchema() throws Exception {
 
 		initCommonWallet();
 
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"              \"name\":\"proof_req_1\",\n" +
-				"              \"version\":\"0.1\",\n" +
-				"              \"requested_attrs\":{},\n" +
-				"              \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"NcYxiDXkpYi6ov5FcYDi1e\"}}\n" +
+		String proofRequest = String.format("{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{" +
+				"                   \"attr1_referent\":{" +
+				"                       \"name\":\"name\"," +
+				"                       \"restrictions\":[{\"schema_key\":%s}]" +
+				"                   }" +
+				"               }," +
+				"              \"requested_predicates\":{}" +
+				"          }", gvtSchemaKey);
+
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+
+		JSONObject claims = new JSONObject(claimsJson);
+
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, claimsForAttribute1.length());
+	}
+
+	@Test
+	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeByPartOfSchema() throws Exception {
+
+		initCommonWallet();
+
+		String proofRequest = "{" +
+				"               \"nonce\":\"123432421212\"," +
+				"               \"name\":\"proof_req_1\"," +
+				"               \"version\":\"0.1\"," +
+				"               \"requested_attrs\":{" +
+				"                    \"attr1_referent\":{" +
+				"                        \"name\":\"name\"," +
+				"                        \"restrictions\":[{\"schema_key\":{\"name\":\"gvt\"}}]" +
+				"                    }" +
+				"                }," +
+				"               \"requested_predicates\":{}" +
 				"             }";
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
-		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_uuid");
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, claimsForAttribute1.length());
+	}
+
+	@Test
+	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeByMultipleSchemas() throws Exception {
+
+		initCommonWallet();
+
+		String proofRequest = String.format("{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{" +
+				"                   \"attr1_referent\":{" +
+				"                       \"name\":\"name\"," +
+				"                       \"restrictions\":[{\"schema_key\":%s}, {\"schema_key\":%s}]" +
+				"                   }" +
+				"               }," +
+				"              \"requested_predicates\":{}" +
+				"          }", gvtSchemaKey, xyzSchemaKey);
+
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+
+		JSONObject claims = new JSONObject(claimsJson);
+
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, claimsForAttribute1.length());
+	}
+
+	@Test
+	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeBySpecificSchemaIssuerPair() throws Exception {
+
+		initCommonWallet();
+
+		String proofRequest = String.format("{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{" +
+				"                   \"attr1_referent\":{" +
+				"                       \"name\":\"name\"," +
+				"                       \"restrictions\":[{\"schema_key\":%s, \"issuer_did\":\"%s\"}]" +
+				"                   }" +
+				"               }," +
+				"              \"requested_predicates\":{}" +
+				"          }", gvtSchemaKey, issuerDid);
+
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+
+		JSONObject claims = new JSONObject(claimsJson);
+
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(1, claimsForAttribute1.length());
+	}
+
+	@Test
+	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeBySpecificSchemaOrSpecificIssuer() throws Exception {
+
+		initCommonWallet();
+
+		String proofRequest = String.format("{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{" +
+				"                   \"attr1_referent\":{" +
+				"                       \"name\":\"name\"," +
+				"                       \"restrictions\":[{\"schema_key\":%s}, {\"issuer_did\":\"%s\"}]" +
+				"                   }" +
+				"               }," +
+				"              \"requested_predicates\":{}" +
+				"          }", gvtSchemaKey, issuerDid);
+
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+
+		JSONObject claims = new JSONObject(claimsJson);
+
+		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, claimsForAttribute1.length());
+	}
+
+	@Test
+	public void testProverGetClaimsForProofRequestWorksForPredicateBySpecificIssuer() throws Exception {
+
+		initCommonWallet();
+
+		String proofRequest = String.format("{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{}," +
+				"              \"requested_predicates\":{" +
+				"                   \"predicate1_referent\":{" +
+				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
+				"                       \"restrictions\":[{\"issuer_did\":\"%s\"}]" +
+				"                   }" +
+				"              }" +
+				"          }", issuerDid);
+
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+
+		JSONObject claims = new JSONObject(claimsJson);
+
+		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
 		assertEquals(1, claimsForPredicate.length());
+	}
+
+	@Test
+	public void testProverGetClaimsForProofRequestWorksForPredicateBySpecificSchema() throws Exception {
+
+		initCommonWallet();
+
+		String proofRequest = String.format("{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{}," +
+				"              \"requested_predicates\":{" +
+				"                   \"predicate1_referent\":{" +
+				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
+				"                       \"restrictions\":[{\"schema_key\":%s}]" +
+				"                   }" +
+				"              }" +
+				"          }", gvtSchemaKey);
+
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+
+		JSONObject claims = new JSONObject(claimsJson);
+
+		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(2, claimsForPredicate.length());
+	}
+
+	@Test
+	public void testProverGetClaimsForProofRequestWorksForPredicateByMultipleSchemas() throws Exception {
+
+		initCommonWallet();
+
+		String proofRequest = String.format("{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{}," +
+				"              \"requested_predicates\":{" +
+				"                   \"predicate1_referent\":{" +
+				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
+				"                       \"restrictions\":[{\"schema_key\":%s}, {\"schema_key\":%s}]" +
+				"                   }" +
+				"              }" +
+				"          }", gvtSchemaKey, xyzSchemaKey);
+
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+
+		JSONObject claims = new JSONObject(claimsJson);
+
+		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(2, claimsForPredicate.length());
+	}
+
+	@Test
+	public void testProverGetClaimsForProofRequestWorksForPredicateBySpecificIssuerSchemaPair() throws Exception {
+
+		initCommonWallet();
+
+		String proofRequest = String.format("{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{}," +
+				"              \"requested_predicates\":{" +
+				"                   \"predicate1_referent\":{" +
+				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
+				"                       \"restrictions\":[{\"schema_key\":%s, \"issuer_did\":\"%s\"}]" +
+				"                   }" +
+				"              }" +
+				"          }", gvtSchemaKey, issuerDid);
+
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+
+		JSONObject claims = new JSONObject(claimsJson);
+
+		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(1, claimsForPredicate.length());
+	}
+
+	@Test
+	public void testProverGetClaimsForProofRequestWorksForPredicateBySpecificIssuerOrSpecificSchema() throws Exception {
+
+		initCommonWallet();
+
+		String proofRequest = String.format("{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{}," +
+				"              \"requested_predicates\":{" +
+				"                   \"predicate1_referent\":{" +
+				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
+				"                       \"restrictions\":[{\"schema_key\":%s}, {\"issuer_did\":\"%s\"}]" +
+				"                   }" +
+				"              }" +
+				"          }", gvtSchemaKey, issuerDid);
+
+		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+
+		JSONObject claims = new JSONObject(claimsJson);
+
+		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(2, claimsForPredicate.length());
 	}
 
 	@Test
@@ -214,11 +555,12 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"              \"name\":\"proof_req_1\",\n" +
-				"              \"version\":\"0.1\",\n" +
-				"              \"requested_predicates\":{}\n" +
-				"             }";
+		String proofRequest = "{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_predicates\":{}" +
+				"          }";
 
 		Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 	}
@@ -231,12 +573,15 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String proofRequest = "{\"nonce\":\"123432421212\",\n" +
-				"              \"name\":\"proof_req_1\",\n" +
-				"              \"version\":\"0.1\",\n" +
-				"              \"requested_attrs\":{},\n" +
-				"              \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"LE\",\"value\":18}}\n" +
-				"             }";
+		String proofRequest = "{" +
+				"              \"nonce\":\"123432421212\"," +
+				"              \"name\":\"proof_req_1\"," +
+				"              \"version\":\"0.1\"," +
+				"              \"requested_attrs\":{}," +
+				"              \"requested_predicates\":{" +
+				"                    \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"LE\",\"value\":18}" +
+				"              }" +
+				"          }";
 
 		Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 	}

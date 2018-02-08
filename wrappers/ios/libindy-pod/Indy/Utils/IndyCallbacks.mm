@@ -166,6 +166,19 @@ static NSString* commandCallbackKey    =  @"commandCallback";
     }
 }
 
+- (void)completeStringAndData:(void (^)(NSError *, NSString *, NSData *))completion
+            forHandle:(indy_handle_t)handle
+              ifError:(indy_error_t)ret
+{
+    if (ret != Success)
+    {
+        [self deleteCommandHandleFor:handle];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil, nil);
+        });
+    }
+}
+
 @end
 
 // MARK: - static indy C-callbacks

@@ -1,7 +1,7 @@
 extern crate serde_json;
+extern crate indy_crypto;
 
 use std::error;
-use std::error::Error;
 use std::io;
 use std::fmt;
 
@@ -20,6 +20,7 @@ pub enum WalletError {
     IncorrectPool(String),
     PluggedWallerError(ErrorCode),
     AlreadyOpened(String),
+    AccessFailed(String),
     CommonError(CommonError)
 }
 
@@ -34,6 +35,7 @@ impl fmt::Display for WalletError {
             WalletError::IncorrectPool(ref description) => write!(f, "Wallet used with different pool: {}", description),
             WalletError::PluggedWallerError(err_code) => write!(f, "Plugged wallet error: {}", err_code as i32),
             WalletError::AlreadyOpened(ref description) => write!(f, "Wallet already opened: {}", description),
+            WalletError::AccessFailed(ref description) => write!(f, "Wallet security error: {}", description),
             WalletError::CommonError(ref err) => err.fmt(f)
         }
     }
@@ -50,6 +52,7 @@ impl error::Error for WalletError {
             WalletError::IncorrectPool(ref description) => description,
             WalletError::PluggedWallerError(ref err_code) => "Plugged wallet error",
             WalletError::AlreadyOpened(ref description) => description,
+            WalletError::AccessFailed(ref description) => description,
             WalletError::CommonError(ref err) => err.description()
         }
     }
@@ -64,6 +67,7 @@ impl error::Error for WalletError {
             WalletError::IncorrectPool(ref description) => None,
             WalletError::PluggedWallerError(ref err_code) => None,
             WalletError::AlreadyOpened(ref description) => None,
+            WalletError::AccessFailed(ref description) => None,
             WalletError::CommonError(ref err) => Some(err)
         }
     }
@@ -80,6 +84,7 @@ impl ToErrorCode for WalletError {
             WalletError::IncorrectPool(ref err) => ErrorCode::WalletIncompatiblePoolError,
             WalletError::PluggedWallerError(err_code) => err_code,
             WalletError::AlreadyOpened(ref err) => ErrorCode::WalletAlreadyOpenedError,
+            WalletError::AccessFailed(ref err) => ErrorCode::WalletAccessFailed,
             WalletError::CommonError(ref err) => err.to_error_code()
         }
     }
@@ -91,8 +96,8 @@ impl From<io::Error> for WalletError {
     }
 }
 
-impl From<serde_json::Error> for WalletError {
-    fn from(err: serde_json::Error) -> WalletError {
-        WalletError::CommonError(CommonError::InvalidStructure(err.description().to_string()))
+impl From<indy_crypto::errors::IndyCryptoError> for WalletError {
+    fn from(err: indy_crypto::errors::IndyCryptoError) -> Self {
+        WalletError::CommonError(CommonError::from(err))
     }
 }

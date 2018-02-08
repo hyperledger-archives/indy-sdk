@@ -218,4 +218,47 @@
                                       data:(NSNumber *)data
                                 completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
 
+// MARK: - Pool config request
+
+/**
+ Builds a POOL_CONFIG request.
+
+ @param submitterDid Id of Identity stored in secured Wallet.
+ @param writes
+ @param force
+ @param completion Callback that takes command result as parameter. Returns request result as json.
+ */
++ (void)buildPoolConfigRequestWithSubmitterDid:(NSString *)submitterDid
+                                        writes:(BOOL)writes
+                                         force:(BOOL)force
+                                    completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
+// MARK: - Pool upgrade request
+
+/**
+ Builds a POOL_UPGRADE request.
+
+ @param submitterDid Id of Identity stored in secured Wallet.
+ @param name
+ @param version
+ @param action
+ @param sha256
+ @param timeout
+ @param schedule
+ @param justification
+ @param reinstall
+ @param force
+ @param completion Callback that takes command result as parameter. Returns request result as json.
+ */
++ (void)buildPoolUpgradeRequestWithSubmitterDid:(NSString *)submitterDid
+                                           name:(NSString *)name
+                                        version:(NSString *)version
+                                         action:(NSString *)action
+                                         sha256:(NSString *)sha256
+                                        timeout:(NSNumber *)timeout
+                                       schedule:(NSString *)schedule
+                                  justification:(NSString *)justification
+                                      reinstall:(BOOL)reinstall
+                                          force:(BOOL)force
+                                     completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
+
 @end

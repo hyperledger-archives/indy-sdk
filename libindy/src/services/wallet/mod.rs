@@ -1,4 +1,5 @@
 extern crate libc;
+extern crate indy_crypto;
 
 mod default;
 mod plugged;
@@ -17,7 +18,7 @@ use std::fs;
 use std::fs::{File, DirBuilder};
 use std::io::{Read, Write};
 use std::path::PathBuf;
-use utils::json::{JsonDecodable, JsonEncodable};
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use self::libc::c_char;
 

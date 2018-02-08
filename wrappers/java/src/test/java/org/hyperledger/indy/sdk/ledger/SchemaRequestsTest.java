@@ -2,8 +2,9 @@ package org.hyperledger.indy.sdk.ledger;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.InvalidStructureException;
-import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusResults;
+import org.hyperledger.indy.sdk.did.Did;
+import org.hyperledger.indy.sdk.did.DidResults;
+import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.*;
 
@@ -49,21 +50,16 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 
 	@Test
 	public void testSchemaRequestWorksWithoutSignature() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
-
-		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String did = didResult.getDid();
+		String did = createStoreAndPublishDidFromTrustee();
 
 		String schemaRequest = Ledger.buildSchemaRequest(did, SCHEMA_DATA).get();
-		String schemaResponse = Ledger.submitRequest(pool, schemaRequest).get();
-		assertNotNull(schemaResponse);
+		String response = Ledger.submitRequest(pool, schemaRequest).get();
+		checkResponseType(response, "REQNACK");
 	}
 
-	@Test
+	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testSchemaRequestsWorks() throws Exception {
-		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String did = didResult.getDid();
+		String did = createStoreAndPublishDidFromTrustee();
 
 		String schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"attr_names\": [\"name\", \"male\"]}";
 
@@ -72,17 +68,19 @@ public class SchemaRequestsTest extends IndyIntegrationTestWithPoolAndSingleWall
 
 		String getSchemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
 		String getSchemaRequest = Ledger.buildGetSchemaRequest(did, did, getSchemaData).get();
-		String getSchemaResponse = Ledger.submitRequest(pool, getSchemaRequest).get();
+		String getSchemaResponse = PoolUtils.ensurePreviousRequestApplied(pool, getSchemaRequest, response -> {
 
-		JSONObject getSchemaResponseObject = new JSONObject(getSchemaResponse);
+			JSONObject getSchemaResponseObject = new JSONObject(response);
 
-		assertEquals("gvt2", getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("name"));
-		assertEquals("2.0", getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("version"));
+			return "gvt2".equals(getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("name")) &&
+					"2.0".equals(getSchemaResponseObject.getJSONObject("result").getJSONObject("data").getString("version"));
+		});
+		assertNotNull(getSchemaResponse);
 	}
 
 	@Test
 	public void testGetSchemaRequestsWorksForUnknownSchema() throws Exception {
-		SignusResults.CreateAndStoreMyDidResult didResult = Signus.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
+		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
 		String did = didResult.getDid();
 
 		String getSchemaData = "{\"name\":\"schema_name\",\"version\":\"2.0\"}";
