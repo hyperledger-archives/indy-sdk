@@ -111,7 +111,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
     result_to_err_code!(result)
 }
 
-/// Create claim offer and store it in Wallet
+/// Create claim offer in Wallet
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
@@ -135,21 +135,21 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_issuer_create_and_store_claim_offer(command_handle: i32,
-                                                       wallet_handle: i32,
-                                                       schema_json: *const c_char,
-                                                       issuer_did: *const c_char,
-                                                       prover_did: *const c_char,
-                                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                            claim_offer_json: *const c_char
-                                                       )>) -> ErrorCode {
+pub extern fn indy_issuer_create_claim_offer(command_handle: i32,
+                                             wallet_handle: i32,
+                                             schema_json: *const c_char,
+                                             issuer_did: *const c_char,
+                                             prover_did: *const c_char,
+                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                  claim_offer_json: *const c_char
+                                             )>) -> ErrorCode {
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(prover_did, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreClaimOffer(
+        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateClaimOffer(
             wallet_handle,
             schema_json,
             issuer_did,

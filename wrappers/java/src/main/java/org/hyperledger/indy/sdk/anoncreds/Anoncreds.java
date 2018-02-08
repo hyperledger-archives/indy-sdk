@@ -61,9 +61,9 @@ public class Anoncreds extends IndyJava.API {
 	};
 
 	/**
-	 * Callback used when issuerCreateAndStoreClaimOffer completes.
+	 * Callback used when issuerCreateClaimOffer completes.
 	 */
-	private static Callback issuerCreateAndStoreClaimOfferCb = new Callback() {
+	private static Callback issuerCreateClaimOfferCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String claim_offer_json) {
@@ -339,7 +339,7 @@ public class Anoncreds extends IndyJava.API {
 	}
 
 	/**
-	 * Create claim offer and store it in Wallet.
+	 * Create claim offer in Wallet.
 	 *
 	 * @param wallet         The wallet.
 	 * @param schemaJson     The JSON schema for the claim.
@@ -348,7 +348,7 @@ public class Anoncreds extends IndyJava.API {
 	 * @return A future resolving to a JSON string containing the claim offer.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> issuerCreateAndStoreClaimOffer(
+	public static CompletableFuture<String> issuerCreateClaimOffer(
 			Wallet wallet,
 			String schemaJson,
 			String issuerDid,
@@ -365,13 +365,13 @@ public class Anoncreds extends IndyJava.API {
 
 		int walletHandle = wallet.getWalletHandle();
 
-		int result = LibIndy.api.indy_issuer_create_and_store_claim_offer(
+		int result = LibIndy.api.indy_issuer_create_claim_offer(
 				commandHandle,
 				walletHandle,
 				schemaJson,
 				issuerDid,
 				proverDid,
-				issuerCreateAndStoreClaimOfferCb);
+				issuerCreateClaimOfferCb);
 
 		checkResult(result);
 

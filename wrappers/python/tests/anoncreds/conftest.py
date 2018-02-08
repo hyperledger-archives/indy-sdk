@@ -347,11 +347,11 @@ async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, g
         wallet_handle, issuer_did_2, gvt_schema_json, None, False)
 
     issuer_1_gvt_claim_offer_json = \
-        await anoncreds.issuer_create_and_store_claim_offer(wallet_handle, gvt_schema_json, issuer_did, prover_did)
+        await anoncreds.issuer_create_claim_offer(wallet_handle, gvt_schema_json, issuer_did, prover_did)
     issuer_1_xyz_claim_offer_json = \
-        await anoncreds.issuer_create_and_store_claim_offer(wallet_handle, xyz_schema_json, issuer_did, prover_did)
+        await anoncreds.issuer_create_claim_offer(wallet_handle, xyz_schema_json, issuer_did, prover_did)
     issuer_2_gvt_claim_offer_json = \
-        await anoncreds.issuer_create_and_store_claim_offer(wallet_handle, gvt_schema_json, issuer_did_2, prover_did)
+        await anoncreds.issuer_create_claim_offer(wallet_handle, gvt_schema_json, issuer_did_2, prover_did)
 
     await anoncreds.prover_store_claim_offer(wallet_handle, issuer_1_gvt_claim_offer_json)
     await anoncreds.prover_store_claim_offer(wallet_handle, issuer_1_xyz_claim_offer_json)

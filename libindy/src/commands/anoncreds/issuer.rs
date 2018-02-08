@@ -30,7 +30,7 @@ pub enum IssuerCommand {
         String, // issuer did
         u32, // max claim num
         Box<Fn(Result<String, IndyError>) + Send>),
-    CreateAndStoreClaimOffer(
+    CreateClaimOffer(
         i32, // wallet handle
         String, // issuer did
         String, // schema json
@@ -82,9 +82,9 @@ impl IssuerCommandExecutor {
                 info!(target: "issuer_command_executor", "CreateClaim command received");
                 cb(self.new_claim(wallet_handle, &claim_req_json, &claim_json, user_revoc_index));
             }
-            IssuerCommand::CreateAndStoreClaimOffer(wallet_handle, schema_json, issuer_did, prover_did, cb) => {
-                info!(target: "issuer_command_executor", "CreateAndStoreClaimOffer command received");
-                cb(self.create_and_store_claim_offer(wallet_handle, &schema_json, &issuer_did, &prover_did));
+            IssuerCommand::CreateClaimOffer(wallet_handle, schema_json, issuer_did, prover_did, cb) => {
+                info!(target: "issuer_command_executor", "CreateClaimOffer command received");
+                cb(self.create_claim_offer(wallet_handle, &schema_json, &issuer_did, &prover_did));
             }
             IssuerCommand::RevokeClaim(wallet_handle, issuer_did, schema_json, user_revoc_index, cb) => {
                 info!(target: "issuer_command_executor", "RevokeClaim command received");
@@ -178,12 +178,12 @@ impl IssuerCommandExecutor {
         Ok(revocation_registry_json)
     }
 
-    fn create_and_store_claim_offer(&self,
-                                    wallet_handle: i32,
-                                    schema_json: &str,
-                                    issuer_did: &str,
-                                    prover_did: &str) -> Result<String, IndyError> {
-        info!("create_and_store_claim_offer >>> wallet_handle: {:?}, issuer_did: {:?}, schema_json: {:?}, prover_did: {:?}",
+    fn create_claim_offer(&self,
+                          wallet_handle: i32,
+                          schema_json: &str,
+                          issuer_did: &str,
+                          prover_did: &str) -> Result<String, IndyError> {
+        info!("create_claim_offer >>> wallet_handle: {:?}, issuer_did: {:?}, schema_json: {:?}, prover_did: {:?}",
               wallet_handle, issuer_did, schema_json, prover_did);
 
         Base58::decode(&issuer_did)
@@ -222,7 +222,7 @@ impl IssuerCommandExecutor {
 
         self.wallet_service.set(wallet_handle, &format!("nonce::{}::{}", id, prover_did), &nonce_json)?;
 
-        info!("create_and_store_claim_definition <<< claim_offer_json: {:?}", claim_offer_json);
+        info!("create_claim_offer <<< claim_offer_json: {:?}", claim_offer_json);
 
         Ok(claim_offer_json)
     }

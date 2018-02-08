@@ -189,10 +189,10 @@ impl CallbackUtils {
         (command_handle, Some(register_wallet_type_callback))
     }
 
-    pub fn closure_to_issuer_create_and_store_claim_offer_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
-                                                                                                                Option<extern fn(command_handle: i32,
-                                                                                                                                 err: ErrorCode,
-                                                                                                                                 claim_offer_json: *const c_char)>) {
+    pub fn closure_to_issuer_create_claim_offer_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                                      Option<extern fn(command_handle: i32,
+                                                                                                                       err: ErrorCode,
+                                                                                                                       claim_offer_json: *const c_char)>) {
         lazy_static! {
             static ref CREATE_CLAIM_OFFER_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
         }

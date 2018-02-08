@@ -53,7 +53,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		String claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, DID, gvtSchemaJson, null, false).get();
 
 		// 3. Issuer creates Claim Offer
-		String claimOffer = Anoncreds.issuerCreateAndStoreClaimOffer(wallet, gvtSchemaJson, DID, DID_MY1).get();
+		String claimOffer = Anoncreds.issuerCreateClaimOffer(wallet, gvtSchemaJson, DID, DID_MY1).get();
 
 		// 4. Issuer stores Claim Offer
 		Anoncreds.proverStoreClaimOffer(wallet, claimOffer).get();

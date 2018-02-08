@@ -108,9 +108,9 @@ public class AnoncredsIntegrationTest {
 		//Issue GVT claim bu Issuer2
 		String gvtClaimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid2, gvtSchemaJson, null, false).get();
 
-		issuer1GvtClaimOffer = Anoncreds.issuerCreateAndStoreClaimOffer(wallet, gvtSchemaJson, issuerDid, proverDid).get();
-		issuer1XyzClaimOffer = Anoncreds.issuerCreateAndStoreClaimOffer(wallet, xyzSchemaJson, issuerDid, proverDid).get();
-		issuer2GvtClaimOffer = Anoncreds.issuerCreateAndStoreClaimOffer(wallet, gvtSchemaJson, issuerDid2, proverDid).get();
+		issuer1GvtClaimOffer = Anoncreds.issuerCreateClaimOffer(wallet, gvtSchemaJson, issuerDid, proverDid).get();
+		issuer1XyzClaimOffer = Anoncreds.issuerCreateClaimOffer(wallet, xyzSchemaJson, issuerDid, proverDid).get();
+		issuer2GvtClaimOffer = Anoncreds.issuerCreateClaimOffer(wallet, gvtSchemaJson, issuerDid2, proverDid).get();
 
 		Anoncreds.proverStoreClaimOffer(wallet, issuer1GvtClaimOffer).get();
 		Anoncreds.proverStoreClaimOffer(wallet, issuer1XyzClaimOffer).get();

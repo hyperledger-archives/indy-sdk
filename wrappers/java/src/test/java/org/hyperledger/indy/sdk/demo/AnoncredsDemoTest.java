@@ -91,7 +91,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecret).get();
 
 		//6. Issuer create Claim Offer
-		String claimOffer = Anoncreds.issuerCreateAndStoreClaimOffer(issuerWallet, gvtSchemaJson, issuerDid, proverDid).get();
+		String claimOffer = Anoncreds.issuerCreateClaimOffer(issuerWallet, gvtSchemaJson, issuerDid, proverDid).get();
 
 		//7. Prover store Claim Offer
 		Anoncreds.proverStoreClaimOffer(proverWallet, claimOffer).get();
@@ -197,13 +197,13 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecret).get();
 
 		//5. Issuer1 create Claim Offer
-		String gvtClaimOffer = Anoncreds.issuerCreateAndStoreClaimOffer(issuerGvtWallet, gvtSchemaJson, issuerDid, proverDid).get();
+		String gvtClaimOffer = Anoncreds.issuerCreateClaimOffer(issuerGvtWallet, gvtSchemaJson, issuerDid, proverDid).get();
 
 		//6. Prover store Claim Offer received from Issuer1
 		Anoncreds.proverStoreClaimOffer(proverWallet, gvtClaimOffer).get();
 
 		//7. Issuer2 create Claim Offer
-		String xyzClaimOffer = Anoncreds.issuerCreateAndStoreClaimOffer(issuerXyzWallet, xyzSchemaJson, issuerDid2, proverDid).get();
+		String xyzClaimOffer = Anoncreds.issuerCreateClaimOffer(issuerXyzWallet, xyzSchemaJson, issuerDid2, proverDid).get();
 
 		//8. Prover store Claim Offer received from Issuer2
 		Anoncreds.proverStoreClaimOffer(proverWallet, xyzClaimOffer).get();
@@ -310,13 +310,13 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecret).get();
 
 		//4. Issuer create GVT Claim Offer
-		String gvtClaimOffer = Anoncreds.issuerCreateAndStoreClaimOffer(issuerWallet, gvtSchemaJson, issuerDid, proverDid).get();
+		String gvtClaimOffer = Anoncreds.issuerCreateClaimOffer(issuerWallet, gvtSchemaJson, issuerDid, proverDid).get();
 
 		//5. Prover store Claim Offer received from Issuer
 		Anoncreds.proverStoreClaimOffer(proverWallet, gvtClaimOffer).get();
 
 		//6. Issuer create GVT Claim Offer
-		String xyzClaimOffer = Anoncreds.issuerCreateAndStoreClaimOffer(issuerWallet, xyzSchemaJson, issuerDid, proverDid).get();
+		String xyzClaimOffer = Anoncreds.issuerCreateClaimOffer(issuerWallet, xyzSchemaJson, issuerDid, proverDid).get();
 
 		//7. Prover store Claim Offer received from Issuer
 		Anoncreds.proverStoreClaimOffer(proverWallet, xyzClaimOffer).get();
@@ -411,7 +411,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		Anoncreds.proverCreateMasterSecret(proverWallet, masterSecret).get();
 
 		//3. Issuer create Claim Offer
-		String claimOfferJson = Anoncreds.issuerCreateAndStoreClaimOffer(issuerWallet, gvtSchemaJson, issuerDid, proverDid).get();
+		String claimOfferJson = Anoncreds.issuerCreateClaimOffer(issuerWallet, gvtSchemaJson, issuerDid, proverDid).get();
 
 		//4. Prover store Claim Offer
 		Anoncreds.proverStoreClaimOffer(proverWallet, claimOfferJson).get();

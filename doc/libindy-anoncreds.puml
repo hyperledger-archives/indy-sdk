@@ -55,7 +55,7 @@ PW -[#green]> PW: store master secret
 
 === Create Claim Offer ==
 
-I -> IW: <b>1. indy_issuer_create_and_store_claim_offer
+I -> IW: <b>1. indy_issuer_create_claim_offer
 IW -[#green]> IW: store claim offer nonce
 
 === Send Claim Offer ==

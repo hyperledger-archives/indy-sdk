@@ -46,7 +46,7 @@ fn anoncreds_demo_works() {
     let (create_wallet_sender, create_wallet_receiver) = channel();
     let (open_wallet_sender, open_wallet_receiver) = channel();
     let (issuer_create_claim_definition_sender, issuer_create_claim_definition_receiver) = channel();
-    let (issuer_create_and_store_claim_offer_sender, issuer_create_and_store_claim_offer_receiver) = channel();
+    let (issuer_create_claim_offer_sender, issuer_create_claim_offer_receiver) = channel();
     let (prover_create_master_secret_sender, prover_create_master_secret_receiver) = channel();
     let (prover_create_claim_req_sender, prover_create_claim_req_receiver) = channel();
     let (issuer_create_claim_sender, issuer_create_claim_receiver) = channel();
@@ -59,8 +59,8 @@ fn anoncreds_demo_works() {
     let issuer_create_claim_definition_cb = Box::new(move |err, claim_def_json| {
         issuer_create_claim_definition_sender.send((err, claim_def_json)).unwrap();
     });
-    let issuer_create_and_store_claim_offer_cb = Box::new(move |err, claim_offer_json| {
-        issuer_create_and_store_claim_offer_sender.send((err, claim_offer_json)).unwrap();
+    let issuer_create_claim_offer_cb = Box::new(move |err, claim_offer_json| {
+        issuer_create_claim_offer_sender.send((err, claim_offer_json)).unwrap();
     });
     let create_wallet_cb = Box::new(move |err| {
         create_wallet_sender.send(err).unwrap();
@@ -92,7 +92,7 @@ fn anoncreds_demo_works() {
     let close_wallet_cb = Box::new(move |err_code| close_wallet_sender.send(err_code).unwrap());
 
     let (issuer_create_claim_definition_command_handle, create_claim_definition_callback) = CallbackUtils::closure_to_issuer_create_claim_definition_cb(issuer_create_claim_definition_cb);
-    let (issuer_create_and_store_claim_offer_command_handle, create_and_store_claim_offer_callback) = CallbackUtils::closure_to_issuer_create_and_store_claim_offer_cb(issuer_create_and_store_claim_offer_cb);
+    let (issuer_create_claim_offer_command_handle, issuer_create_claim_offer_callback) = CallbackUtils::closure_to_issuer_create_claim_offer_cb(issuer_create_claim_offer_cb);
     let (create_wallet_command_handle, create_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_wallet_cb);
     let (open_wallet_command_handle, open_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_wallet_cb);
     let (prover_create_master_secret_command_handle, prover_create_master_secret_callback) = CallbackUtils::closure_to_prover_create_master_secret_cb(prover_create_master_secret_cb);
@@ -178,15 +178,15 @@ fn anoncreds_demo_works() {
 
     // 5. Issuer create Claim Offer
     let err =
-        indy_issuer_create_and_store_claim_offer(issuer_create_and_store_claim_offer_command_handle,
-                                                 wallet_handle,
-                                                 CString::new(schema.clone()).unwrap().as_ptr(),
-                                                 CString::new(issuer_did.clone()).unwrap().as_ptr(),
-                                                 CString::new(prover_did.clone()).unwrap().as_ptr(),
-                                                 create_and_store_claim_offer_callback);
+        indy_issuer_create_claim_offer(issuer_create_claim_offer_command_handle,
+                                      wallet_handle,
+                                      CString::new(schema.clone()).unwrap().as_ptr(),
+                                      CString::new(issuer_did.clone()).unwrap().as_ptr(),
+                                      CString::new(prover_did.clone()).unwrap().as_ptr(),
+                                      issuer_create_claim_offer_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, claim_offer_json) = issuer_create_and_store_claim_offer_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, claim_offer_json) = issuer_create_claim_offer_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 6. Prover create Claim Request

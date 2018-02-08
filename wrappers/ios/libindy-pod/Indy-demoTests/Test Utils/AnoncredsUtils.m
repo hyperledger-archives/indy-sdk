@@ -228,16 +228,16 @@
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
 
-    [IndyAnoncreds issuerCreateAndStoreClaimOfferForProverDID:proverDid
-                                                    issuerDID:issuerDid
-                                                   schemaJSON:schemaJson
-                                                 walletHandle:walletHandle
-                                                   completion:^(NSError *error, NSString *claimOfferJSON) {
-                                                       err = error;
-                                                       outClaimOfferJson = claimOfferJSON;
+    [IndyAnoncreds issuerCreateClaimOfferForProverDID:proverDid
+                                            issuerDID:issuerDid
+                                           schemaJSON:schemaJson
+                                         walletHandle:walletHandle
+                                           completion:^(NSError *error, NSString *claimOfferJSON) {
+                                               err = error;
+                                               outClaimOfferJson = claimOfferJSON;
 
-                                                       [completionExpectation fulfill];
-                                                   }];
+                                               [completionExpectation fulfill];
+                                           }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 

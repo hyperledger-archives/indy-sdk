@@ -102,19 +102,19 @@ impl AnoncredsUtils {
             sender.send((err, claim_def_json)).unwrap();
         });
 
-        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_and_store_claim_offer_cb(cb);
+        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_offer_cb(cb);
 
         let schema = CString::new(schema).unwrap();
         let issuer_did = CString::new(issuer_did).unwrap();
         let prover_did = CString::new(prover_did).unwrap();
 
         let err =
-            indy_issuer_create_and_store_claim_offer(command_handle,
-                                                     wallet_handle,
-                                                     schema.as_ptr(),
-                                                     issuer_did.as_ptr(),
-                                                     prover_did.as_ptr(),
-                                                     cb);
+            indy_issuer_create_claim_offer(command_handle,
+                                           wallet_handle,
+                                           schema.as_ptr(),
+                                           issuer_did.as_ptr(),
+                                           prover_did.as_ptr(),
+                                           cb);
 
         if err != ErrorCode::Success {
             return Err(err);

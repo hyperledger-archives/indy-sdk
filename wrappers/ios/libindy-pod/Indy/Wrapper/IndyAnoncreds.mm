@@ -61,16 +61,16 @@
     }
 }
 
-+ (void)issuerCreateAndStoreClaimOfferForProverDID:(NSString *)proverDID
-                                         issuerDID:(NSString *)issuerDID
-                                        schemaJSON:(NSString *)schemaJSON
-                                      walletHandle:(IndyHandle)walletHandle
-                                        completion:(void (^)(NSError *error, NSString *claimOfferJSON))completion; {
++ (void)issuerCreateClaimOfferForProverDID:(NSString *)proverDID
+                                 issuerDID:(NSString *)issuerDID
+                                schemaJSON:(NSString *)schemaJSON
+                              walletHandle:(IndyHandle)walletHandle
+                                completion:(void (^)(NSError *error, NSString *claimOfferJSON))completion; {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_issuer_create_and_store_claim_offer(handle,
+    ret = indy_issuer_create_claim_offer(handle,
             walletHandle,
             [schemaJSON UTF8String],
             [issuerDID UTF8String],

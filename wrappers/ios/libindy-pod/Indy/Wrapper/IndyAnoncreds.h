@@ -62,11 +62,11 @@
             "key_correctness_proof" : <key_correctness_proof>
        }
 */
-+ (void)issuerCreateAndStoreClaimOfferForProverDID:(NSString *)proverDID
-                                         issuerDID:(NSString *)issuerDID
-                                        schemaJSON:(NSString *)schemaJSON
-                                      walletHandle:(IndyHandle)walletHandle
-                                        completion:(void (^)(NSError *error, NSString *claimOfferJSON))completion;
++ (void)issuerCreateClaimOfferForProverDID:(NSString *)proverDID
+                                 issuerDID:(NSString *)issuerDID
+                                schemaJSON:(NSString *)schemaJSON
+                              walletHandle:(IndyHandle)walletHandle
+                                completion:(void (^)(NSError *error, NSString *claimOfferJSON))completion;
 
 /**
  Signs a given claim for the given user by a given key (claim ef).
