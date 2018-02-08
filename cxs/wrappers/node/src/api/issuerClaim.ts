@@ -12,7 +12,7 @@ import { CXSBaseWithState } from './CXSBaseWithState'
  * @description
  * SourceId: String for SDK User's reference.
  * issuerDid: DID associated with the claim def.
- * attributes: String(JSON formatted) representing the attributes of the claim def.
+ * attributes: key: [value] list of items offered in claim
  */
 export interface IClaimConfig {
   sourceId: string,
@@ -111,11 +111,11 @@ export class IssuerClaim extends CXSBaseWithState {
  * @static
  * @async
  * @function deserialize
- * @param {IClaimData} claimData - contains the information that will be used to build a proof object
+ * @param {IClaimData} claimData - contains the information that will be used to build an issuerClaim object
  * @example <caption>Example of claimData.</caption>
  * { source_id: "12", handle: 22, schema_seq_no: 1, claim_attributes: "{key: [\"value\"]}",
  * issuer_did: "did", state: 1 }
- * @returns {Promise<Connection>} An Issuer Claim Object
+ * @returns {Promise<IssuerClaim>} An Issuer Claim Object
  */
   static async deserialize (claimData: IClaimData) {
     try {

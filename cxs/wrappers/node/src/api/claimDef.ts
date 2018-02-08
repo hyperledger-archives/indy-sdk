@@ -2,6 +2,14 @@ import { CXSInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { CXSBase } from './CXSBase'
 
+/**
+ * @interface
+ * @description
+ * SourceId: String for SDK User's reference.
+ * name: name of claimdef.
+ * schemaNo: Schema Number wanted to create claimdef off of
+ * revocation:
+ */
 export interface IClaimDefinition {
   sourceId: string,
   name: string,
@@ -28,6 +36,9 @@ export interface IClaimDefParams {
   name: string,
 }
 
+/**
+ * @class Class representing a Claim Definition
+ */
 export class ClaimDef extends CXSBase {
   protected _releaseFn = rustAPI().cxs_claimdef_release
   protected _serializeFn = rustAPI().cxs_claimdef_serialize
@@ -41,6 +52,17 @@ export class ClaimDef extends CXSBase {
     this._schemaNo = schemaNo
   }
 
+  /**
+   * @memberof ClaimDef
+   * @description Builds a generic ClaimDef object
+   * @static
+   * @async
+   * @function create
+   * @param {IClaimConfig} config
+   * @example <caption>Example of IClaimDefinition</caption>
+   * { sourceId: "12", schemaNum: 1, name: "name of claim", revocation: false}
+   * @returns {Promise<ClaimDef>} A ClaimDef Object
+   */
   static async create (data: IClaimDefinition): Promise<ClaimDef> {
     const claimDef = new ClaimDef(data.sourceId, { name: data.name, schemaNo: data.schemaNo })
     const commandHandle = 0
@@ -61,6 +83,19 @@ export class ClaimDef extends CXSBase {
     }
   }
 
+  /**
+   * @memberof ClaimDef
+   * @description Builds a ClaimDef object with defined attributes.
+   * Attributes are often provided by a previous call to the serialize function.
+   * @static
+   * @async
+   * @function deserialize
+   * @param {IClaimDefObj} data - contains the information that will be used to build a claimdef object
+   * @example <caption>Example of claimData.</caption>
+   * { source_id: string, handle: number, name: string }
+   * claim_def: { ref: number, origin: string, signature_type: string, data: any}}
+   * @returns {Promise<ClaimDef>} A ClaimDef Obj
+   */
   static async deserialize (data: IClaimDefObj) {
     try {
       const claimDefParams = {
@@ -73,6 +108,15 @@ export class ClaimDef extends CXSBase {
     }
   }
 
+  /**
+   * @memberof ClaimDef
+   * @description Serializes a ClaimDef object.
+   * Data returned can be used to recreate a ClaimDef object by passing it to the deserialize function.
+   * @async
+   * @function serialize
+   * @returns {Promise<IClaimDefObj>} - Jason object with all of the underlying Rust attributes.
+   * Same json object structure that is passed to the deserialize function.
+   */
   async serialize (): Promise<IClaimDefObj> {
     try {
       const data: IClaimDefObj = JSON.parse(await super._serialize())

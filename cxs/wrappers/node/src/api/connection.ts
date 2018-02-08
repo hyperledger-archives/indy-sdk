@@ -160,7 +160,6 @@ export class Connection extends CXSBaseWithState {
         (resolve, reject, cb) => {
           rc = this._inviteDetailFn(0, connHandle, abbr, cb)
           if (rc) {
-            // TODO: handle correct exception
             reject(rc)
           }
         },

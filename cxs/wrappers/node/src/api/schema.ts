@@ -12,6 +12,13 @@ export interface ISchema {
   data: ISchemaAttrs
 }
 
+/**
+ * @interface
+ * @description
+ * name: name of schema
+ * version:
+ * attrNames: a list of named attribtes inteded to be added to the schema
+ */
 export interface ISchemaAttrs {
   name: string,
   version: string,
@@ -59,6 +66,17 @@ export class Schema extends CXSBase {
     this._schemaAttrs = schemaAttrs
   }
 
+  /**
+   * @memberof Schema
+   * @description Builds a generic Schema object
+   * @static
+   * @async
+   * @function create
+   * @param {ISchema} data
+   * @example <caption>Example of ISchema</caption>
+   * {sourceId: '123', data: {name: 'name', version: '1.0', attrNames:['name', 'address', 'city']}}
+   * @returns {Promise<Schema>} A Schema Object
+   */
   static async create (data: ISchema): Promise<Schema> {
     const schema = new Schema(data.sourceId, { name: data.data.name, schemaNo: 0, schemaAttrs: data.data })
     const commandHandle = 0
@@ -77,6 +95,18 @@ export class Schema extends CXSBase {
     }
   }
 
+  /**
+   * @memberof Schema
+   * @description Builds Schema object with defined attributes.
+   * Attributes are often provided by a previous call to the serialize function.
+   * @static
+   * @async
+   * @function deserialize
+   * @param {ISchemaObj} schema - contains the information that will be used to build a Schema object
+   * @example <caption>Example of schema.</caption>
+   * { source_id: string, handle: string, name: string, data: ISchemaTxn, sequence_num: number}
+   * @returns {Promise<Schema>} A Schema Object
+   */
   static async deserialize (schema: ISchemaObj) {
     const schemaAttrs = schema.data.data
     try {
@@ -91,6 +121,14 @@ export class Schema extends CXSBase {
     }
   }
 
+  /**
+   * @memberof Schema
+   * @description Looks up the attributes of an already created Schema.
+   * @async
+   * @function lookup
+   * @param {obj} data - contains sourceId and sequence number of schema to look up
+   * @returns {Promise<Schema>} - A schema object with the attributes set
+   */
   static async lookup (data: { sourceId: string, seqNo: number }): Promise<Schema> {
     try {
       let rc = null
@@ -126,6 +164,15 @@ export class Schema extends CXSBase {
     }
   }
 
+  /**
+   * @memberof Schema
+   * @description Serializes a Schema object.
+   * Data returned can be used to recreate a Schema object by passing it to the deserialize function.
+   * @async
+   * @function serialize
+   * @returns {Promise<ISchemaObj>} - Jason object with all of the underlying Rust attributes.
+   * Same json object structure that is passed to the deserialize function.
+   */
   async serialize (): Promise<ISchemaObj> {
     try {
       const data: ISchemaObj = JSON.parse(await super._serialize())

@@ -22,7 +22,7 @@ use std::ptr;
 ///
 /// schema_seq_no: integer number corresponding to claim's schema number on the ledger
 ///
-/// issuer_did: did corresponding to entity issuing a claim
+/// issuer_did: did corresponding to entity issuing a claim. Needs to have Trust Anchor permissions on ledger
 ///
 /// claim_data: data attributes offered to person in the claim
 ///

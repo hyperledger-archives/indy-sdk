@@ -8,6 +8,23 @@ use std::ptr;
 use schema;
 use settings;
 
+/// Create a new Schema object that can create or look up schemas on the ledger
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: Enterprise's personal identification for the user.
+///
+/// schema_name: Name of schema
+///
+/// schema_data: list of attributes that will make up the schema
+///
+/// # Example schema_data -> "["attr1", "attr2", "attr3"]"
+///
+/// cb: Callback that provides Schema handle and error status of request.
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn cxs_schema_create(command_handle: u32,
                                 source_id: *const c_char,
@@ -36,6 +53,18 @@ pub extern fn cxs_schema_create(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+
+/// Takes the schema object and returns a json string of all its attributes
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// schema_handle: Schema handle that was provided during creation. Used to access schema object
+///
+/// cb: Callback that provides json string of the schema's attributes and provides error status
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn cxs_schema_serialize(command_handle: u32,
                                    schema_handle: u32,
@@ -65,6 +94,19 @@ pub extern fn cxs_schema_serialize(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Takes a json string representing a schema object and recreates an object matching the json
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// schema: json string representing a schema object
+///
+/// # Examples schema -> {"data":{"seqNo":15,"identifier":"4fUDR9R7fjwELRvH9JT6HH","txnTime":1510246647,"type":"101","data":{"name":"Home Address","version":"0.1","attr_names":["address1","address2","city","state","zip"]}},"handle":1,"name":"schema_name","source_id":"testId","sequence_num":306}
+///
+/// cb: Callback that provides schema handle and provides error status
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn cxs_schema_deserialize(command_handle: u32,
                                      schema_data: *const c_char,
@@ -84,11 +126,27 @@ pub extern fn cxs_schema_deserialize(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Releases the schema object by de-allocating memory
+///
+/// #Params
+/// schema_handle: Schema handle that was provided during creation. Used to access schema object
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn cxs_schema_release(schema_handle: u32) -> u32 {
     schema::release(schema_handle)
 }
 
+/// Retrieves schema's sequence number
+///
+/// #Params
+/// schema_handle: Schema handle that was provided during creation. Used to access proof object
+///
+/// cb: Callback that provides schema number and provides error status
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn cxs_schema_get_sequence_no(command_handle: u32,
                                          schema_handle: u32,
@@ -110,6 +168,17 @@ pub extern fn cxs_schema_get_sequence_no(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Retrieves schema's attributes
+///
+/// #Params
+/// sequence_no: The schema sequence number for wanted schema
+///
+/// source_id: Enterprise's personal identification for the user.
+///
+/// cb: Callback that provides schema number and provides error status
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn cxs_schema_get_attributes(command_handle: u32,
                                         source_id: *const c_char,

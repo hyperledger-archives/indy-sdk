@@ -8,6 +8,25 @@ use std::ptr;
 use claim_def;
 use settings;
 
+/// Create a new ClaimDef object that can create claim definitions on the ledger
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: Enterprise's personal identification for the user.
+///
+/// claimdef_name: Name of claim definitions
+///
+/// schema_seq_no: The schema sequence number to create claimdef against
+///
+/// issuer_did: did corresponding to entity issuing a claim. Needs to have Trust Anchor permissions on ledger
+///
+/// create_non_revoc: Todo: need to add what this done. Right now, provide false
+///
+/// cb: Callback that provides ClaimDef handle and error status of request.
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn cxs_claimdef_create(command_handle: u32,
                                   source_id: *const c_char,
@@ -50,6 +69,17 @@ pub extern fn cxs_claimdef_create(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Takes the claimdef object and returns a json string of all its attributes
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// claimdef_handle: Claimdef handle that was provided during creation. Used to access claimdef object
+///
+/// cb: Callback that provides json string of the claimdef's attributes and provides error status
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn cxs_claimdef_serialize(command_handle: u32,
                                      claimdef_handle: u32,
@@ -79,6 +109,19 @@ pub extern fn cxs_claimdef_serialize(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Takes a json string representing a claimdef object and recreates an object matching the json
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// claimdef_data: json string representing a claimdef object
+///
+/// # Examples claimdef -> {"source_id":"test id","claim_def":{"ref":15,"origin":"4fUDR9R7fjwELRvH9JT6HH","signature_type":"CL","data":{"primary":{"n":"9","s":"5","rms":"4","r":{"city":"6","address2":"8","address1":"7","state":"6","zip":"1"},"rctxt":"7","z":"7"},"revocation":null}},"handle":1378455216,"name":"NAME"}
+///
+/// cb: Callback that provides claimdef handle and provides error status
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn cxs_claimdef_deserialize(command_handle: u32,
                                        claimdef_data: *const c_char,
