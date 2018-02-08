@@ -200,7 +200,7 @@ impl CreateSchema {
     pub fn create_schema_req(submitter_did: &str, data: String) -> Result<String, u32> {
         if settings::test_indy_mode_enabled() { return Ok(SCHEMA_REQ.to_string()); }
         libindy_build_schema_request(submitter_did.to_string(), data)
-            .or(Err(error::INVALID_SCHEMA_CREATION.code_num))
+            .map_err( |x| error::map_libindy_err(x, error::INVALID_SCHEMA_CREATION.code_num))
     }
 
     pub fn sign_and_send_request(submitter_did: &str, request: &str) ->  Result<String, u32> {
@@ -211,7 +211,7 @@ impl CreateSchema {
                                         wallet_handle,
                                         submitter_did.to_string(),
                                         request.to_string())
-            .or(Err(error::INVALID_SCHEMA_CREATION.code_num))
+            .map_err( |x| error::map_libindy_err(x, error::INVALID_SCHEMA_CREATION.code_num))
     }
 
     pub fn parse_schema_data(data: &str) -> Result<SchemaTransaction, u32> {

@@ -53,7 +53,7 @@ struct Proof {
 impl Proof {
     fn validate_proof_request(&self) -> Result<u32, u32> {
         //TODO: validate proof request
-        info!("successfully validated proof {}", self.handle);
+        info!("successfully validated proof request {}", self.handle);
         Ok(error::SUCCESS.code_num)
     }
 

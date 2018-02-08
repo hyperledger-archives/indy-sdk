@@ -56,8 +56,8 @@ struct Connection {
 impl Connection {
     fn connect(&mut self, options: Option<String>) -> Result<u32,u32> {
         info!("\"cxs_connection_connect\" for handle {}", self.handle);
-        if self.state != CxsStateType::CxsStateInitialized {
-            info!("connection {} in state {} not ready to connect",self.handle,self.state as u32);
+        if !self.ready_to_connect() {
+            warn!("connection {} in state {} not ready to connect",self.handle,self.state as u32);
             return Err(error::NOT_READY.code_num);
         }
 
@@ -124,6 +124,13 @@ impl Connection {
     fn get_endpoint(&self) -> String { self.endpoint.clone() }
     fn set_uuid(&mut self, uuid: &str) { self.uuid = uuid.to_string(); }
     fn set_endpoint(&mut self, endpoint: &str) { self.endpoint = endpoint.to_string(); }
+    fn ready_to_connect(&self) -> bool {
+        if self.state == CxsStateType::CxsStateNone || self.state == CxsStateType::CxsStateAccepted {
+            false
+        } else {
+            true
+        }
+    }
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
@@ -698,6 +705,17 @@ mod tests {
         println!("{}",first_string);
         println!("{}",second_string);
         assert_eq!(first_string,second_string);
+    }
+
+    #[test]
+    fn test_retry_connection() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let handle = build_connection("test_serialize_deserialize".to_owned()).unwrap();
+        assert!(handle > 0);
+        assert_eq!(get_state(handle), CxsStateType::CxsStateInitialized as u32);
+        connect(handle,Some(String::new())).unwrap();
+        connect(handle, Some(String::new())).unwrap();
     }
 
     #[test]
