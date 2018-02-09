@@ -1,11 +1,11 @@
 extern crate libc;
+extern crate indy_crypto;
 
 use super::{Wallet, WalletType};
 
 use api::ErrorCode;
 use errors::common::CommonError;
 use errors::wallet::WalletError;
-use utils::json::JsonDecodable;
 
 use self::libc::c_char;
 
@@ -13,6 +13,8 @@ use std::error::Error;
 use std::ffi::{CString, CStr, NulError};
 use std::ptr;
 use std::str::Utf8Error;
+
+use self::indy_crypto::utils::json::JsonDecodable;
 
 #[derive(Debug, Deserialize)]
 pub struct PluggedWalletJSONValue {
@@ -391,7 +393,7 @@ mod tests {
             InmemWallet::open,
             InmemWallet::set,
             InmemWallet::get,
-            InmemWallet::get_not_expied,
+            InmemWallet::get_not_expired,
             InmemWallet::list,
             InmemWallet::close,
             InmemWallet::delete,
@@ -411,7 +413,7 @@ mod tests {
             InmemWallet::open,
             InmemWallet::set,
             InmemWallet::get,
-            InmemWallet::get_not_expied,
+            InmemWallet::get_not_expired,
             InmemWallet::list,
             InmemWallet::close,
             InmemWallet::delete,
@@ -432,7 +434,7 @@ mod tests {
             InmemWallet::open,
             InmemWallet::set,
             InmemWallet::get,
-            InmemWallet::get_not_expied,
+            InmemWallet::get_not_expired,
             InmemWallet::list,
             InmemWallet::close,
             InmemWallet::delete,
@@ -456,7 +458,7 @@ mod tests {
             InmemWallet::open,
             InmemWallet::set,
             InmemWallet::get,
-            InmemWallet::get_not_expied,
+            InmemWallet::get_not_expired,
             InmemWallet::list,
             InmemWallet::close,
             InmemWallet::delete,
@@ -479,7 +481,7 @@ mod tests {
             InmemWallet::open,
             InmemWallet::set,
             InmemWallet::get,
-            InmemWallet::get_not_expied,
+            InmemWallet::get_not_expired,
             InmemWallet::list,
             InmemWallet::close,
             InmemWallet::delete,
@@ -501,7 +503,7 @@ mod tests {
             InmemWallet::open,
             InmemWallet::set,
             InmemWallet::get,
-            InmemWallet::get_not_expied,
+            InmemWallet::get_not_expired,
             InmemWallet::list,
             InmemWallet::close,
             InmemWallet::delete,
@@ -527,7 +529,7 @@ mod tests {
             InmemWallet::open,
             InmemWallet::set,
             InmemWallet::get,
-            InmemWallet::get_not_expied,
+            InmemWallet::get_not_expired,
             InmemWallet::list,
             InmemWallet::close,
             InmemWallet::delete,
@@ -556,7 +558,7 @@ mod tests {
             InmemWallet::open,
             InmemWallet::set,
             InmemWallet::get,
-            InmemWallet::get_not_expied,
+            InmemWallet::get_not_expired,
             InmemWallet::list,
             InmemWallet::close,
             InmemWallet::delete,
@@ -580,7 +582,7 @@ mod tests {
             InmemWallet::open,
             InmemWallet::set,
             InmemWallet::get,
-            InmemWallet::get_not_expied,
+            InmemWallet::get_not_expired,
             InmemWallet::list,
             InmemWallet::close,
             InmemWallet::delete,
@@ -609,7 +611,7 @@ mod tests {
             InmemWallet::open,
             InmemWallet::set,
             InmemWallet::get,
-            InmemWallet::get_not_expied,
+            InmemWallet::get_not_expired,
             InmemWallet::list,
             InmemWallet::close,
             InmemWallet::delete,
@@ -637,7 +639,7 @@ mod tests {
             InmemWallet::open,
             InmemWallet::set,
             InmemWallet::get,
-            InmemWallet::get_not_expied,
+            InmemWallet::get_not_expired,
             InmemWallet::list,
             InmemWallet::close,
             InmemWallet::delete,
@@ -673,7 +675,7 @@ mod tests {
             InmemWallet::open,
             InmemWallet::set,
             InmemWallet::get,
-            InmemWallet::get_not_expied,
+            InmemWallet::get_not_expired,
             InmemWallet::list,
             InmemWallet::close,
             InmemWallet::delete,
@@ -696,7 +698,7 @@ mod tests {
             InmemWallet::open,
             InmemWallet::set,
             InmemWallet::get,
-            InmemWallet::get_not_expied,
+            InmemWallet::get_not_expired,
             InmemWallet::list,
             InmemWallet::close,
             InmemWallet::delete,

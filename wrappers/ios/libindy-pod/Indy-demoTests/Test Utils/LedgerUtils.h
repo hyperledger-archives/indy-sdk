@@ -83,6 +83,25 @@
                                            data:(NSNumber *)data
                                      resultJson:(NSString**)resultJson;
 
+// MARK: - Pool Config request
+- (NSError *)buildPoolConfigRequestWithSubmitterDid:(NSString *)submitterDid
+                                             writes:(BOOL)writes
+                                              force:(BOOL)force
+                                         resultJson:(NSString**)resultJson;
+
+// MARK: - Pool Upgrade request
+- (NSError *)buildPoolUpgradeRequestWithSubmitterDid:(NSString *)submitterDid
+                                                name:(NSString *)name
+                                             version:(NSString *)version
+                                              action:(NSString *)action
+                                              sha256:(NSString *)sha256
+                                             timeout:(NSNumber *)timeout
+                                            schedule:(NSString *)schedule
+                                       justification:(NSString *)justification
+                                           reinstall:(BOOL)reinstall
+                                               force:(BOOL)force
+                                     resultJson:(NSString**)resultJson;
+
 // MARK: - Sign Request
 - (NSError *)signRequestWithWalletHandle:(IndyHandle)walletHandle
                             submitterdid:(NSString *)submitterDid

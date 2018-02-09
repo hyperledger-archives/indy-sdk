@@ -1,12 +1,11 @@
 extern crate libc;
 
-pub mod agent;
 pub mod anoncreds;
 pub mod crypto;
 pub mod ledger;
 pub mod pairwise;
 pub mod pool;
-pub mod signus;
+pub mod did;
 pub mod wallet;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -84,6 +83,9 @@ pub enum ErrorCode
     // Trying to open wallet that was opened already
     WalletAlreadyOpenedError = 206,
 
+    // Attempt to open encrypted wallet with invalid credentials
+    WalletAccessFailed = 207,
+
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
     PoolLedgerNotCreatedError = 300,
@@ -97,14 +99,14 @@ pub enum ErrorCode
     // No concensus during ledger operation
     LedgerNoConsensusError = 303,
 
-    // Attempt to send unknown or incomplete transaction message
-    LedgerInvalidTransaction = 304,
-
     // Attempt to send transaction without the necessary privileges
     LedgerSecurityError = 305,
 
     // Attempt to create pool ledger config with name used for another existing pool
     PoolLedgerConfigAlreadyExistsError = 306,
+
+    // Timeout for action
+    PoolLedgerTimeout = 307,
 
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
@@ -122,7 +124,13 @@ pub enum ErrorCode
 
     AnoncredsClaimRevoked = 406,
 
-    // Signus errors
+    // Attempt to create claim definition with duplicated did schema pair
+    AnoncredsClaimDefAlreadyExistsError = 407,
+
+    // Crypto errors
     // Unknown format of DID entity keys
-    SignusUnknownCryptoError = 500
+    UnknownCryptoTypeError = 500,
+
+    // Attempt to create duplicate did
+    DidAlreadyExistsError = 600,
 }

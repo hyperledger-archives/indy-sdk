@@ -84,31 +84,32 @@ class Anoncreds {
 				"                          \"nonce\":\"123432421212\",\n" +
 				"                          \"name\":\"proof_req_1\",\n" +
 				"                          \"version\":\"0.1\",\n" +
-				"                          \"requested_attrs\":{\"attr1_uuid\":{\"schema_seq_no\":1,\"name\":\"name\"},\n" +
-				"                                                \"attr2_uuid\":{\"schema_seq_no\":1,\"name\":\"sex\"}},\n" +
-				"                          \"requested_predicates\":{\"predicate1_uuid\":{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18}}\n" +
+				"                          \"requested_attrs\":{\"attr1_referent\":{\"schema_seq_no\":[1],\"name\":\"name\"},\n" +
+				"                                               \"attr2_referent\":{\"schema_seq_no\":[1],\"name\":\"sex\"}," +
+				"                                               \"attr3_referent\":{\"name\":\"phone\"}},\n" +
+				"                          \"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}\n" +
 				"                  }";
 
 		String claimsForProofJson = proverGetClaimsForProofReq(proverWallet, proofRequestJson).get();
 
 		JSONObject claimsForProof = new JSONObject(claimsForProofJson);
-		JSONArray claimsForAttribute1 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_uuid");
-		JSONArray claimsForAttribute2 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_uuid");
-		JSONArray claimsForPredicate = claimsForProof.getJSONObject("predicates").getJSONArray("predicate1_uuid");
+		JSONArray claimsForAttribute1 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
+		JSONArray claimsForAttribute2 = claimsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
+		JSONArray claimsForPredicate = claimsForProof.getJSONObject("predicates").getJSONArray("predicate1_referent");
 
 		assertEquals(claimsForAttribute1.length(), 1);
 		assertEquals(claimsForAttribute2.length(), 1);
 		assertEquals(claimsForPredicate.length(), 1);
 
-		String claimUuid = claimsForAttribute1.getJSONObject(0).getString("claim_uuid");
+		String claimUuid = claimsForAttribute1.getJSONObject(0).getString("referent");
 
 		//12. Prover create Proof
-		String selfAttestedValue = "yes";
+		String selfAttestedValue = "8-800-200";
 		String requestedClaimsJson = String.format("{\n" +
-				"                                          \"self_attested_attributes\":{\"self1\":\"%s\"},\n" +
-				"                                          \"requested_attrs\":{\"attr1_uuid\":[\"%s\", true],\n" +
-				"                                                               \"attr2_uuid\":[\"%s\", false]},\n" +
-				"                                          \"requested_predicates\":{\"predicate1_uuid\":\"%s\"}\n" +
+				"                                          \"self_attested_attributes\":{\"attr3_referent\":\"%s\"},\n" +
+				"                                          \"requested_attrs\":{\"attr1_referent\":[\"%s\", true],\n" +
+				"                                                               \"attr2_referent\":[\"%s\", false]},\n" +
+				"                                          \"requested_predicates\":{\"predicate1_referent\":\"%s\"}\n" +
 				"                                        }", selfAttestedValue, claimUuid, claimUuid, claimUuid);
 
 		String schemasJson = String.format("{\"%s\":%s}", claimUuid, schemaJson);
@@ -123,11 +124,11 @@ class Anoncreds {
 
 		//13. Verifier verify Proof
 		assertEquals("Alex",
-				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr1_uuid").getString(1));
+				proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONArray("attr1_referent").getString(1));
 
-		assertNotNull(proof.getJSONObject("requested_proof").getJSONObject("unrevealed_attrs").getString("attr2_uuid"));
+		assertNotNull(proof.getJSONObject("requested_proof").getJSONObject("unrevealed_attrs").getString("attr2_referent"));
 
-		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("self1"));
+		assertEquals(selfAttestedValue, proof.getJSONObject("requested_proof").getJSONObject("self_attested_attrs").getString("attr3_referent"));
 
 		Boolean valid = verifierVerifyProof(proofRequestJson, proofJson, schemasJson, claimDefsJson, revocRegsJson).get();
 		assertTrue(valid);

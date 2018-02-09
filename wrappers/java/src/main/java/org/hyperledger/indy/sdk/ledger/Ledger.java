@@ -253,17 +253,49 @@ public class Ledger extends IndyJava.API {
 		}
 	};
 
+	/**
+	 * Callback used when buildPoolConfigRequest completes.
+	 */
+	public static Callback buildPoolConfigRequestCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_json;
+			future.complete(result);
+		}
+	};
+
+	/**
+	 * Callback used when buildPoolUpgradeRequest completes.
+	 */
+	public static Callback buildPoolUpgradeRequestCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String request_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = request_json;
+			future.complete(result);
+		}
+	};
+
 	/*
 	 * STATIC METHODS
 	 */
 
 	/**
 	 * Signs and submits request message to validator pool.
-	 * 
-	 * @param pool A Pool.
-	 * @param wallet A Wallet.
+	 *
+	 * @param pool         A Pool.
+	 * @param wallet       A Wallet.
 	 * @param submitterDid Id of Identity stored in secured Wallet.
-	 * @param requestJson Request data json.
+	 * @param requestJson  Request data json.
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -277,7 +309,7 @@ public class Ledger extends IndyJava.API {
 		ParamGuard.notNull(wallet, "wallet");
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(requestJson, "requestJson");
-		
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -285,9 +317,9 @@ public class Ledger extends IndyJava.API {
 		int walletHandle = wallet.getWalletHandle();
 
 		int result = LibIndy.api.indy_sign_and_submit_request(
-				commandHandle, 
+				commandHandle,
 				poolHandle,
-				walletHandle, 
+				walletHandle,
 				submitterDid,
 				requestJson,
 				signAndSubmitRequestCb);
@@ -299,8 +331,8 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Publishes request message to validator pool (no signing, unlike sign_and_submit_request).
-	 * 
-	 * @param pool The Pool to publish to.
+	 *
+	 * @param pool        The Pool to publish to.
 	 * @param requestJson Request data json.
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -311,14 +343,14 @@ public class Ledger extends IndyJava.API {
 
 		ParamGuard.notNull(pool, "pool");
 		ParamGuard.notNullOrWhiteSpace(requestJson, "requestJson");
-		
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int poolHandle = pool.getPoolHandle();
 
 		int result = LibIndy.api.indy_submit_request(
-				commandHandle, 
+				commandHandle,
 				poolHandle,
 				requestJson,
 				submitRequestCb);
@@ -331,9 +363,9 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Signs request message.
 	 *
-	 * @param wallet A Wallet.
+	 * @param wallet       A Wallet.
 	 * @param submitterDid Id of Identity stored in secured Wallet.
-	 * @param requestJson Request data json.
+	 * @param requestJson  Request data json.
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -345,7 +377,7 @@ public class Ledger extends IndyJava.API {
 		ParamGuard.notNull(wallet, "wallet");
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(requestJson, "requestJson");
-		
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
@@ -365,9 +397,9 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds a request to get a DDO.
-	 * 
+	 *
 	 * @param submitterDid Id of Identity stored in secured Wallet.
-	 * @param targetDid Id of Identity stored in secured Wallet.
+	 * @param targetDid    Id of Identity stored in secured Wallet.
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -377,12 +409,12 @@ public class Ledger extends IndyJava.API {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
-		
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_ddo_request(
-				commandHandle, 
+				commandHandle,
 				submitterDid,
 				targetDid,
 				buildGetDdoRequestCb);
@@ -394,12 +426,12 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds a NYM request.
-	 * 
+	 *
 	 * @param submitterDid Id of Identity stored in secured Wallet.
-	 * @param targetDid Id of Identity stored in secured Wallet.
-	 * @param verkey verification key
-	 * @param alias alias
-	 * @param role Role of a user NYM record
+	 * @param targetDid    Id of Identity stored in secured Wallet.
+	 * @param verkey       verification key
+	 * @param alias        alias
+	 * @param role         Role of a user NYM record
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -412,12 +444,12 @@ public class Ledger extends IndyJava.API {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
-		
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_nym_request(
-				commandHandle, 
+				commandHandle,
 				submitterDid,
 				targetDid,
 				verkey,
@@ -432,12 +464,12 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds an ATTRIB request.
-	 * 
+	 *
 	 * @param submitterDid Id of Identity stored in secured Wallet.
-	 * @param targetDid Id of Identity stored in secured Wallet.
-	 * @param hash Hash of attribute data
-	 * @param raw represented as json, where key is attribute name and value is it's value
-	 * @param enc Encrypted attribute data
+	 * @param targetDid    Id of Identity stored in secured Wallet.
+	 * @param hash         Hash of attribute data
+	 * @param raw          represented as json, where key is attribute name and value is it's value
+	 * @param enc          Encrypted attribute data
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -447,20 +479,15 @@ public class Ledger extends IndyJava.API {
 			String hash,
 			String raw,
 			String enc) throws IndyException {
-		
+
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
-		
-		if(StringUtils.isNullOrWhiteSpace(hash) && 
-				StringUtils.isNullOrWhiteSpace(raw) &&
-				StringUtils.isNullOrWhiteSpace(enc))
-			throw new IllegalArgumentException("At least one of the 'hash', 'raw' or 'enc' parameters must be provided with a non-empty string.");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_attrib_request(
-				commandHandle, 
+				commandHandle,
 				submitterDid,
 				targetDid,
 				hash,
@@ -475,10 +502,10 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds a GET_ATTRIB request.
-	 * 
+	 *
 	 * @param submitterDid Id of Identity stored in secured Wallet.
-	 * @param targetDid Id of Identity stored in secured Wallet.
-	 * @param data name (attribute name)
+	 * @param targetDid    Id of Identity stored in secured Wallet.
+	 * @param data         name (attribute name)
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -490,12 +517,12 @@ public class Ledger extends IndyJava.API {
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
 		ParamGuard.notNullOrWhiteSpace(data, "data");
-		
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_attrib_request(
-				commandHandle, 
+				commandHandle,
 				submitterDid,
 				targetDid,
 				data,
@@ -508,9 +535,9 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds a GET_NYM request.
-	 * 
+	 *
 	 * @param submitterDid Id of Identity stored in secured Wallet.
-	 * @param targetDid Id of Identity stored in secured Wallet.
+	 * @param targetDid    Id of Identity stored in secured Wallet.
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -520,12 +547,12 @@ public class Ledger extends IndyJava.API {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
-		
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_nym_request(
-				commandHandle, 
+				commandHandle,
 				submitterDid,
 				targetDid,
 				buildGetNymRequestCb);
@@ -537,9 +564,9 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds a SCHEMA request.
-	 * 
+	 *
 	 * @param submitterDid Id of Identity stored in secured Wallet.
-	 * @param data name, version, type, attr_names (ip, port, keys)
+	 * @param data         name, version, type, attr_names (ip, port, keys)
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -549,12 +576,12 @@ public class Ledger extends IndyJava.API {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(data, "data");
-		
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_schema_request(
-				commandHandle, 
+				commandHandle,
 				submitterDid,
 				data,
 				buildSchemaRequestCb);
@@ -566,10 +593,10 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds a GET_SCHEMA request.
-	 * 
+	 *
 	 * @param submitterDid Id of Identity stored in secured Wallet.
-	 * @param dest Id of Identity stored in secured Wallet.
-	 * @param data name, version
+	 * @param dest         Id of Identity stored in secured Wallet.
+	 * @param data         name, version
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -581,12 +608,12 @@ public class Ledger extends IndyJava.API {
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(dest, "dest");
 		ParamGuard.notNullOrWhiteSpace(data, "data");
-		
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_schema_request(
-				commandHandle, 
+				commandHandle,
 				submitterDid,
 				dest,
 				data,
@@ -599,11 +626,11 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds an CLAIM_DEF request.
-	 * 
-	 * @param submitterDid Id of Identity stored in secured Wallet.
-	 * @param xref Seq. number of schema
+	 *
+	 * @param submitterDid  Id of Identity stored in secured Wallet.
+	 * @param xref          Seq. number of schema
 	 * @param signatureType signature type (only CL supported now)
-	 * @param data components of a key in json: N, R, S, Z
+	 * @param data          components of a key in json: N, R, S, Z
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -616,12 +643,12 @@ public class Ledger extends IndyJava.API {
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(signatureType, "signatureType");
 		ParamGuard.notNullOrWhiteSpace(data, "data");
-		
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_claim_def_txn(
-				commandHandle, 
+				commandHandle,
 				submitterDid,
 				xref,
 				signatureType,
@@ -635,11 +662,11 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds a GET_CLAIM_DEF request.
-	 * 
-	 * @param submitterDid Id of Identity stored in secured Wallet.
-	 * @param xref Seq. number of schema
+	 *
+	 * @param submitterDid  Id of Identity stored in secured Wallet.
+	 * @param xref          Seq. number of schema
 	 * @param signatureType signature type (only CL supported now)
-	 * @param origin issuer did
+	 * @param origin        issuer did
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -652,12 +679,12 @@ public class Ledger extends IndyJava.API {
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(signatureType, "signatureType");
 		ParamGuard.notNullOrWhiteSpace(origin, "origin");
-		
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_claim_def_txn(
-				commandHandle, 
+				commandHandle,
 				submitterDid,
 				xref,
 				signatureType,
@@ -671,10 +698,10 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds a NODE request.
-	 * 
+	 *
 	 * @param submitterDid Id of Identity stored in secured Wallet.
-	 * @param targetDid Id of Identity stored in secured Wallet.
-	 * @param data id of a target NYM record
+	 * @param targetDid    Id of Identity stored in secured Wallet.
+	 * @param data         id of a target NYM record
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -686,12 +713,12 @@ public class Ledger extends IndyJava.API {
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
 		ParamGuard.notNullOrWhiteSpace(data, "data");
-		
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_node_request(
-				commandHandle, 
+				commandHandle,
 				submitterDid,
 				targetDid,
 				data,
@@ -704,9 +731,9 @@ public class Ledger extends IndyJava.API {
 
 	/**
 	 * Builds a GET_TXN request.
-	 * 
+	 *
 	 * @param submitterDid Id of Identity stored in secured Wallet.
-	 * @param data seq_no of transaction in ledger
+	 * @param data         seq_no of transaction in ledger
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -715,15 +742,98 @@ public class Ledger extends IndyJava.API {
 			int data) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
-		
+
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
 		int result = LibIndy.api.indy_build_get_txn_request(
-				commandHandle, 
-				submitterDid, 
-				data, 
+				commandHandle,
+				submitterDid,
+				data,
 				buildGetTxnRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Builds a POOL_CONFIG request.
+	 *
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param writes
+	 * @param force
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildPoolConfigRequest(
+			String submitterDid,
+			boolean writes,
+			boolean force) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_pool_config_request(
+				commandHandle,
+				submitterDid,
+				writes,
+				force,
+				buildPoolConfigRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Builds a POOL_UPGRADE request.
+	 *
+	 * @param submitterDid Id of Identity stored in secured Wallet.
+	 * @param name
+	 * @param version
+	 * @param action
+	 * @param sha256
+	 * @param timeout
+	 * @param schedule
+	 * @param justification
+	 * @param reinstall
+	 * @param force
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> buildPoolUpgradeRequest(
+			String submitterDid,
+			String name,
+			String version,
+			String action,
+			String sha256,
+			int timeout,
+			String schedule,
+			String justification,
+			boolean reinstall,
+			boolean force) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_build_pool_upgrade_request(
+				commandHandle,
+				submitterDid,
+				name,
+				version,
+				action,
+				sha256,
+				timeout,
+				schedule,
+				justification,
+				reinstall,
+				force,
+				buildPoolUpgradeRequestCb);
 
 		checkResult(result);
 

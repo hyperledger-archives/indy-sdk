@@ -2,37 +2,19 @@ extern crate serde_json;
 extern crate uuid;
 extern crate indy_crypto;
 
-use self::uuid::Uuid;
 use errors::common::CommonError;
 use errors::indy::IndyError;
 use errors::anoncreds::AnoncredsError;
 use services::anoncreds::AnoncredsService;
-use utils::crypto::bn::BigNumber;
-use utils::json::{JsonDecodable, JsonEncodable};
 use services::wallet::WalletService;
 use std::rc::Rc;
 use services::anoncreds::helpers::get_composite_id;
-use services::anoncreds::types::{
-    ClaimDefinition,
-    Schema,
-    RevocationRegistry,
-    ClaimOfferFilter,
-    ClaimInfoFilter,
-    ProofJson,
-    ClaimInfo,
-    ProofClaimsJson,
-    ProofRequestJson,
-    RequestedClaimsJson,
-    ClaimJson,
-    ClaimOffer,
-    ClaimInitData,
-    RevocationClaimInitData,
-    ClaimRequestJson
-};
-use std::collections::HashMap;
-use std::cell::RefCell;
+use services::anoncreds::types::*;
+use std::collections::{HashMap, HashSet};
 use utils::crypto::base58::Base58;
-use self::indy_crypto::pair::PointG2;
+use self::indy_crypto::cl::*;
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use self::uuid::Uuid;
 
 pub enum ProverCommand {
     StoreClaimOffer(
@@ -49,7 +31,7 @@ pub enum ProverCommand {
         Box<Fn(Result<(), IndyError>) + Send>),
     CreateAndStoreClaimRequest(
         i32, // wallet handle
-        String, // prover_did
+        String, // prover did
         String, // claim offer json
         String, // claim def json
         String, // master secret name
@@ -57,6 +39,7 @@ pub enum ProverCommand {
     StoreClaim(
         i32, // wallet handle
         String, // claims json
+        Option<String>, // revocation registry json
         Box<Fn(Result<(), IndyError>) + Send>),
     GetClaims(
         i32, // wallet handle
@@ -95,124 +78,118 @@ impl ProverCommandExecutor {
         match command {
             ProverCommand::StoreClaimOffer(wallet_handle, claim_offer_json, cb) => {
                 info!(target: "prover_command_executor", "StoreClaimOffer command received");
-                self.store_claim_offer(wallet_handle, &claim_offer_json, cb);
+                cb(self.store_claim_offer(wallet_handle, &claim_offer_json));
             }
             ProverCommand::GetClaimOffers(wallet_handle, filter_json, cb) => {
                 info!(target: "prover_command_executor", "GetClaimOffers command received");
-                self.get_claim_offers(wallet_handle, &filter_json, cb);
+                cb(self.get_claim_offers(wallet_handle, &filter_json));
             }
             ProverCommand::CreateMasterSecret(wallet_handle, master_secret_name, cb) => {
                 info!(target: "prover_command_executor", "CreateMasterSecret command received");
-                self.create_master_secret(wallet_handle, &master_secret_name, cb);
+                cb(self.create_master_secret(wallet_handle, &master_secret_name));
             }
             ProverCommand::CreateAndStoreClaimRequest(wallet_handle, prover_did, claim_offer_json,
                                                       claim_def_json, master_secret_name, cb) => {
                 info!(target: "prover_command_executor", "CreateAndStoreClaimRequest command received");
-                self.create_and_store_claim_request(wallet_handle, &prover_did, &claim_offer_json,
-                                                    &claim_def_json, &master_secret_name, cb);
+                cb(self.create_and_store_claim_request(wallet_handle, &prover_did, &claim_offer_json,
+                                                       &claim_def_json, &master_secret_name));
             }
-            ProverCommand::StoreClaim(wallet_handle, claims_json, cb) => {
+            ProverCommand::StoreClaim(wallet_handle, claims_json, rev_reg_json, cb) => {
                 info!(target: "prover_command_executor", "StoreClaim command received");
-                self.store_claim(wallet_handle, &claims_json, cb);
+                cb(self.store_claim(wallet_handle, &claims_json, rev_reg_json.as_ref().map(String::as_str)));
             }
             ProverCommand::GetClaims(wallet_handle, filter_json, cb) => {
                 info!(target: "prover_command_executor", "GetClaims command received");
-                self.get_claims(wallet_handle, &filter_json, cb);
+                cb(self.get_claims(wallet_handle, &filter_json));
             }
             ProverCommand::GetClaimsForProofReq(wallet_handle, proof_req_json, cb) => {
                 info!(target: "prover_command_executor", "GetClaimsForProofReq command received");
-                self.get_claims_for_proof_req(wallet_handle, &proof_req_json, cb);
+                cb(self.get_claims_for_proof_req(wallet_handle, &proof_req_json));
             }
             ProverCommand::CreateProof(wallet_handle, proof_req_json, requested_claims_json, schemas_jsons,
                                        master_secret_name, claim_def_jsons, revoc_regs_jsons, cb) => {
                 info!(target: "prover_command_executor", "CreateProof command received");
-                self.create_proof(wallet_handle, &proof_req_json, &requested_claims_json, &schemas_jsons,
-                                  &master_secret_name, &claim_def_jsons, &revoc_regs_jsons, cb);
+                cb(self.create_proof(wallet_handle, &proof_req_json, &requested_claims_json, &schemas_jsons,
+                                     &master_secret_name, &claim_def_jsons, &revoc_regs_jsons));
             }
         };
     }
 
-    fn store_claim_offer(&self,
-                         wallet_handle: i32,
-                         claim_offer_json: &str,
-                         cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self._store_claim_offer(wallet_handle, claim_offer_json));
-    }
-
-    fn _store_claim_offer(&self, wallet_handle: i32, claim_offer_json: &str) -> Result<(), IndyError> {
-        let uuid = Uuid::new_v4().to_string();
+    fn store_claim_offer(&self, wallet_handle: i32, claim_offer_json: &str) -> Result<(), IndyError> {
+        info!("store_claim_offer >>> wallet_handle: {:?}, claim_offer_json: {:?}", wallet_handle, claim_offer_json);
 
         let claim_offer: ClaimOffer = ClaimOffer::from_json(claim_offer_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_offer_json: {}", err.to_string())))?;
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize claim offer: {:?}", err)))?;
 
         Base58::decode(&claim_offer.issuer_did)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid issuer did: {}", err.to_string())))?;
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid issuer did: {:?}", err)))?;
 
-        self.wallet_service.set(wallet_handle, &format!("claim_offer_json::{}", &uuid), &claim_offer_json)?;
+        let id = get_composite_id(&claim_offer.issuer_did, &claim_offer.schema_key);
+        self.wallet_service.set(wallet_handle, &format!("claim_offer::{}", &id), &claim_offer_json)?;
+
+        info!("store_claim_offer <<<");
 
         Ok(())
     }
 
     fn get_claim_offers(&self,
                         wallet_handle: i32,
-                        filter_json: &str,
-                        cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self._get_claim_offers(wallet_handle, filter_json));
-    }
+                        filter_json: &str) -> Result<String, IndyError> {
+        info!("get_claim_offers >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
 
-    fn _get_claim_offers(&self,
-                         wallet_handle: i32,
-                         filter_json: &str) -> Result<String, IndyError> {
-        let claim_offer_jsons: Vec<(String, String)> = self.wallet_service.list(wallet_handle, &format!("claim_offer_json::"))?;
+        let claim_offer_jsons: Vec<(String, String)> = self.wallet_service.list(wallet_handle, &format!("claim_offer::"))?;
 
         let mut claim_offers: Vec<ClaimOffer> = Vec::new();
-
-        for &(ref uuid, ref claim_offer_json) in claim_offer_jsons.iter() {
+        for &(ref id, ref claim_offer_json) in claim_offer_jsons.iter() {
             claim_offers.push(ClaimOffer::from_json(claim_offer_json)
-                .map_err(map_err_trace!())
-                .map_err(|err| CommonError::InvalidState(format!("Invalid claim_offer_jsons: {}", err.to_string())))?);
+                .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim offer: {:?}", err)))?);
         }
 
-        let filter = ClaimOfferFilter::from_json(filter_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_def_json: {}", err.to_string())))?;
+        let filter: Filter = Filter::from_json(filter_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize filter: {:?}", err)))?;
 
         claim_offers.retain(move |claim_offer| {
             let mut condition = true;
             if let Some(ref issuer_did) = filter.issuer_did {
                 condition = condition && claim_offer.issuer_did == issuer_did.clone();
             }
-            if let Some(ref schema_seq_no) = filter.schema_seq_no {
-                condition = condition && claim_offer.schema_seq_no == schema_seq_no.clone();
+            if let Some(ref schema_key) = filter.schema_key {
+                if let Some(ref name) = schema_key.name {
+                    condition = condition && claim_offer.schema_key.name == name.clone();
+                }
+                if let Some(ref version) = schema_key.version {
+                    condition = condition && claim_offer.schema_key.version == version.clone();
+                }
+                if let Some(ref did) = schema_key.did {
+                    condition = condition && claim_offer.schema_key.did == did.clone();
+                }
             }
             condition
         });
 
         let claim_offers_json = serde_json::to_string(&claim_offers)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid claim_offers: {}", err.to_string())))?;
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of claim offers: {:?}", err)))?;
+
+        info!("get_claim_offers <<< claim_offers_json: {:?}", claim_offers_json);
 
         Ok(claim_offers_json)
     }
 
-    fn create_master_secret(&self,
-                            wallet_handle: i32,
-                            master_secret_name: &str,
-                            cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self._create_master_secret(wallet_handle, master_secret_name))
-    }
+    fn create_master_secret(&self, wallet_handle: i32, master_secret_name: &str) -> Result<(), IndyError> {
+        info!("create_master_secret >>> wallet_handle: {:?}, master_secret_name: {:?}", wallet_handle, master_secret_name);
 
-    fn _create_master_secret(&self, wallet_handle: i32, master_secret_name: &str) -> Result<(), IndyError> {
-        if self.wallet_service.get(wallet_handle, &format!("master_secret::{}", master_secret_name)).is_ok() {
-            return Err(IndyError::AnoncredsError(AnoncredsError::MasterSecretDuplicateNameError(
-                format!("Master Secret already exists {}", master_secret_name))));
+        if let Ok(_) = self.wallet_service.get(wallet_handle, &format!("master_secret::{}", master_secret_name)) {
+            return Err(IndyError::AnoncredsError(
+                AnoncredsError::MasterSecretDuplicateNameError(format!("Master Secret already exists {}", master_secret_name))));
         };
 
-        let master_secret = self.anoncreds_service.prover.generate_master_secret()?;
+        let master_secret = self.anoncreds_service.prover.new_master_secret()?;
+        let master_secret_json = master_secret.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize master secret: {:?}", err)))?;
 
-        self.wallet_service.set(wallet_handle, &format!("master_secret::{}", master_secret_name), &master_secret.to_dec()?)?;
+        self.wallet_service.set(wallet_handle, &format!("master_secret::{}", master_secret_name), &master_secret_json)?;
+
+        info!("create_master_secret <<<");
 
         Ok(())
     }
@@ -222,236 +199,161 @@ impl ProverCommandExecutor {
                                       prover_did: &str,
                                       claim_offer_json: &str,
                                       claim_def_json: &str,
-                                      master_secret_name: &str,
-                                      cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        cb(self._create_and_store_claim_request(wallet_handle, prover_did, claim_offer_json,
-                                                claim_def_json, master_secret_name))
-    }
-
-    fn _create_and_store_claim_request(&self,
-                                       wallet_handle: i32,
-                                       prover_did: &str,
-                                       claim_offer_json: &str,
-                                       claim_def_json: &str,
-                                       master_secret_name: &str) -> Result<String, IndyError> {
-        let master_secret_str = self.wallet_service.get(wallet_handle, &format!("master_secret::{}", &master_secret_name))?;
-
-        let master_secret = BigNumber::from_dec(&master_secret_str)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid master_secret_str: {}", err.to_string())))?;
-
-        let claim_def: ClaimDefinition = ClaimDefinition::from_json(&claim_def_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_def_json: {}", err.to_string())))?;
-
-        let claim_offer: ClaimOffer = ClaimOffer::from_json(&claim_offer_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_offer_json: {}", err.to_string())))?;
+                                      master_secret_name: &str) -> Result<String, IndyError> {
+        info!("create_and_store_claim_request >>> wallet_handle: {:?}, prover_did: {:?}, claim_offer_json: {:?}, claim_def_json: {:?}, \
+               master_secret_name: {:?}", wallet_handle, prover_did, claim_offer_json, claim_def_json, master_secret_name);
 
         Base58::decode(&prover_did)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid prover did: {}", err.to_string())))?;
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid prover did: {:?}", err)))?;
 
+        let master_secret_json = self.wallet_service.get(wallet_handle, &format!("master_secret::{}", &master_secret_name))?;
+        let master_secret = MasterSecret::from_json(&master_secret_json)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize master secret: {:?}", err)))?;
+
+        let claim_def: ClaimDefinition = ClaimDefinition::from_json(&claim_def_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize claim definition: {:?}", err)))?;
+
+        let claim_offer: ClaimOffer = ClaimOffer::from_json(&claim_offer_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize claim offer: {:?}", err)))?;
 
         if claim_def.issuer_did != claim_offer.issuer_did {
             return Err(IndyError::CommonError(CommonError::InvalidStructure(
-                format!("ClaimOffer issuer_did {} does not correspond to ClaimDef issuer_did {:?}", claim_offer.issuer_did, claim_def.issuer_did))));
+                format!("ClaimOffer issuer_did {:?} does not correspond to ClaimDef issuer_did {:?}", claim_offer.issuer_did, claim_def.issuer_did))));
         }
 
-        if claim_def.schema_seq_no != claim_offer.schema_seq_no {
-            return Err(IndyError::CommonError(CommonError::InvalidStructure(
-                format!("ClaimOffer schema_seq_no {} does not correspond to ClaimDef schema_seq_no{}", claim_offer.schema_seq_no, claim_def.schema_seq_no))));
-        }
+        let (claim_request, master_secret_blinding_data) =
+            self.anoncreds_service.prover.new_claim_request(&claim_def.data, &master_secret, &claim_offer, prover_did)?;
 
-        let (claim_request, primary_claim_init_data, revocation_claim_init_data) =
-            self.anoncreds_service.prover.create_claim_request(claim_def.data.public_key,
-                                                               claim_def.data.public_key_revocation,
-                                                               master_secret, prover_did)?;
+        let master_secret_blinding_data_json = master_secret_blinding_data.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize master secret blinding data: {:?}", err)))?;
 
-        self.wallet_service.set(wallet_handle,
-                                &format!("claim_definition::{}", &get_composite_id(&claim_offer.issuer_did.clone(), claim_offer.schema_seq_no)),
-                                &claim_def_json)?;
+        let id = get_composite_id(&claim_offer.issuer_did, &claim_offer.schema_key);
+        self.wallet_service.set(wallet_handle, &format!("master_secret_blinding_data::{}", id), &master_secret_blinding_data_json)?;
 
-        let primary_claim_init_data_json = ClaimInitData::to_json(&primary_claim_init_data)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid primary_claim_init_data: {}", err.to_string())))?;
+        let claim_request_json = claim_request.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claim request: {:?}", err)))?;
 
-        self.wallet_service.set(wallet_handle,
-                                &format!("primary_claim_init_data::{}", &get_composite_id(&claim_offer.issuer_did.clone(), claim_offer.schema_seq_no)),
-                                &primary_claim_init_data_json)?;
+        self.wallet_service.set(wallet_handle, &format!("claim_definition::{}", id), &claim_def_json)?;
 
-        if let Some(data) = revocation_claim_init_data {
-            let revocation_claim_init_data_json = RevocationClaimInitData::to_json(&data)
-                .map_err(map_err_trace!())
-                .map_err(|err| CommonError::InvalidState(format!("Invalid data: {}", err.to_string())))?;
-
-            self.wallet_service.set(wallet_handle,
-                                    &format!("revocation_claim_init_data::{}", &get_composite_id(&claim_offer.issuer_did.clone(), claim_offer.schema_seq_no)),
-                                    &revocation_claim_init_data_json)?;
-        }
-
-        let claim_request = ClaimRequestJson::new(claim_request, claim_offer.issuer_did, claim_offer.schema_seq_no);
-        let claim_request_json = ClaimRequestJson::to_json(&claim_request)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid claim_request: {}", err.to_string())))?;
+        info!("create_and_store_claim_request <<< claim_request_json: {:?}", claim_request_json);
 
         Ok(claim_request_json)
     }
 
-    fn store_claim(&self,
-                   wallet_handle: i32,
-                   claims_json: &str,
-                   cb: Box<Fn(Result<(), IndyError>) + Send>) {
-        cb(self._store_claim(wallet_handle, claims_json));
-    }
+    fn store_claim(&self, wallet_handle: i32, claim_json: &str, rev_reg_json: Option<&str>) -> Result<(), IndyError> {
+        info!("store_claim >>> wallet_handle: {:?}, claim_json: {:?}, rev_reg_json: {:?}", wallet_handle, claim_json, rev_reg_json);
 
-    fn _store_claim(&self, wallet_handle: i32, claims_json: &str) -> Result<(), IndyError> {
-        let claim_json = ClaimJson::from_json(&claims_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_json: {}", err.to_string())))?;
+        let mut claim: Claim = Claim::from_json(&claim_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannon deserialize claim: {:?}", err)))?;
 
-        let (revocation_registry, revocation_claim_init_data) = match claim_json.signature.non_revocation_claim {
-            Some(_) => {
-                let revocation_registry_json = self.wallet_service.get(wallet_handle,
-                                                                       &format!("revocation_registry::{}", &get_composite_id(&claim_json.issuer_did.clone(), claim_json.schema_seq_no)))?;
+        let id = get_composite_id(&claim.issuer_did, &claim.schema_key);
 
-                let revocation_registry = RevocationRegistry::from_json(&revocation_registry_json)
-                    .map_err(map_err_trace!())
-                    .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_registry_json: {}", err.to_string())))?;
-
-                let revocation_claim_init_data_json = self.wallet_service.get(wallet_handle,
-                                                                              &format!("revocation_claim_init_data::{}", &get_composite_id(&claim_json.issuer_did.clone(), claim_json.schema_seq_no)))?;
-                let revocation_claim_init_data = RevocationClaimInitData::from_json(&revocation_claim_init_data_json)
-                    .map_err(map_err_trace!())
-                    .map_err(|err| CommonError::InvalidState(format!("Invalid revocation_claim_init_data_json: {}", err.to_string())))?;
-
-                (Some(revocation_registry), Some(revocation_claim_init_data))
-            }
-            _ => (None, None)
+        let rev_reg_pub = match rev_reg_json {
+            Some(rev_reg_pub_json) =>
+                Some(RevocationRegistry::from_json(&rev_reg_pub_json)
+                    .map_err(|err| CommonError::InvalidState(format!("Cannon deserialize revocation registry: {:?}", err)))?
+                    .data),
+            None => None
         };
 
-        let primary_claim_init_data_json = self.wallet_service.get(wallet_handle,
-                                                                   &format!("primary_claim_init_data::{}", &get_composite_id(&claim_json.issuer_did.clone(), claim_json.schema_seq_no)))?;
-        let primary_claim_init_data = ClaimInitData::from_json(&primary_claim_init_data_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid primary_claim_init_data_json: {}", err.to_string())))?;
+        let master_secret_blinding_data_json = self.wallet_service.get(wallet_handle, &format!("master_secret_blinding_data::{}", &id))?;
+        let master_secret_blinding_data = MasterSecretBlindingData::from_json(&master_secret_blinding_data_json)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize master secret blinding data: {:?}", err)))?;
 
-        let claim_def_json = self.wallet_service.get(wallet_handle,
-                                                     &format!("claim_definition::{}", &get_composite_id(&claim_json.issuer_did.clone(), claim_json.schema_seq_no)))?;
-        let claim_def = ClaimDefinition::from_json(&claim_def_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid claim_def_json: {}", err.to_string())))?;
+        let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", id))?;
+        let claim_def: ClaimDefinition = ClaimDefinition::from_json(&claim_def_json)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim definition: {:?}", err)))?;
 
-        let claim_json = RefCell::new(claim_json);
+        self.anoncreds_service.prover.process_claim(&mut claim,
+                                                    &master_secret_blinding_data,
+                                                    &claim_def.data,
+                                                    rev_reg_pub.as_ref())?;
 
-        self.anoncreds_service.prover.process_claim(&claim_json,
-                                                    primary_claim_init_data,
-                                                    revocation_claim_init_data,
-                                                    claim_def.data.public_key_revocation,
-                                                    &revocation_registry)?;
+        let claim_json = claim.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claim: {:?}", err)))?;
 
-        let claim = ClaimJson::to_json(&claim_json.borrow())
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid claim_json: {}", err.to_string())))?;
+        let referent = Uuid::new_v4().to_string();
+        self.wallet_service.set(wallet_handle, &format!("claim::{}", &referent), &claim_json)?;
 
-        let uuid = Uuid::new_v4().to_string();
-        self.wallet_service.set(wallet_handle,
-                                &format!("claim::{}", &uuid),
-                                &claim)?;
+        if let Some(rev_reg_json) = rev_reg_json {
+            self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", id), &rev_reg_json)?;
+        }
+
+        info!("store_claim <<<");
 
         Ok(())
     }
 
     fn get_claims(&self,
                   wallet_handle: i32,
-                  filter_json: &str,
-                  cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let result = self._get_claims(wallet_handle, filter_json);
-        cb(result)
-    }
+                  filter_json: &str) -> Result<String, IndyError> {
+        info!("get_claims >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
 
-    fn _get_claims(&self,
-                   wallet_handle: i32,
-                   filter_json: &str) -> Result<String, IndyError> {
-        let claims: Vec<(String, String)> = self.wallet_service.list(wallet_handle, &format!("claim::"))?;
-        let mut claims_info: Vec<ClaimInfo> = ProverCommandExecutor::get_all_claims(claims)?;
+        let mut claims_info: Vec<ClaimInfo> = self.get_claims_info(wallet_handle)?;
 
-        let filter = ClaimInfoFilter::from_json(filter_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid filter_json: {}", err.to_string())))?;
+        let filter: Filter = Filter::from_json(filter_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize filter: {:?}", err)))?;
 
-        claims_info.retain(move |claim_info| {
-            let mut condition = true;
-
-            if let Some(schema_seq_no) = filter.schema_seq_no {
-                condition = condition && claim_info.schema_seq_no == schema_seq_no;
-            }
-
-            if let Some(issuer_did) = filter.issuer_did.clone() {
-                condition = condition && claim_info.issuer_did == issuer_did;
-            }
-
-            condition
-        });
+        claims_info.retain(move |claim_info| self.anoncreds_service.prover.claim_satisfy_restriction(claim_info, &filter));
 
         let claims_info_json = serde_json::to_string(&claims_info)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid claim_info: {}", err.to_string())))?;
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claims info: {:?}", err)))?;
+
+        info!("get_claims <<< claims_info_json: {:?}", claims_info_json);
 
         Ok(claims_info_json)
     }
 
-    fn get_all_claims(claims: Vec<(String, String)>) -> Result<Vec<ClaimInfo>, IndyError> {
+    fn get_claims_info(&self, wallet_handle: i32) -> Result<Vec<ClaimInfo>, IndyError> {
+        info!("get_claims_info >>>");
+
+        let claims: Vec<(String, String)> = self.wallet_service.list(wallet_handle, &format!("claim::"))?;
+
         let mut claims_info: Vec<ClaimInfo> = Vec::new();
 
-        for &(ref uuid, ref claim) in claims.iter() {
-            let claim_json: ClaimJson = ClaimJson::from_json(claim)
-                .map_err(map_err_trace!())
-                .map_err(|err| CommonError::InvalidState(format!("Invalid claim: {}", err.to_string())))?;
+        for &(ref referent, ref claim) in claims.iter() {
+            let claim: Claim = Claim::from_json(claim)
+                .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim: {:?}", err)))?;
 
-            let mut attrs: HashMap<String, String> = HashMap::new();
-
-            for (attr, values) in claim_json.claim {
-                attrs.insert(attr.clone(), values[0].clone());
+            let mut claim_values: HashMap<String, String> = HashMap::new();
+            for (attr, values) in claim.values {
+                claim_values.insert(attr.clone(), values[0].clone());
             }
 
-            claims_info.push(ClaimInfo::new(uuid.clone(), attrs, claim_json.schema_seq_no.clone(),
-                                            claim_json.issuer_did.clone()));
+            claims_info.push(
+                ClaimInfo {
+                    referent: referent.clone(),
+                    attrs: claim_values,
+                    schema_key: claim.schema_key.clone(),
+                    issuer_did: claim.issuer_did.clone(),
+                    revoc_reg_seq_no: claim.rev_reg_seq_no.clone()
+                });
         }
+
+        info!("get_claims_info <<< claims_info: {:?}", claims_info);
 
         Ok(claims_info)
     }
 
     fn get_claims_for_proof_req(&self,
                                 wallet_handle: i32,
-                                proof_req_json: &str,
-                                cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let result = self._get_claims_for_proof_req(wallet_handle, proof_req_json);
-        cb(result)
+                                proof_req_json: &str, ) -> Result<String, IndyError> {
+        info!("get_claims_for_proof_req >>> wallet_handle: {:?}, proof_req_json: {:?}", wallet_handle, proof_req_json);
+
+        let proof_req: ProofRequest = ProofRequest::from_json(proof_req_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize proof request: {:?}", err)))?;
+
+        let claims_info: Vec<ClaimInfo> = self.get_claims_info(wallet_handle)?;
+
+        let claims_for_proof_request = self.anoncreds_service.prover.get_claims_for_proof_req(&proof_req, &claims_info)?;
+        let claims_for_proof_request_json = claims_for_proof_request.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claims for proof request: {:?}", err)))?;
+
+        info!("get_claims_for_proof_req <<< claims_for_proof_request_json: {:?}", claims_for_proof_request_json);
+
+        Ok(claims_for_proof_request_json)
     }
 
-    fn _get_claims_for_proof_req(&self,
-                                 wallet_handle: i32,
-                                 proof_req_json: &str, ) -> Result<String, IndyError> {
-        let proof_req: ProofRequestJson = ProofRequestJson::from_json(proof_req_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid proof_req_json: {}", err.to_string())))?;
-
-        let claims: Vec<(String, String)> = self.wallet_service.list(wallet_handle, &format!("claim::"))?;
-        let claims_info: Vec<ClaimInfo> = ProverCommandExecutor::get_all_claims(claims)?;
-
-        let (attributes, predicates) =
-            self.anoncreds_service.prover.find_claims(
-                proof_req.requested_attrs, proof_req.requested_predicates, claims_info)?;
-
-        let proof_claims = ProofClaimsJson::new(attributes, predicates);
-
-        let proof_claims_json = ProofClaimsJson::to_json(&proof_claims)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid proof_claims: {}", err.to_string())))?;
-
-        Ok(proof_claims_json)
-    }
     fn create_proof(&self,
                     wallet_handle: i32,
                     proof_req_json: &str,
@@ -459,76 +361,51 @@ impl ProverCommandExecutor {
                     schemas_jsons: &str,
                     master_secret_name: &str,
                     claim_def_jsons: &str,
-                    revoc_regs_jsons: &str,
-                    cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        let result = self._create_proof(wallet_handle, proof_req_json, requested_claims_json, schemas_jsons, master_secret_name, claim_def_jsons, revoc_regs_jsons);
-        cb(result)
-    }
-
-    fn _create_proof(&self,
-                     wallet_handle: i32,
-                     proof_req_json: &str,
-                     requested_claims_json: &str,
-                     schemas_jsons: &str,
-                     master_secret_name: &str,
-                     claim_def_jsons: &str,
-                     revoc_regs_jsons: &str) -> Result<String, IndyError> {
-        let proof_req: ProofRequestJson = ProofRequestJson::from_json(proof_req_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid proof_req_json: {}", err.to_string())))?;
+                    revoc_regs_jsons: &str) -> Result<String, IndyError> {
+        let proof_req: ProofRequest = ProofRequest::from_json(proof_req_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize proof request: {:?}", err)))?;
 
         let schemas: HashMap<String, Schema> = serde_json::from_str(schemas_jsons)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid schemas_jsons: {}", err.to_string())))?;
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of schemas: {:?}", err)))?;
 
         let claim_defs: HashMap<String, ClaimDefinition> = serde_json::from_str(claim_def_jsons)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid claim_def_jsons: {}", err.to_string())))?;
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of claim definitions: {:?}", err)))?;
 
         let revoc_regs: HashMap<String, RevocationRegistry> = serde_json::from_str(revoc_regs_jsons)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid revoc_regs_jsons: {}", err.to_string())))?;
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of revocation registries: {:?}", err)))?;
 
-        let requested_claims: RequestedClaimsJson = RequestedClaimsJson::from_json(requested_claims_json)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid requested_claims_json: {}", err.to_string())))?;
+        let requested_claims: RequestedClaims = RequestedClaims::from_json(requested_claims_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize requested claims: {:?}", err)))?;
 
-        let mut claims: HashMap<String, ClaimJson> = HashMap::new();
-
-        for claim_uuid in claim_defs.keys() {
-            let claim_json = self.wallet_service.get(wallet_handle, &claim_uuid)?;
-            let claim = ClaimJson::from_json(&claim_json)
-                .map_err(map_err_trace!())
-                .map_err(|err| CommonError::InvalidState(format!("Invalid claim_json: {}", err.to_string())))?;
-
-            claims.insert(claim_uuid.clone(), claim);
+        if schemas.keys().collect::<HashSet<&String>>() != claim_defs.keys().collect::<HashSet<&String>>() {
+            return Err(IndyError::CommonError(CommonError::InvalidStructure(
+                format!("Claim definition keys {:?} do not correspond to schema received {:?}", schemas.keys(), claim_defs.keys()))));
         }
 
-        let ms = self.wallet_service.get(wallet_handle, &format!("master_secret::{}", master_secret_name))?;
+        let mut claims: HashMap<String, Claim> = HashMap::new();
+        for key_id in claim_defs.keys() {
+            let claim_json = self.wallet_service.get(wallet_handle, key_id)?;
+            let claim = Claim::from_json(&claim_json)
+                .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim: {:?}", err)))?;
 
-        let ms: BigNumber = BigNumber::from_dec(&ms)?;
-
-        let mut tails: HashMap<i32, PointG2> = HashMap::new();
-        if revoc_regs.len() > 0 {
-            // TODO: need to change
-            let tails_json = self.wallet_service.get(wallet_handle, &format!("tails"))?;
-            tails = serde_json::from_str(&tails_json)
-                .map_err(map_err_trace!())
-                .map_err(|err| CommonError::InvalidState(format!("Invalid tails_json: {}", err.to_string())))?;
+            claims.insert(key_id.clone(), claim);
         }
 
-        let proof_claims = self.anoncreds_service.prover.create_proof(claims,
+        let master_secret_json = self.wallet_service.get(wallet_handle, &format!("master_secret::{}", master_secret_name))?;
+        let master_secret = MasterSecret::from_json(&master_secret_json)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize master secret: {:?}", err)))?;
+
+
+        let proof_claims = self.anoncreds_service.prover.create_proof(&claims,
                                                                       &proof_req,
                                                                       &schemas,
                                                                       &claim_defs,
                                                                       &revoc_regs,
                                                                       &requested_claims,
-                                                                      &ms,
-                                                                      &tails)?;
+                                                                      &master_secret)?;
 
-        let proof_claims_json = ProofJson::to_json(&proof_claims)
-            .map_err(map_err_trace!())
-            .map_err(|err| CommonError::InvalidState(format!("Invalid proof_claims: {}", err.to_string())))?;
+        let proof_claims_json = FullProof::to_json(&proof_claims)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize proof: {:?}", err)))?;
 
         Ok(proof_claims_json)
     }

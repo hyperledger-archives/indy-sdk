@@ -31,7 +31,7 @@ RUN pip3 install -U \
 	setuptools \
 	virtualenv
 
-ENV RUST_ARCHIVE=rust-1.20.0-x86_64-unknown-linux-gnu.tar.gz
+ENV RUST_ARCHIVE=rust-1.21.0-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
 
 RUN mkdir -p /rust
@@ -62,7 +62,8 @@ USER root
 RUN pip3 install \
     twine
 
-RUN apt-get install -y devscripts
+RUN apt-get install -y devscripts \
+                       libncursesw5-dev
 
 ARG anoncreds_revision=1.0.32-master
 USER indy

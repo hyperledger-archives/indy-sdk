@@ -48,7 +48,6 @@ git clone https://github.com/hyperledger/indy-sdk.git
 ### Source deps
 
 - http://www.sqlite.org/2017/sqlite-amalgamation-3180000.zip
-- https://github.com/miracl/milagro-crypto-c/
 - https://github.com/evernym/libzmq-pw
 
 ### Build sqlite
@@ -57,14 +56,6 @@ Download http://www.sqlite.org/2017/sqlite-amalgamation-3180000.zip
 
 Create empty static library project and add sqlite.c file and 2 headers from exctraced
 archive. Then just build it.
-
-### Build milagro-crypto-c
-
-Checkout https://github.com/miracl/milagro-crypto-c/ repository.
-- cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -G "Visual Studio 15 2017 Win64" .
-- open AMCL.sln
-- disable custom build steps
-- build it
 
 ### Build libzmq-pw
 

@@ -345,6 +345,70 @@
     return err;
 }
 
+- (NSError *)buildPoolConfigRequestWithSubmitterDid:(NSString *)submitterDid
+                                             writes:(BOOL)writes
+                                              force:(BOOL)force
+                                         resultJson:(NSString**)resultJson
+{
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+
+    [IndyLedger buildPoolConfigRequestWithSubmitterDid:submitterDid
+                                              writes:writes
+                                              force:force
+                                            completion:^(NSError* error, NSString* request)
+     {
+         err = error;
+         result = request;
+         [completionExpectation fulfill];
+     }];
+
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) { *resultJson = result;}
+    return err;
+}
+
+- (NSError *)buildPoolUpgradeRequestWithSubmitterDid:(NSString *)submitterDid
+                                                name:(NSString *)name
+                                             version:(NSString *)version
+                                              action:(NSString *)action
+                                              sha256:(NSString *)sha256
+                                             timeout:(NSNumber *)timeout
+                                            schedule:(NSString *)schedule
+                                       justification:(NSString *)justification
+                                           reinstall:(BOOL)reinstall
+                                               force:(BOOL)force
+                                          resultJson:(NSString**)resultJson
+{
+    XCTestExpectation* completionExpectation = [[ XCTestExpectation alloc] initWithDescription: @"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+
+    [IndyLedger buildPoolUpgradeRequestWithSubmitterDid:submitterDid
+                                              name:name
+                                              version:version
+                                              action:action
+                                              sha256:sha256
+                                              timeout:timeout
+                                              schedule:schedule
+                                              justification:justification
+                                              reinstall:reinstall
+                                              force:force
+                                            completion:^(NSError* error, NSString* request)
+     {
+         err = error;
+         result = request;
+         [completionExpectation fulfill];
+     }];
+
+    [self waitForExpectations: @[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) { *resultJson = result;}
+    return err;
+}
+
 // MARK: - Sign Request
 
 - (NSError *)signRequestWithWalletHandle:(IndyHandle)walletHandle

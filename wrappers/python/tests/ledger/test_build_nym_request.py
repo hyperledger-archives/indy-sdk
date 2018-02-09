@@ -1,5 +1,7 @@
-from indy import ledger, signus
+from indy import ledger, did
 from indy.error import ErrorCode, IndyError
+
+from tests.ledger.test_submit_request import ensure_previous_request_applied
 
 import json
 import pytest
@@ -36,7 +38,7 @@ async def test_build_nym_request_works_for_only_required_fields():
 async def test_build_nym_request_works_with_option_fields():
     identifier = "Th7MpTaRZVRYnPiabds81Y"
     destination = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4"
-    ver_key = "Anfh2rjAcxkE249DcdsaQl"
+    ver_key = "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL"
     role = "STEWARD"
     alias = "some_alias"
 
@@ -65,14 +67,17 @@ async def test_nym_request_works_for_different_roles(wallet_handle, pool_handle,
 
 
 async def check_for_role(pool_handle, wallet_handle, trustee_did, role, expected_role_value):
-    (my_did, my_verkey) = await signus.create_and_store_my_did(wallet_handle, "{}")
+    (my_did, my_verkey) = await did.create_and_store_my_did(wallet_handle, "{}")
 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_verkey, None, role)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
     get_nym_request = await ledger.build_get_nym_request(my_did, my_did)
-    get_nym_response = json.loads(await ledger.submit_request(pool_handle, get_nym_request))
-    assert expected_role_value == json.loads(get_nym_response['result']['data'])['role']
+    get_nym_response = await ensure_previous_request_applied(pool_handle, get_nym_request,
+                                                       lambda response:
+                                                       expected_role_value ==
+                                                       json.loads(response['result']['data'])['role'])
+    assert get_nym_response
 
 
 @pytest.mark.asyncio

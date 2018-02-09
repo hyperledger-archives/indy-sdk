@@ -10,9 +10,9 @@
 #import "AnoncredsUtils.h"
 #import "LedgerUtils.h"
 #import "PoolUtils.h"
-#import "SignusUtils.h"
+#import "CryptoUtils.h"
+#import "DidUtils.h"
 #import "WalletUtils.h"
-#import "AgentUtils.h"
 #import "SequenceUtils.h"
 
 #import "NSDictionary+JSON.h"

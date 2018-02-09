@@ -7,7 +7,7 @@
 #import "PoolUtils.h"
 #import "TestUtils.h"
 #import "WalletUtils.h"
-#import "SignusUtils.h"
+#import "DidUtils.h"
 #import "LedgerUtils.h"
 #import "AnoncredsUtils.h"
 #import <Indy/Indy.h>
@@ -92,11 +92,11 @@
     
     // 3. Obtain my did
     NSString* myDid = nil;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:@"000000000000000000000000Trustee1"
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDid() failed");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
     // 4. Build schema request
@@ -124,9 +124,11 @@
                                                               submitterDid:myDid
                                                                requestJson:nodeRequest
                                                            outResponseJson:&nodeResponse];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequest() failed");
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequest() returned not Success");
     XCTAssertNotNil(nodeResponse, @"nodeResponse is nil!");
-    
+    NSDictionary *response = [NSDictionary fromString:nodeResponse];
+    XCTAssertTrue([response[@"op"] isEqualToString:@"REJECT"], @"wrong response type");
+
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }
@@ -154,11 +156,11 @@
     
     // 3. Obtain my did
     NSString* myDid = nil;
-    ret = [[SignusUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
                                                                        seed:@"000000000000000000000000Steward1"
                                                                    outMyDid:&myDid
                                                                 outMyVerkey:nil];
-    XCTAssertEqual(ret.code, Success, @"SignusUtils::createAndStoreMyDid() failed");
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDid() failed");
     XCTAssertNotNil(myDid, @"myDid is nil!");
     
     // 4. Build schema request
@@ -186,9 +188,11 @@
                                                               submitterDid:myDid
                                                                requestJson:nodeRequest
                                                            outResponseJson:&nodeResponse];
-    XCTAssertEqual(ret.code, LedgerInvalidTransaction, @"LedgerUtils::signAndSubmitRequest() failed");
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signAndSubmitRequest() returned not Success");
     XCTAssertNotNil(nodeResponse, @"nodeResponse is nil!");
-    
+    NSDictionary *response = [NSDictionary fromString:nodeResponse];
+    XCTAssertTrue([response[@"op"] isEqualToString:@"REJECT"], @"wrong response type");
+
     [[PoolUtils sharedInstance] closeHandle:poolHandle];
     [TestUtils cleanupStorage];
 }

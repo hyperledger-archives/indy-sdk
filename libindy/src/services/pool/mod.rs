@@ -1,5 +1,6 @@
 mod types;
 mod catchup;
+mod transaction_handler;
 #[warn(dead_code)]
 #[warn(unused_variables)]
 mod state_proof;
@@ -7,45 +8,49 @@ mod state_proof;
 extern crate byteorder;
 extern crate digest;
 extern crate hex;
+extern crate rand;
 extern crate rust_base58;
 extern crate sha2;
+extern crate time;
 extern crate zmq_pw as zmq;
 extern crate rmp_serde;
 extern crate indy_crypto;
 
 
 use self::byteorder::{ByteOrder, LittleEndian};
-use self::digest::{FixedOutput, Input};
-use self::hex::ToHex;
 use self::rust_base58::FromBase58;
+use self::time::{Duration, Tm};
 use serde_json;
 use serde_json::Value as SJsonValue;
 use std::cell::RefCell;
+use std::cmp::max;
 use std::collections::HashMap;
+use std::error::Error;
 use std::{fmt, fs, io, thread};
 use std::fmt::Debug;
 use std::io::{BufRead, Write};
-use std::error::Error;
+use std::ops::{Add, Sub};
 
-use base64;
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use commands::pool::PoolCommand;
 use errors::pool::PoolError;
 use errors::common::CommonError;
 use self::catchup::CatchupHandler;
+use self::transaction_handler::TransactionHandler;
 use self::types::*;
-use services::ledger::constants;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use utils::crypto::box_::CryptoBox;
 use utils::environment::EnvironmentUtils;
-use utils::json::{JsonDecodable, JsonEncodable};
 use utils::sequence::SequenceUtils;
-use self::indy_crypto::bls::{Generator, VerKey};
+use self::indy_crypto::bls::VerKey;
 use std::path::PathBuf;
 
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+
 pub struct PoolService {
-    pools: RefCell<HashMap<i32, Pool>>,
+    pending_pools: RefCell<HashMap<i32, Pool>>,
+    open_pools: RefCell<HashMap<i32, Pool>>,
 }
 
 struct Pool {
@@ -67,13 +72,6 @@ enum PoolWorkerHandler {
     //TODO trait ?
     CatchupHandler(CatchupHandler),
     TransactionHandler(TransactionHandler),
-}
-
-struct TransactionHandler {
-    gen: Generator,
-    f: usize,
-    nodes: Vec<RemoteNode>,
-    pending_commands: HashMap<u64 /* requestId */, CommandProcess>,
 }
 
 impl PoolWorkerHandler {
@@ -128,392 +126,18 @@ impl PoolWorkerHandler {
             &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.f = f,
         };
     }
-}
 
-impl TransactionHandler {
-    fn process_msg(&mut self, msg: Message, raw_msg: &String, src_ind: usize) -> Result<Option<MerkleTree>, PoolError> {
-        match msg {
-            Message::Reply(reply) => {
-                self.process_reply(reply.result.req_id, raw_msg);
-            }
-            Message::PoolLedgerTxns(response) => {
-                self.process_reply(response.txn.req_id, raw_msg);
-            }
-            Message::Reject(response) | Message::ReqNACK(response) => {
-                self.process_reject(&response, raw_msg);
-            }
-            _ => {
-                warn!("unhandled msg {:?}", msg);
-            }
-        };
-        Ok(None)
-    }
-
-    fn process_reply(&mut self, req_id: u64, raw_msg: &str) {
-        trace!("TransactionHandler::process_reply: >>> req_id: {:?}, raw_msg: {:?}", req_id, raw_msg);
-
-        if !self.pending_commands.contains_key(&req_id) {
-            return warn!("TransactionHandler::process_reply: <<< No pending command for request");
-        }
-
-        let json_msg: HashableValue = match serde_json::from_str(raw_msg) {
-            Ok(raw_msg) => HashableValue { inner: raw_msg },
-            Err(err) => return warn!("{:?}", err)
-        };
-
-        let reply_cnt = *self.pending_commands
-            .get(&req_id).unwrap()
-            .replies.get(&json_msg).unwrap_or(&0usize);
-        trace!("TransactionHandler::process_reply: reply_cnt: {:?}, f: {:?}", reply_cnt, self.f);
-
-        let consensus_reached = reply_cnt >= self.f || {
-            debug!("TransactionHandler::process_reply: Try to verify proof and signature");
-
-            let data_to_check_proof = TransactionHandler::parse_reply_for_proof_checking(&json_msg.inner["result"]);
-            let data_to_check_proof_signature = TransactionHandler::parse_reply_for_proof_signature_checking(&json_msg.inner["result"]);
-
-            data_to_check_proof.is_some() && data_to_check_proof_signature.is_some() && {
-                debug!("TransactionHandler::process_reply: Proof and signature are present");
-
-                let (proofs, root_hash, key, value) = data_to_check_proof.unwrap();
-
-                let proof_valid = self::state_proof::verify_proof(
-                    base64::decode(proofs).unwrap().as_slice(),
-                    root_hash.from_base58().unwrap().as_slice(),
-                    key.as_slice(),
-                    value.as_ref().map(String::as_str));
-
-
-                debug!("TransactionHandler::process_reply: proof_valid: {:?}", proof_valid);
-
-                proof_valid && {
-                    let (signature, participants, value) = data_to_check_proof_signature.unwrap();
-                    let signature_valid = self::state_proof::verify_proof_signature(
-                        signature,
-                        participants.as_slice(),
-                        &value,
-                        self.nodes.as_slice(), self.f, &self.gen).map_err(|err| warn!("{:?}", err)).unwrap_or(false);
-
-                    debug!("TransactionHandler::process_reply: signature_valid: {:?}", signature_valid);
-                    signature_valid
-                }
-            }
-        };
-
-        debug!("TransactionHandler::process_reply: consensus_reached {}", consensus_reached);
-
-        if consensus_reached {
-            let cmd_ids = self.pending_commands.get(&req_id).unwrap().cmd_ids.clone();
-
-            for cmd_id in cmd_ids {
-                CommandExecutor::instance().send(
-                    Command::Ledger(LedgerCommand::SubmitAck(cmd_id, Ok(raw_msg.to_owned())))).unwrap();
-            }
-
-            self.pending_commands.remove(&req_id);
-        } else {
-            let pend_cmd: &mut CommandProcess = self.pending_commands.get_mut(&req_id).unwrap();
-            pend_cmd.replies.insert(json_msg, reply_cnt + 1);
-        }
-
-        trace!("TransactionHandler::process_reply: <<<");
-    }
-
-    //TODO correct handling of Reject
-    fn process_reject(&mut self, response: &Response, raw_msg: &String) {
-        let req_id = response.req_id;
-        let mut remove = false;
-        if let Some(pend_cmd) = self.pending_commands.get_mut(&req_id) {
-            pend_cmd.nack_cnt += 1;
-            if pend_cmd.nack_cnt == self.f + 1 {
-                for &cmd_id in &pend_cmd.cmd_ids {
-                    CommandExecutor::instance().send(
-                        Command::Ledger(
-                            LedgerCommand::SubmitAck(cmd_id,
-                                                     Err(PoolError::Rejected(raw_msg.clone()))))
-                    ).unwrap();
-                }
-                remove = true;
-            }
-        }
-        if remove {
-            self.pending_commands.remove(&req_id);
+    fn get_upcoming_timeout(&self) -> Option<Tm> {
+        match self {
+            &PoolWorkerHandler::CatchupHandler(ref ch) => ch.get_upcoming_timeout(),
+            &PoolWorkerHandler::TransactionHandler(ref ch) => ch.get_upcoming_timeout(),
         }
     }
 
-    fn try_send_request(&mut self, cmd: &str, cmd_id: i32) -> Result<(), PoolError> {
-        info!("cmd {:?}", cmd);
-        let request: SJsonValue = serde_json::from_str(cmd)
-            .map_err(|err|
-                CommonError::InvalidStructure(
-                    format!("Invalid request json: {}", err.description())))?;
-
-        let request_id: u64 = request["reqId"]
-            .as_u64()
-            .ok_or(CommonError::InvalidStructure("No reqId in request".to_string()))?;
-
-        if self.pending_commands.contains_key(&request_id) {
-            self.pending_commands.get_mut(&request_id).unwrap().cmd_ids.push(cmd_id);
-        } else {
-            let pc = CommandProcess {
-                cmd_ids: vec!(cmd_id),
-                nack_cnt: 0,
-                replies: HashMap::new(),
-            };
-            self.pending_commands.insert(request_id, pc);
-            for node in &self.nodes {
-                let node: &RemoteNode = node;
-                node.send_str(cmd)?;
-            }
-        }
-        Ok(())
-    }
-
-    fn flush_requests(&mut self, status: Result<(), PoolError>) -> Result<(), PoolError> {
-        match status {
-            Ok(()) => {
-                return Err(PoolError::CommonError(
-                    CommonError::InvalidState(
-                        "Can't flash all transaction requests with common success status".to_string())));
-            }
-            Err(err) => {
-                for (_, pending_cmd) in &self.pending_commands {
-                    let pending_cmd: &CommandProcess = pending_cmd;
-                    for cmd_id in &pending_cmd.cmd_ids {
-                        CommandExecutor::instance()
-                            .send(Command::Ledger(LedgerCommand::SubmitAck(
-                                cmd_id.clone(), Err(PoolError::Terminate))))
-                            .map_err(|err|
-                                CommonError::InvalidState("Can't send ACK cmd".to_string()))?;
-                    }
-                }
-                Ok(())
-            }
-        }
-    }
-
-    fn parse_reply_for_proof_checking(json_msg: &SJsonValue)
-                                      -> Option<(&str, &str, Vec<u8>, Option<String>)> {
-        trace!("TransactionHandler::parse_reply_for_proof_checking: >>> json_msg: {:?}", json_msg);
-
-        let xtype = if let Some(xtype) = json_msg["type"].as_str() {
-            trace!("TransactionHandler::parse_reply_for_proof_checking: xtype: {:?}", xtype);
-            xtype
-        } else {
-            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No type field");
-            return None;
-        };
-
-        if ![constants::GET_NYM, constants::GET_SCHEMA, constants::GET_CLAIM_DEF, constants::GET_ATTR].contains(&xtype) {
-            //TODO GET_DDO, GET_TXN
-            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< type not supported");
-            return None;
-        }
-
-        let proof = if let Some(proof) = json_msg["state_proof"]["proof_nodes"].as_str() {
-            trace!("TransactionHandler::parse_reply_for_proof_checking: proof: {:?}", proof);
-            proof
-        } else {
-            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No proof");
-            return None;
-        };
-
-        let root_hash = if let Some(root_hash) = json_msg["state_proof"]["root_hash"].as_str() {
-            trace!("TransactionHandler::parse_reply_for_proof_checking: root_hash: {:?}", root_hash);
-            root_hash
-        } else {
-            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No root hash");
-            return None;
-        };
-
-        // TODO: FIXME: It is a workaround for Node's problem. Node returns some transactions as strings and some as objects.
-        // If node returns marshaled json it can contain spaces and it can cause invalid hash.
-        // So we have to save the original string too.
-        // See https://jira.hyperledger.org/browse/INDY-699
-        let (data, parsed_data): (Option<String>, SJsonValue) = match json_msg["data"] {
-            SJsonValue::Null => {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: Data is null");
-                (None, SJsonValue::Null)
-            }
-            SJsonValue::String(ref str) => {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: Data is string");
-                if let Ok(parsed_data) = serde_json::from_str(str) {
-                    (Some(str.to_owned()), parsed_data)
-                } else {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Data field is invalid json");
-                    return None;
-                }
-            }
-            SJsonValue::Object(ref map) => {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: Data is object");
-                (Some(json_msg["data"].to_string()), SJsonValue::from(map.clone()))
-            }
-            _ => {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Data field is invalid type");
-                return None;
-            }
-        };
-
-        trace!("TransactionHandler::parse_reply_for_proof_checking: data: {:?}, parsed_data: {:?}", data, parsed_data);
-
-        let key_suffix: String = match xtype {
-            constants::GET_ATTR => {
-                if let Some(attr_name) = json_msg["raw"].as_str()
-                    .or(json_msg["enc"].as_str())
-                    .or(json_msg["hash"].as_str()) {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_ATTR attr_name {:?}", attr_name);
-
-                    let mut hasher = sha2::Sha256::default();
-                    hasher.process(attr_name.as_bytes());
-                    format!(":\x01:{}", hasher.fixed_result().to_hex())
-                } else {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_ATTR No key suffix");
-                    return None;
-                }
-            }
-            constants::GET_CLAIM_DEF => {
-                if let (Some(sign_type), Some(sch_seq_no)) = (json_msg["signature_type"].as_str(),
-                                                              json_msg["ref"].as_u64()) {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_CLAIM_DEF sign_type {:?}, sch_seq_no: {:?}", sign_type, sch_seq_no);
-                    format!(":\x03:{}:{}", sign_type, sch_seq_no)
-                } else {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_CLAIM_DEF No key suffix");
-                    return None;
-                }
-            }
-            constants::GET_NYM => {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: GET_NYM");
-                "".to_string()
-            }
-            constants::GET_SCHEMA => {
-                if let (Some(name), Some(ver)) = (parsed_data["name"].as_str(),
-                                                  parsed_data["version"].as_str()) {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: GET_SCHEMA name {:?}, ver: {:?}", name, ver);
-                    format!(":\x02:{}:{}", name, ver)
-                } else {
-                    trace!("TransactionHandler::parse_reply_for_proof_checking: <<< GET_SCHEMA No key suffix");
-                    return None;
-                }
-            }
-            _ => {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< Unknown transaction");
-                return None;
-            }
-        };
-
-        let key = if let Some(dest) = json_msg["dest"].as_str().or(json_msg["origin"].as_str()) {
-            let mut dest = if xtype == constants::GET_NYM {
-                let mut hasher = sha2::Sha256::default();
-                hasher.process(dest.as_bytes());
-                hasher.fixed_result().to_vec()
-            } else {
-                dest.as_bytes().to_vec()
-            };
-
-            dest.extend_from_slice(key_suffix.as_bytes());
-
-            trace!("TransactionHandler::parse_reply_for_proof_checking: dest: {:?}", dest);
-            dest
-        } else {
-            trace!("TransactionHandler::parse_reply_for_proof_checking: <<< No dest");
-            return None;
-        };
-
-        let value: Option<String> = match TransactionHandler::parse_reply_for_proof_value(json_msg, data, parsed_data, xtype) {
-            Ok(value) => value,
-            Err(err_str) => {
-                trace!("TransactionHandler::parse_reply_for_proof_checking: <<< {}", err_str);
-                return None;
-            }
-        };
-
-        trace!("parse_reply_for_proof_checking: <<< proof {:?}, root_hash: {:?}, dest: {:?}, value: {:?}", proof, root_hash, key, value);
-        Some((proof, root_hash, key, value))
-    }
-
-    fn parse_reply_for_proof_value(json_msg: &SJsonValue, data: Option<String>, parsed_data: SJsonValue, xtype: &str) -> Result<Option<String>, String> {
-        if let Some(data) = data {
-            let mut value = json!({});
-
-            let (seq_no, time) = (json_msg["seqNo"].clone(), json_msg["txnTime"].clone());
-            if xtype.eq(constants::GET_NYM) {
-                value["seqNo"] = seq_no;
-                value["txnTime"] = time;
-            } else {
-                value["lsn"] = seq_no;
-                value["lut"] = time;
-            }
-
-            match xtype {
-                //TODO constants::GET_TXN => check ledger MerkleTree proofs?
-                //TODO constants::GET_DDO => support DDO
-                constants::GET_NYM => {
-                    value["identifier"] = parsed_data["identifier"].clone();
-                    value["role"] = parsed_data["role"].clone();
-                    value["verkey"] = parsed_data["verkey"].clone();
-                }
-                constants::GET_ATTR => {
-                    let mut hasher = sha2::Sha256::default();
-                    hasher.process(data.as_bytes());
-                    value["val"] = SJsonValue::String(hasher.fixed_result().to_hex());
-                }
-                constants::GET_CLAIM_DEF => {
-                    value["val"] = parsed_data;
-                }
-                constants::GET_SCHEMA => {
-                    if let Some(map) = parsed_data.as_object() {
-                        let mut map = map.clone();
-                        map.remove("name");
-                        map.remove("version");
-                        if map.is_empty() {
-                            return Ok(None); // TODO FIXME remove after INDY-699 will be fixed
-                        } else {
-                            value["val"] = SJsonValue::from(map)
-                        }
-                    } else {
-                        return Err("Invalid data for GET_SCHEMA".to_string());
-                    };
-                }
-                _ => {
-                    return Err("Unknown transaction".to_string());
-                }
-            }
-
-            Ok(Some(value.to_string()))
-        } else {
-            Ok(None)
-        }
-    }
-
-    fn parse_reply_for_proof_signature_checking(json_msg: &SJsonValue) -> Option<(&str, Vec<&str>, Vec<u8>)> {
-        match (json_msg["state_proof"]["multi_signature"]["signature"].as_str(),
-               json_msg["state_proof"]["multi_signature"]["participants"].as_array(),
-               rmp_serde::to_vec_named(&json_msg["state_proof"]["multi_signature"]["value"])
-                   .map_err(map_err_trace!())) {
-            (Some(signature), Some(participants), Ok(value)) => {
-                let participants_unwrap: Vec<&str> = participants
-                    .iter()
-                    .flat_map(SJsonValue::as_str)
-                    .collect();
-
-                if participants.len() == participants_unwrap.len() {
-                    Some((signature, participants_unwrap, value))
-                } else {
-                    None
-                }
-            }
-            _ => None
-        }
-    }
-}
-
-impl Default for TransactionHandler {
-    fn default() -> Self {
-        TransactionHandler {
-            gen: Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),
-            pending_commands: HashMap::new(),
-            f: 0,
-            nodes: Vec::new(),
+    fn process_timeout(&mut self) -> Result<(), PoolError> {
+        match self {
+            &mut PoolWorkerHandler::CatchupHandler(ref mut ch) => ch.process_timeout(),
+            &mut PoolWorkerHandler::TransactionHandler(ref mut ch) => ch.process_timeout(),
         }
     }
 }
@@ -548,7 +172,7 @@ impl PoolWorker {
         }
 
         let cnt = self.handler.nodes().len();
-        self.handler.set_f(PoolWorker::get_f(cnt)); //TODO set cnt to connect
+        self.handler.set_f(PoolWorker::get_f(cnt));
         if let PoolWorkerHandler::CatchupHandler(ref mut handler) = self.handler {
             handler.reset_nodes_votes();
         }
@@ -584,6 +208,7 @@ impl PoolWorker {
             initiate_cmd_id: refresh_cmd_id.unwrap_or(self.open_cmd_id),
             is_refresh: refresh_cmd_id.is_some(),
             pool_id: self.pool_id,
+            timeout: time::now_utc().add(Duration::seconds(catchup::CATCHUP_ROUND_TIMEOUT)),
             ..Default::default()
         };
         self.handler = PoolWorkerHandler::CatchupHandler(catchup_handler);
@@ -600,7 +225,7 @@ impl PoolWorker {
 
     pub fn run(&mut self) -> Result<(), PoolError> {
         self._run().or_else(|err: PoolError| {
-            self.handler.flush_requests(Err(PoolError::Terminate))?;
+            self.handler.flush_requests(Err(err.clone()))?;
             match err {
                 PoolError::Terminate => Ok(()),
                 _ => Err(err),
@@ -651,6 +276,9 @@ impl PoolWorker {
                             })
                     })?;
                 }
+                &ZMQLoopAction::Timeout => {
+                    self.handler.process_timeout()?;
+                }
             }
         }
         Ok(())
@@ -660,8 +288,12 @@ impl PoolWorker {
         let mut actions: Vec<ZMQLoopAction> = Vec::new();
 
         let mut poll_items = self.get_zmq_poll_items()?;
-        let r = zmq::poll(poll_items.as_mut_slice(), -1)?;
+        let t = self.get_zmq_poll_timeout();
+        let r = zmq::poll(poll_items.as_mut_slice(), t)?;
         trace!("zmq poll {:?}", r);
+        if r == 0 {
+            actions.push(ZMQLoopAction::Timeout);
+        }
 
         for i in 0..self.handler.nodes().len() {
             if poll_items[1 + i].is_readable() {
@@ -707,6 +339,21 @@ impl PoolWorker {
         Ok(poll_items)
     }
 
+    fn get_zmq_poll_timeout(&self) -> i64 {
+        let first_event: time::Tm = match self.handler.get_upcoming_timeout() {
+            None => return -1,
+            Some(tm) => tm,
+        };
+        let now_utc = time::now_utc();
+        trace!("get_zmq_poll_timeout first_event {:?}", first_event);
+        trace!("get_zmq_poll_timeout now_utc {:?}", now_utc);
+        let diff: Duration = first_event.sub(now_utc);
+        trace!("get_zmq_poll_timeout diff Duration {:?}", diff);
+        let diff: i64 = max(diff.num_milliseconds(), 1);
+        trace!("get_zmq_poll_timeout diff ms {}", diff);
+        return diff;
+    }
+
 
     fn _restore_merkle_tree_from_file(txn_file: &str) -> Result<MerkleTree, PoolError> {
         PoolWorker::_restore_merkle_tree(&PathBuf::from(txn_file))
@@ -728,17 +375,18 @@ impl PoolWorker {
 
         let reader = io::BufReader::new(&f);
         for line in reader.lines() {
-            let line: String = line.map_err(map_err_trace!())?;
-            let genesis_txn: SJsonValue = serde_json::from_str(line.as_str()).unwrap(); /* FIXME resolve unwrap */
-            let bytes = rmp_serde::encode::to_vec_named(&genesis_txn).unwrap(); /* FIXME resolve unwrap */
+            let line: String = line.map_err(map_err_trace!())?.trim().to_string();
+            if line.is_empty() { continue };
+            let genesis_txn: SJsonValue = serde_json::from_str(line.as_str())
+                .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
+            let bytes = rmp_serde::encode::to_vec_named(&genesis_txn)
+                .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Genesis Transaction file: {:?}", err)))?;
             mt.append(bytes).map_err(map_err_trace!())?;
         }
         Ok(mt)
     }
 
-    #[allow(unreachable_code)]
     fn get_f(cnt: usize) -> usize {
-        return cnt / 2; /* FIXME ugly hack to work with pool instability, remove after pool will be fixed */
         if cnt < 4 {
             return 0;
         }
@@ -881,7 +529,12 @@ impl RemoteNode {
         }
         let msg: String = self.zsock.as_ref()
             .ok_or(CommonError::InvalidState("Try to receive msg for unconnected RemoteNode".to_string()))?
-            .recv_string(zmq::DONTWAIT)??;
+            .recv_string(zmq::DONTWAIT)
+            .map_err(map_err_trace!())?
+            .map_err(|err| {
+                trace!("Can't parse UTF-8 string from bytes {:?}", err);
+                err
+            })?;
         info!("RemoteNode::recv_msg {} {}", self.name, msg);
 
         Ok(Some(msg))
@@ -891,7 +544,8 @@ impl RemoteNode {
         info!("Sending {:?}", str);
         self.zsock.as_ref()
             .ok_or(CommonError::InvalidState("Try to send str for unconnected RemoteNode".to_string()))?
-            .send(str, zmq::DONTWAIT)?;
+            .send(str, zmq::DONTWAIT)
+            .map_err(map_err_trace!())?;
         Ok(())
     }
 
@@ -907,7 +561,8 @@ impl RemoteNode {
 impl PoolService {
     pub fn new() -> PoolService {
         PoolService {
-            pools: RefCell::new(HashMap::new()),
+            pending_pools: RefCell::new(HashMap::new()),
+            open_pools: RefCell::new(HashMap::new()),
         }
     }
 
@@ -957,7 +612,7 @@ impl PoolService {
     }
 
     pub fn delete(&self, name: &str) -> Result<(), PoolError> {
-        for pool in self.pools.try_borrow().map_err(CommonError::from)?.values() {
+        for pool in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
             if pool.name.eq(name) {
                 return Err(PoolError::CommonError(CommonError::InvalidState("Can't delete pool config - pool is open now".to_string())));
             }
@@ -967,7 +622,7 @@ impl PoolService {
     }
 
     pub fn open(&self, name: &str, config: Option<&str>) -> Result<i32, PoolError> {
-        for pool in self.pools.try_borrow().map_err(CommonError::from)?.values() {
+        for pool in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
             if name.eq(pool.name.as_str()) {
                 //TODO change error
                 return Err(PoolError::InvalidHandle("Pool with same name already opened".to_string()));
@@ -978,13 +633,23 @@ impl PoolService {
         let new_pool = Pool::new(name, cmd_id)?;
         //FIXME process config: check None (use default), transfer to Pool instance
 
-        self.pools.try_borrow_mut().map_err(CommonError::from)?.insert(new_pool.id, new_pool);
+        self.pending_pools.try_borrow_mut().map_err(CommonError::from)?.insert(new_pool.id, new_pool);
         return Ok(cmd_id);
+    }
+
+    pub fn add_open_pool(&self, pool_id: i32) -> Result<i32, PoolError> {
+        let pool = self.pending_pools.try_borrow_mut().map_err(CommonError::from)?
+            .remove(&pool_id)
+            .ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", pool_id)))?;
+
+        self.open_pools.try_borrow_mut().map_err(CommonError::from)?.insert(pool_id, pool);
+
+        Ok(pool_id)
     }
 
     pub fn send_tx(&self, handle: i32, json: &str) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        self.pools.try_borrow().map_err(CommonError::from)?
+        self.open_pools.try_borrow().map_err(CommonError::from)?
             .get(&handle).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?
             .send_tx(cmd_id, json)?;
         Ok(cmd_id)
@@ -992,7 +657,7 @@ impl PoolService {
 
     pub fn close(&self, handle: i32) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        self.pools.try_borrow_mut().map_err(CommonError::from)?
+        self.open_pools.try_borrow_mut().map_err(CommonError::from)?
             .remove(&handle).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?
             .close(cmd_id)
             .map(|()| cmd_id)
@@ -1000,68 +665,31 @@ impl PoolService {
 
     pub fn refresh(&self, handle: i32) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        self.pools.try_borrow_mut().map_err(CommonError::from)?
+        self.open_pools.try_borrow_mut().map_err(CommonError::from)?
             .get(&handle).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?
             .refresh(cmd_id)
             .map(|()| cmd_id)
     }
 
-    pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
-        self.pools.try_borrow().map_err(CommonError::from)?.get(&handle).map_or(
-            Err(PoolError::InvalidHandle(format!("Pool doesn't exists for handle {}", handle))),
-            |pool: &Pool| Ok(pool.name.clone()))
-    }
-}
+    pub fn list(&self) -> Result<Vec<serde_json::Value>, PoolError> {
+        let mut pool = Vec::new();
 
-#[cfg(test)]
-mod mocks {
-    use super::*;
-
-    use std::cell::RefCell;
-
-    pub struct PoolService {
-        create_results: RefCell<Vec<Result<(), PoolError>>>,
-        delete_results: RefCell<Vec<Result<(), PoolError>>>,
-        open_results: RefCell<Vec<Result<i32, PoolError>>>,
-        close_results: RefCell<Vec<Result<(), PoolError>>>,
-        refresh_results: RefCell<Vec<Result<(), PoolError>>>
-    }
-
-    impl PoolService {
-        pub fn new() -> PoolService {
-            PoolService {
-                create_results: RefCell::new(Vec::new()),
-                delete_results: RefCell::new(Vec::new()),
-                open_results: RefCell::new(Vec::new()),
-                close_results: RefCell::new(Vec::new()),
-                refresh_results: RefCell::new(Vec::new())
+        let pool_home_path = EnvironmentUtils::pool_home_path();
+        for entry in fs::read_dir(pool_home_path)? {
+            let dir_entry = if let Ok(dir_entry) = entry { dir_entry } else { continue };
+            if let Some(pool_name) = dir_entry.path().file_name().and_then(|os_str| os_str.to_str()) {
+                let json = json!({"pool":pool_name.to_owned()});
+                pool.push(json);
             }
         }
 
-        pub fn create(&self, name: &str, config: &str) -> Result<(), PoolError> {
-            //self.create_results.pop().unwrap()
-            unimplemented!()
-        }
+        Ok(pool)
+    }
 
-        pub fn delete(&self, name: &str) -> Result<(), PoolError> {
-            //self.delete_results.pop().unwrap()
-            unimplemented!()
-        }
-
-        pub fn open(&self, name: &str, config: &str) -> Result<i32, PoolError> {
-            //self.open_results.pop().unwrap()
-            unimplemented!()
-        }
-
-        pub fn close(&self, handle: i32) -> Result<(), PoolError> {
-            //self.close_results.pop().unwrap()
-            unimplemented!()
-        }
-
-        pub fn refresh(&self, handle: i32) -> Result<(), PoolError> {
-            //self.refresh_results.pop().unwrap()
-            unimplemented!()
-        }
+    pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
+        self.open_pools.try_borrow().map_err(CommonError::from)?.get(&handle).map_or(
+            Err(PoolError::InvalidHandle(format!("Pool doesn't exists for handle {}", handle))),
+            |pool: &Pool| Ok(pool.name.clone()))
     }
 }
 
@@ -1098,7 +726,7 @@ mod tests {
             let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
             recv_soc.bind("inproc://test").unwrap();
             send_soc.connect("inproc://test").unwrap();
-            ps.pools.borrow_mut().insert(pool_id, Pool {
+            ps.open_pools.borrow_mut().insert(pool_id, Pool {
                 name: String::new(),
                 id: pool_id,
                 worker: None,
@@ -1120,7 +748,7 @@ mod tests {
             let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
             recv_soc.bind("inproc://test").unwrap();
             send_soc.connect("inproc://test").unwrap();
-            ps.pools.borrow_mut().insert(pool_id, Pool {
+            ps.open_pools.borrow_mut().insert(pool_id, Pool {
                 name: String::new(),
                 id: pool_id,
                 worker: None,
@@ -1164,7 +792,7 @@ mod tests {
                 cmd_sock: recv_cmd_sock,
                 id: pool_id
             };
-            ps.pools.borrow_mut().insert(pool_id, pool);
+            ps.open_pools.borrow_mut().insert(pool_id, pool);
 
             fs::create_dir_all(path.as_path()).unwrap();
             assert!(path.exists());
@@ -1341,7 +969,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] /* FIXME remove after get_f will be restored */
     fn pool_worker_get_f_works() {
         assert_eq!(PoolWorker::get_f(0), 0);
         assert_eq!(PoolWorker::get_f(3), 0);
@@ -1349,66 +976,6 @@ mod tests {
         assert_eq!(PoolWorker::get_f(5), 1);
         assert_eq!(PoolWorker::get_f(6), 1);
         assert_eq!(PoolWorker::get_f(7), 2);
-    }
-
-    #[test]
-    fn transaction_handler_process_reply_works() {
-        let mut th: TransactionHandler = Default::default();
-        th.f = 1;
-        let mut pc = super::types::CommandProcess {
-            cmd_ids: Vec::new(),
-            replies: HashMap::new(),
-            nack_cnt: 0,
-        };
-        let json = "{\"value\":1}";
-        pc.replies.insert(HashableValue { inner: serde_json::from_str(json).unwrap() }, 1);
-        let req_id = 1;
-        th.pending_commands.insert(req_id, pc);
-
-        th.process_reply(req_id, &json.to_string());
-
-        assert_eq!(th.pending_commands.len(), 0);
-    }
-
-    #[test]
-    fn transaction_handler_process_reply_works_for_different_replies_with_same_req_id() {
-        let mut th: TransactionHandler = Default::default();
-        th.f = 1;
-        let mut pc = super::types::CommandProcess {
-            cmd_ids: Vec::new(),
-            replies: HashMap::new(),
-            nack_cnt: 0,
-        };
-        let json1 = "{\"value\":1}";
-        let json2 = "{\"value\":2}";
-        pc.replies.insert(HashableValue { inner: serde_json::from_str(json1).unwrap() }, 1);
-        let req_id = 1;
-        th.pending_commands.insert(req_id, pc);
-
-        th.process_reply(req_id, &json2.to_string());
-
-        assert_eq!(th.pending_commands.len(), 1);
-        assert_eq!(th.pending_commands.get(&req_id).unwrap().replies.len(), 2);
-    }
-
-    #[test]
-    fn transaction_handler_try_send_request_works_for_new_req_id() {
-        let mut th: TransactionHandler = Default::default();
-
-        let req_id = 2;
-        let cmd_id = 1;
-        let cmd = format!("{{\"reqId\": {}}}", req_id);
-
-        th.try_send_request(&cmd, cmd_id).unwrap();
-
-        assert_eq!(th.pending_commands.len(), 1);
-        let pending_cmd = th.pending_commands.get(&req_id).unwrap();
-        let exp_command_process = CommandProcess {
-            nack_cnt: 0,
-            replies: HashMap::new(),
-            cmd_ids: vec!(cmd_id),
-        };
-        assert_eq!(pending_cmd, &exp_command_process);
     }
 
     #[test]

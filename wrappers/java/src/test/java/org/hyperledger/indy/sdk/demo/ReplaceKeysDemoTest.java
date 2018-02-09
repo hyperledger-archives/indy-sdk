@@ -1,16 +1,11 @@
 package org.hyperledger.indy.sdk.demo;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
-import org.hyperledger.indy.sdk.ledger.InvalidLedgerTransactionException;
+import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.ledger.Ledger;
-import org.hyperledger.indy.sdk.signus.Signus;
-import org.hyperledger.indy.sdk.signus.SignusJSONParameters;
-import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
+import org.hyperledger.indy.sdk.did.DidJSONParameters;
+import org.hyperledger.indy.sdk.did.DidResults.CreateAndStoreMyDidResult;
 import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.isA;
-
-import java.util.concurrent.ExecutionException;
 
 
 public class ReplaceKeysDemoTest extends IndyIntegrationTestWithPoolAndSingleWallet {
@@ -18,15 +13,15 @@ public class ReplaceKeysDemoTest extends IndyIntegrationTestWithPoolAndSingleWal
 	@Test
 	public void testReplaceKeysDemoWorks() throws Exception {
 		// 1. Create My Did
-		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(wallet, "{}").get();
+		CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, "{}").get();
 		String myDid = result.getDid();
 		String myVerkey = result.getVerkey();
 
 		// 2. Create Their Did from Trustee1 seed
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter theirDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
+		DidJSONParameters.CreateAndStoreMyDidJSONParameter theirDidJson =
+				new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
-		CreateAndStoreMyDidResult createTheirDidResult = Signus.createAndStoreMyDid(wallet, theirDidJson.toJson()).get();
+		CreateAndStoreMyDidResult createTheirDidResult = Did.createAndStoreMyDid(wallet, theirDidJson.toJson()).get();
 		String trusteeDid = createTheirDidResult.getDid();
 
 		// 3. Build and send Nym Request
@@ -34,14 +29,14 @@ public class ReplaceKeysDemoTest extends IndyIntegrationTestWithPoolAndSingleWal
 		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
 
 		// 4. Start replacing of keys
-		String newVerkey = Signus.replaceKeysStart(wallet, myDid, "{}").get();
+		String newVerkey = Did.replaceKeysStart(wallet, myDid, "{}").get();
 
 		// 5. Build and send Nym Request with new key
 		nymRequest = Ledger.buildNymRequest(myDid, myDid, newVerkey, null, null).get();
 		Ledger.signAndSubmitRequest(pool, wallet, myDid, nymRequest).get();
 
 		// 6. Apply replacing of keys
-		Signus.replaceKeysApply(wallet, myDid).get();
+		Did.replaceKeysApply(wallet, myDid).get();
 
 		// 7. Send schema request
 		String schemaRequest = Ledger.buildSchemaRequest(myDid, SCHEMA_DATA).get();
@@ -51,15 +46,15 @@ public class ReplaceKeysDemoTest extends IndyIntegrationTestWithPoolAndSingleWal
 	@Test
 	public void testReplaceKeysWithoutNymTransaction() throws Exception {
 		// 1. Create My Did
-		CreateAndStoreMyDidResult result = Signus.createAndStoreMyDid(wallet, "{}").get();
+		CreateAndStoreMyDidResult result = Did.createAndStoreMyDid(wallet, "{}").get();
 		String myDid = result.getDid();
 		String myVerkey = result.getVerkey();
 
 		// 2. Create Their Did from Trustee1 seed
-		SignusJSONParameters.CreateAndStoreMyDidJSONParameter theirDidJson =
-				new SignusJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
+		DidJSONParameters.CreateAndStoreMyDidJSONParameter theirDidJson =
+				new DidJSONParameters.CreateAndStoreMyDidJSONParameter(null, TRUSTEE_SEED, null, null);
 
-		CreateAndStoreMyDidResult createTheirDidResult = Signus.createAndStoreMyDid(wallet, theirDidJson.toJson()).get();
+		CreateAndStoreMyDidResult createTheirDidResult = Did.createAndStoreMyDid(wallet, theirDidJson.toJson()).get();
 		String trusteeDid = createTheirDidResult.getDid();
 
 		// 3. Build and send Nym Request
@@ -67,16 +62,14 @@ public class ReplaceKeysDemoTest extends IndyIntegrationTestWithPoolAndSingleWal
 		Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
 
 		// 4. Start replacing of keys
-		Signus.replaceKeysStart(wallet, myDid, "{}").get();
+		Did.replaceKeysStart(wallet, myDid, "{}").get();
 
 		// 5. Apply replacing of keys
-		Signus.replaceKeysApply(wallet, myDid).get();
-
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(InvalidLedgerTransactionException.class));
+		Did.replaceKeysApply(wallet, myDid).get();
 
 		// 6. Send schema request
 		String schemaRequest = Ledger.buildSchemaRequest(myDid, SCHEMA_DATA).get();
-		Ledger.signAndSubmitRequest(pool, wallet, myDid, schemaRequest).get();
+		String response = Ledger.signAndSubmitRequest(pool, wallet, myDid, schemaRequest).get();
+		checkResponseType(response,"REQNACK" );
 	}
 }
