@@ -5,7 +5,7 @@ export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2l
 export POD_FILE_NAME=libindy.tar.gz
 
 echo "Build IOS POD started..."
-cargo lipo
+cargo lipo --release
 echo 'Build completed successfully.'
 
 WORK_DIR="out_libindy_pod"
