@@ -4,8 +4,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
-import org.hyperledger.indy.sdk.did.Did;
-import org.hyperledger.indy.sdk.did.DidResults;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
 import org.json.JSONObject;
 import org.junit.Test;
@@ -27,8 +25,7 @@ public class GetTxnRequestTest extends IndyIntegrationTestWithPoolAndSingleWalle
 
 	@Test(timeout = PoolUtils.TEST_TIMEOUT_FOR_REQUEST_ENSURE)
 	public void testGetTxnRequestWorks() throws Exception {
-		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String did = didResult.getDid();
+		String did = createStoreAndPublishDidFromTrustee();
 
 		String schemaRequest = Ledger.buildSchemaRequest(did, SCHEMA_DATA).get();
 		String schemaResponse = Ledger.signAndSubmitRequest(pool, wallet, did, schemaRequest).get();
@@ -48,8 +45,7 @@ public class GetTxnRequestTest extends IndyIntegrationTestWithPoolAndSingleWalle
 
 	@Test
 	public void testGetTxnRequestWorksForInvalidSeqNo() throws Exception {
-		DidResults.CreateAndStoreMyDidResult didResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-		String did = didResult.getDid();
+		String did = createStoreAndPublishDidFromTrustee();
 
 		String schemaRequest = Ledger.buildSchemaRequest(did, SCHEMA_DATA).get();
 		String schemaResponse = Ledger.signAndSubmitRequest(pool, wallet, did, schemaRequest).get();
