@@ -52,7 +52,8 @@ section = "admin"
 revision = "338ad01"
 priority = "optional"
 assets = [
-    ["target/debug/libcxs.so.*", "usr/lib/", "644"]
+    ["target/debug/libcxs.so.*", "usr/lib/", "644"],
+    ["scripts/provision_agent_keys.py", "usr/share/libcxs/", "655"]
 ]
 maintainer-scripts = "./scripts"
 

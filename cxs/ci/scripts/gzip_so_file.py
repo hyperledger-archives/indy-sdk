@@ -4,10 +4,22 @@ import sys
 import gzip
 import shutil
 import os
+import tarfile
 
-# will gzip the so file
+# Given a list of files, this will create a tar.gz archive.
 
 
+def create_tar(source, tfile):
+	tar = tarfile.open(tfile, "w:gz")
+	try:
+		for f in source:
+			tar.add(f, arcname=os.path.basename(f))
+	except IOError:
+		print("error archiving %s"%f)
+	else:
+		tar.close()
+
+	
 def gz(source, dest_dir):
     src_file = os.path.basename(source)
     dest_dir = dest_dir.rstrip('/')
@@ -16,17 +28,30 @@ def gz(source, dest_dir):
     with open(source, 'r') as f_in, gzip.open(z, 'wb' ) as f_out:
         shutil.copyfileobj(f_in, f_out)
 
+
 def print_usage():
-    print("USAGE: python gzip_so_file.py FILE DEST_DIR")
-    print("exiting...")
+	print("USAGE: python %s FILE [FILE..] TAR"% sys.argv[0])
+	print("exiting...")
+	sys.exit(1)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print_usage()
-    else:
-        if os.path.isfile(sys.argv[1]) and os.path.exists(sys.argv[2]):
-            gz(sys.argv[1], sys.argv[2])
-        else:
-            print('Parameters are invalid, file and dest directory both must exists')
-            print_usage()
+	if len(sys.argv) < 3:
+		print_usage()
+	else:
+		tfile = sys.argv[len(sys.argv)-1]
+		files = sys.argv[1:len(sys.argv)-1]
+
+		# check that the tarfile doesnt already exist
+		if os.path.isfile(tfile):
+			print("Tarfile already exists")
+			print_usage()
+		
+		# check that all arguments are valid files:
+		for i in files:
+			if not os.path.isfile(i):
+				print('File %s does not exist.'%i)
+				print_usage()
+	
+		create_tar(files, tfile)
+		
