@@ -22,10 +22,14 @@ node('ubuntu') {
         updateVersions(app)
         // test the npm package and create the npm gzip artifact
         testNodeWrapper(app)
-        // create the debian of the library
-        createDeb(app)
-        // create the npm deb 
-        createNpmDeb(app) 
+        
+        if (env.BRANCH_NAME == "master") {
+            // create the debian of the library
+            createDeb(app)
+            // create the npm deb 
+            createNpmDeb(app) 
+        }
+        
     } catch (Exception ex) {
         currentBuild.result = "FAILED"
         if (env.BRANCH_NAME == "master") {
@@ -101,19 +105,32 @@ def updateVersions(app) {
 // Creates the debian package for the library, as well as gzips the libcxs.so.<version> file
 // Publishes both artifacts.
 def createDeb(envn) {
-  stage('Build libcxs Debian and compress .so file') {
-      envn.inside {
-        SCRIPT = 'cxs/ci/scripts/gzip_so_file.py'
-        FILES = 'cxs/libcxs/target/debug/libcxs.so.* cxs/libcxs/scripts/provision_agent_keys.py'
-        DEST = 'libcxs.tar.gz'
-		// --no-build flag because currently the optimized build of libcxs.so breaks
-		// at the nodejs wrapper level.  Tickets have been made to address this.
-        sh 'cd cxs/libcxs/; cargo deb --no-build'
-        archiveArtifacts allowEmptyARchive: true, artifacts: "cxs/libcxs/target/debian/libcxs_*_amd64.deb"
-        sh "python ${SCRIPT} ${FILES} ${DEST}"
-        archiveArtifacts allowEmptyARchive: true, artifacts: DEST
-      }
-  }
+    stage('Build libcxs Debian and compress .so file') {
+        envn.inside {
+            CERT_SCRIPT = 'cxs/ci/scripts/getCert.sh'
+            SCRIPT = 'cxs/ci/scripts/gzip_so_file.py'
+            FILES = 'cxs/libcxs/target/debug/libcxs.so.* cxs/libcxs/scripts/provision_agent_keys.py'
+            DEST = 'libcxs.tar.gz'
+
+            // get Evernym Certificate onto machine
+            sh "${CERT_SCRIPT}"
+                
+            // build debian
+            sh 'cd cxs/libcxs/; cargo deb --no-build'
+
+            // archive debian to Jenkins
+            archiveArtifacts allowEmptyARchive: true, artifacts: "cxs/libcxs/target/debian/libcxs_*_amd64.deb"
+
+            // archive .so file to Jenkins
+            sh "python ${SCRIPT} ${FILES} ${DEST}"
+            archiveArtifacts allowEmptyARchive: true, artifacts: DEST
+
+            // upload debian to Repo
+            withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
+                sh "find cxs/libcxs/target/debian/ -type f -name 'libcxs_*_amd64.deb' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/agency_dev/upload -F file=@{} \\;"
+            }
+        }
+    }
 }
 
 
