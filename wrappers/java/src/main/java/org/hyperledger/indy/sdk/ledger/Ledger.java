@@ -505,18 +505,21 @@ public class Ledger extends IndyJava.API {
 	 *
 	 * @param submitterDid Id of Identity stored in secured Wallet.
 	 * @param targetDid    Id of Identity stored in secured Wallet.
-	 * @param data         name (attribute name)
+	 * @param raw          represented as json, where key is attribute name and value is it's value
+	 * @param hash         Hash of attribute data
+	 * @param enc          Encrypted attribute data
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildGetAttribRequest(
 			String submitterDid,
 			String targetDid,
-			String data) throws IndyException {
+			String raw,
+			String hash,
+			String enc) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(targetDid, "targetDid");
-		ParamGuard.notNullOrWhiteSpace(data, "data");
 
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
@@ -525,7 +528,9 @@ public class Ledger extends IndyJava.API {
 				commandHandle,
 				submitterDid,
 				targetDid,
-				data,
+				raw,
+				hash,
+				enc,
 				buildGetAttribRequestCb);
 
 		checkResult(result);
