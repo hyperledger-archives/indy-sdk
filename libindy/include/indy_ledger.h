@@ -188,7 +188,9 @@ extern "C" {
     /// command_handle: command handle to map callback to caller context.
     /// submitter_did: Id of Identity stored in secured Wallet.
     /// target_did: Id of Identity stored in secured Wallet.
-    /// data: name (attribute name)
+    /// hash: Hash of attribute data
+    /// raw: represented as json, where key is attribute name and value is it's value
+    /// enc: Encrypted attribute data
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -200,7 +202,9 @@ extern "C" {
     extern indy_error_t indy_build_get_attrib_request(indy_handle_t command_handle,
                                                       const char *  submitter_did,
                                                       const char *  target_did,
-                                                      const char *  data,
+                                                      const char *  hash,
+                                                      const char *  raw,
+                                                      const char *  enc,
 
                                                       void           (*cb)(indy_handle_t xcommand_handle,
                                                                            indy_error_t  err,
