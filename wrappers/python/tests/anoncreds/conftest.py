@@ -132,11 +132,25 @@ def schema_key_json(schema_key):
 
 
 def claim_offer(issuer_did, schema_key):
-    return {"issuer_did": issuer_did, "schema_key": schema_key}
+    return {
+        "issuer_did": issuer_did,
+        "schema_key": schema_key,
+        "nonce": "12345678",
+        "key_correctness_proof": {
+            "c": "40983841062403114696351105468714473190092945361781922980284036284848255102181",
+            "xz_cap": "213464720484089744362618540118202909431724596227070046572799595772146912256777238162172299903278411669692103853805864530643873553457214761106883317761027120427539370942370962393243000202519433219346910021513926418330149853541417254168868250711855156634731074143905917765057402152157911116556639972831731251935718700937677764992720913700241472793061399051130783380568753128719906986229399266611916274676591429895036623790763995576609783339973743504299970516925347817430071017432740932267531399950884977365109931994767334355518355993866340663897276958741231492087880026463329993917787126111107043213858416969200146216919724481899757743335320111464498989394895406342200088098092363803780335427461",
+            "xr_cap": {
+                "age": "428551817403717345496666225339792093375807052545681523267375890344316772830711607454203456132869878139513849454441680693213618371219989695825485734499740269394536720808195352535836241683894046154422601982139187282874298237872016126349886775459552952772019552508536658271791921689339332976876098011786609958781975486656330572741194023204426484952261795227021910523213710060753808292174119734371160619117183552237714301799404966964550022274275304553920529452381773256570920044318126774874528737572897410668952113510485617038975261423255802900402119311766709164727308287389090038205944899002702399329914812218958604251060872288309671952489910694000990814697006984351987506978581894973799401592211",
+                "height": "411657369769012290217285704283327594441623457932786578784814099069982464122634859546109989278195207865751652851745795318226450710002590664034182094394469565119510105316695655956892227633500179147318075067585551834678079812461536830790528252558459232505987954022333485123452283103020768033499524916346016600527748463901810773406682862302906632677327131603416116045070433377354243916235831969703006718595171020843309342047669615896623593427073236313132690348520294916012881797187163597866196204765064323603066770657621979137899593499157032831120638301825327588467780000638198687916279993936278677557249905181200340769464532921226462449219936857163316761986408035441733035901688059567989300117882",
+                "name": "869322975653258356083915983990526979728408630010817458571291042713509811788475578121058954003892631131467356704604351238331780894204614591041662184716582274656810743747383953498817535302551304877321807454020020152874312640585570851593902460677745364557958108957714916300524302083561141490749493731078047092029485764829854763907822331747337420362381448975375124969403844387156269077805007874513313426920627145892677170274354768722781701010279364942880411045002631531693007422568259696565436694533169879230288912084861052431355880089929921941631003274141039364415665970063262534617675591334457554707139889594182371941548502441982219614399925468254660740292400093419154694726435630358592702798293",
+                "sex": "80391464088175985479491145491149691676821702211894975540979533937774408491785219834122762944971811095537317848654416410580026667952335862665033546961195841179049138780634877378888139872391903804566992942049889566118414459535461354834916790111149556147862372720479995171424595620702416860508557772658191427975040372006893431243929350584258325646184152369207604974849840003307909256680303811690743921237117427932325288396536300357224457903672928805464748280413883820982138162562660615091490216949908906589977916965927522227509078411025411863914347809289131586019476288990589861921562466467956967324009607175203666778312423056471533641756179235960697838324279027572094105302470967687825859737087"
+            }
+        }
+    }
 
 
 @pytest.fixture(scope="module")
-def claim_offer_issuer_1_schema_1(issuer_did, schema_key):
+def claim_offer_issuer_1_schema_1(issuer_did, schema_key, prover_did):
     return claim_offer(issuer_did, schema_key)
 
 
@@ -146,7 +160,7 @@ def claim_offer_issuer_1_schema_1_json(claim_offer_issuer_1_schema_1):
 
 
 @pytest.fixture(scope="module")
-def claim_offer_issuer_1_schema_2(issuer_did, xyz_schema_key):
+def claim_offer_issuer_1_schema_2(issuer_did, xyz_schema_key, prover_did):
     return claim_offer(issuer_did, xyz_schema_key)
 
 
@@ -156,7 +170,7 @@ def claim_offer_issuer_1_schema_2_json(claim_offer_issuer_1_schema_2):
 
 
 @pytest.fixture(scope="module")
-def claim_offer_issuer_2_schema_1(issuer_did_2, schema_key):
+def claim_offer_issuer_2_schema_1(issuer_did_2, schema_key, prover_did):
     return claim_offer(issuer_did_2, schema_key)
 
 
@@ -255,26 +269,6 @@ def xyz_claim_json(xyz_claim):
 
 
 @pytest.fixture(scope="module")
-def claim_req(issuer_did, schema_key):
-    return {"blinded_ms": {"u": "541727375645293327107242131390489410830131768916446771173223218236303087346206273292"
-                                "275918450941006362568297619591573147842939390451766213271549909084590728218268187187"
-                                "396963232997879281735355290245565403237095788507069932942349664408266908992668726827"
-                                "902285139739992123705745482398771085112836294238073386324354310973398756650754537851"
-                                "417229890983878959703959824327090115058645337274155525667150696753462207525844495604"
-                                "072614465677317118141888367033373659867254296561952756168465435357073642154989807508"
-                                "60746440672050640048215761507774996460985293327604627646056062013419674090094698841"
-                                "792968543317468164175921100038",
-                           "ur": None},
-            "prover_did": "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
-            "issuer_did": issuer_did, "schema_key": schema_key}
-
-
-@pytest.fixture(scope="module")
-def claim_req_json(claim_req):
-    return json.dumps(claim_req)
-
-
-@pytest.fixture(scope="module")
 def predicate_value():
     return 18
 
@@ -339,46 +333,51 @@ def claim_def_json(claim_def):
 
 @pytest.fixture(scope="module")
 async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, gvt_claim_json, gvt_2_claim_json,
-                              xyz_claim_json, issuer_did, issuer_did_2, master_secret_name,
-                              claim_offer_issuer_1_schema_1_json, claim_offer_issuer_1_schema_2_json,
-                              claim_offer_issuer_2_schema_1_json, prover_did):
-    await anoncreds.prover_store_claim_offer(wallet_handle, claim_offer_issuer_1_schema_1_json)
-    await anoncreds.prover_store_claim_offer(wallet_handle, claim_offer_issuer_1_schema_2_json)
-    await anoncreds.prover_store_claim_offer(wallet_handle, claim_offer_issuer_2_schema_1_json)
-
-    await anoncreds.prover_create_master_secret(wallet_handle, master_secret_name)
-
+                              xyz_claim_json, issuer_did, issuer_did_2, master_secret_name, prover_did):
     # Create GVT Claim by Issuer1
     claim_def_json = await anoncreds.issuer_create_and_store_claim_def(
         wallet_handle, issuer_did, gvt_schema_json, None, False)
-
-    claim_req = await anoncreds.prover_create_and_store_claim_req(
-        wallet_handle, prover_did, claim_offer_issuer_1_schema_1_json, claim_def_json, master_secret_name)
-
-    (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req, gvt_claim_json, -1)
-
-    await anoncreds.prover_store_claim(wallet_handle, claim_json, None)
 
     # Create XYZ Claim by Issuer1
     claim_def_json_2 = await anoncreds.issuer_create_and_store_claim_def(
         wallet_handle, issuer_did, xyz_schema_json, None, False)
 
-    claim_req = await anoncreds.prover_create_and_store_claim_req(
-        wallet_handle, prover_did, claim_offer_issuer_1_schema_2_json, claim_def_json_2, master_secret_name)
-
-    (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req, xyz_claim_json, -1)
-
-    await anoncreds.prover_store_claim(wallet_handle, claim_json, None)
-
     # Create GVT Claim by Issuer2
     claim_def_json_3 = await anoncreds.issuer_create_and_store_claim_def(
         wallet_handle, issuer_did_2, gvt_schema_json, None, False)
 
-    claim_req = await anoncreds.prover_create_and_store_claim_req(
-        wallet_handle, prover_did, claim_offer_issuer_2_schema_1_json, claim_def_json_3, master_secret_name)
+    issuer_1_gvt_claim_offer_json = \
+        await anoncreds.issuer_create_claim_offer(wallet_handle, gvt_schema_json, issuer_did, prover_did)
+    issuer_1_xyz_claim_offer_json = \
+        await anoncreds.issuer_create_claim_offer(wallet_handle, xyz_schema_json, issuer_did, prover_did)
+    issuer_2_gvt_claim_offer_json = \
+        await anoncreds.issuer_create_claim_offer(wallet_handle, gvt_schema_json, issuer_did_2, prover_did)
 
-    (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req, gvt_2_claim_json, -1)
+    await anoncreds.prover_store_claim_offer(wallet_handle, issuer_1_gvt_claim_offer_json)
+    await anoncreds.prover_store_claim_offer(wallet_handle, issuer_1_xyz_claim_offer_json)
+    await anoncreds.prover_store_claim_offer(wallet_handle, issuer_2_gvt_claim_offer_json)
+
+    await anoncreds.prover_create_master_secret(wallet_handle, master_secret_name)
+
+    claim_req = await anoncreds.prover_create_and_store_claim_req(
+        wallet_handle, prover_did, issuer_1_gvt_claim_offer_json, claim_def_json, master_secret_name)
+
+    (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req, gvt_claim_json, -1)
 
     await anoncreds.prover_store_claim(wallet_handle, claim_json, None)
 
-    return claim_def_json,
+    claim_req_2 = await anoncreds.prover_create_and_store_claim_req(
+        wallet_handle, prover_did, issuer_1_xyz_claim_offer_json, claim_def_json_2, master_secret_name)
+
+    (_, claim_2_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req_2, xyz_claim_json, -1)
+
+    await anoncreds.prover_store_claim(wallet_handle, claim_2_json, None)
+
+    claim_req_3 = await anoncreds.prover_create_and_store_claim_req(
+        wallet_handle, prover_did, issuer_2_gvt_claim_offer_json, claim_def_json_3, master_secret_name)
+
+    (_, claim_3_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req_3, gvt_2_claim_json, -1)
+
+    await anoncreds.prover_store_claim(wallet_handle, claim_3_json, None)
+
+    return claim_def_json, issuer_1_gvt_claim_offer_json, claim_req, claim_json,

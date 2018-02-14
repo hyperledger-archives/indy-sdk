@@ -21,8 +21,11 @@ use std::iter::FromIterator;
 
 pub struct AnoncredsUtils {}
 
-static mut WALLET_HANDLE: i32 = 0;
-static mut CLAIM_DEF_JSON: &'static str = "";
+pub static mut WALLET_HANDLE: i32 = 0;
+pub static mut CLAIM_DEF_JSON: &'static str = "";
+pub static mut CLAIM_OFFER_JSON: &'static str = "";
+pub static mut CLAIM_REQUEST_JSON: &'static str = "";
+pub static mut CLAIM_JSON: &'static str = "";
 pub const COMMON_MASTER_SECRET: &'static str = "common_master_secret_name";
 pub const GVT_SEQ_NO: i32 = 1;
 pub const XYZ_SEQ_NO: i32 = 2;
@@ -90,6 +93,40 @@ impl AnoncredsUtils {
         }
 
         Ok(())
+    }
+
+    pub fn issuer_create_claim_offer(wallet_handle: i32, schema: &str, issuer_did: &str, prover_did: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, claim_def_json| {
+            sender.send((err, claim_def_json)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_offer_cb(cb);
+
+        let schema = CString::new(schema).unwrap();
+        let issuer_did = CString::new(issuer_did).unwrap();
+        let prover_did = CString::new(prover_did).unwrap();
+
+        let err =
+            indy_issuer_create_claim_offer(command_handle,
+                                           wallet_handle,
+                                           schema.as_ptr(),
+                                           issuer_did.as_ptr(),
+                                           prover_did.as_ptr(),
+                                           cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, claim_offer_json) = receiver.recv().unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(claim_offer_json)
     }
 
     pub fn prover_store_claim_offer(wallet_handle: i32, claim_offer_json: &str) -> Result<(), ErrorCode> {
@@ -505,6 +542,10 @@ impl AnoncredsUtils {
         }
     }
 
+    pub fn xyz_schema_json() -> String {
+        serde_json::to_string(&AnoncredsUtils::xyz_schema()).unwrap()
+    }
+
     pub fn custom_schema(name: &str) -> String {
         serde_json::to_string(&Schema {
             seq_no: 1,
@@ -517,12 +558,22 @@ impl AnoncredsUtils {
         }).unwrap()
     }
 
-    pub fn xyz_schema_json() -> String {
-        serde_json::to_string(&AnoncredsUtils::xyz_schema()).unwrap()
-    }
-
     pub fn get_claim_offer(issuer_did: &str, schema_key: &SchemaKey) -> String {
-        format!(r#"{{"issuer_did":"{}","schema_key":{{"name":"{}", "version":"{}", "did":"{}"}}}}"#,
+        format!(r#"{{
+                    "issuer_did":"{}",
+                    "schema_key":{{"name":"{}", "version":"{}", "did":"{}"}},
+                    "nonce": "123456789",
+                    "key_correctness_proof": {{
+                        "c": "40983841062403114696351105468714473190092945361781922980284036284848255102181",
+                        "xz_cap": "213464720484089744362618540118202909431724596227070046572799595772146912256777238162172299903278411669692103853805864530643873553457214761106883317761027120427539370942370962393243000202519433219346910021513926418330149853541417254168868250711855156634731074143905917765057402152157911116556639972831731251935718700937677764992720913700241472793061399051130783380568753128719906986229399266611916274676591429895036623790763995576609783339973743504299970516925347817430071017432740932267531399950884977365109931994767334355518355993866340663897276958741231492087880026463329993917787126111107043213858416969200146216919724481899757743335320111464498989394895406342200088098092363803780335427461",
+                        "xr_cap": {{
+                            "age":"428551817403717345496666225339792093375807052545681523267375890344316772830711607454203456132869878139513849454441680693213618371219989695825485734499740269394536720808195352535836241683894046154422601982139187282874298237872016126349886775459552952772019552508536658271791921689339332976876098011786609958781975486656330572741194023204426484952261795227021910523213710060753808292174119734371160619117183552237714301799404966964550022274275304553920529452381773256570920044318126774874528737572897410668952113510485617038975261423255802900402119311766709164727308287389090038205944899002702399329914812218958604251060872288309671952489910694000990814697006984351987506978581894973799401592211",
+                            "height":"411657369769012290217285704283327594441623457932786578784814099069982464122634859546109989278195207865751652851745795318226450710002590664034182094394469565119510105316695655956892227633500179147318075067585551834678079812461536830790528252558459232505987954022333485123452283103020768033499524916346016600527748463901810773406682862302906632677327131603416116045070433377354243916235831969703006718595171020843309342047669615896623593427073236313132690348520294916012881797187163597866196204765064323603066770657621979137899593499157032831120638301825327588467780000638198687916279993936278677557249905181200340769464532921226462449219936857163316761986408035441733035901688059567989300117882",
+                            "name":"869322975653258356083915983990526979728408630010817458571291042713509811788475578121058954003892631131467356704604351238331780894204614591041662184716582274656810743747383953498817535302551304877321807454020020152874312640585570851593902460677745364557958108957714916300524302083561141490749493731078047092029485764829854763907822331747337420362381448975375124969403844387156269077805007874513313426920627145892677170274354768722781701010279364942880411045002631531693007422568259696565436694533169879230288912084861052431355880089929921941631003274141039364415665970063262534617675591334457554707139889594182371941548502441982219614399925468254660740292400093419154694726435630358592702798293",
+                            "sex":"80391464088175985479491145491149691676821702211894975540979533937774408491785219834122762944971811095537317848654416410580026667952335862665033546961195841179049138780634877378888139872391903804566992942049889566118414459535461354834916790111149556147862372720479995171424595620702416860508557772658191427975040372006893431243929350584258325646184152369207604974849840003307909256680303811690743921237117427932325288396536300357224457903672928805464748280413883820982138162562660615091490216949908906589977916965927522227509078411025411863914347809289131586019476288990589861921562466467956967324009607175203666778312423056471533641756179235960697838324279027572094105302470967687825859737087"
+                        }}
+                    }}
+                   }}"#,
                 issuer_did, schema_key.name, schema_key.version, schema_key.did)
     }
 
@@ -599,19 +650,6 @@ impl AnoncredsUtils {
                 "revocation":null
             }
         }"#
-    }
-
-    pub fn gvt_claim_req() -> String {
-        let gvt_schema_key_json = AnoncredsUtils::gvt_schema_key_json();
-        format!(r#"{{
-            "blinded_ms":{{
-                "u":"72052674960029442327236458752017934128206007798774128392572211954456711136771871346204637748253860917837147111221378456345006764308173447177933384497678611527908801900335623480700015849806575534757455484512742315652166882850683721692964547448843598104385874050447011820051099399087175505815748958014671544911179795524159951193233504921329404534187047046492036161628814022862661479869322137573048331473599346645871295570237032991261433025344456232326409789544299441933427561947291495434188942844516539974096858281005872862193803356400358925349350554630231733687344283622639185011395343616612151755685912869590344206893",
-                "ur":null
-            }},
-            "prover_did":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
-            "issuer_did":"{}",
-            "schema_key":{}
-        }}"#, ISSUER_DID, gvt_schema_key_json)
     }
 
     pub fn proof_request_attr_and_predicate() -> &'static str {
@@ -705,7 +743,7 @@ impl AnoncredsUtils {
         claims_for_referent[0].clone()
     }
 
-    pub fn init_common_wallet() -> (i32, &'static str) {
+    pub fn init_common_wallet() -> (i32, &'static str, &'static str, &'static str, &'static str) {
         lazy_static! {
             static ref COMMON_WALLET_INIT: Once = ONCE_INIT;
 
@@ -719,81 +757,112 @@ impl AnoncredsUtils {
                 //1. Create and Open wallet
                 WALLET_HANDLE = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
-                //3. Prover store three claim offers
-                let gvt_claim_offer = AnoncredsUtils::get_claim_offer(ISSUER_DID, &AnoncredsUtils::gvt_schema_key());
-                let xyz_claim_offer = AnoncredsUtils::get_claim_offer(ISSUER_DID, &AnoncredsUtils::xyz_schema_key());
-                let mnt_claim_offer = AnoncredsUtils::get_claim_offer(DID, &AnoncredsUtils::gvt_schema_key());
+                //2. Issuer1 Create GVT ClaimDefinition
+                //TODO Fix it.....Convert String to &'static str
+                let issuer1_gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE,
+                                                                                                ISSUER_DID,
+                                                                                                &AnoncredsUtils::gvt_schema_json(), None, false).unwrap();
 
-                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &gvt_claim_offer).unwrap();
-                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &xyz_claim_offer).unwrap();
-                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &mnt_claim_offer).unwrap();
+                //3. Issuer1 Create XYZ ClaimDefinition
+                let issuer1_xyz_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE,
+                                                                                                ISSUER_DID,
+                                                                                                &AnoncredsUtils::xyz_schema_json(), None, false).unwrap();
 
-                //4. Create MasterSecret
+                //4. Issuer2 Create GVT ClaimDefinition
+                let issuer2_gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE,
+                                                                                                DID,
+                                                                                                &AnoncredsUtils::gvt_schema_json(), None, false).unwrap();
+
+                //5. Issuer1 Create GVT ClaimOffer
+                let issuer1_gvt_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
+                                                                                        &AnoncredsUtils::gvt_schema_json(),
+                                                                                        ISSUER_DID, DID_MY1).unwrap();
+
+                //6. Prover store Issuer1 GVT ClaimOffer
+                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer1_gvt_claim_offer).unwrap();
+
+                //7. Issuer1 Create XYZ ClaimOffer
+                let issuer1_xyz_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
+                                                                                        &AnoncredsUtils::xyz_schema_json(),
+                                                                                        ISSUER_DID, DID_MY1).unwrap();
+
+                //8. Prover store Issuer1 XYZ ClaimOffer
+                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer1_xyz_claim_offer).unwrap();
+
+                //9. Issuer2 Create GVT ClaimOffer
+                let issuer2_gvt_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
+                                                                                        &AnoncredsUtils::gvt_schema_json(),
+                                                                                        DID, DID_MY1).unwrap();
+
+                //10. Prover store Issuer2 GVT ClaimOffer
+                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer2_gvt_claim_offer).unwrap();
+
+                //11. Create MasterSecret
                 AnoncredsUtils::prover_create_master_secret(WALLET_HANDLE, COMMON_MASTER_SECRET).unwrap();
 
-                // Issue GVT Claim
-                //5. Create GVT ClaimDefinition
-                let schema = AnoncredsUtils::gvt_schema_json();
-                //TODO Fix it.....Convert String to &'static str
-                let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE, ISSUER_DID, &schema, None, false).unwrap();
-                let res = mem::transmute(&claim_def_json as &str);
-                mem::forget(claim_def_json);
+                // Issuer1 issue GVT Claim
+                //12. Create and Store Claim Request
+                let issuer1_gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
+                                                                                              DID_MY1,
+                                                                                              &issuer1_gvt_claim_offer,
+                                                                                              &issuer1_gvt_claim_def_json,
+                                                                                              COMMON_MASTER_SECRET).unwrap();
+                let claim_values_json = AnoncredsUtils::gvt_claim_values_json();
+
+                //13. Issuer1 creates GVT Claim
+                let (_, claim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_gvt_claim_req, &claim_values_json, None).unwrap();
+
+                //14. Store Claim
+                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &claim_json, None).unwrap();
+
+                // Issuer1 issue XYZ Claim
+                //15. Create and Store Claim Request
+                let issuer1_xyz_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
+                                                                                  DID_MY1,
+                                                                                  &issuer1_xyz_claim_offer,
+                                                                                  &issuer1_xyz_claim_def_json,
+                                                                                  COMMON_MASTER_SECRET).unwrap();
+                let claim_values_json = AnoncredsUtils::xyz_claim_values_json();
+
+                //16. Create XYZ Claim
+                let (_, claim_2_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_xyz_claim_req, &claim_values_json, None).unwrap();
+
+                //17. Store Claim
+                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &claim_2_json, None).unwrap();
+
+                // Issuer2 issue GVT Claim
+                //18. Create and Store Claim Request
+                let issuer2_gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
+                                                                                  DID_MY1,
+                                                                                  &issuer2_gvt_claim_offer,
+                                                                                  &issuer2_gvt_claim_def_json,
+                                                                                  COMMON_MASTER_SECRET).unwrap();
+                let claim_values_json = AnoncredsUtils::gvt2_claim_values_json();
+
+                //19. Create XYZ Claim
+                let (_, claim_3_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer2_gvt_claim_req, &claim_values_json, None).unwrap();
+
+                //20. Store Claim
+                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &claim_3_json, None).unwrap();
+
+                let res = mem::transmute(&issuer1_gvt_claim_def_json as &str);
+                mem::forget(issuer1_gvt_claim_def_json);
                 CLAIM_DEF_JSON = res;
 
-                //5. Create and Store Claim Request
-                let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
-                                                                                  DID_MY1,
-                                                                                  &gvt_claim_offer,
-                                                                                  CLAIM_DEF_JSON,
-                                                                                  COMMON_MASTER_SECRET).unwrap();
-                let claim_json = AnoncredsUtils::gvt_claim_values_json();
+                let res = mem::transmute(&issuer1_gvt_claim_offer as &str);
+                mem::forget(issuer1_gvt_claim_offer);
+                CLAIM_OFFER_JSON = res;
 
-                //6. Create GVT Claim
-                let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &claim_req, &claim_json, None).unwrap();
+                let res = mem::transmute(&issuer1_gvt_claim_req as &str);
+                mem::forget(issuer1_gvt_claim_req);
+                CLAIM_REQUEST_JSON = res;
 
-                //7. Store Claim
-                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &xclaim_json, None).unwrap();
-
-                // Issue XYZ Claim
-                //8. Create XYZ ClaimDefinition
-                let schema = AnoncredsUtils::xyz_schema_json();
-                let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE, ISSUER_DID, &schema, None, false).unwrap();
-
-                //9. Create and Store Claim Request
-                let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
-                                                                                  DID_MY1,
-                                                                                  &xyz_claim_offer,
-                                                                                  &claim_def_json,
-                                                                                  COMMON_MASTER_SECRET).unwrap();
-                let claim_json = AnoncredsUtils::xyz_claim_values_json();
-
-                //10. Create XYZ Claim
-                let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &claim_req, &claim_json, None).unwrap();
-
-                //11. Store Claim
-                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &xclaim_json, None).unwrap();
-
-                // Issue GVT Claim by other Issuer
-                //12. Create XYZ ClaimDefinition
-                let schema = AnoncredsUtils::gvt_schema_json();
-                let claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE, DID, &schema, None, false).unwrap();
-
-                //13. Create and Store Claim Request
-                let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
-                                                                                  DID_MY1,
-                                                                                  &mnt_claim_offer,
-                                                                                  &claim_def_json,
-                                                                                  COMMON_MASTER_SECRET).unwrap();
-                let claim_json = AnoncredsUtils::gvt2_claim_values_json();
-
-                //14. Create XYZ Claim
-                let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &claim_req, &claim_json, None).unwrap();
-
-                //15. Store Claim
-                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &xclaim_json, None).unwrap();
+                let res = mem::transmute(&claim_json as &str);
+                mem::forget(claim_json);
+                CLAIM_JSON = res;
             });
 
-            (WALLET_HANDLE, CLAIM_DEF_JSON)
+            (WALLET_HANDLE, CLAIM_DEF_JSON, CLAIM_OFFER_JSON, CLAIM_REQUEST_JSON, CLAIM_JSON)
         }
     }
 }

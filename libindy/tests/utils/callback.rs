@@ -189,6 +189,28 @@ impl CallbackUtils {
         (command_handle, Some(register_wallet_type_callback))
     }
 
+    pub fn closure_to_issuer_create_claim_offer_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                                      Option<extern fn(command_handle: i32,
+                                                                                                                       err: ErrorCode,
+                                                                                                                       claim_offer_json: *const c_char)>) {
+        lazy_static! {
+            static ref CREATE_CLAIM_OFFER_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn create_and_store_claim_offer_callback(command_handle: i32, err: ErrorCode, claim_offer_json: *const c_char) {
+            let mut callbacks = CREATE_CLAIM_OFFER_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let claim_offer_json = unsafe { CStr::from_ptr(claim_offer_json).to_str().unwrap().to_string() };
+            cb(err, claim_offer_json)
+        }
+
+        let mut callbacks = CREATE_CLAIM_OFFER_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(create_and_store_claim_offer_callback))
+    }
+
     pub fn closure_to_create_wallet_cb(closure: Box<FnMut(ErrorCode) + Send>) -> (i32,
                                                                                   Option<extern fn(command_handle: i32,
                                                                                                    err: ErrorCode)>) {

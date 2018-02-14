@@ -100,6 +100,49 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     return res
 
 
+async def issuer_create_claim_offer(wallet_handle: int,
+                                    schema_json: str,
+                                    issuer_did: str,
+                                    prover_did: str) -> (str, str):
+    """
+    Create claim offer in Wallet.
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param issuer_did: a DID of the issuer signing claim_def transaction to the Ledger
+    :param prover_did: a DID of the target use
+    :param schema_json: schema as a json
+    :return: claim offer json: { issued DID, schema_key, nonce, key correctness proof, prover_did }
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("issuer_create_claim_offer: >>> wallet_handle: %r, schema_json: %r, issuer_did: %r,"
+                 " prover_did: %r",
+                 wallet_handle,
+                 schema_json,
+                 issuer_did,
+                 prover_did)
+
+    if not hasattr(issuer_create_claim, "cb"):
+        logger.debug("issuer_create_claim_offer: Creating callback")
+        issuer_create_claim_offer.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_schema_json = c_char_p(schema_json.encode('utf-8'))
+    c_issuer_did = c_char_p(issuer_did.encode('utf-8'))
+    c_prover_did = c_char_p(prover_did.encode('utf-8'))
+
+    claim_offer_json = await do_call('indy_issuer_create_claim_offer',
+                                     c_wallet_handle,
+                                     c_schema_json,
+                                     c_issuer_did,
+                                     c_prover_did,
+                                     issuer_create_claim_offer.cb)
+
+    res = claim_offer_json.decode()
+    logger.debug("issuer_create_claim_offer: <<< res: %r", res)
+    return res
+
+
 async def issuer_create_claim(wallet_handle: int,
                               claim_req_json: str,
                               claim_json: str,
@@ -185,11 +228,12 @@ async def issuer_revoke_claim(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("issuer_revoke_claim: >>> wallet_handle: %r, revoc_reg_seq_no: %r, schema_json: %r, user_revoc_index: %r",
-                 wallet_handle,
-                 issuer_did,
-                 schema_json,
-                 user_revoc_index)
+    logger.debug(
+        "issuer_revoke_claim: >>> wallet_handle: %r, revoc_reg_seq_no: %r, schema_json: %r, user_revoc_index: %r",
+        wallet_handle,
+        issuer_did,
+        schema_json,
+        user_revoc_index)
 
     if not hasattr(issuer_revoke_claim, "cb"):
         logger.debug("issuer_revoke_claim: Creating callback")
