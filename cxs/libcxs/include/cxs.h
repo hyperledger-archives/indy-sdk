@@ -128,6 +128,9 @@ cxs_error_t cxs_connection_deserialize(cxs_command_handle_t command_handle, cons
 /** Request a state update from the agent for the given connection. */
 cxs_error_t cxs_connection_update_state(cxs_command_handle_t command_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_state_t state));
 
+/** Retrieves the state of the connection */
+cxs_error_t cxs_connection_get_state(cxs_command_handle_t command_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_state_t state));
+
 /** Releases the connection from memory. */
 cxs_error_t cxs_connection_release(cxs_connection_handle_t connection_handle);
 
@@ -149,6 +152,9 @@ cxs_error_t cxs_issuer_send_claim_offer(cxs_command_handle_t command_handle, cxs
 
 /** Updates the state of the claim from the agency. */
 cxs_error_t cxs_issuer_claim_update_state(cxs_command_handle_t command_handle, cxs_claim_handle_t claim_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_state_t state));
+
+/** Retrieves the state of the issuer_claim. */
+cxs_error_t cxs_issuer_claim_get_state(cxs_command_handle_t command_handle, cxs_claim_handle_t claim_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_state_t state));
 
 /** Asynchronously send the claim to the connection. Populates a handle to the new transaction. */
 cxs_error_t cxs_issuer_send_claim(cxs_command_handle_t command_handle, cxs_claim_handle_t claim_handle, cxs_connection_handle_t connection_handle, void (*cb)(cxs_command_handle_t command_handle, cxs_error_t err));
@@ -191,6 +197,9 @@ cxs_error_t cxs_proof_accepted(cxs_proof_handle_t proof_handle);
 
 /** Populates status with the current state of this proof request. */
 cxs_error_t cxs_proof_update_state(cxs_command_handle_t command_handle, cxs_proof_handle_t proof_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_state_t state));
+
+/** Retrieves the state of the proof. */
+cxs_error_t cxs_proof_get_state(cxs_command_handle_t command_handle, cxs_proof_handle_t proof_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, cxs_state_t state));
 
 /** Populates status with the current state of this claim. */
 cxs_error_t cxs_proof_serialize(cxs_command_handle_t command_handle, cxs_proof_handle_t proof_handle, void (*cb)(cxs_command_handle_t xcommand_handle, cxs_error_t err, const char *state));

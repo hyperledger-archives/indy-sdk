@@ -24,12 +24,6 @@ describe('A Proof', function () {
     assert.equal(proof.sourceId, 'Proof ID')
   })
 
-  it('has a state of 0 after instanstiated', async () => {
-    const proof = new Proof('Proof ID')
-    const state = await proof.state
-    assert.equal(state, 0)
-  })
-
   it('has a proofHandle and a sourceId after it is created', async () => {
     const sourceId = '1'
     const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
@@ -40,7 +34,7 @@ describe('A Proof', function () {
   it('has state of Initialized after creating', async () => {
     const sourceId = 'Proof ID'
     const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
-    assert.equal(proof.state, StateType.Initialized)
+    assert.equal(await proof.getState(), StateType.Initialized)
   })
 
   it('can be created, then serialized, then deserialized and have the same sourceId, state, and claimHandle', async () => {
@@ -50,14 +44,14 @@ describe('A Proof', function () {
     assert.equal(jsonProof.state, StateType.Initialized)
     const proof2 = await Proof.deserialize(jsonProof)
     assert.equal(proof.handle, proof2.handle)
-    assert.equal(proof.state, proof2.state)
+    assert.equal(await proof.getState(), await proof2.getState())
   })
 
   it('will throw error on serialize when proof has been released', async () => {
     const sourceId = 'SerializeDeserialize'
     const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
     const jsonProof = await proof.serialize()
-    assert.equal(await proof.state, StateType.Initialized)
+    assert.equal(await proof.getState(), StateType.Initialized)
     let data = await proof.serialize()
     assert(data)
     assert.equal(data.handle, jsonProof.handle)
@@ -74,7 +68,7 @@ describe('A Proof', function () {
     const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
     const jsonProof = await proof.serialize()
     const proof2 = await Proof.deserialize(jsonProof)
-    assert.equal(proof2.state, StateType.Initialized)
+    assert.equal(await proof2.getState(), StateType.Initialized)
   })
 
   it('has state of OfferSent after sending proof request', async () => {
@@ -83,7 +77,7 @@ describe('A Proof', function () {
     const sourceId = 'SerializeDeserialize'
     const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
     await proof.requestProof(connection)
-    assert.equal(proof.state, StateType.OfferSent)
+    assert.equal(await proof.getState(), StateType.OfferSent)
   })
 
   it('requesting a proof throws invalid connection error with released connection', async () => {

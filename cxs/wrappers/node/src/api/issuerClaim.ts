@@ -52,8 +52,9 @@ export interface IClaimData {
  * @class Class representing an Issuer Claim
  */
 export class IssuerClaim extends CXSBaseWithState {
-  protected _releaseFn = rustAPI().cxs_connection_release // TODO: Fix me
+  protected _releaseFn = rustAPI().cxs_connection_release
   protected _updateStFn = rustAPI().cxs_issuer_claim_update_state
+  protected _getStFn = rustAPI().cxs_issuer_claim_get_state
   protected _serializeFn = rustAPI().cxs_issuer_claim_serialize
   protected _deserializeFn = rustAPI().cxs_issuer_claim_deserialize
   private _schemaNum: number
@@ -97,7 +98,6 @@ export class IssuerClaim extends CXSBaseWithState {
         cb
         )
       )
-      await claim._updateState()
       return claim
     } catch (err) {
       throw new CXSInternalError(`cxs_issuer_create_claim -> ${err}`)
@@ -126,10 +126,24 @@ export class IssuerClaim extends CXSBaseWithState {
         schemaNum: claimData.schema_seq_no
       }
       const claim = await super._deserialize<IssuerClaim, IClaimParams>(IssuerClaim, claimData, params)
-      await claim._updateState()
       return claim
     } catch (err) {
       throw new CXSInternalError(`cxs_issuer_claim_deserialize -> ${err}`)
+    }
+  }
+
+  /**
+   * @memberof IssuerClaim
+   * @description Gets the state of the issuer claim object.
+   * @async
+   * @function getState
+   * @returns {Promise<number>}
+   */
+  async getState (): Promise<number> {
+    try {
+      return await this._getState()
+    } catch (error) {
+      throw new CXSInternalError(`cxs_issuer_claim_get_state -> ${error}`)
     }
   }
 
@@ -183,7 +197,6 @@ export class IssuerClaim extends CXSBaseWithState {
             if (rc) {
               reject(rc)
             }
-            this._state = StateType.OfferSent
           },
           (resolve, reject) => Callback('void', ['uint32', 'uint32'], (xcommandHandle, err) => {
             if (err) {
@@ -226,7 +239,6 @@ export class IssuerClaim extends CXSBaseWithState {
           resolve(xcommandHandle)
         })
       )
-      await this._updateState()
     } catch (err) {
       throw new CXSInternalError(`cxs_issuer_send_claim -> ${err}`)
     }

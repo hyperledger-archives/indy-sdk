@@ -91,6 +91,23 @@ pub extern fn cxs_proof_update_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+#[no_mangle]
+pub extern fn cxs_proof_get_state(command_handle: u32,
+                                     proof_handle: u32,
+                                     cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    if !proof::is_valid_handle(proof_handle) {
+        return error::INVALID_PROOF_HANDLE.code_num;
+    }
+
+    thread::spawn(move|| {
+        cb(command_handle, error::SUCCESS.code_num, proof::get_state(proof_handle));
+    });
+
+    error::SUCCESS.code_num
+}
+
 /// Takes the proof object and returns a json string of all its attributes
 ///
 /// #Params
@@ -475,5 +492,21 @@ mod tests {
         let rc = cxs_get_proof(0, proof_handle, connection_handle, Some(verify_invalid_proof_cb));
         thread::sleep(Duration::from_millis(900));
         assert_eq!(rc, 0);
+    }
+
+    extern "C" fn get_state_cb(command_handle: u32, err: u32, state: u32) {
+        assert!(state > 0);
+        println!("successfully called get_state_cb");
+    }
+
+    #[test]
+    fn test_cxs_connection_get_state() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let handle = proof::from_string(r#"{"nonce":"123456","version":"1.0","handle":1,"msg_uid":"","ref_msg_id":"","name":"Name Data","prover_vk":"","agent_did":"","agent_vk":"","remote_did":"","remote_vk":"","prover_did":"8XFh8yBzrpJQmNyZzgoTqB","requested_attrs":"{\"attrs\":[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"ISSUER_DID2\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]}","requested_predicates":"{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"DID1\"}","source_id":"source id","state":2,"proof_state":0,"proof":null,"proof_request":null}"#).unwrap();
+        assert!(handle > 0);
+        let rc = cxs_proof_get_state(0,handle,Some(get_state_cb));
+        assert_eq!(rc, error::SUCCESS.code_num);
+        thread::sleep(Duration::from_millis(300));
     }
 }

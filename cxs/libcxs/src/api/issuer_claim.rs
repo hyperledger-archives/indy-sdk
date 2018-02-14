@@ -149,6 +149,24 @@ pub extern fn cxs_issuer_claim_update_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+#[no_mangle]
+pub extern fn cxs_issuer_claim_get_state(command_handle: u32,
+                                         claim_handle: u32,
+                                         cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
+
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+
+    if !issuer_claim::is_valid_handle(claim_handle) {
+        return error::INVALID_ISSUER_CLAIM_HANDLE.code_num;
+    }
+
+    thread::spawn(move|| {
+        cb(command_handle, error::SUCCESS.code_num, issuer_claim::get_state(claim_handle));
+    });
+
+    error::SUCCESS.code_num
+}
+
 #[allow(unused_variables, unused_mut)]
 pub extern fn cxs_issuer_get_claim_request(claim_handle: u32, claim_request: *mut c_char) -> u32 { error::SUCCESS.code_num }
 #[allow(unused_variables, unused_mut)]
@@ -512,6 +530,22 @@ mod tests {
                                            CString::new(DEFAULT_ATTR).unwrap().into_raw(),
                                            CString::new(DEFAULT_CLAIM_NAME).unwrap().into_raw(),
                                            Some(create_and_serialize_cb)), error::SUCCESS.code_num);
+    }
+
+    extern "C" fn get_state_cb(command_handle: u32, err: u32, state: u32) {
+        assert!(state > 0);
+        println!("successfully called get_state_cb");
+    }
+
+    #[test]
+    fn test_cxs_issuer_claim_get_state() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let handle = issuer_claim::from_string(DEFAULT_SERIALIZED_ISSUER_CLAIM).unwrap();
+        assert!(handle > 0);
+        let rc = cxs_issuer_claim_get_state(0,handle,Some(get_state_cb));
+        assert_eq!(rc, error::SUCCESS.code_num);
+        thread::sleep(Duration::from_millis(300));
     }
 
 }

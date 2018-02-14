@@ -6,7 +6,6 @@ const assert = chai.assert
 
 const { Connection, StateType, Error, rustAPI } = cxs
 
-// console.log(release(handle)) // tslint:disable-line
 describe('A Connection object with ', function () {
   this.timeout(10000)
 
@@ -38,12 +37,13 @@ describe('A Connection object with ', function () {
       DIDself: '548NLfYrPxtB299RVafcjR',
       DIDremote: '0'
     })
-    await connection.connect({ sms: true })
+    const inviteDetails = await connection.connect({ sms: true })
+    assert(inviteDetails)
   })
 
   it(' a call to create with no connection created should return unknown error', async () => {
     const connection = new Connection()
-    assert.equal(await connection._connect({ sms: true }), Error.INVALID_CONNECTION_HANDLE)
+    assert.equal(await connection.connect({ sms: true }), Error.INVALID_CONNECTION_HANDLE)
   })
 
   // connection_get_data tests
@@ -69,9 +69,10 @@ describe('A Connection object with ', function () {
     const connection = await Connection.create({ id: '234' })
     assert.notEqual(connection._handle, undefined)
 
-    await connection.connect({ sms: true })
+    const inviteDetails = await connection.connect({ sms: true })
+    assert(inviteDetails)
     await connection.updateState()
-    assert.equal(connection.state, StateType.OfferSent)
+    assert.equal(await connection.getState(), StateType.OfferSent)
     let data = await connection.serialize()
     assert.notEqual(data, null)
     assert.equal(data.handle, connection._handle)
@@ -106,9 +107,10 @@ describe('A Connection object with ', function () {
     const connection = await Connection.create({ id: '234' })
     assert.notEqual(connection._handle, undefined)
 
-    await connection.connect({ sms: true })
+    const inviteDetails = await connection.connect({ sms: true })
+    assert(inviteDetails)
     await connection.updateState()
-    assert.equal(connection.state, StateType.OfferSent)
+    assert.equal(await connection.getState(), StateType.OfferSent)
     let data = await connection.serialize()
     const connection2 = await Connection.deserialize(data)
     assert.equal(connection2._handle, connection._handle)
@@ -120,22 +122,23 @@ describe('A Connection object with ', function () {
   it('call to updateState where connection exists should return success', async () => {
     const connection = await Connection.create({ id: '234' })
     assert.notEqual(connection._handle, undefined)
-    await connection.connect({ sms: true })
+    const inviteDetails = await connection.connect({ sms: true })
+    assert(inviteDetails)
     await connection.updateState()
-    assert.equal(connection.state, StateType.OfferSent)
+    assert.equal(await connection.getState(), StateType.OfferSent)
   })
 
   it('call to updateState where no connection exists should have a state value of 0', async () => {
     const connection = new Connection()
     await connection.updateState()
-    assert.equal(connection.state, StateType.None)
+    assert.equal(await connection.getState(), StateType.None)
   })
 
   it('call to updateState where connection exists but not connected should have a state value of 1', async () => {
     const connection = await Connection.create({ id: 'Unique ID 999' })
     assert.notEqual(connection._handle, undefined)
     await connection.updateState()
-    assert.equal(connection.state, StateType.Initialized)
+    assert.equal(await connection.getState(), StateType.Initialized)
   })
 
   it('call to inviteDetail with abbr returns non-empty string', async () => {
@@ -157,9 +160,10 @@ describe('A Connection object with ', function () {
   it('call to connection_release where connection exists should return success', async () => {
     const connection = await Connection.create({ id: '234' })
     assert.notEqual(connection._handle, undefined)
-    await connection.connect({ sms: true })
+    const inviteDetails = await connection.connect({ sms: true })
+    assert(inviteDetails)
     assert.equal(await connection.release(), Error.SUCCESS)
-    assert.equal(await connection._connect({ sms: true }), Error.INVALID_CONNECTION_HANDLE)
+    assert.equal(await connection.connect({ sms: true }), Error.INVALID_CONNECTION_HANDLE)
     try {
       await connection.serialize()
     } catch (error) {
@@ -174,7 +178,8 @@ describe('A Connection object with ', function () {
 
   it('serialize() should return CxsStateType as an integer', async () => {
     const connection = await Connection.create({ id: 'returnCxsTypeInteger' })
-    await connection.connect({ sms: true })
+    const inviteDetails = await connection.connect({ sms: true })
+    assert(inviteDetails)
     const result = await connection.serialize()
     assert.equal(result['state'], StateType.OfferSent)
   })
@@ -182,7 +187,8 @@ describe('A Connection object with ', function () {
   const connectionCreateCheckAndDelete = async () => {
     let connection = await Connection.create({ id: '234' })
     assert.notEqual(connection._handle, undefined)
-    await connection._connect({ sms: true })
+    const inviteDetails = await connection.connect({ sms: true })
+    assert(inviteDetails)
     const serialize = rustAPI().cxs_connection_serialize
     const handle = connection._handle
     const data = await connection.serialize()

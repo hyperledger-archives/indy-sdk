@@ -1,5 +1,5 @@
 import * as ffi from 'ffi'
-import { ConnectionTimeoutError, CXSInternalError } from '../errors'
+import { CXSInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { StateType } from './common'
@@ -38,6 +38,7 @@ export interface IConnectOptions {
 export class Connection extends CXSBaseWithState {
   protected _releaseFn = rustAPI().cxs_connection_release
   protected _updateStFn = rustAPI().cxs_connection_update_state
+  protected _getStFn = rustAPI().cxs_connection_get_state
   protected _serializeFn = rustAPI().cxs_connection_serialize
   protected _deserializeFn = rustAPI().cxs_connection_deserialize
   protected _inviteDetailFn = rustAPI().cxs_connection_invite_details
@@ -58,7 +59,6 @@ export class Connection extends CXSBaseWithState {
     const commandHandle = 0
     try {
       await connection._create((cb) => rustAPI().cxs_connection_create(commandHandle, recipientInfo.id, cb))
-      await connection._updateState()
       return connection
     } catch (err) {
       throw new CXSInternalError(`cxs_connection_create -> ${err}`)
@@ -81,7 +81,6 @@ export class Connection extends CXSBaseWithState {
   static async deserialize (connectionData: IConnectionData) {
     try {
       const connection = await super._deserialize(Connection, connectionData)
-      await connection._updateState()
       return connection
     } catch (err) {
       throw new CXSInternalError(`cxs_connection_deserialize -> ${err}`)
@@ -98,9 +97,31 @@ export class Connection extends CXSBaseWithState {
    * { phone: "800", timeout: 30 }
    * @returns {Promise<void>}
    */
-  async connect ( options: IConnectOptions = {} ): Promise<void> {
-    const timeout = options.timeout || 10000
-    await this._waitFor(async () => await this._connect(options) === 0, timeout)
+  async connect ( options: IConnectOptions = {} ): Promise<string> {
+    const phone = options.phone
+    const connectionType: string = phone ? 'SMS' : 'QR'
+    const connectionData: string = JSON.stringify({connection_type: connectionType, phone})
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().cxs_connection_connect(0, this._handle, connectionData, cb)
+            if (rc) {
+              resolve(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'string'], (xHandle, err, details) => {
+            if (err) {
+              reject(err)
+              return
+            } else if (details == null) {
+              reject('no details returned')
+            }
+            resolve(details)
+          })
+        )
+    } catch (error) {
+      throw new CXSInternalError(`cxs_connection_connect -> ${error}`)
+    }
   }
 
   /**
@@ -133,6 +154,21 @@ export class Connection extends CXSBaseWithState {
       await this._updateState()
     } catch (error) {
       throw new CXSInternalError(`cxs_connection_updateState -> ${error}`)
+    }
+  }
+
+  /**
+   * @memberof Connection
+   * @description Gets the state of the connection.
+   * @async
+   * @function getState
+   * @returns {Promise<number>}
+   */
+  async getState (): Promise<number> {
+    try {
+      return await this._getState()
+    } catch (error) {
+      throw new CXSInternalError(`cxs_connection_get_state -> ${error}`)
     }
   }
 
@@ -174,40 +210,5 @@ export class Connection extends CXSBaseWithState {
         })
     )
     return data
-  }
-
-  private async _connect (options: IConnectOptions): Promise<number> {
-    const phone = options.phone
-    const connectionType: string = phone ? 'SMS' : 'QR'
-    const connectionData: string = JSON.stringify({connection_type: connectionType, phone})
-    try {
-      return await createFFICallbackPromise<number>(
-          (resolve, reject, cb) => {
-            const rc = rustAPI().cxs_connection_connect(0, this._handle, connectionData, cb)
-            if (rc) {
-              resolve(rc)
-            }
-          },
-          (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32'], (xHandle, err) => {
-            resolve(err)
-          })
-        )
-    } catch (error) {
-      throw new CXSInternalError(`cxs_connection_connect -> ${error}`)
-    }
-  }
-
-  private _sleep = (sleepTime: number): Promise<void> => new Promise((res) => setTimeout(res, sleepTime))
-
-  private _waitFor = async (predicate: () => any, timeout: number, sleepTime: number = 1000) => {
-    if (timeout < 0) {
-      throw new ConnectionTimeoutError()
-    }
-    const res = predicate()
-    if (!res) {
-      await this._sleep(sleepTime)
-      return this._waitFor(predicate, timeout - sleepTime)
-    }
-    return res
   }
 }

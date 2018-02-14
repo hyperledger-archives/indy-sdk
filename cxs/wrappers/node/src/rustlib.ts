@@ -49,11 +49,13 @@ export interface IFFIEntryPoint {
   cxs_connection_release: (handle: string) => number,
   cxs_connection_serialize: (commandId: number, handle: string, cb: any) => number,
   cxs_connection_update_state: (commandId: number, handle: string, cb: any) => number,
+  cxs_connection_get_state: (commandId: number, handle: string, cb: any) => number,
   cxs_connection_invite_details: (commandId: number, handle: string, abbreviated: boolean, cb: any) => number,
   // issuer
   cxs_issuer_claim_deserialize: (commandId: number, data: string, cb: any) => number,
   cxs_issuer_claim_serialize: (commandId: number, handle: string, cb: any) => number,
   cxs_issuer_claim_update_state: (commandId: number, handle: string, cb: any) => number,
+  cxs_issuer_claim_get_state: (commandId: number, handle: string, cb: any) => number,
   cxs_issuer_create_claim: any,
   cxs_issuer_send_claim: (commandId: number, claimHandle: string, connectionHandle: string, cb: any) => number,
   cxs_issuer_send_claim_offer: (commandId: number, claimHandle: string, connectionHandle: string, cb: any) => number,
@@ -66,6 +68,7 @@ export interface IFFIEntryPoint {
   cxs_proof_send_request: (commandId: number, proofHandle: string, connectionHandle: string, cb: any) => number,
   cxs_proof_serialize: (commandId: number, handle: string, cb: any) => number,
   cxs_proof_update_state: (commandId: number, handle: string, cb: any) => number,
+  cxs_proof_get_state: (commandId: number, handle: string, cb: any) => number,
   // mock
   cxs_set_next_agency_response: (messageIndex: number) => void,
 
@@ -99,12 +102,14 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   cxs_connection_release: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE]],
   cxs_connection_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   cxs_connection_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
+  cxs_connection_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   cxs_connection_invite_details: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_BOOL,
     FFI_CALLBACK_PTR]],
   // issuer
   cxs_issuer_claim_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   cxs_issuer_claim_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CALLBACK_PTR]],
   cxs_issuer_claim_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CALLBACK_PTR]],
+  cxs_issuer_claim_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CALLBACK_PTR]],
   cxs_issuer_create_claim: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID,
     'int', 'string', 'string', 'string', 'pointer']],
   cxs_issuer_send_claim: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CONNECTION_HANDLE,
@@ -122,6 +127,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_CALLBACK_PTR]],
   cxs_proof_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   cxs_proof_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
+  cxs_proof_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   // claimDef
   cxs_claimdef_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_SCHEMA_NUMBER,
     FFI_STRING_DATA, FFI_BOOL, FFI_CALLBACK_PTR]],

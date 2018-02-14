@@ -75,6 +75,7 @@ export enum ProofState {
 export class Proof extends CXSBaseWithState {
   protected _releaseFn = rustAPI().cxs_proof_release
   protected _updateStFn = rustAPI().cxs_proof_update_state
+  protected _getStFn = rustAPI().cxs_proof_get_state
   protected _serializeFn = rustAPI().cxs_proof_serialize
   protected _deserializeFn = rustAPI().cxs_proof_deserialize
   private _requestedAttributes: IProofAttr[]
@@ -107,7 +108,6 @@ export class Proof extends CXSBaseWithState {
         proof._name,
         cb
       ))
-      await proof._updateState()
       return proof
     } catch (err) {
       throw new CXSInternalError(`cxs_proof_create -> ${err}`)
@@ -130,7 +130,6 @@ export class Proof extends CXSBaseWithState {
   static async deserialize (proofData: IProofData) {
     try {
       const proof = await super._deserialize(Proof, proofData)
-      await proof._updateState()
       return proof
     } catch (err) {
       throw new CXSInternalError(`cxs_proof_deserialize -> ${err}`)
@@ -152,6 +151,21 @@ export class Proof extends CXSBaseWithState {
       return data
     } catch (err) {
       throw new CXSInternalError(`cxs_proof_serialize -> ${err}`)
+    }
+  }
+
+  /**
+   * @description Gets the state of the proof.
+   * @async
+   * @memberof Proof
+   * @function getState
+   * @returns {Promise<number>}
+   */
+  async getState (): Promise<number> {
+    try {
+      return await this._getState()
+    } catch (error) {
+      throw new CXSInternalError(`cxs_proof_get_state -> ${error}`)
     }
   }
 
@@ -197,7 +211,6 @@ export class Proof extends CXSBaseWithState {
             resolve(xcommandHandle)
           })
         )
-      await this.updateState()
     } catch (err) {
       throw new CXSInternalError(`cxs_proof_send_request -> ${err}`)
     }

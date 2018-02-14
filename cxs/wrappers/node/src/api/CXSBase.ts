@@ -45,7 +45,6 @@ export abstract class CXSBase extends GCWatcher {
         (resolve, reject, cb) => {
           rc = this._serializeFn(0, serializeHandle, cb)
           if (rc) {
-            // TODO: handle correct exception
             reject(rc)
           }
         },

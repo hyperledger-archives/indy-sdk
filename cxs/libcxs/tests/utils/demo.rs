@@ -225,12 +225,14 @@ pub fn closure_to_create_connection_cb(closure: Box<FnMut(u32, u32) + Send>) ->
 pub fn closure_to_connect_cb(closure: Box<FnMut(u32) + Send>) -> (u32,
                                                                   Option<extern fn(
                                                                       command_handle: u32,
-                                                                      err: u32 )>) {
+                                                                      err: u32,
+                                                                      details: *const c_char)>) {
     lazy_static! {
         static ref CALLBACKS: Mutex<HashMap<u32, Box<FnMut(u32) + Send>>> = Default::default();
     }
     // this is the only difference between the two closure converters
-    extern "C" fn callback(command_handle: u32, err: u32) {
+    #[allow(unused_variables)]
+    extern "C" fn callback(command_handle: u32, err: u32, details: *const c_char) {
         let mut callbacks = CALLBACKS.lock().unwrap();
         let mut cb = callbacks.remove(&command_handle).unwrap();
         cb(err)
