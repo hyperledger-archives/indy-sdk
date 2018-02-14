@@ -140,6 +140,8 @@ pub mod attrib_command {
                 .add_optional_param("raw", "JSON representation of attribute data")
                 .add_optional_param("enc", "Encrypted attribute data")
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX raw={"endpoint":{"ha":"127.0.0.1:5555"}}"#)
+                .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX hash=83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#)
+                .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX enc=aa3f41f619aa7e5e6b6d0d"#)
                 .finalize()
     );
 
@@ -193,8 +195,12 @@ pub mod get_attrib_command {
 
     command!(CommandMetadata::build("get-attrib", "Get ATTRIB from Ledger.")
                 .add_required_param("did", "DID of identity presented in Ledger")
-                .add_required_param("attr", "Name of attribute")
+                .add_optional_param("raw", "Name of attribute")
+                .add_optional_param("hash", "Hash of attribute data")
+                .add_optional_param("enc", "Encrypted value of attribute data")
                 .add_example("ledger get-attrib did=VsKV7grR1BUE29mG2Fm2kX attr=endpoint")
+                .add_example("ledger get-attrib did=VsKV7grR1BUE29mG2Fm2kX hash=83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3")
+                .add_example("ledger get-attrib did=VsKV7grR1BUE29mG2Fm2kX enc=aa3f41f619aa7e5e6b6d0d")
                 .finalize()
     );
 
@@ -205,9 +211,11 @@ pub mod get_attrib_command {
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
-        let attr = get_str_param("attr", params).map_err(error_err!())?;
+        let raw = get_opt_str_param("raw", params).map_err(error_err!())?;
+        let hash = get_opt_str_param("hash", params).map_err(error_err!())?;
+        let enc = get_opt_str_param("enc", params).map_err(error_err!())?;
 
-        let res = Ledger::build_get_attrib_request(&submitter_did, target_did, attr)
+        let res = Ledger::build_get_attrib_request(&submitter_did, target_did, raw, hash, enc)
             .and_then(|request| Ledger::submit_request(pool_handle, &request));
 
         let response = match res {
@@ -219,18 +227,16 @@ pub mod get_attrib_command {
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
         if let Some(result) = response.result.as_mut() {
-            let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or(""));
+            let data = result["data"].as_str().map(|data| serde_json::Value::String(data.to_string()));
             match data {
-                Ok(data) => {
-                    result["data"] = data;
-                }
-                Err(_) => return Err(println_err!("Attribute not found"))
+                Some(data) => { result["data"] = data; }
+                None => return Err(println_err!("Attribute not found"))
             };
         };
 
         let res = handle_transaction_response(response)
             .map(|result| print_transaction_response(result,
-                                                     "Following NYM has been received.",
+                                                     "Following ATTRIB has been received.",
                                                      &[("dest", "Did"),
                                                          ("seqNo", "Sequence Number"),
                                                          ("reqId", "Request ID"),
@@ -865,6 +871,10 @@ pub mod tests {
     use libindy::ledger::Ledger;
     use libindy::did::Did;
 
+    pub const ATTRIB_RAW_DATA: &'static str = r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#;
+    pub const ATTRIB_HASH_DATA: &'static str = r#"83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#;
+    pub const ATTRIB_ENC_DATA: &'static str = r#"aa3f41f619aa7e5e6b6d0d"#;
+
     mod nym {
         use super::*;
 
@@ -1025,6 +1035,7 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
             send_nym_my1(&ctx);
+            _ensure_nym_added(&ctx, DID_MY1);
             {
                 let cmd = get_nym_command::new();
                 let mut params = CommandParams::new();
@@ -1082,7 +1093,7 @@ pub mod tests {
         use super::*;
 
         #[test]
-        pub fn attrib_works() {
+        pub fn attrib_works_for_raw_value() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -1097,10 +1108,60 @@ pub mod tests {
                 let cmd = attrib_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY1.to_string());
-                params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
+                params.insert("raw", ATTRIB_RAW_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_attrib_added(&ctx, DID_MY1);
+            _ensure_attrib_added(&ctx, DID_MY1, Some(ATTRIB_RAW_DATA), None, None);
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn attrib_works_for_hash_value() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym_my1(&ctx);
+            use_did(&ctx, DID_MY1);
+
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("hash", ATTRIB_HASH_DATA.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            _ensure_attrib_added(&ctx, DID_MY1, None, Some(ATTRIB_HASH_DATA), None);
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn attrib_works_for_enc_value() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym_my1(&ctx);
+            use_did(&ctx, DID_MY1);
+
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("enc", ATTRIB_ENC_DATA.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            _ensure_attrib_added(&ctx, DID_MY1, None, None, Some(ATTRIB_ENC_DATA));
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1137,7 +1198,7 @@ pub mod tests {
                 let cmd = attrib_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY1.to_string());
-                params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
+                params.insert("raw", ATTRIB_RAW_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
@@ -1157,7 +1218,7 @@ pub mod tests {
                 let cmd = attrib_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY3.to_string());
-                params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
+                params.insert("raw", ATTRIB_RAW_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
@@ -1192,7 +1253,7 @@ pub mod tests {
         use super::*;
 
         #[test]
-        pub fn get_attrib_works() {
+        pub fn get_attrib_works_for_raw_value() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -1207,14 +1268,77 @@ pub mod tests {
                 let cmd = attrib_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY1.to_string());
-                params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
+                params.insert("raw", ATTRIB_RAW_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            _ensure_attrib_added(&ctx, DID_MY1, Some(ATTRIB_RAW_DATA), None, None);
             {
                 let cmd = get_attrib_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY1.to_string());
-                params.insert("attr", "endpoint".to_string());
+                params.insert("raw", "endpoint".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn get_attrib_works_for_hash_value() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym_my1(&ctx);
+            use_did(&ctx, DID_MY1);
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("hash", ATTRIB_HASH_DATA.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            _ensure_attrib_added(&ctx, DID_MY1, None, Some(ATTRIB_HASH_DATA), None);
+            {
+                let cmd = get_attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("hash", ATTRIB_HASH_DATA.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn get_attrib_works_for_enc_value() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym_my1(&ctx);
+            use_did(&ctx, DID_MY1);
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("enc", ATTRIB_ENC_DATA.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            _ensure_attrib_added(&ctx, DID_MY1, None, None, Some(ATTRIB_ENC_DATA));
+            {
+                let cmd = get_attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("enc", ATTRIB_ENC_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);
@@ -1326,7 +1450,7 @@ pub mod tests {
         use super::*;
 
         #[test]
-        pub fn schema_works() {
+        pub fn get_schema_works() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -1520,6 +1644,7 @@ pub mod tests {
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            _ensure_claim_def_added(&ctx, DID_TRUSTEE);
             {
                 let cmd = get_claim_def_command::new();
                 let mut params = CommandParams::new();
@@ -1888,11 +2013,16 @@ pub mod tests {
         }).unwrap();
     }
 
-    fn _ensure_attrib_added(ctx: &CommandContext, did: &str) {
-        let request = Ledger::build_get_attrib_request(DID_MY1, did, "endpoint").unwrap();
+    fn _ensure_attrib_added(ctx: &CommandContext, did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) {
+        let attr = if raw.is_some() { Some("endpoint") } else { None };
+        let request = Ledger::build_get_attrib_request(DID_MY1, did, attr, hash, enc).unwrap();
         _submit_retry(ctx, &request, |response| {
             serde_json::from_str::<Response<ReplyResult<String>>>(&response)
-                .and_then(|response| serde_json::from_str::<AttribData>(&response.result.unwrap().data))
+                .map_err(|_| ())
+                .and_then(|response| {
+                    let expected_value = if raw.is_some() { raw.unwrap() } else if hash.is_some() { hash.unwrap() } else { enc.unwrap() };
+                    if response.result.is_some() && expected_value == response.result.unwrap().data { Ok(()) } else { Err(()) }
+                })
         }).unwrap();
     }
 

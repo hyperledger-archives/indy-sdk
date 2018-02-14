@@ -28,16 +28,16 @@ extern "C" {
                                                                                     const char*   revoc_reg_json)
                                                                );
 
-    extern indy_error_t issuer_create_claim_offer(indy_handle_t command_handle,
-                                                  indy_handle_t wallet_handle,
-                                                  const char *  schema_json,
-                                                  const char *  issuer_did,
-                                                  const char *  prover_did,
+    extern indy_error_t indy_issuer_create_claim_offer(indy_handle_t command_handle,
+                                                       indy_handle_t wallet_handle,
+                                                       const char *  schema_json,
+                                                       const char *  issuer_did,
+                                                       const char *  prover_did,
 
-                                                  void           (*cb)(indy_handle_t xcommand_handle,
-                                                                       indy_error_t  err,
-                                                                       const char*   claim_offer_json)
-                                                  );
+                                                       void           (*cb)(indy_handle_t xcommand_handle,
+                                                                            indy_error_t  err,
+                                                                            const char*   claim_offer_json)
+                                                       );
     
     extern indy_error_t indy_issuer_create_claim(indy_handle_t command_handle,
                                                  indy_handle_t wallet_handle,
