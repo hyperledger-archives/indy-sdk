@@ -1,8 +1,6 @@
 require('chai')
 require('fs-extra')
 const ffi = require('ffi')
-const parentDir = require('path')
-const currentDir = parentDir.dirname(module.filename)
 const cxs = require('../dist')
 const assert = require('assert')
 const { CXSRuntime } = cxs
@@ -10,8 +8,7 @@ const { CXSRuntime } = cxs
 describe('call to cxs_init with provided path', function () {
   this.timeout(10000)
 
-  let path = parentDir.dirname(currentDir)
-  path += '/lib/libcxs.so'
+  let path = '/usr/lib/libcxs.so'
   const run = new CXSRuntime({ basepath: path })
 
   it('should return 1004', async () => {
@@ -48,8 +45,7 @@ describe('call to cxs_init with provided path', function () {
 // these tests were created to only test that the ffi could be called with each function
 
 describe('Using the cxs ffi directly ', async () => {
-  let path = parentDir.dirname(currentDir)
-  path += '/lib/libcxs.so'
+  let path = '/usr/lib/libcxs.so'
   const run = new CXSRuntime({ basepath: path })
 
   it('a call to cxs_connection_create should return 0', async () => {

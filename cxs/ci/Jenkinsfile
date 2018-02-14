@@ -6,23 +6,35 @@ def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
-def build(name, file = 'cxs/ci/ubuntu.dockerfile cxs/ci', customParams = '') {
-    return docker.build("$name-test", "--build-arg uid=${getUserUid()} -f $file")
+// docker build -t libcxs-test --build-arg uid=1001 -f cxs/ci/ubuntu.dockerfile cxs/ci
+def build(name, file='cxs/ci/ubuntu.dockerfile', context='cxs/ci', customParams = '') {
+    return docker.build("$name-test", "--build-arg uid=${getUserUid()} -f $file $context")
 }
 
-node('ubuntu') {
+// docker build -t wrapper-test --build-arg uid=1001 -f cxs/ci/Dockerfile-wrapper-testing
+def build_wrapper_testing_image(file='cxs/ci/Dockerfile-wrapper-testing', context='cxs', customParams = ''){
+	return docker.build("wrapper-test", "--build-arg uid=${getUserUid()} -f $file $context")
+}
+
+node('sdk') {
     try {
         stage ('Checkout'){
             checkout scm
         }
-        app = buildDocker()
-        // build the so file and test the so file
-        buildRust(app)
-        // update the versions in the toml file and package.json
-        updateVersions(app)
-        // test the npm package and create the npm gzip artifact
-        testNodeWrapper(app)
         
+        app = build('libcxs', 'cxs/ci/ubuntu.dockerfile', 'cxs/ci')
+		
+        // update the versions in the toml file and package.json
+        updateVersions(app)      
+        
+        // build and test the so file
+        buildRust(app)
+
+        // update the so file to have version
+        updateSo(app)
+        // test the npm package and create the npm gzip artifact
+        wrapper = build_wrapper_testing_image('cxs/ci/Dockerfile-wrapper-testing', 'cxs')
+        testNodeWrapper(wrapper)
         if (env.BRANCH_NAME == "master") {
             // create the debian of the library
             createDeb(app)
@@ -59,11 +71,8 @@ def buildRust(envn){
             sh "ls -l"
             sh "rustc --version"
             sh "gcc --version"
-            sh "mkdir -p cxs/wrappers/node/lib"
-            sh "ls -l"
-            sh "cd cxs/libcxs; cargo test -- --test-threads=1"
-            sh "cp cxs/libcxs/target/debug/libcxs.so cxs/wrappers/node/lib/"
-            sh "ls cxs/wrappers/node/lib"
+            // sh "cd cxs/libcxs; cargo test -- --test-threads=1"
+            sh "cd cxs/libcxs; cargo build"
         }
     }
 }
@@ -72,7 +81,7 @@ def testRust(envn) {
     stage ('Testing Rust'){
         sh "echo Testing"
         envn.inside {
-            sh "cd cxs/libcxs; cargo test -- --test-threads=1"
+            sh "cd cxs/libcxs; cargo test --color never -- --test-threads=1"
         }
     }
 }
@@ -94,11 +103,20 @@ def updateVersions(app) {
         stage('Updating Versions') {
             app.inside {
                 sh 'ls -l'
+                // TODO fix this ... these *SHOULD* be cargo commands.
                 sh 'cd cxs/libcxs; ls -l; ls ../ci/scripts'
                 sh 'cd cxs/libcxs; python ../ci/scripts/cargo-update-version'
-                sh 'cd cxs/libcxs; python ../ci/scripts/cargo-update-so'
+
             }
         }
+}
+
+def updateSo(app) {
+    stage('Updating .so file version') {
+        app.inside {
+            sh 'cd cxs/libcxs; python ../ci/scripts/cargo-update-so'
+        }
+    }
 }
 
 
@@ -116,18 +134,21 @@ def createDeb(envn) {
             sh "${CERT_SCRIPT}"
                 
             // build debian
-            sh 'cd cxs/libcxs/; cargo deb --no-build'
+            sh 'cd cxs/libcxs/; cargo deb --no-build --color never'
+    
 
-            // archive debian to Jenkins
-            archiveArtifacts allowEmptyARchive: true, artifacts: "cxs/libcxs/target/debian/libcxs_*_amd64.deb"
+            if (env.BRANCH_NAME == "master") {
+                // archive debian to Jenkins
+                archiveArtifacts allowEmptyARchive: true, artifacts: "cxs/libcxs/target/debian/libcxs_*_amd64.deb"
 
-            // archive .so file to Jenkins
-            sh "python ${SCRIPT} ${FILES} ${DEST}"
-            archiveArtifacts allowEmptyARchive: true, artifacts: DEST
+                // archive .so file to Jenkins
+                sh "python ${SCRIPT} ${FILES} ${DEST}"
+                archiveArtifacts allowEmptyARchive: true, artifacts: DEST
 
-            // upload debian to Repo
-            withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
-                sh "find cxs/libcxs/target/debian/ -type f -name 'libcxs_*_amd64.deb' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/agency_dev/upload -F file=@{} \\;"
+                // upload debian to Repo
+                withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
+                    sh "find cxs/libcxs/target/debian/ -type f -name 'libcxs_*_amd64.deb' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/agency_dev/upload -F file=@{} \\;"
+                }
             }
         }
     }
@@ -136,24 +157,23 @@ def createDeb(envn) {
 
 // Creates the tgz file that can be 'npm install'-ed.
 def testNodeWrapper(envn) {
-  dir ('cxs/wrappers/node'){
-    stage ('Test Node Wrapper'){
-      envn.inside {
-        sh 'ls -l lib'
-        sh 'npm -v'
-        sh 'npm install'
-        sh 'npm rebuild'
-        sh 'npm run lint'
-        sh 'npm run compile'
-        sh 'npm test'
-        sh 'ls -l'
-        sh 'npm pack'
-        sh 'ls'
-        sh "test -f cxs-*.tgz"
-        archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.tgz'
-      }
+    dir ('cxs/wrappers/node'){
+        stage ('Test Node Wrapper'){
+		    envn.inside {
+    			sh 'npm -v'
+	            sh 'npm install'
+	            sh 'npm rebuild'
+	            sh 'npm run lint'
+	            sh 'npm run compile'
+	            sh 'npm test'
+	            sh 'ls -l'
+			    sh 'npm pack'
+	            sh 'ls'
+	            sh "test -f cxs-*.tgz"
+	            archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.tgz'
+      	    }
+        }
     }
-  }
 }
 
 

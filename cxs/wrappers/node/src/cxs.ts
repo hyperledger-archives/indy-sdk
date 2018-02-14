@@ -23,5 +23,5 @@ export class CXSRuntime {
     this.ffi = ffi.Library(libraryPath, FFIConfiguration)
   }
 
-  private _initializeBasepath = (): string => this._config.basepath || path.resolve(__dirname, '../lib/libcxs.so')
+  private _initializeBasepath = (): string => this._config.basepath || path.resolve(__dirname, '/usr/lib/libcxs.so')
 }

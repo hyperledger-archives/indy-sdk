@@ -48,7 +48,7 @@ def get_agency_info(agency_url):
     return agency_info
 
 def register_agent(args):
-    cxs = CDLL('./libcxs.so')
+    cxs = CDLL('/usr/lib/libcxs.so')
     agency_info = get_agency_info(args.AGENCY_URL)
     json_str = json.dumps({'agency_url':args.AGENCY_URL,
         'agency_did':agency_info['DID'],
