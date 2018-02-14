@@ -72,7 +72,6 @@ pub struct GetAttribReplyResult {
     pub   _type: String,
     pub   data: Option<String>,
     pub  dest: String,
-    pub  raw: String,
     pub  seq_no: Option<i32>
 }
 

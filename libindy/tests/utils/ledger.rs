@@ -248,7 +248,7 @@ impl LedgerUtils {
         Ok(request_json)
     }
 
-    pub fn build_get_attrib_request(submitter_did: &str, target_did: &str, data: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_attrib_request(submitter_did: &str, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, request_json| {
@@ -259,13 +259,17 @@ impl LedgerUtils {
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
-        let data = CString::new(data).unwrap();
+        let raw_str = raw.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let hash_str = hash.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let enc_str = enc.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err =
             indy_build_get_attrib_request(command_handle,
                                           submitter_did.as_ptr(),
                                           target_did.as_ptr(),
-                                          data.as_ptr(),
+                                          if raw.is_some() { raw_str.as_ptr() } else { null() },
+                                          if hash.is_some() { hash_str.as_ptr() } else { null() },
+                                          if enc.is_some() { enc_str.as_ptr() } else { null() },
                                           cb);
 
         if err != ErrorCode::Success {

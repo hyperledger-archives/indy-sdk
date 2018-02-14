@@ -44,7 +44,7 @@ public abstract class LibIndy {
 		public int indy_build_get_ddo_request(int command_handle, String submitter_did, String target_did, Callback cb);
 		public int indy_build_nym_request(int command_handle, String submitter_did, String target_did, String verkey, String alias, String role, Callback cb);
 		public int indy_build_attrib_request(int command_handle, String submitter_did, String target_did, String hash, String raw, String enc, Callback cb);
-		public int indy_build_get_attrib_request(int command_handle, String submitter_did, String target_did, String data, Callback cb);
+		public int indy_build_get_attrib_request(int command_handle, String submitter_did, String target_did, String raw, String hash, String enc, Callback cb);
 		public int indy_build_get_nym_request(int command_handle, String submitter_did, String target_did, Callback cb);
 		public int indy_build_schema_request(int command_handle, String submitter_did, String data, Callback cb);
 		public int indy_build_get_schema_request(int command_handle, String submitter_did, String dest, String data, Callback cb);

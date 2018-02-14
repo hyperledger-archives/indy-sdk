@@ -544,7 +544,7 @@ impl RemoteNode {
         info!("Sending {:?}", str);
         self.zsock.as_ref()
             .ok_or(CommonError::InvalidState("Try to send str for unconnected RemoteNode".to_string()))?
-            .send(str, zmq::DONTWAIT)
+            .send(str, 0)
             .map_err(map_err_trace!())?;
         Ok(())
     }
