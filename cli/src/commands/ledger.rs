@@ -1035,6 +1035,7 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
             send_nym_my1(&ctx);
+            _ensure_nym_added(&ctx, DID_MY1);
             {
                 let cmd = get_nym_command::new();
                 let mut params = CommandParams::new();
@@ -1270,6 +1271,7 @@ pub mod tests {
                 params.insert("raw", ATTRIB_RAW_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            _ensure_attrib_added(&ctx, DID_MY1, Some(ATTRIB_RAW_DATA), None, None);
             {
                 let cmd = get_attrib_command::new();
                 let mut params = CommandParams::new();
@@ -1300,6 +1302,7 @@ pub mod tests {
                 params.insert("hash", ATTRIB_HASH_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            _ensure_attrib_added(&ctx, DID_MY1, None, Some(ATTRIB_HASH_DATA), None);
             {
                 let cmd = get_attrib_command::new();
                 let mut params = CommandParams::new();
@@ -1330,6 +1333,7 @@ pub mod tests {
                 params.insert("enc", ATTRIB_ENC_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            _ensure_attrib_added(&ctx, DID_MY1, None, None, Some(ATTRIB_ENC_DATA));
             {
                 let cmd = get_attrib_command::new();
                 let mut params = CommandParams::new();
@@ -1446,7 +1450,7 @@ pub mod tests {
         use super::*;
 
         #[test]
-        pub fn schema_works() {
+        pub fn get_schema_works() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -1640,6 +1644,7 @@ pub mod tests {
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            _ensure_claim_def_added(&ctx, DID_TRUSTEE);
             {
                 let cmd = get_claim_def_command::new();
                 let mut params = CommandParams::new();
