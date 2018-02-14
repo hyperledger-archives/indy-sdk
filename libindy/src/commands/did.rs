@@ -558,7 +558,7 @@ impl DidCommandExecutor {
         let deferred_cmd_id = self._defer_command(deferred_cmd);
 
         // TODO we need passing of my_did as identifier
-        let get_attrib_request = self.ledger_service.build_get_attrib_request(did, did, "endpoint")
+        let get_attrib_request = self.ledger_service.build_get_attrib_request(did, did, Some("endpoint"), None, None)
             .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::InvalidState(

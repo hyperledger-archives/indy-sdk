@@ -970,7 +970,9 @@
     NSString *getAttribRequestJson;
     NSError *ret = [[LedgerUtils sharedInstance] buildGetAttribRequestWithSubmitterDid:identifier
                                                                              targetDid:dest
-                                                                                  data:raw
+                                                                                   raw:raw
+                                                                                  hash:nil
+                                                                                   enc:nil
                                                                             resultJson:&getAttribRequestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetAttribRequestWithSubmitterDid() returned wrong error");
 
@@ -1134,7 +1136,9 @@
     NSString *getAttribRequest = nil;
     ret = [[LedgerUtils sharedInstance] buildGetAttribRequestWithSubmitterDid:myDid
                                                                     targetDid:myDid
-                                                                         data:@"endpoint"
+                                                                          raw:@"endpoint"
+                                                                         hash:nil
+                                                                          enc:nil
                                                                    resultJson:&getAttribRequest];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildGetAttribRequest() failed");
     XCTAssertNotNil(getAttribRequest, @"getAttribRequest is nil!");
