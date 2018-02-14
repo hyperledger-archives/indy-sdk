@@ -96,10 +96,11 @@ pub mod import_command {
     command!(CommandMetadata::build("import", "Import DIDs entities from file to the current wallet.
         File format:
         {
-            \"version\": 1
-            \"dids\": [
-                { \"did\": \"did1\", \"seed\": \"UTF-8 or base64 seed string\" },
-            ]
+            \"version\": 1,
+            \"dids\": [{
+                \"did\": \"did\",
+                \"seed\": \"UTF-8 or base64 seed string\"
+            }]
         }")
                 .add_main_param("file", "Path to file with DIDs")
                 .finalize()
