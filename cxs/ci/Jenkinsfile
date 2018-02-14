@@ -16,7 +16,7 @@ def build_wrapper_testing_image(file='cxs/ci/Dockerfile-wrapper-testing', contex
 	return docker.build("wrapper-test", "--build-arg uid=${getUserUid()} -f $file $context")
 }
 
-node('sdk') {
+node('ubuntu') {
     try {
         stage ('Checkout'){
             checkout scm
@@ -134,7 +134,7 @@ def createDeb(envn) {
             sh "${CERT_SCRIPT}"
                 
             // build debian
-            sh 'cd cxs/libcxs/; cargo deb --no-build --color never'
+            sh 'cd cxs/libcxs/; cargo deb --no-build'
     
 
             if (env.BRANCH_NAME == "master") {
