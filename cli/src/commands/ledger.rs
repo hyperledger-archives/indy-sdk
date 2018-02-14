@@ -1271,7 +1271,7 @@ pub mod tests {
                 params.insert("raw", ATTRIB_RAW_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_attrib_added(&ctx, DID_MY1, Some("endpoint"), None, None);
+            _ensure_attrib_added(&ctx, DID_MY1, Some(ATTRIB_RAW_DATA), None, None);
             {
                 let cmd = get_attrib_command::new();
                 let mut params = CommandParams::new();
