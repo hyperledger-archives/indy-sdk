@@ -98,8 +98,8 @@ pub mod import_command {
         {
             \"version\": 1,
             \"dids\": [{
-                \"did\": \"AAAAAAAAAAAAAAAAAAAAAA\",
-                \"seed\": \"00000000000000000000000000000000\"
+                \"did\": \"did\",
+                \"seed\": \"UTF-8 or base64 seed string\"
             }]
         }")
                 .add_main_param("file", "Path to file with DIDs")
