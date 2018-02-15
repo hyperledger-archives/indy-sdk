@@ -70,6 +70,9 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     
     // Trying to open wallet that was opened already
     WalletAlreadyOpenedError = 206,
+
+    // Attempt to open encrypted wallet with invalid credentials
+    WalletAccessFailed = 207,
     
     // Ledger errors
     // Trying to open pool ledger that wasn't created before
@@ -106,8 +109,16 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
     AnoncredsMasterSecretDuplicateNameError = 404,
     
     AnoncredsProofRejected = 405,
-    
+
+    AnoncredsClaimRevoked = 406,
+
+    // Attempt to create claim definition with duplicated did schema pair
+    AnoncredsClaimDefAlreadyExistsError = 407,
+
     // Crypto errors
     // Unknown format of DID entity keys
-    UnknownCryptoTypeError = 500
+    UnknownCryptoTypeError = 500,
+
+    // Attempt to create duplicate did
+    DidAlreadyExistsError = 600
 };

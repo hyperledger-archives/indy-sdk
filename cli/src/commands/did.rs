@@ -11,7 +11,7 @@ use std::fs::File;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use commands::ledger::handle_send_command_error;
+use commands::ledger::{handle_transaction_error, handle_transaction_response, Response};
 
 pub mod group {
     use super::*;
@@ -23,15 +23,13 @@ pub mod new_command {
     use super::*;
 
     command!(CommandMetadata::build("new", "Create new DID")
-                .add_param("did", true, "Known DID for new wallet instance")
-                .add_param("seed", true, "Seed for creating DID key-pair")
-                .add_param("cid", true, "Create DID as CID. Can be true or false (default false)")
-                .add_param("metadata", true, "DID metadata")
+                .add_optional_param("did", "Known DID for new wallet instance")
+                .add_optional_deferred_param("seed", "Seed for creating DID key-pair")
+                .add_optional_param("metadata", "DID metadata")
                 .add_example("did new")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX seed=00000000000000000000000000000My1")
-                .add_example("did new seed=00000000000000000000000000000My1 cid=true")
-                .add_example("did new seed=00000000000000000000000000000My1 cid=true metadata=did_metadata")
+                .add_example("did new seed=00000000000000000000000000000My1 metadata=did_metadata")
                 .finalize()
     );
 
@@ -42,20 +40,24 @@ pub mod new_command {
 
         let did = get_opt_str_param("did", params).map_err(error_err!())?;
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
-        let cid = get_opt_bool_param("cid", params).map_err(error_err!())?;
-        let metadata = get_opt_str_param("metadata", params).map_err(error_err!())?;
+        let metadata = get_opt_empty_str_param("metadata", params).map_err(error_err!())?;
 
         let config = {
             let mut json = JSONMap::new();
             update_json_map_opt_key!(json, "did", did);
             update_json_map_opt_key!(json, "seed", seed);
-            update_json_map_opt_key!(json, "cid", cid);
             JSONValue::from(json).to_string()
         };
 
         trace!(r#"Did::new try: config {:?}"#, config);
 
-        let res = Did::new(wallet_handle, config.as_str());
+        let res =
+            Did::new(wallet_handle, config.as_str())
+                .and_then(|(did, vk)|
+                    match Did::abbreviate_verkey(&did, &vk) {
+                        Ok(vk) => Ok((did, vk)),
+                        Err(err) => Err(err)
+                    });
 
         trace!(r#"Did::new return: {:?}"#, res);
 
@@ -65,7 +67,7 @@ pub mod new_command {
                 Ok(did)
             }
             Err(ErrorCode::UnknownCryptoTypeError) => Err(println_err!("Unknown crypto type")),
-            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Wrong command params")),
+            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -74,7 +76,7 @@ pub mod new_command {
                 let res = Did::set_metadata(wallet_handle, &did, metadata);
                 match res {
                     Ok(()) => Ok(println_succ!("Metadata has been saved for DID \"{}\"", did)),
-                    Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Wrong command params")),
+                    Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                 }
             })
@@ -94,10 +96,11 @@ pub mod import_command {
     command!(CommandMetadata::build("import", "Import DIDs entities from file to the current wallet.
         File format:
         {
-            \"version\": 1
-            \"dids\": [
-                { \"did\": \"did1\", \"seed\": \"UTF-8 or base64 seed string\" },
-            ]
+            \"version\": 1,
+            \"dids\": [{
+                \"did\": \"did\",
+                \"seed\": \"UTF-8 or base64 seed string\"
+            }]
         }")
                 .add_main_param("file", "Path to file with DIDs")
                 .finalize()
@@ -128,7 +131,12 @@ pub mod import_command {
                     })
                     .and_then(|dids| {
                         for did in dids {
-                            match Did::new(wallet_handle, &did.to_string()) {
+                            match Did::new(wallet_handle, &did.to_string())
+                                .and_then(|(did, vk)|
+                                    match Did::abbreviate_verkey(&did, &vk) {
+                                        Ok(vk) => Ok((did, vk)),
+                                        Err(err) => Err(err)
+                                    }) {
                                 Ok((did, vk)) =>
                                     println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk),
                                 Err(err) =>
@@ -184,7 +192,7 @@ pub mod rotate_key_command {
     use super::*;
 
     command!(CommandMetadata::build("rotate-key", "Rotate keys for active did")
-                .add_param("seed", true, "If not provide then a random one will be created")
+                .add_optional_deferred_param("seed", "If not provide then a random one will be created")
                 .add_example("did rotate-key")
                 .add_example("did rotate-key seed=00000000000000000000000000000My2")
                 .finalize());
@@ -207,21 +215,30 @@ pub mod rotate_key_command {
         let new_verkey = match Did::replace_keys_start(wallet_handle, &did, &identity_json) {
             Ok(request) => Ok(request),
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
-            Err(_) => return Err(println_err!("Wrong command params")),
+            Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
         }?;
 
         let nym_res = Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request));
 
-        if let Err(err) = nym_res {
-            handle_send_command_error(err, &did, &pool_name, &wallet_name).map(|_| ())?
-        }
-
-        let res = match Did::replace_keys_apply(wallet_handle, &did) {
-            Ok(_) => Ok(println_succ!("Verkey has been updated. New verkey: \"{}\"", new_verkey)),
-            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
-            Err(_) => return Err(println_err!("Wrong command params")),
+        match nym_res {
+            Ok(response) => {
+                let response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response)
+                    .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+                handle_transaction_response(response)?;
+            }
+            Err(err) => {
+                handle_transaction_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))?;
+            }
         };
+
+        let res =
+            match Did::replace_keys_apply(wallet_handle, &did)
+                .and_then(|_| Did::abbreviate_verkey(&did, &new_verkey)) {
+                Ok(vk) => Ok(println_succ!("Verkey for did \"{}\" has been updated. New verkey: \"{}\"", did, vk)),
+                Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Active DID: \"{}\" not found", did)),
+                Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
+            };
 
         trace!("execute << {:?}", res);
         res
@@ -241,16 +258,22 @@ pub mod list_command {
 
         let res = match Did::list_dids_with_meta(wallet_handle) {
             Ok(dids) => {
-                let dids: Vec<serde_json::Value> = serde_json::from_str(&dids)
+                let mut dids: Vec<serde_json::Value> = serde_json::from_str(&dids)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
-                if dids.len() > 0 {
-                    print_list_table(&dids,
-                                     &vec![("did", "Did"),
-                                           ("verkey", "Verkey"),
-                                           ("metadata", "Metadata")]);
-                } else {
-                    println_succ!("There are no dids");
+
+                for did_info in dids.iter_mut() {
+                    match Did::abbreviate_verkey(did_info["did"].as_str().unwrap_or(""),
+                                                 did_info["verkey"].as_str().unwrap_or("")) {
+                        Ok(vk) => did_info["verkey"] = serde_json::Value::String(vk),
+                        Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err))
+                    }
                 }
+
+                print_list_table(&dids,
+                                 &vec![("did", "Did"),
+                                       ("verkey", "Verkey"),
+                                       ("metadata", "Metadata")],
+                                 "There are no dids");
                 if let Some(cur_did) = get_active_did(ctx) {
                     println_succ!("Current did \"{}\"", cur_did);
                 }
@@ -361,25 +384,6 @@ pub mod tests {
             let dids = get_dids(wallet_handle);
             assert_eq!(1, dids.len());
             assert_eq!(dids[0]["metadata"].as_str().unwrap(), metadata);
-
-            close_and_delete_wallet(&ctx);
-        }
-
-        #[test]
-        pub fn new_works_for_cid() {
-            let ctx = CommandContext::new();
-
-            let wallet_handle = create_and_open_wallet(&ctx);
-            {
-                let cmd = new_command::new();
-                let mut params = CommandParams::new();
-                params.insert("cid", "true".to_string());
-                params.insert("seed", SEED_TRUSTEE.to_string());
-                cmd.execute(&ctx, &params).unwrap();
-            }
-            let dids = get_dids(wallet_handle);
-            assert_eq!(1, dids.len());
-            assert_eq!(dids[0]["did"].as_str().unwrap(), VERKEY_TRUSTEE);
 
             close_and_delete_wallet(&ctx);
         }

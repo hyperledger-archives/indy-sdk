@@ -123,7 +123,7 @@ impl CatchupHandler {
             }
         }
         if let Some((most_popular_vote, votes_cnt)) = votes.iter().max_by_key(|entry| entry.1) {
-            if *votes_cnt == self.nodes.len() - self.f /* TODO N-f consensus */ {
+            if *votes_cnt == self.nodes.len() - self.f {
                 let &(ref target_mt_root, target_mt_size) = most_popular_vote;
                 let cur_mt_size = self.merkle_tree.count();
                 let cur_mt_hash = self.merkle_tree.root_hash().to_base58();
@@ -284,11 +284,15 @@ impl CatchupHandler {
     }
 
     pub fn flush_requests(&mut self, status: Result<(), PoolError>) -> Result<(), PoolError> {
+        if self.initiate_cmd_id == -1 {
+            return Ok(());
+        }
         let cmd = if self.is_refresh {
             PoolCommand::RefreshAck(self.initiate_cmd_id, status)
         } else {
             PoolCommand::OpenAck(self.initiate_cmd_id, self.pool_id, status)
         };
+        self.initiate_cmd_id = -1;
         CommandExecutor::instance()
             .send(Command::Pool(cmd))
             .map_err(|err|

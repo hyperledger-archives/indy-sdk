@@ -1,5 +1,4 @@
 use super::ErrorCode;
-use utils::timeout::TimeoutUtils;
 
 use std::sync::mpsc::Receiver;
 
@@ -8,7 +7,7 @@ pub fn result_to_empty(err: ErrorCode, receiver: Receiver<ErrorCode>) -> Result<
         return Err(err);
     }
 
-    let err = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    let err = receiver.recv().unwrap();
 
     if err != ErrorCode::Success {
         return Err(err);
@@ -22,7 +21,7 @@ pub fn result_to_int(err: ErrorCode, receiver: Receiver<(ErrorCode, i32)>) -> Re
         return Err(err);
     }
 
-    let (err, val) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    let (err, val) = receiver.recv().unwrap();
 
     if err != ErrorCode::Success {
         return Err(err);
@@ -36,7 +35,7 @@ pub fn result_to_string(err: ErrorCode, receiver: Receiver<(ErrorCode, String)>)
         return Err(err);
     }
 
-    let (err, val) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    let (err, val) = receiver.recv().unwrap();
 
     if err != ErrorCode::Success {
         return Err(err);
@@ -50,7 +49,7 @@ pub fn result_to_string_string(err: ErrorCode, receiver: Receiver<(ErrorCode, St
         return Err(err);
     }
 
-    let (err, val, val2) = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    let (err, val, val2) = receiver.recv().unwrap();
 
     if err != ErrorCode::Success {
         return Err(err);

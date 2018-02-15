@@ -101,6 +101,10 @@
      walletHandle:(IndyHandle)walletHandle
        completion:(void (^)(NSError *error, NSString *key))completion;
 
++ (void)keyForLocalDid:(NSString *)did
+     walletHandle:(IndyHandle)walletHandle
+       completion:(void (^)(NSError *error, NSString *key))completion;
+
 + (void)setEndpointAddress:(NSString *)address transportKey:(NSString *)transportKey forDid:(NSString *)did walletHandle:(IndyHandle)walletHandle completion:(void (^)(NSError *error))completion;
 
 + (void)getEndpointForDid:(NSString *)did
@@ -115,5 +119,10 @@
 + (void)getMetadataForDid:(NSString *)did
              walletHandle:(IndyHandle)walletHandle
                completion:(void (^)(NSError *error, NSString *metadata))completion;
+
+
++ (void)AbbreviateVerkey:(NSString *)did
+           fullVerkey:(NSString *)fullVerkey
+               completion:(void (^)(NSError *error, NSString *verkey))completion;
 
 @end

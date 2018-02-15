@@ -3,15 +3,12 @@ use super::ErrorCode;
 use libc::c_char;
 use std::ffi::CString;
 use std::ptr::null;
-use std::sync::mpsc::channel;
 
 pub struct Ledger {}
 
 impl Ledger {
     pub fn sign_and_submit_request(pool_handle: i32, wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let request_json = CString::new(request_json).unwrap();
@@ -29,9 +26,7 @@ impl Ledger {
     }
 
     pub fn submit_request(pool_handle: i32, request_json: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let request_json = CString::new(request_json).unwrap();
 
@@ -47,9 +42,7 @@ impl Ledger {
 
     pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&str>,
                              data: Option<&str>, role: Option<&str>) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
@@ -71,9 +64,7 @@ impl Ledger {
     }
 
     pub fn build_get_nym_request(submitter_did: &str, target_did: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
@@ -89,9 +80,7 @@ impl Ledger {
     }
 
     pub fn build_attrib_request(submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
@@ -113,20 +102,23 @@ impl Ledger {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_attrib_request(submitter_did: &str, target_did: &str, data: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
+    pub fn build_get_attrib_request(submitter_did: &str, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
-        let data = CString::new(data).unwrap();
+
+        let raw_str = raw.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let hash_str = hash.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let enc_str = enc.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
             indy_build_get_attrib_request(command_handle,
                                           submitter_did.as_ptr(),
                                           target_did.as_ptr(),
-                                          data.as_ptr(),
+                                          if raw.is_some() { raw_str.as_ptr() } else { null() },
+                                          if hash.is_some() { hash_str.as_ptr() } else { null() },
+                                          if enc.is_some() { enc_str.as_ptr() } else { null() },
                                           cb)
         };
 
@@ -134,9 +126,7 @@ impl Ledger {
     }
 
     pub fn build_schema_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let data = CString::new(data).unwrap();
@@ -152,9 +142,7 @@ impl Ledger {
     }
 
     pub fn build_get_schema_request(submitter_did: &str, dest: &str, data: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let dest = CString::new(dest).unwrap();
@@ -172,9 +160,7 @@ impl Ledger {
     }
 
     pub fn build_claim_def_txn(submitter_did: &str, xref: i32, signature_type: &str, data: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let signature_type = CString::new(signature_type).unwrap();
@@ -193,9 +179,7 @@ impl Ledger {
     }
 
     pub fn build_get_claim_def_txn(submitter_did: &str, xref: i32, signature_type: &str, origin: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let signature_type = CString::new(signature_type).unwrap();
@@ -214,9 +198,7 @@ impl Ledger {
     }
 
     pub fn build_node_request(submitter_did: &str, target_did: &str, data: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let target_did = CString::new(target_did).unwrap();
@@ -234,9 +216,7 @@ impl Ledger {
     }
 
     pub fn indy_build_pool_config_request(submitter_did: &str, writes: bool, force: bool) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
 
@@ -253,9 +233,7 @@ impl Ledger {
 
     pub fn indy_build_pool_upgrade_request(submitter_did: &str, name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
                                            justification: Option<&str>, reinstall: bool, force: bool) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let (command_handle, cb) = super::callbacks::_closure_to_cb_ec_string(sender);
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let name = CString::new(name).unwrap();
@@ -330,7 +308,9 @@ extern {
     fn indy_build_get_attrib_request(command_handle: i32,
                                      submitter_did: *const c_char,
                                      target_did: *const c_char,
-                                     data: *const c_char,
+                                     raw: *const c_char,
+                                     hash: *const c_char,
+                                     enc: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]

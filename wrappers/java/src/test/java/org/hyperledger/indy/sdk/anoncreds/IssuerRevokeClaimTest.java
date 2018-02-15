@@ -37,18 +37,20 @@ public class IssuerRevokeClaimTest extends AnoncredsIntegrationTest {
 		//4. Prover create Master Secret
 		Anoncreds.proverCreateMasterSecret(issuerWallet, masterSecretName).get();
 
-		//5. Prover store Claim Offer received from Issuer
-		String claimOfferJson = String.format(claimOfferTemplate, issuerDid, gvtSchemaKey);
+		//5. Issuer create Claim Offer
+		String claimOfferJson = Anoncreds.issuerCreateClaimOffer(issuerWallet, gvtSchemaJson, issuerDid, proverDid).get();
+
+		//6. Prover store Claim Offer received from Issuer
 		Anoncreds.proverStoreClaimOffer(issuerWallet, claimOfferJson).get();
 
-		//6. Prover create Claim Request
+		//7. Prover create Claim Request
 		String claimReq = Anoncreds.proverCreateAndStoreClaimReq(issuerWallet, proverDid, claimOfferJson, claimDefJson, masterSecretName).get();
 
-		//7. Issuer create Claim
+		//8. Issuer create Claim
 		int userRevocIndex = 1;
 		claimResult = Anoncreds.issuerCreateClaim(issuerWallet, claimReq, gvtClaimValuesJson, userRevocIndex).get();
 
-		//8. Prover store received Claim
+		//9. Prover store received Claim
 		Anoncreds.proverStoreClaim(issuerWallet, claimResult.getClaimJson(), null).get();
 	}
 

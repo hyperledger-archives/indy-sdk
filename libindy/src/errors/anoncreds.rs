@@ -20,6 +20,7 @@ pub enum AnoncredsError {
     InvalidUserRevocIndex(String),
     AccumulatorIsFull(String),
     ClaimRevoked(String),
+    ClaimDefAlreadyExists(String),
     CommonError(CommonError)
 }
 
@@ -33,6 +34,7 @@ impl fmt::Display for AnoncredsError {
             AnoncredsError::InvalidUserRevocIndex(ref description) => write!(f, "Invalid revocation index: {}", description),
             AnoncredsError::AccumulatorIsFull(ref description) => write!(f, "Accumulator is full: {}", description),
             AnoncredsError::ClaimRevoked(ref description) => write!(f, "Claim revoked: {}", description),
+            AnoncredsError::ClaimDefAlreadyExists(ref description) => write!(f, "Claim definition already exists: {}", description),
             AnoncredsError::CommonError(ref err) => err.fmt(f)
         }
     }
@@ -48,6 +50,7 @@ impl error::Error for AnoncredsError {
             AnoncredsError::InvalidUserRevocIndex(ref description) => description,
             AnoncredsError::AccumulatorIsFull(ref description) => description,
             AnoncredsError::ClaimRevoked(ref description) => description,
+            AnoncredsError::ClaimDefAlreadyExists(ref description) => description,
             AnoncredsError::CommonError(ref err) => err.description()
         }
     }
@@ -61,6 +64,7 @@ impl error::Error for AnoncredsError {
             AnoncredsError::InvalidUserRevocIndex(ref description) => None,
             AnoncredsError::AccumulatorIsFull(ref description) => None,
             AnoncredsError::ClaimRevoked(ref description) => None,
+            AnoncredsError::ClaimDefAlreadyExists(ref description) => None,
             AnoncredsError::CommonError(ref err) => Some(err)
         }
     }
@@ -76,6 +80,7 @@ impl ToErrorCode for AnoncredsError {
             AnoncredsError::InvalidUserRevocIndex(ref description) => ErrorCode::AnoncredsInvalidUserRevocIndex,
             AnoncredsError::AccumulatorIsFull(ref description) => ErrorCode::AnoncredsAccumulatorIsFull,
             AnoncredsError::ClaimRevoked(ref description) => ErrorCode::AnoncredsClaimRevoked,
+            AnoncredsError::ClaimDefAlreadyExists(ref description) => ErrorCode::AnoncredsClaimDefAlreadyExistsError,
             AnoncredsError::CommonError(ref err) => err.to_error_code()
         }
     }

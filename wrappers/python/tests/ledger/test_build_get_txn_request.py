@@ -5,15 +5,14 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_build_get_txn_request_works():
-    identifier = "identifier"
+async def test_build_get_txn_request_works(did_trustee):
     data = 1
     expected_response = {
-        "identifier": "identifier",
+        "identifier": did_trustee,
         "operation": {
             "type": "3", "data": 1
         }
     }
 
-    response = json.loads(await ledger.build_get_txn_request(identifier, data))
+    response = json.loads(await ledger.build_get_txn_request(did_trustee, data))
     assert expected_response.items() <= response.items()

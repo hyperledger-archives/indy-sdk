@@ -26,9 +26,9 @@ pub mod nym_command {
     use super::*;
 
     command!(CommandMetadata::build("nym", "Send NYM transaction to the Ledger.")
-                .add_param("did", false, "DID of new identity")
-                .add_param("verkey", true, "Verification key of new identity")
-                .add_param("role", true, "Role of identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, TGB or empty in case of blacklisting NYM")
+                .add_required_param("did", "DID of new identity")
+                .add_optional_param("verkey", "Verification key of new identity")
+                .add_optional_param("role", "Role of identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, TGB or empty in case of blacklisting NYM")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=TRUSTEE")
@@ -45,14 +45,14 @@ pub mod nym_command {
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
         let verkey = get_opt_str_param("verkey", params).map_err(error_err!())?;
-        let role = get_opt_str_param("role", params).map_err(error_err!())?;
+        let role = get_opt_empty_str_param("role", params).map_err(error_err!())?;
 
         let response = Ledger::build_nym_request(&submitter_did, target_did, verkey, None, role)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request));
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
 
         let mut response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -62,14 +62,15 @@ pub mod nym_command {
             result["role"] = get_role_title(&result["role"]);
         }
 
-        let res = handle_transaction_response(response,
-                                              "Nym request has been sent to Ledger.",
-                                              &vec![("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
-                                              None,
-                                              &vec![("dest", "Did"),
-                                                    ("verkey", "Verkey"),
-                                                    ("role", "Role")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Nym request has been sent to Ledger.",
+                                                     &[("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     None,
+                                                     &mut vec![("dest", "Did"),
+                                                               ("verkey", "Verkey"),
+                                                               ("role", "Role")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -79,7 +80,7 @@ pub mod get_nym_command {
     use super::*;
 
     command!(CommandMetadata::build("get-nym", "Get NYM from Ledger.")
-                .add_param("did", false, "DID of identity presented in Ledger")
+                .add_required_param("did","DID of identity presented in Ledger")
                 .add_example("ledger get-nym did=VsKV7grR1BUE29mG2Fm2kX")
                 .finalize()
     );
@@ -97,7 +98,7 @@ pub mod get_nym_command {
 
         let response = match res {
             Ok(response) => Ok(response),
-            Err(err) => handle_get_command_error(err),
+            Err(err) => handle_transaction_error(err, None, None, None),
         }?;
 
         let mut response = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -114,16 +115,17 @@ pub mod get_nym_command {
             };
         };
 
-        let res = handle_transaction_response(response,
-                                              "Following NYM has been received.",
-                                              &vec![("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
-                                              Some("data"),
-                                              &vec![("identifier", "Identifier"),
-                                                    ("dest", "Dest"),
-                                                    ("verkey", "Verkey"),
-                                                    ("role", "Role")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Following NYM has been received.",
+                                                     &[("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     Some("data"),
+                                                     &[("identifier", "Identifier"),
+                                                         ("dest", "Dest"),
+                                                         ("verkey", "Verkey"),
+                                                         ("role", "Role")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -133,11 +135,13 @@ pub mod attrib_command {
     use super::*;
 
     command!(CommandMetadata::build("attrib", "Send Attribute transaction to the Ledger for exists NYM.")
-                .add_param("did", false, "DID of identity presented in Ledger")
-                .add_param("hash", true, "Hash of attribute data")
-                .add_param("raw", true, "JSON representation of attribute data")
-                .add_param("enc", true, "Encrypted attribute data")
+                .add_required_param("did",  "DID of identity presented in Ledger")
+                .add_optional_param("hash", "Hash of attribute data")
+                .add_optional_param("raw", "JSON representation of attribute data")
+                .add_optional_param("enc", "Encrypted attribute data")
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX raw={"endpoint":{"ha":"127.0.0.1:5555"}}"#)
+                .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX hash=83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#)
+                .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX enc=aa3f41f619aa7e5e6b6d0d"#)
                 .finalize()
     );
 
@@ -158,7 +162,7 @@ pub mod attrib_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -171,14 +175,15 @@ pub mod attrib_command {
                 ("hash", "Hashed value")
             } else { ("enc", "Encrypted value") };
 
-        let res = handle_transaction_response(response,
-                                              "Attrib request has been sent to Ledger.",
-                                              &vec![("dest", "Dest"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
-                                              None,
-                                              &vec![attribute]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Attrib request has been sent to Ledger.",
+                                                     &[("dest", "Dest"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     None,
+                                                     &[attribute]));
 
         trace!("execute << {:?}", res);
         res
@@ -189,9 +194,13 @@ pub mod get_attrib_command {
     use super::*;
 
     command!(CommandMetadata::build("get-attrib", "Get ATTRIB from Ledger.")
-                .add_param("did", false, "DID of identity presented in Ledger")
-                .add_param("attr", false, "Name of attribute")
+                .add_required_param("did", "DID of identity presented in Ledger")
+                .add_optional_param("raw", "Name of attribute")
+                .add_optional_param("hash", "Hash of attribute data")
+                .add_optional_param("enc", "Encrypted value of attribute data")
                 .add_example("ledger get-attrib did=VsKV7grR1BUE29mG2Fm2kX attr=endpoint")
+                .add_example("ledger get-attrib did=VsKV7grR1BUE29mG2Fm2kX hash=83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3")
+                .add_example("ledger get-attrib did=VsKV7grR1BUE29mG2Fm2kX enc=aa3f41f619aa7e5e6b6d0d")
                 .finalize()
     );
 
@@ -202,37 +211,38 @@ pub mod get_attrib_command {
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
 
         let target_did = get_str_param("did", params).map_err(error_err!())?;
-        let attr = get_str_param("attr", params).map_err(error_err!())?;
+        let raw = get_opt_str_param("raw", params).map_err(error_err!())?;
+        let hash = get_opt_str_param("hash", params).map_err(error_err!())?;
+        let enc = get_opt_str_param("enc", params).map_err(error_err!())?;
 
-        let res = Ledger::build_get_attrib_request(&submitter_did, target_did, attr)
+        let res = Ledger::build_get_attrib_request(&submitter_did, target_did, raw, hash, enc)
             .and_then(|request| Ledger::submit_request(pool_handle, &request));
 
         let response = match res {
             Ok(response) => Ok(response),
-            Err(err) => handle_get_command_error(err),
+            Err(err) => handle_transaction_error(err, None, None, None),
         }?;
 
         let mut response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
         if let Some(result) = response.result.as_mut() {
-            let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or(""));
+            let data = result["data"].as_str().map(|data| serde_json::Value::String(data.to_string()));
             match data {
-                Ok(data) => {
-                    result["data"] = data;
-                }
-                Err(_) => return Err(println_err!("Attribute not found"))
+                Some(data) => { result["data"] = data; }
+                None => return Err(println_err!("Attribute not found"))
             };
         };
 
-        let res = handle_transaction_response(response,
-                                              "Following NYM has been received.",
-                                              &vec![("dest", "Did"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
-                                              None,
-                                              &vec![("data", "Data")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Following ATTRIB has been received.",
+                                                     &[("dest", "Did"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     None,
+                                                     &[("data", "Data")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -242,9 +252,9 @@ pub mod schema_command {
     use super::*;
 
     command!(CommandMetadata::build("schema", "Send Schema transaction to the Ledger.")
-                .add_param("name", false, "Schema name")
-                .add_param("version", false, "Schema version")
-                .add_param("attr_names", false, "Schema attributes split by comma")
+                .add_required_param("name", "Schema name")
+                .add_required_param("version", "Schema version")
+                .add_required_param("attr_names", "Schema attributes split by comma")
                 .add_example("ledger schema name=gvt version=1.0 attr_names=name,age")
                 .finalize()
     );
@@ -273,22 +283,23 @@ pub mod schema_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = handle_transaction_response(response,
-                                              "NodeConfig request has been sent to Ledger.",
-                                              &vec![("identifier", "Identifier"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
-                                              Some("data"),
-                                              &vec![("name", "Name"),
-                                                    ("version", "Version"),
-                                                    ("attr_names", "Attributes")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "NodeConfig request has been sent to Ledger.",
+                                                     &[("identifier", "Identifier"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     Some("data"),
+                                                     &[("name", "Name"),
+                                                         ("version", "Version"),
+                                                         ("attr_names", "Attributes")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -298,9 +309,9 @@ pub mod get_schema_command {
     use super::*;
 
     command!(CommandMetadata::build("get-schema", "Get Schema from Ledger.")
-                .add_param("did", false, "DID of identity presented in Ledger")
-                .add_param("name", false, "Schema name")
-                .add_param("version", false, "Schema version")
+                .add_required_param("did", "DID of identity presented in Ledger")
+                .add_required_param("name", "Schema name")
+                .add_required_param("version", "Schema version")
                 .add_example("ledger get-schema did=VsKV7grR1BUE29mG2Fm2kX name=gvt version=1.0")
                 .finalize()
     );
@@ -327,7 +338,7 @@ pub mod get_schema_command {
 
         let response = match res {
             Ok(response) => Ok(response),
-            Err(err) => handle_get_command_error(err),
+            Err(err) => handle_transaction_error(err, None, None, None),
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -340,16 +351,17 @@ pub mod get_schema_command {
             }
         };
 
-        let res = handle_transaction_response(response,
-                                              "Following Schema has been received.",
-                                              &vec![("identifier", "Identifier"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
-                                              Some("data"),
-                                              &vec![("name", "Name"),
-                                                    ("version", "Version"),
-                                                    ("attr_names", "Attributes")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Following Schema has been received.",
+                                                     &[("dest", "Did"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     Some("data"),
+                                                     &[("name", "Name"),
+                                                         ("version", "Version"),
+                                                         ("attr_names", "Attributes")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -359,10 +371,10 @@ pub mod claim_def_command {
     use super::*;
 
     command!(CommandMetadata::build("claim-def", "Send Claim Def transaction to the Ledger.")
-                .add_param("schema_no", false, "Sequence number of schema")
-                .add_param("signature_type", false, "Signature type (only CL supported now)")
-                .add_param("primary", false, "Primary key in json format")
-                .add_param("revocation", true, "Revocation key in json format")
+                .add_required_param("schema_no", "Sequence number of schema")
+                .add_required_param("signature_type", "Signature type (only CL supported now)")
+                .add_required_param("primary", "Primary key in json format")
+                .add_optional_param("revocation", "Revocation key in json format")
                 .add_example(r#"ledger claim-def schema_no=1 signature_type=CL primary={"n":"1","s":"2","rms":"3","r":{"age":"4","name":"5"},"rctxt":"6","z":"7"}"#)
                 .finalize()
     );
@@ -391,21 +403,22 @@ pub mod claim_def_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = handle_transaction_response(response,
-                                              "NodeConfig request has been sent to Ledger.",
-                                              &vec![("identifier", "Identifier"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
-                                              Some("data"),
-                                              &vec![("primary", "Primary Key"),
-                                                    ("revocation", "Revocation Key")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "NodeConfig request has been sent to Ledger.",
+                                                     &[("identifier", "Identifier"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     Some("data"),
+                                                     &[("primary", "Primary Key"),
+                                                         ("revocation", "Revocation Key")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -415,9 +428,9 @@ pub mod get_claim_def_command {
     use super::*;
 
     command!(CommandMetadata::build("get-claim-def", "Get Claim Definition from Ledger.")
-                .add_param("schema_no", false, "Sequence number of schema")
-                .add_param("signature_type", false, "Signature type (only CL supported now)")
-                .add_param("origin", false, "Claim definition owner DID")
+                .add_required_param("schema_no", "Sequence number of schema")
+                .add_required_param("signature_type", "Signature type (only CL supported now)")
+                .add_required_param("origin", "Claim definition owner DID")
                 .add_example("ledger get-claim-def schema_no=1 signature_type=CL origin=VsKV7grR1BUE29mG2Fm2kX")
                 .finalize()
     );
@@ -437,7 +450,7 @@ pub mod get_claim_def_command {
 
         let response = match res {
             Ok(response) => Ok(response),
-            Err(err) => handle_get_command_error(err),
+            Err(err) => handle_transaction_error(err, None, None, None),
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -450,15 +463,16 @@ pub mod get_claim_def_command {
             }
         };
 
-        let res = handle_transaction_response(response,
-                                              "Following Claim Definition has been received.",
-                                              &vec![("identifier", "Identifier"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
-                                              Some("data"),
-                                              &vec![("primary", "Primary Key"),
-                                                    ("revocation", "Revocation Key")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "Following Claim Definition has been received.",
+                                                     &[("identifier", "Identifier"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     Some("data"),
+                                                     &[("primary", "Primary Key"),
+                                                         ("revocation", "Revocation Key")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -468,14 +482,14 @@ pub mod node_command {
     use super::*;
 
     command!(CommandMetadata::build("node", "Send Node transaction to the Ledger.")
-                .add_param("target", false, "DID of new identity")
-                .add_param("alias", false, "Node alias (can't be changed in case of update)")
-                .add_param("node_ip", true, "Node Ip (mandatory for adding node and optional for update)")
-                .add_param("node_port", true, "Node port (mandatory for adding node and optional for update)")
-                .add_param("client_ip", true, "Client Ip (mandatory for adding node and optional for update)")
-                .add_param("client_port", true, "Client port (mandatory for adding node and optional for update)")
-                .add_param("blskey", true, "Node BLS key")
-                .add_param("services", true, "Node type. One of: VALIDATOR, OBSERVER or empty in case of blacklisting node")
+                .add_required_param("target", "Node identifier")
+                .add_required_param("alias", "Node alias (can't be changed in case of update)")
+                .add_optional_param("node_ip", "Node Ip. Note that it is mandatory for adding node case")
+                .add_optional_param("node_port", "Node port. Note that it is mandatory for adding node case")
+                .add_optional_param("client_ip", "Client Ip. Note that it is mandatory for adding node case")
+                .add_optional_param("client_port","Client port. Note that it is mandatory for adding node case")
+                .add_optional_param("blskey",  "Node BLS key")
+                .add_optional_param("services", "Node type. One of: VALIDATOR, OBSERVER or empty in case of blacklisting node")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR blskey=2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y alias=Node5 services=VALIDATOR")
@@ -516,26 +530,27 @@ pub mod node_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = handle_transaction_response(response,
-                                              "NodeConfig request has been sent to Ledger.",
-                                              &vec![("identifier", "Identifier"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
-                                              Some("data"),
-                                              &vec![("alias", "Alias"),
-                                                    ("node_ip", "Node Ip"),
-                                                    ("node_port", "Node Port"),
-                                                    ("client_ip", "Client Ip"),
-                                                    ("client_port", "Client Port"),
-                                                    ("services", "Services"),
-                                                    ("blskey", "Blskey")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "NodeConfig request has been sent to Ledger.",
+                                                     &[("identifier", "Identifier"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     Some("data"),
+                                                     &[("alias", "Alias"),
+                                                         ("node_ip", "Node Ip"),
+                                                         ("node_port", "Node Port"),
+                                                         ("client_ip", "Client Ip"),
+                                                         ("client_port", "Client Port"),
+                                                         ("services", "Services"),
+                                                         ("blskey", "Blskey")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -545,8 +560,8 @@ pub mod pool_config_command {
     use super::*;
 
     command!(CommandMetadata::build("pool-config", "Send write configuration to pool.")
-                .add_param("writes", false, "Accept write transactions.")
-                .add_param("force", true, "Forced configuration applying without reaching pool consensus.")
+                .add_required_param("writes", "Accept write transactions.")
+                .add_optional_param("force", "Forced configuration applying without reaching pool consensus.")
                 .add_example("ledger pool-config writes=true")
                 .add_example("ledger pool-config writes=true force=true")
                 .finalize()
@@ -567,21 +582,22 @@ pub mod pool_config_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = handle_transaction_response(response,
-                                              "NodeConfig request has been sent to Ledger.",
-                                              &vec![("identifier", "Identifier"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
-                                              None,
-                                              &vec![("writes", "Writes"),
-                                                    ("force", "Force Apply")]);
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "NodeConfig request has been sent to Ledger.",
+                                                     &[("identifier", "Identifier"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     None,
+                                                     &[("writes", "Writes"),
+                                                         ("force", "Force Apply")]));
         trace!("execute << {:?}", res);
         res
     }
@@ -591,15 +607,19 @@ pub mod pool_upgrade_command {
     use super::*;
 
     command!(CommandMetadata::build("pool-upgrade", "Send instructions to nodes to update themselves.")
-                .add_param("name", false, "Unique upgrade name.")
-                .add_param("version", false, "Target upgrade version.")
-                .add_param("action", false, "Upgrade type. Either start or cancel.")
-                .add_param("sha256", false, "Unique hex identifier.")
-                .add_param("timeout", true, "Timeout.")
-                .add_param("schedule", true, "Node upgrade schedule.")
-                .add_param("justification", true, "Comment.")
-                .add_param("reinstall", true, "Same version reinstallation.")
-                .add_param("force", true, "Forced upgrade applying without reaching pool consensus")
+                .add_required_param("name", "Human-readable name for the upgrade.")
+                .add_required_param("version","The version of indy-node package we perform upgrade to. \n                  \
+                                              Must be greater than existing one (or equal if reinstall flag is True)")
+                .add_required_param("action", "Upgrade type. Either start or cancel.")
+                .add_required_param("sha256", "Sha256 hash of the package.")
+                .add_optional_param("timeout", "Limits upgrade time on each Node.")
+                .add_optional_param("schedule", "Node upgrade schedule. Schedule should contain identifiers of all nodes. Upgrade dates should be in future. \n                              \
+                                              If force flag is False, then it's required that time difference between each Upgrade must be not less than 5 minutes.\n                              \
+                                              Requirements for schedule can be ignored by parameter force=true.\n                              \
+                                              Schedule is mandatory for action=start.")
+                .add_optional_param("justification", "Justification string for this particular Upgrade.")
+                .add_optional_param("reinstall", "Whether it's allowed to re-install the same version. False by default.")
+                .add_optional_param("force", "Whether we should apply transaction without waiting for consensus of this transaction. False by default.")
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=start sha256=f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398 schedule={"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"2020-01-25T12:49:05.258870+00:00"}"#)
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=cancel sha256=ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398"#)
                 .finalize()
@@ -628,28 +648,49 @@ pub mod pool_upgrade_command {
 
         let response = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter_did, &pool_name, &wallet_name)
+            Err(err) => handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name))
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let res = handle_transaction_response(response,
-                                              "NodeConfig request has been sent to Ledger.",
-                                              &vec![("identifier", "Identifier"),
-                                                    ("seqNo", "Sequence Number"),
-                                                    ("reqId", "Request ID"),
-                                                    ("txnTime", "Transaction time")],
-                                              None,
-                                              &vec![("name", "Name"),
-                                                    ("action", "Action"),
-                                                    ("version", "Version"),
-                                                    ("sha256", "Hash"),
-                                                    ("schedule", "Schedule"),
-                                                    ("timeout", "Timeout"),
-                                                    ("justification", "Justification"),
-                                                    ("reinstall", "Reinstall"),
-                                                    ("force", "Force Apply")]);
+        let mut schedule = None;
+        let mut hash = None;
+        if let Some(res) = response.result.as_ref() {
+            schedule = res["schedule"].as_object()
+                .map(|s| format!("{{{}\n}}",
+                                 s.iter()
+                                     .map(|(key, value)| format!("\n    {:?}:{:?}", key, value.as_str().unwrap_or("")))
+                                     .collect::<Vec<String>>()
+                                     .join(",")));
+
+            hash = res["sha256"].as_str().map(|h| h.to_string());
+        };
+
+        let res = handle_transaction_response(response)
+            .map(|result| print_transaction_response(result,
+                                                     "NodeConfig request has been sent to Ledger.",
+                                                     &[("identifier", "Identifier"),
+                                                         ("seqNo", "Sequence Number"),
+                                                         ("reqId", "Request ID"),
+                                                         ("txnTime", "Transaction time")],
+                                                     None,
+                                                     &[("name", "Name"),
+                                                         ("action", "Action"),
+                                                         ("version", "Version"),
+                                                         ("timeout", "Timeout"),
+                                                         ("justification", "Justification"),
+                                                         ("reinstall", "Reinstall"),
+                                                         ("force", "Force Apply")]));
+        if let Some(h) = hash {
+            println_succ!("Hash:");
+            println!("{}", h);
+        }
+        if let Some(s) = schedule {
+            println_succ!("Schedule:");
+            println!("{}", s);
+        }
+
         trace!("execute << {:?}", res);
         res
     }
@@ -660,7 +701,7 @@ pub mod custom_command {
 
     command!(CommandMetadata::build("custom", "Send custom transaction to the Ledger.")
                 .add_main_param("txn", "Transaction json")
-                .add_param("sign", true, "Is signature required")
+                .add_optional_param("sign", "Is signature required")
                 .add_example(r#"ledger custom {"reqId":1,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"105","dest":"V4SGRU86Z58d6TV7PBUe6f"},"protocolVersion":1}"#)
                 .add_example(r#"ledger custom {"reqId":2,"identifier":"V4SGRU86Z58d6TV7PBUe6f","operation":{"type":"1","dest":"VsKV7grR1BUE29mG2Fm2kX"},"protocolVersion":1} sign=true"#)
                 .finalize()
@@ -690,7 +731,7 @@ pub mod custom_command {
 
         let response_json = match response {
             Ok(response) => Ok(response),
-            Err(err) => handle_send_command_error(err, &submitter, &pool_name, &wallet)
+            Err(err) => handle_transaction_error(err, Some(&submitter), Some(&pool_name), Some(&wallet))
         }?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
@@ -701,7 +742,7 @@ pub mod custom_command {
                 Ok(println!("Response: \n{}", response_json)),
             Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
             Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-                Err(println_err!("Transaction has been rejected: {:?}", extract_error_message(&reason))),
+                Err(println_err!("Transaction has been rejected: {}", extract_error_message(&reason))),
             _ => Err(println_err!("Invalid data has been received"))
         };
 
@@ -710,50 +751,48 @@ pub mod custom_command {
     }
 }
 
-fn handle_transaction_response(mut response: Response<serde_json::Value>, title: &str,
-                               metadata_headers: &[(&str, &str)],
-                               data_field: Option<&str>,
-                               data_headers: &[(&str, &str)]) -> Result<(), ()> {
-    if let Some(result) = response.result.as_mut() {
-        if let Some(txn_time) = result["txnTime"].as_i64() {
-            result["txnTime"] = serde_json::Value::String(timestamp_to_datetime(txn_time))
-        }
+fn print_transaction_response(mut result: serde_json::Value, title: &str,
+                              metadata_headers: &[(&str, &str)],
+                              data_field: Option<&str>,
+                              data_headers: &[(&str, &str)]) {
+    if let Some(txn_time) = result["txnTime"].as_i64() {
+        result["txnTime"] = serde_json::Value::String(timestamp_to_datetime(txn_time))
     }
 
+    println_succ!("{}", title);
+    println_succ!("Metadata:");
+    print_table(&result, metadata_headers);
+    println_succ!("Data:");
+
+    let data = if data_field.is_some() { &result[data_field.unwrap()] } else { &result };
+    let mut data_headers = data_headers.to_vec();
+    data_headers.retain(|&(ref key, _)| !data[key].is_null());
+
+    print_table(data, &data_headers);
+}
+
+pub fn handle_transaction_response(response: Response<serde_json::Value>) -> Result<serde_json::Value, ()> {
     match response {
-        Response { op: ResponseType::REPLY, result: Some(result), reason: None } => {
-            println_succ!("{}", title);
-            println_succ!("Metadata:");
-            print_table(&result, metadata_headers);
-            println_succ!("Data:");
-            print_table(if data_field.is_some() { &result[data_field.unwrap()] } else { &result }, data_headers);
-            Ok(())
-        }
+        Response { op: ResponseType::REPLY, result: Some(result), reason: None } => Ok(result),
         Response { op: ResponseType::REQNACK, result: None, reason: Some(reason) } |
         Response { op: ResponseType::REJECT, result: None, reason: Some(reason) } =>
-            Err(println_err!("Transaction has been rejected: {:?}", extract_error_message(&reason))),
+            Err(println_err!("Transaction has been rejected: {}", extract_error_message(&reason))),
         _ => Err(println_err!("Invalid data has been received"))
     }
 }
 
-pub fn handle_send_command_error(err: ErrorCode, submitter_did: &str, pool_name: &str, wallet_name: &str) -> Result<String, ()> {
+pub fn handle_transaction_error(err: ErrorCode, submitter_did: Option<&str>, pool_name: Option<&str>, wallet_name: Option<&str>) -> Result<String, ()> {
     match err {
-        ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
-        ErrorCode::WalletNotFoundError => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did)),
-        ErrorCode::WalletIncompatiblePoolError => Err(println_err!("Wallet \"{}\" is incompatible with pool \"{}\".", wallet_name, pool_name)),
+        ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
+        ErrorCode::WalletNotFoundError => Err(println_err!("Submitter DID: \"{}\" not found", submitter_did.unwrap_or(""))),
+        ErrorCode::WalletIncompatiblePoolError => Err(println_err!("Wallet \"{}\" is incompatible with pool \"{}\".", wallet_name.unwrap_or(""), pool_name.unwrap_or(""))),
+        ErrorCode::PoolLedgerTimeout => Err(println_err!("Transaction response has not been received")),
         err => Err(println_err!("Indy SDK error occurred {:?}", err))
     }
 }
 
-fn handle_get_command_error(err: ErrorCode) -> Result<String, ()> {
-    match err {
-        ErrorCode::CommonInvalidStructure => Err(println_err!("Wrong command params")),
-        err => Err(println_err!("Indy SDK error occurred {:?}", err)),
-    }
-}
-
 fn extract_error_message(error: &str) -> String {
-    let re = Regex::new(r"'(.*)'").unwrap();
+    let re = Regex::new(r#"\(["'](.*)["'],\)"#).unwrap();
     match re.captures(error) {
         Some(message) => message[1].to_string(),
         None => error.to_string()
@@ -830,6 +869,11 @@ pub mod tests {
     use commands::pool::tests::{create_and_connect_pool, disconnect_and_delete_pool};
     use commands::did::tests::{new_did, use_did, SEED_TRUSTEE, DID_TRUSTEE, SEED_MY1, DID_MY1, VERKEY_MY1, SEED_MY3, DID_MY3, VERKEY_MY3};
     use libindy::ledger::Ledger;
+    use libindy::did::Did;
+
+    pub const ATTRIB_RAW_DATA: &'static str = r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#;
+    pub const ATTRIB_HASH_DATA: &'static str = r#"83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#;
+    pub const ATTRIB_ENC_DATA: &'static str = r#"aa3f41f619aa7e5e6b6d0d"#;
 
     mod nym {
         use super::*;
@@ -991,6 +1035,7 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
             send_nym_my1(&ctx);
+            _ensure_nym_added(&ctx, DID_MY1);
             {
                 let cmd = get_nym_command::new();
                 let mut params = CommandParams::new();
@@ -1048,7 +1093,7 @@ pub mod tests {
         use super::*;
 
         #[test]
-        pub fn attrib_works() {
+        pub fn attrib_works_for_raw_value() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -1063,10 +1108,60 @@ pub mod tests {
                 let cmd = attrib_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY1.to_string());
-                params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
+                params.insert("raw", ATTRIB_RAW_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_attrib_added(&ctx, DID_MY1);
+            _ensure_attrib_added(&ctx, DID_MY1, Some(ATTRIB_RAW_DATA), None, None);
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn attrib_works_for_hash_value() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym_my1(&ctx);
+            use_did(&ctx, DID_MY1);
+
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("hash", ATTRIB_HASH_DATA.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            _ensure_attrib_added(&ctx, DID_MY1, None, Some(ATTRIB_HASH_DATA), None);
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn attrib_works_for_enc_value() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym_my1(&ctx);
+            use_did(&ctx, DID_MY1);
+
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("enc", ATTRIB_ENC_DATA.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            _ensure_attrib_added(&ctx, DID_MY1, None, None, Some(ATTRIB_ENC_DATA));
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1103,7 +1198,7 @@ pub mod tests {
                 let cmd = attrib_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY1.to_string());
-                params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
+                params.insert("raw", ATTRIB_RAW_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
@@ -1123,7 +1218,7 @@ pub mod tests {
                 let cmd = attrib_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY3.to_string());
-                params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
+                params.insert("raw", ATTRIB_RAW_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
@@ -1158,7 +1253,7 @@ pub mod tests {
         use super::*;
 
         #[test]
-        pub fn get_attrib_worksa() {
+        pub fn get_attrib_works_for_raw_value() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -1173,14 +1268,77 @@ pub mod tests {
                 let cmd = attrib_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY1.to_string());
-                params.insert("raw", r#"{"endpoint":{"ha":"127.0.0.1:5555"}}"#.to_string());
+                params.insert("raw", ATTRIB_RAW_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            _ensure_attrib_added(&ctx, DID_MY1, Some(ATTRIB_RAW_DATA), None, None);
             {
                 let cmd = get_attrib_command::new();
                 let mut params = CommandParams::new();
                 params.insert("did", DID_MY1.to_string());
-                params.insert("attr", "endpoint".to_string());
+                params.insert("raw", "endpoint".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn get_attrib_works_for_hash_value() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym_my1(&ctx);
+            use_did(&ctx, DID_MY1);
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("hash", ATTRIB_HASH_DATA.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            _ensure_attrib_added(&ctx, DID_MY1, None, Some(ATTRIB_HASH_DATA), None);
+            {
+                let cmd = get_attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("hash", ATTRIB_HASH_DATA.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+        }
+
+        #[test]
+        pub fn get_attrib_works_for_enc_value() {
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym_my1(&ctx);
+            use_did(&ctx, DID_MY1);
+            {
+                let cmd = attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("enc", ATTRIB_ENC_DATA.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            _ensure_attrib_added(&ctx, DID_MY1, None, None, Some(ATTRIB_ENC_DATA));
+            {
+                let cmd = get_attrib_command::new();
+                let mut params = CommandParams::new();
+                params.insert("did", DID_MY1.to_string());
+                params.insert("enc", ATTRIB_ENC_DATA.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);
@@ -1215,8 +1373,7 @@ pub mod tests {
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
 
-            new_did(&ctx, SEED_TRUSTEE);
-            use_did(&ctx, DID_TRUSTEE);
+            let did = crate_send_and_use_new_nym(&ctx);
             {
                 let cmd = schema_command::new();
                 let mut params = CommandParams::new();
@@ -1225,7 +1382,7 @@ pub mod tests {
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_schema_added(&ctx, DID_TRUSTEE);
+            _ensure_schema_added(&ctx, &did);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1293,7 +1450,7 @@ pub mod tests {
         use super::*;
 
         #[test]
-        pub fn schema_works() {
+        pub fn get_schema_works() {
             let ctx = CommandContext::new();
 
             create_and_open_wallet(&ctx);
@@ -1309,6 +1466,8 @@ pub mod tests {
                 params.insert("attr_names", "name,age".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            //TODO avoid assumption aboout previous one test schema::schema successfully passed
+            _ensure_schema_added(&ctx, DID_TRUSTEE);
             {
                 let cmd = get_schema_command::new();
                 let mut params = CommandParams::new();
@@ -1392,8 +1551,7 @@ pub mod tests {
             create_and_open_wallet(&ctx);
             create_and_connect_pool(&ctx);
 
-            new_did(&ctx, SEED_TRUSTEE);
-            use_did(&ctx, DID_TRUSTEE);
+            let did = crate_send_and_use_new_nym(&ctx);
             {
                 let cmd = claim_def_command::new();
                 let mut params = CommandParams::new();
@@ -1402,7 +1560,7 @@ pub mod tests {
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
-            _ensure_claim_def_added(&ctx, DID_TRUSTEE);
+            _ensure_claim_def_added(&ctx, &did);
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
         }
@@ -1486,6 +1644,7 @@ pub mod tests {
                 params.insert("primary", r#"{"n":"1","s":"1","rms":"1","r":{"age":"1","name":"1"},"rctxt":"1","z":"1"}"#.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
+            _ensure_claim_def_added(&ctx, DID_TRUSTEE);
             {
                 let cmd = get_claim_def_command::new();
                 let mut params = CommandParams::new();
@@ -1825,6 +1984,16 @@ pub mod tests {
         });
     }
 
+    pub fn crate_send_and_use_new_nym(ctx: &CommandContext) -> String {
+        let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
+        new_did(&ctx, SEED_TRUSTEE);
+        use_did(&ctx, DID_TRUSTEE);
+        let (did, verkey) = Did::new(wallet_handle, "{}").unwrap();
+        send_nym(ctx, &did, &verkey, None);
+        use_did(&ctx, &did);
+        did
+    }
+
     pub fn send_nym(ctx: &CommandContext, did: &str, verkey: &str, role: Option<&str>) {
         let cmd = nym_command::new();
         let mut params = CommandParams::new();
@@ -1838,32 +2007,55 @@ pub mod tests {
 
     fn _ensure_nym_added(ctx: &CommandContext, did: &str) {
         let request = Ledger::build_get_nym_request(DID_TRUSTEE, did).unwrap();
-        let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
-        let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Response<ReplyResult<String>>>(&response)
-            .and_then(|response| serde_json::from_str::<NymData>(&response.result.unwrap().data)).unwrap();
+        _submit_retry(ctx, &request, |response| {
+            serde_json::from_str::<Response<ReplyResult<String>>>(&response)
+                .and_then(|response| serde_json::from_str::<NymData>(&response.result.unwrap().data))
+        }).unwrap();
     }
 
-    fn _ensure_attrib_added(ctx: &CommandContext, did: &str) {
-        let request = Ledger::build_get_attrib_request(DID_MY1, did, "endpoint").unwrap();
-        let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
-        let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Response<ReplyResult<String>>>(&response)
-            .and_then(|response| serde_json::from_str::<AttribData>(&response.result.unwrap().data)).unwrap();
+    fn _ensure_attrib_added(ctx: &CommandContext, did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) {
+        let attr = if raw.is_some() { Some("endpoint") } else { None };
+        let request = Ledger::build_get_attrib_request(DID_MY1, did, attr, hash, enc).unwrap();
+        _submit_retry(ctx, &request, |response| {
+            serde_json::from_str::<Response<ReplyResult<String>>>(&response)
+                .map_err(|_| ())
+                .and_then(|response| {
+                    let expected_value = if raw.is_some() { raw.unwrap() } else if hash.is_some() { hash.unwrap() } else { enc.unwrap() };
+                    if response.result.is_some() && expected_value == response.result.unwrap().data { Ok(()) } else { Err(()) }
+                })
+        }).unwrap();
     }
 
     fn _ensure_schema_added(ctx: &CommandContext, did: &str) {
         let data = r#"{"name":"gvt", "version":"1.0"}"#;
         let request = Ledger::build_get_schema_request(DID_TRUSTEE, did, data).unwrap();
-        let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
-        let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Response<ReplyResult<SchemaData>>>(&response).unwrap();
+        _submit_retry(ctx, &request, |response| {
+            serde_json::from_str::<Response<ReplyResult<SchemaData>>>(&response)
+        }).unwrap();
     }
 
     fn _ensure_claim_def_added(ctx: &CommandContext, did: &str) {
         let request = Ledger::build_get_claim_def_txn(DID_TRUSTEE, 1, "CL", did).unwrap();
-        let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
-        let response = Ledger::submit_request(pool_handle, &request).unwrap();
-        serde_json::from_str::<Response<ReplyResult<ClaimDefData>>>(&response).unwrap();
+        _submit_retry(ctx, &request, |response| {
+            serde_json::from_str::<Response<ReplyResult<ClaimDefData>>>(response)
+        }).unwrap();
+    }
+
+    fn _submit_retry<F, T, E>(ctx: &CommandContext, request: &str, parser: F) -> Result<(), ()>
+        where F: Fn(&str) -> Result<T, E> {
+        const SUBMIT_RETRY_CNT: usize = 3;
+        const SUBMIT_TIMEOUT_SEC: u64 = 2;
+
+        let pool_handle = ensure_connected_pool_handle(ctx).unwrap();
+
+        for _ in 0..SUBMIT_RETRY_CNT {
+            let response = Ledger::submit_request(pool_handle, request).unwrap();
+            if parser(&response).is_ok() {
+                return Ok(());
+            }
+            ::std::thread::sleep(::std::time::Duration::from_secs(SUBMIT_TIMEOUT_SEC));
+        }
+
+        return Err(());
     }
 }

@@ -17,9 +17,15 @@ mod utils;
 use indy::api::ErrorCode;
 
 use utils::environment::EnvironmentUtils;
+use utils::callback::CallbackUtils;
+use utils::constants::*;
+use utils::ledger::LedgerUtils;
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
-use utils::constants::*;
+use utils::timeout::TimeoutUtils;
+
+use std::ffi::CString;
+use std::sync::mpsc::channel;
 
 mod high_cases {
     use super::*;
@@ -224,6 +230,35 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_close_pool_ledger_works_for_pending_request() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+
+            let get_nym_req = LedgerUtils::build_get_nym_request(DID_MY1, DID_MY1).unwrap();
+
+            let get_nym_req = CString::new(get_nym_req).unwrap();
+            let (submit_sender, submit_receiver) = channel();
+            let (submit_cmd_handle, submit_cb) = CallbackUtils::closure_to_send_tx_cb(Box::new(
+                move |err, resp| { submit_sender.send((err, resp)).unwrap(); }));
+            assert_eq!(api::ledger::indy_submit_request(submit_cmd_handle, pool_handle,
+                                                        get_nym_req.as_ptr(), submit_cb),
+                       ErrorCode::Success);
+
+            PoolUtils::close(pool_handle).unwrap();
+
+            let (err, _) = submit_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+            assert_eq!(err, ErrorCode::PoolLedgerTerminated);
+
+            /* Now any request to API can failed, if PoolUtils::close works incorrect in case of pending requests.
+               For example try to delete the pool. */
+            PoolUtils::delete(POOL).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod delete {
@@ -335,7 +370,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let res = PoolUtils::open_pool_ledger(POOL, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTerminated);//TODO change it on IOError
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
             TestUtils::cleanup_storage();
         }
@@ -346,7 +381,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let res = PoolUtils::open_pool_ledger(POOL, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTerminated);//TODO change it on IOError
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
@@ -357,7 +392,6 @@ mod medium_cases {
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
-        #[ignore] /* Broken in IS-388 workaround, blocked by IS-390 */
         fn open_pool_ledger_works_for_invalid_nodes_file() {
             TestUtils::cleanup_storage();
 
@@ -367,7 +401,7 @@ mod medium_cases {
             PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
 
             let res = PoolUtils::open_pool_ledger(pool_name, Some(pool_config.as_str()));
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTerminated);//TODO Replace on InvalidState Error
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);//TODO Replace on InvalidState Error
 
             TestUtils::cleanup_storage();
         }
@@ -383,7 +417,7 @@ mod medium_cases {
             PoolUtils::create_pool_ledger_config(pool_name, Some(pool_config.as_str())).unwrap();
 
             let res = PoolUtils::open_pool_ledger(pool_name, None);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTerminated);//TODO Replace on InvalidState Error
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);
 
             TestUtils::cleanup_storage();
         }

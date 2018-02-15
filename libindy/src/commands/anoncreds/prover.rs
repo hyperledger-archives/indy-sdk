@@ -168,7 +168,7 @@ impl ProverCommandExecutor {
         });
 
         let claim_offers_json = serde_json::to_string(&claim_offers)
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of claim offers: {:?}", err)))?;
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of claim offer: {:?}", err)))?;
 
         info!("get_claim_offers <<< claim_offers_json: {:?}", claim_offers_json);
 
@@ -224,11 +224,20 @@ impl ProverCommandExecutor {
         let (claim_request, master_secret_blinding_data) =
             self.anoncreds_service.prover.new_claim_request(&claim_def.data, &master_secret, &claim_offer, prover_did)?;
 
-        let master_secret_blinding_data_json = master_secret_blinding_data.to_json()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize master secret blinding data: {:?}", err)))?;
+        let nonce = claim_request.nonce.clone()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize nonce: {:?}", err)))?;
+
+        let claim_request_metadata = ClaimRequestMetadata {
+            master_secret_blinding_data,
+            nonce,
+            master_secret_name: master_secret_name.to_string()
+        };
+
+        let claim_request_metadata_json = claim_request_metadata.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claim request metadata {:?}", err)))?;
 
         let id = get_composite_id(&claim_offer.issuer_did, &claim_offer.schema_key);
-        self.wallet_service.set(wallet_handle, &format!("master_secret_blinding_data::{}", id), &master_secret_blinding_data_json)?;
+        self.wallet_service.set(wallet_handle, &format!("claim_request_metadata::{}", id), &claim_request_metadata_json)?;
 
         let claim_request_json = claim_request.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize claim request: {:?}", err)))?;
@@ -256,16 +265,21 @@ impl ProverCommandExecutor {
             None => None
         };
 
-        let master_secret_blinding_data_json = self.wallet_service.get(wallet_handle, &format!("master_secret_blinding_data::{}", &id))?;
-        let master_secret_blinding_data = MasterSecretBlindingData::from_json(&master_secret_blinding_data_json)
-            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize master secret blinding data: {:?}", err)))?;
+        let claim_request_metadata_json = self.wallet_service.get(wallet_handle, &format!("claim_request_metadata::{}", &id))?;
+        let claim_request_metadata = ClaimRequestMetadata::from_json(&claim_request_metadata_json)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim request metadata: {:?}", err)))?;
+
+        let master_secret_json = self.wallet_service.get(wallet_handle, &format!("master_secret::{}", &claim_request_metadata.master_secret_name))?;
+        let master_secret = MasterSecret::from_json(&master_secret_json)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize master secret: {:?}", err)))?;
 
         let claim_def_json = self.wallet_service.get(wallet_handle, &format!("claim_definition::{}", id))?;
         let claim_def: ClaimDefinition = ClaimDefinition::from_json(&claim_def_json)
             .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize claim definition: {:?}", err)))?;
 
         self.anoncreds_service.prover.process_claim(&mut claim,
-                                                    &master_secret_blinding_data,
+                                                    &claim_request_metadata,
+                                                    &master_secret,
                                                     &claim_def.data,
                                                     rev_reg_pub.as_ref())?;
 
