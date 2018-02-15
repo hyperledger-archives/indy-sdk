@@ -541,7 +541,7 @@ impl RemoteNode {
     }
 
     fn send_str(&self, str: &str) -> Result<(), PoolError> {
-        info!("Sending {:?}", str);
+        info!("RemoteNode::send_str {} {}", self.name, str);
         self.zsock.as_ref()
             .ok_or(CommonError::InvalidState("Try to send str for unconnected RemoteNode".to_string()))?
             .send(str, 0)
