@@ -161,14 +161,10 @@ impl CatchupHandler {
                 CommonError::InvalidState(
                     "CatchUp already started for the pool".to_string())));
         }
-        if self.merkle_tree.count() != self.nodes.len() {
-            return Err(PoolError::CommonError(
-                CommonError::InvalidState(
-                    "Merkle tree doesn't equal nodes count".to_string())));
-        }
 
-        let node_cnt = self.nodes.iter().filter(|node| !node.is_blacklisted).count();
-        let cnt_to_catchup = self.target_mt_size - self.merkle_tree.count();
+        let active_node_cnt = self.nodes.iter().filter(|node| !node.is_blacklisted).count();
+        let txns_cnt_in_cur_mt = self.merkle_tree.count();
+        let cnt_to_catchup = self.target_mt_size - txns_cnt_in_cur_mt;
         if cnt_to_catchup <= 0 {
             return Err(PoolError::CommonError(CommonError::InvalidState(
                 "Nothing to CatchUp, but started".to_string())));
@@ -181,11 +177,11 @@ impl CatchupHandler {
         });
         self.timeout = time::now_utc().add(Duration::seconds(CATCHUP_ROUND_TIMEOUT));
 
-        let portion = (cnt_to_catchup + node_cnt - 1) / node_cnt; //TODO check standard round up div
+        let portion = (cnt_to_catchup + active_node_cnt - 1) / active_node_cnt; //TODO check standard round up div
         let mut catchup_req = CatchupReq {
             ledgerId: 0,
-            seqNoStart: node_cnt + 1,
-            seqNoEnd: node_cnt + 1 + portion - 1,
+            seqNoStart: txns_cnt_in_cur_mt + 1,
+            seqNoEnd: txns_cnt_in_cur_mt + 1 + portion - 1,
             catchupTill: self.target_mt_size,
         };
         for node in &self.nodes {
