@@ -510,6 +510,66 @@ async def get_did_metadata(wallet_handle: int,
     return res
 
 
+async def get_my_did_with_meta(wallet_handle: int, did: str) -> str:
+    """
+    Get DID metadata and verkey stored in the wallet.
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param did: The DID to retrieve metadata.
+    :return: DID with verkey and metadata.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("get_my_did_with_meta: >>> wallet_handle: %r, did: %r",
+                 wallet_handle,
+                 did)
+
+    if not hasattr(get_my_did_with_meta, "cb"):
+        logger.debug("get_my_did_with_meta: Creating callback")
+        get_my_did_with_meta.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_did = c_char_p(did.encode('utf-8'))
+
+    did_with_meta = await do_call('indy_get_my_did_with_meta',
+                                  c_wallet_handle,
+                                  c_did,
+                                  get_my_did_with_meta.cb)
+
+    res = did_with_meta.decode()
+
+    logger.debug("get_my_did_with_meta: <<< res: %r", res)
+    return res
+
+
+async def list_my_dids_with_meta(wallet_handle: int) -> str:
+    """
+    List DIDs and metadata stored in the wallet.
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :return: List of DIDs with verkeys and meta data.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("list_my_dids_with_meta: >>> wallet_handle: %r",
+                 wallet_handle)
+
+    if not hasattr(list_my_dids_with_meta, "cb"):
+        logger.debug("list_my_dids_with_meta: Creating callback")
+        list_my_dids_with_meta.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+
+    dids_with_meta = await do_call('indy_list_my_dids_with_meta',
+                                    c_wallet_handle,
+                                    list_my_dids_with_meta.cb)
+
+    res = dids_with_meta.decode()
+
+    logger.debug("list_my_dids_with_meta: <<< res: %r", res)
+    return res
+
+
 async def abbreviate_verkey(did: str,
                           full_verkey: str) -> str:
     """
