@@ -259,7 +259,7 @@ impl GeneralMessage for SendInvite{
 
         let msg = bundle.encode()?;
 
-        bundle_for_agent(msg, &self.agent_did, &self.agent_vk)
+        bundle_for_agent(msg, &self.to_vk, &self.agent_did, &self.agent_vk)
     }
 }
 

@@ -98,7 +98,9 @@ impl IssuerClaim {
 
         let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &payload, "CLAIM_OFFER")?;
 
-        match messages::send_message().to(&self.issued_did).msg_type("claimOffer")
+        match messages::send_message().to(&self.issued_did)
+            .to_vk(&self.issued_vk)
+            .msg_type("claimOffer")
             .edge_agent_payload(&data)
             .agent_did(&self.agent_did)
             .agent_vk(&self.agent_vk)
@@ -156,6 +158,7 @@ impl IssuerClaim {
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_CLAIM_OFFER_RESPONSE.to_vec()); }
 
         match messages::send_message().to(&self.issued_did)
+            .to_vk(&self.issued_vk)
             .ref_msg_id(&self.ref_msg_id)
             .msg_type("claim")
             .status_code((&MessageAccepted.as_string()))
@@ -541,7 +544,7 @@ pub mod tests {
             claim_attributes: CLAIM_DATA.to_owned(),
             issuer_did: "QTrbV4raAcND4DWWzBmdsh".to_owned(),
             issued_did: "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
-            issued_vk: String::new(),
+            issued_vk: VERKEY.to_string(),
             state: CxsStateType::CxsStateOfferSent,
             claim_name: DEFAULT_CLAIM_NAME.to_owned(),
             claim_request: Some(claim_req.to_owned()),

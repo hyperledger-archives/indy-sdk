@@ -109,7 +109,7 @@ impl GeneralMessage for GetMessages{
 
         let msg = Bundled::create(data).encode()?;
 
-        bundle_for_agent(msg, &self.agent_did, &self.agent_vk)
+        bundle_for_agent(msg, &self.to_vk, &self.agent_did, &self.agent_vk)
     }
 }
 

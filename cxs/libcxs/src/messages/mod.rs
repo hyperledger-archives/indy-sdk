@@ -197,16 +197,15 @@ pub fn bundle_for_agency(message: Vec<u8>, did: &str) -> Result<Vec<u8>, u32> {
     crypto::prep_anonymous_msg(&agency_vk, &msg[..])
 }
 
-pub fn bundle_for_agent(message: Vec<u8>, did: &str, vk: &str) -> Result<Vec<u8>, u32> {
+pub fn bundle_for_agent(message: Vec<u8>, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<Vec<u8>, u32> {
     debug!("pre encryption msg: {:?}", message);
-    let my_vk = settings::get_config_value(settings::CONFIG_ENTERPRISE_VERKEY).unwrap();
-    let msg = crypto::prep_msg(wallet::get_wallet_handle(), &my_vk, vk, &message[..])?;
+    let msg = crypto::prep_msg(wallet::get_wallet_handle(), &pw_vk, agent_vk, &message[..])?;
 
     /* forward to did */
-    info!("forwarding agent bundle to {}", did);
+    info!("forwarding agent bundle to {}", agent_did);
     let inner = Forward {
         msg_type: MsgType { name: "FWD".to_string(), ver: "1.0".to_string(), },
-        fwd: did.to_string(),
+        fwd: agent_did.to_string(),
         msg,
     };
 
