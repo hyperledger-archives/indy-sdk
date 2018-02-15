@@ -27,7 +27,7 @@
                                    signatureType:(NSString *)signatureType
                                   createNonRevoc:(BOOL)createNonRevoc
                                     walletHandle:(IndyHandle)walletHandle
-                                      completion:(void (^)(NSError *error, NSString *claimDefJSON)) completion;
+                                      completion:(void (^)(NSError *error, NSString *claimDefJSON))completion;
 
 /**
  Creates a new revocation registry for the given claim definition.
@@ -40,10 +40,33 @@
  @param completion Callback that takes command result as parameter. Returns revoc registry json and unique number identifying the revocation registry in the wallet.
  */
 + (void)issuerCreateAndStoreRevocRegForIssuerDid:(NSString *)issuerDID
-                                     schemaJSON:(NSString *)schemaJSON
+                                      schemaJSON:(NSString *)schemaJSON
                                      maxClaimNum:(NSNumber *)maxClaimNum
                                     walletHandle:(IndyHandle)walletHandle
-                                      completion:(void (^)(NSError *error, NSString *revocRegJSON)) completion;
+                                      completion:(void (^)(NSError *error, NSString *revocRegJSON))completion;
+
+/**
+ Create claim offer and store it in wallet.
+
+ @param issuerDID DID of the issuer signing claim_def transaction to the Ledger
+ @param issuerDID DID of the targer user
+ @param schemaJSON Schema as a json
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter.
+ Returns claim offer json
+     claim offer json:
+       {
+            "issuer_did": string,
+            "schema_key" : {name: string, version: string, did: string},
+            "nonce": string,
+            "key_correctness_proof" : <key_correctness_proof>
+       }
+*/
++ (void)issuerCreateClaimOfferForProverDID:(NSString *)proverDID
+                                 issuerDID:(NSString *)issuerDID
+                                schemaJSON:(NSString *)schemaJSON
+                              walletHandle:(IndyHandle)walletHandle
+                                completion:(void (^)(NSError *error, NSString *claimOfferJSON))completion;
 
 /**
  Signs a given claim for the given user by a given key (claim ef).
@@ -94,7 +117,7 @@
                            claimJSON:(NSString *)claimJSON
                       userRevocIndex:(NSNumber *)userRevocIndex
                         walletHandle:(IndyHandle)walletHandle
-                          completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON, NSString *xclaimJSON)) completion;
+                          completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON, NSString *xclaimJSON))completion;
 
 /**
  Revokes a user identified by a revoc_id in a given revoc-registry.
@@ -111,7 +134,7 @@
                            schemaJSON:(NSString *)schemaJSON
                        userRevocIndex:(NSNumber *)userRevocIndex
                          walletHandle:(IndyHandle)walletHandle
-                           completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON)) completion;
+                           completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON))completion;
 
 /**
  Stores a claim offer from the given issuer in a secure storage.
@@ -129,7 +152,7 @@
  */
 + (void)proverStoreClaimOffer:(NSString *)claimOfferJSON
              WithWalletHandle:(IndyHandle)walletHandle
-                   completion:(void (^)(NSError *error)) completion;
+                   completion:(void (^)(NSError *error))completion;
 
 /**
  Gets all stored claim offers (see IndyAnoncreds::proverStoreClaimOfferWithWalletHandle).
@@ -158,7 +181,7 @@
  */
 + (void)proverGetClaimOffersWithFilter:(NSString *)filterJSON
                           walletHandle:(IndyHandle)walletHandle
-                            completion:(void (^)(NSError *error, NSString *claimOffersJSON)) completion;
+                            completion:(void (^)(NSError *error, NSString *claimOffersJSON))completion;
 
 
 /**
@@ -172,7 +195,7 @@
  */
 + (void)proverCreateMasterSecretNamed:(NSString *)masterSecretName
                          walletHandle:(IndyHandle)walletHandle
-                           completion:(void (^)(NSError *error)) completion;
+                           completion:(void (^)(NSError *error))completion;
 
 /**
  
@@ -217,7 +240,7 @@
                                   claimOfferJSON:(NSString *)claimOfferJSON
                                 masterSecretName:(NSString *)masterSecretName
                                     walletHandle:(IndyHandle)walletHandle
-                                      completion:(void (^)(NSError *error, NSString *claimReqJSON)) completion;
+                                      completion:(void (^)(NSError *error, NSString *claimReqJSON))completion;
 
 /**
  Updates the claim by a master secret and stores in a secure wallet.  
@@ -245,9 +268,9 @@
  @param completion Callback that takes command result as parameter.
  */
 + (void)proverStoreClaim:(NSString *)claimsJson
-        revRegJSON:(NSString *)revRegJSON
-        walletHandle:(IndyHandle)walletHandle
-        completion:(void (^)(NSError *error)) completion;
+              revRegJSON:(NSString *)revRegJSON
+            walletHandle:(IndyHandle)walletHandle
+              completion:(void (^)(NSError *error))completion;
 
 /**
  Gets human readable claims according to the filter.  
@@ -282,7 +305,7 @@
  */
 + (void)proverGetClaimsWithFilter:(NSString *)filterJSON
                      walletHandle:(IndyHandle)walletHandle
-                       completion:(void (^)(NSError *error, NSString *claimsJSON)) completion;
+                       completion:(void (^)(NSError *error, NSString *claimsJSON))completion;
 
 /**
  Gets human readable claims matching the given proof request.
@@ -327,7 +350,7 @@
  */
 + (void)proverGetClaimsForProofReq:(NSString *)proofReqJSON
                       walletHandle:(IndyHandle)walletHandle
-                        completion:(void (^)(NSError *error, NSString *claimsJSON)) completion;
+                        completion:(void (^)(NSError *error, NSString *claimsJSON))completion;
 
 /**
  Creates a proof according to the given proof request.  
@@ -436,7 +459,7 @@
                       claimDefsJSON:(NSString *)claimDefsJSON
                       revocRegsJSON:(NSString *)revocRegsJSON
                        walletHandle:(IndyHandle)walletHandle
-                         completion:(void (^)(NSError *error, NSString *proofJSON)) completion;
+                         completion:(void (^)(NSError *error, NSString *proofJSON))completion;
 
 /**
  Verifies a proof (of multiple claim).
@@ -523,5 +546,5 @@
                        schemasJSON:(NSString *)schemasJSON
                      claimDefsJSON:(NSString *)claimDefsJSON
                      revocRegsJSON:(NSString *)revocRegsJSON
-                        completion:(void (^)(NSError *error, BOOL valid)) completion;
+                        completion:(void (^)(NSError *error, BOOL valid))completion;
 @end

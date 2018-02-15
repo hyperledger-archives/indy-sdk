@@ -50,6 +50,7 @@ pub mod create_command {
         let res = match res {
             Ok(()) => Ok(println_succ!("Wallet \"{}\" has been created", name)),
             Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", name)),
+            Err(ErrorCode::CommonIOError) => Err(println_err!("Invalid wallet name  \"{}\"", name)),
             Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -158,14 +159,11 @@ pub mod list_command {
                 let wallets: Vec<serde_json::Value> = serde_json::from_str(&wallets)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                if wallets.len() > 0 {
-                    print_list_table(&wallets,
-                                     &vec![("name", "Name"),
-                                           ("associated_pool_name", "Associated pool name"),
-                                           ("type", "Type")]);
-                } else {
-                    println_succ!("There are no wallets");
-                }
+                print_list_table(&wallets,
+                                 &vec![("name", "Name"),
+                                       ("associated_pool_name", "Associated pool name"),
+                                       ("type", "Type")],
+                                 "There are no wallets");
 
                 if let Some((_, cur_wallet)) = get_opened_wallet(ctx) {
                     println_succ!("Current wallet \"{}\"", cur_wallet);

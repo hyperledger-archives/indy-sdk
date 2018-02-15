@@ -1,45 +1,45 @@
 import org.hyperledger.indy.sdk.pool.Pool;
-import org.hyperledger.indy.sdk.signus.SignusResults.CreateAndStoreMyDidResult;
+import org.hyperledger.indy.sdk.did.DidResults.CreateAndStoreMyDidResult;
+import org.hyperledger.indy.sdk.crypto.CryptoResults.AuthDecryptResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
+import org.junit.Assert;
 import utils.PoolUtils;
 
-import static org.hyperledger.indy.sdk.signus.Signus.*;
-import static org.junit.Assert.assertTrue;
+import java.util.Arrays;
+
+import static org.hyperledger.indy.sdk.did.Did.*;
+import static org.hyperledger.indy.sdk.crypto.Crypto.*;
 
 
-class Signus {
+class Crypto {
 
 	static void demo() throws Exception {
-		System.out.println("Ledger sample -> started");
+		System.out.println("Crypto sample -> started");
 
 		String myWalletName = "myWallet";
 		String theirWalletName = "theirWallet";
 
-		//1. Create and Open Pool
+		// 1. Create and Open Pool
 		String poolName = PoolUtils.createPoolLedgerConfig();
 		Pool pool = Pool.openPoolLedger(poolName, "{}").get();
 
-		//2. Create and Open My Wallet
+		// 2. Create and Open My Wallet
 		Wallet.createWallet(poolName, myWalletName, "default", null, null).get();
 		Wallet myWallet = Wallet.openWallet(myWalletName, null, null).get();
 
-		//3. Create and Open Their Wallet
+		// 3. Create and Open Their Wallet
 		Wallet.createWallet(poolName, theirWalletName, "default", null, null).get();
 		Wallet theirWallet = Wallet.openWallet(theirWalletName, null, null).get();
 
-		//4. Create My Did
-		createAndStoreMyDid(myWallet, "{}").get();
+		// 4. Create My Did
+		CreateAndStoreMyDidResult myDid = createAndStoreMyDid(myWallet, "{}").get();
+		String myVerkey = myDid.getVerkey();
 
-		//5. Create Their Did
+		// 5. Create Their Did
 		CreateAndStoreMyDidResult createTheirDidResult = createAndStoreMyDid(theirWallet, "{}").get();
-		String theirDid = createTheirDidResult.getDid();
 		String theirVerkey = createTheirDidResult.getVerkey();
 
-		// 6. Store Their DID
-		String identityJson = String.format("{\"did\":\"%s\", \"verkey\":\"%s\"}", theirDid, theirVerkey);
-		storeTheirDid(myWallet, identityJson).get();
-
-		// 7. Their sign message
+		// 6. Their auth encrypt message
 		String msg = "{\n" +
 				"        \"reqId\":1495034346617224651,\n" +
 				"        \"identifier\":\"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL\",\n" +
@@ -49,26 +49,28 @@ class Signus {
 				"        }\n" +
 				"    }";
 
-		byte[] signature = sign(theirWallet, theirDid, msg.getBytes()).get();
+		byte[] encryptedMessage = authCrypt(theirWallet, theirVerkey, myVerkey, msg.getBytes()).get();
 
-		// 8. I verify message
-		Boolean valid = verifySignature(myWallet, pool, theirDid, msg.getBytes(), signature).get();
-		assertTrue(valid);
+		// 7. I decrypt message
+		AuthDecryptResult authDecryptResult = authDecrypt(myWallet, myVerkey, encryptedMessage).get();
 
-		// 9. Close and delete My Wallet
+		Assert.assertTrue(Arrays.equals(msg.getBytes(), authDecryptResult.getDecryptedMessage()));
+		Assert.assertEquals(theirVerkey, authDecryptResult.getVerkey());
+
+		// 8. Close and delete My Wallet
 		myWallet.closeWallet().get();
 		Wallet.deleteWallet(myWalletName, null).get();
 
-		// 10. Close and delete Their Wallet
+		// 9. Close and delete Their Wallet
 		theirWallet.closeWallet().get();
 		Wallet.deleteWallet(theirWalletName, null).get();
 
-		// 11. Close Pool
+		// 10. Close Pool
 		pool.closePoolLedger().get();
 
-		// 12. Delete Pool ledger config
+		// 11. Delete Pool ledger config
 		Pool.deletePoolLedgerConfig(poolName).get();
 
-		System.out.println("Ledger sample -> completed");
+		System.out.println("Crypto sample -> completed");
 	}
 }

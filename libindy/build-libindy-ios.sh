@@ -10,7 +10,7 @@ if [[ $# -eq 1 ]]; then
   cargo lipo --targets $1
 else
   echo "... for all default targets ..."
-  cargo lipo
+  cargo lipo --release
 fi
 echo 'Build completed successfully.'
 

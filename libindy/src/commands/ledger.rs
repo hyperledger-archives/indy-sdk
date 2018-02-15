@@ -68,7 +68,9 @@ pub enum LedgerCommand {
     BuildGetAttribRequest(
         String, // submitter did
         String, // target did
-        String, // data
+        Option<String>, // raw
+        Option<String>, // hash
+        Option<String>, // enc
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetNymRequest(
         String, // submitter did
@@ -184,9 +186,12 @@ impl LedgerCommandExecutor {
                                              raw.as_ref().map(String::as_str),
                                              enc.as_ref().map(String::as_str)));
             }
-            LedgerCommand::BuildGetAttribRequest(submitter_did, target_did, data, cb) => {
+            LedgerCommand::BuildGetAttribRequest(submitter_did, target_did, raw, hash, enc, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetAttribRequest command received");
-                cb(self.build_get_attrib_request(&submitter_did, &target_did, &data));
+                cb(self.build_get_attrib_request(&submitter_did, &target_did,
+                                                 raw.as_ref().map(String::as_str),
+                                                 hash.as_ref().map(String::as_str),
+                                                 enc.as_ref().map(String::as_str)));
             }
             LedgerCommand::BuildGetNymRequest(submitter_did, target_did, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetNymRequest command received");
@@ -357,15 +362,20 @@ impl LedgerCommandExecutor {
     fn build_get_attrib_request(&self,
                                 submitter_did: &str,
                                 target_did: &str,
-                                data: &str) -> Result<String, IndyError> {
-        info!("build_get_attrib_request >>> submitter_did: {:?}, target_did: {:?}, data: {:?}", submitter_did, target_did, data);
+                                raw: Option<&str>,
+                                hash: Option<&str>,
+                                enc: Option<&str>) -> Result<String, IndyError> {
+        info!("build_get_attrib_request >>> submitter_did: {:?}, target_did: {:?}, raw: {:?}, hash: {:?}, enc: {:?}",
+              submitter_did, target_did, raw, hash, enc);
 
         self.crypto_service.validate_did(submitter_did)?;
         self.crypto_service.validate_did(target_did)?;
 
         let res = self.ledger_service.build_get_attrib_request(submitter_did,
                                                                target_did,
-                                                               data)?;
+                                                               raw,
+                                                               hash,
+                                                               enc)?;
 
         info!("build_get_attrib_request <<< res: {:?}", res);
 

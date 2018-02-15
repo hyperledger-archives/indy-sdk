@@ -6,7 +6,11 @@ use prettytable::Table;
 use prettytable::row::Row;
 use prettytable::cell::Cell;
 
-pub fn print_list_table(rows: &Vec<serde_json::Value>, headers: &[(&str, &str)]) {
+pub fn print_list_table(rows: &Vec<serde_json::Value>, headers: &[(&str, &str)], empty_msg: &str) {
+    if rows.is_empty() {
+        return println_succ!("{}", empty_msg);
+    }
+
     let mut table = Table::new();
 
     print_header(&mut table, headers);

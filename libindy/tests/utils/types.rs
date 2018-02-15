@@ -72,7 +72,6 @@ pub struct GetAttribReplyResult {
     pub   _type: String,
     pub   data: Option<String>,
     pub  dest: String,
-    pub  raw: String,
     pub  seq_no: Option<i32>
 }
 
@@ -159,47 +158,23 @@ pub struct SchemaData {
     pub attr_names: HashSet<String>
 }
 
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimOffer {
     pub issuer_did: String,
-    pub schema_key: SchemaKey
+    pub schema_key: SchemaKey,
+    pub key_correctness_proof: KeyCorrectnessProof,
+    pub nonce: Nonce
 }
 
+#[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
+pub struct ClaimOfferInfo {
+    pub issuer_did: String,
+    pub schema_key: SchemaKey,
+}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaimsForProofRequest {
     pub attrs: HashMap<String, Vec<ClaimInfo>>,
     pub predicates: HashMap<String, Vec<ClaimInfo>>
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ProofRequest {
-    pub nonce: String,
-    pub name: String,
-    pub version: String,
-    pub requested_attrs: HashMap<String, AttributeInfo>,
-    pub requested_predicates: HashMap<String, Predicate>
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
-pub struct PredicateInfo {
-    pub attr_name: String,
-    pub p_type: String,
-    pub value: i32,
-    pub restrictions: Option<Vec<Filter>>
-}
-
-
-#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
-pub struct Filter {
-    pub issuer_did: Option<String>,
-    pub schema_key: Option<SchemaKey>
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct AttributeInfo {
-    pub name: String,
-    pub restrictions: Option<Vec<Filter>>
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
@@ -210,20 +185,14 @@ pub struct ClaimInfo {
     pub revoc_reg_seq_no: Option<i32>
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ClaimRequest {
-    pub prover_did: String,
-    pub issuer_did: String,
-    pub schema_key: SchemaKey,
-    pub blinded_ms: BlindedMasterSecret
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Claim {
     pub values: HashMap<String, Vec<String>>,
     pub schema_key: SchemaKey,
     pub signature: ClaimSignature,
-    pub issuer_did: String
+    pub signature_correctness_proof: SignatureCorrectnessProof,
+    pub issuer_did: String,
+    pub rev_reg_seq_no: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

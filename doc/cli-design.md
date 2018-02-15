@@ -227,7 +227,7 @@ ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-va
 #### GET_ATTRIB transaction
 Send GET_ATTRIB transaction
 ```
-ledger get-attrib did=<did-value> attr=<attr-value>
+ledger get-attrib did=<did-value> [raw=<raw-value>] [hash=<hash-value>] [enc=<enc-value>]
 ```
 
 #### NODE transaction
@@ -295,14 +295,14 @@ pool(sandbox):wallet(alice_wallet):indy> wallet list
 
 #### Create DID in the wallet from seed and use it for the next commands
 ```
-pool(sandbox):wallet(alice_wallet):indy> did new seed=SEED000000000000000000001 metadata="Alice DID"
+pool(sandbox):wallet(alice_wallet):indy> did new seed=SEED0000000000000000000000000001 metadata="Alice DID"
 pool(sandbox):wallet(alice_wallet):indy> did use MYDID000000000000000000001
 pool(sandbox):wallet(alice_wallet):did(MYD...001):indy> did list
 ```
 
 #### Create new DID for BOB
 ```
-pool(sandbox):wallet(alice_wallet):did(MYD...001):indy> did new metadata="Bob DID" publish_to_ledger=true
+pool(sandbox):wallet(alice_wallet):did(MYD...001):indy> did new metadata="Bob DID"
 ```
 
 #### Post new NYM to the ledger

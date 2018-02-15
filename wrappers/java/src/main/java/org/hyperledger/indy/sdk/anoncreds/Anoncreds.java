@@ -61,6 +61,22 @@ public class Anoncreds extends IndyJava.API {
 	};
 
 	/**
+	 * Callback used when issuerCreateClaimOffer completes.
+	 */
+	private static Callback issuerCreateClaimOfferCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String claim_offer_json) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = claim_offer_json;
+			future.complete(result);
+		}
+	};
+
+	/**
 	 * Callback used when issuerCreateClaim completes.
 	 */
 	private static Callback issuerCreateClaimCb = new Callback() {
@@ -316,6 +332,46 @@ public class Anoncreds extends IndyJava.API {
 				schemaJson,
 				maxClaimNum,
 				issuerCreateAndStoreRevocRegCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
+	 * Create claim offer in Wallet.
+	 *
+	 * @param wallet         The wallet.
+	 * @param schemaJson     The JSON schema for the claim.
+	 * @param issuerDid      The DID of the issuer.
+	 * @param proverDid      The DID of the target user.
+	 * @return A future resolving to a JSON string containing the claim offer.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> issuerCreateClaimOffer(
+			Wallet wallet,
+			String schemaJson,
+			String issuerDid,
+			String proverDid) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(schemaJson, "schemaJson");
+		ParamGuard.notNullOrWhiteSpace(issuerDid, "issuerDid");
+		ParamGuard.notNullOrWhiteSpace(proverDid, "proverDid");
+
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_issuer_create_claim_offer(
+				commandHandle,
+				walletHandle,
+				schemaJson,
+				issuerDid,
+				proverDid,
+				issuerCreateClaimOfferCb);
 
 		checkResult(result);
 
