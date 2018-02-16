@@ -21,7 +21,7 @@
     "test": "standard && ava tests",
     "fmt": "standard --fix",
     "dev": "scriptsp --raw dev:watch-src dev:watch-tests",
-    "dev:watch-src": "onchange -i src/ -- npm run dev:build-n-test",
+    "dev:watch-src": "onchange -i src/ -- npm run dev:build-n-test -s",
     "dev:watch-tests": "onchange tests/ -- npm run dev:test -s",
     "dev:build-n-test": "node-gyp rebuild && npm run dev:test -s",
     "dev:test": "ava tests"
