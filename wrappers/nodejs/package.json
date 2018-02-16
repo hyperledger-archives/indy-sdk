@@ -1,0 +1,15 @@
+{
+  "name": "indy-sdk",
+  "version": "0.0.0",
+  "description": "hyperledger libindy bindings for node.js",
+  "author": "hyperledger",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hyperledger/indy-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hyperledger/indy-sdk/issues"
+  },
+  "homepage": "https://github.com/hyperledger/indy-sdk/tree/master/wrappers/nodejs#readme"
+}
