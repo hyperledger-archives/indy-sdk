@@ -1,1 +1,14 @@
-node_modules
+/libindy.so
+node_modules/
+build/
+build-pre-gyp/
+Release/
+prebuilds/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.tlog
+*.obj
+*.1sdk.pdb
+*.lastbuildstate
+npm-debug.log
