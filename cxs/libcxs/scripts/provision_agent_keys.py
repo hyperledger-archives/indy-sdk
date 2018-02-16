@@ -48,7 +48,16 @@ def get_agency_info(agency_url):
     return agency_info
 
 def register_agent(args):
-    cxs = CDLL('/usr/lib/libcxs.so')
+    try:
+        #Try to load the SO from CWD first
+        cxs = CDLL("./libcxs.so")
+    except OSError as e:
+        if 'No such file or directory' in e.args:
+            try:
+                #Not found, Try from system library paths
+                cxs = CDLL("libcxs.so")
+            except:
+                raise
     agency_info = get_agency_info(args.AGENCY_URL)
     json_str = json.dumps({'agency_url':args.AGENCY_URL,
         'agency_did':agency_info['DID'],
