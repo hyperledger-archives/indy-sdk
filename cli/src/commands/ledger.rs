@@ -1791,6 +1791,7 @@ pub mod tests {
                 params.insert("force", "true".to_string()); // because node_works test added fifth Node
                 cmd.execute(&ctx, &params).unwrap();
             }
+            ::std::thread::sleep(::std::time::Duration::from_secs(1));
             {
                 let cmd = pool_upgrade_command::new();
                 let mut params = CommandParams::new();
