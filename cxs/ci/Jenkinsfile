@@ -30,6 +30,9 @@ node('ubuntu') {
         // build and test the so file
         buildRust(app)
 
+	// test rust
+	testRust(app)
+
         // update the so file to have version
         updateSo(app)
         // test the npm package and create the npm gzip artifact
@@ -72,7 +75,7 @@ def buildRust(envn){
             sh "rustc --version"
             sh "gcc --version"
             // sh "cd cxs/libcxs; cargo test -- --test-threads=1"
-            sh "cd cxs/libcxs; cargo build"
+            sh "cd cxs/libcxs; cargo build --features ci"
         }
     }
 }

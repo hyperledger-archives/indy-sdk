@@ -60,13 +60,19 @@ fn main() {
         Some(..) => {
             println!("cargo:rustc-link-lib=indy");
             println!("cargo:rustc-link-search=native=/usr/lib");
-            // Leaving as unwrap, this is in the build script.
-            let revision = get_revision().unwrap();
-            write_variables(&revision);
-            return;
         }
         None => {}
     }
+
+    match env::var("CARGO_FEATURE_CI") {
+        Ok(_) => {
+            println!("injecting version information");
+            // Leaving as unwrap, this is in the build script.
+            let revision = get_revision().unwrap();
+            write_variables(&revision);
+        },
+        Err(_) => {println!("NOT injecting version information"); },
+    };
 }
 
 
