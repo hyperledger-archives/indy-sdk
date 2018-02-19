@@ -194,7 +194,7 @@ async def run():
 
     logger.info("\"Faber\" -> Authcrypt \"Transcript\" Claim Offer for Alice")
     authcrypted_transcript_claim_offer = await crypto.auth_crypt(faber_wallet, faber_alice_key, alice_faber_verkey,
-                                                                 transcript_claim_offer_json)
+                                                                 transcript_claim_offer_json.encode('utf-8'))
 
     logger.info("\"Faber\" -> Send authcrypted \"Transcript\" Claim Offer to Alice")
 
@@ -410,8 +410,8 @@ async def run():
     alice_acme_verkey = await did.key_for_did(pool_handle, acme_wallet, acme_alice_connection_response['did'])
 
     logger.info("\"Acme\" -> Authcrypt \"Job-Certificate\" Claim Offer for Alice")
-    authcrypted_job_certificate_claim_offer = \
-        await crypto.auth_crypt(acme_wallet, acme_alice_key, alice_acme_verkey, job_certificate_claim_offer_json)
+    authcrypted_job_certificate_claim_offer = await crypto.auth_crypt(acme_wallet, acme_alice_key, alice_acme_verkey,
+                                                                      job_certificate_claim_offer_json.encode('utf-8'))
 
     logger.info("\"Acme\" -> Send authcrypted \"Job-Certificate\" Claim Offer to Alice")
 
