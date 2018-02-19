@@ -1,7 +1,0 @@
-#!/bin/sh
-# postinst script for libcxs
-
-/sbin/ldconfig 
-
-ln -s `ls -rt /usr/lib/libcxs.* | tail -n1` /usr/lib/libcxs.so
-

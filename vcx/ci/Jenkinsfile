@@ -1,0 +1,204 @@
+#!groovy
+
+def dockerfile= 'dockerfile'
+
+def getUserUid() {
+    return sh(returnStdout: true, script: 'id -u').trim()
+}
+
+// docker build -t libvcx-test --build-arg uid=1001 -f vcx/ci/ubuntu.dockerfile vcx/ci
+def build(name, file='vcx/ci/ubuntu.dockerfile', context='vcx/ci', customParams = '') {
+    return docker.build("$name-test", "--build-arg uid=${getUserUid()} -f $file $context")
+}
+
+// docker build -t wrapper-test --build-arg uid=1001 -f vcx/ci/Dockerfile-wrapper-testing
+def build_wrapper_testing_image(file='vcx/ci/Dockerfile-wrapper-testing', context='vcx', customParams = ''){
+	return docker.build("wrapper-test", "--build-arg uid=${getUserUid()} -f $file $context")
+}
+
+node('ubuntu') {
+    try {
+        stage ('Checkout'){
+            checkout scm
+        }
+        
+        app = build('libvcx', 'vcx/ci/ubuntu.dockerfile', 'vcx/ci')
+		
+        // update the versions in the toml file and package.json
+        updateVersions(app)      
+        
+        // build and test the so file
+        buildRust(app)
+
+	// test rust
+	testRust(app)
+
+        // update the so file to have version
+        updateSo(app)
+        // test the npm package and create the npm gzip artifact
+        wrapper = build_wrapper_testing_image('vcx/ci/Dockerfile-wrapper-testing', 'vcx')
+        testNodeWrapper(wrapper)
+        if (env.BRANCH_NAME == "master") {
+            // create the debian of the library
+            createDeb(app)
+            // create the npm deb 
+            createNpmDeb(app) 
+        }
+        
+    } catch (Exception ex) {
+        currentBuild.result = "FAILED"
+        if (env.BRANCH_NAME == "master") {
+            fail()
+        }
+        echo "$ex error"
+    } finally {
+        step([$class: 'WsCleanup'])
+    }
+}
+
+def buildDocker(){
+    def app
+    def pathToCi = 'vcx/ci'
+    stage ('Build docker environment'){
+        sh "pwd"
+        sh "ls ${pathToCi}"
+        sh "echo building"
+        app = build('vcx')
+    }
+    return app
+}
+
+def buildRust(envn){
+    stage ('Building and Testing Rust Library'){
+        envn.inside {
+            sh "ls -l"
+            sh "rustc --version"
+            sh "gcc --version"
+            // sh "cd vcx/libvcx; cargo test -- --test-threads=1"
+            sh "cd vcx/libvcx; cargo build --features ci"
+        }
+    }
+}
+
+def testRust(envn) {
+    stage ('Testing Rust'){
+        sh "echo Testing"
+        envn.inside {
+            sh "cd vcx/libvcx; cargo test --color never -- --test-threads=1"
+        }
+    }
+}
+
+
+// updates the path to include the scripts, 
+// needed for cargo commands
+def updatePath(app) {
+    dir ('vcx/ci/scripts') {
+        app.inside {
+            sh 'export PATH=$PATH:`pwd`'
+        }
+    }
+}
+
+
+// Update the version and revision in the Cargo.toml file, also the so file .
+def updateVersions(app) {
+        stage('Updating Versions') {
+            app.inside {
+                sh 'ls -l'
+                // TODO fix this ... these *SHOULD* be cargo commands.
+                sh 'cd vcx/libvcx; ls -l; ls ../ci/scripts'
+                sh 'cd vcx/libvcx; python ../ci/scripts/cargo-update-version'
+
+            }
+        }
+}
+
+def updateSo(app) {
+    stage('Updating .so file version') {
+        app.inside {
+            sh 'cd vcx/libvcx; python ../ci/scripts/cargo-update-so'
+        }
+    }
+}
+
+
+// Creates the debian package for the library, as well as gzips the libvcx.so.<version> file
+// Publishes both artifacts.
+def createDeb(envn) {
+    stage('Build libvcx Debian and compress .so file') {
+        envn.inside {
+            CERT_SCRIPT = 'vcx/ci/scripts/getCert.sh'
+            SCRIPT = 'vcx/ci/scripts/gzip_so_file.py'
+            FILES = 'vcx/libvcx/target/debug/libvcx.so.* vcx/libvcx/scripts/provision_agent_keys.py'
+            DEST = 'libvcx.tar.gz'
+
+            // get Evernym Certificate onto machine
+            sh "${CERT_SCRIPT}"
+                
+            // build debian
+            sh 'cd vcx/libvcx/; cargo deb --no-build'
+    
+
+            if (env.BRANCH_NAME == "master") {
+                // archive debian to Jenkins
+                archiveArtifacts allowEmptyARchive: true, artifacts: "vcx/libvcx/target/debian/libvcx_*_amd64.deb"
+
+                // archive .so file to Jenkins
+                sh "python ${SCRIPT} ${FILES} ${DEST}"
+                archiveArtifacts allowEmptyARchive: true, artifacts: DEST
+
+                // upload debian to Repo
+                withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
+                    sh "find vcx/libvcx/target/debian/ -type f -name 'libvcx_*_amd64.deb' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST https://kraken.corp.evernym.com/repo/agency_dev/upload -F file=@{} \\;"
+                }
+            }
+        }
+    }
+}
+
+
+// Creates the tgz file that can be 'npm install'-ed.
+def testNodeWrapper(envn) {
+    dir ('vcx/wrappers/node'){
+        stage ('Test Node Wrapper'){
+		    envn.inside {
+    			sh 'npm -v'
+	            sh 'npm install'
+	            sh 'npm rebuild'
+	            sh 'npm run lint'
+	            sh 'npm run compile'
+	            sh 'npm test'
+	            sh 'ls -l'
+			    sh 'npm pack'
+	            sh 'ls'
+	            sh "test -f vcx-*.tgz"
+	            archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.tgz'
+      	    }
+        }
+    }
+}
+
+
+// Creates debian that can install through npm.
+def createNpmDeb(app){
+  dir('vcx') {
+    stage ('Create Npm Deb') {
+      app.inside {
+        // TODO make this a version number from the script somehow.
+        sh 'ls'
+        sh 'python ci/scripts/create_npm_deb.py wrappers/node/vcx-*.tgz'
+        sh 'ls'
+        archiveArtifacts allowEmptyArchive: true, artifacts: 'vcx*.deb'
+      }
+    }
+  }
+}
+
+def fail() {
+    def message = [
+        message: "$JOB_NAME - Build # $BUILD_NUMBER - fail: Check console output at $BUILD_URL to view the results."
+    ]
+    slackSend message
+}
+
