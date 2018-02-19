@@ -103,7 +103,7 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
 async def issuer_create_claim_offer(wallet_handle: int,
                                     schema_json: str,
                                     issuer_did: str,
-                                    prover_did: str) -> (str, str):
+                                    prover_did: str) -> str:
     """
     Create claim offer in Wallet.
 
