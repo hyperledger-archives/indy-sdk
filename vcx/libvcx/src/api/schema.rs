@@ -219,8 +219,8 @@ mod tests {
     use settings;
     use utils::libindy::pool;
     use utils::libindy::signus::SignusUtils;
-    use utils::constants::{ DEMO_AGENT_PW_SEED, DEMO_ISSUER_PW_SEED };
-    use utils::libindy::wallet::{init_wallet, get_wallet_handle};
+    use utils::constants::{ DEMO_AGENT_PW_SEED, DEMO_ISSUER_PW_SEED, SCHEMA_TXN };
+    use utils::libindy::wallet::{init_wallet, get_wallet_handle, delete_wallet};
 
     extern "C" fn create_cb(command_handle: u32, err: u32, schema_handle: u32) {
         assert_eq!(err, 0);
@@ -240,6 +240,21 @@ mod tests {
         assert_eq!(vcx_schema_serialize(0, schema_handle, Some(serialize_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
+
+    extern "C" fn get_attrs_cb(command_handle: u32, err: u32, schema_data: *const c_char) {
+        assert_eq!(err, 0);
+        if schema_data.is_null() {
+            panic!("schema_data is null");
+        }
+        check_useful_c_str!(schema_data, ());
+        let mut data = r#""data":{"name":"New Claim - Claim5","version":"1.0","attr_names":["New Claim","claim5","a5","b5","c5","d5"]}"#;
+        if settings::test_indy_mode_enabled() {
+            data = SCHEMA_TXN;
+        }
+        assert!(schema_data.contains(&data));
+        println!("successfully called get_attrs_cb: {}", schema_data);
+    }
+
 
     extern "C" fn create_cb_get_seq_no(command_handle: u32, err: u32, schema_handle: u32) {
         assert_eq!(err, 0);
@@ -347,14 +362,16 @@ mod tests {
     #[ignore]
     #[test]
     fn test_vcx_schema_get_attrs_with_pool() {
-        set_default_and_enable_test_mode();
+        settings::set_defaults();
+        pool::open_sandbox_pool();
+        init_wallet("a_test_wallet").unwrap();
         let data = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#.to_string();
-        assert_eq!(vcx_schema_create(0,
+        assert_eq!(vcx_schema_get_attributes(0,
                                      CString::new("Test Source ID").unwrap().into_raw(),
-                                     CString::new("Test Schema").unwrap().into_raw(),
-                                     CString::new(data).unwrap().into_raw(),
-                                     Some(create_and_serialize_cb)), error::SUCCESS.code_num);
+                                     116,
+                                     Some(get_attrs_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
+        delete_wallet("a_test_wallet").unwrap();
     }
 
     #[test]
@@ -393,11 +410,10 @@ mod tests {
     fn test_vcx_schema_get_attrs() {
         set_default_and_enable_test_mode();
         let data = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#.to_string();
-        assert_eq!(vcx_schema_create(0,
-                                     CString::new("Test Source ID").unwrap().into_raw(),
-                                     CString::new("Test Schema").unwrap().into_raw(),
-                                     CString::new(data).unwrap().into_raw(),
-                                     Some(create_and_serialize_cb)), error::SUCCESS.code_num);
+        assert_eq!(vcx_schema_get_attributes(0,
+                                             CString::new("Test Source ID").unwrap().into_raw(),
+                                             116,
+                                             Some(get_attrs_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 }
