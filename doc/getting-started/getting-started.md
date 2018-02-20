@@ -70,7 +70,7 @@ Publishing with a DID verification key allows a person, organization or thing, t
 
 Our ledger is public permissioned and anyone who wants to publish DIDs need to get the role of **Trust Anchor** on the ledger. A **Trust Anchor** is a person or organization that the ledger already knows about, that is able to help bootstrap others. (It is *not* the same as what cybersecurity experts call a "trusted third party"; think of it more like a facilitator). See [Roles](https://docs.google.com/spreadsheets/d/1TWXF7NtBjSOaUIBeIH77SyZnawfo91cJ_ns4TR-wsq4/edit#gid=0) to get more information about roles.
 
-**The first step to being able to place transactions on the ledger, Faber College, Acme Corp and Thrift Bank will need to get the role of Trust Anchor on the ledger because they will need to create Verinyms and Pairwise-Unique Identifiers to provide the service to Alice.**
+**The first step towards being able to place transactions on the ledger involves getting the role of Trust Anchor on the ledger. Faber College, Acme Corp and Thrift Bank will need to get the role of Trust Anchor on the ledger s they can create Verinyms and Pairwise-Unique Identifiers to provide the service to Alice.**
 
 Becoming a **Trust Anchor** requires contacting a person or organization who already has the **Trust Anchor** role on the ledger. For the sake of the demo, in our empty test ledger we have only NYMs with the **Steward** role, but all **Stewards** are automatically **Trust Anchors**.
 
