@@ -335,6 +335,12 @@ pub fn release(handle: u32) -> u32 {
     }
 }
 
+pub fn release_all() {
+    let mut map = CLAIMDEF_MAP.lock().unwrap();
+
+    map.drain();
+}
+
 #[cfg(test)]
 pub mod tests {
     use utils::libindy::signus::SignusUtils;
@@ -512,5 +518,22 @@ pub mod tests {
         let claimdef1: CreateClaimDef = serde_json::from_str(&claimdef_data).unwrap();
         let claimdef2: CreateClaimDef = serde_json::from_str(&new_claimdef_data).unwrap();
         assert_eq!(claimdef1,claimdef2);
+    }
+
+    #[test]
+    fn test_release_all() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let h1 = create_new_claimdef("SID".to_string(),"NAME".to_string(),15,ISSUER_DID.to_string(),false).unwrap();
+        let h2 = create_new_claimdef("SID".to_string(),"NAME".to_string(),15,ISSUER_DID.to_string(),false).unwrap();
+        let h3 = create_new_claimdef("SID".to_string(),"NAME".to_string(),15,ISSUER_DID.to_string(),false).unwrap();
+        let h4 = create_new_claimdef("SID".to_string(),"NAME".to_string(),15,ISSUER_DID.to_string(),false).unwrap();
+        let h5 = create_new_claimdef("SID".to_string(),"NAME".to_string(),15,ISSUER_DID.to_string(),false).unwrap();
+        release_all();
+        assert_eq!(release(h1),error::INVALID_CLAIM_DEF_HANDLE.code_num);
+        assert_eq!(release(h2),error::INVALID_CLAIM_DEF_HANDLE.code_num);
+        assert_eq!(release(h3),error::INVALID_CLAIM_DEF_HANDLE.code_num);
+        assert_eq!(release(h4),error::INVALID_CLAIM_DEF_HANDLE.code_num);
+        assert_eq!(release(h5),error::INVALID_CLAIM_DEF_HANDLE.code_num);
     }
 }

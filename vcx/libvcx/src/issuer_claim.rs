@@ -379,6 +379,12 @@ pub fn release(handle: u32) -> u32 {
     }
 }
 
+pub fn release_all() {
+    let mut map = ISSUER_CLAIM_MAP.lock().unwrap();
+
+    map.drain();
+}
+
 pub fn is_valid_handle(handle: u32) -> bool {
     match ISSUER_CLAIM_MAP.lock().unwrap().get(&handle) {
         Some(_) => true,
@@ -672,7 +678,6 @@ pub mod tests {
 
     #[test]
     fn test_update_state_with_pending_claim_request() {
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
@@ -838,9 +843,6 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, "QTrbV4raAcND4DWWzBmdsh");
 
-        let claim_req = ClaimRequest::from_str(CLAIM_REQ_STRING).unwrap();
-        let issuer_did = claim_req.issuer_did;
-
         let mut claim = create_standard_issuer_claim();
         claim.state = VcxStateType::VcxStateRequestReceived;
 
@@ -857,5 +859,20 @@ pub mod tests {
 
     }
 
-
+    #[test]
+    fn test_release_all() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        let h1 = issuer_claim_create(0,None,"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
+        let h2 = issuer_claim_create(0,None,"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
+        let h3 = issuer_claim_create(0,None,"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
+        let h4 = issuer_claim_create(0,None,"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
+        let h5 = issuer_claim_create(0,None,"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
+        release_all();
+        assert_eq!(release(h1),error::INVALID_ISSUER_CLAIM_HANDLE.code_num);
+        assert_eq!(release(h2),error::INVALID_ISSUER_CLAIM_HANDLE.code_num);
+        assert_eq!(release(h3),error::INVALID_ISSUER_CLAIM_HANDLE.code_num);
+        assert_eq!(release(h4),error::INVALID_ISSUER_CLAIM_HANDLE.code_num);
+        assert_eq!(release(h5),error::INVALID_ISSUER_CLAIM_HANDLE.code_num);
+    }
 }

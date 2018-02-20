@@ -466,6 +466,12 @@ pub fn release(handle: u32) -> u32 {
     }
 }
 
+pub fn release_all() {
+    let mut map = CONNECTION_MAP.lock().unwrap();
+
+    map.drain();
+}
+
 pub fn get_invite_details(handle: u32, abbreviated:bool) -> Result<String,u32> {
     match CONNECTION_MAP.lock().unwrap().get(&handle) {
         Some(t) => {
@@ -645,7 +651,6 @@ mod tests {
 
     #[test]
     fn test_get_qr_code_data() {
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let test_name = "test_get_qr_code_data";
@@ -727,7 +732,6 @@ mod tests {
 
     #[test]
     fn test_parse_acceptance_details() {
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let test_name = "test_parse_acceptance_details";
@@ -767,7 +771,6 @@ mod tests {
     #[ignore]
     #[test]
     fn test_vcx_connection_create_real() {
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         let agency_did = "FhrSrYtQcw3p9xwf7NYemf";
         let agency_vk = "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE";
@@ -862,4 +865,20 @@ mod tests {
         assert_eq!(processed, abbr);
     }
 
+    #[test]
+    fn test_release_all() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let h1 = build_connection("rel1".to_owned()).unwrap();
+        let h2 = build_connection("rel2".to_owned()).unwrap();
+        let h3 = build_connection("rel3".to_owned()).unwrap();
+        let h4 = build_connection("rel4".to_owned()).unwrap();
+        let h5 = build_connection("rel5".to_owned()).unwrap();
+        release_all();
+        assert_eq!(release(h1),error::INVALID_CONNECTION_HANDLE.code_num);
+        assert_eq!(release(h2),error::INVALID_CONNECTION_HANDLE.code_num);
+        assert_eq!(release(h3),error::INVALID_CONNECTION_HANDLE.code_num);
+        assert_eq!(release(h4),error::INVALID_CONNECTION_HANDLE.code_num);
+        assert_eq!(release(h5),error::INVALID_CONNECTION_HANDLE.code_num);
+    }
 }

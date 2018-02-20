@@ -100,7 +100,6 @@ mod tests {
 
     #[test]
     fn test(){
-        ::utils::logger::LoggerUtils::init();
         let proof = r#"{
   "msg_type":"proof",
   "version":"0.1",
