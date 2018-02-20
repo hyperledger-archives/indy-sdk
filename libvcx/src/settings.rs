@@ -216,7 +216,6 @@ pub mod tests {
     }
     #[test]
     fn test_default_values() {
-        ::utils::logger::LoggerUtils::init();
         remove_file_if_exists(DEFAULT_GENESIS_PATH);
 
         // test invalid config value

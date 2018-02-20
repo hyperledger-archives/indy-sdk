@@ -70,7 +70,6 @@ mod tests {
 
     #[test]
     fn test_provision_agent() {
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 

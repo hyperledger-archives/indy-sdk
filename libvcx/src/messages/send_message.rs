@@ -10,7 +10,6 @@ use serde::Deserialize;
 use self::rmp_serde::Deserializer;
 use messages::*;
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
 pub struct SendMessage {
     message: String,
     to_did: String,
@@ -23,24 +22,30 @@ pub struct SendMessage {
     ref_msg_id: String,
     status_code: String,
     uid: String,
+    title: Option<String>,
+    detail: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
+#[derive(Serialize, Debug, PartialEq, PartialOrd, Clone)]
 pub struct CreateMessagePayload {
     #[serde(rename = "@type")]
     msg_type: MsgType,
     mtype: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
+#[derive(Serialize, Debug, PartialEq, PartialOrd, Clone)]
 pub struct MessageDetailPayload {
     #[serde(rename = "@type")]
     msg_type: MsgType,
     #[serde(rename = "@msg")]
     msg: Vec<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    detail: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
+#[derive(Serialize, Debug, PartialEq, PartialOrd, Clone)]
 pub struct SendMessagePayload {
     #[serde(rename = "@type")]
     msg_type: MsgType,
@@ -61,6 +66,8 @@ impl SendMessage{
             ref_msg_id: String::new(),
             status_code: String::new(),
             uid: String::new(),
+            title: None,
+            detail: None,
         }
     }
 
@@ -118,6 +125,16 @@ impl SendMessage{
         info!("sent message to agency");
         Ok(result.to_owned())
     }
+
+    pub fn set_title(&mut self, title: &str) -> &mut Self {
+        self.title = Some(title.to_string());
+        self
+    }
+
+    pub fn set_detail(&mut self, detail: &str) -> &mut Self {
+        self.detail = Some(detail.to_string());
+        self
+    }
 }
 
 //Todo: Every GeneralMessage extension, duplicates code
@@ -136,14 +153,19 @@ impl GeneralMessage for SendMessage{
         }
 
         let create = CreateMessagePayload { msg_type: MsgType { name: "CREATE_MSG".to_string(), ver: "1.0".to_string(), }, mtype: self.message.to_string(), };
-        let detail = MessageDetailPayload { msg_type: MsgType { name: "MSG_DETAIL".to_string(), ver: "1.0".to_string(), }, msg: self.payload.clone(), };
+        let detail = MessageDetailPayload { msg_type: MsgType { name: "MSG_DETAIL".to_string(), ver: "1.0".to_string(), }, msg: self.payload.clone(), title: self.title.clone(), detail: self.detail.clone(), };
         let send = SendMessagePayload { msg_type: MsgType { name: "SEND_MSG".to_string(), ver: "1.0".to_string(), }, };
 
+        match serde_json::to_string(&detail) {
+            Ok(x) => info!("sending message: {}", x),
+            Err(_) => {},
+        };
+
+        debug!("SendMessage details: {:?}", detail);
         let create = encode::to_vec_named(&create).unwrap();
         let detail = encode::to_vec_named(&detail).unwrap();
         let send = encode::to_vec_named(&send).unwrap();
 
-        debug!("SendMessage details: {:?}", detail);
         let mut bundle = Bundled::create(create);
         bundle.bundled.push(detail);
         bundle.bundled.push(send);
@@ -203,6 +225,8 @@ mod tests {
             ref_msg_id: "123".to_string(),
             status_code: "123".to_string(),
             uid: "123".to_string(),
+            title: Some("this is the title".to_string()),
+            detail: Some("this is the detail".to_string()),
         };
 
         /* just check that it doesn't panic */

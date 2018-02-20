@@ -206,11 +206,14 @@ impl Proof {
         self.proof_request = Some(proof_obj);
         let data = connection::generate_encrypted_payload(&self.prover_vk, &self.remote_vk, &proof_request, "PROOF_REQUEST")?;
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_CLAIM_OFFER_RESPONSE.to_vec()); }
+        let title = format!("{} wants you to share {}", settings::get_config_value(settings::CONFIG_ENTERPRISE_NAME).unwrap(), self.name);
 
         match messages::send_message().to(&self.prover_did)
             .to_vk(&self.prover_vk)
             .msg_type("proofReq")
             .agent_did(&self.agent_did)
+            .set_title(&title)
+            .set_detail(&title)
             .agent_vk(&self.agent_vk)
             .edge_agent_payload(&data)
             .send_secure() {
@@ -365,6 +368,12 @@ pub fn release(handle: u32) -> u32 {
     }
 }
 
+pub fn release_all() {
+    let mut map = PROOF_MAP.lock().unwrap();
+
+    map.drain();
+}
+
 pub fn to_string(handle: u32) -> Result<String, u32> {
     match PROOF_MAP.lock().unwrap().get(&handle) {
         Some(p) => Ok(serde_json::to_string(&p).unwrap().to_owned()),
@@ -485,13 +494,10 @@ mod tests {
     fn test_create_proof_succeeds() {
         set_default_and_enable_test_mode();
 
-        match create_proof(None,
+        create_proof(None,
                            REQUESTED_ATTRS.to_owned(),
                            REQUESTED_PREDICATES.to_owned(),
-                           "Optional".to_owned()) {
-            Ok(x) => assert!(x > 0),
-            Err(_) => assert_eq!(0, 1),
-        }
+                           "Optional".to_owned()).unwrap();
     }
 
     #[test]
@@ -504,13 +510,10 @@ mod tests {
     fn test_to_string_succeeds() {
         set_default_and_enable_test_mode();
 
-        let handle = match create_proof(None,
+        let handle = create_proof(None,
                                         REQUESTED_ATTRS.to_owned(),
                                         REQUESTED_PREDICATES.to_owned(),
-                                        "Optional".to_owned()) {
-            Ok(x) => x,
-            Err(_) => panic!("Proof creation failed"),
-        };
+                                        "Optional".to_owned()).unwrap();
         let proof_string = to_string(handle).unwrap();
         assert!(!proof_string.is_empty());
     }
@@ -518,13 +521,10 @@ mod tests {
     #[test]
     fn test_from_string_succeeds() {
         set_default_and_enable_test_mode();
-        let handle = match create_proof(None,
+        let handle = create_proof(None,
                                         REQUESTED_ATTRS.to_owned(),
                                         REQUESTED_PREDICATES.to_owned(),
-                                        "Optional".to_owned()) {
-            Ok(x) => x,
-            Err(_) => panic!("Proof creation failed"),
-        };
+                                        "Optional".to_owned()).unwrap();
         let proof_data = to_string(handle).unwrap();
         assert!(!proof_data.is_empty());
         release(handle);
@@ -537,20 +537,16 @@ mod tests {
     #[test]
     fn test_release_proof() {
         set_default_and_enable_test_mode();
-        let handle = match create_proof(Some("1".to_string()),
+        let handle = create_proof(Some("1".to_string()),
                                         REQUESTED_ATTRS.to_owned(),
                                         REQUESTED_PREDICATES.to_owned(),
-                                        "Optional".to_owned()) {
-            Ok(x) => x,
-            Err(_) => panic!("Proof creation failed"),
-        };
+                                        "Optional".to_owned()).unwrap();
         assert_eq!(release(handle), 0);
         assert!(!is_valid_handle(handle));
     }
 
     #[test]
     fn test_send_proof_request() {
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
@@ -559,13 +555,10 @@ mod tests {
         connection::set_agent_did(connection_handle, DID);
         connection::set_their_pw_verkey(connection_handle, VERKEY);
 
-        let handle = match create_proof(Some("1".to_string()),
+        let handle = create_proof(Some("1".to_string()),
                                         REQUESTED_ATTRS.to_owned(),
                                         REQUESTED_PREDICATES.to_owned(),
-                                        "Optional".to_owned()) {
-            Ok(x) => x,
-            Err(_) => panic!("Proof creation failed"),
-        };
+                                        "Optional".to_owned()).unwrap();
         assert_eq!(send_proof_request(handle, connection_handle).unwrap(), error::SUCCESS.code_num);
         assert_eq!(get_state(handle), VcxStateType::VcxStateOfferSent as u32);
         assert_eq!(get_proof_uuid(handle).unwrap(), "ntc2ytb");
@@ -583,13 +576,10 @@ mod tests {
         let connection_handle = build_connection("test_send_proof_request".to_owned()).unwrap();
         connection::set_pw_did(connection_handle, "");
 
-        let handle = match create_proof(Some("1".to_string()),
+        let handle = create_proof(Some("1".to_string()),
                                         REQUESTED_ATTRS.to_owned(),
                                         REQUESTED_PREDICATES.to_owned(),
-                                        "Optional".to_owned()) {
-            Ok(x) => x,
-            Err(_) => panic!("Proof creation failed"),
-        };
+                                        "Optional".to_owned()).unwrap();
         match send_proof_request(handle, connection_handle) {
             Ok(x) => panic!("Should have failed in send_proof_request"),
             Err(y) => assert_eq!(y, error::INVALID_DID.code_num)
@@ -599,13 +589,10 @@ mod tests {
     #[test]
     fn test_get_proof_fails_with_no_proof() {
         set_default_and_enable_test_mode();
-        let handle = match create_proof(Some("1".to_string()),
+        let handle = create_proof(Some("1".to_string()),
                                         REQUESTED_ATTRS.to_owned(),
                                         REQUESTED_PREDICATES.to_owned(),
-                                        "Optional".to_owned()) {
-            Ok(x) => x,
-            Err(_) => panic!("Proof creation failed"),
-        };
+                                        "Optional".to_owned()).unwrap();
         assert!(is_valid_handle(handle));
 
         match get_proof(handle) {
@@ -619,7 +606,6 @@ mod tests {
 
     #[test]
     fn test_update_state_with_pending_proof() {
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
@@ -657,7 +643,6 @@ mod tests {
 
     #[test]
     fn test_get_proof_returns_proof_when_proof_state_invalid() {
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
@@ -701,7 +686,6 @@ mod tests {
     #[test]
     fn test_build_claim_defs_json_with_multiple_claims() {
         let claim_result = r#"{"auditPath":["7hRA1eWgHDmqFfXQHmHLzCE1ZeXvvkq5VaJEpb6NWz74","4QvchQ6JGxvU57kyzHzKJvUV7rb12jpFX7FBP9LrN9qA","G14qswNCM1mxhRHPMLx4h5qmbLEDQkczjJUVUEedUGxQ","4B6hCrJc2TubiFE1rgxjM1Hj7zvTTjxkzo9Gikhy4MVZ"],"data":{"attr_names":["name","male"],"name":"name","version":"1.0"},"identifier":"VsKV7grR1BUE29mG2Fm2kX","reqId":1515795761424583710,"rootHash":"C98M4qjp4zzHw6APDWwGxTBHkEdAhjUQepi3Bxz2auna","seqNo":299,"signature":"4iFhpLknpRiCU6Axrj8HcFxMaxGaMmnzwJ1WMKndK653k4B7LYGZD2PNHEEGZQEBVXwhgDxPFe1t9bSzdVcEQ3eL","txnTime":1515795761,"type":"101"}"#;
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let data = r#"{"ref":1,"origin":"NcYxiDXkpYi6ov5FcYDi1e","signature_type":"CL","data":{"primary":{"n":"9","s":"8","rms":"7","r":{"height":"6","sex":"5","age":"4","name":"3"},"rctxt":"2","z":"1"},"revocation":null}}"#;
@@ -764,7 +748,6 @@ mod tests {
     #[test]
     fn test_build_schemas_json_with_multiple_schemas() {
         let claim_result = r#"{"auditPath":["7hRA1eWgHDmqFfXQHmHLzCE1ZeXvvkq5VaJEpb6NWz74","4QvchQ6JGxvU57kyzHzKJvUV7rb12jpFX7FBP9LrN9qA","G14qswNCM1mxhRHPMLx4h5qmbLEDQkczjJUVUEedUGxQ","4B6hCrJc2TubiFE1rgxjM1Hj7zvTTjxkzo9Gikhy4MVZ"],"data":{"attr_names":["name","male"],"name":"name","version":"1.0"},"identifier":"VsKV7grR1BUE29mG2Fm2kX","reqId":1515795761424583710,"rootHash":"C98M4qjp4zzHw6APDWwGxTBHkEdAhjUQepi3Bxz2auna","seqNo":299,"signature":"4iFhpLknpRiCU6Axrj8HcFxMaxGaMmnzwJ1WMKndK653k4B7LYGZD2PNHEEGZQEBVXwhgDxPFe1t9bSzdVcEQ3eL","txnTime":1515795761,"type":"101"}"#;
-        ::utils::logger::LoggerUtils::init();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let data = r#"{"ref":1,"origin":"NcYxiDXkpYi6ov5FcYDi1e","signature_type":"CL","data":{"primary":{"n":"9","s":"8","rms":"7","r":{"height":"6","sex":"5","age":"4","name":"3"},"rctxt":"2","z":"1"},"revocation":null}}"#;
@@ -868,4 +851,20 @@ mod tests {
 //        proof.proof_validation().unwrap();
 //    }
 
+    #[test]
+    fn test_release_all() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        let h1 = create_proof(None,REQUESTED_ATTRS.to_owned(),REQUESTED_PREDICATES.to_owned(),"Optional".to_owned()).unwrap();
+        let h2 = create_proof(None,REQUESTED_ATTRS.to_owned(),REQUESTED_PREDICATES.to_owned(),"Optional".to_owned()).unwrap();
+        let h3 = create_proof(None,REQUESTED_ATTRS.to_owned(),REQUESTED_PREDICATES.to_owned(),"Optional".to_owned()).unwrap();
+        let h4 = create_proof(None,REQUESTED_ATTRS.to_owned(),REQUESTED_PREDICATES.to_owned(),"Optional".to_owned()).unwrap();
+        let h5 = create_proof(None,REQUESTED_ATTRS.to_owned(),REQUESTED_PREDICATES.to_owned(),"Optional".to_owned()).unwrap();
+        release_all();
+        assert_eq!(release(h1),error::INVALID_PROOF_HANDLE.code_num);
+        assert_eq!(release(h2),error::INVALID_PROOF_HANDLE.code_num);
+        assert_eq!(release(h3),error::INVALID_PROOF_HANDLE.code_num);
+        assert_eq!(release(h4),error::INVALID_PROOF_HANDLE.code_num);
+        assert_eq!(release(h5),error::INVALID_PROOF_HANDLE.code_num);
+    }
 }
