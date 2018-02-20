@@ -384,6 +384,58 @@
     return err;
 }
 
+- (NSError *)buildRevocRegDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                                type:(NSString *)type
+                                                 tag:(NSString *)tag
+                                           credDefId:(NSString *)credDefId
+                                               value:(NSString *)value
+                                          resultJson:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+
+    [IndyLedger buildRevocRegDefRequestWithSubmitterDid:submitterDid
+                                                   type:(NSString *)type
+                                                    tag:(NSString *)tag
+                                              credDefId:(NSString *)credDefId
+                                                  value:(NSString *)value
+                                             completion:^(NSError *error, NSString *request) {
+                                                 err = error;
+                                                 result = request;
+                                                 [completionExpectation fulfill];
+                                             }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = result;}
+    return err;
+}
+
+- (NSError *)buildRevocRegDeltaRequestWithSubmitterDid:(NSString *)submitterDid
+                                                  type:(NSString *)type
+                                         revocRegDefId:(NSString *)revocRegDefId
+                                                 value:(NSString *)value
+                                            resultJson:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *result = nil;
+
+    [IndyLedger buildRevocRegDeltaRequestWithSubmitterDid:submitterDid
+                                                     type:(NSString *)type
+                                            revocRegDefId:(NSString *)revocRegDefId
+                                                    value:(NSString *)value
+                                               completion:^(NSError *error, NSString *request) {
+                                                 err = error;
+                                                 result = request;
+                                                 [completionExpectation fulfill];
+                                             }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (resultJson) {*resultJson = result;}
+    return err;
+}
+
 // MARK: - Sign Request
 
 - (NSError *)signRequestWithWalletHandle:(IndyHandle)walletHandle

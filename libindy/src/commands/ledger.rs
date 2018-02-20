@@ -122,6 +122,19 @@ pub enum LedgerCommand {
         Option<String>, // justification
         bool, // reinstall
         bool, // force
+        Box<Fn(Result<String, IndyError>) + Send>),
+    BuildRevocRegDefRequest(
+        String, // submitter did
+        String, // _type
+        String, // tag
+        String, // cred_def_id
+        String, // value
+        Box<Fn(Result<String, IndyError>) + Send>),
+    BuildRevocRegEntryRequest(
+        String, // submitter did
+        String, // _type
+        String, // revoc_reg_def_id
+        String, // value
         Box<Fn(Result<String, IndyError>) + Send>)
 }
 
@@ -231,6 +244,14 @@ impl LedgerCommandExecutor {
                                                    schedule.as_ref().map(String::as_str),
                                                    justification.as_ref().map(String::as_str),
                                                    reinstall, force));
+            }
+            LedgerCommand::BuildRevocRegDefRequest(submitter_did, _type, tag, cred_def_id, value, cb) => {
+                info!(target: "ledger_command_executor", "BuildRevocRegDefRequest command received");
+                cb(self.build_revoc_reg_def_request(&submitter_did, &_type, &tag, &cred_def_id, &value));
+            }
+            LedgerCommand::BuildRevocRegEntryRequest(submitter_did, _type, revoc_reg_def_id, value, cb) => {
+                info!(target: "ledger_command_executor", "BuildRevocRegEntryRequest command received");
+                cb(self.build_revoc_reg_entry_request(&submitter_did, &_type, &revoc_reg_def_id, &value));
             }
         };
     }
@@ -543,6 +564,41 @@ impl LedgerCommandExecutor {
                                                          timeout, schedule, justification, reinstall, force)?;
 
         info!("build_pool_upgrade_request  <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_revoc_reg_def_request(&self,
+                                   submitter_did: &str,
+                                   _type: &str,
+                                   tag: &str,
+                                   cred_def_id: &str,
+                                   value: &str) -> Result<String, IndyError> {
+        info!("build_revoc_reg_def_request >>> submitter_did: {:?}, _type: {:?}, tag: {:?}, cred_def_id: {:?}, value: {:?}",
+              submitter_did, _type, tag, cred_def_id, value);
+
+        self.crypto_service.validate_did(submitter_did)?;
+
+        let res = self.ledger_service.build_revoc_reg_def_request(submitter_did, _type, tag, cred_def_id, value)?;
+
+        info!("build_revoc_reg_def_request  <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_revoc_reg_entry_request(&self,
+                                     submitter_did: &str,
+                                     _type: &str,
+                                     revoc_reg_def_id: &str,
+                                     value: &str) -> Result<String, IndyError> {
+        info!("build_revoc_reg_entry_request >>> submitter_did: {:?}, _type: {:?}, revoc_reg_def_id: {:?}, value: {:?}",
+              submitter_did, _type, revoc_reg_def_id, value);
+
+        self.crypto_service.validate_did(submitter_did)?;
+
+        let res = self.ledger_service.build_revoc_reg_entry_request(submitter_did, _type, revoc_reg_def_id, value)?;
+
+        info!("build_revoc_reg_entry_request  <<< res: {:?}", res);
 
         Ok(res)
     }

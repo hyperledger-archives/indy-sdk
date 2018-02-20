@@ -7,7 +7,7 @@ use services::ledger::constants::*;
 use self::indy_crypto::cl::*;
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -22,17 +22,17 @@ pub struct Request<T: serde::Serialize> {
 }
 
 impl<T: serde::Serialize> Request<T> {
-    fn new(req_id: u64, identifier: String, operation: T, protocol_version: u64) -> Request<T> {
+    fn new(req_id: u64, identifier: &str, operation: T, protocol_version: u64) -> Request<T> {
         Request {
             req_id,
-            identifier,
+            identifier: identifier.to_string(),
             operation,
             protocol_version,
             signature: None
         }
     }
 
-    pub fn build_request(identifier: String, operation: T) -> Result<String, serde_json::Error> {
+    pub fn build_request(identifier: &str, operation: T) -> Result<String, serde_json::Error> {
         serde_json::to_string(&Request::new(super::LedgerService::get_req_id(), identifier, operation, 1))
     }
 }
@@ -511,3 +511,77 @@ impl PoolUpgradeOperation {
 }
 
 impl JsonEncodable for PoolUpgradeOperation {}
+
+#[derive(Serialize, PartialEq, Debug, Deserialize)]
+pub struct RevocationRegistryKeys {
+    pub accum_key: serde_json::Value
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct RevocationRegistryDefOperationValue {
+    pub issuance_type: bool,
+    pub max_cred_num: u32,
+    pub public_keys: RevocationRegistryKeys,
+    pub tails_hash: String,
+    pub tails_location: String
+}
+
+impl JsonEncodable for RevocationRegistryDefOperationValue {}
+
+impl<'a> JsonDecodable<'a> for RevocationRegistryDefOperationValue {}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct RevocationRegistryDefOperation {
+    pub id: String,
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub tag: String,
+    pub cred_def_id: String,
+    pub value: RevocationRegistryDefOperationValue,
+}
+
+impl RevocationRegistryDefOperation {
+    pub fn new(id: &str, tag: &str, cred_def_id: &str, value: RevocationRegistryDefOperationValue) -> RevocationRegistryDefOperation {
+        RevocationRegistryDefOperation {
+            _type: REVOC_REG_DEF.to_string(),
+            id: id.to_string(),
+            tag: tag.to_string(),
+            cred_def_id: cred_def_id.to_string(),
+            value
+        }
+    }
+}
+
+impl JsonEncodable for RevocationRegistryDefOperation {}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct RevocationRegistryEntryOperationValue {
+    pub prev_accum: Option<String>,
+    pub accum: String,
+    pub issued: Option<HashSet<u32>>,
+    pub revoked: Option<HashSet<u32>>
+}
+
+impl JsonEncodable for RevocationRegistryEntryOperationValue {}
+
+impl<'a> JsonDecodable<'a> for RevocationRegistryEntryOperationValue {}
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct RevocationRegistryEntryOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub revoc_reg_def_id: String,
+    pub value: RevocationRegistryEntryOperationValue,
+}
+
+impl RevocationRegistryEntryOperation {
+    pub fn new(revoc_reg_def_id: &str, value: RevocationRegistryEntryOperationValue) -> RevocationRegistryEntryOperation {
+        RevocationRegistryEntryOperation {
+            _type: REVOC_REG_ENTRY.to_string(),
+            revoc_reg_def_id: revoc_reg_def_id.to_string(),
+            value
+        }
+    }
+}
+
+impl JsonEncodable for RevocationRegistryEntryOperation {}

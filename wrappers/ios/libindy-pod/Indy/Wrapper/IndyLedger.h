@@ -59,13 +59,17 @@
 // MARK: - Nym request
 
 /**
- Builds a NYM request.
+ Builds a NYM request. Request to create a new NYM record for a specific user.
 
- @param submitterDid Id of Identity stored in secured Wallet.
- @param targetDid Id of Identity stored in secured Wallet.
- @param verkey Verification key
- @param alias Alias
- @param role Role of a user NYM record
+ @param submitterDid DID of the submitter stored in secured Wallet.
+ @param targetDid Target DID as base58-encoded string for 16 or 32 bit DID value.
+ @param verkey Target identity verification key as base58-encoded string.
+ @param alias NYM's alias.
+ @param role Role of a user NYM record:
+                                 null (common USER)
+                                 TRUSTEE
+                                 STEWARD
+                                 TRUST_ANCHOR
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildNymRequestWithSubmitterDid:(NSString *)submitterDid
@@ -76,10 +80,10 @@
                              completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 /**
- Builds a GET_NYM request.
+ Builds a GET_NYM request. Request to get information about a DID (NYM).
  
- @param submitterDid Id of Identity stored in secured Wallet.
- @param targetDid Id of Identity stored in secured Wallet.
+ @param submitterDid DID of the read request sender.
+ @param targetDid Target DID as base58-encoded string for 16 or 32 bit DID value.
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
@@ -89,13 +93,13 @@
 // MARK: - Attribute request
 
 /**
- Builds an ATTRIB request.
+ Builds an ATTRIB request. Request to add attribute to a NYM record.
 
- @param submitterDid Id of Identity stored in secured Wallet.
- @param targetDid Id of Identity stored in secured Wallet.
- @param hash Hash of attribute data
- @param raw represented as json, where key is attribute name and value is it's value
- @param enc Encrypted attribute data
+ @param submitterDid DID of the read request sender.
+ @param targetDid Target DID as base58-encoded string for 16 or 32 bit DID value.
+ @param raw (Optional) Requested attribute name.
+ @param hash (Optional) Requested attribute hash.
+ @param enc (Optional) Requested attribute encrypted value.
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildAttribRequestWithSubmitterDid:(NSString *)submitterDid
@@ -106,11 +110,13 @@
                                 completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 /**
- Builds a GET_ATTRIB request.
+ Builds a GET_ATTRIB request. Request to get information about an Attribute for the specified DID.
  
- @param submitterDid Id of Identity stored in secured Wallet.
- @param targetDid Id of Identity stored in secured Wallet.
- @param data Name (attribute name)
+ @param submitterDid DID of the read request sender.
+ @param targetDid Target DID as base58-encoded string for 16 or 32 bit DID value.
+ @param raw (Optional) Requested attribute name.
+ @param hash (Optional) Requested attribute hash.
+ @param enc (Optional) Requested attribute encrypted value.
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildGetAttribRequestWithSubmitterDid:(NSString *)submitterDid
@@ -123,10 +129,14 @@
 // MARK: - Schema request
 
 /**
- Builds a SCHEMA request.
+ Builds a SCHEMA request. Request to add Claim's schema.
  
- @param submitterDid Id of Identity stored in secured Wallet.
- @param data Name, version, type, attr_names (ip, port, keys)
+ @param submitterDid DID of the submitter stored in secured Wallet.
+ @param data {
+     attr_names: array of attribute name strings
+     name: Schema's name string
+     version: Schema's version string
+ }
  @param completion Callback that takes command result as parameter. Request result as json.
  */
 + (void)buildSchemaRequestWithSubmitterDid:(NSString *)submitterDid
@@ -134,11 +144,14 @@
                                 completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 /**
- Builds a GET_SCHEMA request.
+ Builds a GET_SCHEMA request. Request to get Claim's Schema.
  
- @param submitterDid Id of Identity stored in secured Wallet.
- @param dest Id of Identity stored in secured Wallet.
- @param data Name, version
+ @param submitterDid DID of the read request sender.
+ @param dest Schema Issuer's DID as base58-encoded string for 16 or 32 bit DID value. It differs from submitter_did field.
+ @param data {
+     name (string): Schema's name string
+     version (string): Schema's version string
+ }
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildGetSchemaRequestWithSubmitterDid:(NSString *)submitterDid
@@ -149,12 +162,16 @@
 // MARK: - ClaimDefTxn request
 
 /**
- Builds an CLAIM_DEF request.
+ Builds an CLAIM_DEF request. Request to add a claim definition (in particular, public key),
+ that Issuer creates for a particular Claim Schema.
  
- @param submitterDid Id of Identity stored in secured Wallet.
- @param xref Seq. number of schema
- @param signatureType Signature type (only CL supported now)
- @param data Components of a key in json: N, R, S, Z
+ @param submitterDid DID of the submitter stored in secured Wallet.
+ @param xref Sequence number of a Schema transaction the claim definition is created for.
+ @param signatureType Type of the claim definition. CL is the only supported type now.
+ @param data Dictionary with Claim Definition's data: {
+     primary: primary claim public key
+     revocation: revocation claim public key
+ }
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
@@ -164,12 +181,13 @@
                               completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 /**
- Builds a GET_CLAIM_DEF request.
+ Builds a GET_CLAIM_DEF request. Request to get a claim definition (in particular, public key),
+ that Issuer creates for a particular Claim Schema.
  
- @param submitterDid Id of Identity stored in secured Wallet.
- @param xref Seq. number of schema
- @param signatureType signature type (only CL supported now)
- @param origin issuer did
+ @param submitterDid DID of the read request sender.
+ @param xref Sequence number of a Schema transaction the claim definition is created for.
+ @param signatureType Type of the claim definition. CL is the only supported type now.
+ @param origin Claim Definition Issuer's DID as base58-encoded string for 16 or 32 bit DID value.
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildGetClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
@@ -195,11 +213,19 @@
 // MARK: - Node request
 
 /**
- Builds a NODE request.
+ Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
  
- @param submitterDid Id of Identity stored in secured Wallet.
- @param targetDid Id of Identity stored in secured Wallet.
- @param data id of a target NYM record
+ @param submitterDid DID of the submitter stored in secured Wallet.
+ @param targetDid Target Node's DID.  It differs from submitter_did field.
+ @param data Data associated with the Node: {
+     alias: string - Node's alias
+     blskey: string - (Optional) BLS multi-signature key as base58-encoded string.
+     client_ip: string - (Optional) Node's client listener IP address.
+     client_port: string - (Optional) Node's client listener port.
+     node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.
+     node_port: string - (Optional) The port other Nodes use to communicate with this Node.
+     services: array<string> - (Optional) The service of the Node. VALIDATOR is the only supported one now.
+ }
  @param completion Callback that takes command result as parameter. Return request result as json.
  */
 + (void)buildNodeRequestWithSubmitterDid:(NSString *)submitterDid
@@ -210,10 +236,10 @@
 // MARK: - Txn request
 
 /**
- Builds a GET_TXN request.
+ Builds a GET_TXN request. Request to get any transaction by its seq_no.
 
- @param submitterDid Id of Identity stored in secured Wallet.
- @param data seq_no of transaction in ledger
+ @param submitterDid DID of the request submitter.
+ @param data seq_no of transaction in ledger.
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
@@ -223,11 +249,13 @@
 // MARK: - Pool config request
 
 /**
- Builds a POOL_CONFIG request.
+ Builds a POOL_CONFIG request. Request to change Pool's configuration.
 
- @param submitterDid Id of Identity stored in secured Wallet.
- @param writes
- @param force
+ @param submitterDid DID of the submitter stored in secured Wallet.
+ @param writes Whether any write requests can be processed by the pool
+               (if false, then pool goes to read-only state). True by default.
+ @param force Whether we should apply transaction (for example, move pool to read-only state)
+              without waiting for consensus of this transaction.
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildPoolConfigRequestWithSubmitterDid:(NSString *)submitterDid
@@ -237,18 +265,20 @@
 // MARK: - Pool upgrade request
 
 /**
- Builds a POOL_UPGRADE request.
+ Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
+ It upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).
 
- @param submitterDid Id of Identity stored in secured Wallet.
- @param name
- @param version
- @param action
- @param sha256
- @param timeout
- @param schedule
- @param justification
- @param reinstall
- @param force
+ @param submitterDid DID of the submitter stored in secured Wallet.
+ @param name Human-readable name for the upgrade.
+ @param version The version of indy-node package we perform upgrade to.
+                Must be greater than existing one (or equal if reinstall flag is True).
+ @param action Either start or cancel.
+ @param sha256 sha256 hash of the package.
+ @param timeout (Optional) Limits upgrade time on each Node.
+ @param schedule (Optional) Schedule of when to perform upgrade on each node. Map Node DIDs to upgrade time.
+ @param justification (Optional) justification string for this particular Upgrade.
+ @param reinstall Whether it's allowed to re-install the same version. False by default.
+ @param force Whether we should apply transaction (schedule Upgrade) without waiting for consensus of this transaction.
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildPoolUpgradeRequestWithSubmitterDid:(NSString *)submitterDid
@@ -262,5 +292,54 @@
                                       reinstall:(BOOL)reinstall
                                           force:(BOOL)force
                                      completion:(void (^)(NSError *error, NSString *requestJSON))completion;
+// MARK: - Revocation registry definition request
+
+/**
+ Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry to an exists claim definition.
+
+ @param submitterDid DID of the submitter stored in secured Wallet.
+ @param type Revocation Registry type (only CL_ACCUM is supported for now).
+ @param tag Unique descriptive ID of the Registry.
+ @param credDefId ID of the corresponding ClaimDef.
+ @param value Registry-specific data: {
+     issuance_type: string - Type of Issuance(ISSUANCE_BY_DEFAULT or ISSUANCE_ON_DEMAND),
+     max_cred_num: number - Maximum number of credentials the Registry can serve.
+     public_keys: <public_keys> - Registry's public key.
+     tails_hash: string - Hash of tails.
+     tails_locaiton: string - Location of tails file.
+ }
+ @param completion Callback that takes command result as parameter. Returns request result as json.
+ */
++ (void)buildRevocRegDefRequestWithSubmitterDid:(NSString *)submitterDid
+                                           type:(NSString *)type
+                                            tag:(NSString *)tag
+                                      credDefId:(NSString *)credDefId
+                                          value:(NSString *)value
+                                     completion:(void (^)(NSError *error, NSString *requestJSON))completion;
+// MARK: - Revocation registry delta request
+
+/**
+ Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
+ /// the new accumulator value and issued/revoked indices.
+ /// This is just a delta of indices, not the whole list.
+ /// So, it can be sent each time a new claim is issued/revoked.
+
+ @param submitterDid DID of the submitter stored in secured Wallet.
+ @param type Revocation Registry type (only CL_ACCUM is supported for now).
+ @param revocRegDefId ID of the corresponding RevocRegDef.
+ @param value Registry-specific data: {
+     issued: array<number> - an array of issued indices.
+     revoked: array<number> an array of revoked indices
+     prev_accum: previous accumulator value.
+     accum: current accumulator value.
+ }
+ @param completion Callback that takes command result as parameter. Returns request result as json.
+ */
++ (void)buildRevocRegDeltaRequestWithSubmitterDid:(NSString *)submitterDid
+                                             type:(NSString *)type
+                                    revocRegDefId:(NSString *)revocRegDefId
+                                            value:(NSString *)value
+                                       completion:(void (^)(NSError *error, NSString *requestJSON))completion;
+
 
 @end

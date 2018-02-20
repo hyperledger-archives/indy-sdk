@@ -54,6 +54,8 @@ public abstract class LibIndy {
 		public int indy_build_get_txn_request(int command_handle, String submitter_did, int data, Callback cb);
 		public int indy_build_pool_config_request(int command_handle, String submitter_did, boolean writes, boolean force, Callback cb);
 		public int indy_build_pool_upgrade_request(int command_handle, String submitter_did, String name, String version, String action, String sha256, int timeout, String schedule, String justification, boolean reinstall, boolean force, Callback cb);
+		public int indy_build_revoc_reg_def_request(int command_handle, String submitter_did, String type, String tag, String cred_def_id, String value, Callback cb);
+		public int indy_build_revoc_reg_delta_request(int command_handle, String submitter_did, String type, String revoc_reg_def_id, String value, Callback cb);
 
 		// did.rs
 
