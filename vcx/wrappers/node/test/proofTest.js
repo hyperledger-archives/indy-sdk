@@ -59,7 +59,8 @@ describe('A Proof', function () {
     try {
       await proof.serialize()
     } catch (error) {
-      assert.equal(error.toString(), 'Error: vcx_proof_serialize -> 1017')
+      assert.equal(error.code, 1017)
+      assert.equal(error.message, 'vcx_proof_serialize')
     }
   })
 
@@ -88,8 +89,9 @@ describe('A Proof', function () {
     const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
     try {
       await proof.requestProof(connection)
-    } catch (err) {
-      assert.equal(err.toString(), 'Error: vcx_proof_send_request -> 1003')
+    } catch (error) {
+      assert.equal(error.code, 1003)
+      assert.equal(error.message, 'vcx_proof_send_request')
     }
   })
 
@@ -102,8 +104,9 @@ describe('A Proof', function () {
     await proof.release()
     try {
       await proof.requestProof(connection)
-    } catch (err) {
-      assert.equal(err.toString(), 'Error: vcx_proof_send_request -> 1017')
+    } catch (error) {
+      assert.equal(error.code, 1017)
+      assert.equal(error.message, 'vcx_proof_send_request')
     }
   })
 

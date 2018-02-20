@@ -49,7 +49,8 @@ describe('A ClaimDef', function () {
     try {
       await claimDef.serialize()
     } catch (error) {
-      assert.equal(error.toString(), 'Error: vcx_claimdef_serialize -> 1037')
+      assert.equal(error.code, 1037)
+      assert.equal(error.message, 'vcx_claimdef_serialize')
     }
   })
 })
