@@ -100,7 +100,7 @@ export class IssuerClaim extends VCXBaseWithState {
       )
       return claim
     } catch (err) {
-      throw new VCXInternalError(`vcx_issuer_create_claim -> ${err}`)
+      throw new VCXInternalError(err, 'vcx_issuer_create_claim')
     }
   }
 
@@ -128,7 +128,7 @@ export class IssuerClaim extends VCXBaseWithState {
       const claim = await super._deserialize<IssuerClaim, IClaimParams>(IssuerClaim, claimData, params)
       return claim
     } catch (err) {
-      throw new VCXInternalError(`vcx_issuer_claim_deserialize -> ${err}`)
+      throw new VCXInternalError(err, 'vcx_issuer_claim_deserialize')
     }
   }
 
@@ -142,8 +142,8 @@ export class IssuerClaim extends VCXBaseWithState {
   async getState (): Promise<number> {
     try {
       return await this._getState()
-    } catch (error) {
-      throw new VCXInternalError(`vcx_issuer_claim_get_state -> ${error}`)
+    } catch (err) {
+      throw new VCXInternalError(err, 'vcx_issuer_claim_get_state')
     }
   }
 
@@ -157,8 +157,8 @@ export class IssuerClaim extends VCXBaseWithState {
   async updateState (): Promise<void> {
     try {
       await this._updateState()
-    } catch (error) {
-      throw new VCXInternalError(`vcx_issuer_claim_updateState -> ${error}`)
+    } catch (err) {
+      throw new VCXInternalError(err, 'vcx_issuer_claim_updateState')
     }
   }
 
@@ -175,7 +175,7 @@ export class IssuerClaim extends VCXBaseWithState {
     try {
       return JSON.parse(await super._serialize())
     } catch (err) {
-      throw new VCXInternalError(`vcx_issuer_claim_serialize -> ${err}`)
+      throw new VCXInternalError(err, 'vcx_issuer_claim_serialize')
     }
   }
 
@@ -208,7 +208,7 @@ export class IssuerClaim extends VCXBaseWithState {
         )
     } catch (err) {
       // TODO handle error
-      throw new VCXInternalError(`vcx_issuer_send_claim_offer -> ${err}`)
+      throw new VCXInternalError(err, 'vcx_issuer_send_claim_offer')
     }
   }
 
@@ -240,7 +240,7 @@ export class IssuerClaim extends VCXBaseWithState {
         })
       )
     } catch (err) {
-      throw new VCXInternalError(`vcx_issuer_send_claim -> ${err}`)
+      throw new VCXInternalError(err, 'vcx_issuer_send_claim')
     }
   }
 
