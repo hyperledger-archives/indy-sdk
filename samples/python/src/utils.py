@@ -1,3 +1,4 @@
+import asyncio
 from os import environ
 from pathlib import Path
 from tempfile import gettempdir
@@ -32,3 +33,9 @@ def save_pool_genesis_txn_file(path):
 
     with open(str(path), "w+") as f:
         f.writelines(data)
+
+
+def run_coroutine(coroutine, loop=None):
+    if loop is None:
+        loop = asyncio.get_event_loop()
+    loop.run_until_complete(coroutine())

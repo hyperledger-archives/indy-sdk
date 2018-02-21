@@ -1,10 +1,14 @@
+import time
+
 from indy import anoncreds, crypto, did, ledger, pool, wallet
 
 import json
 import logging
 from typing import Optional
 
-from src.utils import get_pool_genesis_txn_path
+from indy.error import ErrorCode, IndyError
+
+from src.utils import get_pool_genesis_txn_path, run_coroutine
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -13,11 +17,15 @@ logging.basicConfig(level=logging.INFO)
 async def run():
     logger.info("Getting started -> started")
 
-    logger.info("Open Pool Ledger")
     pool_name = 'pool1'
+    logger.info("Open Pool Ledger: {}".format(pool_name))
     pool_genesis_txn_path = get_pool_genesis_txn_path(pool_name)
     pool_config = json.dumps({"genesis_txn": str(pool_genesis_txn_path)})
-    await pool.create_pool_ledger_config(pool_name, pool_config)
+    try:
+        await pool.create_pool_ledger_config(pool_name, pool_config)
+    except IndyError as ex:
+        if ex.error_code == ErrorCode.PoolLedgerConfigAlreadyExistsError:
+            pass
     pool_handle = await pool.open_pool_ledger(pool_name, None)
 
     logger.info("==============================")
@@ -26,7 +34,13 @@ async def run():
 
     logger.info("\"Sovrin Steward\" -> Create wallet")
     steward_wallet_name = 'sovrin_steward_wallet'
-    await wallet.create_wallet(pool_name, steward_wallet_name, None, None, None)
+    try:
+        await wallet.create_wallet(pool_name, steward_wallet_name, None, None,
+                                   None)
+    except IndyError as ex:
+        if ex.error_code == ErrorCode.WalletAlreadyExistsError:
+            pass
+
     steward_wallet = await wallet.open_wallet(steward_wallet_name, None, None)
 
     logger.info("\"Sovrin Steward\" -> Create and store in Wallet DID from seed")
@@ -732,7 +746,12 @@ async def onboarding(pool_handle, pool_name, _from, from_wallet, from_did, to,
 
     if not to_wallet:
         logger.info("\"{}\" -> Create wallet".format(to))
-        await wallet.create_wallet(pool_name, to_wallet_name, None, None, None)
+        try:
+            await wallet.create_wallet(pool_name, to_wallet_name, None, None,
+                                       None)
+        except IndyError as ex:
+            if ex.error_code == ErrorCode.PoolLedgerConfigAlreadyExistsError:
+                pass
         to_wallet = await wallet.open_wallet(to_wallet_name, None, None)
 
     logger.info("\"{}\" -> Create and store in Wallet \"{} {}\" DID".format(to, to, _from))
@@ -852,3 +871,8 @@ async def auth_decrypt(wallet_handle, key, message):
     decrypted_message_json = decrypted_message_json.decode("utf-8")
     decrypted_message = json.loads(decrypted_message_json)
     return from_verkey, decrypted_message_json, decrypted_message
+
+
+if __name__ == '__main__':
+    run_coroutine(run)
+    time.sleep(1)  # FIXME waiting for libindy thread complete
