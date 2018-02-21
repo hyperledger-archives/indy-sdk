@@ -1,9 +1,10 @@
-# Goals
+# Tails
+
+## Goals
 * Provide default implementation on indy-sdk level for Tails routine
 * Need to be able to extend and customize tails handler in applications
   * For example allow client to not downloads whole large tails
 
-# Tails
 It's an ordered sequence of elements used for non-revocation proof. "As is" tails is static (once generated) array of BigIntegers
 * may require quite huge amount of data (up to 1/2GB per Issuer revocation registry);
 * are created and uploaded by Issuers;
@@ -32,23 +33,27 @@ It's an ordered sequence of elements used for non-revocation proof. "As is" tail
 
 ## Tails API in SDK
 ### TailsReader
-* tails_reader_verify_consistency(type, URI, hash) -> bool
-* tails_reader_open(type, URI, hash) -> handle
-* tails_reader_close(handle)
-* tails_reader_calc_tail_offset(idx) -> offset
-* tails_reader_tail_from_bytes(tail_bytes)
-* tails_reader_register_type(type,
-    (access_tail)(handle, idx) -> Tail,
-    (verify_consistency)(URI) -> hash
+* indy_open_tails_reader(type, config, tails_location, tails_hash) -> tails_reader_handle
+  * config
+    - baseDir
+* indy_verify_tails(tails_reader_handle) -> bool
+* indy_close_tails_reader(tails_reader_handle)
+* indy_register_tails_reader_type(type,
+     (open)(url, hash, config) -> handle,
+     (close)(handle),
+     (read)(handle, buffer, size, offset),
   )
 
 `handle` will be used for calls like `indy_prover_create_proof` or `indy_issuer_revoke_claim`
 
 ### TailsWriter
-* tails_writer_init_config(type, config) -> config_handle
-* tails_writer_register_type(type,
-    (append_tail)(tail_bytes)
-    (finalize_tail)() -> hash
+* indy_register_tails_writer_type(type,
+    (init)(config) -> handle,
+    (append)(handle, buffer, size)
+    (finalize)(handle, hash) -> tails_location
   )
 
-`config_handle` will be used in `indy_issuer_create_and_store_revoc_reg` (multiply times)
+Also `tails_writer_config` json should be passed into `indy_issuer_create_and_store_revoc_reg`.
+For default Tails Writer the config fields are:
+* baseDir
+* URIPattern
