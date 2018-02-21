@@ -26,7 +26,7 @@ It's an ordered sequence of elements used for non-revocation proof. "As is" tail
   The new one version of API should return public part of revocation registry without Tails. 
   And also it returns `RevocationTailsGenerator` object which should be used to generate all tails one by one and store it somehow
   * `count() -> u32` count of rest Tails in the generator
-  * `next() -> Result<Tail, IndyCryptoError>` - generate next tail
+  * `next() -> Result<Option<Tail>, IndyCryptoError>` - generate next tail
 * Tail::from_bytes
 * Tail::to_bytes   
 
@@ -35,10 +35,10 @@ It's an ordered sequence of elements used for non-revocation proof. "As is" tail
 * tails_reader_verify_consistency(type, URI, hash) -> bool
 * tails_reader_open(type, URI, hash) -> handle
 * tails_reader_close(handle)
-* tails_reader_calc_tail_offset()
+* tails_reader_calc_tail_offset(idx) -> offset
 * tails_reader_tail_from_bytes(tail_bytes)
 * tails_reader_register_type(type,
-    (access_tail)(handle, idx) -> Tail
+    (access_tail)(handle, idx) -> Tail,
     (verify_consistency)(URI) -> hash
   )
 
@@ -52,6 +52,3 @@ It's an ordered sequence of elements used for non-revocation proof. "As is" tail
   )
 
 `config_handle` will be used in `indy_issuer_create_and_store_revoc_reg` (multiply times)
-
-## Default VS implementation in SDK
-TODO
