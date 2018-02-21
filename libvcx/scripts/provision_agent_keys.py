@@ -48,16 +48,8 @@ def get_agency_info(agency_url):
     return agency_info
 
 def register_agent(args):
-    try:
-        #Try to load the SO from CWD first
-        vcx = CDLL("./libvcx.so")
-    except OSError as e:
-        if 'No such file or directory' in e.args:
-            try:
-                #Not found, Try from system library paths
-                vcx = CDLL("libvcx.so")
-            except:
-                raise
+    vcx = CDLL("/usr/lib/libvcx.so")
+
     agency_info = get_agency_info(args.AGENCY_URL)
     json_str = json.dumps({'agency_url':args.AGENCY_URL,
         'agency_did':agency_info['DID'],
