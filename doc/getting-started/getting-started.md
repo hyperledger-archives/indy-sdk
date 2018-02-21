@@ -12,9 +12,9 @@
       * [Step 1: Getting Trust Anchor Credentials for Faber, Acme, Thrift and Government](#step-1-getting-trust-anchor-credentials-for-faber-acme-thrift-and-government)
       * [Step 2: Connecting to the Indy Nodes Pool](#step-2-connecting-to-the-indy-nodes-pool)
       * [Step 3: Getting the Ownership for Stewards's Verinym](#step-3-getting-the-ownership-for-stewardss-verinym)
-      * [Step 4: Onboarding Faber, Acme, Thrift and Government by the Steward](#step-4-onboarding-faber-acme-thrift-and-government-by-the-steward)
+      * [Step 4: Onboarding Faber, Acme, Thrift and Government by the Steward](#step-4-onboarding-faber-acme-thrift-and-government-by-steward)
         * [Connecting the Establishment](#connecting-the-establishment)
-        * [Getting the Verinym](#getting-the-verinym)
+        * [Getting the Verinym](#getting-verinym)
       * [Step 5: Claim Schemas Setup](#step-5-claim-schemas-setup)
       * [Step 6: Claim Definition Setup](#step-6-claim-definition-setup)
   * [Alice Gets a Transcript](#alice-gets-a-transcript)
@@ -44,11 +44,11 @@ Ready?
 
 As a graduate of Faber College, Alice receives an alumni newsletter where she learns that her alma mater is offering digital transcripts. She logs in to the college alumni website and requests her transcript by clicking **Get Transcript**.  (Other ways to initiate this request might include scanning a QR code, downloading a transcript package from a published URL, etc.)
 
-Alice doesn’t realize it yet, but in order to use this digital transcript she will need a new type of identity -- not the traditional identity that Faber College has built for her in its on-campus database, but a new and portable one that belongs to her, independent of all past and future relationships, that nobody can revoke or co-opt or correlate without her permission. This is a **_self-sovereign identity_** and it is the core feature of the ledger.
+Alice doesn’t realize it yet, but in order to use this digital transcript she will need a new type of identity — not the traditional identity that Faber College has built for her in its on-campus database, but a new and portable one that belongs to her, independent of all past and future relationships, that nobody can revoke or co-opt or correlate without her permission. This is a **_self-sovereign identity_** and it is the core feature of the ledger.
 
 In normal contexts, managing a self-sovereign identity will require a tool such as a desktop or mobile application. It might be a standalone app or it might leverage a third party service provider that the ledger calls an **agency**. For example, leaders in this technology such as the Sovrin Foundation and companies like Evernym, publish reference versions of such tools. Faber College will have studied these requirements and will recommend an **_Indy app_** to Alice if she doesn’t already have one. This app will install as part of the workflow from the **Get Transcript** button.
 
-When Alice clicks **Get Transcript**, she will download a file that holds an Indy **connection request**. This connection request file, having an .indy extension and associated with her Indy app, will allow her to establish a secure channel of communication with another party in the ledger ecosystem -- Faber College.
+When Alice clicks **Get Transcript**, she will download a file that holds an Indy **connection request**. This connection request file, having an .indy extension and associated with her Indy app, will allow her to establish a secure channel of communication with another party in the ledger ecosystem — Faber College.
 
 So when Alice clicks **Get Transcript**, she will normally end up installing an app (if needed), launching it, and then being asked by the app whether she wants to accept a request to connect with Faber.
 
@@ -89,7 +89,7 @@ The ``pool.create_pool_ledger_config`` call allows you to create a named pool co
 The below code block below contains each of these items. Note how the comments denote that this is the code for the "Steward Agent."
 
 ```python
-  " Steward Agent
+  " # Steward Agent
   pool_name = 'pool1'
   pool_genesis_txn_path = get_pool_genesis_txn_path(pool_name)
   pool_config = json.dumps({"genesis_txn": str(pool_genesis_txn_path)})
@@ -212,7 +212,7 @@ Let's look the process of connection establishment between **Steward** and **Fab
         (await crypto.anon_decrypt(steward_wallet, steward_faber_key, anoncrypted_connection_response)).decode("utf-8")
     ```
 
-14. **Steward** authenticates **Faber** by the comparision of Nonce.
+14. **Steward** authenticates **Faber** by the comparison of Nonce.
     ```python
     # Steward Agent
     assert connection_request['nonce'] == decrypted_connection_response['nonce']
@@ -278,7 +278,7 @@ After the connection is established **Faber** must create new DID record that he
     faber_verkey = await did.key_for_did(pool_handle, from_wallet, faber_did_info['did'])
     ```
 
-7. **Steward** authenticates **Faber** by comparision of the Message Sender Verkey and the **Faber** Verkey received from the Ledger.
+7. **Steward** authenticates **Faber** by comparison of the Message Sender Verkey and the **Faber** Verkey received from the Ledger.
     ```python        
     # Steward Agent    
     assert sender_verkey == faber_verkey
@@ -420,7 +420,7 @@ At this point we have a **Claim Definition** for the **Job-Certificate** Claim S
 
 ## Alice Gets a Transcript
 
-A claim is a piece of information about an identity -- a name, an age, a credit score… It is information claimed to be true. In this case, the claim is named, "Transcript".
+A claim is a piece of information about an identity — a name, an age, a credit score… It is information claimed to be true. In this case, the claim is named, "Transcript".
 
 Claims are offered by an issuer.
 
@@ -736,7 +736,7 @@ Now the **Job-Certificate** Claim has been issued and Alice now has it in her po
 
 She can use it when she applies for her loan, in much the same way that she used her transcript when applying for a job.
 
-There is a disadvantage in this approach to data sharing though, -- it may disclose more data than what is strictly necessary. If all Alice needs to do is provide proof of employment, this can be done with an anonymous credential instead. Anonymous credentials may prove certain predicates without disclosing actual values (e.g., Alice is employed full-time, with a salary greater than X, along with her hire date, but her actually salary remains hidden). A compound proof can be created, drawing from claims from both Faber College and Acme Corp, that discloses only what is necessary.
+There is a disadvantage in this approach to data sharing though, — it may disclose more data than what is strictly necessary. If all Alice needs to do is provide proof of employment, this can be done with an anonymous credential instead. Anonymous credentials may prove certain predicates without disclosing actual values (e.g., Alice is employed full-time, with a salary greater than X, along with her hire date, but her actually salary remains hidden). A compound proof can be created, drawing from claims from both Faber College and Acme Corp, that discloses only what is necessary.
 
 Alice now establishes connection with Thrift Bank.
 
