@@ -59,7 +59,7 @@ describe('A Proof', function () {
     try {
       await proof.serialize()
     } catch (error) {
-      assert.equal(error.code, 1017)
+      assert.equal(error.vcxCode, 1017)
       assert.equal(error.message, 'vcx_proof_serialize')
     }
   })
@@ -90,7 +90,7 @@ describe('A Proof', function () {
     try {
       await proof.requestProof(connection)
     } catch (error) {
-      assert.equal(error.code, 1003)
+      assert.equal(error.vcxCode, 1003)
       assert.equal(error.message, 'vcx_proof_send_request')
     }
   })
@@ -105,7 +105,7 @@ describe('A Proof', function () {
     try {
       await proof.requestProof(connection)
     } catch (error) {
-      assert.equal(error.code, 1017)
+      assert.equal(error.vcxCode, 1017)
       assert.equal(error.message, 'vcx_proof_send_request')
     }
   })

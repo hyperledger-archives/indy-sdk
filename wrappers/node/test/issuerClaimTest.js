@@ -113,7 +113,7 @@ describe('An issuerClaim', async function () {
     try {
       await claim.serialize()
     } catch (error) {
-      assert.equal(error.code, Error.INVALID_ISSUER_CLAIM_HANDLE)
+      assert.equal(error.vcxCode, Error.INVALID_ISSUER_CLAIM_HANDLE)
       assert.equal(error.message, 'vcx_issuer_claim_serialize')
     }
   })
@@ -154,7 +154,7 @@ describe('An issuerClaim', async function () {
     try {
       await claim.sendClaim(connection)
     } catch (error) {
-      assert.equal(error.code, Error.INVALID_ISSUER_CLAIM_HANDLE)
+      assert.equal(error.vcxCode, Error.INVALID_ISSUER_CLAIM_HANDLE)
       assert.equal(error.message, 'vcx_issuer_send_claim')
     }
   })
@@ -167,7 +167,7 @@ describe('An issuerClaim', async function () {
     try {
       await claim.sendClaim(releasedConnection)
     } catch (error) {
-      assert.equal(error.code, Error.INVALID_CONNECTION_HANDLE)
+      assert.equal(error.vcxCode, Error.INVALID_CONNECTION_HANDLE)
       assert.equal(error.message, 'vcx_issuer_send_claim')
     }
   })
@@ -177,7 +177,7 @@ describe('An issuerClaim', async function () {
     const sourceId = 'Claim'
     const claim = await IssuerClaim.create({ ...config, sourceId })
     const error = await shouldThrow(() => claim.sendClaim(connection))
-    assert.equal(error.code, Error.NOT_READY)
+    assert.equal(error.vcxCode, Error.NOT_READY)
     assert.equal(error.message, 'vcx_issuer_send_claim')
   })
 
