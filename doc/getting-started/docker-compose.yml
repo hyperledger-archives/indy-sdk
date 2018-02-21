@@ -22,7 +22,7 @@ services:
       pool_network:
         ipv4_address: 10.0.0.2
     volumes:
-       - sandbox:/home/indy/.indy-cli/networks/sandbox
+       - sandbox:/var/lib/indy/sandbox/
   jupyther:
     build:
       context: .
