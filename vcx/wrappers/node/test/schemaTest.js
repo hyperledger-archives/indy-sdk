@@ -61,7 +61,7 @@ describe('A Shema', function () {
     try {
       await schema.serialize()
     } catch (error) {
-      assert.equal(error.code, 1042)
+      assert.equal(error.vcxCode, 1042)
       assert.equal(error.message, 'vcx_schema_serialize')
     }
   })

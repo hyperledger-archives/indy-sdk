@@ -61,7 +61,7 @@ describe('A Connection object with ', function () {
     try {
       await connection.serialize()
     } catch (error) {
-      assert.equal(error.code, 1003)
+      assert.equal(error.vcxCode, 1003)
       assert.equal(error.message, 'vcx_connection_serialize')
     }
   })
@@ -81,7 +81,7 @@ describe('A Connection object with ', function () {
     try {
       await connection.serialize()
     } catch (error) {
-      assert.equal(error.code, 1003)
+      assert.equal(error.vcxCode, 1003)
       assert.equal(error.message, 'vcx_connection_serialize')
     }
   })
@@ -101,7 +101,7 @@ describe('A Connection object with ', function () {
     try {
       await Connection.deserialize({source_id: 'Invalid'})
     } catch (error) {
-      assert.equal(error.code, 1016)
+      assert.equal(error.vcxCode, 1016)
       assert.equal(error.message, 'vcx_connection_deserialize')
     }
   })
@@ -170,7 +170,7 @@ describe('A Connection object with ', function () {
     try {
       await connection.serialize()
     } catch (error) {
-      assert.equal(error.code, 1003)
+      assert.equal(error.vcxCode, 1003)
       assert.equal(error.message, 'vcx_connection_serialize')
     }
   })
