@@ -3,7 +3,7 @@ extern crate indy_crypto;
 use errors::common::CommonError;
 
 use services::anoncreds::types::{PredicateInfo, SchemaKey};
-use self::indy_crypto::cl::{issuer, verifier, ClaimSchema, ClaimValues, SubProofRequest};
+use self::indy_crypto::cl::{issuer, verifier, CredentialSchema, CredentialValues, SubProofRequest};
 
 use std::collections::{HashSet, HashMap};
 
@@ -11,23 +11,23 @@ pub fn get_composite_id(issuer_did: &str, schema_key: &SchemaKey) -> String {
     format!("{}:{}:{}:{}", issuer_did, schema_key.name, schema_key.version, schema_key.did)
 }
 
-pub fn build_claim_schema(attrs: &HashSet<String>) -> Result<ClaimSchema, CommonError> {
-    let mut claim_schema_builder = issuer::Issuer::new_claim_schema_builder()?;
+pub fn build_credential_schema(attrs: &HashSet<String>) -> Result<CredentialSchema, CommonError> {
+    let mut credential_schema_builder = issuer::Issuer::new_credential_schema_builder()?;
     for attr in attrs {
-        claim_schema_builder.add_attr(&attr)?;
+        credential_schema_builder.add_attr(&attr)?;
     }
-    Ok(claim_schema_builder.finalize()?)
+    Ok(credential_schema_builder.finalize()?)
 }
 
-pub fn build_claim_values(claim_values: &HashMap<String, Vec<String>>) -> Result<ClaimValues, CommonError> {
-    let mut claim_values_builder = issuer::Issuer::new_claim_values_builder()?;
-    for (attr, values) in claim_values {
+pub fn build_credential_values(credential_values: &HashMap<String, Vec<String>>) -> Result<CredentialValues, CommonError> {
+    let mut credential_values_builder = issuer::Issuer::new_credential_values_builder()?;
+    for (attr, values) in credential_values {
         let dec_val = values.get(1)
             .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?;
 
-        claim_values_builder.add_value(&attr, &dec_val)?;
+        credential_values_builder.add_value(&attr, &dec_val)?;
     }
-    Ok(claim_values_builder.finalize()?)
+    Ok(credential_values_builder.finalize()?)
 }
 
 pub fn build_sub_proof_request(attrs_for_claim: &Vec<String>, predicates_for_claim: &Vec<PredicateInfo>) -> Result<SubProofRequest, CommonError> {

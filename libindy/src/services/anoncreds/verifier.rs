@@ -3,7 +3,7 @@ extern crate indy_crypto;
 use services::anoncreds::types::*;
 use std::collections::HashMap;
 use errors::common::CommonError;
-use self::indy_crypto::cl::IssuerPublicKey;
+use self::indy_crypto::cl::{CredentialPublicKey, RevocationKeyPublic, RevocationRegistry};
 use self::indy_crypto::cl::verifier::Verifier as CryptoVerifier;
 use services::anoncreds::helpers::*;
 
@@ -17,32 +17,35 @@ impl Verifier {
     pub fn verify(&self,
                   full_proof: &FullProof,
                   proof_req: &ProofRequest,
-                  claim_defs: &HashMap<String, ClaimDefinition>,
-                  revoc_regs: &HashMap<String, RevocationRegistry>,
-                  schemas: &HashMap<String, Schema>) -> Result<bool, CommonError> {
-        info!("verify >>> full_proof: {:?}, proof_req: {:?}, claim_defs: {:?}, revoc_regs: {:?}, schemas: {:?}",
-              full_proof, proof_req, claim_defs, revoc_regs, schemas);
+                  credential_schemas: &HashMap<String, Schema>,
+                  credential_defs: &HashMap<String, CredentialDefinition>,
+                  rev_reg_defs: &HashMap<String, RevocationRegistryDefinition>,
+                  rev_regs: &HashMap<String, RevocationRegistry>) -> Result<bool, CommonError> {
+        info!("verify >>> full_proof: {:?}, proof_req: {:?}, credential_schemas: {:?}, credential_defs: {:?}, rev_reg_defs: {:?} rev_regs: {:?}",
+               full_proof, proof_req, credential_schemas, credential_defs, rev_reg_defs, rev_regs);
 
         let mut proof_verifier = CryptoVerifier::new_proof_verifier()?;
 
-        for (referent, claim_definition) in claim_defs {
-            let schema = schemas.get(referent.as_str())
+        for (referent, credential_def) in credential_defs.iter() {
+            let credential_schema = credential_schemas.get(referent)
                 .ok_or(CommonError::InvalidStructure(format!("Schema not found")))?;
-            let revocation_registry = revoc_regs.get(referent.as_str());
+            let rev_reg_def = rev_reg_defs.get(referent);
+            let rev_reg = rev_regs.get(referent);
 
-            let attrs_for_claim = Verifier::_get_revealed_attributes_for_claim(referent.as_str(), &full_proof.requested_proof, proof_req)?;
-            let predicates_for_claim = Verifier::_get_predicates_for_claim(referent.as_str(), &full_proof.requested_proof, proof_req)?;
+            let attrs_for_credential = Verifier::_get_revealed_attributes_for_credential(referent, &full_proof.requested_proof, proof_req)?;
+            let predicates_for_credential = Verifier::_get_predicates_for_credential(referent, &full_proof.requested_proof, proof_req)?;
 
-            let claim_schema = build_claim_schema(&schema.data.attr_names)?;
-            let sub_proof_request = build_sub_proof_request(&attrs_for_claim, &predicates_for_claim)?;
+            let credential_schema = build_credential_schema(&credential_schema.data.attr_names)?;
+            let sub_proof_request = build_sub_proof_request(&attrs_for_credential, &predicates_for_credential)?;
 
-            let issuer_pub_key = IssuerPublicKey::build_from_parts(&claim_definition.data.primary, claim_definition.data.revocation.as_ref())?;
+            let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.data.primary, credential_def.data.revocation.as_ref())?;
 
-            proof_verifier.add_sub_proof_request(referent.as_str(),
+            proof_verifier.add_sub_proof_request(referent,
                                                  &sub_proof_request,
-                                                 &claim_schema,
-                                                 &issuer_pub_key,
-                                                 revocation_registry.map(|rev_reg| &rev_reg.data))?;
+                                                 &credential_schema,
+                                                 &credential_pub_key,
+                                                 rev_reg_def.as_ref().map(|r_reg_def| &r_reg_def.public_keys.accum_key),
+                                                 rev_reg)?;
         }
 
         let valid = proof_verifier.verify(&full_proof.proof, &proof_req.nonce)?;
@@ -52,41 +55,41 @@ impl Verifier {
         Ok(valid)
     }
 
-    fn _get_revealed_attributes_for_claim(referent: &str, requested_proof: &RequestedProof, proof_req: &ProofRequest) -> Result<Vec<String>, CommonError> {
-        info!("_get_revealed_attributes_for_claim >>> referent: {:?}, requested_claims: {:?}, proof_req: {:?}",
-              referent, requested_proof, proof_req);
+    fn _get_revealed_attributes_for_credential(referent: &str,
+                                               requested_proof: &RequestedProof,
+                                               proof_req: &ProofRequest) -> Result<Vec<String>, CommonError> {
+        info!("_get_revealed_attributes_for_credential >>> referent: {:?}, requested_credentials: {:?}, proof_req: {:?}",
+               referent, requested_proof, proof_req);
 
-        let mut revealed_attrs_for_claim: Vec<String> = Vec::new();
+        let revealed_attrs_for_credential = requested_proof.revealed_attrs
+            .iter()
+            .filter(|&(attr_referent, &(ref requested_referent, _, _))|
+                referent.eq(requested_referent) && proof_req.requested_attrs.contains_key(attr_referent))
+            .map(|(attr_referent, &(ref requested_referent, _, _))|
+                proof_req.requested_attrs[attr_referent].name.clone())
+            .collect::<Vec<String>>();
 
-        for (attr_referent, &(ref requested_referent, _, _)) in &requested_proof.revealed_attrs {
-            if referent.eq(requested_referent.as_str()) {
-                if let Some(attr) = proof_req.requested_attrs.get(attr_referent) {
-                    revealed_attrs_for_claim.push(attr.name.clone());
-                }
-            }
-        }
+        info!("_get_revealed_attributes_for_credential <<< revealed_attrs_for_credential: {:?}", revealed_attrs_for_credential);
 
-        info!("_get_revealed_attributes_for_claim <<< revealed_attrs_for_claim: {:?}", revealed_attrs_for_claim);
-
-        Ok(revealed_attrs_for_claim)
+        Ok(revealed_attrs_for_credential)
     }
 
-    fn _get_predicates_for_claim(referent: &str, requested_proof: &RequestedProof, proof_req: &ProofRequest) -> Result<Vec<PredicateInfo>, CommonError> {
-        info!("_get_predicates_for_claim >>> referent: {:?}, requested_claims: {:?}, proof_req: {:?}",
-              referent, requested_proof, proof_req);
+    fn _get_predicates_for_credential(referent: &str,
+                                      requested_proof: &RequestedProof,
+                                      proof_req: &ProofRequest) -> Result<Vec<PredicateInfo>, CommonError> {
+        info!("_get_predicates_for_credential >>> referent: {:?}, requested_credentials: {:?}, proof_req: {:?}",
+               referent, requested_proof, proof_req);
 
-        let mut predicates_for_claim: Vec<PredicateInfo> = Vec::new();
+        let predicates_for_credential = requested_proof.predicates
+            .iter()
+            .filter(|&(predicate_referent, requested_referent)|
+                referent.eq(requested_referent) && proof_req.requested_predicates.contains_key(predicate_referent))
+            .map(|(predicate_referent, requested_referent)|
+                proof_req.requested_predicates[predicate_referent].clone())
+            .collect::<Vec<PredicateInfo>>();
 
-        for (predicate_referent, requested_referent) in &requested_proof.predicates {
-            if referent.eq(requested_referent) {
-                if let Some(predicate) = proof_req.requested_predicates.get(predicate_referent) {
-                    predicates_for_claim.push(predicate.clone());
-                }
-            }
-        }
+        info!("_get_predicates_for_credential <<< predicates_for_credential: {:?}", predicates_for_credential);
 
-        info!("_get_predicates_for_claim <<< predicates_for_claim: {:?}", predicates_for_claim);
-
-        Ok(predicates_for_claim)
+        Ok(predicates_for_credential)
     }
 }

@@ -38,7 +38,7 @@ mod high_cases {
                                                                                 &AnoncredsUtils::gvt_schema_json(),
                                                                                 None, false).unwrap();
 
-            serde_json::from_str::<ClaimDefinition>(&claim_def_json).unwrap();
+            serde_json::from_str::<CredentialDefinition>(&claim_def_json).unwrap();
         }
 
         #[test]
@@ -92,12 +92,12 @@ mod high_cases {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{}"#).unwrap();
-            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<CredentialOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 3);
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
         }
 
         #[test]
@@ -105,11 +105,11 @@ mod high_cases {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID)).unwrap();
-            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<CredentialOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 2);
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
         }
 
         #[test]
@@ -118,11 +118,11 @@ mod high_cases {
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle,
                                                                        &format!(r#"{{"schema_key":{}}}"#, AnoncredsUtils::gvt_schema_key_json())).unwrap();
-            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<CredentialOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 2);
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
         }
 
         #[test]
@@ -130,11 +130,11 @@ mod high_cases {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"schema_key":{"name":"gvt"}}"#).unwrap();
-            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<CredentialOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 2);
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
         }
 
         #[test]
@@ -142,12 +142,12 @@ mod high_cases {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"schema_key":{"version":"1.0"}}"#).unwrap();
-            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<CredentialOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 3);
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
         }
 
         #[test]
@@ -155,10 +155,10 @@ mod high_cases {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, &format!(r#"{{"schema_key":{{"did":"{}"}}}}"#, ISSUER_DID)).unwrap();
-            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<CredentialOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 1);
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
         }
 
         #[test]
@@ -167,10 +167,10 @@ mod high_cases {
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle,
                                                                        &format!(r#"{{"issuer_did":"{}","schema_key":{}}}"#, ISSUER_DID, AnoncredsUtils::gvt_schema_key_json())).unwrap();
-            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<CredentialOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 1);
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
         }
 
         #[test]
@@ -178,7 +178,7 @@ mod high_cases {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, r#"{"issuer_did":"didaacdsfds"}"#).unwrap();
-            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<CredentialOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 0);
         }
@@ -206,11 +206,11 @@ mod high_cases {
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID)).unwrap();
 
-            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<CredentialOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 2);
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::gvt_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
             InmemWallet::cleanup();
@@ -356,7 +356,7 @@ mod high_cases {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{}"#).unwrap();
-            let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
+            let claims: Vec<CredentialInfo> = serde_json::from_str(&claims).unwrap();
 
             assert_eq!(claims.len(), 3);
         }
@@ -366,7 +366,7 @@ mod high_cases {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID)).unwrap();
-            let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
+            let claims: Vec<CredentialInfo> = serde_json::from_str(&claims).unwrap();
 
             assert_eq!(claims.len(), 2);
             assert_eq!(claims[0].issuer_did, ISSUER_DID);
@@ -378,7 +378,7 @@ mod high_cases {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, &format!(r#"{{"schema_key":{}}}"#, &AnoncredsUtils::gvt_schema_key_json())).unwrap();
-            let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
+            let claims: Vec<CredentialInfo> = serde_json::from_str(&claims).unwrap();
 
             assert_eq!(claims.len(), 2);
             assert_eq!(claims[0].schema_key, AnoncredsUtils::gvt_schema_key());
@@ -390,7 +390,7 @@ mod high_cases {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{"schema_key":{"name":"gvt"}}"#).unwrap();
-            let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
+            let claims: Vec<CredentialInfo> = serde_json::from_str(&claims).unwrap();
 
             assert_eq!(claims.len(), 2);
             assert_eq!(claims[0].schema_key, AnoncredsUtils::gvt_schema_key());
@@ -402,7 +402,7 @@ mod high_cases {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{"schema_key":{"version":"1.0"}}"#).unwrap();
-            let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
+            let claims: Vec<CredentialInfo> = serde_json::from_str(&claims).unwrap();
 
             assert_eq!(claims.len(), 3);
         }
@@ -412,7 +412,7 @@ mod high_cases {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, &format!(r#"{{"schema_key":{{"did":"{}"}}}}"#, ISSUER_DID)).unwrap();
-            let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
+            let claims: Vec<CredentialInfo> = serde_json::from_str(&claims).unwrap();
 
             assert_eq!(claims.len(), 1);
             assert_eq!(claims[0].schema_key, AnoncredsUtils::xyz_schema_key());
@@ -423,7 +423,7 @@ mod high_cases {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, &format!(r#"{{"issuer_did":"{}", "schema_key":{}}}"#, ISSUER_DID, &AnoncredsUtils::gvt_schema_key_json())).unwrap();
-            let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
+            let claims: Vec<CredentialInfo> = serde_json::from_str(&claims).unwrap();
 
             assert_eq!(claims.len(), 1);
             assert_eq!(claims[0].issuer_did, ISSUER_DID);
@@ -435,7 +435,7 @@ mod high_cases {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let claims = AnoncredsUtils::prover_get_claims(wallet_handle, r#"{"issuer_did":"issuerdid"}"#).unwrap();
-            let claims: Vec<ClaimInfo> = serde_json::from_str(&claims).unwrap();
+            let claims: Vec<CredentialInfo> = serde_json::from_str(&claims).unwrap();
 
             assert_eq!(claims.len(), 0);
         }
@@ -471,7 +471,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 0);
             assert_eq!(claims.predicates.len(), 0);
         }
@@ -492,7 +492,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -515,7 +515,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -538,7 +538,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -564,7 +564,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -591,7 +591,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -617,7 +617,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -643,7 +643,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -669,7 +669,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -695,7 +695,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -722,7 +722,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -749,7 +749,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -775,7 +775,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -802,7 +802,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -829,7 +829,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -852,7 +852,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.predicates.len(), 1);
 
             let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
@@ -875,7 +875,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.predicates.len(), 1);
 
             let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
@@ -898,7 +898,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.predicates.len(), 1);
 
             let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
@@ -923,7 +923,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.predicates.len(), 1);
 
             let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
@@ -949,7 +949,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.predicates.len(), 1);
 
             let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
@@ -975,7 +975,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.predicates.len(), 1);
 
             let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
@@ -1001,7 +1001,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.predicates.len(), 1);
 
             let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
@@ -1027,7 +1027,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.predicates.len(), 1);
 
             let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
@@ -1054,7 +1054,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.predicates.len(), 1);
 
             let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
@@ -1079,7 +1079,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
 
             assert_eq!(claims.attrs.len(), 2);
             assert_eq!(claims.predicates.len(), 2);
@@ -1114,7 +1114,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -1139,7 +1139,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
 
             assert_eq!(claims.attrs.len(), 0);
             assert_eq!(claims.predicates.len(), 1);
@@ -1166,7 +1166,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
 
             assert_eq!(claims.attrs.len(), 0);
             assert_eq!(claims.predicates.len(), 1);
@@ -1194,7 +1194,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -1223,7 +1223,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -1249,7 +1249,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.attrs.len(), 1);
 
             let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
@@ -1274,7 +1274,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.predicates.len(), 1);
 
             let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
@@ -1301,7 +1301,7 @@ mod high_cases {
 
             let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+            let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
             assert_eq!(claims.predicates.len(), 1);
 
             let claims_for_predicate_1 = claims.predicates.get("predicate1_referent").unwrap();
@@ -1601,10 +1601,10 @@ mod medium_cases {
                                                      &AnoncredsUtils::get_claim_offer(DID, &AnoncredsUtils::xyz_schema_key())).unwrap();
 
             let claim_offers = AnoncredsUtils::prover_get_claim_offers(wallet_handle_2, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID)).unwrap();
-            let claim_offers: Vec<ClaimOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
+            let claim_offers: Vec<CredentialOfferInfo> = serde_json::from_str(&claim_offers).unwrap();
 
             assert_eq!(claim_offers.len(), 1);
-            assert!(claim_offers.contains(&ClaimOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
+            assert!(claim_offers.contains(&CredentialOfferInfo { issuer_did: ISSUER_DID.to_string(), schema_key: AnoncredsUtils::xyz_schema_key() }));
         }
     }
 
@@ -1726,7 +1726,7 @@ mod medium_cases {
         fn prover_store_claim_works_without_claim_req() {
             let (wallet_handle, _, _, _, claim) = AnoncredsUtils::init_common_wallet();
 
-            let mut claim: Claim = serde_json::from_str(&claim).unwrap();
+            let mut claim: Credential = serde_json::from_str(&claim).unwrap();
             claim.issuer_did = DID_MY2.to_string();
             let claim_json = serde_json::to_string(&claim).unwrap();
 
@@ -1982,7 +1982,7 @@ mod medium_cases {
 mod demos {
     use super::*;
     #[cfg(feature = "interoperability_tests")]
-    use utils::types::ClaimDefinitionData;
+    use utils::types::CredentialDefinitionData;
     #[cfg(feature = "interoperability_tests")]
     use std::process::Command;
     #[cfg(feature = "interoperability_tests")]
@@ -2005,11 +2005,11 @@ mod demos {
         //2. Prover create Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //3. Prover store Claim Offer received from Issuer
+        //3. Prover store Credential Offer received from Issuer
         let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, AnoncredsUtils::gvt_schema_key());
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
 
-        //4. Prover get Claim Offers
+        //4. Prover get Credential Offers
         let filter_json = format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID);
         let claim_offers_json = AnoncredsUtils::prover_get_claim_offers(prover_wallet_handle, &filter_json).unwrap();
 
@@ -2025,9 +2025,9 @@ mod demos {
         stream.read(&mut buf).unwrap();
         buf.retain(|&element| element != 0);
 
-        let claim_def_data: ClaimDefinitionData = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
+        let claim_def_data: CredentialDefinitionData = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
 
-        let claim_def = ClaimDefinition {
+        let claim_def = CredentialDefinition {
             issuer_did: ISSUER_DID.to_string(),
             signature_type: "CL".to_string(),
             schema_seq_no: GVT_SEQ_NO,
@@ -2036,7 +2036,7 @@ mod demos {
 
         let claim_def_json = serde_json::to_string(&claim_def).unwrap();
 
-        //5. Prover create Claim Request
+        //5. Prover create Credential Request
         let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                           DID_MY1,
                                                                           &claim_offer_json,
@@ -2049,11 +2049,11 @@ mod demos {
         let _ = stream.write(r#"{"type":"close"}"#.as_bytes());
         buf.retain(|&element| element != 0);
 
-        let mut claim_json: Claim = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
+        let mut claim_json: Credential = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
         claim_json.schema_seq_no = Some(schema_seq_no);
         claim_json.issuer_did = Some(ISSUER_DID.to_string());
 
-        // 6. Prover store received Claim
+        // 6. Prover store received Credential
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &serde_json::to_string(&claim_json).unwrap(), None).unwrap();
 
         // 7. Prover gets Claims for Proof Request
@@ -2148,24 +2148,24 @@ mod demos {
         //4. Prover create Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //5. Prover store Claim Offer received from Issuer
+        //5. Prover store Credential Offer received from Issuer
         let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, GVT_SEQ_NO);
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
 
-        //7. Prover create Claim Request
+        //7. Prover create Credential Request
         let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                           DID_MY1,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
                                                                           COMMON_MASTER_SECRET).unwrap();
 
-        //8. Issuer create Claim
+        //8. Issuer create Credential
         let claim_values_json = AnoncredsUtils::gvt_claim_values_json();
         let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                    &claim_req,
                                                                    &claim_values_json, None).unwrap();
 
-        // 9. Prover store received Claim
+        // 9. Prover store received Credential
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xclaim_json, None).unwrap();
 
         let _ = stream.write(r#"{"type":"get_proof_request"}"#.as_bytes());
@@ -2232,9 +2232,9 @@ mod demos {
         stream.read(&mut buf).unwrap();
         buf.retain(|&element| element != 0);
 
-        let claim_def_data: ClaimDefinitionData = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
+        let claim_def_data: CredentialDefinitionData = serde_json::from_str(&String::from_utf8(buf).unwrap()).unwrap();
 
-        let claim_def = ClaimDefinition {
+        let claim_def = CredentialDefinition {
             issuer_did: ISSUER_DID.to_string(),
             signature_type: "CL".to_string(),
             schema_seq_no: GVT_SEQ_NO,
@@ -2299,23 +2299,23 @@ mod demos {
         // 3. Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        // 4. Issuer creates Claim Offer
+        // 4. Issuer creates Credential Offer
         let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(wallet_handle, &schema_json, ISSUER_DID, DID_MY1).unwrap();
 
-        // 5. Prover creates Claim Request
+        // 5. Prover creates Credential Request
         let claim_req_json = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle,
                                                                                DID_MY1,
                                                                                &claim_offer_json,
                                                                                &claim_def_json,
                                                                                COMMON_MASTER_SECRET).unwrap();
 
-        // 6. Issuer creates Claim
+        // 6. Issuer creates Credential
         let (_, claim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle,
                                                                   &claim_req_json,
                                                                   &AnoncredsUtils::gvt_claim_values_json(),
                                                                   None).unwrap();
 
-        // 7. Prover stores received Claim
+        // 7. Prover stores received Credential
         AnoncredsUtils::prover_store_claim(wallet_handle, &claim_json, None).unwrap();
 
         // 8. Prover gets Claims for Proof Request
@@ -2373,31 +2373,31 @@ mod demos {
         //4. Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //5. Issuer creates Claim Offer
+        //5. Issuer creates Credential Offer
         let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_wallet_handle, &schema_json, ISSUER_DID, DID_MY1).unwrap();
 
-        //6. Prover stores Claim Offer received from Issuer
+        //6. Prover stores Credential Offer received from Issuer
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
 
-        //7. Prover get Claim Offers
+        //7. Prover get Credential Offers
         let claim_offers_json = AnoncredsUtils::prover_get_claim_offers(prover_wallet_handle, "{}").unwrap();
-        let claim_offers: Vec<ClaimOffer> = serde_json::from_str(&claim_offers_json).unwrap();
+        let claim_offers: Vec<CredentialOffer> = serde_json::from_str(&claim_offers_json).unwrap();
         let claim_offer_json = serde_json::to_string(&claim_offers[0]).unwrap();
 
-        //8. Prover creates Claim Request
+        //8. Prover creates Credential Request
         let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                           DID_MY1,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
                                                                           COMMON_MASTER_SECRET).unwrap();
 
-        //9. Issuer creates Claim
+        //9. Issuer creates Credential
         let (_, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                   &claim_req,
                                                                   &AnoncredsUtils::gvt_claim_values_json(),
                                                                   None).unwrap();
 
-        // 10. Prover stores received Claim
+        // 10. Prover stores received Credential
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &claim_json, None).unwrap();
 
         // 11. Prover gets Claims for Proof Request
@@ -2504,52 +2504,52 @@ mod demos {
         //6. Prover creates Master Secret for Issuer1
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //7. Issuer1 creates Claim Offer
+        //7. Issuer1 creates Credential Offer
         let gvt_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_gvt_wallet_handle,
                                                                              &AnoncredsUtils::gvt_schema_json(),
                                                                              ISSUER_DID, DID_MY1).unwrap();
 
-        //8. Prover stores Claim Offer received from Issuer1
+        //8. Prover stores Credential Offer received from Issuer1
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &gvt_claim_offer_json).unwrap();
 
-        //9. Issuer2 creates Claim Offer
+        //9. Issuer2 creates Credential Offer
         let xyz_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_xyz_wallet_handle,
                                                                              &AnoncredsUtils::xyz_schema_json(),
                                                                              DID_MY2, DID_MY1).unwrap();
 
-        //10. Prover stores Claim Offer received from Issuer2
+        //10. Prover stores Credential Offer received from Issuer2
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &xyz_claim_offer_json).unwrap();
 
-        //11. Prover creates Claim Request for gvt claim offer
+        //11. Prover creates Credential Request for gvt claim offer
         let gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                               DID_MY1,
                                                                               &gvt_claim_offer_json,
                                                                               &gvt_claim_def_json,
                                                                               COMMON_MASTER_SECRET).unwrap();
 
-        //12. Issuer creates GVT Claim
+        //12. Issuer creates GVT Credential
         let (_, gvt_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_gvt_wallet_handle,
                                                                       &gvt_claim_req,
                                                                       &AnoncredsUtils::gvt_claim_values_json(),
                                                                       None).unwrap();
 
-        //13. Prover stores received GVT Claim
+        //13. Prover stores received GVT Credential
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &gvt_claim_json, None).unwrap();
 
-        //14. Prover creates Claim Request for xyz claim offer
+        //14. Prover creates Credential Request for xyz claim offer
         let xyz_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                               DID_MY1,
                                                                               &xyz_claim_offer_json,
                                                                               &xyz_claim_def_json,
                                                                               COMMON_MASTER_SECRET).unwrap();
 
-        //15. Issuer creates XYZ Claim
+        //15. Issuer creates XYZ Credential
         let (_, xyz_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_xyz_wallet_handle,
                                                                       &xyz_claim_req,
                                                                       &AnoncredsUtils::xyz_claim_values_json(),
                                                                       None).unwrap();
 
-        //16. Prover stores received XYZ Claim
+        //16. Prover stores received XYZ Credential
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xyz_claim_json, None).unwrap();
 
         //17. Prover gets Claims for Proof Request
@@ -2573,7 +2573,7 @@ mod demos {
 
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
 
-        let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+        let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
         let claim_for_attr_1 = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
         let claim_for_attr_2 = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr2_referent");
         let claim_for_predicate_1 = AnoncredsUtils::get_claim_for_predicate_referent(&claims_json, "predicate1_referent");
@@ -2670,23 +2670,23 @@ mod demos {
         //5. Prover creates Master Secret for Issuer1
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //6. Issuer1 creates Claim Offer
+        //6. Issuer1 creates Credential Offer
         let gvt_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_wallet_handle,
                                                                              &AnoncredsUtils::gvt_schema_json(),
                                                                              ISSUER_DID, DID_MY1).unwrap();
 
-        //7. Prover stores GVT Claim Offer received from Issuer
+        //7. Prover stores GVT Credential Offer received from Issuer
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &gvt_claim_offer_json).unwrap();
 
-        //8. Issuer1 creates Claim Offer
+        //8. Issuer1 creates Credential Offer
         let xyz_claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_wallet_handle,
                                                                              &AnoncredsUtils::xyz_schema_json(),
                                                                              ISSUER_DID, DID_MY1).unwrap();
 
-        //9. Prover stores XYZ Claim Offer received from Issuer
+        //9. Prover stores XYZ Credential Offer received from Issuer
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &xyz_claim_offer_json).unwrap();
 
-        //10. Prover creates Claim Request for gvt claim offer
+        //10. Prover creates Credential Request for gvt claim offer
         let gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                               DID_MY1,
                                                                               &gvt_claim_offer_json,
@@ -2694,29 +2694,29 @@ mod demos {
                                                                               COMMON_MASTER_SECRET).unwrap();
 
 
-        //11. Issuer creates GVT Claim
+        //11. Issuer creates GVT Credential
         let (_, gvt_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                       &gvt_claim_req,
                                                                       &AnoncredsUtils::gvt_claim_values_json(),
                                                                       None).unwrap();
 
-        //12. Prover stores received GVT Claim
+        //12. Prover stores received GVT Credential
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &gvt_claim_json, None).unwrap();
 
-        //13. Prover creates Claim Request for xyz claim offer
+        //13. Prover creates Credential Request for xyz claim offer
         let xyz_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                               DID_MY1,
                                                                               &xyz_claim_offer_json,
                                                                               &xyz_claim_def_json,
                                                                               COMMON_MASTER_SECRET).unwrap();
 
-        //14. Issuer creates XYZ Claim
+        //14. Issuer creates XYZ Credential
         let (_, xyz_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                       &xyz_claim_req,
                                                                       &AnoncredsUtils::xyz_claim_values_json(),
                                                                       None).unwrap();
 
-        //15. Prover stores received XYZ Claim
+        //15. Prover stores received XYZ Credential
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &xyz_claim_json, None).unwrap();
 
         //16. Prover gets Claims for Proof Request
@@ -2734,7 +2734,7 @@ mod demos {
                                     }"#;
 
         let claims_json = AnoncredsUtils::prover_get_claims_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
-        let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+        let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
         let claim_for_attr_1 = AnoncredsUtils::get_claim_for_attr_referent(&claims_json, "attr1_referent");
         let claim_for_predicate_1 = AnoncredsUtils::get_claim_for_predicate_referent(&claims_json, "predicate1_referent");
         let claim_for_predicate_2 = AnoncredsUtils::get_claim_for_predicate_referent(&claims_json, "predicate2_referent");
@@ -2812,28 +2812,28 @@ mod demos {
         //4. Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //5. Issuer creates Claim Offer
+        //5. Issuer creates Credential Offer
         let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_wallet_handle,
                                                                          &AnoncredsUtils::gvt_schema_json(),
                                                                          ISSUER_DID, DID_MY1).unwrap();
 
-        //6. Prover stores Claim Offer received from Issuer
+        //6. Prover stores Credential Offer received from Issuer
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
 
-        //7. Prover creates Claim Request
+        //7. Prover creates Credential Request
         let claim_req_json = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                                DID_MY1,
                                                                                &claim_offer_json,
                                                                                &claim_def_json,
                                                                                COMMON_MASTER_SECRET).unwrap();
 
-        //8. Issuer creates Claim
+        //8. Issuer creates Credential
         let (revoc_reg_update_json, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                                       &claim_req_json,
                                                                                       &AnoncredsUtils::gvt_claim_values_json(),
                                                                                       Some(SEQ_NO)).unwrap();
 
-        //9. Prover store received Claim
+        //9. Prover store received Credential
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &claim_json, Some(&revoc_reg_update_json)).unwrap();
 
         //10. Prover gets Claims for Proof Request
@@ -2895,28 +2895,28 @@ mod demos {
         //5. Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //6. Issuer creates Claim Offer
+        //6. Issuer creates Credential Offer
         let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_wallet_handle,
                                                                          &AnoncredsUtils::gvt_schema_json(),
                                                                          ISSUER_DID, DID_MY1).unwrap();
 
-        //7. Prover stores Claim Offer received from Issuer
+        //7. Prover stores Credential Offer received from Issuer
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
 
-        //8. Prover creates Claim Request
+        //8. Prover creates Credential Request
         let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                           DID_MY1,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
                                                                           COMMON_MASTER_SECRET).unwrap();
 
-        //9. Issuer creates Claim
+        //9. Issuer creates Credential
         let (revoc_reg_update_json, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                                       &claim_req,
                                                                                       &AnoncredsUtils::gvt_claim_values_json(),
                                                                                       Some(SEQ_NO)).unwrap();
 
-        //10. Prover stores received Claim
+        //10. Prover stores received Credential
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &claim_json, Some(&revoc_reg_update_json)).unwrap();
 
         //11. Issuer revokes claim
@@ -2974,28 +2974,28 @@ mod demos {
         //5. Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
-        //6. Issuer creates Claim Offer
+        //6. Issuer creates Credential Offer
         let claim_offer_json = AnoncredsUtils::issuer_create_claim_offer(issuer_wallet_handle,
                                                                          &AnoncredsUtils::gvt_schema_json(),
                                                                          ISSUER_DID, DID_MY1).unwrap();
 
-        //7. Prover stores Claim Offer received from Issuer
+        //7. Prover stores Credential Offer received from Issuer
         AnoncredsUtils::prover_store_claim_offer(prover_wallet_handle, &claim_offer_json).unwrap();
 
-        //8. Prover creates Claim Request
+        //8. Prover creates Credential Request
         let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle,
                                                                           DID_MY1,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
                                                                           COMMON_MASTER_SECRET).unwrap();
 
-        //9. Issuer creates Claim
+        //9. Issuer creates Credential
         let (revoc_reg_update_json, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                                       &claim_req,
                                                                                       &AnoncredsUtils::gvt_claim_values_json(),
                                                                                       Some(SEQ_NO)).unwrap();
 
-        //10. Prover stores received Claim
+        //10. Prover stores received Credential
         AnoncredsUtils::prover_store_claim(prover_wallet_handle, &claim_json, Some(&revoc_reg_update_json)).unwrap();
 
         //11. Prover gets Claims for Proof Request

@@ -34,7 +34,7 @@ use utils::callback::CallbackUtils;
 use std::ptr::null;
 use std::sync::mpsc::channel;
 use std::ffi::CString;
-use utils::types::ClaimsForProofRequest;
+use utils::types::CredentialsForProofRequest;
 
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;
@@ -149,7 +149,7 @@ fn anoncreds_demo_works() {
                                     }}
                                  }}"#, schema_seq_no, issuer_did);
 
-    // 3. Issuer create Claim Definition for Schema
+    // 3. Issuer create Credential Definition for Schema
     let err =
         indy_issuer_create_and_store_claim_def(issuer_create_claim_definition_command_handle,
                                                wallet_handle,
@@ -176,7 +176,7 @@ fn anoncreds_demo_works() {
     let err = prover_create_master_secret_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    // 5. Issuer create Claim Offer
+    // 5. Issuer create Credential Offer
     let err =
         indy_issuer_create_claim_offer(issuer_create_claim_offer_command_handle,
                                       wallet_handle,
@@ -189,7 +189,7 @@ fn anoncreds_demo_works() {
     let (err, claim_offer_json) = issuer_create_claim_offer_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    // 6. Prover create Claim Request
+    // 6. Prover create Credential Request
     let err =
         indy_prover_create_and_store_claim_req(prover_create_claim_req_command_handle,
                                                wallet_handle,
@@ -210,7 +210,7 @@ fn anoncreds_demo_works() {
                                "age":["28","28"]
                              }"#;
 
-    // 7. Issuer create Claim for Claim Request
+    // 7. Issuer create Credential for Credential Request
     let err =
         indy_issuer_create_claim(issuer_create_claim_command_handle,
                                  wallet_handle,
@@ -223,7 +223,7 @@ fn anoncreds_demo_works() {
     let (err, _, xclaim_json) = issuer_create_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    // 7. Prover process and store Claim
+    // 7. Prover process and store Credential
     let err =
         indy_prover_store_claim(prover_store_claim_command_handle,
                                 wallet_handle,
@@ -270,7 +270,7 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
     let (err, claims_json) = prover_get_claims_for_proof_req_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
-    let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+    let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
     let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
     assert_eq!(1, claims_for_attr_1.len());
 

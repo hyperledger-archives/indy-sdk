@@ -4,7 +4,7 @@ use errors::common::CommonError;
 use errors::anoncreds::AnoncredsError;
 use services::anoncreds::types::*;
 use std::collections::HashMap;
-use services::anoncreds::types::{ClaimInfo, RequestedClaims, ProofRequest, PredicateInfo, Identifier};
+use services::anoncreds::types::{CredentialInfo, RequestedCredentials, ProofRequest, PredicateInfo, Identifier};
 
 use self::indy_crypto::cl::*;
 use self::indy_crypto::cl::prover::Prover as CryptoProver;
@@ -21,160 +21,173 @@ impl Prover {
         Ok(CryptoProver::new_master_secret()?)
     }
 
-    pub fn new_claim_request(&self, claim_def_data: &ClaimDefinitionData, master_secret: &MasterSecret, claim_offer: &ClaimOffer,
-                             prover_did: &str) -> Result<(ClaimRequest, MasterSecretBlindingData), CommonError> {
-        info!("new_claim_request >>> claim_def_data: {:?}, master_secret: {:?}, prover_did: {:?}",
-              claim_def_data, master_secret, prover_did);
+    pub fn new_credential_request(&self,
+                                  credential_def: &CredentialDefinition,
+                                  master_secret: &MasterSecret,
+                                  credential_offer: &CredentialOffer,
+                                  prover_did: &str) -> Result<(CredentialRequest,
+                                                               MasterSecretBlindingData), CommonError> {
+        info!("new_credential_request >>> credential_def: {:?}, master_secret: {:?}, credential_offer: {:?}, prover_did: {:?}",
+               credential_def, master_secret, credential_offer, prover_did);
 
-        let issuer_pub_key = IssuerPublicKey::build_from_parts(&claim_def_data.primary, claim_def_data.revocation.as_ref())?;
+        let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.data.primary, credential_def.data.revocation.as_ref())?;
 
         let (blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof) =
-            CryptoProver::blind_master_secret(&issuer_pub_key,
-                                              &claim_offer.key_correctness_proof,
+            CryptoProver::blind_master_secret(&credential_pub_key,
+                                              &credential_offer.key_correctness_proof,
                                               &master_secret,
-                                              &claim_offer.nonce)?;
-        let nonce = new_nonce()?;
+                                              &credential_offer.nonce)?;
 
-        let claim_request = ClaimRequest {
+        let credential_request = CredentialRequest {
             prover_did: prover_did.to_owned(),
-            issuer_did: claim_offer.issuer_did.clone(),
-            schema_key: claim_offer.schema_key.clone(),
+            issuer_did: credential_offer.issuer_did.clone(),
+            schema_key: credential_offer.schema_key.clone(),
             blinded_ms,
             blinded_ms_correctness_proof,
-            nonce
+            nonce: new_nonce()?
         };
 
-        info!("new_claim_request <<< claim_request: {:?}, master_secret_blinding_data: {:?}", claim_request, master_secret_blinding_data);
+        info!("new_credential_request <<< credential_request: {:?}, master_secret_blinding_data: {:?}", credential_request, master_secret_blinding_data);
 
-        Ok((claim_request, master_secret_blinding_data))
+        Ok((credential_request, master_secret_blinding_data))
     }
 
-    pub fn process_claim(&self, claim: &mut Claim, claim_request_metadata: &ClaimRequestMetadata, master_secret: &MasterSecret,
-                         claim_def_data: &ClaimDefinitionData, rev_reg_pub: Option<&RevocationRegistryPublic>) -> Result<(), CommonError> {
-        info!("process_claim >>> claim: {:?}, claim_request_metadata: {:?}, master_secret: {:?}, claim_def_data: {:?}, rev_reg_pub: {:?}",
-              claim, claim_request_metadata, master_secret, claim_def_data, rev_reg_pub);
+    pub fn process_credential(&self,
+                              credential: &mut Credential,
+                              credential_request_metadata: &CredentialRequestMetadata,
+                              master_secret: &MasterSecret,
+                              credential_def: &CredentialDefinition,
+                              rev_reg_def: Option<&RevocationRegistryDefinition>,
+                              rev_reg: Option<&RevocationRegistry>,
+                              witness: Option<&Witness>) -> Result<(), CommonError> {
+        info!("process_credential >>> credential: {:?}, credential_request_metadata: {:?}, master_secret: {:?}, credential_def: {:?}, rev_reg_def: {:?}, \
+        rev_reg: {:?}, witness: {:?}", credential, credential_request_metadata, master_secret, credential_def, rev_reg_def, rev_reg, witness);
 
+        let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.data.primary, credential_def.data.revocation.as_ref())?;
+        let credential_values = build_credential_values(&credential.values)?;
 
-        let issuer_pub_key = IssuerPublicKey::build_from_parts(&claim_def_data.primary, claim_def_data.revocation.as_ref())?;
+        CryptoProver::process_credential_signature(&mut credential.signature,
+                                                   &credential_values,
+                                                   &credential.signature_correctness_proof,
+                                                   &credential_request_metadata.master_secret_blinding_data,
+                                                   &master_secret,
+                                                   &credential_pub_key,
+                                                   &credential_request_metadata.nonce,
+                                                   rev_reg_def.as_ref().map(|r_reg_def| &r_reg_def.public_keys.accum_key),
+                                                   rev_reg,
+                                                   witness)?;
 
-        let claim_values = build_claim_values(&claim.values)?;
-
-        CryptoProver::process_claim_signature(&mut claim.signature,
-                                              &claim_values,
-                                              &claim.signature_correctness_proof,
-                                              &claim_request_metadata.master_secret_blinding_data,
-                                              &master_secret,
-                                              &issuer_pub_key,
-                                              &claim_request_metadata.nonce,
-                                              rev_reg_pub)?;
-
-        info!("process_claim <<<");
+        info!("process_credential <<< ");
 
         Ok(())
     }
 
-    pub fn get_claims_for_proof_req(&self, proof_request: &ProofRequest, claims: &Vec<ClaimInfo>) -> Result<ClaimsForProofRequest, CommonError> {
-        info!("get_claims_for_proof_req >>> proof_request: {:?}, claims: {:?}", proof_request, claims);
+    pub fn get_credentials_for_proof_req(&self,
+                                         proof_request: &ProofRequest,
+                                         credentials: &Vec<CredentialInfo>) -> Result<CredentialsForProofRequest, CommonError> {
+        info!("get_credentials_for_proof_req >>> proof_request: {:?}, credentials: {:?}", proof_request, credentials);
 
-        let mut found_attributes: HashMap<String, Vec<ClaimInfo>> = HashMap::new();
-        let mut found_predicates: HashMap<String, Vec<ClaimInfo>> = HashMap::new();
+        let mut found_attributes: HashMap<String, Vec<CredentialInfo>> = HashMap::new();
+        let mut found_predicates: HashMap<String, Vec<CredentialInfo>> = HashMap::new();
 
         for (attr_id, requested_attr) in &proof_request.requested_attrs {
-            let mut claims_for_attribute: Vec<ClaimInfo> = Vec::new();
+            let credentials_for_attribute = credentials
+                .iter()
+                .filter(|credential|
+                    Prover::_credential_value_for_attribute(&credential.attrs, &requested_attr.name).is_some() &&
+                        self._credential_satisfy_restrictions(credential, &requested_attr.restrictions))
+                .cloned()
+                .collect::<Vec<CredentialInfo>>();
 
-            for claim in claims {
-                let mut satisfy = Prover::_claim_value_for_attribute(&claim.attrs, &requested_attr.name).is_some();
-
-                satisfy = satisfy && self._claim_satisfy_restrictions(claim, &requested_attr.restrictions);
-
-                if satisfy { claims_for_attribute.push(claim.clone()); }
-            }
-
-            found_attributes.insert(attr_id.clone(), claims_for_attribute);
+            found_attributes.insert(attr_id.clone(), credentials_for_attribute);
         }
 
         for (predicate_id, requested_predicate) in &proof_request.requested_predicates {
-            let mut claims_for_predicate: Vec<ClaimInfo> = Vec::new();
+            let mut credentials_for_predicate: Vec<CredentialInfo> = Vec::new();
 
-            for claim in claims {
-                let mut satisfy = match Prover::_claim_value_for_attribute(&claim.attrs, &requested_predicate.attr_name) {
+            for credential in credentials {
+                let mut satisfy = match Prover::_credential_value_for_attribute(&credential.attrs, &requested_predicate.attr_name) {
                     Some(attribute_value) => Prover::_attribute_satisfy_predicate(&requested_predicate, &attribute_value)?,
                     None => false
                 };
 
-                satisfy = satisfy && self._claim_satisfy_restrictions(claim, &requested_predicate.restrictions);
+                satisfy = satisfy && self._credential_satisfy_restrictions(credential, &requested_predicate.restrictions);
 
-                if satisfy { claims_for_predicate.push(claim.clone()); }
+                if satisfy { credentials_for_predicate.push(credential.clone()); }
             }
 
-            found_predicates.insert(predicate_id.clone(), claims_for_predicate);
+            found_predicates.insert(predicate_id.clone(), credentials_for_predicate);
         }
 
-        let claims_for_proof_request = ClaimsForProofRequest {
+        let credentials_for_proof_request = CredentialsForProofRequest {
             attrs: found_attributes,
             predicates: found_predicates
         };
 
-        info!("get_claims_for_proof_req <<< claims_for_proof_requerst: {:?}", claims_for_proof_request);
-        Ok(claims_for_proof_request)
+        info!("get_credentials_for_proof_req <<< credentials_for_proof_requerst: {:?}", credentials_for_proof_request);
+        Ok(credentials_for_proof_request)
     }
 
     pub fn create_proof(&self,
-                        claims: &HashMap<String, Claim>,
+                        credentials: &HashMap<String, Credential>,
                         proof_req: &ProofRequest,
+                        requested_credentials: &RequestedCredentials,
+                        master_secret: &MasterSecret,
                         schemas: &HashMap<String, Schema>,
-                        claim_defs: &HashMap<String, ClaimDefinition>,
-                        revoc_regs: &HashMap<String, RevocationRegistry>,
-                        requested_claims: &RequestedClaims,
-                        master_secret: &MasterSecret) -> Result<FullProof, AnoncredsError> {
-        info!("create_proof >>> claims: {:?}, proof_req: {:?}, schemas: {:?}, claim_defs: {:?}, revoc_regs: {:?}, \
-                       requested_claims: {:?}, master_secret: {:?}", claims, proof_req, schemas, claim_defs, revoc_regs, requested_claims, master_secret);
+                        credential_defs: &HashMap<String, CredentialDefinition>,
+                        rev_regs: &HashMap<String, RevocationRegistry>,
+                        witnesses: &HashMap<String, Witness>) -> Result<FullProof, AnoncredsError> {
+        info!("create_proof >>> credentials: {:?}, proof_req: {:?}, schemas: {:?}, credential_defs: {:?}, rev_regs: {:?}, \
+               requested_credentials: {:?}, master_secret: {:?}",
+               credentials, proof_req, schemas, credential_defs, rev_regs, requested_credentials, master_secret);
 
         let mut proof_builder = CryptoProver::new_proof_builder()?;
 
         let mut identifiers: HashMap<String, Identifier> = HashMap::new();
 
-        for (referent, claim) in claims {
+        for (referent, credential) in credentials {
             let schema = schemas.get(referent.as_str())
                 .ok_or(CommonError::InvalidStructure(format!("Schema not found")))?;
-            let claim_definition = claim_defs.get(referent.as_str())
-                .ok_or(CommonError::InvalidStructure(format!("Claim definition not found")))?;
-            let issuer_pub_key = IssuerPublicKey::build_from_parts(&claim_definition.data.primary, claim_definition.data.revocation.as_ref())?;
+            let credential_definition = credential_defs.get(referent.as_str())
+                .ok_or(CommonError::InvalidStructure(format!("Credential definition not found")))?;
+            let rev_reg = rev_regs.get(referent.as_str());
+            let witness = witnesses.get(referent.as_str());
 
-            let revocation_registry = revoc_regs.get(referent.as_str());
+            let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_definition.data.primary, credential_definition.data.revocation.as_ref())?;
 
-            let attrs_for_claim = Prover::_get_revealed_attributes_for_claim(referent.as_str(), requested_claims, proof_req)?;
-            let predicates_for_claim = Prover::_get_predicates_for_claim(referent.as_str(), requested_claims, proof_req)?;
+            let attrs_for_credential = Prover::_get_revealed_attributes_for_credential(referent.as_str(), requested_credentials, proof_req)?;
+            let predicates_for_credential = Prover::_get_predicates_for_credential(referent.as_str(), requested_credentials, proof_req)?;
 
-            let claim_schema = build_claim_schema(&schema.data.attr_names)?;
-            let claim_values = build_claim_values(&claim.values)?;
-            let sub_proof_request = build_sub_proof_request(&attrs_for_claim, &predicates_for_claim)?;
+            let credential_schema = build_credential_schema(&schema.data.attr_names)?;
+            let credential_values = build_credential_values(&credential.values)?;
+            let sub_proof_request = build_sub_proof_request(&attrs_for_credential, &predicates_for_credential)?;
 
             proof_builder.add_sub_proof_request(referent.as_str(),
                                                 &sub_proof_request,
-                                                &claim_schema,
-                                                &claim.signature,
-                                                &claim_values,
-                                                &issuer_pub_key,
-                                                revocation_registry.map(|rev_reg| &rev_reg.data).clone())?;
+                                                &credential_schema,
+                                                &credential.signature,
+                                                &credential_values,
+                                                &credential_pub_key,
+                                                rev_reg,
+                                                witness)?;
 
             identifiers.insert(referent.to_string(), Identifier {
-                schema_key: claim.schema_key.clone(),
-                issuer_did: claim.issuer_did.clone(),
-                rev_reg_seq_no: claim.rev_reg_seq_no.clone()
+                schema_key: credential.schema_key.clone(),
+                issuer_did: credential.issuer_did.clone(),
+                rev_reg_seq_no: credential.rev_reg_seq_no.clone()
             });
         }
 
         let proof = proof_builder.finalize(&proof_req.nonce, &master_secret)?;
 
         let (revealed_attrs, unrevealed_attrs) =
-            Prover::_split_attributes(&proof_req, requested_claims, claims)?;
+            Prover::_split_attributes(&proof_req, requested_credentials, credentials)?;
 
         let requested_proof = RequestedProof {
-            self_attested_attrs: requested_claims.self_attested_attributes.clone(),
+            self_attested_attrs: requested_credentials.self_attested_attributes.clone(),
             revealed_attrs,
             unrevealed_attrs,
-            predicates: requested_claims.requested_predicates.clone()
+            predicates: requested_credentials.requested_predicates.clone()
         };
 
         let full_proof = FullProof {
@@ -188,57 +201,58 @@ impl Prover {
         Ok(full_proof)
     }
 
-    fn _claim_value_for_attribute(claim_attrs: &HashMap<String, String>, requested_attr: &str) -> Option<String> {
+    fn _credential_value_for_attribute(credential_attrs: &HashMap<String, String>,
+                                       requested_attr: &str) -> Option<String> {
         let _attr_common_view = |attr: &str|
             attr.replace(" ", "").to_lowercase();
 
-        let requested_attr = _attr_common_view(&requested_attr);
-
-        claim_attrs.iter()
-            .find(|&(ref key, ref value)| _attr_common_view(key) == requested_attr)
+        credential_attrs.iter()
+            .find(|&(ref key, _)| _attr_common_view(key) == _attr_common_view(&requested_attr))
             .map(|(_, value)| value.to_string())
     }
 
-    fn _claim_satisfy_restrictions(&self, claim_info: &ClaimInfo, restrictions: &Option<Vec<Filter>>) -> bool {
-        info!("_claim_satisfy_restrictions >>> claim_info: {:?}, restrictions: {:?}", claim_info, restrictions);
+    fn _credential_satisfy_restrictions(&self,
+                                        credential_info: &CredentialInfo,
+                                        restrictions: &Option<Vec<Filter>>) -> bool {
+        info!("_credential_satisfy_restrictions >>> credential_info: {:?}, restrictions: {:?}", credential_info, restrictions);
 
         let res = match restrictions {
             &Some(ref restrictions) => restrictions.iter().any(|restriction|
-                self.claim_satisfy_restriction(claim_info, &restriction)),
+                self.satisfy_restriction(credential_info, &restriction)),
             &None => true
         };
 
-        info!("_claim_satisfy_restrictions <<< res: {:?}", res);
+        info!("_credential_satisfy_restrictions <<< res: {:?}", res);
 
         res
     }
 
-    pub fn claim_satisfy_restriction(&self, claim_info: &ClaimInfo, restriction: &Filter) -> bool {
-        info!("_claim_satisfy_restriction >>> claim_info: {:?}, restriction: {:?}", claim_info, restriction);
+    pub fn satisfy_restriction<T>(&self,
+                                  object: &T,
+                                  restriction: &Filter) -> bool where T: Filtering {
+        info!("satisfy_restriction >>> restriction: {:?}", restriction);
+
+        let check_condition = |mut res, expected: Option<&str>, actual: &str|
+            if let Some(ex) = expected {
+                res = res && actual.eq(ex);
+            };
 
         let mut res = true;
 
-        if let Some(issuer_did) = restriction.issuer_did.clone() {
-            res = res && claim_info.issuer_did == issuer_did;
-        }
+        check_condition(res, restriction.issuer_did.as_ref().map(String::as_str), &object.issuer_did());
         if let Some(ref schema_key) = restriction.schema_key {
-            if let Some(ref name) = schema_key.name {
-                res = res && claim_info.schema_key.name == name.clone();
-            }
-            if let Some(ref version) = schema_key.version {
-                res = res && claim_info.schema_key.version == version.clone();
-            }
-            if let Some(ref did) = schema_key.did {
-                res = res && claim_info.schema_key.did == did.clone();
-            }
+            check_condition(res, schema_key.name.as_ref().map(String::as_str), &object.schema_key().name);
+            check_condition(res, schema_key.version.as_ref().map(String::as_str), &object.schema_key().version);
+            check_condition(res, schema_key.did.as_ref().map(String::as_str), &object.schema_key().did);
         }
 
-        info!("_claim_satisfy_restriction >>> res: {:?}", res);
+        info!("satisfy_restriction >>> res: {:?}", res);
 
         res
     }
 
-    fn _attribute_satisfy_predicate(predicate: &PredicateInfo, attribute_value: &String) -> Result<bool, CommonError> {
+    fn _attribute_satisfy_predicate(predicate: &PredicateInfo,
+                                    attribute_value: &String) -> Result<bool, CommonError> {
         info!("_attribute_satisfy_predicate >>> predicate: {:?}, attribute_value: {:?}", predicate, attribute_value);
 
         let res = match predicate.p_type.as_str() {
@@ -255,71 +269,65 @@ impl Prover {
         res
     }
 
-    fn _get_revealed_attributes_for_claim(referent: &str, requested_claims: &RequestedClaims, proof_req: &ProofRequest) -> Result<Vec<String>, CommonError> {
-        info!("_get_revealed_attributes_for_claim >>> referent: {:?}, requested_claims: {:?}, proof_req: {:?}",
-              referent, requested_claims, proof_req);
+    fn _get_revealed_attributes_for_credential(referent: &str,
+                                               requested_credentials: &RequestedCredentials,
+                                               proof_req: &ProofRequest) -> Result<Vec<String>, CommonError> {
+        info!("_get_revealed_attributes_for_credential >>> referent: {:?}, requested_credentials: {:?}, proof_req: {:?}",
+               referent, requested_credentials, proof_req);
 
-        let mut revealed_attrs_for_claim: Vec<String> = Vec::new();
+        let revealed_attrs_for_credential = requested_credentials.requested_attrs
+            .iter()
+            .filter(|&(attr_referent, &(ref requested_referent, ref revealed))|
+                referent.eq(requested_referent) && revealed.clone() && proof_req.requested_attrs.contains_key(attr_referent))
+            .map(|(attr_referent, _)|
+                proof_req.requested_attrs[attr_referent].name.clone())
+            .collect::<Vec<String>>();
 
-        for (attr_referent, &(ref requested_referent, ref revealed)) in &requested_claims.requested_attrs {
-            if referent.eq(requested_referent) && revealed.clone() {
-                if let Some(attr) = proof_req.requested_attrs.get(attr_referent) {
-                    revealed_attrs_for_claim.push(attr.name.clone());
-                }
-            }
-        }
+        info!("_get_revealed_attributes_for_credential <<< revealed_attrs_for_credential: {:?}", revealed_attrs_for_credential);
 
-        info!("_get_revealed_attributes_for_claim <<< revealed_attrs_for_claim: {:?}", revealed_attrs_for_claim);
-
-        Ok(revealed_attrs_for_claim)
+        Ok(revealed_attrs_for_credential)
     }
 
-    fn _get_predicates_for_claim(referent: &str, requested_claims: &RequestedClaims, proof_req: &ProofRequest) -> Result<Vec<PredicateInfo>, CommonError> {
-        info!("_get_predicates_for_claim >>> referent: {:?}, requested_claims: {:?}, proof_req: {:?}",
-              referent, requested_claims, proof_req);
+    fn _get_predicates_for_credential(referent: &str,
+                                      requested_credentials: &RequestedCredentials,
+                                      proof_req: &ProofRequest) -> Result<Vec<PredicateInfo>, CommonError> {
+        info!("_get_predicates_for_credential >>> referent: {:?}, requested_credentials: {:?}, proof_req: {:?}",
+               referent, requested_credentials, proof_req);
 
-        let mut predicates_for_claim: Vec<PredicateInfo> = Vec::new();
+        let predicates_for_credential = requested_credentials.requested_predicates
+            .iter()
+            .filter(|&(attr_referent, requested_referent)|
+                referent.eq(requested_referent) && proof_req.requested_predicates.contains_key(attr_referent))
+            .map(|(attr_referent, _)|
+                proof_req.requested_predicates[attr_referent].clone())
+            .collect::<Vec<PredicateInfo>>();
 
-        for (predicate_referent, requested_referent) in &requested_claims.requested_predicates {
-            if referent.eq(requested_referent) {
-                if let Some(predicate) = proof_req.requested_predicates.get(predicate_referent) {
-                    predicates_for_claim.push(predicate.clone());
-                }
-            }
-        }
+        info!("_get_predicates_for_credential <<< predicates_for_credential: {:?}", predicates_for_credential);
 
-        info!("_get_predicates_for_claim <<< predicates_for_claim: {:?}", predicates_for_claim);
-
-        Ok(predicates_for_claim)
+        Ok(predicates_for_credential)
     }
 
 
-    pub fn _split_attributes(proof_req: &ProofRequest, requested_claims: &RequestedClaims,
-                             claims: &HashMap<String, Claim>) -> Result<(HashMap<String, (String, String, String)>, HashMap<String, String>), CommonError> {
-        info!("_split_attributes >>> proof_req: {:?}, requested_claims: {:?}, claims: {:?}",
-              proof_req, requested_claims, claims);
+    pub fn _split_attributes(proof_req: &ProofRequest,
+                             requested_credentials: &RequestedCredentials,
+                             credentials: &HashMap<String, Credential>) -> Result<(HashMap<String, (String, String, String)>,
+                                                                                   HashMap<String, String>), CommonError> {
+        info!("_split_attributes >>> proof_req: {:?}, requested_credentials: {:?}, credentials: {:?}",
+               proof_req, requested_credentials, credentials);
 
         let mut revealed_attrs: HashMap<String, (String, String, String)> = HashMap::new();
         let mut unrevealed_attrs: HashMap<String, String> = HashMap::new();
 
-        for (attr_referent, &(ref referent, ref revealed)) in &requested_claims.requested_attrs {
-            let claim = claims.get(referent)
-                .ok_or(CommonError::InvalidStructure(format!("Claim not found")))?;
-
-            let attribute = proof_req.requested_attrs.get(attr_referent)
-                .ok_or(CommonError::InvalidStructure(format!("Attribute not found")))?;
+        for (attr_referent, &(ref referent, ref revealed)) in &requested_credentials.requested_attrs {
+            let credential = &credentials[referent];
+            let attribute = &proof_req.requested_attrs[attr_referent];
 
             if revealed.clone() {
-                let attribute_values = claim.values.get(&attribute.name)
-                    .ok_or(CommonError::InvalidStructure(format!("Attributes for claim {} not found", referent)))?;
+                let attribute_values = &credential.values[&attribute.name];
+                let raw_value = &attribute_values[0];
+                let encoded_value = &attribute_values[1];
 
-                let value = attribute_values.get(0)
-                    .ok_or(CommonError::InvalidStructure(format!("Raw value not found")))?;
-
-                let encoded_value = attribute_values.get(1)
-                    .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?;
-
-                revealed_attrs.insert(attr_referent.clone(), (referent.clone(), value.clone(), encoded_value.clone()));
+                revealed_attrs.insert(attr_referent.clone(), (referent.clone(), raw_value.clone(), encoded_value.clone()));
             } else {
                 unrevealed_attrs.insert(attr_referent.clone(), referent.clone());
             }

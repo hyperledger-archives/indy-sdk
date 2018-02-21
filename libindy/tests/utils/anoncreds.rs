@@ -7,7 +7,7 @@ use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
 use utils::wallet::WalletUtils;
 use utils::test::TestUtils;
-use utils::types::{ClaimsForProofRequest, ClaimInfo, Schema, SchemaData, SchemaKey};
+use utils::types::{CredentialsForProofRequest, CredentialInfo, Schema, SchemaData, SchemaKey};
 
 use std::ffi::CString;
 use std::ptr::null;
@@ -711,34 +711,34 @@ impl AnoncredsUtils {
         }"#
     }
 
-    pub fn get_unique_claims(proof_claims: &ClaimsForProofRequest) -> Vec<ClaimInfo> {
+    pub fn get_unique_claims(proof_claims: &CredentialsForProofRequest) -> Vec<CredentialInfo> {
         let attrs_claims =
             proof_claims.attrs
                 .values()
                 .flat_map(|claims| claims)
                 .map(|claim| claim.clone())
-                .collect::<Vec<ClaimInfo>>();
+                .collect::<Vec<CredentialInfo>>();
 
         let predicates_claims =
             proof_claims.predicates
                 .values()
                 .flat_map(|claims| claims)
                 .map(|claim| claim.clone())
-                .collect::<Vec<ClaimInfo>>();
+                .collect::<Vec<CredentialInfo>>();
 
-        attrs_claims.into_iter().collect::<HashSet<ClaimInfo>>()
-            .union(&predicates_claims.into_iter().collect::<HashSet<ClaimInfo>>())
-            .map(|v| v.clone()).collect::<Vec<ClaimInfo>>()
+        attrs_claims.into_iter().collect::<HashSet<CredentialInfo>>()
+            .union(&predicates_claims.into_iter().collect::<HashSet<CredentialInfo>>())
+            .map(|v| v.clone()).collect::<Vec<CredentialInfo>>()
     }
 
-    pub fn get_claim_for_attr_referent(claims_json: &str, referent: &str) -> ClaimInfo {
-        let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+    pub fn get_claim_for_attr_referent(claims_json: &str, referent: &str) -> CredentialInfo {
+        let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
         let claims_for_referent = claims.attrs.get(referent).unwrap();
         claims_for_referent[0].clone()
     }
 
-    pub fn get_claim_for_predicate_referent(claims_json: &str, referent: &str) -> ClaimInfo {
-        let claims: ClaimsForProofRequest = serde_json::from_str(&claims_json).unwrap();
+    pub fn get_claim_for_predicate_referent(claims_json: &str, referent: &str) -> CredentialInfo {
+        let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
         let claims_for_referent = claims.predicates.get(referent).unwrap();
         claims_for_referent[0].clone()
     }
@@ -757,51 +757,51 @@ impl AnoncredsUtils {
                 //1. Create and Open wallet
                 WALLET_HANDLE = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
 
-                //2. Issuer1 Create GVT ClaimDefinition
+                //2. Issuer1 Create GVT CredentialDefinition
                 //TODO Fix it.....Convert String to &'static str
                 let issuer1_gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE,
                                                                                                 ISSUER_DID,
                                                                                                 &AnoncredsUtils::gvt_schema_json(), None, false).unwrap();
 
-                //3. Issuer1 Create XYZ ClaimDefinition
+                //3. Issuer1 Create XYZ CredentialDefinition
                 let issuer1_xyz_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE,
                                                                                                 ISSUER_DID,
                                                                                                 &AnoncredsUtils::xyz_schema_json(), None, false).unwrap();
 
-                //4. Issuer2 Create GVT ClaimDefinition
+                //4. Issuer2 Create GVT CredentialDefinition
                 let issuer2_gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE,
                                                                                                 DID,
                                                                                                 &AnoncredsUtils::gvt_schema_json(), None, false).unwrap();
 
-                //5. Issuer1 Create GVT ClaimOffer
+                //5. Issuer1 Create GVT CredentialOffer
                 let issuer1_gvt_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
                                                                                         &AnoncredsUtils::gvt_schema_json(),
                                                                                         ISSUER_DID, DID_MY1).unwrap();
 
-                //6. Prover store Issuer1 GVT ClaimOffer
+                //6. Prover store Issuer1 GVT CredentialOffer
                 AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer1_gvt_claim_offer).unwrap();
 
-                //7. Issuer1 Create XYZ ClaimOffer
+                //7. Issuer1 Create XYZ CredentialOffer
                 let issuer1_xyz_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
                                                                                         &AnoncredsUtils::xyz_schema_json(),
                                                                                         ISSUER_DID, DID_MY1).unwrap();
 
-                //8. Prover store Issuer1 XYZ ClaimOffer
+                //8. Prover store Issuer1 XYZ CredentialOffer
                 AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer1_xyz_claim_offer).unwrap();
 
-                //9. Issuer2 Create GVT ClaimOffer
+                //9. Issuer2 Create GVT CredentialOffer
                 let issuer2_gvt_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
                                                                                         &AnoncredsUtils::gvt_schema_json(),
                                                                                         DID, DID_MY1).unwrap();
 
-                //10. Prover store Issuer2 GVT ClaimOffer
+                //10. Prover store Issuer2 GVT CredentialOffer
                 AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer2_gvt_claim_offer).unwrap();
 
                 //11. Create MasterSecret
                 AnoncredsUtils::prover_create_master_secret(WALLET_HANDLE, COMMON_MASTER_SECRET).unwrap();
 
-                // Issuer1 issue GVT Claim
-                //12. Create and Store Claim Request
+                // Issuer1 issue GVT Credential
+                //12. Create and Store Credential Request
                 let issuer1_gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
                                                                                               DID_MY1,
                                                                                               &issuer1_gvt_claim_offer,
@@ -809,14 +809,14 @@ impl AnoncredsUtils {
                                                                                               COMMON_MASTER_SECRET).unwrap();
                 let claim_values_json = AnoncredsUtils::gvt_claim_values_json();
 
-                //13. Issuer1 creates GVT Claim
+                //13. Issuer1 creates GVT Credential
                 let (_, claim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_gvt_claim_req, &claim_values_json, None).unwrap();
 
-                //14. Store Claim
+                //14. Store Credential
                 AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &claim_json, None).unwrap();
 
-                // Issuer1 issue XYZ Claim
-                //15. Create and Store Claim Request
+                // Issuer1 issue XYZ Credential
+                //15. Create and Store Credential Request
                 let issuer1_xyz_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
                                                                                   DID_MY1,
                                                                                   &issuer1_xyz_claim_offer,
@@ -824,14 +824,14 @@ impl AnoncredsUtils {
                                                                                   COMMON_MASTER_SECRET).unwrap();
                 let claim_values_json = AnoncredsUtils::xyz_claim_values_json();
 
-                //16. Create XYZ Claim
+                //16. Create XYZ Credential
                 let (_, claim_2_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_xyz_claim_req, &claim_values_json, None).unwrap();
 
-                //17. Store Claim
+                //17. Store Credential
                 AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &claim_2_json, None).unwrap();
 
-                // Issuer2 issue GVT Claim
-                //18. Create and Store Claim Request
+                // Issuer2 issue GVT Credential
+                //18. Create and Store Credential Request
                 let issuer2_gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
                                                                                   DID_MY1,
                                                                                   &issuer2_gvt_claim_offer,
@@ -839,10 +839,10 @@ impl AnoncredsUtils {
                                                                                   COMMON_MASTER_SECRET).unwrap();
                 let claim_values_json = AnoncredsUtils::gvt2_claim_values_json();
 
-                //19. Create XYZ Claim
+                //19. Create XYZ Credential
                 let (_, claim_3_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer2_gvt_claim_req, &claim_values_json, None).unwrap();
 
-                //20. Store Claim
+                //20. Store Credential
                 AnoncredsUtils::prover_store_claim(WALLET_HANDLE, &claim_3_json, None).unwrap();
 
                 let res = mem::transmute(&issuer1_gvt_claim_def_json as &str);

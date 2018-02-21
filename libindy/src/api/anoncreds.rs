@@ -20,7 +20,7 @@ use self::libc::c_char;
 /// issuer_did: a DID of the issuer signing claim_def transaction to the Ledger
 /// schema_json: schema as a json
 /// signature_type: signature type (optional). Currently only 'CL' is supported.
-/// create_non_revoc: whether to request non-revocation claim.
+/// support_revocation: whether to request non-revocation claim.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -36,7 +36,7 @@ pub extern fn indy_issuer_create_and_store_claim_def(command_handle: i32,
                                                      issuer_did: *const c_char,
                                                      schema_json: *const c_char,
                                                      signature_type: *const c_char,
-                                                     create_non_revoc: bool,
+                                                     support_revocation: bool,
                                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                           claim_def_json: *const c_char
                                                      )>) -> ErrorCode {
@@ -46,12 +46,12 @@ pub extern fn indy_issuer_create_and_store_claim_def(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreClaimDefinition(
+        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateAndStoreCredentialDefinition(
             wallet_handle,
             issuer_did,
             schema_json,
             signature_type,
-            create_non_revoc,
+            support_revocation,
             Box::new(move |result| {
                 let (err, claim_def_json) = result_to_err_code_1!(result, String::new());
                 let claim_def_json = CStringUtils::string_to_cstring(claim_def_json);
@@ -68,6 +68,7 @@ pub extern fn indy_issuer_create_and_store_claim_def(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
+/// tails_writer_config_handle: .
 /// issuer_did: a DID of the issuer signing revoc_reg transaction to the Ledger
 /// schema_json: schema as a json
 /// max_claim_num: maximum number of claims the new registry can process.
@@ -83,28 +84,36 @@ pub extern fn indy_issuer_create_and_store_claim_def(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                                                      wallet_handle: i32,
+                                                     tails_writer_config_handle: i32,
                                                      issuer_did: *const c_char,
                                                      schema_json: *const c_char,
                                                      max_claim_num: u32,
+                                                     issuance_by_default: bool,
                                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                          revoc_reg_json: *const c_char
+                                                                          revoc_reg_def_json: *const c_char,
+                                                                          revoc_reg_json: *const c_char,
+                                                                          revoc_tails_generator_json: *const c_char
                                                      )>) -> ErrorCode {
-    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
             AnoncredsCommand::Issuer(
                 IssuerCommand::CreateAndStoreRevocationRegistry(
                     wallet_handle,
+                    tails_writer_config_handle,
                     issuer_did,
                     schema_json,
                     max_claim_num,
+                    issuance_by_default,
                     Box::new(move |result| {
-                        let (err, revoc_reg_json) = result_to_err_code_1!(result, String::new());
+                        let (err, revoc_reg_def_json, revoc_reg_json, rev_tails_generator_json) = result_to_err_code_3!(result, String::new(), String::new(), String::new());
+                        let revoc_reg_def_json = CStringUtils::string_to_cstring(revoc_reg_def_json);
                         let revoc_reg_json = CStringUtils::string_to_cstring(revoc_reg_json);
-                        cb(command_handle, err, revoc_reg_json.as_ptr())
+                        let revoc_tails_generator_json = CStringUtils::string_to_cstring(rev_tails_generator_json);
+                        cb(command_handle, err, revoc_reg_json.as_ptr(), revoc_reg_json.as_ptr(), revoc_tails_generator_json.as_ptr())
                     })
                 ))));
 
@@ -117,7 +126,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// schema_json: schema as a json
-/// issuer_did: a DID of the issuer created Claim definition
+/// issuer_did: a DID of the issuer created Credential definition
 /// prover_did: a DID of the target user
 /// cb: Callback that takes command result as parameter.
 ///
@@ -149,7 +158,7 @@ pub extern fn indy_issuer_create_claim_offer(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateClaimOffer(
+        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateCredentialOffer(
             wallet_handle,
             schema_json,
             issuer_did,
@@ -194,7 +203,7 @@ pub extern fn indy_issuer_create_claim_offer(command_handle: i32,
 ///
 /// #Returns
 /// Revocation registry update json with a newly issued claim
-/// Claim json containing signed claim values, issuer_did, schema_key, and revoc_reg_seq_no
+/// Credential json containing signed claim values, issuer_did, schema_key, and revoc_reg_seq_no
 /// used for issuance
 ///     {
 ///         "values": <see claim_values_json above>,
@@ -320,7 +329,7 @@ pub extern fn indy_prover_store_claim_offer(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::StoreClaimOffer(
+        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::StoreCredentialOffer(
             wallet_handle,
             claim_offer_json,
             Box::new(move |result| {
@@ -370,7 +379,7 @@ pub extern fn indy_prover_get_claim_offers(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::GetClaimOffers(
+        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::GetCredentialOffers(
             wallet_handle,
             filter_json,
             Box::new(move |result| {
@@ -445,7 +454,7 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Claim request json.
+/// Credential request json.
 ///     {
 ///      "blinded_ms" : <blinded_master_secret>,
 ///      "schema_key" : {name: string, version: string, did: string},
@@ -476,7 +485,7 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::CreateAndStoreClaimRequest(
+        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::CreateAndStoreCredentialRequest(
             wallet_handle,
             prover_did,
             claim_offer_json,
@@ -511,7 +520,8 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
 ///         "schema_key" : {name: string, version: string, did: string},
 ///         "signature_correctness_proof": <signature_correctness_proof>
 ///     }
-/// rev_reg_json: revocation registry json
+/// rev_reg_def_json: revocation registry definition json
+/// rev_reg_entry_json: revocation registry entry json
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -525,19 +535,22 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
 pub extern fn indy_prover_store_claim(command_handle: i32,
                                       wallet_handle: i32,
                                       claims_json: *const c_char,
-                                      rev_reg_json: *const c_char,
+                                      rev_reg_def_json: *const c_char,
+                                      rev_reg_entry_json: *const c_char,
                                       cb: Option<extern fn(
                                           xcommand_handle: i32, err: ErrorCode
                                       )>) -> ErrorCode {
     check_useful_c_str!(claims_json, ErrorCode::CommonInvalidParam3);
-    check_useful_opt_c_str!(rev_reg_json, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(rev_reg_def_json, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(rev_reg_entry_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::StoreClaim(
             wallet_handle,
             claims_json,
-            rev_reg_json,
+            rev_reg_def_json,
+            rev_reg_entry_json,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
                 cb(command_handle, err)
@@ -642,7 +655,7 @@ pub extern fn indy_prover_get_claims(command_handle: i32,
 ///     }
 /// #Returns
 /// json with claims for the given pool request.
-/// Claim consists of referent, human-readable attributes (key-value map), schema_key, issuer_did and revoc_reg_seq_no.
+/// Credential consists of referent, human-readable attributes (key-value map), schema_key, issuer_did and revoc_reg_seq_no.
 ///     {
 ///         "requested_attr1_referent": [claim1, claim2],
 ///         "requested_attr2_referent": [],
@@ -799,7 +812,7 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
                                        schemas_json: *const c_char,
                                        master_secret_name: *const c_char,
                                        claim_defs_json: *const c_char,
-                                       revoc_regs_json: *const c_char,
+                                       rev_reg_entries_json: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             proof_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(proof_req_json, ErrorCode::CommonInvalidParam3);
@@ -807,7 +820,7 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
     check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam6);
     check_useful_c_str!(claim_defs_json, ErrorCode::CommonInvalidParam7);
-    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam8);
+    check_useful_c_str!(rev_reg_entries_json, ErrorCode::CommonInvalidParam8);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
     let result = CommandExecutor::instance()
@@ -818,7 +831,7 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
             schemas_json,
             master_secret_name,
             claim_defs_json,
-            revoc_regs_json,
+            rev_reg_entries_json,
             Box::new(move |result| {
                 let (err, proof_json) = result_to_err_code_1!(result, String::new());
                 let proof_json = CStringUtils::string_to_cstring(proof_json);
@@ -868,23 +881,29 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
 ///         }
 ///         "identifiers": {"claim_proof1_referent":{issuer_did, rev_reg_seq_no, schema_key: {name, version, did}}}
 ///     }
-/// schemas_jsons: all schema jsons participating in the proof
+/// schemas_jsons: all schemas json participating in the proof
 ///         {
 ///             "claim_proof1_referent": <schema>,
 ///             "claim_proof2_referent": <schema>,
 ///             "claim_proof3_referent": <schema>
 ///         }
-/// claim_defs_jsons: all claim definition jsons participating in the proof
+/// credential_defs_jsons: all claim definitions json participating in the proof
 ///         {
 ///             "claim_proof1_referent": <claim_def>,
 ///             "claim_proof2_referent": <claim_def>,
 ///             "claim_proof3_referent": <claim_def>
 ///         }
-/// revoc_regs_jsons: all revocation registry jsons participating in the proof
+/// rev_reg_defs_json: all revocation registry definitions json participating in the proof
 ///         {
-///             "claim_proof1_referent": <revoc_reg>,
-///             "claim_proof2_referent": <revoc_reg>,
-///             "claim_proof3_referent": <revoc_reg>
+///             "claim_proof1_referent": <rev_reg_def>,
+///             "claim_proof2_referent": <rev_reg_def>,
+///             "claim_proof3_referent": <rev_reg_def>
+///         }
+/// rev_reg_entries_json: all revocation registry entries json participating in the proof
+///         {
+///             "claim_proof1_referent": <rev_reg_entry>,
+///             "claim_proof2_referent": <rev_reg_entry>,
+///             "claim_proof3_referent": <rev_reg_entry>
 ///         }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -900,24 +919,27 @@ pub extern fn indy_verifier_verify_proof(command_handle: i32,
                                          proof_request_json: *const c_char,
                                          proof_json: *const c_char,
                                          schemas_json: *const c_char,
-                                         claim_defs_jsons: *const c_char,
-                                         revoc_regs_json: *const c_char,
+                                         credential_defs_jsons: *const c_char,
+                                         rev_reg_defs_json: *const c_char,
+                                         rev_reg_entries_json: *const c_char,
                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                               valid: bool)>) -> ErrorCode {
     check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(proof_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(claim_defs_jsons, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(revoc_regs_json, ErrorCode::CommonInvalidParam6);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+    check_useful_c_str!(credential_defs_jsons, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(rev_reg_defs_json, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(rev_reg_entries_json, ErrorCode::CommonInvalidParam7);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Verifier(VerifierCommand::VerifyProof(
             proof_request_json,
             proof_json,
             schemas_json,
-            claim_defs_jsons,
-            revoc_regs_json,
+            credential_defs_jsons,
+            rev_reg_defs_json,
+            rev_reg_entries_json,
             Box::new(move |result| {
                 let (err, valid) = result_to_err_code_1!(result, false);
                 cb(command_handle, err, valid)

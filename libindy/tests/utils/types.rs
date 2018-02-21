@@ -6,18 +6,18 @@ use std::collections::{HashMap, HashSet};
 use self::indy_crypto::cl::*;
 
 #[derive(Deserialize, Debug, Serialize, PartialEq)]
-pub struct ClaimDefinition {
+pub struct CredentialDefinition {
     #[serde(rename = "ref")]
     pub schema_seq_no: i32,
     #[serde(rename = "origin")]
     pub issuer_did: String,
     pub signature_type: String,
-    pub data: ClaimDefinitionData
+    pub data: CredentialDefinitionData
 }
 
 #[derive(Deserialize, Debug, Serialize, PartialEq)]
-pub struct ClaimDefinitionData {
-    pub primary: IssuerPrimaryPublicKey,
+pub struct CredentialDefinitionData {
+    pub primary: CredentialPrimaryPublicKey,
     pub revocation: Option<serde_json::Value>,
 }
 
@@ -105,7 +105,7 @@ pub struct GetClaimDefReplyResult {
     pub seq_no: i32,
     #[serde(rename = "type")]
     pub _type: String,
-    pub data: ClaimDefinitionData,
+    pub data: CredentialDefinitionData,
     pub origin: String,
     pub signature_type: String,
     #[serde(rename = "ref")]
@@ -159,26 +159,26 @@ pub struct SchemaData {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct ClaimOffer {
+pub struct CredentialOffer {
     pub issuer_did: String,
     pub schema_key: SchemaKey,
-    pub key_correctness_proof: KeyCorrectnessProof,
+    pub key_correctness_proof: CredentialKeyCorrectnessProof,
     pub nonce: Nonce
 }
 
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
-pub struct ClaimOfferInfo {
+pub struct CredentialOfferInfo {
     pub issuer_did: String,
     pub schema_key: SchemaKey,
 }
 #[derive(Debug, Deserialize, Serialize)]
-pub struct ClaimsForProofRequest {
-    pub attrs: HashMap<String, Vec<ClaimInfo>>,
-    pub predicates: HashMap<String, Vec<ClaimInfo>>
+pub struct CredentialsForProofRequest {
+    pub attrs: HashMap<String, Vec<CredentialInfo>>,
+    pub predicates: HashMap<String, Vec<CredentialInfo>>
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
-pub struct ClaimInfo {
+pub struct CredentialInfo {
     pub referent: String,
     pub schema_key: SchemaKey,
     pub issuer_did: String,
@@ -186,10 +186,10 @@ pub struct ClaimInfo {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Claim {
+pub struct Credential {
     pub values: HashMap<String, Vec<String>>,
     pub schema_key: SchemaKey,
-    pub signature: ClaimSignature,
+    pub signature: CredentialSignature,
     pub signature_correctness_proof: SignatureCorrectnessProof,
     pub issuer_did: String,
     pub rev_reg_seq_no: Option<i32>,
