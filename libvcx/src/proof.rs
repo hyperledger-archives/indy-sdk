@@ -93,13 +93,25 @@ impl Proof {
         info!("building claimdef json for proof validation");
         let mut claim_json: HashMap<String, ClaimDefinition> = HashMap::new();
         for claim in claim_data.iter() {
+            let schema_seq_no = match claim.schema_seq_no {
+                Some(x) => x,
+                None => return Err(error::INVALID_CLAIM_DEF_JSON.code_num)
+            };
+            let issuer_did = match claim.issuer_did {
+                Some(ref x) => x,
+                None => return Err(error::INVALID_CLAIM_DEF_JSON.code_num)
+            };
+            let claim_uuid = match claim.claim_uuid {
+                Some(ref x) => x,
+                None => return Err(error::INVALID_CLAIM_DEF_JSON.code_num)
+            };
             let claim_def = RetrieveClaimDef::new()
-                .retrieve_claim_def("GGBDg1j8bsKmr4h5T9XqYf", claim.schema_seq_no, Some(SigTypes::CL), &claim.issuer_did)?;
+                .retrieve_claim_def("GGBDg1j8bsKmr4h5T9XqYf", schema_seq_no, Some(SigTypes::CL), issuer_did)?;
             let claim_obj: ClaimDefinition = match serde_json::from_str(&claim_def) {
                 Ok(x) => x,
                 Err(_) => return Err(error::INVALID_JSON.code_num),
             };
-            claim_json.insert(claim.claim_uuid.clone(), claim_obj);
+            claim_json.insert(claim_uuid.to_string(), claim_obj);
         }
 
         match serde_json::to_string(&claim_json) {
@@ -121,12 +133,20 @@ impl Proof {
 
         let mut schema_json: HashMap<String, SchemaTransaction> = HashMap::new();
         for schema in claim_data.iter() {
-            let schema_obj = LedgerSchema::new_from_ledger(schema.schema_seq_no as i32)?;
+            let schema_seq_no = match schema.schema_seq_no {
+                Some(x) => x,
+                None => return Err(error::INVALID_SCHEMA.code_num)
+            };
+            let claim_uuid = match schema.claim_uuid {
+                Some(ref x) => x,
+                None => return Err(error::INVALID_SCHEMA.code_num)
+            };
+            let schema_obj = LedgerSchema::new_from_ledger(schema_seq_no as i32)?;
             let data = match schema_obj.data {
                 Some(x) => x,
                 None => return Err(error::INVALID_PROOF.code_num)
             };
-            schema_json.insert(schema.claim_uuid.clone(), data);
+            schema_json.insert(claim_uuid.to_string(), data);
         }
 
         match serde_json::to_string(&schema_json) {
@@ -154,7 +174,7 @@ impl Proof {
             Some(x) => x,
             None => return Err(error::INVALID_PROOF.code_num),
         };
-        let claim_data = proof_msg.get_claim_schema_info()?;
+        let claim_data = proof_msg.get_claim_info()?;
 
         if claim_data.len() == 0 {
             return Err(error::INVALID_PROOF_CLAIM_DATA.code_num)
@@ -200,7 +220,7 @@ impl Proof {
             .proof_name(&self.name)
             .proof_data_version(data_version)
             .requested_attrs(&self.requested_attrs)
-//            .requested_predicates(&self.requested_predicates)
+            .requested_predicates(&self.requested_predicates)
             .serialize_message()?;
 
         self.proof_request = Some(proof_obj);
@@ -475,6 +495,7 @@ pub fn generate_nonce() -> Result<String, u32> {
 mod tests {
     use super::*;
     use connection::build_connection;
+    use messages::proofs::proof_message::{ Attr };
 
     static REQUESTED_ATTRS: &'static str = "[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]";
     static REQUESTED_PREDICATES: &'static str = "[{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\"}]";
@@ -711,35 +732,42 @@ mod tests {
             agent_vk: VERKEY.to_string(),
         };
         let claim1 = ClaimData {
-            schema_seq_no: 1,
-            issuer_did: "11".to_string(),
-            claim_uuid: "claim1".to_string(),
-            name: "claim1Name".to_string(),
-            value: serde_json::to_value("val1").unwrap(),
-            attr_type: "attr1".to_string(),
+            schema_seq_no: Some(1),
+            issuer_did: Some("11".to_string()),
+            claim_uuid: Some("claim1".to_string()),
+            attr_info: Some(Attr{
+                name: "claim1Name".to_string(),
+                value: serde_json::to_value("val1").unwrap(),
+                attr_type: "attr1".to_string(),
+            })
         };
         let claim2 = ClaimData {
-            schema_seq_no: 2,
-            issuer_did: "22".to_string(),
-            claim_uuid: "claim2".to_string(),
-            name: "claim2Name".to_string(),
-            value: serde_json::to_value("val2").unwrap(),
-            attr_type: "attr2".to_string(),
+            schema_seq_no: Some(2),
+            issuer_did: Some("22".to_string()),
+            claim_uuid: Some("claim2".to_string()),
+            attr_info: Some(Attr{
+                name: "claim2Name".to_string(),
+                value: serde_json::to_value("val2").unwrap(),
+                attr_type: "attr2".to_string(),
+            })
+
         };
         let claim3 = ClaimData {
-            schema_seq_no: 3,
-            issuer_did: "33".to_string(),
-            claim_uuid: "claim3".to_string(),
-            name: "claim3Name".to_string(),
-            value: serde_json::to_value("val3").unwrap(),
-            attr_type: "attr3".to_string(),
+            schema_seq_no: Some(3),
+            issuer_did: Some("33".to_string()),
+            claim_uuid: Some("claim3".to_string()),
+            attr_info: Some(Attr{
+                name: "claim3Name".to_string(),
+                value: serde_json::to_value("val3").unwrap(),
+                attr_type: "attr3".to_string(),
+            })
         };
         let claims = vec![claim1.clone(), claim2.clone(), claim3.clone()];
         let claim_json = proof.build_claim_defs_json(claims.as_ref()).unwrap();
         let test_claim_json = format!(r#"{{"{}":{},"{}":{},"{}":{}}}"#,
-                                      claim1.claim_uuid, data,
-                                      claim2.claim_uuid, data,
-                                      claim3.claim_uuid, data);
+                                      claim1.claim_uuid.unwrap(), data,
+                                      claim2.claim_uuid.unwrap(), data,
+                                      claim3.claim_uuid.unwrap(), data);
         assert!(claim_json.contains("\"claim1\":{\"ref\":1,\"origin\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"signature_type\":\"CL\""));
         assert!(claim_json.contains("\"claim2\":{\"ref\":1,\"origin\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"signature_type\":\"CL\""));
         assert!(claim_json.contains("\"claim3\":{\"ref\":1,\"origin\":\"NcYxiDXkpYi6ov5FcYDi1e\",\"signature_type\":\"CL\""));
@@ -773,28 +801,34 @@ mod tests {
             agent_vk: VERKEY.to_string(),
         };
         let claim1 = ClaimData {
-            schema_seq_no: 1,
-            issuer_did: "11".to_string(),
-            claim_uuid: "claim1".to_string(),
-            name: "claim1Name".to_string(),
-            value: serde_json::to_value("val1").unwrap(),
-            attr_type: "attr1".to_string(),
+            schema_seq_no: Some(1),
+            issuer_did: Some("11".to_string()),
+            claim_uuid: Some("claim1".to_string()),
+            attr_info: Some(Attr{
+                name: "claim1Name".to_string(),
+                value: serde_json::to_value("val1").unwrap(),
+                attr_type: "attr1".to_string(),
+            })
         };
         let claim2 = ClaimData {
-            schema_seq_no: 2,
-            issuer_did: "22".to_string(),
-            claim_uuid: "claim2".to_string(),
-            name: "claim2Name".to_string(),
-            value: serde_json::to_value("val2").unwrap(),
-            attr_type: "attr2".to_string(),
+            schema_seq_no: Some(2),
+            issuer_did: Some("22".to_string()),
+            claim_uuid: Some("claim2".to_string()),
+            attr_info: Some(Attr{
+                name: "claim2Name".to_string(),
+                value: serde_json::to_value("val2").unwrap(),
+                attr_type: "attr2".to_string(),
+            })
         };
         let claim3 = ClaimData {
-            schema_seq_no: 3,
-            issuer_did: "33".to_string(),
-            claim_uuid: "claim3".to_string(),
-            name: "claim3Name".to_string(),
-            value: serde_json::to_value("val3").unwrap(),
-            attr_type: "attr3".to_string(),
+            schema_seq_no: Some(3),
+            issuer_did: Some("33".to_string()),
+            claim_uuid: Some("claim3".to_string()),
+            attr_info: Some(Attr{
+                name: "claim3Name".to_string(),
+                value: serde_json::to_value("val3").unwrap(),
+                attr_type: "attr3".to_string(),
+            })
         };
         let claims = vec![claim1.clone(), claim2.clone(), claim3.clone()];
         let schemas_json = proof.build_schemas_json(claims.as_ref()).unwrap();
@@ -803,53 +837,38 @@ mod tests {
         assert!(schemas_json.contains("\"claim3\":{\"seqNo\":344,\"identifier\":\"VsKV7grR1BUE29mG2Fm2kX\",\"txnTime\":1516284381,\"type\":\"101\",\"data\":{\"name\":\"get schema attrs\",\"version\":\"1.0\",\"attr_names\":[\"test\",\"get\",\"schema\",\"attrs\"]}}"));
     }
 
-//    #[test]
-//    fn test_validate_proof() {
-//        settings::set_defaults();
-//        ::claim_def::tests::open_sandbox_pool();
-//
-//        let proof_msg = r#"{"msg_type":"proof","version":"0.1","to_did":"BnRXf8yDMUwGyZVDkSENeq","from_did":"GxtnGN6ypZYgEqcftSQFnC","proof_request_id":"cCanHnpFAD","proofs":{"claim::e5fec91f-d03d-4513-813c-ab6db5715d55":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"state":"96473275571522321025213415717206189191162"},"a_prime":"22605045280481376895214546474258256134055560453004805058368015338423404000586901936329279496160366852115900235316791489357953785379851822281248296428005020302405076144264617943389810572564188437603815231794326272302243703078443007359698858400857606408856314183672828086906560155576666631125808137726233827430076624897399072853872527464581329767287002222137559918765406079546649258389065217669558333867707240780369514832185660287640444094973804045885379406641474693993903268791773620198293469768106363470543892730424494655747935463337367735239405840517696064464669905860189004121807576749786474060694597244797343224031","e":"70192089123105616042684481760592174224585053817450673797400202710878562748001698340846985261463026529360990669802293480312441048965520897","v":"1148619141217957986496757711054111791862691178309410923416837802801708689012670430650138736456223586898110113348220116209094530854607083005898964558239710027534227973983322542548800291320747321452329327824406430787211689678096549398458892087551551587767498991043777397791000822007896620414888602588897806008609113730393639807814070738699614969916095861363383223421727858670289337712185089527052065958362840287749622133424503902085247641830693297082507827948006947829401008622239294382186995101394791468192083810475776455445579931271665980788474331866572497866962452476638881287668931141052552771328556458489781734943404258692308937784221642452132005267809852656378394530342203469943982066011466088478895643800295937901139711103301249691253510784029114718919483272055970725860849610885050165709968510696738864528287788491998027072378656038991754015693216663830793243584350961586874315757599094357535856429087122365865868729","m":{"address2":"11774234640096848605908744857306447015748098256395922562149769943967941106193320512788344020652220849708117081570187385467979956319507248530701654682748372348387275979419669108338","city":"4853213962270369118453000522408430296589146124488849630769837449684434138367659379663124155088827069418193027370932024893343033367076071757003149452226758383807126385017161888440","address1":"12970590675851114145396120869959510754345567924518524026685086869487243290925032320159287997675756075512889990901552679591155319959039145119122576164798225386578339739435869622811","zip":"8333721522340131864419931745588776943042067606218561135102011966361165456174036379901390244538991611895455576519950813910672825465382312504250936740379785802177629077591444977329"},"m1":"92853615502250003546205004470333326341901175168428906399291824325990659330595200000112546157141090642053863739870044907457400076448073272490169488870502566172795456430489790324815765612798273406119873266684053517977802902202155082987833343670942161987285661291655743810590661447300059024966135828466539810035","m2":"14442362430453309930284822850357071315613831915865367971974791350454381198894252834180803515368579729220423713315556807632571621646127926114010380486713602821529657583905131582938"},"ge_proofs":[]},"non_revoc_proof":null},"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH"}},"aggregated_proof":{"c_hash":"68430476900085482958838239880418115228681348197588159723604944078288347793331","c_list":[[179,17,2,242,194,227,92,203,28,32,255,113,112,20,5,243,9,111,220,111,21,210,116,12,167,119,253,181,37,40,143,215,140,42,179,97,75,229,96,94,54,248,206,3,48,14,61,219,160,122,139,227,166,183,37,43,197,200,28,220,217,10,65,42,6,195,124,44,164,65,114,206,51,231,254,156,170,141,21,153,50,251,237,65,147,97,243,17,157,116,213,201,80,119,106,70,88,60,55,36,33,160,135,106,60,212,191,235,116,57,78,177,61,86,44,226,205,100,134,118,93,6,26,58,220,66,232,166,202,62,90,174,231,207,19,239,233,223,70,191,199,100,157,62,139,176,28,184,9,70,116,199,142,237,198,183,12,32,53,84,207,202,77,56,97,177,154,169,223,201,212,163,212,101,184,255,215,167,16,163,136,44,25,123,49,15,229,41,149,133,159,86,106,208,234,73,207,154,194,162,141,63,159,145,94,47,174,51,225,91,243,2,221,202,59,11,212,243,197,208,116,42,242,131,221,137,16,169,203,215,239,78,254,150,42,169,202,132,172,106,179,130,178,130,147,24,173,213,151,251,242,44,54,47,208,223]]},"requested_proof":{"revealed_attrs":{"sdf":["claim::e5fec91f-d03d-4513-813c-ab6db5715d55","UT","96473275571522321025213415717206189191162"]},"unrevealed_attrs":{},"self_attested_attrs":{},"predicates":{}}}"#;
-//        let new_handle = 1;
-//        let proof_req = messages::proof_request()
-//            .type_version("0.1")
-//            .prover_did("BnRXf8yDMUwGyZVDkSENeq")
-//            .requester_did("GxtnGN6ypZYgEqcftSQFnC")
-//            .tid(1)
-//            .mid(9)
-//            .nonce("123")
-//            .proof_name("proof_req_1")
-//            .proof_data_version(".01")
-//            .requested_attrs(REQUESTED_ATTRS).clone();
-//
-//        let mut proof = Proof {
-//            handle: 1,
-//            source_id: "12".to_string(),
-//            msg_uid: String::from("1234"),
-//            ref_msg_id: String::new(),
-//            requested_attrs: String::from("[]"),
-//            requested_predicates: String::from("[]"),
-//            prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
-//            prover_vk: VERKEY.to_string(),
-//            state: VcxStateType::VcxStateOfferSent,
-//            proof_state: ProofStateType::ProofUndefined,
-//            name: String::new(),
-//            version: String::from("1.0"),
-//            nonce: generate_nonce().unwrap(),
-//            proof: Some(ProofMessage::from_str(&proof_msg).unwrap()),
-//            proof_request: Some(proof_req.clone()),
-//            remote_did: DID.to_string(),
-//            remote_vk: VERKEY.to_string(),
-//            agent_did: DID.to_string(),
-//            agent_vk: VERKEY.to_string(),
-//        };
-//
-//        {
-//            let mut m = PROOF_MAP.lock().unwrap();
-//            info!("inserting handle {} into proof table", new_handle);
-//            m.insert(new_handle, proof.clone());
-//        }
-//        proof.proof_validation().unwrap();
-//    }
+    #[test]
+    fn test_get_proof() {
+        ::utils::logger::LoggerUtils::init();
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        let proof_msg = r#"{"proofs":{"claim::71b6070f-14ba-45fa-876d-1fe8491fe5d4":{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"sex":"5944657099558967239210949258394887428692050081607692519917050011144233115103","name":"1139481716457488690172217916278103335"},"a_prime":"55115757663642844902979276276581544287881791112969892277372135316353511833640150801244335663890109536491278379177551666081054765286807563008348637104046950934828407012194403360724040287698135607556244297972578864339500981366412262454282194811242239615009347165118318516694216754501345324782597475927199400880006212632553233049354866295429520527445980181939247828351677971991914388778860092824318440481574181300185829423762990910739241691289976584754979812272223819007422499654272590946235912914032826994670588466080422906806402660885408376207875827950805200378568062518210110828954480363081643567615791016011737856977","e":"34976147138641338975844073241645969211530343885520088294714132974884138611036204288689212378023649179372520412699253155486970203797562324","v":"961473607552945346906354315658276499450491951690969023699851664262072769313929148332129868528140265952852653009499943891795293148107502144091334703992581737220352761140064276811372868396353572957613845323343723271098601244774874235526135299483412285009916812621185291842845156342501611029106982811773616231232684804116984093651972537804480090649736612551759833591251845595059217608938213987633789344584340351801507541774726753840600143685051258161251666953243698589585559347435011414292427590918153421953579895479604685390401357681887618798200391305919594609949167659780330698000168295871428737686822637913218269005987492318466661186509308179489615192663542904993253626728197630057096161118638090776180812895097232529119979970798938360220605280817954648588493778338816318524451785027916181454650102696493927306340658666852294316562458212054696739343800993703515542777264448535624584845146378512183572107830260813929222999","m":{},"m1":"75548120024969192086664289521241751069844239013520403238642886571169851979005373784309432586593371476370934469326730539754613694936161784687213609047455188306625204249706249661640538349287762196100659095340756990269587317065862046598569445591945049204366911309949910119711238973099702616527117177036784698661","m2":"287944186286321709724396773443214682376883853676549188669693055373059354657799325692443906346632814001611911026063358134413175852024773765930829079850890920811398176944587192618"},"ge_proofs":[]},"non_revoc_proof":null},"schema_seq_no":103,"issuer_did":"V4SGRU86Z58d6TV7PBUe6f"}},"aggregated_proof":{"c_hash":"63330487197040957750863022608534150304998351350639315143102570772502292901825","c_list":[[1,180,153,212,162,132,5,189,14,181,140,112,236,109,182,76,91,6,161,215,62,207,205,135,86,211,49,197,215,198,104,201,14,22,48,6,112,170,31,191,110,118,121,15,62,114,126,249,221,107,114,161,163,234,19,233,150,236,182,217,195,6,218,217,193,6,94,160,33,23,103,147,109,221,81,38,138,20,225,141,68,37,142,10,225,79,164,119,168,250,188,186,47,229,165,8,237,230,14,35,53,176,97,28,82,105,87,210,117,16,154,222,66,11,96,172,90,13,239,190,29,71,11,88,53,36,219,139,67,21,136,58,161,164,97,106,56,230,55,157,59,35,187,235,154,194,111,93,168,135,67,15,97,136,38,169,87,142,32,255,50,247,111,83,44,88,251,99,6,226,182,170,146,229,118,164,118,228,235,51,137,168,135,50,1,14,1,201,72,175,102,241,149,117,88,83,84,37,205,130,26,155,124,158,211,89,112,33,46,24,94,93,202,8,127,172,214,178,6,156,79,188,132,223,239,127,200,158,95,247,139,101,51,162,168,175,74,1,67,201,94,108,192,14,130,109,217,248,193,10,142,37,95,231,227,251,209]]},"requested_proof":{"revealed_attrs":{"attr2_uuid":["claim::71b6070f-14ba-45fa-876d-1fe8491fe5d4","male","5944657099558967239210949258394887428692050081607692519917050011144233115103"],"attr1_uuid":["claim::71b6070f-14ba-45fa-876d-1fe8491fe5d4","Alex","1139481716457488690172217916278103335"]},"unrevealed_attrs":{},"self_attested_attrs":{"self_attested_attr":"self_value"},"predicates":{}},"remoteDid":"KP8AaEBc368CMK1PqZaEzX","userPairwiseDid":"PofTCeegEXT7S2aAePhM6a"}"#;
+        let new_handle = 1121;
+        let proof = Proof {
+            handle: new_handle,
+            source_id: "12".to_string(),
+            msg_uid: String::from("1234"),
+            ref_msg_id: String::new(),
+            requested_attrs: String::from("[]"),
+            requested_predicates: String::from("[]"),
+            prover_did: String::from("GxtnGN6ypZYgEqcftSQFnC"),
+            prover_vk: VERKEY.to_string(),
+            state: VcxStateType::VcxStateOfferSent,
+            proof_state: ProofStateType::ProofUndefined,
+            name: String::new(),
+            version: String::from("1.0"),
+            nonce: generate_nonce().unwrap(),
+            proof: Some(ProofMessage::from_str(proof_msg).unwrap()),
+            proof_request: None,
+            remote_did: DID.to_string(),
+            remote_vk: VERKEY.to_string(),
+            agent_did: DID.to_string(),
+            agent_vk: VERKEY.to_string(),
+        };
+        let proof_str = proof.get_proof().unwrap();
+        assert!(proof_str.contains(r#"{"schema_seq_no":103,"issuer_did":"V4SGRU86Z58d6TV7PBUe6f","claim_uuid":"claim::71b6070f-14ba-45fa-876d-1fe8491fe5d4","attr_info":{"name":"name","value":"Alex","type":"revealed"}}"#));
+        assert!(proof_str.contains(r#"{"name":"self_attested_attr","value":"self_value","type":"self_attested"}"#));
+    }
 
     #[test]
     fn test_release_all() {

@@ -13,7 +13,7 @@ def build(name, file='vcx/ci/ubuntu.dockerfile', context='vcx/ci', customParams 
 
 // docker build -t wrapper-test --build-arg uid=1001 -f vcx/ci/Dockerfile-wrapper-testing
 def build_wrapper_testing_image(file='vcx/ci/Dockerfile-wrapper-testing', context='vcx', customParams = ''){
-	return docker.build("wrapper-test", "--build-arg uid=${getUserUid()} -f $file $context")
+	return docker.build("wrapper-test", "--no-cache --build-arg uid=${getUserUid()} -f $file $context")
 }
 
 node('ubuntu') {

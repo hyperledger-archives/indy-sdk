@@ -53,6 +53,7 @@ pub static INVALID_SCHEMA_HANDLE: Error = Error{code_num: 1042, message: "Schema
 pub static INVALID_MASTER_SECRET: Error = Error{code_num: 1043, message: "Invalid master secret"};
 pub static ALREADY_INITIALIZED: Error = Error{code_num: 1044, message: "Library already initialized"};
 pub static INVALID_INVITE_DETAILS: Error = Error{code_num: 1045, message: "Invalid invite details structure"};
+pub static INVALID_SELF_ATTESTED_VAL: Error = Error{code_num: 1046, message: "Self Attested Value was invalid"};
 
 lazy_static! {
     static ref ERROR_MESSAGES: HashMap<u32, &'static str> = {

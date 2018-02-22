@@ -32,9 +32,26 @@ pub struct Attr {
     pub issuer_did: Option<String>,
 }
 
+//Todo: Move Predicate to a common place for both proof_req and proof msg
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct Predicate {
+    pub attr_name: String,
+    pub p_type: String,
+    pub value: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub schema_seq_no: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub issuer_did: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct ProofAttrs {
     attrs: Vec<Attr>
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct ProofPredicates {
+    predicates: Vec<Predicate>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -44,12 +61,11 @@ pub struct ProofRequestData{
     #[serde(rename = "version")]
     data_version: String,
     pub requested_attrs: HashMap<String, Attr>,
-    pub requested_predicates: HashMap<String, Attr>,
+    pub requested_predicates: HashMap<String, Predicate>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct ProofRequestMessage{
-    //Todo: type_header and topic will be removed from specific messages and made general
     #[serde(rename = "@type")]
     type_header: ProofType,
     #[serde(rename = "@topic")]
@@ -63,6 +79,14 @@ impl ProofAttrs {
     pub fn create() -> ProofAttrs {
         ProofAttrs {
             attrs: Vec::new()
+        }
+    }
+}
+
+impl ProofPredicates {
+    pub fn create() -> ProofPredicates {
+        ProofPredicates {
+            predicates: Vec::new()
         }
     }
 }
@@ -137,22 +161,25 @@ impl ProofRequestMessage {
                 return self;
             }
         };
-
-        self.proof_request_data.requested_attrs = combine_request_attributes(proof_attrs.attrs);
+        for (i, attr) in proof_attrs.attrs.iter().enumerate() {
+            self.proof_request_data.requested_attrs.insert(format!("{}_{}", attr.name, i), attr.clone());
+        }
         self
     }
 
     pub fn requested_predicates(&mut self, predicates: &str) -> &mut Self {
-        let mut proof_attrs = ProofAttrs::create();
-        proof_attrs.attrs = match serde_json::from_str(predicates) {
+        let mut proof_predicates = ProofPredicates::create();
+        proof_predicates.predicates = match serde_json::from_str(predicates) {
             Ok(x) => x,
             Err(x) => {
                 self.validate_rc = error::INVALID_JSON.code_num;
                 return self;
             }
         };
-
-        self.proof_request_data.requested_predicates = combine_request_attributes(proof_attrs.attrs);
+        for (i, attr) in proof_predicates.predicates.iter().enumerate() {
+            self.proof_request_data.requested_predicates.insert(
+                format!("{}_{}", attr.attr_name, i), attr.clone());
+        }
         self
     }
 
@@ -177,14 +204,6 @@ impl ProofRequestMessage {
             Err(_) => Err(error::INVALID_JSON.code_num),
         }
     }
-}
-
-pub fn combine_request_attributes(requested_attrs: Vec<Attr>) -> HashMap<String, Attr> {
-    let mut all_attrs: HashMap<String, Attr> = HashMap::new();
-    for (i, attr) in requested_attrs.iter().enumerate() {
-        all_attrs.insert(format!("{}_{}", attr.name, i), attr.clone());
-    }
-    all_attrs
 }
 
 
@@ -228,7 +247,7 @@ mod tests {
             .proof_name(data_name)
             .proof_data_version(data_version)
             .requested_attrs(REQUESTED_ATTRS)
-//            .requested_predicates(REQUESTED_PREDICATES)
+            .requested_predicates(REQUESTED_PREDICATES)
             .clone();
 
         let proof_request_test: serde_json::Value = json!({
@@ -259,7 +278,15 @@ mod tests {
                         "name": "zip",
                     },
                 },
-                "requested_predicates": {},
+                "requested_predicates": {
+                        "age_0": {
+                            "schema_seq_no": 2,
+                            "issuer_did": "8XFh8yBzrpJQmNyZzgoTqB",
+                            "attr_name": "age",
+                            "p_type": "GE",
+                            "value": 18
+                        }
+                },
             },
         });
         let serialized_msg = request.serialize_message().unwrap();
@@ -267,5 +294,6 @@ mod tests {
         assert!(serialized_msg.contains(r#"@topic":{"mid":98,"tid":89}"#));
         assert!(serialized_msg.contains(r#"proof_request_data":{"nonce":"123432421212","name":"Test","version":"3.75","requested_attrs""#));
         assert!(serialized_msg.contains(r#""zip_5":{"name":"zip","schema_seq_no":1}"#));
+        assert!(serialized_msg.contains(r#""age_0":{"attr_name":"age","p_type":"GE","value":18,"schema_seq_no":1,"issuer_did":"DID1"}"#));
     }
 }
