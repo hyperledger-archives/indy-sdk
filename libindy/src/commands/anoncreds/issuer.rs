@@ -16,6 +16,7 @@ use utils::crypto::base58::Base58;
 use self::indy_crypto::cl::*;
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
+#[allow(dead_code)] //FIXME
 pub enum IssuerCommand {
     CreateAndStoreCredentialDefinition(
         i32, // wallet handle
@@ -279,7 +280,7 @@ impl IssuerCommandExecutor {
         let credential_values: HashMap<String, Vec<String>> = serde_json::from_str(credential_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannon deserialize CredentialValues: {:?}", err)))?;
 
-        let mut rev_reg_def = match self.wallet_service.get(wallet_handle, &format!("revocation_registry_definition::{}", id)) {
+        let rev_reg_def = match self.wallet_service.get(wallet_handle, &format!("revocation_registry_definition::{}", id)) {
             Ok(rev_reg_def_json) =>
                 Some(RevocationRegistryDefinition::from_json(&rev_reg_def_json)
                     .map_err(|err| CommonError::InvalidState(format!("Cannon deserialize RevocationRegistryDefinition: {:?}", err)))?),

@@ -210,6 +210,7 @@ impl JsonEncodable for FullProof {}
 
 impl<'a> JsonDecodable<'a> for FullProof {}
 
+#[allow(non_camel_case_types)] //FIXME
 #[derive(Deserialize, Debug, Serialize, PartialEq, Clone)]
 pub enum IssuanceTypes {
     ISSUANCE_BY_DEFAULT,

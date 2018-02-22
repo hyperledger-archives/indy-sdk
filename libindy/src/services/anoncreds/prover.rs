@@ -232,18 +232,19 @@ impl Prover {
                                   restriction: &Filter) -> bool where T: Filtering {
         info!("satisfy_restriction >>> restriction: {:?}", restriction);
 
-        let check_condition = |mut res, expected: Option<&str>, actual: &str|
-            if let Some(ex) = expected {
-                res = res && actual.eq(ex);
-            };
-
         let mut res = true;
+        {
+            let mut check_condition = |expected: Option<&str>, actual: &str|
+                if let Some(ex) = expected {
+                    res = res && actual.eq(ex);
+                };
 
-        check_condition(res, restriction.issuer_did.as_ref().map(String::as_str), &object.issuer_did());
-        if let Some(ref schema_key) = restriction.schema_key {
-            check_condition(res, schema_key.name.as_ref().map(String::as_str), &object.schema_key().name);
-            check_condition(res, schema_key.version.as_ref().map(String::as_str), &object.schema_key().version);
-            check_condition(res, schema_key.did.as_ref().map(String::as_str), &object.schema_key().did);
+            check_condition(restriction.issuer_did.as_ref().map(String::as_str), &object.issuer_did());
+            if let Some(ref schema_key) = restriction.schema_key {
+                check_condition(schema_key.name.as_ref().map(String::as_str), &object.schema_key().name);
+                check_condition(schema_key.version.as_ref().map(String::as_str), &object.schema_key().version);
+                check_condition(schema_key.did.as_ref().map(String::as_str), &object.schema_key().did);
+            }
         }
 
         info!("satisfy_restriction >>> res: {:?}", res);

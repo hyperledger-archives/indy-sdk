@@ -3,7 +3,7 @@ extern crate indy_crypto;
 use services::anoncreds::types::*;
 use std::collections::HashMap;
 use errors::common::CommonError;
-use self::indy_crypto::cl::{CredentialPublicKey, RevocationKeyPublic, RevocationRegistry};
+use self::indy_crypto::cl::{CredentialPublicKey, RevocationRegistry};
 use self::indy_crypto::cl::verifier::Verifier as CryptoVerifier;
 use services::anoncreds::helpers::*;
 

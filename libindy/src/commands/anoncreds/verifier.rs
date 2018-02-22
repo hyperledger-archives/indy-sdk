@@ -8,7 +8,7 @@ use services::anoncreds::AnoncredsService;
 use services::anoncreds::types::*;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
-use self::indy_crypto::cl::{RevocationRegistry, RevocationRegistryDelta};
+use self::indy_crypto::cl::RevocationRegistry;
 use self::indy_crypto::utils::json::JsonDecodable;
 
 pub enum VerifierCommand {

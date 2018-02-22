@@ -109,8 +109,8 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                     max_claim_num,
                     issuance_by_default,
                     Box::new(move |result| {
-                        let (err, revoc_reg_def_json, revoc_reg_json, rev_tails_generator_json) = result_to_err_code_3!(result, String::new(), String::new(), String::new());
-                        let revoc_reg_def_json = CStringUtils::string_to_cstring(revoc_reg_def_json);
+                        let (err, _/*FIXME revoc_reg_def_json*/, revoc_reg_json, rev_tails_generator_json) = result_to_err_code_3!(result, String::new(), String::new(), String::new());
+                        //FIXME restore and use let revoc_reg_def_json = CStringUtils::string_to_cstring(revoc_reg_def_json);
                         let revoc_reg_json = CStringUtils::string_to_cstring(revoc_reg_json);
                         let revoc_tails_generator_json = CStringUtils::string_to_cstring(rev_tails_generator_json);
                         cb(command_handle, err, revoc_reg_json.as_ptr(), revoc_reg_json.as_ptr(), revoc_tails_generator_json.as_ptr())
