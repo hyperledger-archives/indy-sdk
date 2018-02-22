@@ -6,7 +6,7 @@ use errors::anoncreds::AnoncredsError;
 use errors::common::CommonError;
 
 use services::anoncreds::AnoncredsService;
-use services::blob_storage::TailsService;
+use services::blob_storage::BlobStorageService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::anoncreds::types::*;
@@ -63,20 +63,20 @@ pub enum IssuerCommand {
 
 pub struct IssuerCommandExecutor {
     pub anoncreds_service: Rc<AnoncredsService>,
+    pub blob_storage_service: Rc<BlobStorageService>,
     pub pool_service: Rc<PoolService>,
-    pub tails_service: Rc<TailsService>,
     pub wallet_service: Rc<WalletService>
 }
 
 impl IssuerCommandExecutor {
     pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
-               tails_service: Rc<TailsService>,
+               blob_storage_service: Rc<BlobStorageService>,
                wallet_service: Rc<WalletService>) -> IssuerCommandExecutor {
         IssuerCommandExecutor {
             anoncreds_service,
             pool_service,
-            tails_service,
+            blob_storage_service,
             wallet_service,
         }
     }
@@ -393,7 +393,7 @@ impl IssuerCommandExecutor {
         let simple_tails_accessor = SimpleTailsAccessor::new(&mut rev_tails_generator).unwrap(); // TODO
         */
         let tails_reader_handle = 0; //FIXME should be param
-        let sdk_tails_accessor = SDKTailsAccessor::new(self.tails_service.clone(), tails_reader_handle);
+        let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(), tails_reader_handle);
 
         let revocation_registry_delta =
             self.anoncreds_service.issuer.revoke(&mut revocation_registry, revocation_registry_definition.max_cred_num, user_revoc_index, &sdk_tails_accessor)?;

@@ -21,7 +21,7 @@ use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 use errors::common::CommonError;
 
 use services::anoncreds::AnoncredsService;
-use services::blob_storage::TailsService;
+use services::blob_storage::BlobStorageService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::crypto::CryptoService;
@@ -69,13 +69,13 @@ impl CommandExecutor {
                 info!(target: "command_executor", "Worker thread started");
 
                 let anoncreds_service = Rc::new(AnoncredsService::new());
-                let pool_service = Rc::new(PoolService::new());
-                let wallet_service = Rc::new(WalletService::new());
+                let blob_storage_service = Rc::new(BlobStorageService::new());
                 let crypto_service = Rc::new(CryptoService::new());
                 let ledger_service = Rc::new(LedgerService::new());
-                let tails_service = Rc::new(TailsService::new());
+                let pool_service = Rc::new(PoolService::new());
+                let wallet_service = Rc::new(WalletService::new());
 
-                let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), tails_service.clone(), wallet_service.clone());
+                let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), blob_storage_service.clone(), pool_service.clone(), wallet_service.clone());
                 let crypto_command_executor = CryptoCommandExecutor::new(wallet_service.clone(), crypto_service.clone());
                 let ledger_command_executor = LedgerCommandExecutor::new(pool_service.clone(), crypto_service.clone(), wallet_service.clone(), ledger_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());

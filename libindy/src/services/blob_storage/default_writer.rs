@@ -7,35 +7,35 @@ use std::io::Write;
 
 use base64;
 
-use super::{TailsWriter, TailsWriterType};
+use super::{Writer, WriterType};
 use errors::common::CommonError;
 use utils::environment::EnvironmentUtils;
 
 use self::indy_crypto::utils::json::*;
 
-pub struct DefaultTailsWriter {
+pub struct DefaultWriter {
     base_dir: PathBuf,
     uri_pattern: String,
     file: File,
 }
 
 #[derive(Serialize, Deserialize)]
-struct DefaultTailsWriterConfig {
+struct DefaultWriterConfig {
     base_dir: String,
     uri_pattern: String,
 }
 
-impl<'a> JsonDecodable<'a> for DefaultTailsWriterConfig {}
+impl<'a> JsonDecodable<'a> for DefaultWriterConfig {}
 
-impl TailsWriterType for DefaultTailsWriterType {
-    fn create(&self, config: &str) -> Result<Box<TailsWriter>, CommonError>  {
-        let config: DefaultTailsWriterConfig = DefaultTailsWriterConfig::from_json(config)
+impl WriterType for DefaultWriterType {
+    fn create(&self, config: &str) -> Result<Box<Writer>, CommonError>  {
+        let config: DefaultWriterConfig = DefaultWriterConfig::from_json(config)
             .map_err(map_err_trace!())?;
         let path = PathBuf::from(config.base_dir);
-        let file = File::create(EnvironmentUtils::tmp_file_path("tails_tmp"))
-            .map_err(map_err_trace!())?; //TODO unique
+        let file = File::create(EnvironmentUtils::tmp_file_path("def_storage_tmp")) //FIXME
+            .map_err(map_err_trace!())?;
 
-        Ok(Box::new(DefaultTailsWriter {
+        Ok(Box::new(DefaultWriter {
             base_dir: path,
             uri_pattern: config.uri_pattern,
             file,
@@ -43,7 +43,7 @@ impl TailsWriterType for DefaultTailsWriterType {
     }
 }
 
-impl TailsWriter for DefaultTailsWriter {
+impl Writer for DefaultWriter {
     fn append(&mut self, bytes: &[u8]) -> Result<usize, CommonError> {
         Ok(self.file.write(bytes)?)
     }
@@ -53,16 +53,16 @@ impl TailsWriter for DefaultTailsWriter {
         let mut path = self.base_dir.clone();
         path.push(base64::encode(hash));
 
-        fs::rename(EnvironmentUtils::tmp_file_path("tails_tmp"), &path)?;
+        fs::rename(EnvironmentUtils::tmp_file_path("def_storage_tmp"), &path)?; //FIXME
 
         Ok(path.to_str().unwrap().to_owned())
     }
 }
 
-pub struct DefaultTailsWriterType {}
+pub struct DefaultWriterType {}
 
-impl DefaultTailsWriterType {
+impl DefaultWriterType {
     pub fn new() -> Self {
-        DefaultTailsWriterType {}
+        DefaultWriterType {}
     }
 }

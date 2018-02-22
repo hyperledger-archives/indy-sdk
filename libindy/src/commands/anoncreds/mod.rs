@@ -9,7 +9,7 @@ use commands::anoncreds::prover::{ProverCommand, ProverCommandExecutor};
 use commands::anoncreds::verifier::{VerifierCommand, VerifierCommandExecutor};
 
 use services::anoncreds::AnoncredsService;
-use services::blob_storage::TailsService;
+use services::blob_storage::BlobStorageService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 
@@ -32,12 +32,12 @@ pub struct AnoncredsCommandExecutor {
 
 impl AnoncredsCommandExecutor {
     pub fn new(anoncreds_service: Rc<AnoncredsService>,
+               blob_storage_service: Rc<BlobStorageService>,
                pool_service: Rc<PoolService>,
-               tails_service: Rc<TailsService>,
                wallet_service: Rc<WalletService>) -> AnoncredsCommandExecutor {
         AnoncredsCommandExecutor {
             issuer_command_cxecutor: IssuerCommandExecutor::new(
-                anoncreds_service.clone(), pool_service.clone(), tails_service.clone(), wallet_service.clone()),
+                anoncreds_service.clone(), pool_service.clone(), blob_storage_service.clone(), wallet_service.clone()),
             prover_command_cxecutor: ProverCommandExecutor::new(
                 anoncreds_service.clone(), wallet_service.clone()),
             verifier_command_cxecutor: VerifierCommandExecutor::new(
@@ -64,12 +64,12 @@ impl AnoncredsCommandExecutor {
 }
 
 pub struct SDKTailsAccessor {
-    tails_service: Rc<TailsService>,
+    tails_service: Rc<BlobStorageService>,
     tails_reader_handle: u32,
 }
 
 impl SDKTailsAccessor {
-    pub fn new(tails_service: Rc<TailsService>, tails_reader_handle: u32) -> SDKTailsAccessor {
+    pub fn new(tails_service: Rc<BlobStorageService>, tails_reader_handle: u32) -> SDKTailsAccessor {
         SDKTailsAccessor {
             tails_service,
             tails_reader_handle

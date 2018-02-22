@@ -1,16 +1,16 @@
 extern crate indy_crypto;
 
-use super::{TailsReader, TailsReaderType};
+use super::{Reader, ReaderType};
 
-pub struct DefaultTailsReader {}
+pub struct DefaultReader {}
 
-impl TailsReaderType for DefaultTailsReaderType {
-    fn open(&self, config: &str) -> Box<TailsReader> {
+impl ReaderType for DefaultReaderType {
+    fn open(&self, config: &str) -> Box<Reader> {
         unimplemented!()
     }
 }
 
-impl TailsReader for DefaultTailsReader {
+impl Reader for DefaultReader {
     fn verify(&self) -> () {
         unimplemented!()
     }
@@ -24,10 +24,10 @@ impl TailsReader for DefaultTailsReader {
     }
 }
 
-pub struct DefaultTailsReaderType {}
+pub struct DefaultReaderType {}
 
-impl DefaultTailsReaderType {
+impl DefaultReaderType {
     pub fn new() -> Self {
-        DefaultTailsReaderType {}
+        DefaultReaderType {}
     }
 }

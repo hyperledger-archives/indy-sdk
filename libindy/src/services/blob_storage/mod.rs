@@ -17,40 +17,40 @@ use std::collections::HashMap;
 const TAILS_BLOB_TAG_SZ: usize = 2;
 const TAIL_SIZE: usize = Tail::BYTES_REPR_SIZE;
 
-trait TailsWriterType {
-    fn create(&self, config: &str) -> Result<Box<TailsWriter>, CommonError>;
+trait WriterType {
+    fn create(&self, config: &str) -> Result<Box<Writer>, CommonError>;
 }
 
-trait TailsWriter {
+trait Writer {
     fn append(&mut self, bytes: &[u8]) -> Result<usize, CommonError>;
     fn finalize(&mut self, hash: &[u8]) -> Result<String, CommonError>;
 }
 
-trait TailsReaderType {
-    fn open(&self, config: &str) -> Box<TailsReader>;
+trait ReaderType {
+    fn open(&self, config: &str) -> Box<Reader>;
 }
 
-trait TailsReader {
+trait Reader {
     fn verify(&self) -> ();
     fn close(&self) -> ();
     fn read(&self, size: usize, offset: usize) -> Vec<u8>;
 }
 
-pub struct TailsService {
-    writer_types: RefCell<HashMap<String, Box<TailsWriterType>>>,
+pub struct BlobStorageService {
+    writer_types: RefCell<HashMap<String, Box<WriterType>>>,
 
-    reader_types: RefCell<HashMap<String, Box<TailsReaderType>>>,
-    readers: RefCell<HashMap<u32, Box<TailsReader>>>,
+    reader_types: RefCell<HashMap<String, Box<ReaderType>>>,
+    readers: RefCell<HashMap<u32, Box<Reader>>>,
 }
 
-impl TailsService {
-    pub fn new() -> TailsService {
-        let mut writer_types: HashMap<String, Box<TailsWriterType>> = HashMap::new();
-        writer_types.insert("default".to_owned(), Box::new(default_writer::DefaultTailsWriterType::new()));
-        let mut reader_types: HashMap<String, Box<TailsReaderType>> = HashMap::new();
-        reader_types.insert("default".to_owned(), Box::new(default_reader::DefaultTailsReaderType::new()));
+impl BlobStorageService {
+    pub fn new() -> BlobStorageService {
+        let mut writer_types: HashMap<String, Box<WriterType>> = HashMap::new();
+        writer_types.insert("default".to_owned(), Box::new(default_writer::DefaultWriterType::new()));
+        let mut reader_types: HashMap<String, Box<ReaderType>> = HashMap::new();
+        reader_types.insert("default".to_owned(), Box::new(default_reader::DefaultReaderType::new()));
 
-        TailsService {
+        BlobStorageService {
             writer_types: RefCell::new(writer_types),
 
             reader_types: RefCell::new(reader_types),
@@ -60,7 +60,7 @@ impl TailsService {
 }
 
 /* Writer part */
-impl TailsService {
+impl BlobStorageService {
     pub fn store_tails_from_generator(&self,
                                       type_: &str,
                                       config: &str,
@@ -83,7 +83,7 @@ impl TailsService {
 }
 
 /* Reader part */
-impl TailsService {
+impl BlobStorageService {
     pub fn read(&self, handle: u32, idx: usize) -> Tail {
         let bytes = self.readers.borrow().get(&handle).unwrap()
             .read(TAIL_SIZE, TAILS_BLOB_TAG_SZ + TAIL_SIZE * idx);
