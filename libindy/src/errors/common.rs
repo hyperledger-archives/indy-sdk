@@ -121,6 +121,12 @@ impl ToErrorCode for CommonError {
     }
 }
 
+impl From<io::Error> for CommonError {
+    fn from(err: io::Error) -> Self {
+        CommonError::IOError(err)
+    }
+}
+
 impl From<zmq::Error> for CommonError {
     fn from(err: zmq::Error) -> Self {
         CommonError::IOError(From::from(err))

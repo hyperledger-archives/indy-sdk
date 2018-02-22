@@ -20,12 +20,12 @@ const TAILS_BLOB_TAG_SZ: usize = 2;
 const TAIL_SIZE: usize = Tail::BYTES_REPR_SIZE;
 
 trait TailsWriterType {
-    fn create(&self, config: &str) -> Box<TailsWriter>;
+    fn create(&self, config: &str) -> Result<Box<TailsWriter>, CommonError>;
 }
 
 trait TailsWriter {
-    fn append(&mut self, bytes: &[u8]) -> ();
-    fn finalize(&mut self, hash: &[u8]) -> String;
+    fn append(&mut self, bytes: &[u8]) -> Result<usize, CommonError>;
+    fn finalize(&mut self, hash: &[u8]) -> Result<String, CommonError>;
 }
 
 trait TailsReaderType {
@@ -67,8 +67,9 @@ impl TailsService {
                                       type_: &str,
                                       config: &str,
                                       rtg: &mut RevocationTailsGenerator)
-                                      -> Result<(), CommonError> {
-        let mut tails_writer = self.writer_types.borrow_mut().get(type_).unwrap().create(config);
+                                      -> Result<String, CommonError> {
+        let mut tails_writer = self.writer_types.try_borrow()?
+            .get(type_).unwrap().create(config)?; //FIXME UnknownType error instead of unwrap
         let mut hasher = sha2::Sha256::default();
 
         //FIXME store version/tag/meta at start of the Tail's BLOB
@@ -76,12 +77,10 @@ impl TailsService {
         while let Some(tail) = rtg.next()? {
             let tail_bytes = tail.to_bytes()?;
             hasher.process(tail_bytes.as_slice());
-            tails_writer.append(tail_bytes.as_slice())
+            tails_writer.append(tail_bytes.as_slice())?;
         }
 
-        tails_writer.finalize(hasher.fixed_result().as_slice());
-
-        Ok(())
+        tails_writer.finalize(hasher.fixed_result().as_slice())
     }
 }
 
