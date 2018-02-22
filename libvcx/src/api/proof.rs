@@ -340,7 +340,7 @@ mod tests {
             panic!("proof_string is null");
         }
         check_useful_c_str!(proof_string, ());
-        assert_eq!(proof_string, r#"[{"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH","claim_uuid":"claim::e5fec91f-d03d-4513-813c-ab6db5715d55","name":"state","value":"UT","type":"revealed"}]"#);
+        assert_eq!(proof_string, r#"[{"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH","claim_uuid":"claim::e5fec91f-d03d-4513-813c-ab6db5715d55","attr_info":{"name":"state","value":"UT","type":"revealed"}}]"#);
         assert_eq!(proof_state, ProofStateType::ProofInvalid as u32);
         println!("successfully called verify_invalid_proof_cb");
     }
