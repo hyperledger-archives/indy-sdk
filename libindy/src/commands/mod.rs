@@ -25,6 +25,7 @@ use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
+use services::tails::TailsService;
 
 use std::error::Error;
 use std::sync::mpsc::{Sender, channel};
@@ -72,8 +73,9 @@ impl CommandExecutor {
                 let wallet_service = Rc::new(WalletService::new());
                 let crypto_service = Rc::new(CryptoService::new());
                 let ledger_service = Rc::new(LedgerService::new());
+                let tails_service = Rc::new(TailsService::new());
 
-                let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone());
+                let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), tails_service.clone(), wallet_service.clone());
                 let crypto_command_executor = CryptoCommandExecutor::new(wallet_service.clone(), crypto_service.clone());
                 let ledger_command_executor = LedgerCommandExecutor::new(pool_service.clone(), crypto_service.clone(), wallet_service.clone(), ledger_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());

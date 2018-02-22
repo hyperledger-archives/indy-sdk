@@ -7,6 +7,7 @@ use errors::common::CommonError;
 
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
+use services::tails::{TailsService, SDKTailsAccessor};
 use services::wallet::WalletService;
 use services::anoncreds::types::*;
 use services::anoncreds::helpers::get_composite_id;
@@ -62,16 +63,19 @@ pub enum IssuerCommand {
 pub struct IssuerCommandExecutor {
     pub anoncreds_service: Rc<AnoncredsService>,
     pub pool_service: Rc<PoolService>,
+    pub tails_service: Rc<TailsService>,
     pub wallet_service: Rc<WalletService>
 }
 
 impl IssuerCommandExecutor {
     pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
+               tails_service: Rc<TailsService>,
                wallet_service: Rc<WalletService>) -> IssuerCommandExecutor {
         IssuerCommandExecutor {
             anoncreds_service,
             pool_service,
+            tails_service,
             wallet_service,
         }
     }
@@ -381,13 +385,17 @@ impl IssuerCommandExecutor {
         let revocation_registry_definition = RevocationRegistryDefinition::from_json(&revocation_registry_definition_json)
             .map_err(|err| CommonError::InvalidState(format!("Cannon deserialize  RevocationRegistryDefinition: {:?}", err)))?;
 
+        /*
         let revocation_tails_generator_json = self.wallet_service.get(wallet_handle, &format!("revocation_tails_generator::{}", id))?;
         let mut rev_tails_generator = RevocationTailsGenerator::from_json(&revocation_tails_generator_json)
             .map_err(|err| CommonError::InvalidState(format!("Cannon deserialize RevocationTailsGenerator: {:?}", err)))?;
         let simple_tails_accessor = SimpleTailsAccessor::new(&mut rev_tails_generator).unwrap(); // TODO
+        */
+        let tails_reader_handle = 0; //FIXME should be param
+        let sdk_tails_accessor = SDKTailsAccessor::new(self.tails_service.clone(), tails_reader_handle);
 
         let revocation_registry_delta =
-            self.anoncreds_service.issuer.revoke(&mut revocation_registry, revocation_registry_definition.max_cred_num, user_revoc_index, &simple_tails_accessor)?;
+            self.anoncreds_service.issuer.revoke(&mut revocation_registry, revocation_registry_definition.max_cred_num, user_revoc_index, &sdk_tails_accessor)?;
 
         let revocation_registry_updated_json = revocation_registry.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannon serialize RevocationRegistry: {:?}", err)))?;
@@ -444,5 +452,4 @@ impl IssuerCommandExecutor {
 
         Ok(revocation_registry_delta_json)
     }
-
 }

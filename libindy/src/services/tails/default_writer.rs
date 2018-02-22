@@ -1,6 +1,6 @@
 extern crate indy_crypto;
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::fs;
 use std::fs::File;
 use std::io::Write;

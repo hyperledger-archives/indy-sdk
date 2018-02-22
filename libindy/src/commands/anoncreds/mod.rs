@@ -8,6 +8,7 @@ use commands::anoncreds::verifier::{VerifierCommand, VerifierCommandExecutor};
 
 use services::anoncreds::AnoncredsService;
 use services::pool::PoolService;
+use services::tails::TailsService;
 use services::wallet::WalletService;
 
 use std::rc::Rc;
@@ -27,10 +28,11 @@ pub struct AnoncredsCommandExecutor {
 impl AnoncredsCommandExecutor {
     pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
+               tails_service: Rc<TailsService>,
                wallet_service: Rc<WalletService>) -> AnoncredsCommandExecutor {
         AnoncredsCommandExecutor {
             issuer_command_cxecutor: IssuerCommandExecutor::new(
-                anoncreds_service.clone(), pool_service.clone(), wallet_service.clone()),
+                anoncreds_service.clone(), pool_service.clone(), tails_service.clone(), wallet_service.clone()),
             prover_command_cxecutor: ProverCommandExecutor::new(
                 anoncreds_service.clone(), wallet_service.clone()),
             verifier_command_cxecutor: VerifierCommandExecutor::new(
