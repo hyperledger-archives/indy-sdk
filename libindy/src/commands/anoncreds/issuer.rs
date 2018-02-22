@@ -6,8 +6,8 @@ use errors::anoncreds::AnoncredsError;
 use errors::common::CommonError;
 
 use services::anoncreds::AnoncredsService;
+use services::blob_storage::TailsService;
 use services::pool::PoolService;
-use services::tails::{TailsService, SDKTailsAccessor};
 use services::wallet::WalletService;
 use services::anoncreds::types::*;
 use services::anoncreds::helpers::get_composite_id;
@@ -16,6 +16,7 @@ use std::collections::HashMap;
 use utils::crypto::base58::Base58;
 use self::indy_crypto::cl::*;
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use super::SDKTailsAccessor;
 
 #[allow(dead_code)] //FIXME
 pub enum IssuerCommand {

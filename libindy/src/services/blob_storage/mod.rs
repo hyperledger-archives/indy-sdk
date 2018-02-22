@@ -6,15 +6,13 @@ extern crate indy_crypto;
 extern crate sha2;
 
 use self::digest::{FixedOutput, Input};
-use self::indy_crypto::cl::{RevocationTailsGenerator, RevocationTailsAccessor};
+use self::indy_crypto::cl::RevocationTailsGenerator;
 use self::indy_crypto::cl::Tail;
-use self::indy_crypto::errors::IndyCryptoError;
 
 use errors::common::CommonError;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
 
 const TAILS_BLOB_TAG_SZ: usize = 2;
 const TAIL_SIZE: usize = Tail::BYTES_REPR_SIZE;
@@ -90,27 +88,5 @@ impl TailsService {
         let bytes = self.readers.borrow().get(&handle).unwrap()
             .read(TAIL_SIZE, TAILS_BLOB_TAG_SZ + TAIL_SIZE * idx);
         Tail::from_bytes(bytes.as_slice()).unwrap()
-    }
-}
-
-pub struct SDKTailsAccessor {
-    tails_service: Rc<TailsService>,
-    tails_reader_handle: u32,
-}
-
-impl SDKTailsAccessor {
-    pub fn new(tails_service: Rc<TailsService>, tails_reader_handle: u32) -> SDKTailsAccessor {
-        SDKTailsAccessor {
-            tails_service,
-            tails_reader_handle
-        }
-    }
-}
-
-impl RevocationTailsAccessor for SDKTailsAccessor {
-    fn access_tail(&self, tail_id: u32, accessor: &mut FnMut(&Tail)) -> Result<(), IndyCryptoError> {
-        let tail = self.tails_service.read(self.tails_reader_handle, tail_id as usize);
-        accessor(&tail);
-        Ok(())
     }
 }

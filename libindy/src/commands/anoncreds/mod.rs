@@ -1,3 +1,5 @@
+extern crate indy_crypto;
+
 pub mod issuer;
 pub mod prover;
 pub mod verifier;
@@ -7,9 +9,12 @@ use commands::anoncreds::prover::{ProverCommand, ProverCommandExecutor};
 use commands::anoncreds::verifier::{VerifierCommand, VerifierCommandExecutor};
 
 use services::anoncreds::AnoncredsService;
+use services::blob_storage::TailsService;
 use services::pool::PoolService;
-use services::tails::TailsService;
 use services::wallet::WalletService;
+
+use self::indy_crypto::cl::{Tail, RevocationTailsAccessor};
+use self::indy_crypto::errors::IndyCryptoError;
 
 use std::rc::Rc;
 
@@ -55,5 +60,27 @@ impl AnoncredsCommandExecutor {
                 self.verifier_command_cxecutor.execute(cmd);
             }
         };
+    }
+}
+
+pub struct SDKTailsAccessor {
+    tails_service: Rc<TailsService>,
+    tails_reader_handle: u32,
+}
+
+impl SDKTailsAccessor {
+    pub fn new(tails_service: Rc<TailsService>, tails_reader_handle: u32) -> SDKTailsAccessor {
+        SDKTailsAccessor {
+            tails_service,
+            tails_reader_handle
+        }
+    }
+}
+
+impl RevocationTailsAccessor for SDKTailsAccessor {
+    fn access_tail(&self, tail_id: u32, accessor: &mut FnMut(&Tail)) -> Result<(), IndyCryptoError> {
+        let tail = self.tails_service.read(self.tails_reader_handle, tail_id as usize);
+        accessor(&tail);
+        Ok(())
     }
 }

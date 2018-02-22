@@ -21,11 +21,11 @@ use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 use errors::common::CommonError;
 
 use services::anoncreds::AnoncredsService;
+use services::blob_storage::TailsService;
 use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
-use services::tails::TailsService;
 
 use std::error::Error;
 use std::sync::mpsc::{Sender, channel};
