@@ -11,7 +11,7 @@ use super::{Writer, WriterType};
 use errors::common::CommonError;
 use utils::environment::EnvironmentUtils;
 
-use self::indy_crypto::utils::json::*;
+use self::indy_crypto::utils::json::JsonDecodable;
 
 pub struct DefaultWriter {
     base_dir: PathBuf,

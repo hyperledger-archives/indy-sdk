@@ -24,11 +24,11 @@ trait Writer {
 }
 
 trait ReaderType {
-    fn open(&self, config: &str) -> Box<Reader>;
+    fn open(&self, config: &str, hash: &[u8], location: &str) -> Result<Box<Reader>, CommonError>;
 }
 
 trait Reader {
-    fn read(&self, size: usize, offset: usize) -> Result<Vec<u8>, CommonError>;
+    fn read(&mut self, size: usize, offset: usize) -> Result<Vec<u8>, CommonError>;
     fn verify(&self) -> ();
     fn close(&self) -> ();
 }
@@ -95,8 +95,8 @@ impl BlobStorageService {
 /* Reader */
 impl BlobStorageService {
     pub fn read(&self, handle: i32, size: usize, offset: usize) -> Result<Vec<u8>, CommonError> {
-        self.readers.try_borrow()?
-            .get(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?
+        self.readers.try_borrow_mut()?
+            .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?
             .read(size, offset)
     }
 }
