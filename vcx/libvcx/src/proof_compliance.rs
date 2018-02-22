@@ -1,10 +1,12 @@
 use messages::proofs::proof_message::ProofMessage;
 use messages::proofs::proof_request::{ ProofRequestData };
+use std::collections::HashMap;
 use utils::error;
 
 
 pub fn proof_compliance(request: &ProofRequestData, proof: &ProofMessage) -> Result<(), u32> {
     let proof_revealed_attrs = &proof.requested_proof.revealed_attrs;
+    let self_attested_attrs = &proof.requested_proof.self_attested_attrs;
     let proofs = &proof.proofs;
     let requested_attrs = &request.requested_attrs;
     info!("starting vcx proof verification");
@@ -13,13 +15,14 @@ pub fn proof_compliance(request: &ProofRequestData, proof: &ProofMessage) -> Res
         let issuer_did = val.issuer_did.clone();
         let schema_seq_no = val.schema_seq_no;
 
-        if issuer_did.is_none() && schema_seq_no.is_none() {
-            continue;
-        }
-
         let proof_attr_data = match proof_revealed_attrs.get(key) {
             Some(data) => data,
             None => {
+                if issuer_did.is_none() && schema_seq_no.is_none() &&
+                    self_attested(&val.name, self_attested_attrs)? {
+                    info!("attribute: {} was self attested", val.name);
+                    continue
+                }
                 warn!("Proof Compliance: attr_id not found in proof");
                 return Err(error::FAILED_PROOF_COMPLIANCE.code_num);
             }
@@ -64,6 +67,16 @@ pub fn proof_compliance(request: &ProofRequestData, proof: &ProofMessage) -> Res
     Ok(())
 }
 
+fn self_attested(attr_name: &str, self_attested_attrs: &HashMap<String, String>) -> Result<bool, u32> {
+    match self_attested_attrs.get(attr_name) {
+        Some(_) => Ok(true),
+        None => {
+            warn!("Proof Compliance: attr_id not found in proof");
+            Err(error::FAILED_PROOF_COMPLIANCE.code_num)
+        }
+    }
+}
+
 fn check_value<T: PartialEq>(control: Option<T>, val: &T) -> bool {
     if control.is_none() {
         return true;
@@ -77,30 +90,15 @@ fn check_value<T: PartialEq>(control: Option<T>, val: &T) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use ::proof_compliance::proof_compliance;
+    use ::proof_compliance::{proof_compliance, self_attested};
     use ::messages::proofs::proof_message::ProofMessage;
-    use messages::proofs::proof_request::{ ProofRequestData };
+    use messages::proofs::proof_request::{ ProofRequestData, Attr };
     use serde_json::{ from_str };
+    use ::utils::error;
     use ::proof_compliance::check_value;
+    use ::std::collections::HashMap;
 
-    #[test]
-    fn test_check_value(){
-        //Test equal
-        let control = "sdf".to_string();
-        let val = "sdf".to_string();
-        assert!(check_value(Some(control), &val));
-
-        //Test not equal
-        let control = "eee".to_string();
-        assert!(!check_value(Some(control), &val));
-
-        //Test None control
-        assert!(check_value(None, &val));
-    }
-
-    #[test]
-    fn test(){
-        let proof = r#"{
+    static PROOF: &'static str = r#"{
   "msg_type":"proof",
   "version":"0.1",
   "to_did":"BnRXf8yDMUwGyZVDkSENeq",
@@ -168,7 +166,7 @@ mod tests {
     }
   }
 }"#;
-        let request = r#"{
+    static REQUEST: &'static str = r#"{
   "nonce":"123432421212",
   "name":"Home Address",
   "version":"0.1",
@@ -187,9 +185,67 @@ mod tests {
 
   }
 }"#;
-        let proof_obj = ProofMessage::from_str(proof).unwrap();
-        let proof_req: ProofRequestData = from_str(request).unwrap();
+    #[test]
+    fn test_check_value(){
+        //Test equal
+        let control = "sdf".to_string();
+        let val = "sdf".to_string();
+        assert!(check_value(Some(control), &val));
+
+        //Test not equal
+        let control = "eee".to_string();
+        assert!(!check_value(Some(control), &val));
+
+        //Test None control
+        assert!(check_value(None, &val));
+    }
+
+    #[test]
+    fn test(){
+        ::utils::logger::LoggerUtils::init();
+        let proof_obj = ProofMessage::from_str(PROOF).unwrap();
+        let proof_req: ProofRequestData = from_str(REQUEST).unwrap();
         proof_compliance(&proof_req, &proof_obj).unwrap();
     }
 
+    #[test]
+    fn test_proof_with_self_attested_values(){
+        ::utils::logger::LoggerUtils::init();
+        let mut proof_obj = ProofMessage::from_str(PROOF).unwrap();
+        let mut proof_req: ProofRequestData = from_str(REQUEST).unwrap();
+        proof_obj.requested_proof.self_attested_attrs.insert("dog".to_string(), "ralph".to_string());
+        proof_obj.requested_proof.self_attested_attrs.insert("cat".to_string(), "spot".to_string());
+        proof_req.requested_attrs.insert("ccc".to_string(),
+                                         Attr{ name: "dog".to_string(), issuer_did: None, schema_seq_no: None});
+        proof_req.requested_attrs.insert("bbb".to_string(),
+                                         Attr{ name: "cat".to_string(), issuer_did: None, schema_seq_no: None});
+        proof_compliance(&proof_req, &proof_obj).unwrap();
+    }
+
+    #[test]
+    fn test_self_attested_fails_when_issuer_did_expected(){
+        ::utils::logger::LoggerUtils::init();
+        let mut proof_obj = ProofMessage::from_str(PROOF).unwrap();
+        let mut proof_req: ProofRequestData = from_str(REQUEST).unwrap();
+        proof_obj.requested_proof.self_attested_attrs.insert("dog".to_string(), "ralph".to_string());
+        proof_obj.requested_proof.self_attested_attrs.insert("cat".to_string(), "spot".to_string());
+        proof_req.requested_attrs.insert("ccc".to_string(),
+                                         Attr{ name: "dog".to_string(), issuer_did: None, schema_seq_no: None});
+        proof_req.requested_attrs.insert("bbb".to_string(),
+                                         Attr{ name: "cat".to_string(), issuer_did: Some("123".to_string()), schema_seq_no: None});
+
+        let err = proof_compliance(&proof_req, &proof_obj);
+        assert_eq!(Err(error::FAILED_PROOF_COMPLIANCE.code_num), err);
+    }
+
+    #[test]
+    fn test_self_attested() {
+        ::utils::logger::LoggerUtils::init();
+        let mut self_attested_vals: HashMap<String, String> = HashMap::new();
+        self_attested_vals.insert("dog".to_string(), "sally".to_string());
+        self_attested_vals.insert("cat".to_string(), "matt".to_string());
+        assert_eq!(true, self_attested("dog", &self_attested_vals).unwrap());
+        let err = self_attested("random", &self_attested_vals);
+        assert_eq!(err, Err(error::FAILED_PROOF_COMPLIANCE.code_num));
+    }
 }
