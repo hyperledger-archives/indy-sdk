@@ -1,21 +1,18 @@
-pub mod default_writer;
-pub mod default_reader;
+mod default_writer;
+mod default_reader;
 
 extern crate digest;
 extern crate indy_crypto;
 extern crate sha2;
 
-use self::digest::{FixedOutput, Input};
-use self::indy_crypto::cl::RevocationTailsGenerator;
-use self::indy_crypto::cl::Tail;
-
 use errors::common::CommonError;
+use utils::sequence::SequenceUtils;
+
+use self::digest::{FixedOutput, Input};
+use self::sha2::Sha256;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-
-const TAILS_BLOB_TAG_SZ: usize = 2;
-const TAIL_SIZE: usize = Tail::BYTES_REPR_SIZE;
 
 trait WriterType {
     fn create(&self, config: &str) -> Result<Box<Writer>, CommonError>;
@@ -31,16 +28,17 @@ trait ReaderType {
 }
 
 trait Reader {
+    fn read(&self, size: usize, offset: usize) -> Result<Vec<u8>, CommonError>;
     fn verify(&self) -> ();
     fn close(&self) -> ();
-    fn read(&self, size: usize, offset: usize) -> Vec<u8>;
 }
 
 pub struct BlobStorageService {
     writer_types: RefCell<HashMap<String, Box<WriterType>>>,
+    writers: RefCell<HashMap<i32, (Box<Writer>, Sha256)>>,
 
     reader_types: RefCell<HashMap<String, Box<ReaderType>>>,
-    readers: RefCell<HashMap<u32, Box<Reader>>>,
+    readers: RefCell<HashMap<i32, Box<Reader>>>,
 }
 
 impl BlobStorageService {
@@ -52,6 +50,7 @@ impl BlobStorageService {
 
         BlobStorageService {
             writer_types: RefCell::new(writer_types),
+            writers: RefCell::new(HashMap::new()),
 
             reader_types: RefCell::new(reader_types),
             readers: RefCell::new(HashMap::new()),
@@ -59,34 +58,45 @@ impl BlobStorageService {
     }
 }
 
-/* Writer part */
+/* Writer */
 impl BlobStorageService {
-    pub fn store_tails_from_generator(&self,
-                                      type_: &str,
-                                      config: &str,
-                                      rtg: &mut RevocationTailsGenerator)
-                                      -> Result<String, CommonError> {
-        let mut tails_writer = self.writer_types.try_borrow()?
-            .get(type_).unwrap().create(config)?; //FIXME UnknownType error instead of unwrap
-        let mut hasher = sha2::Sha256::default();
+    pub fn create_writer(&self, type_: &str, config: &str) -> Result<i32, CommonError> {
+        let writer = self.writer_types.try_borrow()?
+            .get(type_).ok_or(CommonError::InvalidStructure("Unknown BlobStorage type".to_owned()))?
+            .create(config)?;
 
-        //FIXME store version/tag/meta at start of the Tail's BLOB
+        let writer_handle = SequenceUtils::get_next_id();
+        self.writers.try_borrow_mut()?.insert(writer_handle, (writer, Sha256::default()));
 
-        while let Some(tail) = rtg.next()? {
-            let tail_bytes = tail.to_bytes()?;
-            hasher.process(tail_bytes.as_slice());
-            tails_writer.append(tail_bytes.as_slice())?;
-        }
+        Ok(writer_handle)
+    }
 
-        tails_writer.finalize(hasher.fixed_result().as_slice())
+    pub fn append(&self, handle: i32, bytes: &[u8]) -> Result<usize, CommonError> {
+        let mut writers = self.writers.try_borrow_mut()?;
+        let &mut (ref mut writer, ref mut hasher) = writers
+            .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?;
+
+        hasher.process(bytes);
+        writer.append(bytes)
+    }
+
+    pub fn finalize(&self, handle: i32) -> Result<(String, Vec<u8>), CommonError> {
+        let mut writers = self.writers.try_borrow_mut()?;
+        let &mut (ref mut writer, ref mut hasher) = writers
+            .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?;
+
+        let hash = hasher.fixed_result().to_vec();
+
+        writer.finalize(hash.as_slice())
+            .map(|location| (location, hash))
     }
 }
 
-/* Reader part */
+/* Reader */
 impl BlobStorageService {
-    pub fn read(&self, handle: u32, idx: usize) -> Tail {
-        let bytes = self.readers.borrow().get(&handle).unwrap()
-            .read(TAIL_SIZE, TAILS_BLOB_TAG_SZ + TAIL_SIZE * idx);
-        Tail::from_bytes(bytes.as_slice()).unwrap()
+    pub fn read(&self, handle: i32, size: usize, offset: usize) -> Result<Vec<u8>, CommonError> {
+        self.readers.try_borrow()?
+            .get(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?
+            .read(size, offset)
     }
 }

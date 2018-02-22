@@ -1,0 +1,64 @@
+extern crate digest;
+extern crate indy_crypto;
+extern crate sha2;
+
+use errors::common::CommonError;
+use services::blob_storage::BlobStorageService;
+
+use self::indy_crypto::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
+use self::indy_crypto::errors::IndyCryptoError;
+use self::digest::Input;
+
+use std::rc::Rc;
+
+const TAILS_BLOB_TAG_SZ: usize = 2;
+const TAIL_SIZE: usize = Tail::BYTES_REPR_SIZE;
+
+pub struct SDKTailsAccessor {
+    tails_service: Rc<BlobStorageService>,
+    tails_reader_handle: i32,
+}
+
+impl SDKTailsAccessor {
+    pub fn new(tails_service: Rc<BlobStorageService>, tails_reader_handle: i32) -> SDKTailsAccessor {
+        SDKTailsAccessor {
+            tails_service,
+            tails_reader_handle
+        }
+    }
+}
+
+impl RevocationTailsAccessor for SDKTailsAccessor {
+    fn access_tail(&self, tail_id: u32, accessor: &mut FnMut(&Tail)) -> Result<(), IndyCryptoError> {
+        let tail_bytes = self.tails_service
+            .read(self.tails_reader_handle,
+                  TAIL_SIZE,
+                  TAILS_BLOB_TAG_SZ + TAIL_SIZE * tail_id as usize)
+            .map_err(|err|
+                IndyCryptoError::InvalidState("Can't read tail bytes from blob storage".to_owned()))?; //TODO
+        let tail = Tail::from_bytes(tail_bytes.as_slice())?;
+        accessor(&tail);
+        Ok(())
+    }
+}
+
+#[allow(dead_code)] //FIXME
+pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
+                                  type_: &str,
+                                  config: &str,
+                                  rtg: &mut RevocationTailsGenerator)
+                                  -> Result<String, CommonError> {
+    let storage_handle = service.create_writer(type_, config)?;
+
+    let mut hasher = sha2::Sha256::default();
+
+    //FIXME store version/tag/meta at start of the Tail's BLOB
+
+    while let Some(tail) = rtg.next()? {
+        let tail_bytes = tail.to_bytes()?;
+        hasher.process(tail_bytes.as_slice());
+        service.append(storage_handle, tail_bytes.as_slice())?;
+    }
+
+    service.finalize(storage_handle).map(|(location, _hash)| location)
+}

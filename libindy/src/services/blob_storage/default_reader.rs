@@ -1,5 +1,7 @@
 extern crate indy_crypto;
 
+use errors::common::CommonError;
+
 use super::{Reader, ReaderType};
 
 pub struct DefaultReader {}
@@ -19,7 +21,7 @@ impl Reader for DefaultReader {
         unimplemented!()
     }
 
-    fn read(&self, size: usize, offset: usize) -> Vec<u8> {
+    fn read(&self, size: usize, offset: usize) -> Result<Vec<u8>, CommonError> {
         unimplemented!()
     }
 }

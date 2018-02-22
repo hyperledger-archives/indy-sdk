@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use utils::crypto::base58::Base58;
 use self::indy_crypto::cl::*;
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
-use super::SDKTailsAccessor;
+use super::tails::SDKTailsAccessor;
 
 #[allow(dead_code)] //FIXME
 pub enum IssuerCommand {
