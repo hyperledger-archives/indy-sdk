@@ -3,6 +3,7 @@ extern crate libc;
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
+use utils::error::error_string;
 use std::thread;
 use std::ptr;
 use claim_def;
@@ -38,7 +39,6 @@ pub extern fn vcx_claimdef_create(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(claimdef_name, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
-    info!("vcx create claimdef called");
     let issuer_did: String = if !issuer_did.is_null() {
         check_useful_c_str!(issuer_did, error::INVALID_OPTION.code_num);
         issuer_did.to_owned()
@@ -48,6 +48,13 @@ pub extern fn vcx_claimdef_create(command_handle: u32,
             Err(x) => return x
         }
     };
+    info!("vcx_claim_def_create(command_handle: {}, source_id: {}, claimdef_name: {} schema_seq_no: {}, issuer_did: {}, create_non_rev: {})",
+          command_handle,
+          source_id,
+          claimdef_name,
+          schema_seq_no,
+          issuer_did,
+          create_non_revoc);
 
     thread::spawn( move|| {
         let ( rc, handle) = match claim_def::create_new_claimdef(source_id,
@@ -56,11 +63,13 @@ pub extern fn vcx_claimdef_create(command_handle: u32,
                                                                  issuer_did,
                                                                  create_non_revoc) {
             Ok(x) => {
-                info!("claimdef created with handle: {}", x);
+                info!("vcx_claim_def_create_cb(command_handle: {}, rc: {}, claimdef_handle: {})",
+                      command_handle, error_string(0), x);
                 (error::SUCCESS.code_num, x)
             },
             Err(x) => {
-                info!("create claimdef returned error: {}", x);
+                warn!("vcx_claim_def_create_cb(command_handle: {}, rc: {}, claimdef_handle: {})",
+                      command_handle, error_string(x), 0);
                 (x, 0)
             },
         };
@@ -87,6 +96,8 @@ pub extern fn vcx_claimdef_serialize(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
+    info!("vcx_claimdef_serialize(command_handle: {}, claimdef_handle: {})", command_handle, claimdef_handle);
+
     if !claim_def::is_valid_handle(claimdef_handle) {
         return error::INVALID_CLAIM_DEF_HANDLE.code_num;
     };
@@ -94,12 +105,14 @@ pub extern fn vcx_claimdef_serialize(command_handle: u32,
     thread::spawn( move|| {
         match claim_def::to_string(claimdef_handle) {
             Ok(x) => {
-                info!("serializing claimdef handle: {} with data: {}", claimdef_handle, x);
+                info!("vcx_claimdef_serialize_cb(command_handle: {}, claimdef_handle: {}, rc: {}, state: {})",
+                      command_handle, claimdef_handle, error_string(0), x);
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                warn!("could not serialize claimdef handle {}", claimdef_handle);
+                warn!("vcx_claimdef_serialize_cb(command_handle: {}, claimdef_handle: {}, rc: {}, state: {})",
+                      command_handle, claimdef_handle, error_string(x), "null");
                 cb(command_handle, x, ptr::null_mut());
             },
         };
@@ -130,10 +143,20 @@ pub extern fn vcx_claimdef_deserialize(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(claimdef_data, error::INVALID_OPTION.code_num);
 
+    info!("vcx_claimdef_deserialize(command_handle: {}, claimdef_data: {})", command_handle, claimdef_data);
+
     thread::spawn( move|| {
         let (rc, handle) = match claim_def::from_string(&claimdef_data) {
-            Ok(x) => (error::SUCCESS.code_num, x),
-            Err(x) => (x, 0),
+            Ok(x) => {
+                info!("vcx_claimdef_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
+                      command_handle, error_string(0), x);
+                (error::SUCCESS.code_num, x)
+            },
+            Err(x) => {
+                warn!("vcx_claimdef_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
+                      command_handle, error_string(x), 0);
+                (x, 0)
+            },
         };
         cb(command_handle, rc, handle);
     });
@@ -143,6 +166,7 @@ pub extern fn vcx_claimdef_deserialize(command_handle: u32,
 
 #[no_mangle]
 pub extern fn vcx_claimdef_release(claimdef_handle: u32) -> u32 {
+    info!("vcx_claimdef_release(claimdef_handle: {})", claimdef_handle);
     claim_def::release(claimdef_handle)
 }
 

@@ -64,12 +64,12 @@ pub struct ClaimOffer {
 impl IssuerClaim {
     fn validate_claim_offer(&self) -> Result<u32, u32> {
         //TODO: validate claim_attributes against claim_def
-        info!("successfully validated issuer_claim {}", self.handle);
+        debug!("successfully validated issuer_claim {}", self.handle);
         Ok(error::SUCCESS.code_num)
     }
 
     fn send_claim_offer(&mut self, connection_handle: u32) -> Result<u32, u32> {
-        info!("sending claim offer for issuer_claim handle {} to connection handle {}", self.handle, connection_handle);
+        debug!("sending claim offer for issuer_claim handle {} to connection handle {}", self.handle, connection_handle);
         if self.state != VcxStateType::VcxStateInitialized {
             warn!("claim {} has invalid state {} for sending claimOffer", self.handle, self.state as u32);
             return Err(error::NOT_READY.code_num);
@@ -114,7 +114,7 @@ impl IssuerClaim {
             Ok(response) => {
                 self.msg_uid = get_offer_details(&response[0])?;
                 self.state = VcxStateType::VcxStateOfferSent;
-                info!("sent claim offer for: {}", self.handle);
+                debug!("sent claim offer for: {}", self.handle);
                 return Ok(error::SUCCESS.code_num);
             }
         }
@@ -122,7 +122,7 @@ impl IssuerClaim {
     }
 
     fn send_claim(&mut self, connection_handle: u32) -> Result<u32, u32> {
-        info!("sending claim for issuer_claim handle {} to connection handle {}", self.handle, connection_handle);
+        debug!("sending claim for issuer_claim handle {} to connection handle {}", self.handle, connection_handle);
         if self.state != VcxStateType::VcxStateRequestReceived {
             warn!("claim {} has invalid state {} for sending claim", self.handle, self.state as u32);
             return Err(error::NOT_READY.code_num);
@@ -173,7 +173,7 @@ impl IssuerClaim {
             Ok(response) => {
                 self.msg_uid = get_offer_details(&response[0])?;
                 self.state = VcxStateType::VcxStateAccepted;
-                info!("issued claim: {}", self.handle);
+                debug!("issued claim: {}", self.handle);
                 return Ok(error::SUCCESS.code_num);
             }
         }
@@ -227,7 +227,7 @@ impl IssuerClaim {
     }
 
     fn get_claim_offer_status(&mut self) -> Result<u32, u32> {
-        info!("updating state for claim offer: {}", self.handle);
+        debug!("updating state for claim offer: {}", self.handle);
         if self.state == VcxStateType::VcxStateRequestReceived {
             return Ok(error::SUCCESS.code_num);
         }
@@ -238,7 +238,7 @@ impl IssuerClaim {
         let payload = messages::get_message::get_ref_msg(&self.msg_uid, &self.issued_did, &self.issued_vk, &self.agent_did, &self.agent_vk)?;
 
         self.claim_request = Some(parse_claim_req_payload(&payload)?);
-        info!("received claim request for claim offer: {}", self.handle);
+        debug!("received claim request for claim offer: {}", self.handle);
         self.state = VcxStateType::VcxStateRequestReceived;
         Ok(error::SUCCESS.code_num)
     }
@@ -273,7 +273,7 @@ impl IssuerClaim {
 }
 
 pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRequest, claim_data: &str, wallet_handle: i32) -> Result< String, u32> {
-    info!("claim data: {}", claim_data);
+    debug!("claim data: {}", claim_data);
 
     if claim_req.blinded_ms.is_none() {
         error!("No Master Secret in the Claim Request!");
@@ -287,7 +287,7 @@ pub fn create_claim_payload_using_wallet<'a>(claim_id: &str, claim_req: &ClaimRe
             return Err(error::INVALID_JSON.code_num);
         },
     };
-    info!("claim request: {}", claim_req_str);
+    debug!("claim request: {}", claim_req_str);
 
     let (_, xclaim_json) = libindy_issuer_create_claim(wallet_handle,
                                                        claim_req_str,
@@ -352,7 +352,7 @@ pub fn issuer_claim_create(schema_seq_no: u32,
 
     new_issuer_claim.state = VcxStateType::VcxStateInitialized;
 
-    info!("inserting handle {} into claim_issuer table", new_handle);
+    debug!("inserting handle {} into claim_issuer table", new_handle);
     ISSUER_CLAIM_MAP.lock().unwrap().insert(new_handle, new_issuer_claim);
 
     Ok(new_handle)
@@ -412,7 +412,7 @@ pub fn from_string(claim_data: &str) -> Result<u32,u32> {
 
     {
         let mut m = ISSUER_CLAIM_MAP.lock().unwrap();
-        info!("inserting handle {} into claim_issuer table", new_handle);
+        debug!("inserting handle {} into claim_issuer table", new_handle);
         m.insert(new_handle, claim);
     }
 
@@ -440,14 +440,14 @@ fn get_offer_details(response: &str) -> Result<String,u32> {
             let detail = match json["uid"].as_str() {
                 Some(x) => x,
                 None => {
-                    info!("response had no uid");
+                    warn!("response had no uid");
                     return Err(error::INVALID_JSON.code_num)
                 },
             };
             Ok(String::from(detail))
         },
         Err(_) => {
-            info!("get_messages called without a valid response from server");
+            warn!("get_messages called without a valid response from server");
             Err(error::INVALID_JSON.code_num)
         },
     }
@@ -520,7 +520,6 @@ pub mod tests {
     pub fn util_put_claim_def_in_issuer_wallet(schema_seq_num: u32, wallet_handle: i32) {
         let stored_xclaim = String::from("");
 
-        info!("wallet_handle: {}", wallet_handle);
         let issuer_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID).unwrap();
 
         libindy_create_and_store_claim_def(wallet_handle, issuer_did, SCHEMAS_JSON.to_string(), None, false).unwrap();
@@ -534,9 +533,7 @@ pub mod tests {
     fn stand_up_a_wallet() -> (String, i32, String) {
         let wallet_name = String::from("wallet1");
         let wallet_handle = init_wallet(&wallet_name).unwrap();
-        info!("Wallet Handle: {}", wallet_handle);
         let (did, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-        info!("Successfully used wallet handle {} to create_and_store_my_did", wallet_handle);
         (wallet_name, wallet_handle, did)
     }
 
@@ -562,11 +559,6 @@ pub mod tests {
             agent_vk: VERKEY.to_string(),
         };
         issuer_claim
-    }
-
-    fn print_error_message(e: &u32) -> () {
-        use utils::error::error_message;
-        info!("error message: {}", error_message(e));
     }
 
     fn normalize_claims(c1: &str, c2: &str) -> (serde_json::Value, serde_json::Value) {
@@ -651,7 +643,7 @@ pub mod tests {
         match claim.send_claim(connection_handle) {
             Ok(_) => assert_eq!(0, 0),
             Err(x) => {
-                info!("error message: {}", error::error_message(&x));
+                println!("error message: {}", error::error_message(&x));
                 assert_eq!(x, 0)
             },
         };
@@ -787,8 +779,8 @@ pub mod tests {
         let mut claim_request = issuer_claim.claim_request.clone().unwrap();
         claim_request.issuer_did = String::from("NcYxiDXkpYi6ov5FcYDi1e");
         assert_eq!(claim_request.schema_seq_no, 15);
-        info!("claim request: {:?}", serde_json::to_string(&claim_request));
-        info!("claim data: {:?}", &CLAIM_DATA);
+        println!("claim request: {:?}", serde_json::to_string(&claim_request));
+        println!("claim data: {:?}", &CLAIM_DATA);
         let encoded = issuer_claim.create_attributes_encodings().unwrap();
         let claim_payload = match create_claim_payload_using_wallet( &issuer_claim.claim_id,
                                                                      &claim_request,
@@ -851,7 +843,7 @@ pub mod tests {
         match claim.send_claim(connection_handle) {
             Ok(_) => assert_eq!(0, 0),
             Err(x) => {
-                info!("error message: {}", error::error_message(&x));
+                println!("error message: {}", error::error_message(&x));
                 assert_eq!(x, 0)
             },
         };

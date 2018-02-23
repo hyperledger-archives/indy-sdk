@@ -68,7 +68,7 @@ pub fn init_wallet(wallet_name: &str) -> Result<i32, u32> {
     };
     let mut use_key = false;
     let credentials = match settings::get_wallet_credentials() {
-        Some(x) => {info!("using key for indy wallet"); use_key = true; CString::new(x).map_err(map_string_error)? },
+        Some(x) => {debug!("using key for indy wallet"); use_key = true; CString::new(x).map_err(map_string_error)? },
         None => CString::new("").map_err(map_string_error)?,
     };
 

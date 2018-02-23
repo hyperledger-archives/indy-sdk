@@ -55,22 +55,21 @@ pub extern fn vcx_init (command_handle: u32,
                         config_path:*const c_char,
                         cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
 
-    ::utils::logger::LoggerUtils::init();
-
     if !config_path.is_null() {
         check_useful_c_str!(config_path,error::INVALID_OPTION.code_num);
 
         if config_path == "ENABLE_TEST_MODE" {
             settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         } else {
-            info!("config_path: {}", config_path);
             match settings::process_config_file(&config_path) {
-                Err(_) => {
-                    error!("Invalid configuration specified");
+                Err(e) => {
+                    println!("Invalid configuration specified: {}", e);
                     return error::INVALID_CONFIGURATION.code_num;
                 },
-                Ok(_) => info!("Successfully parsed config: {}", config_path),
+                Ok(_) => (),
             };
+            ::utils::logger::LoggerUtils::init();
+            println!("config_path: {}", config_path);
         }
     } else {
         error!("Cannot initialize with given config path: config path is null.");
@@ -162,18 +161,18 @@ pub extern fn vcx_init (command_handle: u32,
         let option_path = Some(Path::new(&path));
         match pool::create_pool_ledger_config(&pool_name, option_path.to_owned()) {
             Err(e) => {
-                info!("Pool Config Creation Error: {}", e);
+                warn!("Pool Config Creation Error: {}", e);
                 return e;
             },
             Ok(_) => {
-                info!("Pool Config Created Successfully");
+                debug!("Pool Config Created Successfully");
                 match pool::open_pool_ledger(&pool_name, None) {
                     Err(e) => {
-                    info!("Open Pool Error: {}", e);
+                    warn!("Open Pool Error: {}", e);
                         return e;
                     },
                     Ok(handle) => {
-                        info!("Open Pool Successful");
+                        debug!("Open Pool Successful");
                     }
                 }
             }
@@ -183,11 +182,11 @@ pub extern fn vcx_init (command_handle: u32,
     thread::spawn(move|| {
         match wallet::init_wallet(&wallet_name) {
             Err(e) => {
-                info!("Init Wallet Error {}.", e);
+                warn!("Init Wallet Error {}.", e);
                 cb(command_handle, e);
             },
             Ok(_) => {
-                info!("Init Wallet Successful");
+                debug!("Init Wallet Successful");
                 cb(command_handle, error::SUCCESS.code_num);
             },
         }

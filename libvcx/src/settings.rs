@@ -27,6 +27,7 @@ pub static CONFIG_ENABLE_TEST_MODE: &'static str = "enable_test_mode";
 pub static CONFIG_ENTERPRISE_VERKEY: &'static str = "agent_enterprise_verkey";
 pub static CONFIG_GENESIS_PATH: &str = "genesis_path";
 pub static CONFIG_WALLET_KEY: &str = "wallet_key";
+pub static CONFIG_LOG_CONFIG: &str = "log_config";
 pub static DEFAULT_GENESIS_PATH: &str = "/tmp/genesis.txn";
 pub static UNINITIALIZED_WALLET_KEY: &str = "<KEY_IS_NOT_SET>";
 
@@ -87,6 +88,8 @@ fn validate_config() -> Result<u32, String> {
                 Err(x) => valid = false,
                 Ok(_) => valid = true,
             }
+        } else if setting.0 == CONFIG_LOG_CONFIG {
+            println!("log_config set to {}", setting.1);
         } else if setting.0 == CONFIG_ENTERPRISE_DID && !is_valid(setting.1) {
             valid = false;
         } else if setting.0 == CONFIG_ENTERPRISE_DID_AGENCY && !is_valid(setting.1) {
@@ -162,7 +165,6 @@ pub fn process_config_file(path: &str) -> Result<u32, String> {
     } else {
         // if this fails the program should exit
         SETTINGS.write().unwrap().merge(config::File::with_name(path)).unwrap();
-        info!("path: {}", path);
 
         match validate_config() {
             Err(x) => Err(x),
@@ -203,10 +205,10 @@ pub mod tests {
 
     pub fn remove_file_if_exists(filename: &str){
         if Path::new(filename).exists() {
-            info!("{}", format!("Removing file for testing: {}.", &filename));
+            println!("{}", format!("Removing file for testing: {}.", &filename));
             match fs::remove_file(filename) {
                 Ok(t) => (),
-                Err(e) => info!("Unable to remove file: {:?}", e)
+                Err(e) => println!("Unable to remove file: {:?}", e)
             }
         }
     }

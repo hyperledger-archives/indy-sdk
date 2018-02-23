@@ -261,8 +261,8 @@ pub mod tests {
             let path = Path::new(&pp);
             if path.exists(){
                 match fs::remove_dir_all(path){
-                    Ok(_) => info!("Removed {:?}", path),
-                    Err(_)=> info!("Failed to remove {:?}", path),
+                    Ok(_) => debug!("Removed {:?}", path),
+                    Err(_)=> warn!("Failed to remove {:?}", path),
                 };
             }
         }

@@ -77,7 +77,7 @@ pub trait ClaimDefCommon {
         let request = self.build_get_txn(submitter_did, schema_num, sig_type, issuer_did)?;
         match self.send_request(&request) {
             Ok(x) => {
-                info!("Retrieved claim_def from the ledger with issuer_did: {}, schema_no: {}", issuer_did, schema_num);
+                debug!("Retrieved claim_def from the ledger with issuer_did: {}, schema_no: {}", issuer_did, schema_num);
                 self.extract_result(&x)
             },
             Err(y) => {
@@ -173,7 +173,7 @@ impl CreateClaimDef {
                            issuer_did: &str,
                            sig_type: Option<SigTypes>) -> bool {
         if settings::test_indy_mode_enabled() { return false }
-        info!("checking to see if claimdef is already on the ledger");
+        debug!("checking to see if claimdef is already on the ledger");
         let claim_def_str = match self.retrieve_claim_def(submitter_did.unwrap_or(""),
                                                           schema_no,
                                                           sig_type,
@@ -246,7 +246,7 @@ pub fn create_new_claimdef(source_id: String,
         warn!("Claim Definition already on Ledger");
         return Err(error::CLAIM_DEF_ALREADY_CREATED.code_num)
     }
-    info!("creating claimdef with source_id: {}, name: {}, issuer_did: {}, sequence_no: {}", source_id, claimdef_name, issuer_did, schema_seq_no);
+    debug!("creating claimdef with source_id: {}, name: {}, issuer_did: {}, sequence_no: {}", source_id, claimdef_name, issuer_did, schema_seq_no);
     let claim_def_json = create_and_store_claim_def(&schema_data,
                                                     &issuer_did,
                                                     Some(SigTypes::CL),
@@ -260,7 +260,7 @@ pub fn create_new_claimdef(source_id: String,
     )?;
 
     new_claimdef.sign_and_send_request(&claim_def_txn)?;
-    info!("created new claim def on ledger and stored in wallet");
+    debug!("created new claim def on ledger and stored in wallet");
 
     let new_handle = rand::thread_rng().gen::<u32>();
     new_claimdef.set_name(claimdef_name);
@@ -268,7 +268,7 @@ pub fn create_new_claimdef(source_id: String,
     new_claimdef.set_source_id(source_id);
     {
         let mut m = CLAIMDEF_MAP.lock().unwrap();
-        info!("inserting handle {} into claimdef table", new_handle);
+        debug!("inserting handle {} into claimdef table", new_handle);
         m.insert(new_handle, new_claimdef);
     }
 
@@ -292,7 +292,7 @@ fn create_and_store_claim_def(schema_json: &str,
 pub fn get_schema_data(schema_seq_no: u32) -> Result<String, u32> {
     if settings::test_indy_mode_enabled() { return Ok(SCHEMAS_JSON.to_string()); }
     let schema_obj = LedgerSchema::new_from_ledger(schema_seq_no as i32)?;
-    info!("retrieved schema data from ledger");
+    debug!("retrieved schema data from ledger");
     Ok(schema_obj.to_string())
 }
 
@@ -322,7 +322,7 @@ pub fn from_string(claimdef_data: &str) -> Result<u32, u32> {
 
     {
         let mut m = CLAIMDEF_MAP.lock().unwrap();
-        info!("inserting handle {} into claimdef table", new_handle);
+        debug!("inserting handle {} into claimdef table", new_handle);
         m.insert(new_handle, claimdef);
     }
     Ok(new_handle)
@@ -443,16 +443,16 @@ pub mod tests {
         let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_ISSUER_PW_SEED)).unwrap();
         SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_AGENT_PW_SEED)).unwrap();
         let claim_def_json = create_and_store_claim_def(SCHEMAS_JSON, &my_did, Some(SigTypes::CL), false).unwrap();
-        info!("ClaimDefJson: {:?}", claim_def_json);
+        println!("ClaimDefJson: {:?}", claim_def_json);
         let claim_def_obj = ClaimDefinition::from_str(&claim_def_json).unwrap();
         let claimdef_data = serde_json::to_string(&claim_def_obj.data).unwrap();
-        info!("ClaimData: {:?}", claim_def_obj.data);
+        println!("ClaimData: {:?}", claim_def_obj.data);
         let mut create_claim_def = CreateClaimDef::new();
         create_claim_def.set_claim_def(claim_def_obj);
         let claim_def_txn = create_claim_def.build_create_txn(&claimdef_data).unwrap();
-        info!("ClaimDef TXN:  {:?}", claim_def_txn);
+        println!("ClaimDef TXN:  {:?}", claim_def_txn);
         let claim_def_result = create_claim_def.sign_and_send_request(&claim_def_txn).unwrap();
-        info!("ClaimDef Result:  {:?}", claim_def_result);
+        println!("ClaimDef Result:  {:?}", claim_def_result);
         delete_wallet("a_test_wallet").unwrap();
     }
 

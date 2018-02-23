@@ -43,7 +43,7 @@ extern {
 pub fn prep_msg(wallet_handle: i32, sender_vk: &str, recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
     if settings::test_indy_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
 
-    info!("prep_msg svk: {} rvk: {}",sender_vk, recipient_vk);
+    debug!("prep_msg svk: {} rvk: {}",sender_vk, recipient_vk);
 
     let rtn_obj = Return_I32_BIN::new()?;
     let sender_vk = CString::new(sender_vk).map_err(map_string_error)?;
@@ -67,7 +67,7 @@ pub fn prep_msg(wallet_handle: i32, sender_vk: &str, recipient_vk: &str, msg: &[
 pub fn prep_anonymous_msg(recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
     if settings::test_indy_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
 
-    info!("prep_anonymous_msg rvk: {}",recipient_vk);
+    debug!("prep_anonymous_msg rvk: {}",recipient_vk);
 
     let rtn_obj = Return_I32_BIN::new()?;
     let recipient_vk = CString::new(recipient_vk).map_err(map_string_error)?;
@@ -88,7 +88,7 @@ pub fn prep_anonymous_msg(recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32
 pub fn parse_msg(wallet_handle: i32, recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
     if settings::test_indy_mode_enabled() { return Ok(Vec::from(msg).to_owned()) }
 
-    info!("parse_msg vk: {}",recipient_vk);
+    debug!("parse_msg vk: {}",recipient_vk);
 
     let rtn_obj = Return_I32_OPTSTR_BIN::new()?;
     let recipient_vk = CString::new(recipient_vk).map_err(map_string_error)?;
@@ -113,7 +113,7 @@ pub fn parse_msg(wallet_handle: i32, recipient_vk: &str, msg: &[u8]) -> Result<V
 pub fn sign(wallet_handle: i32, their_did: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
     if settings::test_indy_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
 
-    info!("sign msg did: {}", their_did);
+    debug!("sign msg did: {}", their_did);
 
     let rtn_obj = Return_I32_BIN::new()?;
     let their_did = CString::new(their_did).map_err(map_string_error)?;

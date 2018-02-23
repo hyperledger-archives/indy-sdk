@@ -11,7 +11,7 @@ lazy_static!{
 /* TODO: remove and use generics */
 pub fn post_u8(body_content: &Vec<u8>, url: &str) -> Result<Vec<u8>,String> {
     let client = reqwest::Client::new();
-    info!("Posting encrypted bundle to: \"{}\"", url);
+    debug!("Posting encrypted bundle to: \"{}\"", url);
     if settings::test_agency_mode_enabled() {return Ok(NEXT_U8_RESPONSE.lock().unwrap().pop().unwrap_or(Vec::new()));}
     let mut response = match  client.post(url).body(body_content.to_owned()).header(ContentType::octet_stream()).send() {
         Ok(result) => result,
@@ -21,7 +21,7 @@ pub fn post_u8(body_content: &Vec<u8>, url: &str) -> Result<Vec<u8>,String> {
         },
     };
 
-    info!("Response Header: {:?}", response);
+    debug!("Response Header: {:?}", response);
     if !response.status().is_success() {
         let mut content = String::new();
         match response.read_to_string(&mut content) {

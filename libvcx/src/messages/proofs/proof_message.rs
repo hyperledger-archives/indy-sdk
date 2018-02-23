@@ -136,7 +136,7 @@ impl ProofMessage {
     }
 
     pub fn get_proof_attributes(&self) -> Result<String, u32> {
-        info!("retrieving proof attributes");
+        debug!("retrieving proof attributes");
         let mut claim_attrs = self.get_revealed_attrs()?;
         //Todo: retrieve all revealed attributes
         //Todo: Retrieve predicate values??
@@ -174,7 +174,7 @@ impl ProofMessage {
     }
 
     fn get_revealed_attrs(&self) -> Result<Vec<ClaimData>, u32> {
-        info!("retrieving revealed attributes");
+        debug!("retrieving revealed attributes");
         let mut claim_data: Vec<ClaimData> = Vec::new();
         for (attr_id, attr_data) in &self.requested_proof.revealed_attrs {
             let claim_uuid: String = match serde_json::from_value(attr_data[0].clone()) {

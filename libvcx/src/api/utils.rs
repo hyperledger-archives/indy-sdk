@@ -36,7 +36,7 @@ pub extern fn vcx_provision_agent(json:    *const c_char) -> *mut c_char {
             return ptr::null_mut();
         },
         Ok(s) => {
-            info!("Provision Agent Successful");
+            debug!("Provision Agent Successful");
             let msg = CStringUtils::string_to_cstring(s);
 
             msg.into_raw()

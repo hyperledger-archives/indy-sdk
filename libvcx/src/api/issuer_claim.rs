@@ -3,6 +3,7 @@ extern crate libc;
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
+use utils::error::error_string;
 use connection;
 use settings;
 use issuer_claim;
@@ -64,10 +65,26 @@ pub extern fn vcx_issuer_create_claim(command_handle: u32,
         Some(val)
     } else { None };
 
+    info!("vcx_issuer_create_claim(command_handle: {}, source_id: {:?}, schema_seq_no: {}, issuer_did: {}, claim_data: {}, claim_name: {})",
+          command_handle,
+          source_id_opt,
+          schema_seq_no,
+          issuer_did,
+          claim_data,
+          claim_name);
+
     thread::spawn(move|| {
         let (rc, handle) = match issuer_claim::issuer_claim_create(schema_seq_no, source_id_opt, issuer_did, claim_name, claim_data) {
-            Ok(x) => (error::SUCCESS.code_num, x),
-            Err(x) => (x, 0),
+            Ok(x) => {
+                info!("vcx_issuer_create_claim_cb(command_handle: {}, rc: {}, handle: {})",
+                      command_handle, error_string(0), x);
+                (error::SUCCESS.code_num, x)
+            },
+            Err(x) => {
+                warn!("vcx_issuer_create_claim_cb(command_handle: {}, rc: {}, handle: {})",
+                      command_handle, error_string(x), 0);
+                (x, 0)
+            },
         };
 
         cb(command_handle, rc, handle);
@@ -105,11 +122,21 @@ pub extern fn vcx_issuer_send_claim_offer(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
+    info!("vcx_issuer_send_claim(command_handle: {}, claim_handle: {}, connection_handle: {})",
+          command_handle, claim_handle, connection_handle);
 
     thread::spawn(move|| {
         let err = match issuer_claim::send_claim_offer(claim_handle, connection_handle) {
-            Ok(x) => x,
-            Err(x) => x,
+            Ok(x) => {
+                info!("vcx_issuer_send_claim_cb(command_handle: {}, claim_handle: {}, rc: {})",
+                      command_handle, claim_handle, error_string(x));
+                x
+            },
+            Err(x) => {
+                warn!("vcx_issuer_send_claim_cb(command_handle: {}, claim_handle: {}, rc: {})",
+                      command_handle, claim_handle, error_string(x));
+                x
+            },
         };
 
         cb(command_handle,err);
@@ -136,6 +163,9 @@ pub extern fn vcx_issuer_claim_update_state(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
+    info!("vcx_issuer_claim_update_state(command_handle: {}, claim_handle: {})",
+          command_handle, claim_handle);
+
     if !issuer_claim::is_valid_handle(claim_handle) {
         return error::INVALID_ISSUER_CLAIM_HANDLE.code_num;
     }
@@ -143,6 +173,8 @@ pub extern fn vcx_issuer_claim_update_state(command_handle: u32,
     thread::spawn(move|| {
         issuer_claim::update_state(claim_handle);
 
+        info!("vcx_issuer_claim_update_state_cb(command_handle: {}, claim_handle: {}, rc: {}, state: {})",
+              command_handle, claim_handle, error_string(0), issuer_claim::get_state(claim_handle));
         cb(command_handle, error::SUCCESS.code_num, issuer_claim::get_state(claim_handle));
     });
 
@@ -156,11 +188,16 @@ pub extern fn vcx_issuer_claim_get_state(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
+    info!("vcx_issuer_claim_get_state(command_handle: {}, claim_handle: {})",
+          command_handle, claim_handle);
+
     if !issuer_claim::is_valid_handle(claim_handle) {
         return error::INVALID_ISSUER_CLAIM_HANDLE.code_num;
     }
 
     thread::spawn(move|| {
+        info!("vcx_issuer_claim_get_state_cb(command_handle: {}, claim_handle: {}, rc: {}, state: {})",
+              command_handle, claim_handle, error_string(0), issuer_claim::get_state(claim_handle));
         cb(command_handle, error::SUCCESS.code_num, issuer_claim::get_state(claim_handle));
     });
 
@@ -193,6 +230,9 @@ pub extern fn vcx_issuer_send_claim(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
+    info!("vcx_issuer_send_claim(command_handle: {}, claim_handle: {}, connection_handle: {})",
+          command_handle, claim_handle, connection_handle);
+
     if !issuer_claim::is_valid_handle(claim_handle) {
         return error::INVALID_ISSUER_CLAIM_HANDLE.code_num;
     }
@@ -203,8 +243,16 @@ pub extern fn vcx_issuer_send_claim(command_handle: u32,
 
     thread::spawn(move|| {
         let err = match issuer_claim::send_claim(claim_handle, connection_handle) {
-            Ok(x) => x,
-            Err(x) => x,
+            Ok(x) => {
+                info!("vcx_issuer_send_claim_cb(command_handle: {}, claim_handle: {}, rc: {})",
+                      command_handle, claim_handle, error_string(x));
+                x
+            },
+            Err(x) => {
+                warn!("vcx_issuer_send_claim_cb(command_handle: {}, claim_handle: {}, rc: {})",
+                      command_handle, claim_handle, error_string(x));
+                x
+            },
         };
 
         cb(command_handle,err);
@@ -234,6 +282,8 @@ pub extern fn vcx_issuer_claim_serialize(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
+    info!("vcx_issuer_claim_serialize(claim_serialize(command_handle: {}, claim_handle: {})",
+          command_handle, claim_handle);
     if !issuer_claim::is_valid_handle(claim_handle) {
         return error::INVALID_ISSUER_CLAIM_HANDLE.code_num;
     }
@@ -241,12 +291,14 @@ pub extern fn vcx_issuer_claim_serialize(command_handle: u32,
     thread::spawn(move|| {
         match issuer_claim::to_string(claim_handle) {
             Ok(x) => {
-                info!("serializing handle: {} with data: {}",claim_handle, x);
+                info!("vcx_issuer_claim_serialize_cb(command_handle: {}, claim_handle: {}, rc: {}, state: {})",
+                      command_handle, claim_handle, error_string(0), x);
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num,msg.as_ptr());
             },
             Err(x) => {
-                warn!("could not serialize handle {}",claim_handle);
+                info!("vcx_issuer_claim_serialize_cb(command_handle: {}, claim_handle: {}, rc: {}, state: {})",
+                      command_handle, claim_handle, error_string(x), "null");
                 cb(command_handle,x,ptr::null_mut());
             },
         };
@@ -276,10 +328,20 @@ pub extern fn vcx_issuer_claim_deserialize(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(claim_data, error::INVALID_OPTION.code_num);
 
+    info!("vcx_issuer_claim_deserialize(command_handle: {}, claim_data: {})", command_handle, claim_data);
+
     thread::spawn(move|| {
         let (rc, handle) = match issuer_claim::from_string(&claim_data) {
-            Ok(x) => (error::SUCCESS.code_num, x),
-            Err(x) => (x, 0),
+            Ok(x) => {
+                info!("vcx_issuer_claim_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
+                      command_handle, error_string(0), x);
+                (error::SUCCESS.code_num, x)
+            },
+            Err(x) => {
+                warn!("vcx_issuer_claim_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
+                      command_handle, error_string(x), 0);
+                (x, 0)
+            },
         };
 
         cb(command_handle, rc, handle);
@@ -296,7 +358,10 @@ pub extern fn vcx_issuer_claim_deserialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_claim_issuer_release(claim_handle: u32) -> u32 { issuer_claim::release(claim_handle) }
+pub extern fn vcx_claim_issuer_release(claim_handle: u32) -> u32 {
+    info!("vcx_claim_issuer_release(claim_handle: {})", claim_handle);
+    issuer_claim::release(claim_handle)
+}
 
 
 #[cfg(test)]

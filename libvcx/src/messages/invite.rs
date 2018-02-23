@@ -248,7 +248,7 @@ impl GeneralMessage for SendInvite{
 
         self.generate_signature()?;
 
-        info!("connection invitation details: {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap_or("failure".to_string()));
+        debug!("connection invitation details: {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap_or("failure".to_string()));
         let create = encode::to_vec_named(&self.payload.create_payload).unwrap();
         let details = encode::to_vec_named(&self.payload.msg_detail_payload).unwrap();
         let send = encode::to_vec_named(&self.payload.send_payload).unwrap();
@@ -280,7 +280,7 @@ fn parse_send_invite_response(response: Vec<u8>) -> Result<String, u32> {
         },
     };
 
-    info!("Invite Details: {:?}", response.invite_detail);
+    debug!("Invite Details: {:?}", response.invite_detail);
     match serde_json::to_string(&response.invite_detail) {
         Ok(x) => Ok(x),
         Err(_) => Err(error::INVALID_JSON.code_num),

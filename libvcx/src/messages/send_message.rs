@@ -110,7 +110,7 @@ impl SendMessage{
         };
 
         let mut result = Vec::new();
-        info!("sending secure message to agency");
+        debug!("sending secure message to agency");
         match httpclient::post_u8(&data, &url) {
             Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
             Ok(response) => {
@@ -122,7 +122,7 @@ impl SendMessage{
                 result.push(string);
             },
         };
-        info!("sent message to agency");
+        debug!("sent message to agency");
         Ok(result.to_owned())
     }
 
@@ -157,7 +157,7 @@ impl GeneralMessage for SendMessage{
         let send = SendMessagePayload { msg_type: MsgType { name: "SEND_MSG".to_string(), ver: "1.0".to_string(), }, };
 
         match serde_json::to_string(&detail) {
-            Ok(x) => info!("sending message: {}", x),
+            Ok(x) => debug!("sending message: {}", x),
             Err(_) => {},
         };
 
@@ -195,7 +195,7 @@ fn parse_send_message_response(response: Vec<u8>) -> Result<String, u32> {
         },
     };
 
-    info!("messages: {:?}", response);
+    debug!("messages: {:?}", response);
     match serde_json::to_string(&response) {
         Ok(x) => Ok(x),
         Err(_) => Err(error::INVALID_JSON.code_num),

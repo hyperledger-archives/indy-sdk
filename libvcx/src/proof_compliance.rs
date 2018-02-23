@@ -9,7 +9,7 @@ pub fn proof_compliance(request: &ProofRequestData, proof: &ProofMessage) -> Res
     let self_attested_attrs = &proof.requested_proof.self_attested_attrs;
     let proofs = &proof.proofs;
     let requested_attrs = &request.requested_attrs;
-    info!("starting vcx proof verification");
+    debug!("starting vcx proof verification");
     for (key, val) in requested_attrs.iter() {
         let name = &val.name;
         let issuer_did = val.issuer_did.clone();
@@ -20,7 +20,7 @@ pub fn proof_compliance(request: &ProofRequestData, proof: &ProofMessage) -> Res
             None => {
                 if issuer_did.is_none() && schema_seq_no.is_none() &&
                     self_attested(&val.name, self_attested_attrs)? {
-                    info!("attribute: {} was self attested", val.name);
+                    debug!("attribute: {} was self attested", val.name);
                     continue
                 }
                 warn!("Proof Compliance: attr_id not found in proof");
