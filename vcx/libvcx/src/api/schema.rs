@@ -3,6 +3,7 @@ extern crate libc;
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
+use utils::error::error_string;
 use std::thread;
 use std::ptr;
 use schema;
@@ -39,13 +40,23 @@ pub extern fn vcx_schema_create(command_handle: u32,
         Ok(x) => x,
         Err(x) => return x
     };
+    info!("vcx_schema_create(command_handle: {}, source_id: {}, schema_name: {},  schema_data: {})",
+          command_handle, source_id, schema_name, schema_data);
+
     thread::spawn( move|| {
         let ( rc, handle) = match schema::create_new_schema(source_id,
                                                                  schema_name,
                                                                  issuer_did,
                                                                  schema_data) {
-            Ok(x) => (error::SUCCESS.code_num, x),
-            Err(x) => { info!("create schema returned error: {}", x); (x, 0) },
+            Ok(x) => {
+                info!("vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {})",
+                      command_handle, error_string(0), x);
+                (error::SUCCESS.code_num, x)
+            },
+            Err(x) => {
+                warn!("vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {})",
+                      command_handle, error_string(x), 0);
+                (x, 0) },
         };
 
         cb(command_handle, rc, handle);
@@ -72,6 +83,8 @@ pub extern fn vcx_schema_serialize(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
+    info!("vcx_schema_serialize(command_handle: {}, schema_handle: {})", command_handle, schema_handle);
+
     if !schema::is_valid_handle(schema_handle) {
         return error::INVALID_SCHEMA_HANDLE.code_num;
     };
@@ -79,12 +92,14 @@ pub extern fn vcx_schema_serialize(command_handle: u32,
     thread::spawn( move|| {
         match schema::to_string(schema_handle) {
             Ok(x) => {
-                info!("serializing schema handle: {} with data: {}", schema_handle, x);
+                info!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {})",
+                      command_handle, schema_handle, error_string(0), x);
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                warn!("could not serialize schema handle {}", schema_handle);
+                warn!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {})",
+                      command_handle, schema_handle, error_string(x), "null");
                 cb(command_handle, x, ptr::null_mut());
             },
         };
@@ -115,10 +130,19 @@ pub extern fn vcx_schema_deserialize(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(schema_data, error::INVALID_OPTION.code_num);
 
+    info!("vcx_schema_deserialize(command_handle: {}, schema_data: {})", command_handle, schema_data);
     thread::spawn( move|| {
         let (rc, handle) = match schema::from_string(&schema_data) {
-            Ok(x) => (error::SUCCESS.code_num, x),
-            Err(x) => (x, 0),
+            Ok(x) => {
+                info!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
+                      command_handle, error_string(0), x);
+                (error::SUCCESS.code_num, x)
+            },
+            Err(x) => {
+                warn!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
+                      command_handle, error_string(x), 0);
+                (x, 0)
+            },
         };
         cb(command_handle, rc, handle);
     });
@@ -135,6 +159,7 @@ pub extern fn vcx_schema_deserialize(command_handle: u32,
 /// Error code as a u32
 #[no_mangle]
 pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
+    info!("vcx_schema_release(schema_handle: {})", schema_handle);
     schema::release(schema_handle)
 }
 
@@ -153,14 +178,23 @@ pub extern fn vcx_schema_get_sequence_no(command_handle: u32,
                                          cb: Option<extern fn(xcommand_handle: u32, err: u32, sequence_no: u32)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
+    info!("vcx_schema_get_sequence_no(command_handle: {}, schema_handle: {})", command_handle, schema_handle);
     if !schema::is_valid_handle(schema_handle) {
         return error::INVALID_SCHEMA_HANDLE.code_num;
     }
 
     thread::spawn(move|| {
         let (schema_no, rc) = match schema::get_sequence_num(schema_handle) {
-            Ok(x) => (x, error::SUCCESS.code_num),
-            Err(x) => (0, x),
+            Ok(x) => {
+                info!("vcx_schema_get_sequence_no_cb(command_handle: {}, schema_handle: {}, rc: {}, schema_seq_no: {})",
+                      command_handle, schema_handle, error_string(0), x);
+                (x, error::SUCCESS.code_num)
+            },
+            Err(x) => {
+                warn!("vcx_schema_get_sequence_no_cb(command_handle: {}, schema_handle: {}, rc: {}, schema_seq_no: {})",
+                      command_handle, schema_handle, error_string(x), 0);
+                (0, x)
+            },
         };
         cb(command_handle, rc, schema_no);
     });
@@ -186,17 +220,20 @@ pub extern fn vcx_schema_get_attributes(command_handle: u32,
                                         cb: Option<extern fn(xcommand_handle: u32, err: u32, schema_attrs: *const c_char)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
-    info!("vcx call to get schema attributes");
+    info!("vcx_schema_get_attributes(command_handle: {}, source_id: {}, sequence_no: {})",
+          command_handle, source_id, sequence_no);
 
     thread::spawn( move|| {
         match schema::get_schema_attrs(source_id, sequence_no) {
             Ok(x) => {
-                info!("retrieving schema attrs with data: {}", x);
+                info!("vcx_schema_get_attributes_cb(command_handle: {}, rc: {}, attrs: {}, sequence_no: {})",
+                      command_handle, error_string(0), x, sequence_no);
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                warn!("could not retrieve attrs for schema sequence number {}", sequence_no);
+                warn!("vcx_schema_get_attributes_cb(command_handle: {}, rc: {}, attrs: {}, sequence_no: {})",
+                      command_handle, error_string(x), 0, sequence_no);
                 cb(command_handle, x, ptr::null_mut());
             },
         };

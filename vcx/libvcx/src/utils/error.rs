@@ -146,6 +146,13 @@ pub fn error_message(code_num:&u32) -> &'static str {
     }
 }
 
+pub fn error_string(code_num:u32) -> String {
+    match ERROR_MESSAGES.get(&code_num) {
+        Some(msg) => format!("{}-{}", code_num, msg),
+        None => format!("{}-{}", code_num, UNKNOWN_ERROR.message),
+    }
+}
+
 pub fn map_libindy_err(check_rtn: u32, default_rtn: u32) -> u32 {
     match check_rtn {
         x if x == TIMEOUT_LIBINDY_ERROR.code_num => {

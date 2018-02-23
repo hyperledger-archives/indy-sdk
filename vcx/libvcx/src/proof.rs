@@ -53,7 +53,7 @@ struct Proof {
 impl Proof {
     fn validate_proof_request(&self) -> Result<u32, u32> {
         //TODO: validate proof request
-        info!("successfully validated proof request {}", self.handle);
+        debug!("successfully validated proof request {}", self.handle);
         Ok(error::SUCCESS.code_num)
     }
 
@@ -65,7 +65,7 @@ impl Proof {
                            revoc_regs_json: &str) -> Result<u32, u32> {
         if settings::test_indy_mode_enabled() {return Ok(error::SUCCESS.code_num);}
 
-        info!("starting libindy proof verification");
+        debug!("starting libindy proof verification");
         let valid = match libindy_verifier_verify_proof(proof_req_json,
                                                          proof_json,
                                                          schemas_json,
@@ -90,7 +90,7 @@ impl Proof {
     }
 
     fn build_claim_defs_json(&mut self, claim_data:&Vec<ClaimData>) -> Result<String, u32> {
-        info!("building claimdef json for proof validation");
+        debug!("building claimdef json for proof validation");
         let mut claim_json: HashMap<String, ClaimDefinition> = HashMap::new();
         for claim in claim_data.iter() {
             let schema_seq_no = match claim.schema_seq_no {
@@ -121,7 +121,7 @@ impl Proof {
     }
 
     fn build_proof_json(&mut self) -> Result<String, u32> {
-        info!("building proof json for proof validation");
+        debug!("building proof json for proof validation");
         match self.proof {
             Some(ref x) => x.to_string(),
             None => Err(error::INVALID_PROOF.code_num),
@@ -129,7 +129,7 @@ impl Proof {
     }
 
     fn build_schemas_json(&mut self, claim_data:&Vec<ClaimData>) -> Result<String, u32> {
-        info!("building schemas json for proof validation");
+        debug!("building schemas json for proof validation");
 
         let mut schema_json: HashMap<String, SchemaTransaction> = HashMap::new();
         for schema in claim_data.iter() {
@@ -156,7 +156,7 @@ impl Proof {
     }
 
     fn build_proof_req_json(&mut self) -> Result<String, u32> {
-        info!("building proof request json for proof validation");
+        debug!("building proof request json for proof validation");
         match self.proof_request {
             Some(ref mut x) => {
                 Ok(x.get_proof_request_data())
@@ -183,10 +183,10 @@ impl Proof {
         let schemas_json = self.build_schemas_json(&claim_data)?;
         let proof_json = self.build_proof_json()?;
         let proof_req_json = self.build_proof_req_json()?;
-        info!("*******\n{}\n********", claim_def_msg);
-        info!("*******\n{}\n********", schemas_json);
-        info!("*******\n{}\n********", proof_json);
-        info!("*******\n{}\n********", proof_req_json);
+        debug!("*******\n{}\n********", claim_def_msg);
+        debug!("*******\n{}\n********", schemas_json);
+        debug!("*******\n{}\n********", proof_json);
+        debug!("*******\n{}\n********", proof_req_json);
         proof_compliance(&proof_req_msg.proof_request_data, &proof_msg)?;
         self.validate_proof_indy(&proof_req_json, &proof_json, &schemas_json, &claim_def_msg, INDY_REVOC_REGS_JSON)
     }
@@ -196,7 +196,7 @@ impl Proof {
             warn!("proof {} has invalid state {} for sending proofRequest", self.handle, self.state as u32);
             return Err(error::NOT_READY.code_num);
         }
-        info!("sending proof request with proof: {}, and connection {}", self.handle, connection_handle);
+        debug!("sending proof request with proof: {}, and connection {}", self.handle, connection_handle);
         self.prover_did = connection::get_pw_did(connection_handle)?;
         self.agent_did = connection::get_agent_did(connection_handle)?;
         self.agent_vk = connection::get_agent_verkey(connection_handle)?;
@@ -258,7 +258,7 @@ impl Proof {
     }
 
     fn get_proof_request_status(&mut self) -> Result<u32, u32> {
-        info!("updating state for proof {}", self.handle);
+        debug!("updating state for proof {}", self.handle);
         if self.state == VcxStateType::VcxStateAccepted {
             return Ok(error::SUCCESS.code_num);
         }
@@ -278,16 +278,16 @@ impl Proof {
         match self.proof_validation() {
             Ok(x) => {
                 if self.proof_state != ProofStateType::ProofInvalid {
-                    info!("Proof format was validated for proof {}", self.handle);
+                    debug!("Proof format was validated for proof {}", self.handle);
                     self.proof_state = ProofStateType::ProofValidated;
                 }
             }
             Err(x) => {
                 if x == error::TIMEOUT_LIBINDY_ERROR.code_num {
-                    info!("Proof {} unable to be validated", self.handle);
+                    warn!("Proof {} unable to be validated", self.handle);
                     self.proof_state = ProofStateType::ProofUndefined;
                 } else {
-                    info!("Proof {} had invalid format with err {}", self.handle, x);
+                    warn!("Proof {} had invalid format with err {}", self.handle, x);
                     self.proof_state = ProofStateType::ProofInvalid;
                 }
             }
@@ -314,7 +314,7 @@ pub fn create_proof(source_id: Option<String>,
                     name: String) -> Result<u32, u32> {
 
     let new_handle = rand::thread_rng().gen::<u32>();
-    info!("creating proof with name: {}, requested_attrs: {}, requested_predicates: {}", name, requested_attrs, requested_predicates);
+    debug!("creating proof with name: {}, requested_attrs: {}, requested_predicates: {}", name, requested_attrs, requested_predicates);
 
     let source_id_unwrap = source_id.unwrap_or("".to_string());
 
@@ -346,7 +346,7 @@ pub fn create_proof(source_id: Option<String>,
 
     {
         let mut m = PROOF_MAP.lock().unwrap();
-        info!("inserting handle {} into proof table", new_handle);
+        debug!("inserting handle {} into proof table", new_handle);
         m.insert(new_handle, new_proof);
     }
 
@@ -413,7 +413,7 @@ pub fn from_string(proof_data: &str) -> Result<u32, u32> {
 
     {
         let mut m = PROOF_MAP.lock().unwrap();
-        info!("inserting handle {} into proof table", new_handle);
+        debug!("inserting handle {} into proof table", new_handle);
         m.insert(new_handle, proof);
     }
     Ok(new_handle)
@@ -433,14 +433,14 @@ fn get_proof_details(response: &str) -> Result<String, u32> {
             let detail = match json["uid"].as_str() {
                 Some(x) => x,
                 None => {
-                    info!("response had no uid");
+                    warn!("response had no uid");
                     return Err(error::INVALID_JSON.code_num)
                 },
             };
             Ok(String::from(detail))
         },
         Err(_) => {
-            info!("Proof called without a valid response from server");
+            warn!("Proof called without a valid response from server");
             Err(error::INVALID_JSON.code_num)
         },
     }

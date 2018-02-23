@@ -55,7 +55,7 @@ struct Connection {
 
 impl Connection {
     fn connect(&mut self, options: Option<String>) -> Result<u32,u32> {
-        info!("\"vcx_connection_connect\" for handle {}", self.handle);
+        debug!("\"vcx_connection_connect\" for handle {}", self.handle);
         if !self.ready_to_connect() {
             warn!("connection {} in state {} not ready to connect",self.handle,self.state as u32);
             return Err(error::NOT_READY.code_num);
@@ -260,7 +260,7 @@ pub fn get_state(handle: u32) -> u32 {
 }
 
 pub fn create_agent_pairwise(handle: u32) -> Result<u32, u32> {
-    info!("creating pairwise keys on agent for connection handle {}", handle);
+    debug!("creating pairwise keys on agent for connection handle {}", handle);
     let pw_did = get_pw_did(handle)?;
     let pw_verkey = get_pw_verkey(handle)?;
 
@@ -271,14 +271,14 @@ pub fn create_agent_pairwise(handle: u32) -> Result<u32, u32> {
         Ok(x) => x,
         Err(x) => return Err(x),
     };
-    info!("create key for handle: {} with did/vk: {:?}",  handle,  result);
+    debug!("create key for handle: {} with did/vk: {:?}",  handle,  result);
     set_agent_did(handle,&result[0]);
     set_agent_verkey(handle,&result[1]);
     Ok(error::SUCCESS.code_num)
 }
 
 pub fn update_agent_profile(handle: u32) -> Result<u32, u32> {
-    info!("updating agent config for connection handle {}", handle);
+    debug!("updating agent config for connection handle {}", handle);
     let pw_did = get_pw_did(handle)?;
 
     match messages::update_data()
@@ -300,7 +300,7 @@ pub fn update_agent_profile(handle: u32) -> Result<u32, u32> {
 fn create_connection(source_id: String) -> u32 {
     let new_handle = rand::thread_rng().gen::<u32>();
 
-    info!("creating connection with handle {} and id {}", new_handle, source_id);
+    debug!("creating connection with handle {} and id {}", new_handle, source_id);
     // This is a new connection
 
     let c = Box::new(Connection {
@@ -338,7 +338,7 @@ pub fn build_connection(source_id: String) -> Result<u32,u32> {
         },
     };
 
-    info!("handle: {} did: {} verkey: {}", new_handle, my_did, my_verkey);
+    debug!("handle: {} did: {} verkey: {}", new_handle, my_did, my_verkey);
     set_pw_did(new_handle, &my_did);
     set_pw_verkey(new_handle, &my_verkey);
 
@@ -348,7 +348,7 @@ pub fn build_connection(source_id: String) -> Result<u32,u32> {
             release(new_handle);
             return Err(x);
         },
-        Ok(_) => info!("created pairwise key on agent"),
+        Ok(_) => debug!("created pairwise key on agent"),
     };
 
     match update_agent_profile(new_handle) {
@@ -357,7 +357,7 @@ pub fn build_connection(source_id: String) -> Result<u32,u32> {
             release(new_handle);
             return Err(x);
         },
-        Ok(_) => info!("updated profile on agent"),
+        Ok(_) => debug!("updated profile on agent"),
     };
 
     set_state(new_handle, VcxStateType::VcxStateInitialized);
@@ -392,7 +392,7 @@ pub fn parse_acceptance_details(handle: u32, message: &Message) -> Result<Sender
 }
 
 pub fn update_state(handle: u32) -> Result<u32, u32> {
-    info!("updating state for connection handle {}", handle);
+    debug!("updating state for connection handle {}", handle);
     let pw_did = get_pw_did(handle)?;
     let pw_vk = get_pw_verkey(handle)?;
     let agent_did = get_agent_did(handle)?;
@@ -452,7 +452,7 @@ pub fn from_string(connection_data: &str) -> Result<u32,u32> {
 
     let connection = Box::from(derived_connection);
 
-    info!("inserting handle {} into connection table", new_handle);
+    debug!("inserting handle {} into connection table", new_handle);
 
     CONNECTION_MAP.lock().unwrap().insert(new_handle, connection);
 
@@ -500,7 +500,7 @@ pub fn parse_invite_detail(response: &str) -> Result<InviteDetail, u32> {
     let details: InviteDetail = match serde_json::from_str(response) {
         Ok(x) => x,
         Err(x) => {
-            info!("Connect called without a valid response from server: {}", x);
+            debug!("Connect called without a valid response from server: {}", x);
             return Err(error::INVALID_HTTP_RESPONSE.code_num);
         },
     };
