@@ -3,6 +3,7 @@ mod utils;
 
 #[allow(unused_variables)] /* FIXME */
 pub mod anoncreds;
+pub mod blob_storage;
 pub mod crypto;
 pub mod ledger;
 pub mod pool;
@@ -12,6 +13,7 @@ pub mod pairwise;
 pub mod blob_storage;
 
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
+use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
 use commands::crypto::{CryptoCommand, CryptoCommandExecutor};
 use commands::ledger::{LedgerCommand, LedgerCommandExecutor};
 use commands::pool::{PoolCommand, PoolCommandExecutor};
@@ -38,6 +40,7 @@ use std::sync::{Mutex, MutexGuard};
 pub enum Command {
     Exit,
     Anoncreds(AnoncredsCommand),
+    BlobStorage(BlobStorageCommand),
     Crypto(CryptoCommand),
     Ledger(LedgerCommand),
     Pool(PoolCommand),
@@ -92,6 +95,10 @@ impl CommandExecutor {
                         Ok(Command::Anoncreds(cmd)) => {
                             info!("AnoncredsCommand command received");
                             anoncreds_command_executor.execute(cmd);
+                        }
+                        Ok(Command::BlobStorage(cmd)) => {
+                            info!("BlobStorageCommand command received");
+                            blob_storage_command_executor.execute(cmd);
                         }
                         Ok(Command::Crypto(cmd)) => {
                             info!("CryptoCommand command received");
