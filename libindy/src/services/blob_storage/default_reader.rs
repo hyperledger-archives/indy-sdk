@@ -1,4 +1,6 @@
+extern crate digest;
 extern crate indy_crypto;
+extern crate sha2;
 
 use base64;
 
@@ -6,13 +8,16 @@ use errors::common::CommonError;
 
 use super::{Reader, ReaderType};
 use self::indy_crypto::utils::json::JsonDecodable;
+use self::digest::{FixedOutput, Input};
+use self::sha2::Sha256;
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::PathBuf;
 
 pub struct DefaultReader {
-    file: File
+    file: File,
+    hash: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -29,18 +34,30 @@ impl ReaderType for DefaultReaderType {
         path.push(base64::encode(hash));
         let file = File::open(path)?;
         Ok(Box::new(DefaultReader {
-            file
+            file,
+            hash: hash.to_owned()
         }))
     }
 }
 
 impl Reader for DefaultReader {
-    fn verify(&self) -> () {
-        unimplemented!()
+    fn verify(&mut self) -> Result<bool, CommonError> {
+        self.file.seek(SeekFrom::Start(0))?;
+        let mut hasher = Sha256::default();
+        let mut buf = [0u8; 1024];
+
+        loop {
+            let sz = self.file.read(&mut buf)?;
+            if sz == 0 {
+                return Ok(hasher.fixed_result().as_slice().eq(self.hash.as_slice()));
+            }
+            hasher.process(&buf[0..sz])
+        }
     }
 
-    fn close(&self) -> () {
+    fn close(&self) -> Result<(), CommonError> {
         /* nothing to do */
+        Ok(())
     }
 
     fn read(&mut self, size: usize, offset: usize) -> Result<Vec<u8>, CommonError> {
