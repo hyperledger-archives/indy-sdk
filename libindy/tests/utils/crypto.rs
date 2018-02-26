@@ -1,23 +1,17 @@
 extern crate libc;
 
-use std::sync::mpsc::channel;
 use std::ffi::CString;
 
 use indy::api::crypto::*;
 use indy::api::ErrorCode;
 
 use utils::callback::CallbackUtils;
-use utils::timeout::TimeoutUtils;
 
 pub struct CryptoUtils {}
 
 impl CryptoUtils {
     pub fn create_key(wallet_handle: i32, seed: Option<&str>) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-        let cb = Box::new(move |err, verkey| {
-            sender.send((err, verkey)).unwrap();
-        });
-        let (command_handle, callback) = CallbackUtils::closure_to_create_key_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let key_json = seed.map_or("{}".to_string(), |seed| format!(r#"{{"seed":"{}"}}"#, seed));
         let key_json = CString::new(key_json).unwrap();
@@ -25,76 +19,37 @@ impl CryptoUtils {
         let err = indy_create_key(command_handle,
                                   wallet_handle,
                                   key_json.as_ptr(),
-                                  callback);
+                                  cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-        let (err, verkey) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-        Ok(verkey)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn set_key_metadata(wallet_handle: i32, verkey: &str, metadata: &str) -> Result<(), ErrorCode> {
-        let (sender, receiver) = channel();
-        let cb = Box::new(move |err| {
-            sender.send((err)).unwrap();
-        });
-        let (command_handle, callback) = CallbackUtils::closure_to_store_key_metadata_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let verkey = CString::new(verkey).unwrap();
         let metadata = CString::new(metadata).unwrap();
 
-        let err = indy_set_key_metadata(command_handle,
-                                        wallet_handle,
-                                        verkey.as_ptr(),
-                                        metadata.as_ptr(),
-                                        callback);
+        let err = indy_set_key_metadata(command_handle, wallet_handle, verkey.as_ptr(), metadata.as_ptr(), cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-        let err = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-        Ok(())
+        super::results::result_to_empty(err, receiver)
     }
 
     pub fn get_key_metadata(wallet_handle: i32, verkey: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-        let cb = Box::new(move |err, metadata| {
-            sender.send((err, metadata)).unwrap();
-        });
-        let (command_handle, callback) = CallbackUtils::closure_to_get_key_metadata_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let verkey = CString::new(verkey).unwrap();
 
         let err = indy_get_key_metadata(command_handle,
                                         wallet_handle,
                                         verkey.as_ptr(),
-                                        callback);
+                                        cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-        let (err, metadata) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-        Ok(metadata)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn sign(wallet_handle: i32, my_vk: &str, msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, signature| {
-            sender.send((err, signature)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_crypto_sign_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_vec_u8();
 
         let my_vk = CString::new(my_vk).unwrap();
 
@@ -106,27 +61,11 @@ impl CryptoUtils {
                              msg.len() as u32,
                              cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, signature) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(signature)
+        super::results::result_to_vec_u8(err, receiver)
     }
 
     pub fn verify(their_vk: &str, msg: &[u8], signature: &[u8]) -> Result<bool, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, valid| {
-            sender.send((err, valid)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_crypto_verify_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_bool();
 
         let their_vk = CString::new(their_vk).unwrap();
 
@@ -138,27 +77,11 @@ impl CryptoUtils {
                                      signature.len() as u32,
                                      cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, valid) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(valid)
+        super::results::result_to_bool(err, receiver)
     }
 
     pub fn auth_crypt(wallet_handle: i32, my_vk: &str, their_vk: &str, msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, encrypted_msg| {
-            sender.send((err, encrypted_msg)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_encrypt_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_vec_u8();
 
         let my_vk = CString::new(my_vk).unwrap();
         let their_vk = CString::new(their_vk).unwrap();
@@ -171,27 +94,11 @@ impl CryptoUtils {
                                          msg.len() as u32,
                                          cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, encrypted_msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(encrypted_msg)
+        super::results::result_to_vec_u8(err, receiver)
     }
 
     pub fn auth_decrypt(wallet_handle: i32, my_vk: &str, msg: &[u8]) -> Result<(String, Vec<u8>), ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, sender_vk, decrypted_msg| {
-            sender.send((err, sender_vk, decrypted_msg)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_decrypt_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_vec_u8();
 
         let my_vk = CString::new(my_vk).unwrap();
 
@@ -203,27 +110,11 @@ impl CryptoUtils {
                                      msg.len() as u32,
                                      cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, sender_vk, decrypted_msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok((sender_vk, decrypted_msg))
+        super::results::result_to_string_vec_u8(err, receiver)
     }
 
     pub fn anon_crypt(their_vk: &str, msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, encrypted_msg| {
-            sender.send((err, encrypted_msg)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_encrypt_sealed_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_vec_u8();
 
         let their_vk = CString::new(their_vk).unwrap();
 
@@ -234,27 +125,11 @@ impl CryptoUtils {
                                    msg.len() as u32,
                                    cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, encrypted_msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(encrypted_msg)
+        super::results::result_to_vec_u8(err, receiver)
     }
 
     pub fn anon_decrypt(wallet_handle: i32, my_vk: &str, encrypted_msg: &[u8]) -> Result<Vec<u8>, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, decrypted_msg| {
-            sender.send((err, decrypted_msg)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_decrypt_sealed_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_vec_u8();
 
         let my_vk = CString::new(my_vk).unwrap();
 
@@ -266,16 +141,6 @@ impl CryptoUtils {
                                      encrypted_msg.len() as u32,
                                      cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, decrypted_msg) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(decrypted_msg)
+        super::results::result_to_vec_u8(err, receiver)
     }
 }
