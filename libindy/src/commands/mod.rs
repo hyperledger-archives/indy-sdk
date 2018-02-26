@@ -10,7 +10,6 @@ pub mod pool;
 pub mod did;
 pub mod wallet;
 pub mod pairwise;
-pub mod blob_storage;
 
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
 use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
@@ -20,7 +19,6 @@ use commands::pool::{PoolCommand, PoolCommandExecutor};
 use commands::did::{DidCommand, DidCommandExecutor};
 use commands::wallet::{WalletCommand, WalletCommandExecutor};
 use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
-use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
 
 use errors::common::CommonError;
 
@@ -46,8 +44,7 @@ pub enum Command {
     Pool(PoolCommand),
     Did(DidCommand),
     Wallet(WalletCommand),
-    Pairwise(PairwiseCommand),
-    BlobStorage(BlobStorageCommand)
+    Pairwise(PairwiseCommand)
 }
 
 pub struct CommandExecutor {
@@ -123,10 +120,6 @@ impl CommandExecutor {
                         Ok(Command::Pairwise(cmd)) => {
                             info!("PairwiseCommand command received");
                             pairwise_command_executor.execute(cmd);
-                        }
-                        Ok(Command::BlobStorage(cmd)) => {
-                            info!("BlobStorage command received");
-                            blob_storage_command_executor.execute(cmd);
                         }
                         Ok(Command::Exit) => {
                             info!("Exit command received");
