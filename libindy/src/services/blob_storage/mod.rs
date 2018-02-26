@@ -94,6 +94,17 @@ impl BlobStorageService {
 
 /* Reader */
 impl BlobStorageService {
+    pub fn open_reader(&self, type_: &str, config: &str, location: &str, hash: &[u8]) -> Result<i32, CommonError> {
+        let reader = self.reader_types.try_borrow()?
+            .get(type_).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Reader type".to_string()))?
+            .open(config, hash, location)?;
+
+        let reader_handle = SequenceUtils::get_next_id();
+        self.readers.try_borrow_mut()?.insert(reader_handle, reader);
+
+        Ok(reader_handle)
+    }
+
     pub fn read(&self, handle: i32, size: usize, offset: usize) -> Result<Vec<u8>, CommonError> {
         self.readers.try_borrow_mut()?
             .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?
