@@ -8,6 +8,9 @@ pub mod pool;
 pub mod did;
 pub mod wallet;
 
+pub mod authz;
+
+
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
 pub enum ErrorCode
@@ -133,4 +136,18 @@ pub enum ErrorCode
 
     // Attempt to create duplicate did
     DidAlreadyExistsError = 600,
+
+    // TODO: Reconsider: Should be moved to a different enum and use composition here?
+    // ------------------------------------------------ AUTHZ -------------------------
+
+    // Attempt to create duplicate policy address
+    PolicyDoesNotExistError = 3000,
+
+    PolicyAlreadyExistsError = 3001,
+
+    AgentDoesNotExistError = 3002,
+
+    AgentAlreadyExistsError = 3003,
+
+    AgentHasNoSecretError = 3004,
 }

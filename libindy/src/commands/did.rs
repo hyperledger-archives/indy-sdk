@@ -430,6 +430,7 @@ impl DidCommandExecutor {
     }
 
     fn _get_nym_ack(&self, wallet_handle: i32, get_nym_reply_result: Result<String, IndyError>) -> Result<(), IndyError> {
+        // Takes the result of a `GET_NYM` and stores the corresponding DID and its details in the ledger
         let get_nym_reply = get_nym_reply_result?;
 
         let get_nym_response: Reply<GetNymReplyResult> = Reply::from_json(&get_nym_reply)
@@ -584,7 +585,7 @@ impl DidCommandExecutor {
         let my_did_json = Did::to_json(my_did)
             .map_err(map_err_trace!())
             .map_err(|err|
-                CommonError::InvalidState(
+                CommonError::InvalidState(  // Error should be InvalidStructure not InvalidState
                     format!("Can't serialize my Did: {}", err.description())))?;
 
         self.wallet_service.set(wallet_handle, &format!("my_did::{}", my_did.did), &my_did_json)?;
@@ -597,7 +598,7 @@ impl DidCommandExecutor {
         let res = Did::from_json(&my_did_json)
             .map_err(map_err_trace!())
             .map_err(|err|
-                CommonError::InvalidState(
+                CommonError::InvalidState(    // Error should be InvalidStructure not InvalidState
                     format!("Can't deserialize my Did: {}", err.description())))?;
         Ok(res)
     }

@@ -273,7 +273,6 @@ mod high_cases {
         use super::*;
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_nym_requests_works_for_only_required_fields() {
             let expected_result = format!(
                 "\"identifier\":\"{}\",\
@@ -288,7 +287,6 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_nym_requests_works_with_option_fields() {
             let role = "STEWARD";
             let alias = "some_alias";
@@ -309,7 +307,6 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_nym_requests_works_for_empty_role() {
             let expected_result = format!(
                 "\"identifier\":\"{}\",\
@@ -325,7 +322,6 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_nym_requests_works() {
             let expected_result = format!(
                 "\"identifier\":\"{}\",\
@@ -412,7 +408,6 @@ mod high_cases {
         use super::*;
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_attrib_requests_works_for_raw_value() {
             let expected_result = format!(
                 "\"identifier\":\"{}\",\
@@ -428,7 +423,6 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_attrib_requests_works_for_hash_value() {
             let expected_result = format!(
                 "\"identifier\":\"{}\",\
@@ -445,7 +439,6 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_attrib_requests_works_for_enc_value() {
             let expected_result = format!(
                 "\"identifier\":\"{}\",\
@@ -461,14 +454,12 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_attrib_requests_works_for_missed_attribute() {
             let res = LedgerUtils::build_attrib_request(&IDENTIFIER, &DEST, None, None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_attrib_requests_works_for_raw_value() {
             let raw = "endpoint";
 
@@ -486,7 +477,6 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_attrib_requests_works_for_hash_value() {
             let expected_result = format!(
                 "\"identifier\":\"{}\",\
@@ -502,7 +492,6 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_attrib_requests_works_for_enc_value() {
             let expected_result = format!(
                 "\"identifier\":\"{}\",\
@@ -638,7 +627,6 @@ mod high_cases {
         use super::*;
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_schema_requests_works_for_correct_data_json() {
             let expected_result = r#""operation":{"type":"101","data":{"name":"name","version":"1.0","attr_names":["name","male"]}},"protocolVersion":1"#;
 
@@ -647,7 +635,6 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_schema_requests_works_for_correct_data_json() {
             let expected_result = format!(r#""identifier":"{}","operation":{{"type":"107","dest":"{}","data":{{"name":"name","version":"1.0"}}}},"protocolVersion":1"#,
                                           IDENTIFIER, DEST);
@@ -939,14 +926,12 @@ mod high_cases {
         use super::*;
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_pool_config_request_works() {
             TestUtils::cleanup_storage();
 
             let expected_result = r#""operation":{"type":"111","writes":true,"force":false"#;
             let request = LedgerUtils::build_pool_config_request(DID_TRUSTEE, true, false).unwrap();
             assert!(request.contains(expected_result));
-
 
             TestUtils::cleanup_storage();
         }
@@ -1005,7 +990,6 @@ mod high_cases {
 
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_pool_upgrade_request_works_for_start_action() {
             TestUtils::cleanup_storage();
 
@@ -1026,7 +1010,6 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_pool_upgrade_request_works_for_cancel_action() {
             TestUtils::cleanup_storage();
 
@@ -1097,6 +1080,60 @@ mod high_cases {
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
+        }
+    }
+
+    mod agent_authz_requests {
+        use super::*;
+
+        pub const SUBMITTER: &'static str = "Th7MpTaRZVRYnPiabds81YTh7MpTaRZVRYnPiabds81Y";
+        pub const ADDRESS: &'static str = "401649503110834456379398944358735048827168009229158935371109219347634813888999";
+        pub const COMM: &'static str = "803299006221668912758797888717470097654336018458317870742218438695269627777999";
+        pub const ACCUM_ID: &'static str = "accum_id";
+
+        #[test]
+        fn indy_build_agent_authz_request_with_defaults_works() {
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"30000","address":"{}"}},"protocolVersion":1"#,
+                                          SUBMITTER, ADDRESS);
+
+            let agent_authz_request = LedgerUtils::build_agent_authz_request(SUBMITTER, ADDRESS, None, None, None).unwrap();
+            assert!(agent_authz_request.contains(&expected_result));
+        }
+
+        #[test]
+        fn indy_build_agent_authz_request_with_auth_works() {
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"30000","address":"{}","authz":1}},"protocolVersion":1"#,
+                                          SUBMITTER, ADDRESS);
+
+            let agent_authz_request = LedgerUtils::build_agent_authz_request(SUBMITTER, ADDRESS, None, Some(1), None).unwrap();
+            assert!(agent_authz_request.contains(&expected_result));
+        }
+
+        #[test]
+        fn indy_build_agent_authz_request_with_verkey_works() {
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"30000","address":"{}","verkey":"{}","authz":1,"comm":"{}"}},"protocolVersion":1"#,
+                                          SUBMITTER, ADDRESS, SUBMITTER, COMM);
+
+            let agent_authz_request = LedgerUtils::build_agent_authz_request(SUBMITTER, ADDRESS, Some(SUBMITTER), Some(1), Some(COMM)).unwrap();
+            assert!(agent_authz_request.contains(&expected_result));
+        }
+
+        #[test]
+        fn indy_build_get_agent_authz_request_works() {
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"30001","address":"{}"}},"protocolVersion":1"#,
+                                          IDENTIFIER, ADDRESS);
+
+            let get_policy_request = LedgerUtils::build_get_agent_authz_request(&IDENTIFIER, &ADDRESS).unwrap();
+            assert!(get_policy_request.contains(&expected_result));
+        }
+
+        #[test]
+        fn indy_build_get_agent_authz_accum_request_works() {
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"30002","accum_id":"{}"}},"protocolVersion":1"#,
+                                          IDENTIFIER, ACCUM_ID);
+
+            let get_accum_request = LedgerUtils::build_get_agent_authz_accum_request(&IDENTIFIER, &ACCUM_ID).unwrap();
+            assert!(get_accum_request.contains(&expected_result));
         }
     }
 }
@@ -1231,7 +1268,6 @@ mod medium_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_nym_requests_works_for_wrong_role() {
             let role = "WRONG_ROLE";
             let res = LedgerUtils::build_nym_request(&IDENTIFIER, &DEST, None, None, Some(role));
@@ -1310,28 +1346,24 @@ mod medium_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_nym_request_works_for_invalid_submitter_identifier() {
             let res = LedgerUtils::build_nym_request(INVALID_IDENTIFIER, IDENTIFIER, None, None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_nym_request_works_for_invalid_target_identifier() {
             let res = LedgerUtils::build_nym_request(IDENTIFIER, INVALID_IDENTIFIER, None, None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_nym_request_works_for_invalid_submitter_identifier() {
             let res = LedgerUtils::build_get_nym_request(INVALID_IDENTIFIER, IDENTIFIER);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_nym_request_works_for_invalid_target_identifier() {
             let res = LedgerUtils::build_get_nym_request(IDENTIFIER, INVALID_IDENTIFIER);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1446,7 +1478,6 @@ mod medium_cases {
 
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_attrib_request_works_for_invalid_submitter_did() {
             let res = LedgerUtils::build_attrib_request(INVALID_IDENTIFIER, IDENTIFIER, None,
                                                         Some(ATTRIB_RAW_DATA), None);
@@ -1454,7 +1485,6 @@ mod medium_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_attrib_request_works_for_invalid_target_did() {
             let res = LedgerUtils::build_attrib_request(IDENTIFIER, INVALID_IDENTIFIER, None,
                                                         Some(ATTRIB_RAW_DATA), None);
@@ -1462,14 +1492,12 @@ mod medium_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_attrib_request_works_for_invalid_submitter_identifier() {
             let res = LedgerUtils::build_get_attrib_request(INVALID_IDENTIFIER, IDENTIFIER, Some("endpoint"), None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_attrib_request_works_for_invalid_target_identifier() {
             let res = LedgerUtils::build_get_attrib_request(IDENTIFIER, INVALID_IDENTIFIER, Some("endpoint"), None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1480,7 +1508,6 @@ mod medium_cases {
         use super::*;
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_schema_requests_works_for_missed_field_in_data_json() {
             let data = r#"{"name":"name"}"#;
 
@@ -1489,7 +1516,6 @@ mod medium_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_schema_requests_works_for_invalid_data_json_format() {
             let data = r#"{"name":"name", "keys":"name"}"#;
 
@@ -1498,14 +1524,12 @@ mod medium_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_schema_requests_works_for_invalid_submitter_identifier() {
             let res = LedgerUtils::build_schema_request(INVALID_IDENTIFIER, SCHEMA_DATA);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_schema_requests_works_for_invalid_data_json() {
             let data = r#"{"name":"name"}"#;
             let res = LedgerUtils::build_get_schema_request(IDENTIFIER, IDENTIFIER, data);
@@ -1513,14 +1537,12 @@ mod medium_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_schema_requests_works_for_invalid_submitter_identifier() {
             let res = LedgerUtils::build_get_schema_request(INVALID_IDENTIFIER, DEST, GET_SCHEMA_DATA);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_schema_requests_works_for_invalid_dest() {
             let res = LedgerUtils::build_get_schema_request(IDENTIFIER, INVALID_IDENTIFIER, GET_SCHEMA_DATA);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);

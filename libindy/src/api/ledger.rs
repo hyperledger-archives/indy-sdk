@@ -6,7 +6,7 @@ use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
 use utils::cstring::CStringUtils;
 
-use self::libc::c_char;
+use self::libc::{c_char, c_int};
 
 /// Signs and submits request message to validator pool.
 ///
@@ -704,6 +704,109 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: i32,
             justification,
             reinstall,
             force,
+            Box::new(move |result| {
+                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let request_json = CStringUtils::string_to_cstring(request_json);
+                cb(command_handle, err, request_json.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+
+// ------------------------------------------------ AUTHZ -------------------------
+
+
+/// Builds an AGENT_AUTHZ request.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// submitter: Verkey of the sender of txn
+/// address: Policy address
+/// verkey: verkey which is the target of the txn
+/// auth: Integer representing authorisation, negative integer is ignored
+/// comm: Commitment
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+#[no_mangle]
+pub extern fn indy_build_agent_authz_request(command_handle: i32,
+                                             submitter: *const c_char,
+                                             address: *const c_char,
+                                             verkey: *const c_char,
+                                             auth: c_int,
+                                             comm: *const c_char,
+                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                             request_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(submitter, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(address, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(verkey, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_int!(auth);
+    check_useful_opt_c_str!(comm, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildAgentAuthzRequest(
+            submitter,
+            address,
+            verkey,
+            auth,
+            comm,
+            Box::new(move |result| {
+                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let request_json = CStringUtils::string_to_cstring(request_json);
+                cb(command_handle, err, request_json.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+
+#[no_mangle]
+pub extern fn indy_build_get_agent_authz_request(command_handle: i32,
+                                             submitter: *const c_char,
+                                             address: *const c_char,
+                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                  request_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(submitter, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(address, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildGetAgentAuthzRequest(
+            submitter,
+            address,
+            Box::new(move |result| {
+                let (err, request_json) = result_to_err_code_1!(result, String::new());
+                let request_json = CStringUtils::string_to_cstring(request_json);
+                cb(command_handle, err, request_json.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
+
+#[no_mangle]
+pub extern fn indy_build_get_agent_authz_accum_request(command_handle: i32,
+                                                 submitter: *const c_char,
+                                                 accum_id: *const c_char,
+                                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                      request_json: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(submitter, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(accum_id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(LedgerCommand::BuildGetAgentAuthzAccumRequest(
+            submitter,
+            accum_id,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 let request_json = CStringUtils::string_to_cstring(request_json);

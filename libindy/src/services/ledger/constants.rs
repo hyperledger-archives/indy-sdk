@@ -17,3 +17,10 @@ pub const TRUSTEE: &str = "0";
 pub const TRUST_ANCHOR: &str = "101";
 pub const TGB: &str = "100";
 pub const ROLE_REMOVE: &str = "";
+
+
+// ------------------------------------------------ AUTHZ -------------------------
+
+pub const AGENT_AUTHZ: &'static str = "30000";
+pub const GET_AGENT_AUTHZ: &'static str = "30001";
+pub const GET_AGENT_AUTHZ_ACCUM: &'static str = "30002";

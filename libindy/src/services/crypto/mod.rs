@@ -43,22 +43,59 @@ impl CryptoService {
         }
     }
 
-    pub fn create_key(&self, key_info: &KeyInfo) -> Result<Key, CryptoError> {
-        let crypto_type_name = key_info.crypto_type
-            .as_ref()
-            .map(String::as_str)
-            .unwrap_or(DEFAULT_CRYPTO_TYPE);
+    pub fn get_crypto_type_name<'a>(crypto_type: &'a Option<String>) -> (&'a str) {
+        crypto_type.as_ref().map(String::as_str).unwrap_or(DEFAULT_CRYPTO_TYPE)
+    }
 
-        if !self.crypto_types.contains_key(crypto_type_name) {
+    pub fn get_crypto_type_name_from_verkey<'a>(verkey: &'a String) -> (&'a str) {
+        if verkey.contains(":") {
+            let splits: Vec<&str> = verkey.split(":").collect();
+            splits[1]
+        } else {
+            DEFAULT_CRYPTO_TYPE
+        }
+    }
+
+    pub fn get_verkey_and_crypto_type_name_from_verkey<'a>(verkey: &'a str) -> (&'a str, &'a str) {
+        if verkey.contains(":") {
+            let splits: Vec<&str> = verkey.split(":").collect();
+            (splits[0], splits[1])
+        } else {
+            (verkey, DEFAULT_CRYPTO_TYPE)
+        }
+    }
+
+    pub fn is_crypto_type_supported(&self, crypto_type_name: &str) -> bool {
+        self.crypto_types.contains_key(crypto_type_name)
+    }
+
+    pub fn get_crypto_type(&self, crypto_type_name: &str) -> &Box<CryptoType> {
+        self.crypto_types.get(crypto_type_name).unwrap()
+    }
+
+    pub fn get_crypto_name_and_keypair<'a>(&self, crypto_type: &'a Option<String>,
+                                           seed: &'a Option<String>) -> Result<(&'a str, Vec<u8>, Vec<u8>), CryptoError> {
+        let crypto_type_name = CryptoService::get_crypto_type_name(&crypto_type);
+
+        if !self.is_crypto_type_supported(crypto_type_name) {
             return Err(
                 CryptoError::UnknownCryptoError(
-                    format!("KeyInfo contains unknown crypto: {}", crypto_type_name)));
+                    format!("contains unknown crypto: {}", crypto_type_name)));
         }
 
-        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
+        let crypto_type = self.get_crypto_type(crypto_type_name);
 
-        let seed = self.convert_seed(key_info.seed.as_ref().map(String::as_ref))?;
+        let seed = CryptoService::deserialize_seed(seed.as_ref().map(String::as_ref))?;
         let (vk, sk) = crypto_type.create_key(seed.as_ref().map(Vec::as_slice))?;
+        Ok((crypto_type_name, vk, sk))
+    }
+
+    pub fn create_key(&self, key_info: &KeyInfo) -> Result<Key, CryptoError> {
+        let (crypto_type_name, vk, sk) = match self.get_crypto_name_and_keypair(&key_info.crypto_type, &key_info.seed) {
+            Ok((cn, vk, sk)) => (cn, vk, sk),
+            Err(err) => return Err(err),
+        };
+
         let vk = Base58::encode(&vk);
         let sk = Base58::encode(&sk);
 
@@ -71,21 +108,11 @@ impl CryptoService {
     }
 
     pub fn create_my_did(&self, my_did_info: &MyDidInfo) -> Result<(Did, Key), CryptoError> {
-        let crypto_type_name = my_did_info.crypto_type
-            .as_ref()
-            .map(String::as_str)
-            .unwrap_or(DEFAULT_CRYPTO_TYPE);
+        let (crypto_type_name, vk, sk) = match self.get_crypto_name_and_keypair(&my_did_info.crypto_type, &my_did_info.seed) {
+            Ok((cn, vk, sk)) => (cn, vk, sk),
+            Err(err) => return Err(err),
+        };
 
-        if !self.crypto_types.contains_key(crypto_type_name) {
-            return Err(
-                CryptoError::UnknownCryptoError(
-                    format!("MyDidInfo info contains unknown crypto: {}", crypto_type_name)));
-        }
-
-        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
-
-        let seed = self.convert_seed(my_did_info.seed.as_ref().map(String::as_ref))?;
-        let (vk, sk) = crypto_type.create_key(seed.as_ref().map(Vec::as_slice))?;
         let did = match my_did_info.did {
             Some(ref did) => {
                 self.validate_did(did)?;
@@ -122,20 +149,15 @@ impl CryptoService {
     }
 
     pub fn sign(&self, my_key: &Key, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        let crypto_type_name = if my_key.verkey.contains(":") {
-            let splits: Vec<&str> = my_key.verkey.split(":").collect();
-            splits[1]
-        } else {
-            DEFAULT_CRYPTO_TYPE
-        };
+        let crypto_type_name = CryptoService::get_crypto_type_name_from_verkey(&my_key.verkey);
 
-        if !self.crypto_types.contains_key(crypto_type_name) {
+        if !self.is_crypto_type_supported(crypto_type_name) {
             return Err(
                 CryptoError::UnknownCryptoError(
                     format!("Trying to sign message with unknown crypto: {}", crypto_type_name)));
         }
 
-        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
+        let crypto_type = self.get_crypto_type(crypto_type_name);
 
         let my_sk = Base58::decode(my_key.signkey.as_str())?;
         let signature = crypto_type.sign(&my_sk, doc)?;
@@ -144,22 +166,16 @@ impl CryptoService {
     }
 
     pub fn verify(&self, their_vk: &str, msg: &[u8], signature: &[u8]) -> Result<bool, CryptoError> {
-        let (their_vk, crypto_type_name) = if their_vk.contains(":") {
-            let splits: Vec<&str> = their_vk.split(":").collect();
-            (splits[0], splits[1])
-        } else {
-            (their_vk, DEFAULT_CRYPTO_TYPE)
-        };
+        let (their_vk, crypto_type_name) = CryptoService::get_verkey_and_crypto_type_name_from_verkey(their_vk);
 
-        if !self.crypto_types.contains_key(crypto_type_name) {
+        if !self.is_crypto_type_supported(crypto_type_name) {
             return Err(CryptoError::UnknownCryptoError(
                 format!("Trying to verify message with unknown crypto: {}", crypto_type_name)));
         }
 
-        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
+        let crypto_type = self.get_crypto_type(crypto_type_name);
 
         let their_vk = Base58::decode(&their_vk)?;
-
         Ok(crypto_type.verify(&their_vk, msg, signature)?)
     }
 
@@ -174,21 +190,11 @@ impl CryptoService {
     }
 
     pub fn encrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8]) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
-        let (my_vk, crypto_type_name) = if my_key.verkey.contains(":") {
-            let splits: Vec<&str> = my_key.verkey.split(":").collect();
-            (splits[0], splits[1])
-        } else {
-            (my_key.verkey.as_str(), DEFAULT_CRYPTO_TYPE)
-        };
+        let (my_vk, crypto_type_name) = CryptoService::get_verkey_and_crypto_type_name_from_verkey(my_key.verkey.as_str());
 
-        let (their_vk, their_crypto_type_name) = if their_vk.contains(":") {
-            let splits: Vec<&str> = their_vk.split(":").collect();
-            (splits[0], splits[1])
-        } else {
-            (their_vk, DEFAULT_CRYPTO_TYPE)
-        };
+        let (their_vk, their_crypto_type_name) = CryptoService::get_verkey_and_crypto_type_name_from_verkey(their_vk);
 
-        if !self.crypto_types.contains_key(&crypto_type_name) {
+        if !self.is_crypto_type_supported(&crypto_type_name) {
             return Err(CryptoError::UnknownCryptoError(format!("Trying to encrypt message with unknown crypto: {}", crypto_type_name)));
         }
 
@@ -200,7 +206,7 @@ impl CryptoService {
                         their_crypto_type_name)));
         }
 
-        let crypto_type = self.crypto_types.get(&crypto_type_name).unwrap();
+        let crypto_type = self.get_crypto_type(&crypto_type_name);
 
         let my_sk = Base58::decode(my_key.signkey.as_str())?;
         let their_vk = Base58::decode(their_vk)?;
@@ -211,21 +217,11 @@ impl CryptoService {
     }
 
     pub fn decrypt(&self, my_key: &Key, their_vk: &str, doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        let (my_vk, crypto_type_name) = if my_key.verkey.contains(":") {
-            let splits: Vec<&str> = my_key.verkey.split(":").collect();
-            (splits[0], splits[1])
-        } else {
-            (my_key.verkey.as_str(), DEFAULT_CRYPTO_TYPE)
-        };
+        let (my_vk, crypto_type_name) = CryptoService::get_verkey_and_crypto_type_name_from_verkey(my_key.verkey.as_str());
 
-        let (their_vk, their_crypto_type_name) = if their_vk.contains(":") {
-            let splits: Vec<&str> = their_vk.split(":").collect();
-            (splits[0], splits[1])
-        } else {
-            (their_vk, DEFAULT_CRYPTO_TYPE)
-        };
+        let (their_vk, their_crypto_type_name) = CryptoService::get_verkey_and_crypto_type_name_from_verkey(their_vk);
 
-        if !self.crypto_types.contains_key(&crypto_type_name) {
+        if !self.is_crypto_type_supported(&crypto_type_name) {
             return Err(CryptoError::UnknownCryptoError(
                 format!("Trying to decrypt message with unknown crypto: {}", crypto_type_name)));
         }
@@ -238,7 +234,7 @@ impl CryptoService {
                         their_crypto_type_name)));
         }
 
-        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
+        let crypto_type = self.get_crypto_type(crypto_type_name);
 
         let my_sk = Base58::decode(&my_key.signkey)?;
         let their_vk = Base58::decode(their_vk)?;
@@ -249,18 +245,13 @@ impl CryptoService {
     }
 
     pub fn encrypt_sealed(&self, their_vk: &str, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        let (their_vk, crypto_type_name) = if their_vk.contains(":") {
-            let splits: Vec<&str> = their_vk.split(":").collect();
-            (splits[0], splits[1])
-        } else {
-            (their_vk, DEFAULT_CRYPTO_TYPE)
-        };
+        let (their_vk, crypto_type_name) = CryptoService::get_verkey_and_crypto_type_name_from_verkey(their_vk);
 
-        if !self.crypto_types.contains_key(&crypto_type_name) {
+        if !self.is_crypto_type_supported(&crypto_type_name) {
             return Err(CryptoError::UnknownCryptoError(format!("Trying to encrypt sealed message with unknown crypto: {}", crypto_type_name)));
         }
 
-        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
+        let crypto_type = self.get_crypto_type(crypto_type_name);
 
         let their_vk = Base58::decode(their_vk)?;
 
@@ -269,19 +260,14 @@ impl CryptoService {
     }
 
     pub fn decrypt_sealed(&self, my_key: &Key, doc: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        let (my_vk, crypto_type_name) = if my_key.verkey.contains(":") {
-            let splits: Vec<&str> = my_key.verkey.split(":").collect();
-            (splits[0], splits[1])
-        } else {
-            (my_key.verkey.as_str(), DEFAULT_CRYPTO_TYPE)
-        };
+        let (my_vk, crypto_type_name) = CryptoService::get_verkey_and_crypto_type_name_from_verkey(my_key.verkey.as_str());
 
-        if !self.crypto_types.contains_key(&crypto_type_name) {
+        if !self.is_crypto_type_supported(&crypto_type_name) {
             return Err(CryptoError::UnknownCryptoError(
                 format!("Trying to decrypt sealed message with unknown crypto: {}", crypto_type_name)));
         }
 
-        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
+        let crypto_type = self.get_crypto_type(crypto_type_name);
 
         let my_vk = Base58::decode(my_vk)?;
         let my_sk = Base58::decode(my_key.signkey.as_str())?;
@@ -290,7 +276,9 @@ impl CryptoService {
         Ok(decrypted_doc)
     }
 
-    pub fn convert_seed(&self, seed: Option<&str>) -> Result<Option<Vec<u8>>, CryptoError> {
+    pub fn deserialize_seed(seed: Option<&str>) -> Result<Option<Vec<u8>>, CryptoError> {
+        // TODO: Fixme: This looks like its checking for seed to be bas64 or otherwise and convert
+        // base64 to raw bytes but a base64 string does not always end in `=`, the `=` is only needed for padding.
         Ok(match seed {
             Some(ref seed) =>
                 if seed.ends_with("=") {
@@ -304,18 +292,13 @@ impl CryptoService {
     }
 
     pub fn validate_key(&self, vk: &str) -> Result<(), CryptoError> {
-        let (vk, crypto_type_name) = if vk.contains(":") {
-            let splits: Vec<&str> = vk.split(":").collect();
-            (splits[0], splits[1])
-        } else {
-            (vk, DEFAULT_CRYPTO_TYPE)
-        };
+        let (vk, crypto_type_name) = CryptoService::get_verkey_and_crypto_type_name_from_verkey(vk);
 
-        if !self.crypto_types.contains_key(&crypto_type_name) {
+        if !self.is_crypto_type_supported(&crypto_type_name) {
             return Err(CryptoError::UnknownCryptoError(format!("Trying to use key with unknown crypto: {}", crypto_type_name)));
         }
 
-        let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
+        let crypto_type = self.get_crypto_type(crypto_type_name);
 
         let vk = if vk.starts_with("~") { &vk[1..] } else { vk };
         let vk = Base58::decode(vk)?;

@@ -7,6 +7,8 @@ pub mod indy;
 pub mod wallet;
 pub mod did;
 
+pub mod authz;
+
 use api::ErrorCode;
 
 pub trait ToErrorCode {

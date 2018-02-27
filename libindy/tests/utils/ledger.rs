@@ -588,4 +588,104 @@ impl LedgerUtils {
 
         Ok(request_json)
     }
+
+    pub fn build_agent_authz_request(submitter: &str, address: &str, verkey: Option<&str>, auth: Option<u32>, comm: Option<&str>) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, request_json| {
+            sender.send((err, request_json)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_build_request_cb(cb);
+
+        let submitter = CString::new(submitter).unwrap();
+        let address = CString::new(address).unwrap();
+
+        let verkey_str = verkey.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let auth = auth.map(|t| t as i32).unwrap_or(-1);
+        let comm_str = comm.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+
+        let err =
+            indy_build_agent_authz_request(command_handle,
+                                      submitter.as_ptr(),
+                                           address.as_ptr(),
+                                      if verkey.is_some() { verkey_str.as_ptr() } else { null() },
+                                           auth,
+                                      if comm.is_some() { comm_str.as_ptr() } else { null() },
+                                      cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, request_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(request_json)
+    }
+
+    pub fn build_get_agent_authz_request(submitter: &str, address: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, request_json| {
+            sender.send((err, request_json)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_build_request_cb(cb);
+
+        let submitter = CString::new(submitter).unwrap();
+        let address = CString::new(address).unwrap();
+
+        let err =
+            indy_build_get_agent_authz_request(command_handle,
+                                       submitter.as_ptr(),
+                                               address.as_ptr(),
+                                       cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, request_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(request_json)
+    }
+
+    pub fn build_get_agent_authz_accum_request(submitter: &str, accum_id: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, request_json| {
+            sender.send((err, request_json)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_build_request_cb(cb);
+
+        let submitter = CString::new(submitter).unwrap();
+        let accum_id = CString::new(accum_id).unwrap();
+
+        let err =
+            indy_build_get_agent_authz_accum_request(command_handle,
+                                               submitter.as_ptr(),
+                                                     accum_id.as_ptr(),
+                                               cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, request_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(request_json)
+    }
 }
