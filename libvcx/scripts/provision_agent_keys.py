@@ -74,7 +74,7 @@ def register_agent(args):
         string = cast(pointer.value, c_char_p)
         new_config = json.loads(string.value.decode('utf-8'))
 
-        print(json.dumps(new_config, indent=2))
+        print(json.dumps(new_config, indent=2, sort_keys=True))
 
 
 async def main():

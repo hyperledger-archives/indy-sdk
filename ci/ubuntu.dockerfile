@@ -67,7 +67,7 @@ RUN useradd -ms /bin/bash -u $uid vcx
 USER vcx
 
 # cargo deb for debian packaging of libvcx
-RUN cargo install cargo-deb
+RUN cargo install cargo-deb --color never
 
 
 

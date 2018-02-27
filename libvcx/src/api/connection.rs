@@ -27,8 +27,7 @@ use connection::{build_connection, connect, to_string, get_state, release, is_va
 #[allow(unused_assignments)]
 pub extern fn vcx_connection_create(command_handle: u32,
                                     source_id: *const c_char,
-                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, claim_handle: u32)>) -> u32 {
-
+                                    cb: Option<extern fn(xcommand_handle: u32, err: u32, connection_handle: u32)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
     info!("vcx_connection_create(command_handle: {}, source_id: {})", command_handle, source_id);

@@ -1,0 +1,32 @@
+# Development
+FROM ubuntu:16.04
+
+ARG uid=1000
+
+
+# Update environment
+# JRE installation and gcc
+RUN apt-get update -y && apt-get install -y \
+    build-essential \
+    libsodium-dev \
+    libssl-dev \
+    libgmp3-dev \
+    curl \
+    libsqlite0 \
+    python3
+
+
+# Install libindy
+RUN mkdir -p /libindy
+WORKDIR /libindy
+
+ENV LIBINDY_DEB=libindy_1.1.0_amd64.deb
+ENV LIBINDY_DOWNLOAD_URL=https://repo.sovrin.org/sdk/lib/apt/xenial/stable/$LIBINDY_DEB
+
+RUN curl -fsOSL $LIBINDY_DOWNLOAD_URL \
+    && dpkg -i $LIBINDY_DEB \
+    && apt-get -f install
+
+
+WORKDIR /
+
