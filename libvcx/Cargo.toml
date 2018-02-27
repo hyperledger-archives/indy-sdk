@@ -61,6 +61,7 @@ revision = "338ad01"
 priority = "optional"
 assets = [
     ["target/debug/libvcx.so.*", "usr/lib/", "644"],
+    ["include/vcx.h", "usr/share/libvcx/", "644"],
     ["scripts/provision_agent_keys.py", "usr/share/libvcx/", "655"]
 ]
 maintainer-scripts = "./scripts"
