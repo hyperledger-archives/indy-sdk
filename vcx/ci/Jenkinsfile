@@ -16,13 +16,31 @@ def build_wrapper_testing_image(file='vcx/ci/Dockerfile-wrapper-testing', contex
 	return docker.build("wrapper-test", "--no-cache --build-arg uid=${getUserUid()} -f $file $context")
 }
 
-node('ubuntu') {
+def build_libindy_image(){
+    dir ('vcx') {
+        return docker.build("libindy", "--build-arg uid=${getUserUid()} -f wrappers/python3/ci/Dockerfile .")
+    }
+}
+
+def build_python_image(){
+    dir ('vcx') {
+		sh 'ls'
+		sh 'ls libvcx'
+		sh 'ls libvcx/target'
+		sh 'ls libvcx/target/debug'
+        return docker.build("python", "--build-arg uid${getUserUid()} -f wrappers/python3/ci/Dockerfile-python-wrapper .")
+    }
+}
+
+//node('ubuntu') {
+node('sdk') {
     try {
         stage ('Checkout'){
             checkout scm
         }
         
         app = build('libvcx', 'vcx/ci/ubuntu.dockerfile', 'vcx/ci')
+        libindy = build_libindy_image()
 		
         // update the versions in the toml file and package.json
         updateVersions(app)      
@@ -30,14 +48,20 @@ node('ubuntu') {
         // build and test the so file
         buildRust(app)
 
-	// test rust
-	testRust(app)
+
+	    // test rust
+	    testRust(app)
 
         // update the so file to have version
         updateSo(app)
         // test the npm package and create the npm gzip artifact
         wrapper = build_wrapper_testing_image('vcx/ci/Dockerfile-wrapper-testing', 'vcx')
+		// test python wrapper
+		// this image must be built after the libvcx.so is built
+        python = build_python_image()
+        testPythonWrapper(python)
         testNodeWrapper(wrapper)
+
         if (env.BRANCH_NAME == "master") {
             // create the debian of the library
             createDeb(app)
@@ -68,8 +92,16 @@ def buildDocker(){
     return app
 }
 
+def testPythonWrapper(envn){
+    stage ("Testing Python Wrapper"){
+        envn.inside {
+            sh "python3 -m pytest"
+        }
+    }
+}
+
 def buildRust(envn){
-    stage ('Building and Testing Rust Library'){
+    stage ('Building Rust Library'){
         envn.inside {
             sh "ls -l"
             sh "rustc --version"
