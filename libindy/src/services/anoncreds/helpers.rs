@@ -2,14 +2,10 @@ extern crate indy_crypto;
 
 use errors::common::CommonError;
 
-use services::anoncreds::types::{PredicateInfo, SchemaKey};
+use services::anoncreds::types::PredicateInfo;
 use self::indy_crypto::cl::{issuer, verifier, CredentialSchema, CredentialValues, SubProofRequest};
 
 use std::collections::{HashSet, HashMap};
-
-pub fn get_composite_id(issuer_did: &str, schema_key: &SchemaKey) -> String {
-    format!("{}:{}:{}:{}", issuer_did, schema_key.name, schema_key.version, schema_key.did)
-}
 
 pub fn build_credential_schema(attrs: &HashSet<String>) -> Result<CredentialSchema, CommonError> {
     let mut credential_schema_builder = issuer::Issuer::new_credential_schema_builder()?;

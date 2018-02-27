@@ -62,7 +62,7 @@ impl VerifierCommandExecutor {
         let credential_defs: HashMap<String, CredentialDefinition> = serde_json::from_str(credential_defs_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of CredentialDefinition: {:?}", err)))?;
 
-        let rev_reg_defs: HashMap<String, RevocationRegistryDefinition> = serde_json::from_str(rev_reg_defs_json)
+        let rev_reg_defs: HashMap<String, RevocationRegistryDefinitionValue> = serde_json::from_str(rev_reg_defs_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationRegistryDef: {:?}", err)))?;
 
         let rev_regs: HashMap<String, RevocationRegistry> = serde_json::from_str(rev_reg_entries_json)

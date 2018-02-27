@@ -18,30 +18,30 @@ impl<'a> JsonDecodable<'a> for AttributeInfo {}
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
 pub struct Filter {
-    pub issuer_did: Option<String>,
-    pub schema_key: Option<SchemaKeyFilter>
+    pub schema_id: Option<String>,
+    pub cred_def_id: Option<String>
 }
 
 impl<'a> JsonDecodable<'a> for Filter {}
 
-#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
+/*#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
 pub struct SchemaKeyFilter {
     pub name: Option<String>,
     pub version: Option<String>,
     pub did: Option<String>
 }
 
-impl<'a> JsonDecodable<'a> for SchemaKeyFilter {}
+impl<'a> JsonDecodable<'a> for SchemaKeyFilter {}*/
 
 pub trait Filtering {
-    fn issuer_did(&self) -> String;
-    fn schema_key(&self) -> SchemaKey;
+    fn schema_id(&self) -> String;
+    fn cred_def_id(&self) -> String;
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CredentialOffer {
-    pub issuer_did: String,
-    pub schema_key: SchemaKey,
+    pub cred_def_id: String,
+    pub rev_reg_id: Option<String>,
     pub key_correctness_proof: CredentialKeyCorrectnessProof,
     pub nonce: Nonce
 }
@@ -50,30 +50,30 @@ impl JsonEncodable for CredentialOffer {}
 
 impl<'a> JsonDecodable<'a> for CredentialOffer {}
 
-impl Filtering for CredentialOffer {
-    fn issuer_did(&self) -> String { self.issuer_did.clone() }
-    fn schema_key(&self) -> SchemaKey { self.schema_key.clone() }
-}
+//impl Filtering for CredentialOffer {
+//    fn issuer_did(&self) -> String { self.issuer_did.clone() }
+//    fn schema_key(&self) -> SchemaKey { self.schema_key.clone() }
+//}
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct CredentialInfo {
     pub referent: String,
     pub attrs: HashMap<String, String>,
-    pub schema_key: SchemaKey,
-    pub issuer_did: String,
-    pub revoc_reg_seq_no: Option<i32>
+    pub schema_id: String,
+    pub cred_def_id: String,
+    pub rev_reg_id: Option<String>
 }
 
 impl Filtering for CredentialInfo {
-    fn issuer_did(&self) -> String { self.issuer_did.clone() }
-    fn schema_key(&self) -> SchemaKey { self.schema_key.clone() }
+    fn schema_id(&self) -> String { self.schema_id.to_string() }
+    fn cred_def_id(&self) -> String { self.cred_def_id.to_string() }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialRequest {
     pub prover_did: String,
-    pub issuer_did: String,
-    pub schema_key: SchemaKey,
+    pub cred_def_id: String,
+    pub rev_reg_id: Option<String>,
     pub blinded_ms: BlindedMasterSecret,
     pub blinded_ms_correctness_proof: BlindedMasterSecretCorrectnessProof,
     pub nonce: Nonce,
@@ -99,23 +99,35 @@ pub enum SignatureTypes {
     CL
 }
 
+impl<'a> JsonDecodable<'a> for SignatureTypes {}
+
+impl SignatureTypes {
+    pub fn to_str(&self) -> &'static str {
+        match self {
+            &SignatureTypes::CL => "CL"
+        }
+    }
+}
+
 #[derive(Deserialize, Debug, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct CredentialDefinition {
-    #[serde(rename = "ref")]
-    pub schema_seq_no: i32,
-    #[serde(rename = "origin")]
-    pub issuer_did: String,
+    pub id: String,
+    pub schema_id: String,
+    #[serde(rename = "type")]
     pub signature_type: SignatureTypes,
-    pub data: CredentialDefinitionData
+    pub tag: String,
+    pub value: CredentialDefinitionValue
 }
 
 impl CredentialDefinition {
     pub fn clone(&self) -> Result<CredentialDefinition, CommonError> {
         Ok(CredentialDefinition {
-            schema_seq_no: self.schema_seq_no,
-            issuer_did: self.issuer_did.clone(),
+            id: self.id.clone(),
+            schema_id: self.schema_id.clone(),
             signature_type: self.signature_type.clone(),
-            data: self.data.clone()?,
+            tag: self.tag.clone(),
+            value: self.value.clone()?,
         })
     }
 }
@@ -125,32 +137,32 @@ impl JsonEncodable for CredentialDefinition {}
 impl<'a> JsonDecodable<'a> for CredentialDefinition {}
 
 #[derive(Deserialize, Debug, Serialize, PartialEq)]
-pub struct CredentialDefinitionData {
+pub struct CredentialDefinitionValue {
     pub primary: CredentialPrimaryPublicKey,
     pub revocation: Option<CredentialRevocationPublicKey>
 }
 
-impl CredentialDefinitionData {
-    pub fn clone(&self) -> Result<CredentialDefinitionData, CommonError> {
-        Ok(CredentialDefinitionData {
+impl CredentialDefinitionValue {
+    pub fn clone(&self) -> Result<CredentialDefinitionValue, CommonError> {
+        Ok(CredentialDefinitionValue {
             primary: self.primary.clone()?,
             revocation: self.revocation.clone()
         })
     }
 }
 
-impl JsonEncodable for CredentialDefinitionData {}
+impl JsonEncodable for CredentialDefinitionValue {}
 
-impl<'a> JsonDecodable<'a> for CredentialDefinitionData {}
+impl<'a> JsonDecodable<'a> for CredentialDefinitionValue {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Credential {
     pub values: HashMap<String, Vec<String>>,
-    pub schema_key: SchemaKey,
     pub signature: CredentialSignature,
     pub signature_correctness_proof: SignatureCorrectnessProof,
-    pub issuer_did: String,
-    pub rev_reg_seq_no: Option<i32>,
+    pub schema_id: String,
+    pub cred_def_id: String,
+    pub rev_reg_id: Option<String>
 }
 
 impl JsonEncodable for Credential {}
@@ -190,9 +202,9 @@ impl<'a> JsonDecodable<'a> for ProofRequest {}
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct Identifier {
-    pub issuer_did: String,
-    pub schema_key: SchemaKey,
-    pub rev_reg_seq_no: Option<i32>
+    pub schema_id: String,
+    pub cred_def_id: String,
+    pub rev_reg_id: Option<String>
 }
 
 impl JsonEncodable for Identifier {}
@@ -212,34 +224,75 @@ impl<'a> JsonDecodable<'a> for FullProof {}
 
 #[allow(non_camel_case_types)] //FIXME
 #[derive(Deserialize, Debug, Serialize, PartialEq, Clone)]
+pub enum RevocationRegistryTypes {
+    CL_ACCUM,
+}
+
+impl<'a> JsonDecodable<'a> for RevocationRegistryTypes {}
+
+impl RevocationRegistryTypes {
+    pub fn to_str(&self) -> &'static str {
+        match self {
+            &RevocationRegistryTypes::CL_ACCUM => "CL_ACCUM"
+        }
+    }
+}
+
+#[allow(non_camel_case_types)] //FIXME
+#[derive(Deserialize, Debug, Serialize, PartialEq, Clone)]
 pub enum IssuanceTypes {
     ISSUANCE_BY_DEFAULT,
     ISSUANCE_ON_DEMAND
 }
 
+impl<'a> JsonDecodable<'a> for IssuanceTypes {}
+
 impl IssuanceTypes {
     pub fn to_bool(&self) -> bool {
         self.clone() == IssuanceTypes::ISSUANCE_BY_DEFAULT
     }
+
+    pub fn to_str(&self) -> &'static str {
+        match self {
+            &IssuanceTypes::ISSUANCE_BY_DEFAULT => "ISSUANCE_BY_DEFAULT",
+            &IssuanceTypes::ISSUANCE_ON_DEMAND => "ISSUANCE_ON_DEMAND"
+        }
+    }
 }
 
+
 #[derive(Deserialize, Debug, Serialize, Clone)]
-pub struct RevocationRegistryDefinitionPublicKeys {
+pub struct RevocationRegistryDefinitionValuePublicKeys {
     pub accum_key: RevocationKeyPublic
 }
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct RevocationRegistryDefinition {
-    pub issuance_type: IssuanceTypes,
-    pub max_cred_num: u32,
-    pub public_keys: RevocationRegistryDefinitionPublicKeys,
-    pub tails_hash: String,
-    pub tails_location: String
+    pub id: String,
+    #[serde(rename = "type")]
+    pub type_: RevocationRegistryTypes,
+    pub tag: String,
+    pub cred_def_id: String,
+    pub value: RevocationRegistryDefinitionValue
 }
 
 impl JsonEncodable for RevocationRegistryDefinition {}
 
 impl<'a> JsonDecodable<'a> for RevocationRegistryDefinition {}
+
+#[derive(Deserialize, Debug, Serialize, Clone)]
+pub struct RevocationRegistryDefinitionValue {
+    pub issuance_type: IssuanceTypes,
+    pub max_cred_num: u32,
+    pub public_keys: RevocationRegistryDefinitionValuePublicKeys,
+    pub tails_hash: String,
+    pub tails_location: String
+}
+
+impl JsonEncodable for RevocationRegistryDefinitionValue {}
+
+impl<'a> JsonDecodable<'a> for RevocationRegistryDefinitionValue {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RequestedCredentials {
@@ -262,37 +315,13 @@ pub struct RequestedProof {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Schema {
-    #[serde(rename = "seqNo")]
-    pub seq_no: i32,
-    pub dest: String,
-    pub data: SchemaData
-}
-
-impl Schema {
-    pub fn schema_key(&self) -> SchemaKey {
-        SchemaKey { name: self.data.name.clone(), version: self.data.version.clone(), did: self.dest.clone() }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SchemaData {
+    pub id: String,
     pub name: String,
     pub version: String,
+    #[serde(rename = "attrNames")]
     pub attr_names: HashSet<String>
 }
 
 impl JsonEncodable for Schema {}
 
 impl<'a> JsonDecodable<'a> for Schema {}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
-pub struct SchemaKey {
-    pub name: String,
-    pub version: String,
-    pub did: String
-}
-
-impl JsonEncodable for SchemaKey {}
-
-impl<'a> JsonDecodable<'a> for SchemaKey {}
-

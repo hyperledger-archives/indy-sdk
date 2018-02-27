@@ -36,7 +36,42 @@ pub const GVT_SEQ_NO: i32 = 1;
 pub const XYZ_SEQ_NO: i32 = 2;
 
 impl AnoncredsUtils {
-    pub fn issuer_create_claim_definition(wallet_handle: i32, issuer_did: &str, schema: &str, signature_type: Option<&str>, create_non_revoc: bool) -> Result<String, ErrorCode> {
+    pub fn issuer_create_schema(issuer_did: &str, name: &str, version: &str, attr_names: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+
+        let cb = Box::new(move |err, claim_def_json| {
+            sender.send((err, claim_def_json)).unwrap();
+        });
+
+        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_definition_cb(cb);
+
+        let issuer_did = CString::new(issuer_did).unwrap();
+        let name = CString::new(name).unwrap();
+        let version = CString::new(version).unwrap();
+        let attr_names = CString::new(attr_names).unwrap();
+
+        let err =
+            indy_issuer_create_schema(command_handle,
+                                      issuer_did.as_ptr(),
+                                      name.as_ptr(),
+                                      version.as_ptr(),
+                                      attr_names.as_ptr(),
+                                      cb);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        let (err, schema_json) = receiver.recv().unwrap();
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+
+        Ok(schema_json)
+    }
+
+    pub fn issuer_create_claim_definition(wallet_handle: i32, issuer_did: &str, schema: &str, tag: &str, signature_type: Option<&str>, create_non_revoc: bool) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, claim_def_json| {
@@ -46,6 +81,7 @@ impl AnoncredsUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_definition_cb(cb);
 
         let schema = CString::new(schema).unwrap();
+        let tag = CString::new(tag).unwrap();
         let signature_type_str = signature_type.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let issuer_did = CString::new(issuer_did).unwrap();
 
@@ -54,6 +90,7 @@ impl AnoncredsUtils {
                                                    wallet_handle,
                                                    issuer_did.as_ptr(),
                                                    schema.as_ptr(),
+                                                   tag.as_ptr(),
                                                    if signature_type.is_some() { signature_type_str.as_ptr() } else { null() },
                                                    create_non_revoc,
                                                    cb);
@@ -100,7 +137,7 @@ impl AnoncredsUtils {
         Ok(())
     }
 
-    pub fn issuer_create_claim_offer(wallet_handle: i32, schema: &str, issuer_did: &str, prover_did: &str) -> Result<String, ErrorCode> {
+    pub fn issuer_create_claim_offer(wallet_handle: i32, cred_def_id: &str, rev_reg_id: Option<&str>, prover_did: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, claim_def_json| {
@@ -109,15 +146,15 @@ impl AnoncredsUtils {
 
         let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_offer_cb(cb);
 
-        let schema = CString::new(schema).unwrap();
-        let issuer_did = CString::new(issuer_did).unwrap();
+        let cred_def_id = CString::new(cred_def_id).unwrap();
+        let rev_reg_id_str = rev_reg_id.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let prover_did = CString::new(prover_did).unwrap();
 
         let err =
             indy_issuer_create_claim_offer(command_handle,
                                            wallet_handle,
-                                           schema.as_ptr(),
-                                           issuer_did.as_ptr(),
+                                           cred_def_id.as_ptr(),
+                                           if rev_reg_id.is_some() { rev_reg_id_str.as_ptr() } else { null() },
                                            prover_did.as_ptr(),
                                            cb);
 
@@ -435,8 +472,8 @@ impl AnoncredsUtils {
         Ok(valid)
     }
 
-    pub fn indy_issuer_create_and_store_revoc_reg(wallet_handle: i32, tails_writer_config: &str, issuer_did: &str,
-                                                  schema_json: &str, issuance_by_default: bool, max_claim_num: u32) -> Result<(String, String), ErrorCode> {
+    pub fn indy_issuer_create_and_store_revoc_reg(wallet_handle: i32, issuer_did: &str, type_: Option<&str>, tag: &str,
+                                                  cred_def_id: &str, issuance_type: Option<&str>, max_claim_num: u32, tails_writer_config: &str) -> Result<(String, String), ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, revoc_reg_def_json, revoc_reg_json| {
@@ -448,16 +485,21 @@ impl AnoncredsUtils {
         let tails_writer_type = CString::new("default").unwrap();
         let tails_writer_config = CString::new(tails_writer_config).unwrap();
         let issuer_did = CString::new(issuer_did).unwrap();
-        let schema_json = CString::new(schema_json).unwrap();
+        let type_str = type_.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let issuance_type_str = issuance_type.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let tag = CString::new(tag).unwrap();
+        let cred_def_id = CString::new(cred_def_id).unwrap();
 
         let err = indy_issuer_create_and_store_revoc_reg(command_handle,
                                                          wallet_handle,
+                                                         issuer_did.as_ptr(),
+                                                         if type_.is_some() { type_str.as_ptr() } else { null() },
+                                                         tag.as_ptr(),
+                                                         cred_def_id.as_ptr(),
+                                                         if issuance_type.is_some() { issuance_type_str.as_ptr() } else { null() },
+                                                         max_claim_num,
                                                          tails_writer_type.as_ptr(),
                                                          tails_writer_config.as_ptr(),
-                                                         issuer_did.as_ptr(),
-                                                         schema_json.as_ptr(),
-                                                         max_claim_num,
-                                                         issuance_by_default,
                                                          cb);
 
         if err != ErrorCode::Success {
@@ -473,7 +515,7 @@ impl AnoncredsUtils {
         Ok((revoc_reg_def_json, revoc_reg_json))
     }
 
-    pub fn issuer_revoke_claim(wallet_handle: i32, tails_reader_handle: i32, issuer_did: &str, schema_json: &str, user_revoc_index: u32) -> Result<String, ErrorCode> {
+    pub fn issuer_revoke_claim(wallet_handle: i32, tails_reader_handle: i32, rev_reg_id: &str, user_revoc_index: u32) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, revoc_reg_delta_json| {
@@ -482,14 +524,12 @@ impl AnoncredsUtils {
 
         let (command_handle, cb) = CallbackUtils::closure_to_issuer_revoke_claim_cb(cb);
 
-        let issuer_did = CString::new(issuer_did).unwrap();
-        let schema_json = CString::new(schema_json).unwrap();
+        let rev_reg_id = CString::new(rev_reg_id).unwrap();
 
         let err = indy_issuer_revoke_claim(command_handle,
                                            wallet_handle,
                                            tails_reader_handle,
-                                           issuer_did.as_ptr(),
-                                           schema_json.as_ptr(),
+                                           rev_reg_id.as_ptr(),
                                            user_revoc_index,
                                            cb);
 
@@ -899,129 +939,129 @@ impl AnoncredsUtils {
         format!(r#"{{"base_dir":"{}", "uri_pattern":""}}"#, base_dir.to_str().unwrap())
     }
 
-    pub fn init_common_wallet() -> (i32, &'static str, &'static str, &'static str, &'static str) {
-        lazy_static! {
-                static ref COMMON_WALLET_INIT: Once = ONCE_INIT;
-
-            }
-
-        unsafe {
-            COMMON_WALLET_INIT.call_once(|| {
-                //TODO Need clean after tests but not exists After function in Cargo
-                TestUtils::cleanup_storage();
-
-                //1. Create and Open wallet
-                WALLET_HANDLE = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
-
-                //2. Issuer1 Create GVT CredentialDefinition
-                //TODO Fix it.....Convert String to &'static str
-                let issuer1_gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE,
-                                                                                                ISSUER_DID,
-                                                                                                &AnoncredsUtils::gvt_schema_json(),
-                                                                                                None, false).unwrap();
-
-                //3. Issuer1 Create XYZ CredentialDefinition
-                let issuer1_xyz_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE,
-                                                                                                ISSUER_DID,
-                                                                                                &AnoncredsUtils::xyz_schema_json(),
-                                                                                                None, false).unwrap();
-
-                //4. Issuer2 Create GVT CredentialDefinition
-                let issuer2_gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE,
-                                                                                                DID,
-                                                                                                &AnoncredsUtils::gvt_schema_json(),
-                                                                                                None, false).unwrap();
-
-                //5. Issuer1 Create GVT CredentialOffer
-                let issuer1_gvt_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
-                                                                                        &AnoncredsUtils::gvt_schema_json(),
-                                                                                        ISSUER_DID, DID_MY1).unwrap();
-
-                //6. Prover store Issuer1 GVT CredentialOffer
-                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer1_gvt_claim_offer).unwrap();
-
-                //7. Issuer1 Create XYZ CredentialOffer
-                let issuer1_xyz_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
-                                                                                        &AnoncredsUtils::xyz_schema_json(),
-                                                                                        ISSUER_DID, DID_MY1).unwrap();
-
-                //8. Prover store Issuer1 XYZ CredentialOffer
-                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer1_xyz_claim_offer).unwrap();
-
-                //9. Issuer2 Create GVT CredentialOffer
-                let issuer2_gvt_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
-                                                                                        &AnoncredsUtils::gvt_schema_json(),
-                                                                                        DID, DID_MY1).unwrap();
-
-                //10. Prover store Issuer2 GVT CredentialOffer
-                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer2_gvt_claim_offer).unwrap();
-
-                //11. Create MasterSecret
-                AnoncredsUtils::prover_create_master_secret(WALLET_HANDLE, COMMON_MASTER_SECRET).unwrap();
-
-                // Issuer1 issue GVT Credential
-                //12. Create and Store Credential Request
-                let issuer1_gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
-                                                                                              DID_MY1,
-                                                                                              &issuer1_gvt_claim_offer,
-                                                                                              &issuer1_gvt_claim_def_json,
-                                                                                              COMMON_MASTER_SECRET).unwrap();
-                let claim_values_json = AnoncredsUtils::gvt_claim_values_json();
-
-                //13. Issuer1 creates GVT Credential
-                let (_, claim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_gvt_claim_req, &claim_values_json, None, None).unwrap();
-
-                //14. Store Credential
-                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, CLAIM1_ID, &claim_json, None, None).unwrap();
-
-                // Issuer1 issue XYZ Credential
-                //15. Create and Store Credential Request
-                let issuer1_xyz_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
-                                                                                              DID_MY1,
-                                                                                              &issuer1_xyz_claim_offer,
-                                                                                              &issuer1_xyz_claim_def_json,
-                                                                                              COMMON_MASTER_SECRET).unwrap();
-                let claim_values_json = AnoncredsUtils::xyz_claim_values_json();
-
-                //16. Create XYZ Credential
-                let (_, claim_2_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_xyz_claim_req, &claim_values_json, None, None).unwrap();
-
-                //17. Store Credential
-                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, CLAIM2_ID, &claim_2_json, None, None).unwrap();
-
-                // Issuer2 issue GVT Credential
-                //18. Create and Store Credential Request
-                let issuer2_gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
-                                                                                              DID_MY1,
-                                                                                              &issuer2_gvt_claim_offer,
-                                                                                              &issuer2_gvt_claim_def_json,
-                                                                                              COMMON_MASTER_SECRET).unwrap();
-                let claim_values_json = AnoncredsUtils::gvt2_claim_values_json();
-
-                //19. Create XYZ Credential
-                let (_, claim_3_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer2_gvt_claim_req, &claim_values_json, None, None).unwrap();
-
-                //20. Store Credential
-                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, CLAIM3_ID, &claim_3_json, None, None).unwrap();
-
-                let res = mem::transmute(&issuer1_gvt_claim_def_json as &str);
-                mem::forget(issuer1_gvt_claim_def_json);
-                CLAIM_DEF_JSON = res;
-
-                let res = mem::transmute(&issuer1_gvt_claim_offer as &str);
-                mem::forget(issuer1_gvt_claim_offer);
-                CLAIM_OFFER_JSON = res;
-
-                let res = mem::transmute(&issuer1_gvt_claim_req as &str);
-                mem::forget(issuer1_gvt_claim_req);
-                CLAIM_REQUEST_JSON = res;
-
-                let res = mem::transmute(&claim_json as &str);
-                mem::forget(claim_json);
-                CLAIM_JSON = res;
-            });
-
-            (WALLET_HANDLE, CLAIM_DEF_JSON, CLAIM_OFFER_JSON, CLAIM_REQUEST_JSON, CLAIM_JSON)
-        }
-    }
+    //    pub fn init_common_wallet() -> (i32, &'static str, &'static str, &'static str, &'static str) {
+    //        lazy_static! {
+    //                static ref COMMON_WALLET_INIT: Once = ONCE_INIT;
+    //
+    //            }
+    //
+    //        unsafe {
+    //            COMMON_WALLET_INIT.call_once(|| {
+    //                //TODO Need clean after tests but not exists After function in Cargo
+    //                TestUtils::cleanup_storage();
+    //
+    //                //1. Create and Open wallet
+    //                WALLET_HANDLE = WalletUtils::create_and_open_wallet("pool1", None).unwrap();
+    //
+    //                //2. Issuer1 Create GVT CredentialDefinition
+    //                //TODO Fix it.....Convert String to &'static str
+    //                let issuer1_gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE,
+    //                                                                                                ISSUER_DID,
+    //                                                                                                &AnoncredsUtils::gvt_schema_json(),
+    //                                                                                                None, false).unwrap();
+    //
+    //                //3. Issuer1 Create XYZ CredentialDefinition
+    //                let issuer1_xyz_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE,
+    //                                                                                                ISSUER_DID,
+    //                                                                                                &AnoncredsUtils::xyz_schema_json(),
+    //                                                                                                None, false).unwrap();
+    //
+    //                //4. Issuer2 Create GVT CredentialDefinition
+    //                let issuer2_gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE,
+    //                                                                                                DID,
+    //                                                                                                &AnoncredsUtils::gvt_schema_json(),
+    //                                                                                                None, false).unwrap();
+    //
+    //                //5. Issuer1 Create GVT CredentialOffer
+    //                let issuer1_gvt_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
+    //                                                                                        &AnoncredsUtils::gvt_schema_json(),
+    //                                                                                        ISSUER_DID, DID_MY1).unwrap();
+    //
+    //                //6. Prover store Issuer1 GVT CredentialOffer
+    //                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer1_gvt_claim_offer).unwrap();
+    //
+    //                //7. Issuer1 Create XYZ CredentialOffer
+    //                let issuer1_xyz_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
+    //                                                                                        &AnoncredsUtils::xyz_schema_json(),
+    //                                                                                        ISSUER_DID, DID_MY1).unwrap();
+    //
+    //                //8. Prover store Issuer1 XYZ CredentialOffer
+    //                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer1_xyz_claim_offer).unwrap();
+    //
+    //                //9. Issuer2 Create GVT CredentialOffer
+    //                let issuer2_gvt_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
+    //                                                                                        &AnoncredsUtils::gvt_schema_json(),
+    //                                                                                        DID, DID_MY1).unwrap();
+    //
+    //                //10. Prover store Issuer2 GVT CredentialOffer
+    //                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer2_gvt_claim_offer).unwrap();
+    //
+    //                //11. Create MasterSecret
+    //                AnoncredsUtils::prover_create_master_secret(WALLET_HANDLE, COMMON_MASTER_SECRET).unwrap();
+    //
+    //                // Issuer1 issue GVT Credential
+    //                //12. Create and Store Credential Request
+    //                let issuer1_gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
+    //                                                                                              DID_MY1,
+    //                                                                                              &issuer1_gvt_claim_offer,
+    //                                                                                              &issuer1_gvt_claim_def_json,
+    //                                                                                              COMMON_MASTER_SECRET).unwrap();
+    //                let claim_values_json = AnoncredsUtils::gvt_claim_values_json();
+    //
+    //                //13. Issuer1 creates GVT Credential
+    //                let (_, claim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_gvt_claim_req, &claim_values_json, None, None).unwrap();
+    //
+    //                //14. Store Credential
+    //                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, CLAIM1_ID, &claim_json, None, None).unwrap();
+    //
+    //                // Issuer1 issue XYZ Credential
+    //                //15. Create and Store Credential Request
+    //                let issuer1_xyz_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
+    //                                                                                              DID_MY1,
+    //                                                                                              &issuer1_xyz_claim_offer,
+    //                                                                                              &issuer1_xyz_claim_def_json,
+    //                                                                                              COMMON_MASTER_SECRET).unwrap();
+    //                let claim_values_json = AnoncredsUtils::xyz_claim_values_json();
+    //
+    //                //16. Create XYZ Credential
+    //                let (_, claim_2_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_xyz_claim_req, &claim_values_json, None, None).unwrap();
+    //
+    //                //17. Store Credential
+    //                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, CLAIM2_ID, &claim_2_json, None, None).unwrap();
+    //
+    //                // Issuer2 issue GVT Credential
+    //                //18. Create and Store Credential Request
+    //                let issuer2_gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
+    //                                                                                              DID_MY1,
+    //                                                                                              &issuer2_gvt_claim_offer,
+    //                                                                                              &issuer2_gvt_claim_def_json,
+    //                                                                                              COMMON_MASTER_SECRET).unwrap();
+    //                let claim_values_json = AnoncredsUtils::gvt2_claim_values_json();
+    //
+    //                //19. Create XYZ Credential
+    //                let (_, claim_3_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer2_gvt_claim_req, &claim_values_json, None, None).unwrap();
+    //
+    //                //20. Store Credential
+    //                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, CLAIM3_ID, &claim_3_json, None, None).unwrap();
+    //
+    //                let res = mem::transmute(&issuer1_gvt_claim_def_json as &str);
+    //                mem::forget(issuer1_gvt_claim_def_json);
+    //                CLAIM_DEF_JSON = res;
+    //
+    //                let res = mem::transmute(&issuer1_gvt_claim_offer as &str);
+    //                mem::forget(issuer1_gvt_claim_offer);
+    //                CLAIM_OFFER_JSON = res;
+    //
+    //                let res = mem::transmute(&issuer1_gvt_claim_req as &str);
+    //                mem::forget(issuer1_gvt_claim_req);
+    //                CLAIM_REQUEST_JSON = res;
+    //
+    //                let res = mem::transmute(&claim_json as &str);
+    //                mem::forget(claim_json);
+    //                CLAIM_JSON = res;
+    //            });
+    //
+    //            (WALLET_HANDLE, CLAIM_DEF_JSON, CLAIM_OFFER_JSON, CLAIM_REQUEST_JSON, CLAIM_JSON)
+    //        }
+    //    }
 }

@@ -24,13 +24,13 @@ impl Prover {
     pub fn new_credential_request(&self,
                                   credential_def: &CredentialDefinition,
                                   master_secret: &MasterSecret,
-                                  credential_offer: &CredentialOffer,
-                                  prover_did: &str) -> Result<(CredentialRequest,
-                                                               MasterSecretBlindingData), CommonError> {
-        info!("new_credential_request >>> credential_def: {:?}, master_secret: {:?}, credential_offer: {:?}, prover_did: {:?}",
-              credential_def, master_secret, credential_offer, prover_did);
+                                  credential_offer: &CredentialOffer) -> Result<(BlindedMasterSecret,
+                                                                                 MasterSecretBlindingData,
+                                                                                 BlindedMasterSecretCorrectnessProof), CommonError> {
+        info!("new_credential_request >>> credential_def: {:?}, master_secret: {:?}, credential_offer: {:?}",
+              credential_def, master_secret, credential_offer);
 
-        let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.data.primary, credential_def.data.revocation.as_ref())?;
+        let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.value.primary, credential_def.value.revocation.as_ref())?;
 
         let (blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof) =
             CryptoProver::blind_master_secret(&credential_pub_key,
@@ -38,18 +38,10 @@ impl Prover {
                                               &master_secret,
                                               &credential_offer.nonce)?;
 
-        let credential_request = CredentialRequest {
-            prover_did: prover_did.to_owned(),
-            issuer_did: credential_offer.issuer_did.clone(),
-            schema_key: credential_offer.schema_key.clone(),
-            blinded_ms,
-            blinded_ms_correctness_proof,
-            nonce: new_nonce()?
-        };
+        info!("new_credential_request <<< blinded_ms: {:?}, master_secret_blinding_data: {:?}, blinded_ms_correctness_proof: {:?}",
+              blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof);
 
-        info!("new_credential_request <<< credential_request: {:?}, master_secret_blinding_data: {:?}", credential_request, master_secret_blinding_data);
-
-        Ok((credential_request, master_secret_blinding_data))
+        Ok((blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof))
     }
 
     pub fn process_credential(&self,
@@ -57,13 +49,13 @@ impl Prover {
                               credential_request_metadata: &CredentialRequestMetadata,
                               master_secret: &MasterSecret,
                               credential_def: &CredentialDefinition,
-                              rev_reg_def: Option<&RevocationRegistryDefinition>,
+                              rev_reg_def: Option<&RevocationRegistryDefinitionValue>,
                               rev_reg: Option<&RevocationRegistry>,
                               witness: Option<&Witness>) -> Result<(), CommonError> {
         info!("process_credential >>> credential: {:?}, credential_request_metadata: {:?}, master_secret: {:?}, credential_def: {:?}, rev_reg_def: {:?}, \
         rev_reg: {:?}, witness: {:?}", credential, credential_request_metadata, master_secret, credential_def, rev_reg_def, rev_reg, witness);
 
-        let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.data.primary, credential_def.data.revocation.as_ref())?;
+        let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.value.primary, credential_def.value.revocation.as_ref())?;
         let credential_values = build_credential_values(&credential.values)?;
 
         CryptoProver::process_credential_signature(&mut credential.signature,
@@ -151,7 +143,7 @@ impl Prover {
             let credential_definition: &CredentialDefinition = credential_defs.get(referent.as_str())
                 .ok_or(CommonError::InvalidStructure(format!("CredentialDefinition not found")))?;
 
-            let (rev_reg, witness) = if credential_definition.data.revocation.is_some() {
+            let (rev_reg, witness) = if credential_definition.value.revocation.is_some() {
                 let rev_reg = Some(rev_regs.get(referent.as_str())
                     .ok_or(CommonError::InvalidStructure(format!("RevocationRegistryEntry not found")))?);
                 let witness = Some(witnesses.get(referent.as_str())
@@ -159,12 +151,12 @@ impl Prover {
                 (rev_reg, witness)
             } else { (None, None) };
 
-            let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_definition.data.primary, credential_definition.data.revocation.as_ref())?;
+            let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_definition.value.primary, credential_definition.value.revocation.as_ref())?;
 
             let attrs_for_credential = Prover::_get_revealed_attributes_for_credential(referent.as_str(), requested_credentials, proof_req)?;
             let predicates_for_credential = Prover::_get_predicates_for_credential(referent.as_str(), requested_credentials, proof_req)?;
 
-            let credential_schema = build_credential_schema(&schema.data.attr_names)?;
+            let credential_schema = build_credential_schema(&schema.attr_names)?;
             let credential_values = build_credential_values(&credential.values)?;
             let sub_proof_request = build_sub_proof_request(&attrs_for_credential, &predicates_for_credential)?;
 
@@ -178,9 +170,9 @@ impl Prover {
                                                 witness)?;
 
             identifiers.insert(referent.to_string(), Identifier {
-                schema_key: credential.schema_key.clone(),
-                issuer_did: credential.issuer_did.clone(),
-                rev_reg_seq_no: credential.rev_reg_seq_no.clone()
+                schema_id: credential.schema_id.clone(),
+                cred_def_id: credential.cred_def_id.clone(),
+                rev_reg_id: credential.rev_reg_id.clone()
             });
         }
 
@@ -245,12 +237,15 @@ impl Prover {
                     res = res && actual.eq(ex);
                 };
 
-            check_condition(restriction.issuer_did.as_ref().map(String::as_str), &object.issuer_did());
-            if let Some(ref schema_key) = restriction.schema_key {
-                check_condition(schema_key.name.as_ref().map(String::as_str), &object.schema_key().name);
-                check_condition(schema_key.version.as_ref().map(String::as_str), &object.schema_key().version);
-                check_condition(schema_key.did.as_ref().map(String::as_str), &object.schema_key().did);
-            }
+            check_condition(restriction.schema_id.as_ref().map(String::as_str), &object.schema_id());
+            check_condition(restriction.cred_def_id.as_ref().map(String::as_str), &object.cred_def_id());
+
+//            check_condition(restriction.issuer_did.as_ref().map(String::as_str), &object.issuer_did());
+//            if let Some(ref schema_key) = restriction.schema_key {
+//                check_condition(schema_key.name.as_ref().map(String::as_str), &object.schema_key().name);
+//                check_condition(schema_key.version.as_ref().map(String::as_str), &object.schema_key().version);
+//                check_condition(schema_key.did.as_ref().map(String::as_str), &object.schema_key().did);
+//            }
         }
 
         info!("satisfy_restriction >>> res: {:?}", res);

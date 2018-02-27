@@ -8,7 +8,6 @@ use services::anoncreds::AnoncredsService;
 use services::wallet::WalletService;
 use services::crypto::CryptoService;
 use std::rc::Rc;
-use services::anoncreds::helpers::get_composite_id;
 use services::anoncreds::types::*;
 use services::blob_storage::BlobStorageService;
 use std::collections::{HashMap, HashSet};
@@ -175,10 +174,7 @@ impl ProverCommandExecutor {
         let credential_offer: CredentialOffer = CredentialOffer::from_json(credential_offer_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialOffer: {:?}", err)))?;
 
-        self.crypto_service.validate_did(&credential_offer.issuer_did)?;
-
-        let id = get_composite_id(&credential_offer.issuer_did, &credential_offer.schema_key);
-        self.wallet_service.set(wallet_handle, &format!("credential_offer::{}", &id), &credential_offer_json)?;
+        self.wallet_service.set(wallet_handle, &format!("credential_offer::{}", &credential_offer.cred_def_id), &credential_offer_json)?;
 
         trace!("store_credential_offer <<<");
 
@@ -198,11 +194,12 @@ impl ProverCommandExecutor {
                 .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize CredentialOffer: {:?}", err)))?);
         }
 
-        let filter: Filter = Filter::from_json(filter_json)
+        // TODO How filter?
+        /*let filter: Filter = Filter::from_json(filter_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Filter: {:?}", err)))?;
 
         credential_offers.retain(|credential_offer|
-            self.anoncreds_service.prover.satisfy_restriction(credential_offer, &filter));
+            self.anoncreds_service.prover.satisfy_restriction(credential_offer, &filter));*/
 
         let credential_offers_json = serde_json::to_string(&credential_offers)
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of CredentialOffer: {:?}", err)))?;
@@ -251,17 +248,23 @@ impl ProverCommandExecutor {
         let credential_offer: CredentialOffer = CredentialOffer::from_json(&credential_offer_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialOffer: {:?}", err)))?;
 
-        if credential_def.issuer_did != credential_offer.issuer_did {
-            return Err(IndyError::CommonError(CommonError::InvalidStructure(
-                format!("CredentialOffer issuer_did {:?} does not correspond to CredentialDefinition issuer_did {:?}",
-                        credential_offer.issuer_did, credential_def.issuer_did))));
-        }
+        let (blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof) =
+            self.anoncreds_service.prover.new_credential_request(&credential_def, &master_secret, &credential_offer)?;
 
-        let (credential_request, master_secret_blinding_data) =
-            self.anoncreds_service.prover.new_credential_request(&credential_def, &master_secret, &credential_offer, prover_did)?;
+        let nonce = new_nonce()
+            .map_err(|err| IndyError::AnoncredsError(AnoncredsError::from(err)))?;
+
+        let credential_request = CredentialRequest {
+            prover_did: prover_did.to_string(),
+            cred_def_id: credential_offer.cred_def_id.clone(),
+            rev_reg_id: credential_offer.rev_reg_id.clone(),
+            blinded_ms,
+            blinded_ms_correctness_proof,
+            nonce
+        };
 
         let nonce = credential_request.nonce.clone()
-            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize Nonce: {:?}", err)))?;
+            .map_err(|err| IndyError::AnoncredsError(AnoncredsError::from(err)))?;
 
         let credential_request_metadata = CredentialRequestMetadata {
             master_secret_blinding_data,
@@ -269,11 +272,12 @@ impl ProverCommandExecutor {
             master_secret_name: master_secret_name.to_string()
         };
 
-        let id = get_composite_id(&credential_offer.issuer_did, &credential_offer.schema_key);
+        self.wallet_service.set_object(wallet_handle,
+                                       &format!("credential_request_metadata::{}", credential_offer.cred_def_id),
+                                       &credential_request_metadata,
+                                       "CredentialRequestMetadata")?;
 
-        self.wallet_service.set_object(wallet_handle, &format!("credential_request_metadata::{}", id), &credential_request_metadata, "CredentialRequestMetadata")?;
-
-        self.wallet_service.set(wallet_handle, &format!("credential_definition::{}", id), &credential_def_json)?;
+        self.wallet_service.set(wallet_handle, &format!("credential_definition::{}", credential_offer.cred_def_id), &credential_def_json)?;
 
         let credential_request_json = credential_request.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize CredentialRequest: {:?}", err)))?;
@@ -297,8 +301,8 @@ impl ProverCommandExecutor {
 
         let rev_reg_def = match rev_reg_def_json {
             Some(r_reg_def_json) =>
-                Some(RevocationRegistryDefinition::from_json(&r_reg_def_json)
-                    .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize RevocationRegistryDefinition: {:?}", err)))?),
+                Some(RevocationRegistryDefinitionValue::from_json(&r_reg_def_json)
+                    .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize RevocationRegistryDefinitionValue: {:?}", err)))?),
             None => None
         };
 
@@ -309,16 +313,14 @@ impl ProverCommandExecutor {
             None => None
         };
 
-        let key_id = get_composite_id(&credential.issuer_did, &credential.schema_key);
-
         let credential_request_metadata: CredentialRequestMetadata =
-            self.wallet_service.get_object(wallet_handle, &format!("credential_request_metadata::{}", key_id), "CredentialRequestMetadata", &mut String::new())?;
+            self.wallet_service.get_object(wallet_handle, &format!("credential_request_metadata::{}", credential.cred_def_id), "CredentialRequestMetadata", &mut String::new())?;
 
         let master_secret: MasterSecret =
             self.wallet_service.get_object(wallet_handle, &format!("master_secret::{}", &credential_request_metadata.master_secret_name), "MasterSecret", &mut String::new())?;
 
         let credential_def: CredentialDefinition =
-            self.wallet_service.get_object(wallet_handle, &format!("credential_definition::{}", key_id), "CredentialDefinition", &mut String::new())?;
+            self.wallet_service.get_object(wallet_handle, &format!("credential_definition::{}", credential.cred_def_id), "CredentialDefinition", &mut String::new())?;
 
         let witness = self.wallet_service.get_opt_object::<Witness>(wallet_handle, &format!("witness::{}", &id), "Witness", &mut String::new())?;
 
@@ -331,14 +333,6 @@ impl ProverCommandExecutor {
                                                          witness.as_ref())?;
 
         self.wallet_service.set_object(wallet_handle, &format!("credential::{}", &id), &credential, "Credential")?;
-
-        if let Some(r_reg_def_json) = rev_reg_def_json {
-            self.wallet_service.set(wallet_handle, &format!("revocation_registry_definition::{}", id), &r_reg_def_json)?;
-        }
-
-        if let Some(r_reg_entry_json) = rev_reg_entry_json {
-            self.wallet_service.set(wallet_handle, &format!("revocation_registry::{}", id), &r_reg_entry_json)?;
-        }
 
         trace!("store_credential <<<");
 
@@ -387,9 +381,9 @@ impl ProverCommandExecutor {
                 CredentialInfo {
                     referent: referent.replace("credential::", ""),
                     attrs: credential_values,
-                    schema_key: credential.schema_key.clone(),
-                    issuer_did: credential.issuer_did.clone(),
-                    revoc_reg_seq_no: credential.rev_reg_seq_no.clone()
+                    schema_id: credential.schema_id.clone(),
+                    cred_def_id: credential.cred_def_id.clone(),
+                    rev_reg_id: credential.rev_reg_id.as_ref().map(|s| s.to_string())
                 });
         }
 
@@ -426,8 +420,8 @@ impl ProverCommandExecutor {
         trace!("create_witness >>> wallet_handle: {:?}, tails_reader_handle: {:?}, rev_reg_def: {:?}, rev_reg_delta_json: {:?}, rev_idx: {:?}",
                wallet_handle, tails_reader_handle, rev_reg_def, rev_reg_delta_json, rev_idx);
 
-        let revocation_registry_definition: RevocationRegistryDefinition = RevocationRegistryDefinition::from_json(rev_reg_def)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDefinition: {:?}", err)))?;
+        let revocation_registry_definition: RevocationRegistryDefinitionValue = RevocationRegistryDefinitionValue::from_json(rev_reg_def)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDefinitionValue: {:?}", err)))?;
 
         let rev_reg_delta: RevocationRegistryDelta = RevocationRegistryDelta::from_json(rev_reg_delta_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDelta: {:?}", err)))?;
@@ -458,8 +452,8 @@ impl ProverCommandExecutor {
         let mut witness: Witness = Witness::from_json(witness_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Witness: {:?}", err)))?;
 
-        let revocation_registry_definition: RevocationRegistryDefinition = RevocationRegistryDefinition::from_json(rev_reg_def_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDefinition: {:?}", err)))?;
+        let revocation_registry_definition: RevocationRegistryDefinitionValue = RevocationRegistryDefinitionValue::from_json(rev_reg_def_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDefinitionValue: {:?}", err)))?;
 
         let rev_reg_delta: RevocationRegistryDelta = RevocationRegistryDelta::from_json(rev_reg_delta_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDelta: {:?}", err)))?;

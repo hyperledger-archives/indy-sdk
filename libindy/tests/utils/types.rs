@@ -180,9 +180,8 @@ pub struct CredentialsForProofRequest {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct CredentialInfo {
     pub referent: String,
-    pub schema_key: SchemaKey,
-    pub issuer_did: String,
-    pub revoc_reg_seq_no: Option<i32>
+    pub cred_def_id: String,
+    pub rev_reg_id: Option<String>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -212,6 +211,7 @@ pub struct RequestedProof {
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct Identifier {
-    pub issuer_did: String,
-    pub schema_key: SchemaKey
+    pub schema_id: String,
+    pub cred_def_id: String,
+    pub rev_reg_id: Option<String>
 }

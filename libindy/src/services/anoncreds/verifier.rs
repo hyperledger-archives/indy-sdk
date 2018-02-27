@@ -19,7 +19,7 @@ impl Verifier {
                   proof_req: &ProofRequest,
                   credential_schemas: &HashMap<String, Schema>,
                   credential_defs: &HashMap<String, CredentialDefinition>,
-                  rev_reg_defs: &HashMap<String, RevocationRegistryDefinition>,
+                  rev_reg_defs: &HashMap<String, RevocationRegistryDefinitionValue>,
                   rev_regs: &HashMap<String, RevocationRegistry>) -> Result<bool, CommonError> {
         info!("verify >>> full_proof: {:?}, proof_req: {:?}, credential_schemas: {:?}, credential_defs: {:?}, rev_reg_defs: {:?} rev_regs: {:?}",
               full_proof, proof_req, credential_schemas, credential_defs, rev_reg_defs, rev_regs);
@@ -30,9 +30,9 @@ impl Verifier {
             let credential_schema = credential_schemas.get(referent)
                 .ok_or(CommonError::InvalidStructure(format!("Schema not found")))?;
 
-            let (rev_reg_def, rev_reg) = if credential_def.data.revocation.is_some() {
+            let (rev_reg_def, rev_reg) = if credential_def.value.revocation.is_some() {
                 let rev_reg_def = Some(rev_reg_defs.get(referent)
-                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistryDefinition not found")))?);
+                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistryDefinitionValue not found")))?);
                 let rev_reg = Some(rev_regs.get(referent.as_str())
                     .ok_or(CommonError::InvalidStructure(format!("RevocationRegistryEntry not found")))?);
                 (rev_reg_def, rev_reg)
@@ -41,10 +41,10 @@ impl Verifier {
             let attrs_for_credential = Verifier::_get_revealed_attributes_for_credential(referent, &full_proof.requested_proof, proof_req)?;
             let predicates_for_credential = Verifier::_get_predicates_for_credential(referent, &full_proof.requested_proof, proof_req)?;
 
-            let credential_schema = build_credential_schema(&credential_schema.data.attr_names)?;
+            let credential_schema = build_credential_schema(&credential_schema.attr_names)?;
             let sub_proof_request = build_sub_proof_request(&attrs_for_credential, &predicates_for_credential)?;
 
-            let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.data.primary, credential_def.data.revocation.as_ref())?;
+            let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.value.primary, credential_def.value.revocation.as_ref())?;
 
             proof_verifier.add_sub_proof_request(referent,
                                                  &sub_proof_request,
