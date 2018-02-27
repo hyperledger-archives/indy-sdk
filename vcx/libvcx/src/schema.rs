@@ -82,14 +82,10 @@ pub trait Schema: ToString {
         let result = Self::extract_result_from_txn(&txn)?;
         let schema_txn: SchemaTransaction = match result.get("data") {
             Some(d) => {
-                let schema: SchemaTransaction = match serde_json::from_value(d.clone()) {
-                    Ok(parsed) => parsed,
-                    Err(e) => {
-                        warn!("{}: {:?}","Parse from value error", e);
-                        return Err(error::INVALID_JSON.code_num)
-                    }
-                };
-                schema
+                serde_json::from_value(d.clone()).map_err(|err| {
+                    warn!("{}: {:?}","Parse from value error", err);
+                    error::INVALID_JSON.code_num
+                })?
             },
             None => {
                 warn!("{}","'data' not found in json");
@@ -110,13 +106,10 @@ pub trait Schema: ToString {
     }
 
     fn extract_result_from_txn(txn:&str) -> Result<serde_json::Value, u32> {
-        let txn_struct: Value = match serde_json::from_str(txn) {
-            Ok(stc) => stc,
-            Err(e) => {
-                warn!("{}: {:?}","Parse from json error", e);
-                return Err(error::INVALID_JSON.code_num)
-            }
-        };
+        let txn_struct: Value = serde_json::from_str(txn).map_err(|err| {
+            warn!("{}: {:?}","Parse from json error", err);
+            error::INVALID_JSON.code_num
+        })?;
         match txn_struct.get("result"){
             Some(result) => Ok(result.clone()),
             None => {
@@ -303,10 +296,11 @@ pub fn to_string(handle: u32) -> Result<String, u32> {
 }
 
 pub fn from_string(schema_data: &str) -> Result<u32, u32> {
-    let derived_schema: CreateSchema = match serde_json::from_str(schema_data) {
-        Ok(x) => x,
-        Err(y) => return Err(error::INVALID_JSON.code_num),
-    };
+    let derived_schema: CreateSchema = serde_json::from_str(schema_data)
+        .map_err(|_| {
+            error!("Invalid Json format for CreateSchema string");
+            error::INVALID_JSON.code_num
+        })?;
     let new_handle = derived_schema.handle;
 
     if is_valid_handle(new_handle) {return Ok(new_handle);}
