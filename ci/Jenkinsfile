@@ -32,8 +32,7 @@ def build_python_image(){
     }
 }
 
-//node('ubuntu') {
-node('sdk') {
+node('ubuntu') {
     try {
         stage ('Checkout'){
             checkout scm
