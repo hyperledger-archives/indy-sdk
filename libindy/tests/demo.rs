@@ -179,11 +179,11 @@ fn anoncreds_demo_works() {
     // 5. Issuer create Credential Offer
     let err =
         indy_issuer_create_claim_offer(issuer_create_claim_offer_command_handle,
-                                      wallet_handle,
-                                      CString::new(schema.clone()).unwrap().as_ptr(),
-                                      CString::new(issuer_did.clone()).unwrap().as_ptr(),
-                                      CString::new(prover_did.clone()).unwrap().as_ptr(),
-                                      issuer_create_claim_offer_callback);
+                                       wallet_handle,
+                                       CString::new(schema.clone()).unwrap().as_ptr(),
+                                       CString::new(issuer_did.clone()).unwrap().as_ptr(),
+                                       CString::new(prover_did.clone()).unwrap().as_ptr(),
+                                       issuer_create_claim_offer_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claim_offer_json) = issuer_create_claim_offer_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -217,6 +217,7 @@ fn anoncreds_demo_works() {
                                  CString::new(claim_req_json).unwrap().as_ptr(),
                                  CString::new(claim_json).unwrap().as_ptr(),
                                  -1,
+                                 -1,
                                  issuer_create_claim_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -224,10 +225,13 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     // 7. Prover process and store Credential
+    let id = "123456789";
     let err =
         indy_prover_store_claim(prover_store_claim_command_handle,
                                 wallet_handle,
+                                CString::new(id).unwrap().as_ptr(),
                                 CString::new(xclaim_json).unwrap().as_ptr(),
+                                null(),
                                 null(),
                                 prover_store_claim_callback);
 
@@ -285,6 +289,7 @@ fn anoncreds_demo_works() {
     let schemas_json = format!(r#"{{"{}":{}}}"#, claim.referent, schema);
     let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.referent, claim_def_json);
     let revoc_regs_jsons = "{}";
+    let revoc_entries_jsons = "{}";
 
     // 9. Prover create Proof for Proof Request
     let err =
@@ -310,6 +315,7 @@ fn anoncreds_demo_works() {
                                    CString::new(schemas_json).unwrap().as_ptr(),
                                    CString::new(claim_defs_json).unwrap().as_ptr(),
                                    CString::new(revoc_regs_jsons).unwrap().as_ptr(),
+                                   CString::new(revoc_entries_jsons).unwrap().as_ptr(),
                                    verifier_verify_proof_callback);
 
     assert_eq!(ErrorCode::Success, err);

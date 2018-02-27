@@ -9,9 +9,11 @@ use self::indy_crypto::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenera
 use self::indy_crypto::errors::IndyCryptoError;
 use self::digest::Input;
 
+use base64;
+
 use std::rc::Rc;
 
-const TAILS_BLOB_TAG_SZ: usize = 2;
+const _TAILS_BLOB_TAG_SZ: usize = 2;
 const TAIL_SIZE: usize = Tail::BYTES_REPR_SIZE;
 
 pub struct SDKTailsAccessor {
@@ -33,7 +35,7 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
         let tail_bytes = self.tails_service
             .read(self.tails_reader_handle,
                   TAIL_SIZE,
-                  TAILS_BLOB_TAG_SZ + TAIL_SIZE * tail_id as usize)
+                  TAIL_SIZE * tail_id as usize)  // + _TAILS_BLOB_TAG_SZ
             .map_err(|err|
                 IndyCryptoError::InvalidState("Can't read tail bytes from blob storage".to_owned()))?; //TODO
         let tail = Tail::from_bytes(tail_bytes.as_slice())?;
@@ -42,12 +44,10 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
     }
 }
 
-#[allow(dead_code)] //FIXME
 pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
                                   type_: &str,
                                   config: &str,
-                                  rtg: &mut RevocationTailsGenerator)
-                                  -> Result<String, CommonError> {
+                                  rtg: &mut RevocationTailsGenerator) -> Result<(String, String), CommonError> {
     let storage_handle = service.create_writer(type_, config)?;
 
     let mut hasher = sha2::Sha256::default();
@@ -60,5 +60,5 @@ pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
         service.append(storage_handle, tail_bytes.as_slice())?;
     }
 
-    service.finalize(storage_handle).map(|(location, _hash)| location)
+    service.finalize(storage_handle).map(|(location, hash)| (location, base64::encode(&hash)))
 }

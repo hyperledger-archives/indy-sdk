@@ -28,7 +28,7 @@ impl Prover {
                                   prover_did: &str) -> Result<(CredentialRequest,
                                                                MasterSecretBlindingData), CommonError> {
         info!("new_credential_request >>> credential_def: {:?}, master_secret: {:?}, credential_offer: {:?}, prover_did: {:?}",
-               credential_def, master_secret, credential_offer, prover_did);
+              credential_def, master_secret, credential_offer, prover_did);
 
         let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.data.primary, credential_def.data.revocation.as_ref())?;
 
@@ -139,7 +139,7 @@ impl Prover {
                         witnesses: &HashMap<String, Witness>) -> Result<FullProof, AnoncredsError> {
         info!("create_proof >>> credentials: {:?}, proof_req: {:?}, schemas: {:?}, credential_defs: {:?}, rev_regs: {:?}, \
                requested_credentials: {:?}, master_secret: {:?}",
-               credentials, proof_req, schemas, credential_defs, rev_regs, requested_credentials, master_secret);
+              credentials, proof_req, schemas, credential_defs, rev_regs, requested_credentials, master_secret);
 
         let mut proof_builder = CryptoProver::new_proof_builder()?;
 
@@ -148,10 +148,16 @@ impl Prover {
         for (referent, credential) in credentials {
             let schema = schemas.get(referent.as_str())
                 .ok_or(CommonError::InvalidStructure(format!("Schema not found")))?;
-            let credential_definition = credential_defs.get(referent.as_str())
-                .ok_or(CommonError::InvalidStructure(format!("Credential definition not found")))?;
-            let rev_reg = rev_regs.get(referent.as_str());
-            let witness = witnesses.get(referent.as_str());
+            let credential_definition: &CredentialDefinition = credential_defs.get(referent.as_str())
+                .ok_or(CommonError::InvalidStructure(format!("CredentialDefinition not found")))?;
+
+            let (rev_reg, witness) = if credential_definition.data.revocation.is_some() {
+                let rev_reg = Some(rev_regs.get(referent.as_str())
+                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistryEntry not found")))?);
+                let witness = Some(witnesses.get(referent.as_str())
+                    .ok_or(CommonError::InvalidState(format!("Witness not found")))?);
+                (rev_reg, witness)
+            } else { (None, None) };
 
             let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_definition.data.primary, credential_definition.data.revocation.as_ref())?;
 
@@ -274,7 +280,7 @@ impl Prover {
                                                requested_credentials: &RequestedCredentials,
                                                proof_req: &ProofRequest) -> Result<Vec<String>, CommonError> {
         info!("_get_revealed_attributes_for_credential >>> referent: {:?}, requested_credentials: {:?}, proof_req: {:?}",
-               referent, requested_credentials, proof_req);
+              referent, requested_credentials, proof_req);
 
         let revealed_attrs_for_credential = requested_credentials.requested_attrs
             .iter()
@@ -293,7 +299,7 @@ impl Prover {
                                       requested_credentials: &RequestedCredentials,
                                       proof_req: &ProofRequest) -> Result<Vec<PredicateInfo>, CommonError> {
         info!("_get_predicates_for_credential >>> referent: {:?}, requested_credentials: {:?}, proof_req: {:?}",
-               referent, requested_credentials, proof_req);
+              referent, requested_credentials, proof_req);
 
         let predicates_for_credential = requested_credentials.requested_predicates
             .iter()
@@ -314,7 +320,7 @@ impl Prover {
                              credentials: &HashMap<String, Credential>) -> Result<(HashMap<String, (String, String, String)>,
                                                                                    HashMap<String, String>), CommonError> {
         info!("_split_attributes >>> proof_req: {:?}, requested_credentials: {:?}, credentials: {:?}",
-               proof_req, requested_credentials, credentials);
+              proof_req, requested_credentials, credentials);
 
         let mut revealed_attrs: HashMap<String, (String, String, String)> = HashMap::new();
         let mut unrevealed_attrs: HashMap<String, String> = HashMap::new();

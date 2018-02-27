@@ -1,7 +1,9 @@
 extern crate libc;
 extern crate serde_json;
+extern crate base64;
 
 use errors::indy::IndyError;
+use errors::common::CommonError;
 use services::blob_storage::BlobStorageService;
 
 use std::rc::Rc;
@@ -11,7 +13,7 @@ pub enum BlobStorageCommand {
         String, // reader type
         String, // reader config JSON
         String, // blob location
-        Vec<u8>, // blob hash
+        String, // blob hash
         Box<Fn(Result<i32, IndyError>) + Send>),
 }
 
@@ -28,13 +30,16 @@ impl BlobStorageCommandExecutor {
 
     pub fn execute(&self, command: BlobStorageCommand) {
         match command {
-            BlobStorageCommand::OpenReader(config, type_, location, hash, cb) => {
-                cb(self.open_reader(&config, &type_, &location, hash.as_slice()));
+            BlobStorageCommand::OpenReader(type_, config, location, hash, cb) => {
+                cb(self.open_reader(&type_, &config, &location, &hash));
             }
         }
     }
 
-    fn open_reader(&self, type_: &str, config: &str, location: &str, hash: &[u8]) -> Result<i32, IndyError> {
-        Ok(self.blob_storage_service.open_reader(type_, config, location, hash)?)
+    fn open_reader(&self, type_: &str, config: &str, location: &str, hash: &str) -> Result<i32, IndyError> {
+        let hash: Vec<u8> = base64::decode(&hash)
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't decode hash from base64 {}", err)))?;
+
+        Ok(self.blob_storage_service.open_reader(type_, config, location, &hash)?)
     }
 }

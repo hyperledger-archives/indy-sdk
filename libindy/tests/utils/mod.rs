@@ -14,6 +14,7 @@ pub mod anoncreds;
 pub mod types;
 pub mod pairwise;
 pub mod constants;
+pub mod blob_storage;
 
 #[macro_use]
 #[allow(unused_macros)]
