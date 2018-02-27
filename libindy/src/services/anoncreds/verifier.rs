@@ -22,15 +22,21 @@ impl Verifier {
                   rev_reg_defs: &HashMap<String, RevocationRegistryDefinition>,
                   rev_regs: &HashMap<String, RevocationRegistry>) -> Result<bool, CommonError> {
         info!("verify >>> full_proof: {:?}, proof_req: {:?}, credential_schemas: {:?}, credential_defs: {:?}, rev_reg_defs: {:?} rev_regs: {:?}",
-               full_proof, proof_req, credential_schemas, credential_defs, rev_reg_defs, rev_regs);
+              full_proof, proof_req, credential_schemas, credential_defs, rev_reg_defs, rev_regs);
 
         let mut proof_verifier = CryptoVerifier::new_proof_verifier()?;
 
         for (referent, credential_def) in credential_defs.iter() {
             let credential_schema = credential_schemas.get(referent)
                 .ok_or(CommonError::InvalidStructure(format!("Schema not found")))?;
-            let rev_reg_def = rev_reg_defs.get(referent);
-            let rev_reg = rev_regs.get(referent);
+
+            let (rev_reg_def, rev_reg) = if credential_def.data.revocation.is_some() {
+                let rev_reg_def = Some(rev_reg_defs.get(referent)
+                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistryDefinition not found")))?);
+                let rev_reg = Some(rev_regs.get(referent.as_str())
+                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistryEntry not found")))?);
+                (rev_reg_def, rev_reg)
+            } else { (None, None) };
 
             let attrs_for_credential = Verifier::_get_revealed_attributes_for_credential(referent, &full_proof.requested_proof, proof_req)?;
             let predicates_for_credential = Verifier::_get_predicates_for_credential(referent, &full_proof.requested_proof, proof_req)?;
@@ -59,7 +65,7 @@ impl Verifier {
                                                requested_proof: &RequestedProof,
                                                proof_req: &ProofRequest) -> Result<Vec<String>, CommonError> {
         info!("_get_revealed_attributes_for_credential >>> referent: {:?}, requested_credentials: {:?}, proof_req: {:?}",
-               referent, requested_proof, proof_req);
+              referent, requested_proof, proof_req);
 
         let revealed_attrs_for_credential = requested_proof.revealed_attrs
             .iter()
@@ -78,7 +84,7 @@ impl Verifier {
                                       requested_proof: &RequestedProof,
                                       proof_req: &ProofRequest) -> Result<Vec<PredicateInfo>, CommonError> {
         info!("_get_predicates_for_credential >>> referent: {:?}, requested_credentials: {:?}, proof_req: {:?}",
-               referent, requested_proof, proof_req);
+              referent, requested_proof, proof_req);
 
         let predicates_for_credential = requested_proof.predicates
             .iter()

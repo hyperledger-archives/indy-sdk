@@ -28,11 +28,16 @@ struct DefaultWriterConfig {
 impl<'a> JsonDecodable<'a> for DefaultWriterConfig {}
 
 impl WriterType for DefaultWriterType {
-    fn create(&self, config: &str) -> Result<Box<Writer>, CommonError>  {
+    fn create(&self, config: &str) -> Result<Box<Writer>, CommonError> {
         let config: DefaultWriterConfig = DefaultWriterConfig::from_json(config)
             .map_err(map_err_trace!())?;
         let path = PathBuf::from(config.base_dir);
-        let file = File::create(EnvironmentUtils::tmp_file_path("def_storage_tmp")) //FIXME
+
+        fs::DirBuilder::new()
+            .recursive(true)
+            .create(tmp_storage_file().parent().unwrap())?;
+
+        let file = File::create(tmp_storage_file()) //FIXME
             .map_err(map_err_trace!())?;
 
         Ok(Box::new(DefaultWriter {
@@ -53,10 +58,19 @@ impl Writer for DefaultWriter {
         let mut path = self.base_dir.clone();
         path.push(base64::encode(hash));
 
-        fs::rename(EnvironmentUtils::tmp_file_path("def_storage_tmp"), &path)?; //FIXME
+        fs::DirBuilder::new()
+            .recursive(true)
+            .create(path.parent().unwrap())?;
+
+        fs::copy(&tmp_storage_file(), &path)?; //FIXME
+        fs::remove_file(&tmp_storage_file())?;
 
         Ok(path.to_str().unwrap().to_owned())
     }
+}
+
+fn tmp_storage_file() -> PathBuf {
+    EnvironmentUtils::tmp_file_path("def_storage_tmp")
 }
 
 pub struct DefaultWriterType {}

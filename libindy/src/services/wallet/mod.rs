@@ -321,10 +321,16 @@ impl WalletService {
     }
 
     pub fn get_opt_object<'a, T>(&self, handle: i32, key: &str, _type: &str, json: &'a mut String) -> Result<Option<T>, IndyError> where T: JsonDecodable<'a> {
-        *json = match self.wallets.borrow().get(&handle) {
+        let row = match self.wallets.borrow().get(&handle) {
             Some(wallet) => wallet.get(key),
-            None => return Ok(None)
-        }?;
+            None => return Err(IndyError::WalletError(WalletError::InvalidHandle(handle.to_string())))
+        };
+
+        *json = match row {
+            Ok(row) => row,
+            Err(WalletError::NotFound(_)) => return Ok(None),
+            Err(err) => return Err(IndyError::WalletError(err))
+        };
 
         T::from_json(json)
             .map(|obj| Some(obj))

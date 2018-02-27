@@ -232,7 +232,9 @@ pub struct RevocationRegistryDefinitionPublicKeys {
 pub struct RevocationRegistryDefinition {
     pub issuance_type: IssuanceTypes,
     pub max_cred_num: u32,
-    pub public_keys: RevocationRegistryDefinitionPublicKeys
+    pub public_keys: RevocationRegistryDefinitionPublicKeys,
+    pub tails_hash: String,
+    pub tails_location: String
 }
 
 impl JsonEncodable for RevocationRegistryDefinition {}
@@ -267,7 +269,7 @@ pub struct Schema {
 }
 
 impl Schema {
-    pub fn  schema_key(&self) -> SchemaKey {
+    pub fn schema_key(&self) -> SchemaKey {
         SchemaKey { name: self.data.name.clone(), version: self.data.version.clone(), did: self.dest.clone() }
     }
 }
