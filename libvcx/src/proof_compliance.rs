@@ -1,17 +1,68 @@
-use messages::proofs::proof_message::ProofMessage;
+use messages::proofs::proof_message::{ ProofMessage, Attr };
 use messages::proofs::proof_request::{ ProofRequestData };
 use std::collections::HashMap;
 use utils::error;
 
 
 pub fn proof_compliance(request: &ProofRequestData, proof: &ProofMessage) -> Result<(), u32> {
+    debug!("starting vcx proof verification");
+
+    verify_requested_attributes(request, proof)?;
+    verify_requested_predicates(request, proof)
+}
+
+fn verify_requested_predicates(request: &ProofRequestData, proof: &ProofMessage) -> Result<(), u32> {
+    let provided_predicates = &proof.requested_proof.predicates;
+    let requested_predicates = &request.requested_predicates;
+
+    for (predicate_uuid, requested_predicate) in requested_predicates.iter() {
+        let proof_id = match provided_predicates.get(predicate_uuid) {
+            Some(uuid) => uuid,
+            None => {
+                warn!("Proof Compliance: requested predicate id not found in proof");
+                return Err(error::FAILED_PROOF_COMPLIANCE.code_num);
+            }
+        };
+
+        let proof_data = match  proof.proofs.get(proof_id) {
+            Some(x) => x,
+            None => {
+                warn!("Proof Compliance: proof id not found in proofs");
+                return Err(error::FAILED_PROOF_COMPLIANCE.code_num);
+            }
+        };
+        let proved_predicates = proof_data.proof.primary_proof.get_predicates_from_claim(proof_id)?;
+        let predicate = proved_predicates.iter().find(|predicate| {
+            predicate.attr_info.clone().unwrap_or(Attr::new()).name == requested_predicate.attr_name
+        });
+
+        match predicate {
+            Some(x) => {
+                // Todo: Which issuer did and schema do I use?? The one in the GE.predicate or the one in the claim
+                // Todo: currently using the one for the entire claim
+
+                if !check_value(requested_predicate.issuer_did.clone(),
+                               &proof_data.issuer_did) {
+                    return Err(error::FAILED_PROOF_COMPLIANCE.code_num)
+                }
+
+                if !check_value(requested_predicate.schema_seq_no,
+                                &proof_data.schema_seq_no) {
+                    return Err(error::FAILED_PROOF_COMPLIANCE.code_num)
+                }
+            },
+            None => return Err(error::FAILED_PROOF_COMPLIANCE.code_num)
+        }
+    }
+    Ok(())
+}
+
+fn verify_requested_attributes(request: &ProofRequestData, proof: &ProofMessage) -> Result<(), u32> {
     let proof_revealed_attrs = &proof.requested_proof.revealed_attrs;
     let self_attested_attrs = &proof.requested_proof.self_attested_attrs;
-    let proofs = &proof.proofs;
     let requested_attrs = &request.requested_attrs;
-    debug!("starting vcx proof verification");
+
     for (key, val) in requested_attrs.iter() {
-        let name = &val.name;
         let issuer_did = val.issuer_did.clone();
         let schema_seq_no = val.schema_seq_no;
 
@@ -41,7 +92,7 @@ pub fn proof_compliance(request: &ProofRequestData, proof: &ProofMessage) -> Res
             }
         };
 
-        let proof_data = match proofs.get(proof_id) {
+        let proof_data = match proof.proofs.get(proof_id) {
             Some(data) => data,
             None => {
                 warn!("Proof Compliance: proof id not found in proofs");
@@ -58,11 +109,10 @@ pub fn proof_compliance(request: &ProofRequestData, proof: &ProofMessage) -> Res
         }
 
         if !check_value(schema_seq_no,
-                             &proof_schema_seq_no) {
+                        &proof_schema_seq_no) {
             return Err(error::FAILED_PROOF_COMPLIANCE.code_num)
         }
     }
-
 
     Ok(())
 }
@@ -91,8 +141,8 @@ fn check_value<T: PartialEq>(control: Option<T>, val: &T) -> bool {
 #[cfg(test)]
 mod tests {
     use ::proof_compliance::{proof_compliance, self_attested};
-    use ::messages::proofs::proof_message::ProofMessage;
-    use messages::proofs::proof_request::{ ProofRequestData, Attr };
+    use ::messages::proofs::proof_message::{ ProofMessage, Proofs };
+    use messages::proofs::proof_request::{ ProofRequestData, Attr, Predicate };
     use serde_json::{ from_str };
     use ::utils::error;
     use ::proof_compliance::check_value;
@@ -206,6 +256,59 @@ mod tests {
         let proof_obj = ProofMessage::from_str(PROOF).unwrap();
         let proof_req: ProofRequestData = from_str(REQUEST).unwrap();
         proof_compliance(&proof_req, &proof_obj).unwrap();
+    }
+
+    #[test]
+    fn test_proof_with_predicates() {
+        let add_claim: Proofs = from_str(r#"{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"t2":"Hash for 2"},"a_prime":"3","e":"2","v":"5","m":{"t2":"2"},"m1":"2","m2":"2"},"ge_proofs":[{"u":{"2":"2","0":"2","3":"2","1":"2"},"r":{"1":"2","3":"2","DELTA":"2","2":"2","0":"2"},"mj":"3","alpha":"2","t":{"0":"2","2":"2","DELTA":"4","1":"5","3":"3"},"predicate":{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}}]},"non_revoc_proof":null},"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();
+        let mut proof = ProofMessage::from_str(PROOF).unwrap();
+        proof.proofs.insert("claim2_uuid".to_string(), add_claim);
+        proof.requested_proof.predicates.insert("pred_uuid".to_string(), "claim2_uuid".to_string());
+        let mut proof_req: ProofRequestData = from_str(REQUEST).unwrap();
+        let added_predicate: Predicate = from_str(r#"{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();
+        proof_req.requested_predicates.insert("pred_uuid".to_string(), added_predicate.clone());
+        proof_compliance(&proof_req, &proof).unwrap();
+    }
+
+    #[test]
+    fn test_compliance_failed_with_missing_predicate() {
+        let add_claim: Proofs = from_str(r#"{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"t2":"Hash for 2"},"a_prime":"3","e":"2","v":"5","m":{"t2":"2"},"m1":"2","m2":"2"},"ge_proofs":[{"u":{"2":"2","0":"2","3":"2","1":"2"},"r":{"1":"2","3":"2","DELTA":"2","2":"2","0":"2"},"mj":"3","alpha":"2","t":{"0":"2","2":"2","DELTA":"4","1":"5","3":"3"},"predicate":{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}}]},"non_revoc_proof":null},"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();
+        let mut proof = ProofMessage::from_str(PROOF).unwrap();
+        proof.proofs.insert("claim2_uuid".to_string(), add_claim);
+        proof.requested_proof.predicates.insert("pred_uuid".to_string(), "claim2_uuid".to_string());
+        let mut proof_req: ProofRequestData = from_str(REQUEST).unwrap();
+        let added_predicate: Predicate = from_str(r#"{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();
+        let failing_predicate: Predicate = from_str(r#"{"attr_name":"missing","p_type":"GE","value":22,"schema_seq_no":664,"issuer_did":"456"}"#).unwrap();
+        proof_req.requested_predicates.insert("pred_uuid".to_string(), added_predicate.clone());
+        proof_req.requested_predicates.insert("fail_uuid".to_string(), failing_predicate.clone());
+        let err = proof_compliance(&proof_req, &proof);
+        assert_eq!(Err(error::FAILED_PROOF_COMPLIANCE.code_num), err);
+    }
+
+    #[test]
+    fn test_proof_with_predicates_fails_with_differing_dids() {
+        let add_claim: Proofs = from_str(r#"{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"t2":"Hash for 2"},"a_prime":"3","e":"2","v":"5","m":{"t2":"2"},"m1":"2","m2":"2"},"ge_proofs":[{"u":{"2":"2","0":"2","3":"2","1":"2"},"r":{"1":"2","3":"2","DELTA":"2","2":"2","0":"2"},"mj":"3","alpha":"2","t":{"0":"2","2":"2","DELTA":"4","1":"5","3":"3"},"predicate":{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}}]},"non_revoc_proof":null},"schema_seq_no":778,"issuer_did":"98765"}"#).unwrap();
+        let mut proof = ProofMessage::from_str(PROOF).unwrap();
+        proof.proofs.insert("claim2_uuid".to_string(), add_claim);
+        proof.requested_proof.predicates.insert("pred_uuid".to_string(), "claim2_uuid".to_string());
+        let mut proof_req: ProofRequestData = from_str(REQUEST).unwrap();
+        let added_predicate: Predicate = from_str(r#"{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();
+        proof_req.requested_predicates.insert("pred_uuid".to_string(), added_predicate.clone());
+        let err = proof_compliance(&proof_req, &proof);
+        assert_eq!(Err(error::FAILED_PROOF_COMPLIANCE.code_num), err);
+    }
+
+    #[test]
+    fn test_proof_with_predicates_fails_with_differing_schema_no() {
+        let add_claim: Proofs = from_str(r#"{"proof":{"primary_proof":{"eq_proof":{"revealed_attrs":{"t2":"Hash for 2"},"a_prime":"3","e":"2","v":"5","m":{"t2":"2"},"m1":"2","m2":"2"},"ge_proofs":[{"u":{"2":"2","0":"2","3":"2","1":"2"},"r":{"1":"2","3":"2","DELTA":"2","2":"2","0":"2"},"mj":"3","alpha":"2","t":{"0":"2","2":"2","DELTA":"4","1":"5","3":"3"},"predicate":{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":null,"issuer_did":null}}]},"non_revoc_proof":null},"schema_seq_no":321,"issuer_did":"98765"}"#).unwrap();
+        let mut proof = ProofMessage::from_str(PROOF).unwrap();
+        proof.proofs.insert("claim2_uuid".to_string(), add_claim);
+        proof.requested_proof.predicates.insert("pred_uuid".to_string(), "claim2_uuid".to_string());
+        let mut proof_req: ProofRequestData = from_str(REQUEST).unwrap();
+        let added_predicate: Predicate = from_str(r#"{"attr_name":"predicate2","p_type":"LE","value":99,"schema_seq_no":778,"issuer_did":"12345"}"#).unwrap();
+        proof_req.requested_predicates.insert("pred_uuid".to_string(), added_predicate.clone());
+        let err = proof_compliance(&proof_req, &proof);
+        assert_eq!(Err(error::FAILED_PROOF_COMPLIANCE.code_num), err);
     }
 
     #[test]

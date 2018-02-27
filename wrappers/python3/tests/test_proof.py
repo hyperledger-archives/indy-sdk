@@ -149,7 +149,7 @@ async def test_request_proof_with_released_proof():
         await proof.request_proof(connection)
     assert ErrorCode.InvalidProofHandle == e.value.error_code
 
-@pytest.mark.skip
+
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_get_proof_with_invalid_proof():
@@ -165,6 +165,9 @@ async def test_get_proof_with_invalid_proof():
     await proof2.update_state()
     proof_data = await proof2.get_proof(connection)
     assert proof2.proof_state == ProofState.Invalid
-    attrs = [{"schema_seq_no":15,"issuer_did":"4fUDR9R7fjwELRvH9JT6HH", "claim_uuid":"claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b","name":"state","value":"UT","type":"revealed"}]
+    attrs = [{"schema_seq_no": 15,
+              "issuer_did": "4fUDR9R7fjwELRvH9JT6HH",
+              "claim_uuid": "claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b",
+              "attr_info": {"name": "state", "value": "UT", "type": "revealed"}}]
     assert proof_data[0] == attrs[0]
 
