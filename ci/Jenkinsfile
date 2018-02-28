@@ -6,66 +6,45 @@ def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
 
-// docker build -t libvcx-test --build-arg uid=1001 -f vcx/ci/ubuntu.dockerfile vcx/ci
-def build(name, file='vcx/ci/ubuntu.dockerfile', context='vcx/ci', customParams = '') {
-    return docker.build("$name-test", "--build-arg uid=${getUserUid()} -f $file $context")
-}
-
-// docker build -t wrapper-test --build-arg uid=1001 -f vcx/ci/Dockerfile-wrapper-testing
-def build_wrapper_testing_image(file='vcx/ci/Dockerfile-wrapper-testing', context='vcx', customParams = ''){
-	return docker.build("wrapper-test", "--no-cache --build-arg uid=${getUserUid()} -f $file $context")
-}
-
-def build_libindy_image(){
-    dir ('vcx') {
-        return docker.build("libindy", "--build-arg uid=${getUserUid()} -f wrappers/python3/ci/Dockerfile .")
-    }
-}
-
-def build_python_image(){
-    dir ('vcx') {
-		sh 'ls'
-		sh 'ls libvcx'
-		sh 'ls libvcx/target'
-		sh 'ls libvcx/target/debug'
-        return docker.build("python", "--build-arg uid${getUserUid()} -f wrappers/python3/ci/Dockerfile-python-wrapper .")
-    }
+def build(name, file, context='.', customParams = '') {
+    return docker.build("$name", "${customParams} --build-arg uid=${getUserUid()} -f $file $context")
 }
 
 node('ubuntu') {
+
     try {
         stage ('Checkout'){
             checkout scm
         }
-        
-        app = build('libvcx', 'vcx/ci/ubuntu.dockerfile', 'vcx/ci')
-        libindy = build_libindy_image()
+        libindy = build('libindy', 'vcx/ci/Dockerfile-libindy', 'vcx')
+        rust = build('rust', 'vcx/ci/ubuntu.dockerfile', 'vcx')
 		
         // update the versions in the toml file and package.json
-        updateVersions(app)      
+        updateVersions(rust)      
         
         // build and test the so file
-        buildRust(app)
-
-
-	    // test rust
-	    testRust(app)
+        buildRust(rust)
+        
+        // test rust
+	    testRust(rust)
 
         // update the so file to have version
-        updateSo(app)
-        // test the npm package and create the npm gzip artifact
-        wrapper = build_wrapper_testing_image('vcx/ci/Dockerfile-wrapper-testing', 'vcx')
-		// test python wrapper
-		// this image must be built after the libvcx.so is built
-        python = build_python_image()
-        testPythonWrapper(python)
-        testNodeWrapper(wrapper)
+        updateSo(rust)
 
+        // test nodejs wrapper
+        nodejs = build('nodejs', 'vcx/wrappers/node/ci/Dockerfile-nodejs', 'vcx')
+        vcx_nodejs = build('vcx-nodejs', 'vcx/wrappers/node/ci/Dockerfile-nodejs-wrapper', 'vcx', '--no-cache')
+        testNodeWrapper(vcx_nodejs)
+
+		// test python wrapper
+        vcx_python = build('vcx-python', 'vcx/wrappers/python3/ci/Dockerfile-python-wrapper', 'vcx', '--no-cache')
+        testPythonWrapper(vcx_python)
+        
         if (env.BRANCH_NAME == "master") {
             // create the debian of the library
-            createDeb(app)
+            createDeb(rust)
             // create the npm deb 
-            createNpmDeb(app) 
+            createNpmDeb(rust) 
         }
         
     } catch (Exception ex) {
@@ -115,7 +94,7 @@ def testRust(envn) {
     stage ('Testing Rust'){
         sh "echo Testing"
         envn.inside {
-            sh "cd vcx/libvcx; cargo test --color never -- --test-threads=1"
+            sh "cd vcx/libvcx; cargo test --color=never -- --test-threads=1"
         }
     }
 }
@@ -191,21 +170,17 @@ def createDeb(envn) {
 
 // Creates the tgz file that can be 'npm install'-ed.
 def testNodeWrapper(envn) {
-    dir ('vcx/wrappers/node'){
-        stage ('Test Node Wrapper'){
-		    envn.inside {
-    			sh 'npm -v'
-	            sh 'npm install'
-	            sh 'npm rebuild'
-	            sh 'npm run lint'
-	            sh 'npm run compile'
-	            sh 'npm test'
-	            sh 'ls -l'
-			    sh 'npm pack'
-	            sh 'ls'
-	            sh "test -f vcx-*.tgz"
-	            archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.tgz'
-      	    }
+    stage ('Test Node Wrapper'){
+        dir('vcx/wrappers/node'){
+            envn.inside() {
+                sh 'npm install'
+                sh 'npm -v'
+                sh 'npm run lint'
+                sh 'npm run compile'
+                sh 'npm test'
+                sh 'npm pack'
+                archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.tgz'
+            }
         }
     }
 }
