@@ -1,4 +1,5 @@
 import * as ffi from 'ffi'
+import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { GCWatcher } from '../utils/memory-management-helpers'
 
@@ -7,11 +8,32 @@ export abstract class VCXBase extends GCWatcher {
   protected abstract _deserializeFn: any
   protected _handle: string
   protected _sourceId: string
+  protected _errorMsg: string
 
   constructor (sourceId) {
     super()
     this._handle = null
     this._sourceId = sourceId
+  }
+
+  static async errorMessage (errorCode: number): Promise<string> {
+    let rc = null
+    const data = await createFFICallbackPromise<string>(
+        (resolve, reject, cb) => {
+          rc = rustAPI().vcx_error_message(0, errorCode, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'string'], (handle, err, errorMsg) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve(errorMsg)
+        })
+    )
+    return data
   }
 
   static async _deserialize<T extends VCXBase = any, P = object> (

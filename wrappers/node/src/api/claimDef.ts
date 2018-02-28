@@ -79,7 +79,7 @@ export class ClaimDef extends VCXBase {
       ))
       return claimDef
     } catch (err) {
-      throw new VCXInternalError(err, 'vcx_claimdef_create')
+      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_claimdef_create')
     }
   }
 
@@ -104,7 +104,7 @@ export class ClaimDef extends VCXBase {
       }
       return await super._deserialize(ClaimDef, data, claimDefParams)
     } catch (err) {
-      throw new VCXInternalError(err, 'vcx_claimdef_deserialize')
+      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_claimdef_deserialize')
     }
   }
 
@@ -122,7 +122,7 @@ export class ClaimDef extends VCXBase {
       const data: IClaimDefObj = JSON.parse(await super._serialize())
       return data
     } catch (err) {
-      throw new VCXInternalError(err, 'vcx_claimdef_serialize')
+      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_claimdef_serialize')
     }
   }
 }

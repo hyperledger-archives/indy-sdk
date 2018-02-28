@@ -62,7 +62,8 @@ describe('A Connection object with ', function () {
       await connection.serialize()
     } catch (error) {
       assert.equal(error.vcxCode, 1003)
-      assert.equal(error.message, 'vcx_connection_serialize')
+      assert.equal(error.vcxFunction, 'vcx_connection_serialize')
+      assert.equal(error.message, 'Invalid Connection Handle')
     }
   })
 
@@ -82,7 +83,8 @@ describe('A Connection object with ', function () {
       await connection.serialize()
     } catch (error) {
       assert.equal(error.vcxCode, 1003)
-      assert.equal(error.message, 'vcx_connection_serialize')
+      assert.equal(error.vcxFunction, 'vcx_connection_serialize')
+      assert.equal(error.message, 'Invalid Connection Handle')
     }
   })
 
@@ -102,7 +104,8 @@ describe('A Connection object with ', function () {
       await Connection.deserialize({source_id: 'Invalid'})
     } catch (error) {
       assert.equal(error.vcxCode, 1016)
-      assert.equal(error.message, 'vcx_connection_deserialize')
+      assert.equal(error.vcxFunction, 'vcx_connection_deserialize')
+      assert.equal(error.message, 'Invalid JSON string')
     }
   })
 
@@ -171,7 +174,8 @@ describe('A Connection object with ', function () {
       await connection.serialize()
     } catch (error) {
       assert.equal(error.vcxCode, 1003)
-      assert.equal(error.message, 'vcx_connection_serialize')
+      assert.equal(error.vcxFunction, 'vcx_connection_serialize')
+      assert.equal(error.message, 'Invalid Connection Handle')
     }
   })
 

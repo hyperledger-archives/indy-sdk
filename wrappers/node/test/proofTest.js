@@ -60,7 +60,8 @@ describe('A Proof', function () {
       await proof.serialize()
     } catch (error) {
       assert.equal(error.vcxCode, 1017)
-      assert.equal(error.message, 'vcx_proof_serialize')
+      assert.equal(error.vcxFunction, 'vcx_proof_serialize')
+      assert.equal(error.message, 'Invalid Proof Handle')
     }
   })
 
@@ -91,7 +92,8 @@ describe('A Proof', function () {
       await proof.requestProof(connection)
     } catch (error) {
       assert.equal(error.vcxCode, 1003)
-      assert.equal(error.message, 'vcx_proof_send_request')
+      assert.equal(error.vcxFunction, 'vcx_proof_send_request')
+      assert.equal(error.message, 'Invalid Connection Handle')
     }
   })
 
@@ -106,7 +108,8 @@ describe('A Proof', function () {
       await proof.requestProof(connection)
     } catch (error) {
       assert.equal(error.vcxCode, 1017)
-      assert.equal(error.message, 'vcx_proof_send_request')
+      assert.equal(error.vcxFunction, 'vcx_proof_send_request')
+      assert.equal(error.message, 'Invalid Proof Handle')
     }
   })
 
