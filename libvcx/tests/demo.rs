@@ -42,58 +42,22 @@ fn demo(){
     let random_int: u32 = rand::random();
     let logo_url = format!("https://robohash.org/{}?set=set3", random_int);
 
-    /*
-    // Init STAGING ENV
-    let config_string: String = json!({
-        "enterprise_verkey": "3W9WGtRowAanh5q6giQrGncZVMvRwPedB9fJAJkAN5Gk",
-        "enterprise_name": "Evernym",
-        "agency_pairwise_verkey": "z8bokfTeuSGjygosTZmjo9XnHGsRhiTcnhV5Dp6xxsL",
-        "agent_endpoint": "https://eas.pstg.evernym.com",
-        "agent_pairwise_verkey": "FqBMwDobDQNjHCMyVBJG8hUY4Fq5XcgqqRdj89dTBZwL",
-        "agency_pairwise_did": "2opd29fJoE7UJwtVn6QDhd",
-        "wallet_name": "my_real_wallet",
-        "genesis_path":self::vcx::utils::constants::GENESIS_PATH,
-        "logo_url":logo_url,
-        "agent_pairwise_did": "UDDEoTTzUG7vmcEq6meesq",
-        "enterprise_did": "5bJqPo8aCWyBwLQosZkJcB",
-        "agent_enterprise_verkey": "EA7bVoYwFs8Y8aA5oCR5aEbVWZDxUfYmMqHjSLf1D16t",
-        "enterprise_did_agent": "R9835umcd7E8sMa9qqxpmq"
-    }).to_string();
-
-    // Init SANDBOX ENV  *********************************************************************
-    let config_string: String = json!({
-        "enterprise_verkey": "D2RTm2HZFBLMhrCp43ZowDMuxVHGUVe49pgM6cHhkj6L",
-        "enterprise_name": "Evernym",
-        "agency_pairwise_verkey": "BtGUVLVKQGbiLDPz8kg56vjHWjzMmcMsr65cMa2zwCZm",
-        "agent_endpoint": "https://agency-ea-sandbox.evernym.com",
-        "agent_pairwise_verkey": "En9myzhuLRqLAw6zPwVFaSmiNtVwZDDYazvuBLHD6Hin",
-        "agency_pairwise_did": "LyDVoajwQ6skcGSf6DKay9",
-        "genesis_path":self::vcx::utils::constants::GENESIS_PATH,
-        "logo_url":logo_url,
-        "wallet_name":"my_real_wallet",
-        "agent_pairwise_did": "SHEzUMX56jxo9BPU8Rsmnc",
-        "enterprise_did": "2hoqvcwupRTUNkXn6ArYzs",
-        "agent_enterprise_verkey": "9YAUcPGbRgu8GGnsMacT4xwHZJTVQAe1g9xUUj7t1iZh",
-        "enterprise_did_agent": "GfW11C5VZT2nddzf7fECVU"
-        }).to_string();
-    */
-
     // Init DEV ENV  *********************************************************************
     let config_string: String = json!({
-       "agent_endpoint": "https://enym-eagency.pdev.evernym.com",
-       "logo_url":logo_url,
-       "agent_enterprise_verkey": "By1CvKuLFRRdqMyGsmu8naVQQQfSH4MYna4K7d4KDvfy",
-       "enterprise_did": "2hoqvcwupRTUNkXn6ArYzs",
-       "agent_pairwise_did": "NUHiPAuSi8XoPRPGnECPUo",
-       "enterprise_name":"Evernym",
-       "enterprise_did_agent": "M7uZU89SUdsav7i4hVZtXp",
-       "agency_pairwise_verkey": "4hmBc54YanNhQHTD66u6XDp1NSgQm1BacPFbE7b5gtat",
-       "wallet_name": "my_real_wallet",
-       "agency_pairwise_did": "7o2xT9Qtp83cJUJMUBTF3M",
-       "enterprise_verkey": "vrWGArMA3toVoZrYGSAMjR2i9KjBS66bZWyWuYJJYPf",
-       "agent_pairwise_verkey": "Chj1oQYdmbTXKG96Fpo8C2sd6fRrt9UyCrbmuo4vzroK",
-       "genesis_path":self::vcx::utils::constants::GENESIS_PATH
-      }).to_string();
+        "agent_endpoint":"https://enym-eagency.pdev.evernym.com",
+        "agency_pairwise_did":"YRuVCckY6vfZfX9kcQZe3u",
+        "agency_pairwise_verkey":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v",
+        "enterprise_did_agent":"AQ2EZRY9JQ4ssjmZPL5MiU",
+        "agent_enterprise_verkey":"684CRDu3k4TGBzNU99JTqM8cVS4ZtRwC7eZHEvZjzMRX",
+        "wallet_name":"my_real_wallet",
+        "enterprise_did":"2hoqvcwupRTUNkXn6ArYzs",
+        "enterprise_verkey":"vrWGArMA3toVoZrYGSAMjR2i9KjBS66bZWyWuYJJYPf",
+        "agent_pairwise_did":"7csYfSY8b4hvqnu5K8nGQP",
+        "agent_pairwise_verkey":"4cDwBvDZy9aWWKf2uCYTSgffCNt7ffmY9nrMTHmqsG8z",
+        "enterprise_name":"Evernym",
+        "logo_url":logo_url,
+        "genesis_path": self::vcx::utils::constants::GENESIS_PATH
+    }).to_string();
 
     let mut file = NamedTempFileOptions::new()
         .suffix(".json")
