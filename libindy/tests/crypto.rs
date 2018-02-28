@@ -435,7 +435,6 @@ mod high_cases {
         fn indy_crypto_auth_decrypt_works_for_invalid_msg() {
             TestUtils::cleanup_storage();
 
-            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let sender_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
             let recipient_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
@@ -449,7 +448,6 @@ mod high_cases {
 
             WalletUtils::close_wallet(sender_wallet_handle).unwrap();
             WalletUtils::close_wallet(recipient_wallet_handle).unwrap();
-            PoolUtils::close(pool_handle).unwrap();
 
             TestUtils::cleanup_storage();
         }
