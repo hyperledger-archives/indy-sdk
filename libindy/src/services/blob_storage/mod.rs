@@ -29,8 +29,8 @@ trait ReaderType {
 
 trait Reader {
     fn read(&mut self, size: usize, offset: usize) -> Result<Vec<u8>, CommonError>;
-    fn verify(&self) -> ();
-    fn close(&self) -> ();
+    fn verify(&mut self) -> Result<bool, CommonError>;
+    fn close(&self) -> Result<(), CommonError>;
 }
 
 pub struct BlobStorageService {
@@ -109,5 +109,17 @@ impl BlobStorageService {
         self.readers.try_borrow_mut()?
             .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?
             .read(size, offset)
+    }
+
+    pub fn verify(&self, handle: i32) -> Result<bool, CommonError> {
+        self.readers.try_borrow_mut()?
+            .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?
+            .verify()
+    }
+
+    pub fn close(&self, handle: i32) -> Result<(), CommonError> {
+        self.readers.try_borrow_mut()?
+            .remove(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?
+            .close()
     }
 }
