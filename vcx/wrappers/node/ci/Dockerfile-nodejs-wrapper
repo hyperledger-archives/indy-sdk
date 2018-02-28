@@ -1,0 +1,11 @@
+# Development
+FROM nodejs
+ARG uid=1000
+# Assumes we are in the ./vcx directory
+RUN npm install typescript-compiler
+COPY libvcx/target/debug/libvcx.so /usr/lib
+RUN useradd -ms /bin/bash -u $uid vcx
+USER vcx
+
+
+
