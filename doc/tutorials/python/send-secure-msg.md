@@ -1,5 +1,5 @@
 # Send a Secure Message in 10 minutes
-Indy-SDK Developer Experience Module #3, Python Edition
+Indy-SDK Developer Walkthrough #3, Python Edition
 
 [ [Java](../java/send-secure-msg.md) | [.NET](../dotnet/send-secure-msg.md) | [Node.js](../node/send-secure-msg.md) | [Objective C](../objectivec/send-secure-msg.md) ]
 
