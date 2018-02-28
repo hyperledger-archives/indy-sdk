@@ -47,8 +47,8 @@ extern "C" {
 
                                                  void           (*cb)(indy_handle_t xcommand_handle,
                                                                       indy_error_t  err,
-                                                                      const char*   revoc_reg_update_json,
-                                                                      const char*   xclaim_json   )
+                                                                      const char*   xclaim_json,
+                                                                      const char*   revoc_reg_update_json)
                                                  );
     
     

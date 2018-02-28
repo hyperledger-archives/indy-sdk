@@ -231,8 +231,8 @@ pub extern fn indy_issuer_create_claim(command_handle: i32,
                                        tails_reader_handle: i32,
                                        user_revoc_index: i32,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                            revoc_reg_delta_json: *const c_char, //TODO must be OPTIONAL
-                                                            claim_json: *const c_char
+                                                            claim_json: *const c_char,
+                                                            revoc_reg_delta_json: *const c_char
                                        )>) -> ErrorCode {
     check_useful_c_str!(claim_req_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(claim_values_json, ErrorCode::CommonInvalidParam4);
@@ -252,7 +252,7 @@ pub extern fn indy_issuer_create_claim(command_handle: i32,
                 let (err, revoc_reg_delta_json, claim_json) = result_to_err_code_2!(result, None, String::new());
                 let revoc_reg_delta_json = revoc_reg_delta_json.map(CStringUtils::string_to_cstring);
                 let claim_json = CStringUtils::string_to_cstring(claim_json);
-                cb(command_handle, err, revoc_reg_delta_json.as_ref().map(|delta| delta.as_ptr()).unwrap_or(ptr::null()), claim_json.as_ptr())
+                cb(command_handle, err, claim_json.as_ptr(), revoc_reg_delta_json.as_ref().map(|delta| delta.as_ptr()).unwrap_or(ptr::null()))
             })
         ))));
 

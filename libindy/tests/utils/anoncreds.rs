@@ -5,14 +5,12 @@ use indy::api::ErrorCode;
 use indy::api::anoncreds::*;
 
 use utils::callback::CallbackUtils;
-use utils::timeout::TimeoutUtils;
 use utils::wallet::WalletUtils;
 use utils::test::TestUtils;
 use utils::types::{CredentialsForProofRequest, CredentialInfo, Schema, SchemaData, SchemaKey};
 
 use std::ffi::CString;
 use std::ptr::null;
-use std::sync::mpsc::channel;
 use std::sync::{Once, ONCE_INIT};
 use std::mem;
 use utils::constants::*;
@@ -37,13 +35,7 @@ pub const XYZ_SEQ_NO: i32 = 2;
 
 impl AnoncredsUtils {
     pub fn issuer_create_claim_definition(wallet_handle: i32, issuer_did: &str, schema: &str, signature_type: Option<&str>, create_non_revoc: bool) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, claim_def_json| {
-            sender.send((err, claim_def_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_definition_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let schema = CString::new(schema).unwrap();
         let signature_type_str = signature_type.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
@@ -58,56 +50,21 @@ impl AnoncredsUtils {
                                                    create_non_revoc,
                                                    cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, claim_def_json) = receiver.recv().unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(claim_def_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn prover_create_master_secret(wallet_handle: i32, master_secret_name: &str) -> Result<(), ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err| {
-            sender.send((err)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_prover_create_master_secret_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let master_secret_name = CString::new(master_secret_name).unwrap();
 
-        let err = indy_prover_create_master_secret(command_handle,
-                                                   wallet_handle,
-                                                   master_secret_name.as_ptr(),
-                                                   cb);
+        let err = indy_prover_create_master_secret(command_handle, wallet_handle, master_secret_name.as_ptr(), cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let err = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(())
+        super::results::result_to_empty(err, receiver)
     }
 
     pub fn issuer_create_claim_offer(wallet_handle: i32, schema: &str, issuer_did: &str, prover_did: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, claim_def_json| {
-            sender.send((err, claim_def_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_offer_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let schema = CString::new(schema).unwrap();
         let issuer_did = CString::new(issuer_did).unwrap();
@@ -121,27 +78,11 @@ impl AnoncredsUtils {
                                            prover_did.as_ptr(),
                                            cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, claim_offer_json) = receiver.recv().unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(claim_offer_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn prover_store_claim_offer(wallet_handle: i32, claim_offer_json: &str) -> Result<(), ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err| {
-            sender.send((err)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_claim_offer_json_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let claim_offer_json = CString::new(claim_offer_json).unwrap();
 
@@ -150,57 +91,22 @@ impl AnoncredsUtils {
                                                 claim_offer_json.as_ptr(),
                                                 cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let err = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(())
+        super::results::result_to_empty(err, receiver)
     }
 
     pub fn prover_get_claim_offers(wallet_handle: i32, filter_json: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, claim_offers_json| {
-            sender.send((err, claim_offers_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_prover_get_claim_offers_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let filter_json = CString::new(filter_json).unwrap();
 
-        let err = indy_prover_get_claim_offers(command_handle,
-                                               wallet_handle,
-                                               filter_json.as_ptr(),
-                                               cb);
+        let err = indy_prover_get_claim_offers(command_handle, wallet_handle, filter_json.as_ptr(), cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, claim_offers_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(claim_offers_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn prover_create_and_store_claim_req(wallet_handle: i32, prover_did: &str, claim_offer_json: &str,
                                              claim_def_json: &str, master_secret_name: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, claim_req_json| {
-            sender.send((err, claim_req_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_prover_create_claim_req_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let prover_did = CString::new(prover_did).unwrap();
         let claim_offer_json = CString::new(claim_offer_json).unwrap();
@@ -215,28 +121,13 @@ impl AnoncredsUtils {
                                                          master_secret_name.as_ptr(),
                                                          cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, claim_req_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(claim_req_json)
+        super::results::result_to_string(err, receiver)
     }
 
+
     pub fn issuer_create_claim(wallet_handle: i32, claim_req_json: &str, claim_values_json: &str,
-                               tails_reader_handler: Option<i32>, user_revoc_index: Option<i32>) -> Result<(Option<String>, String), ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, revoc_reg_delta_json, xclaim_json| {
-            sender.send((err, revoc_reg_delta_json, xclaim_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_cb(cb);
+                               tails_reader_handler: Option<i32>, user_revoc_index: Option<i32>) -> Result<(String, Option<String>), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_opt_string();
 
         let claim_req_json = CString::new(claim_req_json).unwrap();
         let claim_values_json = CString::new(claim_values_json).unwrap();
@@ -249,27 +140,11 @@ impl AnoncredsUtils {
                                            user_revoc_index.unwrap_or(-1),
                                            cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, revoc_reg_delta_json, claim_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok((revoc_reg_delta_json, claim_json))
+        super::results::result_to_string_opt_string(err, receiver)
     }
 
     pub fn prover_store_claim(wallet_handle: i32, id: &str, claim_json: &str, rev_reg_def_json: Option<&str>, rev_reg_entry_json: Option<&str>) -> Result<(), ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err| {
-            sender.send(err).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_prover_store_claim_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let id = CString::new(id).unwrap();
         let claim_json = CString::new(claim_json).unwrap();
@@ -284,56 +159,21 @@ impl AnoncredsUtils {
                                           if rev_reg_entry_json.is_some() { rev_reg_entry_json_str.as_ptr() } else { null() },
                                           cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let err = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(())
+        super::results::result_to_empty(err, receiver)
     }
 
     pub fn prover_get_claims(wallet_handle: i32, filter_json: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, claims_json| {
-            sender.send((err, claims_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_prover_get_claims(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let filter_json = CString::new(filter_json).unwrap();
 
-        let err = indy_prover_get_claims(command_handle,
-                                         wallet_handle,
-                                         filter_json.as_ptr(),
-                                         cb);
+        let err = indy_prover_get_claims(command_handle, wallet_handle, filter_json.as_ptr(), cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, claims_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(claims_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn prover_get_claims_for_proof_req(wallet_handle: i32, proof_request_json: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, claims_json| {
-            sender.send((err, claims_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_prover_get_claims_for_proof_req_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let proof_request_json = CString::new(proof_request_json).unwrap();
 
@@ -342,36 +182,20 @@ impl AnoncredsUtils {
                                                        proof_request_json.as_ptr(),
                                                        cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, claims_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(claims_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn prover_create_proof(wallet_handle: i32, proof_req_json: &str, requested_claims_json: &str,
                                schemas_json: &str, master_secret_name: &str, claim_defs_json: &str,
                                revoc_reg_entries_json: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, proof_json| {
-            sender.send((err, proof_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_prover_get_claims_for_proof_req_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let proof_req_json = CString::new(proof_req_json).unwrap();
         let requested_claims_json = CString::new(requested_claims_json).unwrap();
         let schemas_json = CString::new(schemas_json).unwrap();
         let master_secret_name = CString::new(master_secret_name).unwrap();
         let claim_defs_json = CString::new(claim_defs_json).unwrap();
-        let revoc_regs_json = CString::new(revoc_reg_entries_json).unwrap();
+        let revoc_reg_entries_json = CString::new(revoc_reg_entries_json).unwrap();
 
         let err = indy_prover_create_proof(command_handle,
                                            wallet_handle,
@@ -380,31 +204,15 @@ impl AnoncredsUtils {
                                            schemas_json.as_ptr(),
                                            master_secret_name.as_ptr(),
                                            claim_defs_json.as_ptr(),
-                                           revoc_regs_json.as_ptr(),
+                                           revoc_reg_entries_json.as_ptr(),
                                            cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, proof_json) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(proof_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn verifier_verify_proof(proof_request_json: &str, proof_json: &str, schemas_json: &str,
                                  claim_defs_json: &str, rev_reg_defs_json: &str, rev_reg_entries_json: &str) -> Result<bool, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, valid| {
-            sender.send((err, valid)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_verifier_verify_proof_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_bool();
 
         let proof_request_json = CString::new(proof_request_json).unwrap();
         let proof_json = CString::new(proof_json).unwrap();
@@ -422,28 +230,12 @@ impl AnoncredsUtils {
                                              rev_reg_entries_json.as_ptr(),
                                              cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, valid) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(valid)
+        super::results::result_to_bool(err, receiver)
     }
 
     pub fn indy_issuer_create_and_store_revoc_reg(wallet_handle: i32, tails_writer_config: &str, issuer_did: &str,
                                                   schema_json: &str, issuance_by_default: bool, max_claim_num: u32) -> Result<(String, String), ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, revoc_reg_def_json, revoc_reg_json| {
-            sender.send((err, revoc_reg_def_json, revoc_reg_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_and_store_revoc_reg_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
 
         let tails_writer_type = CString::new("default").unwrap();
         let tails_writer_config = CString::new(tails_writer_config).unwrap();
@@ -460,27 +252,11 @@ impl AnoncredsUtils {
                                                          issuance_by_default,
                                                          cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, revoc_reg_def_json, revoc_reg_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok((revoc_reg_def_json, revoc_reg_json))
+        super::results::result_to_string_string(err, receiver)
     }
 
     pub fn issuer_revoke_claim(wallet_handle: i32, tails_reader_handle: i32, issuer_did: &str, schema_json: &str, user_revoc_index: u32) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, revoc_reg_delta_json| {
-            sender.send((err, revoc_reg_delta_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_issuer_revoke_claim_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let issuer_did = CString::new(issuer_did).unwrap();
         let schema_json = CString::new(schema_json).unwrap();
@@ -493,27 +269,11 @@ impl AnoncredsUtils {
                                            user_revoc_index,
                                            cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, revoc_reg_delta_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(revoc_reg_delta_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn create_witness(wallet_handle: i32, tails_reader_handle: i32, rev_reg_def_json: &str, rev_reg_delta_json: &str, user_revoc_index: u32) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, witness_json| {
-            sender.send((err, witness_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_issuer_revoke_claim_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let rev_reg_def_json = CString::new(rev_reg_def_json).unwrap();
         let rev_reg_delta_json = CString::new(rev_reg_delta_json).unwrap();
@@ -526,28 +286,12 @@ impl AnoncredsUtils {
                                       user_revoc_index,
                                       cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, witness_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(witness_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn update_witness(wallet_handle: i32, tails_reader_handle: i32, witness_json: &str, rev_reg_def_json: &str,
                           rev_reg_delta_json: &str, user_revoc_index: u32) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, witness_json| {
-            sender.send((err, witness_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_issuer_revoke_claim_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let witness_json = CString::new(witness_json).unwrap();
         let rev_reg_def_json = CString::new(rev_reg_def_json).unwrap();
@@ -562,27 +306,11 @@ impl AnoncredsUtils {
                                       user_revoc_index,
                                       cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, updated_witness_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(updated_witness_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn store_witness(wallet_handle: i32, id: &str, witness_json: &str) -> Result<(), ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err| {
-            sender.send(err).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_prover_store_claim_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let id = CString::new(id).unwrap();
         let witness_json = CString::new(witness_json).unwrap();
@@ -593,27 +321,11 @@ impl AnoncredsUtils {
                                      witness_json.as_ptr(),
                                      cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let err = receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(())
+        super::results::result_to_empty(err, receiver)
     }
 
     pub fn get_witness(wallet_handle: i32, id: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, witness_json| {
-            sender.send((err, witness_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_issuer_revoke_claim_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let id = CString::new(id).unwrap();
 
@@ -622,17 +334,7 @@ impl AnoncredsUtils {
                                    id.as_ptr(),
                                    cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, witness_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(witness_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn get_composite_id(issuer_did: &str, schema_key: &SchemaKey) -> String {
@@ -969,7 +671,7 @@ impl AnoncredsUtils {
                 let claim_values_json = AnoncredsUtils::gvt_claim_values_json();
 
                 //13. Issuer1 creates GVT Credential
-                let (_, claim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_gvt_claim_req, &claim_values_json, None, None).unwrap();
+                let (claim_json, _) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_gvt_claim_req, &claim_values_json, None, None).unwrap();
 
                 //14. Store Credential
                 AnoncredsUtils::prover_store_claim(WALLET_HANDLE, CLAIM1_ID, &claim_json, None, None).unwrap();
@@ -984,7 +686,7 @@ impl AnoncredsUtils {
                 let claim_values_json = AnoncredsUtils::xyz_claim_values_json();
 
                 //16. Create XYZ Credential
-                let (_, claim_2_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_xyz_claim_req, &claim_values_json, None, None).unwrap();
+                let (claim_2_json, _) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_xyz_claim_req, &claim_values_json, None, None).unwrap();
 
                 //17. Store Credential
                 AnoncredsUtils::prover_store_claim(WALLET_HANDLE, CLAIM2_ID, &claim_2_json, None, None).unwrap();
@@ -999,7 +701,7 @@ impl AnoncredsUtils {
                 let claim_values_json = AnoncredsUtils::gvt2_claim_values_json();
 
                 //19. Create XYZ Credential
-                let (_, claim_3_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer2_gvt_claim_req, &claim_values_json, None, None).unwrap();
+                let (claim_3_json, _) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer2_gvt_claim_req, &claim_values_json, None, None).unwrap();
 
                 //20. Store Credential
                 AnoncredsUtils::prover_store_claim(WALLET_HANDLE, CLAIM3_ID, &claim_3_json, None, None).unwrap();

@@ -13,13 +13,7 @@ pub struct BlobStorageUtils {}
 
 impl BlobStorageUtils {
     pub fn open_reader(type_: &str, config_json: &str, location: &str, hash: &str) -> Result<i32, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, handle| {
-            sender.send((err, handle)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_open_reader_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_i32();
 
         let type_ = CString::new(type_).unwrap();
         let config_json = CString::new(config_json).unwrap();
@@ -33,16 +27,6 @@ impl BlobStorageUtils {
                                    hash.as_ptr(),
                                    cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, handle) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(handle)
+        super::results::result_to_int(err, receiver)
     }
 }
