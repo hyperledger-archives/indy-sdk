@@ -88,7 +88,8 @@ Save the updated version of `msgme.py`. Now take a minute and study the changes.
 The `prep()` function is designed to be called with a string argument entered
 on the command line--for example, when the user types `prep Hello, world`, the
 `msg` parameter of `prep()` receives the value `"Hello, world"`. Prep saves
-this message into a text file. It then turns around and reads the bytes it
+this message into a text file (so you can inspect it--not because it needs
+to do any file I/O). It then turns around and reads the bytes it
 has just written, and calls `auth_crypt()` to convert those bytes into a
 version that is encrypted especially for the private channel between two
 identities. The receiver will know that the sender created the message, that
