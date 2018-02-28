@@ -62,7 +62,8 @@ describe('A Shema', function () {
       await schema.serialize()
     } catch (error) {
       assert.equal(error.vcxCode, 1042)
-      assert.equal(error.message, 'vcx_schema_serialize')
+      assert.equal(error.vcxFunction, 'vcx_schema_serialize')
+      assert.equal(error.message, 'Invalid Schema Handle')
     }
   })
 

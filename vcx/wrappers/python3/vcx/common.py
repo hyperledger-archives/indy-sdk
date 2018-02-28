@@ -46,6 +46,20 @@ def release(name, handle):
         raise VcxError(ErrorCode(err))
 
 
+async def error_message(error_code: int) -> str:
+    logger = logging.getLogger(__name__)
+    if not hasattr(error_message, "cb"):
+        logger.debug("{}: Creating callback".format('vcx_error_message'))
+        error_message.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+    c_error_code = c_uint32(error_code)
+
+    msg = await do_call('vcx_error_message',
+                        c_error_code,
+                        error_message.cb)
+    return msg.decode()
+
+
 def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
 
     def _cb(command_handle: int, err: int, *args):

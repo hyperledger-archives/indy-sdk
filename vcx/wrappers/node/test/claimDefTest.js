@@ -50,7 +50,8 @@ describe('A ClaimDef', function () {
       await claimDef.serialize()
     } catch (error) {
       assert.equal(error.vcxCode, 1037)
-      assert.equal(error.message, 'vcx_claimdef_serialize')
+      assert.equal(error.vcxFunction, 'vcx_claimdef_serialize')
+      assert.equal(error.message, 'Invalid Claim Definition handle')
     }
   })
 })

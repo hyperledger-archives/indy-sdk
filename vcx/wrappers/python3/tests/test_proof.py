@@ -170,4 +170,3 @@ async def test_get_proof_with_invalid_proof():
               "claim_uuid": "claim::f22cc7c8-924f-4541-aeff-29a9aed9c46b",
               "attr_info": {"name": "state", "value": "UT", "type": "revealed"}}]
     assert proof_data[0] == attrs[0]
-

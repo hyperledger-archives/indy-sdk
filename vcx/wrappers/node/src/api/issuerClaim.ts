@@ -5,6 +5,7 @@ import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { StateType } from './common'
 import { Connection } from './connection'
+import { VCXBase } from './VCXBase'
 import { VCXBaseWithState } from './VCXBaseWithState'
 
 /**
@@ -100,7 +101,7 @@ export class IssuerClaim extends VCXBaseWithState {
       )
       return claim
     } catch (err) {
-      throw new VCXInternalError(err, 'vcx_issuer_create_claim')
+      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_issuer_create_claim')
     }
   }
 
@@ -128,7 +129,7 @@ export class IssuerClaim extends VCXBaseWithState {
       const claim = await super._deserialize<IssuerClaim, IClaimParams>(IssuerClaim, claimData, params)
       return claim
     } catch (err) {
-      throw new VCXInternalError(err, 'vcx_issuer_claim_deserialize')
+      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_issuer_claim_deserialize')
     }
   }
 
@@ -143,7 +144,7 @@ export class IssuerClaim extends VCXBaseWithState {
     try {
       return await this._getState()
     } catch (err) {
-      throw new VCXInternalError(err, 'vcx_issuer_claim_get_state')
+      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_issuer_claim_get_state')
     }
   }
 
@@ -158,7 +159,7 @@ export class IssuerClaim extends VCXBaseWithState {
     try {
       await this._updateState()
     } catch (err) {
-      throw new VCXInternalError(err, 'vcx_issuer_claim_updateState')
+      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_issuer_claim_updateState')
     }
   }
 
@@ -175,7 +176,7 @@ export class IssuerClaim extends VCXBaseWithState {
     try {
       return JSON.parse(await super._serialize())
     } catch (err) {
-      throw new VCXInternalError(err, 'vcx_issuer_claim_serialize')
+      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_issuer_claim_serialize')
     }
   }
 
@@ -208,7 +209,7 @@ export class IssuerClaim extends VCXBaseWithState {
         )
     } catch (err) {
       // TODO handle error
-      throw new VCXInternalError(err, 'vcx_issuer_send_claim_offer')
+      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_issuer_send_claim_offer')
     }
   }
 
@@ -240,7 +241,7 @@ export class IssuerClaim extends VCXBaseWithState {
         })
       )
     } catch (err) {
-      throw new VCXInternalError(err, 'vcx_issuer_send_claim')
+      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_issuer_send_claim')
     }
   }
 

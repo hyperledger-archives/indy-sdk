@@ -54,6 +54,7 @@ typedef struct {
  */
 
 vcx_error_t vcx_init(vcx_command_handle_t handle, const char *config_path,void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
+vcx_error_t vcx_error_message(vcx_command_handle_t handle, vcx_error_t error_code, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *error_msg))
 
 
 /**

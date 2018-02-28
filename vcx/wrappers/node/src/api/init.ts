@@ -3,6 +3,7 @@ import { Callback } from 'ffi'
 import { VCXInternalError } from '../errors'
 import { initRustAPI, rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
+import { VCXBase } from './VCXBase'
 
 export interface IInitVCXOptions {
   libVCXPath?: string
@@ -30,6 +31,6 @@ export async function initVcx (configPath: string, options: IInitVCXOptions = {}
       })
     )
   } catch (err) {
-    throw new VCXInternalError(err, 'vcx_init')
+    throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_init')
   }
 }
