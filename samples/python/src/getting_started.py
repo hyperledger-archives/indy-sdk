@@ -194,7 +194,7 @@ async def run():
 
     logger.info("\"Faber\" -> Authcrypt \"Transcript\" Claim Offer for Alice")
     authcrypted_transcript_claim_offer = await crypto.auth_crypt(faber_wallet, faber_alice_key, alice_faber_verkey,
-                                                                 transcript_claim_offer_json)
+                                                                 transcript_claim_offer_json.encode('utf-8'))
 
     logger.info("\"Faber\" -> Send authcrypted \"Transcript\" Claim Offer to Alice")
 
@@ -321,7 +321,7 @@ async def run():
         await crypto.auth_crypt(acme_wallet, acme_alice_key, alice_acme_verkey,
                                 job_application_proof_request_json.encode('utf-8'))
 
-    logger.info("\"Acme\" -> Sentd authcrypted \"Job-Application\" Proof Request to Alice")
+    logger.info("\"Acme\" -> Send authcrypted \"Job-Application\" Proof Request to Alice")
 
     logger.info("\"Alice\" -> Authdecrypt \"Job-Application\" Proof Request from Acme")
     acme_alice_verkey, authdecrypted_job_application_proof_request_json, _ = \
@@ -410,8 +410,8 @@ async def run():
     alice_acme_verkey = await did.key_for_did(pool_handle, acme_wallet, acme_alice_connection_response['did'])
 
     logger.info("\"Acme\" -> Authcrypt \"Job-Certificate\" Claim Offer for Alice")
-    authcrypted_job_certificate_claim_offer = \
-        await crypto.auth_crypt(acme_wallet, acme_alice_key, alice_acme_verkey, job_certificate_claim_offer_json)
+    authcrypted_job_certificate_claim_offer = await crypto.auth_crypt(acme_wallet, acme_alice_key, alice_acme_verkey,
+                                                                      job_certificate_claim_offer_json.encode('utf-8'))
 
     logger.info("\"Acme\" -> Send authcrypted \"Job-Certificate\" Claim Offer to Alice")
 
@@ -524,7 +524,7 @@ async def run():
         await crypto.auth_crypt(thrift_wallet, thrift_alice_key, alice_thrift_verkey,
                                 apply_loan_proof_request_json.encode('utf-8'))
 
-    logger.info("\"Thrift\" -> Sentd authcrypted \"Loan-Application-Basic\" Proof Request to Alice")
+    logger.info("\"Thrift\" -> Send authcrypted \"Loan-Application-Basic\" Proof Request to Alice")
 
     logger.info("\"Alice\" -> Authdecrypt \"Loan-Application-Basic\" Proof Request from Thrift")
     thrift_alice_verkey, authdecrypted_apply_loan_proof_request_json, _ = \
@@ -614,7 +614,7 @@ async def run():
         await crypto.auth_crypt(thrift_wallet, thrift_alice_key, alice_thrift_verkey,
                                 apply_loan_kyc_proof_request_json.encode('utf-8'))
 
-    logger.info("\"Thrift\" -> Sentd authcrypted \"Loan-Application-KYC\" Proof Request to Alice")
+    logger.info("\"Thrift\" -> Send authcrypted \"Loan-Application-KYC\" Proof Request to Alice")
 
     logger.info("\"Alice\" -> Authdecrypt \"Loan-Application-KYC\" Proof Request from Thrift")
     thrift_alice_verkey, authdecrypted_apply_loan_kyc_proof_request_json, _ = \

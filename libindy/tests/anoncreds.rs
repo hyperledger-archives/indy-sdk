@@ -26,6 +26,9 @@ use indy::api::ErrorCode;
 use utils::inmem_wallet::InmemWallet;
 use utils::constants::*;
 
+#[test]
+fn a() {}
+
 mod high_cases {
     use super::*;
 
@@ -325,7 +328,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn prover_store_claim_worksa() {
+        fn prover_store_claim_works() {
             let (wallet_handle, claim_def_json, claim_offer, _, _) = AnoncredsUtils::init_common_wallet();
             let prover_wallet_handle = WalletUtils::create_and_open_wallet("proverWallet", None).unwrap();
 
@@ -337,7 +340,7 @@ mod high_cases {
                                                                               claim_def_json,
                                                                               COMMON_MASTER_SECRET).unwrap();
 
-            let (_, claim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle, &claim_req,
+            let (claim_json, _) = AnoncredsUtils::issuer_create_claim(wallet_handle, &claim_req,
                                                                       &AnoncredsUtils::gvt_claim_values_json(),
                                                                       None,
                                                                       None).unwrap();
@@ -2186,7 +2189,7 @@ mod demos {
 
         //8. Issuer create Credential
         let claim_values_json = AnoncredsUtils::gvt_claim_values_json();
-        let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
+        let (xclaim_json, _) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                    -1, &claim_req,
                                                                    &claim_values_json, None).unwrap();
 
@@ -2336,7 +2339,7 @@ mod demos {
                                                                                COMMON_MASTER_SECRET).unwrap();
 
         // 6. Issuer creates Credential
-        let (_, claim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle,
+        let (claim_json, _) = AnoncredsUtils::issuer_create_claim(wallet_handle,
                                                                   &claim_req_json,
                                                                   &AnoncredsUtils::gvt_claim_values_json(),
                                                                   None,
@@ -2421,7 +2424,7 @@ mod demos {
                                                                           COMMON_MASTER_SECRET).unwrap();
 
         //9. Issuer creates Credential
-        let (_, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
+        let (claim_json, _) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                   &claim_req,
                                                                   &AnoncredsUtils::gvt_claim_values_json(),
                                                                   None,
@@ -2560,7 +2563,7 @@ mod demos {
                                                                               COMMON_MASTER_SECRET).unwrap();
 
         //12. Issuer creates GVT Credential
-        let (_, gvt_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_gvt_wallet_handle,
+        let (gvt_claim_json, _) = AnoncredsUtils::issuer_create_claim(issuer_gvt_wallet_handle,
                                                                       &gvt_claim_req,
                                                                       &AnoncredsUtils::gvt_claim_values_json(),
                                                                       None,
@@ -2577,7 +2580,7 @@ mod demos {
                                                                               COMMON_MASTER_SECRET).unwrap();
 
         //15. Issuer creates XYZ Credential
-        let (_, xyz_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_xyz_wallet_handle,
+        let (xyz_claim_json, _) = AnoncredsUtils::issuer_create_claim(issuer_xyz_wallet_handle,
                                                                       &xyz_claim_req,
                                                                       &AnoncredsUtils::xyz_claim_values_json(),
                                                                       None,
@@ -2731,7 +2734,7 @@ mod demos {
 
 
         //11. Issuer creates GVT Credential
-        let (_, gvt_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
+        let (gvt_claim_json, _) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                       &gvt_claim_req,
                                                                       &AnoncredsUtils::gvt_claim_values_json(),
                                                                       None,
@@ -2748,7 +2751,7 @@ mod demos {
                                                                               COMMON_MASTER_SECRET).unwrap();
 
         //14. Issuer creates XYZ Credential
-        let (_, xyz_claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
+        let (xyz_claim_json, _) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                       &xyz_claim_req,
                                                                       &AnoncredsUtils::xyz_claim_values_json(),
                                                                       None,
@@ -2879,7 +2882,7 @@ mod demos {
 
 
         //9. Issuer creates Credential
-        let (revoc_reg_delta_json, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
+        let (claim_json, revoc_reg_delta_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                                      &claim_req_json,
                                                                                      &AnoncredsUtils::gvt_claim_values_json(),
                                                                                      Some(tails_reader_handle),
@@ -2982,7 +2985,7 @@ mod demos {
 
 
         //9. Issuer creates Credential
-        let (revoc_reg_delta_json, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
+        let (claim_json, revoc_reg_delta_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                                      &claim_req_json,
                                                                                      &AnoncredsUtils::gvt_claim_values_json(),
                                                                                      Some(tails_reader_handle),
@@ -3087,7 +3090,7 @@ mod demos {
 
 
         //9. Issuer creates Credential
-        let (revoc_reg_delta_json, claim_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
+        let (claim_json, revoc_reg_delta_json) = AnoncredsUtils::issuer_create_claim(issuer_wallet_handle,
                                                                                      &claim_req_json,
                                                                                      &AnoncredsUtils::gvt_claim_values_json(),
                                                                                      Some(tails_reader_handle),
