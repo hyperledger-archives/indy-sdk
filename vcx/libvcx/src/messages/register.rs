@@ -179,7 +179,7 @@ pub fn connect_register_provision(endpoint: &str,
 mod tests {
 
     use super::*;
-    use utils::constants::{DEMO_AGENT_PW_SEED, REGISTER_RESPONSE, PROVISION_RESPONSE};
+    use utils::constants::{DEMO_ISSUER_PW_SEED, REGISTER_RESPONSE, PROVISION_RESPONSE};
 
     #[test]
     fn test_connect_register_provision() {
@@ -208,12 +208,12 @@ mod tests {
     fn test_real_connect_register_provision() {
         let config_path = "/tmp/test_real_agency_connect.json";
 
-        let agency_did = "Ab8TvZa3Q19VNkQVzAWVL7";
-        let agency_vk = "5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf";
+        let agency_did = "YRuVCckY6vfZfX9kcQZe3u";
+        let agency_vk = "J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v";
         let host = "https://enym-eagency.pdev.evernym.com";
-        let wallet_name = "my_real_wallet";
+        let wallet_name = "test_real_connect_register_provision";
 
-        let result = connect_register_provision(&host, &agency_did, &agency_vk, &wallet_name, None, Some(DEMO_AGENT_PW_SEED.to_string()), None).unwrap();
+        let result = connect_register_provision(&host, &agency_did, &agency_vk, &wallet_name, None, Some(DEMO_ISSUER_PW_SEED.to_string()), None).unwrap();
         assert!(result.len() > 0);
         println!("result: {}", result);
 
