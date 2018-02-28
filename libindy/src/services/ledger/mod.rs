@@ -89,8 +89,11 @@ impl LedgerService {
             .map_err(|err| CommonError::InvalidState(format!("Invalid attrib request json: {:?}", err)))
     }
 
-    pub fn build_get_attrib_request(&self, identifier: &str, dest: &str, raw: &str) -> Result<String, CommonError> {
-        let operation = GetAttribOperation::new(dest.to_string(), raw.to_string());
+    pub fn build_get_attrib_request(&self, identifier: &str, dest: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, CommonError> {
+        if raw.is_none() && hash.is_none() && enc.is_none() {
+            return Err(CommonError::InvalidStructure(format!("Either raw or hash or enc must be specified")));
+        }
+        let operation = GetAttribOperation::new(dest.to_string(), raw, hash, enc);
         Request::build_request(identifier.to_string(), operation)
             .map_err(|err| CommonError::InvalidState(format!("Invalid get_attrib request json: {:?}", err)))
     }
@@ -284,6 +287,51 @@ mod tests {
     }
 
     #[test]
+    fn build_get_attrib_request_works_for_raw_value() {
+        let ledger_service = LedgerService::new();
+        let identifier = "identifier";
+        let dest = "dest";
+        let raw = "raw";
+
+        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","raw":"raw"},"protocolVersion":1"#;
+
+        let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, Some(raw), None, None);
+        assert!(get_attrib_request.is_ok());
+        let get_attrib_request = get_attrib_request.unwrap();
+        assert!(get_attrib_request.contains(expected_result));
+    }
+
+    #[test]
+    fn build_get_attrib_request_works_for_hash_value() {
+        let ledger_service = LedgerService::new();
+        let identifier = "identifier";
+        let dest = "dest";
+        let hash = "hash";
+
+        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","hash":"hash"},"protocolVersion":1"#;
+
+        let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, None, Some(hash), None);
+        assert!(get_attrib_request.is_ok());
+        let get_attrib_request = get_attrib_request.unwrap();
+        assert!(get_attrib_request.contains(expected_result));
+    }
+
+    #[test]
+    fn build_get_attrib_request_works_for_enc_value() {
+        let ledger_service = LedgerService::new();
+        let identifier = "identifier";
+        let dest = "dest";
+        let enc = "enc";
+
+        let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","enc":"enc"},"protocolVersion":1"#;
+
+        let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, None, None, Some(enc));
+        assert!(get_attrib_request.is_ok());
+        let get_attrib_request = get_attrib_request.unwrap();
+        assert!(get_attrib_request.contains(expected_result));
+    }
+
+    #[test]
     fn build_get_attrib_request_works() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
@@ -292,7 +340,7 @@ mod tests {
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","raw":"raw"},"protocolVersion":1"#;
 
-        let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, raw);
+        let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, Some(raw), None, None);
         assert!(get_attrib_request.is_ok());
         let get_attrib_request = get_attrib_request.unwrap();
         assert!(get_attrib_request.contains(expected_result));

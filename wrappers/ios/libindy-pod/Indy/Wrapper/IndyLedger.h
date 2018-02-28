@@ -25,7 +25,7 @@
                 submitterDID:(NSString *)submitterDid
                   poolHandle:(IndyHandle)poolHandle
                 walletHandle:(IndyHandle)walletHandle
-                  completion:(void (^)(NSError *error, NSString *requestResultJSON)) completion;
+                  completion:(void (^)(NSError *error, NSString *requestResultJSON))completion;
 
 /**
  Signs request message.
@@ -41,7 +41,7 @@
 + (void)signRequest:(NSString *)requestJson
        submitterDid:(NSString *)submitterDid
        walletHandle:(IndyHandle)walletHandle
-         completion:(void (^)(NSError *error, NSString *requestResultJSON)) completion;
+         completion:(void (^)(NSError *error, NSString *requestResultJSON))completion;
 
 /**
  Publishes request message to validator pool (no signing, unlike sign_and_submit_request).
@@ -54,7 +54,7 @@
  */
 + (void)submitRequest:(NSString *)requestJSON
            poolHandle:(IndyHandle)poolHandle
-           completion:(void (^)(NSError *error, NSString *requestResultJSON)) completion;
+           completion:(void (^)(NSError *error, NSString *requestResultJSON))completion;
 
 // MARK: - Nym request
 
@@ -73,7 +73,7 @@
                                  verkey:(NSString *)verkey
                                   alias:(NSString *)alias
                                    role:(NSString *)role
-                             completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
+                             completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 /**
  Builds a GET_NYM request.
@@ -84,7 +84,7 @@
  */
 + (void)buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
                                  targetDID:(NSString *)targetDid
-                                completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
+                                completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 // MARK: - Attribute request
 
@@ -103,7 +103,7 @@
                                       hash:(NSString *)hash
                                        raw:(NSString *)raw
                                        enc:(NSString *)enc
-                                completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
+                                completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 /**
  Builds a GET_ATTRIB request.
@@ -115,8 +115,10 @@
  */
 + (void)buildGetAttribRequestWithSubmitterDid:(NSString *)submitterDid
                                     targetDID:(NSString *)targetDid
-                                         data:(NSString *)data
-                                   completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
+                                          raw:(NSString *)raw
+                                         hash:(NSString *)hash
+                                          enc:(NSString *)enc
+                                   completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 // MARK: - Schema request
 
@@ -129,7 +131,7 @@
  */
 + (void)buildSchemaRequestWithSubmitterDid:(NSString *)submitterDid
                                       data:(NSString *)data
-                                completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
+                                completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 /**
  Builds a GET_SCHEMA request.
@@ -142,7 +144,7 @@
 + (void)buildGetSchemaRequestWithSubmitterDid:(NSString *)submitterDid
                                          dest:(NSString *)dest
                                          data:(NSString *)data
-                                   completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
+                                   completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 // MARK: - ClaimDefTxn request
 
@@ -159,7 +161,7 @@
                                     xref:(NSNumber *)xref
                            signatureType:(NSString *)signatureType
                                     data:(NSString *)data
-                              completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
+                              completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 /**
  Builds a GET_CLAIM_DEF request.
@@ -174,7 +176,7 @@
                                        xref:(NSNumber *)xref
                               signatureType:(NSString *)signatureType
                                      origin:(NSString *)origin
-                                 completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
+                                 completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 // MARK: - Ddo request
 
@@ -188,7 +190,7 @@
  */
 + (void)buildGetDdoRequestWithSubmitterDid:(NSString *)submitterDid
                                  targetDID:(NSString *)targetDid
-                                completion:(void (^)(NSError *error, NSString *requestResultJSON)) completion;
+                                completion:(void (^)(NSError *error, NSString *requestResultJSON))completion;
 
 // MARK: - Node request
 
@@ -203,7 +205,7 @@
 + (void)buildNodeRequestWithSubmitterDid:(NSString *)submitterDid
                                targetDid:(NSString *)targetDid
                                     data:(NSString *)data
-                              completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
+                              completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 // MARK: - Txn request
 
@@ -216,7 +218,7 @@
  */
 + (void)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
                                       data:(NSNumber *)data
-                                completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
+                                completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 // MARK: - Pool config request
 
@@ -231,7 +233,7 @@
 + (void)buildPoolConfigRequestWithSubmitterDid:(NSString *)submitterDid
                                         writes:(BOOL)writes
                                          force:(BOOL)force
-                                    completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
+                                    completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 // MARK: - Pool upgrade request
 
 /**
@@ -259,6 +261,6 @@
                                   justification:(NSString *)justification
                                       reinstall:(BOOL)reinstall
                                           force:(BOOL)force
-                                     completion:(void (^)(NSError *error, NSString *requestJSON)) completion;
+                                     completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 
 @end

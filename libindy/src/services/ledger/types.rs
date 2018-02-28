@@ -118,15 +118,22 @@ pub struct GetAttribOperation {
     #[serde(rename = "type")]
     pub _type: String,
     pub dest: String,
-    pub raw: String
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub raw: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enc: Option<String>
 }
 
 impl GetAttribOperation {
-    pub fn new(dest: String, raw: String) -> GetAttribOperation {
+    pub fn new(dest: String, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> GetAttribOperation {
         GetAttribOperation {
             _type: GET_ATTR.to_string(),
             dest,
-            raw
+            raw: raw.map(String::from),
+            hash: hash.map(String::from),
+            enc: enc.map(String::from)
         }
     }
 }

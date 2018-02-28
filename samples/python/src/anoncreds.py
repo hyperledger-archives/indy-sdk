@@ -50,16 +50,14 @@ async def demo():
     master_secret_name = 'master_secret'
     await anoncreds.prover_create_master_secret(prover_wallet, master_secret_name)
 
-    # 5. Prover create Claim Request
-    claim_offer_json = json.dumps({
-        'issuer_did': issuer_did,
-        'schema_key': schema_key
-    })
+    # 5. Issuer create Claim Offer
+    claim_offer_json = await anoncreds.issuer_create_claim_offer(issuer_wallet, schema_json, issuer_did, prover_did)
 
+    # 6. Prover create Claim Request
     claim_req_json = await anoncreds.prover_create_and_store_claim_req(prover_wallet, prover_did, claim_offer_json,
                                                                        claim_def_json, master_secret_name)
 
-    # 6. Issuer create Claim for Claim Request
+    # 7. Issuer create Claim for Claim Request
     claim_json = json.dumps({
         'sex': ['male', '5944657099558967239210949258394887428692050081607692519917050011144233115103'],
         'name': ['Alex', '1139481716457488690172217916278103335'],
@@ -69,10 +67,10 @@ async def demo():
 
     (_, claim_json) = await anoncreds.issuer_create_claim(issuer_wallet, claim_req_json, claim_json, -1)
 
-    # 7. Prover process and store Claim
+    # 8. Prover process and store Claim
     await anoncreds.prover_store_claim(prover_wallet, claim_json, None)
 
-    # 8. Prover gets Claims for Proof Request
+    # 9. Prover gets Claims for Proof Request
     proof_req_json = json.dumps({
         'nonce': '123432421212',
         'name': 'proof_req_1',
@@ -102,7 +100,7 @@ async def demo():
     claim_for_attr1 = claims_for_proof['attrs']['attr1_referent']
     referent = claim_for_attr1[0]['referent']
 
-    # 9. Prover create Proof for Proof Request
+    # 10. Prover create Proof for Proof Request
     requested_claims_json = json.dumps({
         'self_attested_attributes': {},
         'requested_attrs': {'attr1_referent': [referent, True]},
@@ -119,15 +117,15 @@ async def demo():
 
     assert 'Alex' == proof['requested_proof']['revealed_attrs']['attr1_referent'][1]
 
-    # 10. Verifier verify proof
+    # 11. Verifier verify proof
     assert await anoncreds.verifier_verify_proof(proof_req_json, proof_json, schemas_json, claim_defs_json,
                                                  revoc_regs_json)
 
-    # 11. Close and delete Issuer wallet
+    # 12. Close and delete Issuer wallet
     await wallet.close_wallet(issuer_wallet)
     await wallet.delete_wallet(issuer_wallet_name, None)
 
-    # 12. Close and delete Prover wallet
+    # 13. Close and delete Prover wallet
     await wallet.close_wallet(prover_wallet)
     await wallet.delete_wallet(prover_wallet_name, None)
 

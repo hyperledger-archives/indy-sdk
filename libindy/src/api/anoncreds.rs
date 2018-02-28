@@ -111,6 +111,59 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
     result_to_err_code!(result)
 }
 
+/// Create claim offer in Wallet
+///
+/// #Params
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
+/// schema_json: schema as a json
+/// issuer_did: a DID of the issuer created Claim definition
+/// prover_did: a DID of the target user
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// claim offer json:
+///        {
+///            "issuer_did": string,
+///            "schema_key" : {name: string, version: string, did: string},
+///            "nonce": string,
+///            "key_correctness_proof" : <key_correctness_proof>
+///        }
+///
+/// #Errors
+/// Common*
+/// Wallet*
+/// Anoncreds*
+#[no_mangle]
+pub extern fn indy_issuer_create_claim_offer(command_handle: i32,
+                                             wallet_handle: i32,
+                                             schema_json: *const c_char,
+                                             issuer_did: *const c_char,
+                                             prover_did: *const c_char,
+                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                  claim_offer_json: *const c_char
+                                             )>) -> ErrorCode {
+    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(prover_did, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateClaimOffer(
+            wallet_handle,
+            schema_json,
+            issuer_did,
+            prover_did,
+            Box::new(move |result| {
+                let (err, claim_offer_json) = result_to_err_code_1!(result, String::new());
+                let claim_offer_json = CStringUtils::string_to_cstring(claim_offer_json);
+                cb(command_handle, err, claim_offer_json.as_ptr())
+            })
+        ))));
+
+    result_to_err_code!(result)
+}
+
 /// Signs a given claim values for the given user by a given key (claim def).
 /// The corresponding claim definition and revocation registry must be already created
 /// an stored into the wallet.
@@ -125,9 +178,11 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 ///     {
 ///      "blinded_ms" : <blinded_master_secret>,
 ///      "schema_key" : {name: string, version: string, did: string},
-///      "issuer_did" : string
-///      "prover_did" : string
-///     }
+///      "issuer_did" : string,
+///      "prover_did" : string,
+///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+///      "nonce": string
+///    }
 /// claim_values_json: a claim containing attribute values for each of requested attribute names.
 ///     Example:
 ///     {
@@ -146,7 +201,8 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 ///         "signature": <signature>,
 ///         "revoc_reg_seq_no": int,
 ///         "issuer_did", string,
-///         "schema_key" : {name: string, version: string, did: string}
+///         "schema_key" : {name: string, version: string, did: string},
+///         "signature_correctness_proof": <signature_correctness_proof>
 ///     }
 ///
 /// #Errors
@@ -244,9 +300,10 @@ pub extern fn indy_issuer_revoke_claim(command_handle: i32,
 /// claim_offer_json: claim offer as a json containing information about the issuer and a claim:
 ///        {
 ///            "issuer_did": string,
-///            "schema_key" : {name: string, version: string, did: string}
+///            "schema_key" : {name: string, version: string, did: string},
+///            "nonce": string,
+///            "key_correctness_proof" : <key_correctness_proof>
 ///        }
-///
 /// #Returns
 /// None.
 ///
@@ -292,8 +349,10 @@ pub extern fn indy_prover_store_claim_offer(command_handle: i32,
 /// A json with a list of claim offers for the filter.
 ///        {
 ///            [{
-///                 "issuer_did": string,
-///                 "schema_key" : {name: string, version: string, did: string}
+///            "issuer_did": string,
+///            "schema_key" : {name: string, version: string, did: string},
+///            "nonce": string,
+///            "key_correctness_proof" : <key_correctness_proof>
 ///            }]
 ///        }
 ///
@@ -377,7 +436,9 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 /// claim_offer_json: claim offer as a json containing information about the issuer and a claim:
 ///        {
 ///            "issuer_did": string,
-///            "schema_key" : {name: string, version: string, did: string}
+///            "schema_key" : {name: string, version: string, did: string},
+///            "nonce": string,
+///            "key_correctness_proof" : <key_correctness_proof>
 ///        }
 /// claim_def_json: claim definition json associated with issuer_did and schema_seq_no in the claim_offer
 /// master_secret_name: the name of the master secret stored in the wallet
@@ -389,8 +450,10 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 ///      "blinded_ms" : <blinded_master_secret>,
 ///      "schema_key" : {name: string, version: string, did: string},
 ///      "issuer_did" : string,
-///      "prover_did" : string
-///     }
+///      "prover_did" : string,
+///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+///      "nonce": string
+///    }
 ///
 /// #Errors
 /// Annoncreds*
@@ -441,11 +504,12 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
 /// command_handle: command handle to map callback to user context.
 /// claims_json: claim json:
 ///     {
-///         "claim": {attr1:[value, value_as_int]}
+///         "values": <see claim_values_json above>,
 ///         "signature": <signature>,
+///         "revoc_reg_seq_no": int,
+///         "issuer_did", string,
 ///         "schema_key" : {name: string, version: string, did: string},
-///         "revoc_reg_seq_no", int
-///         "issuer_did", string
+///         "signature_correctness_proof": <signature_correctness_proof>
 ///     }
 /// rev_reg_json: revocation registry json
 /// cb: Callback that takes command result as parameter.

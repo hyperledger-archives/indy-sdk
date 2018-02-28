@@ -98,22 +98,57 @@ async def test_send_attrib_request_works_without_signature(pool_handle, identity
 
 
 @pytest.mark.asyncio
-async def test_attrib_requests_works(pool_handle, wallet_handle, identity_trustee1, identity_my1):
+async def test_attrib_requests_works_for_raw_value(pool_handle, wallet_handle, identity_trustee1, identity_my1):
     (trustee_did, _) = identity_trustee1
     (my_did, my_ver_key) = identity_my1
 
     nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
 
-    attrib_request = await ledger.build_attrib_request(my_did, my_did, None,
-                                                       "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}", None)
+    raw = "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}"
+    attrib_request = await ledger.build_attrib_request(my_did, my_did, None, raw, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, attrib_request)
 
-    get_attrib_request = await ledger.build_get_attrib_request(my_did, my_did, "endpoint")
+    get_attrib_request = await ledger.build_get_attrib_request(my_did, my_did, "endpoint", None, None)
     get_attrib_response = await ensure_previous_request_applied(pool_handle, get_attrib_request,
                                                                 lambda response: response['result']['data'] is not None)
+    assert get_attrib_response['result']['data'] == raw
 
-    assert get_attrib_response
+
+@pytest.mark.asyncio
+async def test_attrib_requests_works_for_hash_value(pool_handle, wallet_handle, identity_trustee1, identity_my1):
+    (trustee_did, _) = identity_trustee1
+    (my_did, my_ver_key) = identity_my1
+
+    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
+
+    xhash = "83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"
+    attrib_request = await ledger.build_attrib_request(my_did, my_did, xhash, None, None)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, attrib_request)
+
+    get_attrib_request = await ledger.build_get_attrib_request(my_did, my_did, None, xhash, None)
+    get_attrib_response = await ensure_previous_request_applied(pool_handle, get_attrib_request,
+                                                                lambda response: response['result']['data'] is not None)
+    assert get_attrib_response['result']['data'] == xhash
+
+
+@pytest.mark.asyncio
+async def test_attrib_requests_works_for_enc_value(pool_handle, wallet_handle, identity_trustee1, identity_my1):
+    (trustee_did, _) = identity_trustee1
+    (my_did, my_ver_key) = identity_my1
+
+    nym_request = await ledger.build_nym_request(trustee_did, my_did, my_ver_key, None, None)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, trustee_did, nym_request)
+
+    enc = "aa3f41f619aa7e5e6b6d0de555e05331787f9bf9aa672b94b57ab65b9b66c3ea960b18a98e3834b1fc6cebf49f463b81fd6e3181"
+    attrib_request = await ledger.build_attrib_request(my_did, my_did, None, None, enc)
+    await ledger.sign_and_submit_request(pool_handle, wallet_handle, my_did, attrib_request)
+
+    get_attrib_request = await ledger.build_get_attrib_request(my_did, my_did, None, None, enc)
+    get_attrib_response = await ensure_previous_request_applied(pool_handle, get_attrib_request,
+                                                                lambda response: response['result']['data'] is not None)
+    assert get_attrib_response['result']['data'] == enc
 
 
 @pytest.mark.asyncio
