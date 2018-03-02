@@ -1,16 +1,20 @@
+#include <string>
+#include <map>
 #include <nan.h>
 #include "indy_core.h"
-#include <string>
 
+struct IndyCallback {
+    indy_handle_t command_handle;
+    Nan::Callback* callback;
+    uv_async_t* uvHandle;
 
-indy_handle_t command_handle = 1;
-Nan::Callback *callback;
-struct Payload {
     indy_error_t err;
-    std::string verkey;
+    const char* verkey;
 };
-uv_async_t* uvHandle = (uv_async_t*)malloc(sizeof(uv_async_t));
 
+std::map<indy_handle_t, IndyCallback*> cbmap;
+
+indy_handle_t next_command_handle = 0;
 
 void freeUvHandle (uv_handle_t* handle) {
     free(handle);
@@ -19,35 +23,60 @@ void freeUvHandle (uv_handle_t* handle) {
 NAUV_WORK_CB(asyncfunctionwat) {
     Nan::HandleScope scope;
 
-    Payload* p = (struct Payload*)uvHandle->data;
+    IndyCallback* icb = (struct IndyCallback*)async->data;
 
     v8::Local<v8::Value> argv[] = {
-        Nan::New<v8::Number>(p->err),
-        Nan::New<v8::String>(p->verkey).ToLocalChecked()
+        Nan::New<v8::Number>(icb->err),
+        Nan::New<v8::String>(icb->verkey).ToLocalChecked()
     };
-    callback->Call(2, argv);
-    delete callback;
-    delete p;
+    icb->callback->Call(2, argv);
 
-    uv_close((uv_handle_t*)uvHandle, freeUvHandle);
+
+    cbmap.erase(icb->command_handle);
+
+    delete icb->callback;
+    icb->callback = NULL;
+
+    delete icb->verkey;
+    icb->verkey = NULL;
+
+    uv_close((uv_handle_t*)icb->uvHandle, freeUvHandle);
 }
+
+IndyCallback* initIndyCallback(v8::Local<v8::Value> callbackArg) {
+    next_command_handle++;
+
+    IndyCallback* icb = new IndyCallback();
+    icb->command_handle = next_command_handle;
+    icb->callback = new Nan::Callback(Nan::To<v8::Function>(callbackArg).ToLocalChecked());
+    icb->uvHandle = (uv_async_t*)malloc(sizeof(uv_async_t));
+    icb->uvHandle->data = (void *)icb;
+
+    uv_async_init(uv_default_loop(), icb->uvHandle, asyncfunctionwat);
+
+    cbmap[icb->command_handle] = icb;
+
+    return icb;
+}
+
+char* copyCStr(const char* original){
+    size_t len = strlen(original);
+    char* tmp = new char[len];
+    strncpy(tmp, original, len);
+    return tmp;
+}
+
 
 void abbreviate_verkey_cb(indy_handle_t resp_command_handle, indy_error_t resp_err, const char *const resp_verkey) {
 
-    struct Payload* p = new Payload();
-    p->err = resp_err;
+    IndyCallback* icb = cbmap[resp_command_handle];
 
-    std::string verkey(resp_verkey);
-    p->verkey = verkey;
+    icb->err = resp_err;
+    if(icb->err == 0){
+        icb->verkey = copyCStr(resp_verkey);
+    }
 
-    uvHandle->data = (void *)p;
-
-    uv_async_send(uvHandle);
-}
-
-
-NAN_METHOD(hello) {
-    info.GetReturnValue().Set(Nan::New("Hello indy!").ToLocalChecked());
+    uv_async_send(icb->uvHandle);
 }
 
 NAN_METHOD(abbreviate_verkey) {
@@ -56,34 +85,43 @@ NAN_METHOD(abbreviate_verkey) {
         return Nan::ThrowError(Nan::New("abbreviate_verkey expected 3 args").ToLocalChecked());
     }
 
+    if(!info[0]->IsString()) {
+        return Nan::ThrowError(Nan::New("abbreviate_verkey arg 0 expected String").ToLocalChecked());
+    }
+    Nan::Utf8String arg0UTF(info[0]);
+    const char* arg0 = (const char*)(*arg0UTF);
 
+    if(!info[1]->IsString()) {
+        return Nan::ThrowError(Nan::New("abbreviate_verkey arg 1 expected String").ToLocalChecked());
+    }
+    Nan::Utf8String arg1UTF(info[1]);
+    const char* arg1 = (const char*)(*arg1UTF);
 
-    Nan::Utf8String didUTF(info[0]);
-    const char* did = (const char*)(*didUTF);
+    if(!info[2]->IsFunction()) {
+        return Nan::ThrowError(Nan::New("abbreviate_verkey arg 2 expected Function").ToLocalChecked());
+    }
+    IndyCallback* icb = initIndyCallback(info[2]);
 
-    Nan::Utf8String verkeyUTF(info[1]);
-    const char* verkey = (const char*)(*verkeyUTF);
-
-    callback = new Nan::Callback(Nan::To<v8::Function>(info[2]).ToLocalChecked());
-
-    uv_async_init(uv_default_loop(), uvHandle, asyncfunctionwat);
-
-    indy_error_t res = indy_abbreviate_verkey(command_handle, did, verkey, abbreviate_verkey_cb);
+    indy_error_t res = indy_abbreviate_verkey(icb->command_handle, arg0, arg1, abbreviate_verkey_cb);
 
     if(res != 0){
         v8::Local<v8::Value> argv[] = {
             Nan::New<v8::Number>(res)
         };
-        callback->Call(1, argv);
-        delete callback;
+        icb->callback->Call(1, argv);
+        delete icb->callback;
     }
-
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Export the JS functions
+//
 
 #define EXPORT_FN(NAME) (Nan::Set(target, Nan::New(""#NAME"").ToLocalChecked(), Nan::GetFunction(Nan::New<v8::FunctionTemplate>(NAME)).ToLocalChecked()))
 
 NAN_MODULE_INIT(InitAll) {
-    EXPORT_FN(hello);
     EXPORT_FN(abbreviate_verkey);
 }
 
