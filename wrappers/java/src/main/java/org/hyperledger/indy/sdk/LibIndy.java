@@ -44,7 +44,7 @@ public abstract class LibIndy {
 		public int indy_build_get_ddo_request(int command_handle, String submitter_did, String target_did, Callback cb);
 		public int indy_build_nym_request(int command_handle, String submitter_did, String target_did, String verkey, String alias, String role, Callback cb);
 		public int indy_build_attrib_request(int command_handle, String submitter_did, String target_did, String hash, String raw, String enc, Callback cb);
-		public int indy_build_get_attrib_request(int command_handle, String submitter_did, String target_did, String data, Callback cb);
+		public int indy_build_get_attrib_request(int command_handle, String submitter_did, String target_did, String raw, String hash, String enc, Callback cb);
 		public int indy_build_get_nym_request(int command_handle, String submitter_did, String target_did, Callback cb);
 		public int indy_build_schema_request(int command_handle, String submitter_did, String data, Callback cb);
 		public int indy_build_get_schema_request(int command_handle, String submitter_did, String dest, String data, Callback cb);
@@ -85,6 +85,7 @@ public abstract class LibIndy {
 
 		public int indy_issuer_create_and_store_claim_def(int command_handle, int wallet_handle, String issuer_did, String schema_json, String signature_type, boolean create_non_revoc, Callback cb);
 		public int indy_issuer_create_and_store_revoc_reg(int command_handle, int wallet_handle, String issuer_did, String schema_json, int max_claim_num, Callback cb);
+		public int indy_issuer_create_claim_offer(int command_handle, int wallet_handle, String schema_json, String issuer_did, String prover_did, Callback cb);
 		public int indy_issuer_create_claim(int command_handle, int wallet_handle, String claim_req_json, String claim_json, int user_revoc_index, Callback cb);
 		public int indy_issuer_revoke_claim(int command_handle, int wallet_handle, String issuer_did, String schema_json, int user_revoc_index, Callback cb);
 		public int indy_prover_store_claim_offer(int command_handle, int wallet_handle, String claim_offer_json, Callback cb);

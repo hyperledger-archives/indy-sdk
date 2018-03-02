@@ -19,24 +19,24 @@
                                    walletHandle:(IndyHandle)walletHandle
                                    submitterDid:(NSString *)submitterDid
                                     requestJson:(NSString *)requestJson
-                                outResponseJson:(NSString**)responseJson;
+                                outResponseJson:(NSString **)responseJson;
 
 - (NSError *)submitRequest:(NSString *)request
             withPoolHandle:(IndyHandle)poolHandle
-                resultJson:(NSString**)resultJson;
+                resultJson:(NSString **)resultJson;
 
 
 // MARK: - Nym request
-- (NSError *) buildNymRequestWithSubmitterDid:(NSString *)submitterDid
-                                    targetDid:(NSString *)targetDid
-                                       verkey:(NSString *)verkey
-                                        alias:(NSString *)alias
-                                         role:(NSString *)role
-                                   outRequest:(NSString**)resultJson;
+- (NSError *)buildNymRequestWithSubmitterDid:(NSString *)submitterDid
+                                   targetDid:(NSString *)targetDid
+                                      verkey:(NSString *)verkey
+                                       alias:(NSString *)alias
+                                        role:(NSString *)role
+                                  outRequest:(NSString **)resultJson;
 
-- (NSError *) buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
-                                       targetDid:(NSString *)targetDid
-                                      outRequest:(NSString**)requestJson;
+- (NSError *)buildGetNymRequestWithSubmitterDid:(NSString *)submitterDid
+                                      targetDid:(NSString *)targetDid
+                                     outRequest:(NSString **)requestJson;
 
 // MARK: - Attrib request
 - (NSError *)buildAttribRequestWithSubmitterDid:(NSString *)submitterDid
@@ -48,8 +48,11 @@
 
 - (NSError *)buildGetAttribRequestWithSubmitterDid:(NSString *)submitterDid
                                          targetDid:(NSString *)targetDid
-                                              data:(NSString *)data
+                                               raw:(NSString *)raw
+                                              hash:(NSString *)hash
+                                               enc:(NSString *)enc
                                         resultJson:(NSString **)resultJson;
+
 // MARK: - Schema request
 - (NSError *)buildSchemaRequestWithSubmitterDid:(NSString *)submitterDid
                                            data:(NSString *)data
@@ -65,29 +68,30 @@
                                     targetDid:(NSString *)targetDid
                                          data:(NSString *)data
                                    resultJson:(NSString **)resultJson;
+
 // MARK: - ClaimDefTxn
 - (NSError *)buildClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
                                          xref:(NSNumber *)xref
                                 signatureType:(NSString *)signatureType
                                          data:(NSString *)data
-                                   resultJson:(NSString**)resultJson;
+                                   resultJson:(NSString **)resultJson;
 
 - (NSError *)buildGetClaimDefTxnWithSubmitterDid:(NSString *)submitterDid
                                             xref:(NSNumber *)xref
                                    signatureType:(NSString *)signatureType
                                           origin:(NSString *)origin
-                                      resultJson:(NSString**)resultJson;
+                                      resultJson:(NSString **)resultJson;
 
 // MARK: - Get Txn request
 - (NSError *)buildGetTxnRequestWithSubmitterDid:(NSString *)submitterDid
                                            data:(NSNumber *)data
-                                     resultJson:(NSString**)resultJson;
+                                     resultJson:(NSString **)resultJson;
 
 // MARK: - Pool Config request
 - (NSError *)buildPoolConfigRequestWithSubmitterDid:(NSString *)submitterDid
                                              writes:(BOOL)writes
                                               force:(BOOL)force
-                                         resultJson:(NSString**)resultJson;
+                                         resultJson:(NSString **)resultJson;
 
 // MARK: - Pool Upgrade request
 - (NSError *)buildPoolUpgradeRequestWithSubmitterDid:(NSString *)submitterDid
@@ -100,13 +104,13 @@
                                        justification:(NSString *)justification
                                            reinstall:(BOOL)reinstall
                                                force:(BOOL)force
-                                     resultJson:(NSString**)resultJson;
+                                          resultJson:(NSString **)resultJson;
 
 // MARK: - Sign Request
 - (NSError *)signRequestWithWalletHandle:(IndyHandle)walletHandle
                             submitterdid:(NSString *)submitterDid
                              requestJson:(NSString *)requestJson
-                              resultJson:(NSString**)resultJson;
+                              resultJson:(NSString **)resultJson;
 
 
 @end

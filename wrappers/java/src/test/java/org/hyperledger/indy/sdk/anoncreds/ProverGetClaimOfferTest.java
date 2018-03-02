@@ -10,7 +10,6 @@ import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 
@@ -36,9 +35,8 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		JSONArray claimOffersArray = new JSONArray(claimOffers);
 
 		assertEquals(2, claimOffersArray.length());
-
-		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, gvtSchemaKey)));
-		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, xyzSchemaKey)));
+		assertEquals(claimOffersArray.getJSONObject(0).getString("issuer_did"), issuerDid);
+		assertEquals(claimOffersArray.getJSONObject(1).getString("issuer_did"), issuerDid);
 	}
 
 	@Test
@@ -52,9 +50,8 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		JSONArray claimOffersArray = new JSONArray(claimOffers);
 
 		assertEquals(2, claimOffersArray.length());
-
-		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, gvtSchemaKey)));
-		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid2, gvtSchemaKey)));
+		assertEquals(claimOffersArray.getJSONObject(0).getJSONObject("schema_key").toString(), gvtSchemaKey);
+		assertEquals(claimOffersArray.getJSONObject(1).getJSONObject("schema_key").toString(), gvtSchemaKey);
 	}
 
 	@Test
@@ -68,9 +65,8 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		JSONArray claimOffersArray = new JSONArray(claimOffers);
 
 		assertEquals(2, claimOffersArray.length());
-
-		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, gvtSchemaKey)));
-		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid2, gvtSchemaKey)));
+		assertEquals(claimOffersArray.getJSONObject(0).getJSONObject("schema_key").toString(), gvtSchemaKey);
+		assertEquals(claimOffersArray.getJSONObject(1).getJSONObject("schema_key").toString(), gvtSchemaKey);
 	}
 
 	@Test
@@ -84,8 +80,8 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		JSONArray claimOffersArray = new JSONArray(claimOffers);
 
 		assertEquals(1, claimOffersArray.length());
-
-		assertTrue(claimOffersArray.toString().contains(String.format(claimOfferTemplate, issuerDid, gvtSchemaKey)));
+		assertEquals(claimOffersArray.getJSONObject(0).getJSONObject("schema_key").toString(), gvtSchemaKey);
+		assertEquals(claimOffersArray.getJSONObject(0).getString("issuer_did"), issuerDid);
 	}
 
 	@Test
@@ -123,20 +119,17 @@ public class ProverGetClaimOfferTest extends AnoncredsIntegrationTest {
 		Wallet.createWallet("default", walletName, "proverInmem", null, null).get();
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 
-		String claimOffer3 = String.format(claimOfferTemplate, issuerDid2, gvtSchemaKey);
-
-		Anoncreds.proverStoreClaimOffer(wallet, gvtClaimOffer).get();
-		Anoncreds.proverStoreClaimOffer(wallet, xyzClaimOffer).get();
-		Anoncreds.proverStoreClaimOffer(wallet, claimOffer3).get();
+		Anoncreds.proverStoreClaimOffer(wallet, issuer1GvtClaimOffer).get();
+		Anoncreds.proverStoreClaimOffer(wallet, issuer1XyzClaimOffer).get();
+		Anoncreds.proverStoreClaimOffer(wallet, issuer2GvtClaimOffer).get();
 
 		String filter = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
 
 		String claimOffers = Anoncreds.proverGetClaimOffers(wallet, filter).get();
 		JSONArray claimOffersArray = new JSONArray(claimOffers);
-		System.out.println(claimOffersArray);
-		assertEquals(2, claimOffersArray.length());
 
-		assertTrue(claimOffersArray.toString().contains(gvtClaimOffer));
-		assertTrue(claimOffersArray.toString().contains(xyzClaimOffer));
+		assertEquals(2, claimOffersArray.length());
+		assertEquals(claimOffersArray.getJSONObject(0).getString("issuer_did"), issuerDid);
+		assertEquals(claimOffersArray.getJSONObject(1).getString("issuer_did"), issuerDid);
 	}
 }

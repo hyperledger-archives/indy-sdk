@@ -50,6 +50,7 @@ pub mod create_command {
         let res = match res {
             Ok(()) => Ok(println_succ!("Wallet \"{}\" has been created", name)),
             Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", name)),
+            Err(ErrorCode::CommonIOError) => Err(println_err!("Invalid wallet name  \"{}\"", name)),
             Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 

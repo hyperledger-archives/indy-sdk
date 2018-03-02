@@ -25,7 +25,6 @@ use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
 
 use std::ffi::CString;
-use std::sync::mpsc::channel;
 
 mod high_cases {
     use super::*;
@@ -241,11 +240,10 @@ mod high_cases {
             let get_nym_req = LedgerUtils::build_get_nym_request(DID_MY1, DID_MY1).unwrap();
 
             let get_nym_req = CString::new(get_nym_req).unwrap();
-            let (submit_sender, submit_receiver) = channel();
-            let (submit_cmd_handle, submit_cb) = CallbackUtils::closure_to_send_tx_cb(Box::new(
-                move |err, resp| { submit_sender.send((err, resp)).unwrap(); }));
-            assert_eq!(api::ledger::indy_submit_request(submit_cmd_handle, pool_handle,
-                                                        get_nym_req.as_ptr(), submit_cb),
+
+            let (submit_receiver, submit_cmd_handle, submit_cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+            assert_eq!(api::ledger::indy_submit_request(submit_cmd_handle, pool_handle, get_nym_req.as_ptr(), submit_cb),
                        ErrorCode::Success);
 
             PoolUtils::close(pool_handle).unwrap();

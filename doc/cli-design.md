@@ -227,7 +227,7 @@ ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-va
 #### GET_ATTRIB transaction
 Send GET_ATTRIB transaction
 ```
-ledger get-attrib did=<did-value> attr=<attr-value>
+ledger get-attrib did=<did-value> [raw=<raw-value>] [hash=<hash-value>] [enc=<enc-value>]
 ```
 
 #### NODE transaction
