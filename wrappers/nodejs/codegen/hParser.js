@@ -124,4 +124,4 @@ functionLines.forEach(function (line) {
   })
 })
 
-console.log(JSON.stringify(AST, null, 2))
+module.exports = AST

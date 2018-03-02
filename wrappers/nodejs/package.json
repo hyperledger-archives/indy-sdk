@@ -23,7 +23,7 @@
     "dev": "scriptsp --raw dev:watch-src dev:watch-tests",
     "dev:watch-src": "onchange -i src/ -- npm run dev:build-n-test -s",
     "dev:watch-tests": "ava tests --watch",
-    "dev:build-n-test": "node-gyp rebuild && touch tests/index.js"
+    "dev:build-n-test": "node codegen && node-gyp rebuild && touch tests/index.js"
   },
   "dependencies": {
     "bindings": "^1.3.0",
