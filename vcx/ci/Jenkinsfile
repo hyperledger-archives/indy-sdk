@@ -146,7 +146,7 @@ def createDeb(envn) {
             sh "${CERT_SCRIPT}"
                 
             // build debian
-            sh 'cd vcx/libvcx/; cargo deb --no-build --color=never'
+            sh 'cd vcx/libvcx/; cargo deb --no-build'
     
 
             if (env.BRANCH_NAME == "master") {
