@@ -1,6 +1,7 @@
+from demo.utils.create_vcx import update_json_values, config_dev
+from demo.utils.random_name import get_random_name
 from demo.vcxdemo import Vcxdemo
-from demo.utils.random_name import get_name
-from demo.utils.create_vcx import create_config
+from demo.enterprise_settings import settings
 
 from vcx.error import VcxError
 from vcx.state import State
@@ -13,10 +14,9 @@ import qrcode
 import json
 import os
 import time
+import sys
 
-ENTERPRISE_DID = '2hoqvcwupRTUNkXn6ArYzs'
 SOURCE_ID = 'Philip J Fry'
-ENTERPRISE_SOURCE_ID = 'Planet Express'
 DETAILS= [{
     "name": 'Phillip J Fry',
     "account": '435111368991'
@@ -31,33 +31,34 @@ DETAILS= [{
     }]
 
 QR_DATA= '{"sm": "message created", "t": "there", "s": {"v": "E2u2xA7RqRgGZ5aSyaJMGr1yEUfKUoyPot9qtnWJUXPC", "n": "DoomTown", "dp": {"k": "DVKwoWZ8PtYqGqSjEcExxggLc46iM91jW31qvgXABq9h", "s": "TW8FLdouR5KKb/35wNvSsi5pzcb59ycDzZCIftMSX2Tlmx2IFy1zmKopKj6L3EUfHaX9F1gQRggD7OEnkVFeDg==", "d": "PuxVjQ9imGLnVwrCbYukjn"}, "d": "Qut5k3WJVeDkvLx2Z5XHDe", "l": "https://robohash.org/469b25d"}, "id": "nzvmmwn", "sc": "MS-101", "sa": {"v": "4hmBc54YanNhQHTD66u6XDp1NSgQm1BacPFbE7b5gtat", "d": "7o2xT9Qtp83cJUJMUBTF3M", "e": "52.38.32.107:80/agency/msg"}}'
-VCXCONFIG = 'utils/vcxconfig.json'
+VCXCONFIG_PATH = 'utils/vcxconfig.json'
 SCHEMA_SEQ_NUMBER = 22
 CLAIM_NAME = 'Planet Express Club Member'
 SCHEMA_NAME = 'Club Membership'
 
 
-def write_json_to_file(data, filename):
+def write_json_to_file(data, filename, sort_keys=False):
     try:
         with open(filename, 'w') as out_file:
-            json.dump(data, out_file, indent=4)
+            json.dump(data, out_file, indent=4, sort_keys=sort_keys)
     except IOError as e:
         print('error writing to %s: %s' % (filename, e))
+        sys.exit(1)
 
 
-def init_vcxdemo():
+def init_vcxdemo(path):
+
     try:
-        Vcxdemo.init(VCXCONFIG)
-    except VcxError:
+        Vcxdemo.init(path)
+    except VcxError as e:
+        print('Error Initializing Vcx: ' + str(e))
         assert False
 
 
-def util_create_schema(source_id):
-    # Schema
-    schema_name = 'Club Membership'
+def util_create_schema(source_id, schema_name):
     attr_names = ['name', 'account']
     version = '1.0'
-    schema_skeleton = {"name": source_id,
+    schema_skeleton = {"name": schema_name,
                        "version": version,
                        "attr_names": attr_names,
                        }
@@ -67,35 +68,41 @@ def util_create_schema(source_id):
 
 
 # THE demo
-def test_vcxdemo():
-    # get random name for unique testing
-    name = get_name()
-
-    config = {
-        'enterprise_name': name,
-        'logo_url': 'https://robohash.org/' + name
+def test_demo():
+    random_enterprise_name = get_random_name()
+    genesis_path = settings['genesis_path']
+    enterprise_config = {
+        'enterprise_name': random_enterprise_name,
+        'logo_url': 'https://robohash.org/' + random_enterprise_name,
+        'genesis_path': genesis_path,
+        'wallet_name': settings['wallet_name'],
+        'wallet_key': settings['wallet_key']
     }
-    create_config(config)
+    vcx_config_json = update_json_values(enterprise_config, config_dev)
+    assert vcx_config_json['enterprise_name'] == random_enterprise_name
+    write_json_to_file(vcx_config_json, 'utils/vcxconfig.json', sort_keys=True)
 
-    source_id = name
-
-    init_vcxdemo()
+    schema_name = 'Club Membership'
+    init_vcxdemo(VCXCONFIG_PATH)
     claim_name = 'Club Membership'
+    schema_source_id = random_enterprise_name
+    claim_def_source_id = random_enterprise_name
+    connection_source_id = random_enterprise_name
     assert len(Vcxdemo.schemas) == 0
-    util_create_schema(source_id)
+    util_create_schema(schema_source_id, schema_name)
+    write_json_to_file(Vcxdemo.serialize_schema(0), 'schema.dat')
+
+    # Write Connection to file
     assert len(Vcxdemo.schemas) == 1
     s0 = Vcxdemo.get_schema_attr_list(0)
 
     # Create Claim Def on Ledger (and wallet)
-    schema_number = Vcxdemo.get_schema_sequence_number(0)
-    Vcxdemo.create_claim_def(source_id, claim_name, schema_number)
+    schema_sequence_number = Vcxdemo.get_schema_sequence_number(0)
+    Vcxdemo.create_claim_def(claim_def_source_id, claim_name, schema_sequence_number)
     assert len(Vcxdemo.claim_defs) > 0
     assert Vcxdemo.claim_defs[claim_name]
 
-    customer1 = Vcxdemo(source_id, details=DETAILS[0])
-    assert customer1.source_id == source_id
-    for d in customer1.details:
-        assert customer1.details[d] == DETAILS[0][d]
+    customer1 = Vcxdemo(connection_source_id)
 
     # Connection
     assert customer1.state['connection'] == State.Undefined
@@ -132,12 +139,7 @@ def test_vcxdemo():
                                             Vcxdemo.get_schema_attr_list(0)['attr_names'])
     source_id = 'Club Membership'
 
-    proof1 = request_proof(customer1, source_id, proof_attr, proof_id)
-
-    # second request of same proof
-    time.sleep(5)
-    proof2 = request_proof(customer1, source_id, proof_attr, proof_id)
-    assert proof1['claim_uuid'] != proof2['claim_uuid']
+    request_proof(customer1, source_id, proof_attr, proof_id)
 
 
 def request_proof(connection, source_id, proof_attr, proof_id):
@@ -155,7 +157,7 @@ def request_proof(connection, source_id, proof_attr, proof_id):
 # demo
 def test_vcx_deserialize_connection_fulfill_claim():
     try:
-        Vcxdemo.init(VCXCONFIG)
+        Vcxdemo.init(VCXCONFIG_PATH)
     except VcxError as e:
         assert False
 
@@ -260,7 +262,7 @@ def test_schema():
             "account"
         ]
     }
-    Vcxdemo.init(VCXCONFIG)
+    Vcxdemo.init(VCXCONFIG_PATH)
     filename = 'schema.dat'
     data = None
     try:
@@ -291,7 +293,7 @@ def test_schema():
 
 # demo
 def test_request_proof():
-    Vcxdemo.init(VCXCONFIG)
+    Vcxdemo.init(VCXCONFIG_PATH)
     customer1 = Vcxdemo('Fry')
     customer1.deserialize_connection('connection.dat')
     assert isinstance(customer1.connection, Connection)
@@ -317,18 +319,18 @@ def test_utils_create_config():
     filename = 'vcxconfig.json'
     dir = 'utils'
     image_hash= '12345'
-    random_name = get_name()
+    random_name = get_random_name()
     config = {
         'logo_url': 'https://robohash.org/' + image_hash,
         'enterprise_name': random_name
     }
-    create_config(config)
+    create_vcx_config_json(config)
     assert filename in os.listdir(dir)
     with open(os.path.join(dir, filename), 'r') as in_file:
         config = json.load(in_file)
         assert config['logo_url'] == 'https://robohash.org/' + image_hash
         assert config['enterprise_name'] == random_name
-    print(get_name())
+    print(get_random_name())
 
 
 # demo
@@ -338,7 +340,7 @@ def test_lookup():
     with open(schema_filename) as in_file:
         schema = json.load(in_file)
 
-    Vcxdemo.init(VCXCONFIG)
+    Vcxdemo.init(VCXCONFIG_PATH)
     customer1 = Vcxdemo('Fry')
     customer1.deserialize_connection('connection.dat')
     assert isinstance(customer1.connection, Connection)
@@ -349,3 +351,6 @@ def test_lookup():
     assert len(Vcxdemo.schemas) == 2
     assert schema['sequence_num'] == Vcxdemo.get_schema_sequence_number(1)
 
+
+if __name__=='__main__':
+    demo()

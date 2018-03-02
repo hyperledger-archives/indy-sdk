@@ -84,8 +84,7 @@ def buildRust(envn){
             sh "ls -l"
             sh "rustc --version"
             sh "gcc --version"
-            // sh "cd vcx/libvcx; cargo test -- --test-threads=1"
-            sh "cd vcx/libvcx; cargo build --features ci"
+            sh "cd vcx/libvcx; cargo build --features ci --color=never"
         }
     }
 }
@@ -147,7 +146,7 @@ def createDeb(envn) {
             sh "${CERT_SCRIPT}"
                 
             // build debian
-            sh 'cd vcx/libvcx/; cargo deb --no-build'
+            sh 'cd vcx/libvcx/; cargo deb --no-build --color=never'
     
 
             if (env.BRANCH_NAME == "master") {
