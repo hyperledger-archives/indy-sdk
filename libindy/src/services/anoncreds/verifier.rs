@@ -19,22 +19,28 @@ impl Verifier {
                   proof_req: &ProofRequest,
                   credential_schemas: &HashMap<String, Schema>,
                   credential_defs: &HashMap<String, CredentialDefinition>,
-                  rev_reg_defs: &HashMap<String, RevocationRegistryDefinitionValue>,
-                  rev_regs: &HashMap<String, RevocationRegistry>) -> Result<bool, CommonError> {
+                  rev_reg_defs: &HashMap<String, RevocationRegistryDefinition>,
+                  rev_regs: &HashMap<String, HashMap<u64, RevocationRegistry>>) -> Result<bool, CommonError> {
         info!("verify >>> full_proof: {:?}, proof_req: {:?}, credential_schemas: {:?}, credential_defs: {:?}, rev_reg_defs: {:?} rev_regs: {:?}",
               full_proof, proof_req, credential_schemas, credential_defs, rev_reg_defs, rev_regs);
 
         let mut proof_verifier = CryptoVerifier::new_proof_verifier()?;
 
-        for (referent, credential_def) in credential_defs.iter() {
+        for (referent, identifier) in full_proof.identifiers.iter() {
             let credential_schema = credential_schemas.get(referent)
                 .ok_or(CommonError::InvalidStructure(format!("Schema not found")))?;
+            let credential_def = credential_defs.get(referent)
+                .ok_or(CommonError::InvalidStructure(format!("CredentialDefinition not found")))?;
 
             let (rev_reg_def, rev_reg) = if credential_def.value.revocation.is_some() {
+                let timestamp = identifier.timestamp.ok_or(CommonError::InvalidStructure(format!("Timestamp not found")))?;
                 let rev_reg_def = Some(rev_reg_defs.get(referent)
-                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistryDefinitionValue not found")))?);
-                let rev_reg = Some(rev_regs.get(referent.as_str())
-                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistryEntry not found")))?);
+                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistryDefinition not found")))?);
+                let rev_regs_for_cred = rev_regs.get(referent.as_str())
+                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistry not found")))?;
+                let rev_reg = Some(rev_regs_for_cred.get(&timestamp)
+                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistry not found")))?);
+
                 (rev_reg_def, rev_reg)
             } else { (None, None) };
 
@@ -50,7 +56,7 @@ impl Verifier {
                                                  &sub_proof_request,
                                                  &credential_schema,
                                                  &credential_pub_key,
-                                                 rev_reg_def.as_ref().map(|r_reg_def| &r_reg_def.public_keys.accum_key),
+                                                 rev_reg_def.as_ref().map(|r_reg_def| &r_reg_def.value.public_keys.accum_key),
                                                  rev_reg)?;
         }
 
@@ -63,7 +69,7 @@ impl Verifier {
 
     fn _get_revealed_attributes_for_credential(referent: &str,
                                                requested_proof: &RequestedProof,
-                                               proof_req: &ProofRequest) -> Result<Vec<String>, CommonError> {
+                                               proof_req: &ProofRequest) -> Result<Vec<AttributeInfo>, CommonError> {
         info!("_get_revealed_attributes_for_credential >>> referent: {:?}, requested_credentials: {:?}, proof_req: {:?}",
               referent, requested_proof, proof_req);
 
@@ -72,8 +78,8 @@ impl Verifier {
             .filter(|&(attr_referent, &(ref requested_referent, _, _))|
                 referent.eq(requested_referent) && proof_req.requested_attrs.contains_key(attr_referent))
             .map(|(attr_referent, &(ref requested_referent, _, _))|
-                proof_req.requested_attrs[attr_referent].name.clone())
-            .collect::<Vec<String>>();
+                proof_req.requested_attrs[attr_referent].clone())
+            .collect::<Vec<AttributeInfo>>();
 
         info!("_get_revealed_attributes_for_credential <<< revealed_attrs_for_credential: {:?}", revealed_attrs_for_credential);
 

@@ -9,7 +9,8 @@ use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AttributeInfo {
     pub name: String,
-    pub restrictions: Option<Vec<Filter>>
+    pub restrictions: Option<Vec<Filter>>,
+    pub freshness: Option<u64>
 }
 
 impl JsonEncodable for AttributeInfo {}
@@ -19,22 +20,21 @@ impl<'a> JsonDecodable<'a> for AttributeInfo {}
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
 pub struct Filter {
     pub schema_id: Option<String>,
+    pub schema_did: Option<String>,
+    pub schema_name: Option<String>,
+    pub schema_version: Option<String>,
+    pub issuer_did: Option<String>,
     pub cred_def_id: Option<String>
 }
 
 impl<'a> JsonDecodable<'a> for Filter {}
 
-/*#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq, Hash)]
-pub struct SchemaKeyFilter {
-    pub name: Option<String>,
-    pub version: Option<String>,
-    pub did: Option<String>
-}
-
-impl<'a> JsonDecodable<'a> for SchemaKeyFilter {}*/
-
 pub trait Filtering {
     fn schema_id(&self) -> String;
+    fn schema_did(&self) -> String;
+    fn schema_name(&self) -> String;
+    fn schema_version(&self) -> String;
+    fn issuer_did(&self) -> String;
     fn cred_def_id(&self) -> String;
 }
 
@@ -50,23 +50,34 @@ impl JsonEncodable for CredentialOffer {}
 
 impl<'a> JsonDecodable<'a> for CredentialOffer {}
 
-//impl Filtering for CredentialOffer {
-//    fn issuer_did(&self) -> String { self.issuer_did.clone() }
-//    fn schema_key(&self) -> SchemaKey { self.schema_key.clone() }
-//}
+impl Filtering for CredentialOffer {
+    fn schema_id(&self) -> String { get_parts(&self.cred_def_id)[2..6].join(":").to_string() }
+    fn schema_did(&self) -> String { get_parts(&self.cred_def_id)[3].to_string() }
+    fn schema_name(&self) -> String { get_parts(&self.cred_def_id)[4].to_string() }
+    fn schema_version(&self) -> String { get_parts(&self.cred_def_id)[5].to_string() }
+    fn issuer_did(&self) -> String { get_parts(&self.cred_def_id)[0].to_string() }
+    fn cred_def_id(&self) -> String { self.cred_def_id.to_string() }
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct CredentialInfo {
     pub referent: String,
     pub attrs: HashMap<String, String>,
-    pub schema_id: String,
     pub cred_def_id: String,
     pub rev_reg_id: Option<String>
 }
 
 impl Filtering for CredentialInfo {
-    fn schema_id(&self) -> String { self.schema_id.to_string() }
+    fn schema_id(&self) -> String { get_parts(&self.cred_def_id)[2..6].join(":").to_string() }
+    fn schema_did(&self) -> String { get_parts(&self.cred_def_id)[3].to_string() }
+    fn schema_name(&self) -> String { get_parts(&self.cred_def_id)[4].to_string() }
+    fn schema_version(&self) -> String { get_parts(&self.cred_def_id)[5].to_string() }
+    fn issuer_did(&self) -> String { get_parts(&self.cred_def_id)[0].to_string() }
     fn cred_def_id(&self) -> String { self.cred_def_id.to_string() }
+}
+
+fn get_parts(id: &str) -> Vec<&str> {
+    id.split_terminator(":").collect::<Vec<&str>>()
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -160,7 +171,6 @@ pub struct Credential {
     pub values: HashMap<String, Vec<String>>,
     pub signature: CredentialSignature,
     pub signature_correctness_proof: SignatureCorrectnessProof,
-    pub schema_id: String,
     pub cred_def_id: String,
     pub rev_reg_id: Option<String>
 }
@@ -174,13 +184,14 @@ pub struct PredicateInfo {
     pub attr_name: String,
     pub p_type: String,
     pub value: i32,
-    pub restrictions: Option<Vec<Filter>>
+    pub restrictions: Option<Vec<Filter>>,
+    pub freshness: Option<u64>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CredentialsForProofRequest {
-    pub attrs: HashMap<String, Vec<CredentialInfo>>,
-    pub predicates: HashMap<String, Vec<CredentialInfo>>
+    pub attrs: HashMap<String, Vec<(CredentialInfo, Option<u64>)>>,
+    pub predicates: HashMap<String, Vec<(CredentialInfo, Option<u64>)>>
 }
 
 impl JsonEncodable for CredentialsForProofRequest {}
@@ -193,7 +204,8 @@ pub struct ProofRequest {
     pub name: String,
     pub version: String,
     pub requested_attrs: HashMap<String, AttributeInfo>,
-    pub requested_predicates: HashMap<String, PredicateInfo>
+    pub requested_predicates: HashMap<String, PredicateInfo>,
+    pub freshness: Option<u64>
 }
 
 impl JsonEncodable for ProofRequest {}
@@ -204,7 +216,8 @@ impl<'a> JsonDecodable<'a> for ProofRequest {}
 pub struct Identifier {
     pub schema_id: String,
     pub cred_def_id: String,
-    pub rev_reg_id: Option<String>
+    pub rev_reg_id: Option<String>,
+    pub timestamp: Option<u64>
 }
 
 impl JsonEncodable for Identifier {}
@@ -297,8 +310,8 @@ impl<'a> JsonDecodable<'a> for RevocationRegistryDefinitionValue {}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RequestedCredentials {
     pub self_attested_attributes: HashMap<String, String>,
-    pub requested_attrs: HashMap<String, (String, bool)>,
-    pub requested_predicates: HashMap<String, String>
+    pub requested_attrs: HashMap<String, (ProvingCredentialKey, bool)>,
+    pub requested_predicates: HashMap<String, ProvingCredentialKey>
 }
 
 impl JsonEncodable for RequestedCredentials {}
@@ -325,3 +338,33 @@ pub struct Schema {
 impl JsonEncodable for Schema {}
 
 impl<'a> JsonDecodable<'a> for Schema {}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct RequestedAttributeInfo {
+    pub attr_referent: String,
+    pub attr_info: AttributeInfo,
+    pub revealed: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct RequestedPredicateInfo {
+    pub predicate_referent: String,
+    pub predicate_info: PredicateInfo
+}
+
+#[derive(Debug, Deserialize, Serialize, Eq, PartialEq, Hash, Clone)]
+pub struct ProvingCredentialKey {
+    pub cred_id: String,
+    pub timestamp: Option<u64>
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RevocationInfo {
+    pub witness: Witness,
+    pub rev_reg: RevocationRegistry,
+    pub timestamp: u64
+}
+
+impl JsonEncodable for RevocationInfo {}
+
+impl<'a> JsonDecodable<'a> for RevocationInfo {}

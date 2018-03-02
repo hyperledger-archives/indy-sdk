@@ -24,14 +24,14 @@ use std::env;
 pub struct AnoncredsUtils {}
 
 pub static mut WALLET_HANDLE: i32 = 0;
-pub static mut CLAIM_DEF_JSON: &'static str = "";
-pub static mut CLAIM_OFFER_JSON: &'static str = "";
-pub static mut CLAIM_REQUEST_JSON: &'static str = "";
-pub static mut CLAIM_JSON: &'static str = "";
+pub static mut CREDENTIAL_DEF_JSON: &'static str = "";
+pub static mut CREDENTIAL_OFFER_JSON: &'static str = "";
+pub static mut CREDENTIAL_REQUEST_JSON: &'static str = "";
+pub static mut CREDENTIAL_JSON: &'static str = "";
 pub const COMMON_MASTER_SECRET: &'static str = "common_master_secret_name";
-pub const CLAIM1_ID: &'static str = "claim1_id";
-pub const CLAIM2_ID: &'static str = "claim2_id";
-pub const CLAIM3_ID: &'static str = "claim3_id";
+pub const CREDENTIAL1_ID: &'static str = "credential1_id";
+pub const CREDENTIAL2_ID: &'static str = "credential2_id";
+pub const CREDENTIAL3_ID: &'static str = "credential3_id";
 pub const GVT_SEQ_NO: i32 = 1;
 pub const XYZ_SEQ_NO: i32 = 2;
 
@@ -39,8 +39,8 @@ impl AnoncredsUtils {
     pub fn issuer_create_schema(issuer_did: &str, name: &str, version: &str, attr_names: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, claim_def_json| {
-            sender.send((err, claim_def_json)).unwrap();
+        let cb = Box::new(move |err, credential_def_json| {
+            sender.send((err, credential_def_json)).unwrap();
         });
 
         let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_definition_cb(cb);
@@ -71,11 +71,11 @@ impl AnoncredsUtils {
         Ok(schema_json)
     }
 
-    pub fn issuer_create_claim_definition(wallet_handle: i32, issuer_did: &str, schema: &str, tag: &str, signature_type: Option<&str>, create_non_revoc: bool) -> Result<String, ErrorCode> {
+    pub fn issuer_create_credential_definition(wallet_handle: i32, issuer_did: &str, schema: &str, tag: &str, signature_type: Option<&str>, create_non_revoc: bool) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, claim_def_json| {
-            sender.send((err, claim_def_json)).unwrap();
+        let cb = Box::new(move |err, credential_def_json| {
+            sender.send((err, credential_def_json)).unwrap();
         });
 
         let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_definition_cb(cb);
@@ -86,7 +86,7 @@ impl AnoncredsUtils {
         let issuer_did = CString::new(issuer_did).unwrap();
 
         let err =
-            indy_issuer_create_and_store_claim_def(command_handle,
+            indy_issuer_create_and_store_credential_def(command_handle,
                                                    wallet_handle,
                                                    issuer_did.as_ptr(),
                                                    schema.as_ptr(),
@@ -99,13 +99,13 @@ impl AnoncredsUtils {
             return Err(err);
         }
 
-        let (err, claim_def_json) = receiver.recv().unwrap();
+        let (err, credential_def_json) = receiver.recv().unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        Ok(claim_def_json)
+        Ok(credential_def_json)
     }
 
     pub fn prover_create_master_secret(wallet_handle: i32, master_secret_name: &str) -> Result<(), ErrorCode> {
@@ -137,11 +137,11 @@ impl AnoncredsUtils {
         Ok(())
     }
 
-    pub fn issuer_create_claim_offer(wallet_handle: i32, cred_def_id: &str, rev_reg_id: Option<&str>, prover_did: &str) -> Result<String, ErrorCode> {
+    pub fn issuer_create_credential_offer(wallet_handle: i32, cred_def_id: &str, rev_reg_id: Option<&str>, prover_did: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, claim_def_json| {
-            sender.send((err, claim_def_json)).unwrap();
+        let cb = Box::new(move |err, credential_def_json| {
+            sender.send((err, credential_def_json)).unwrap();
         });
 
         let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_offer_cb(cb);
@@ -151,7 +151,7 @@ impl AnoncredsUtils {
         let prover_did = CString::new(prover_did).unwrap();
 
         let err =
-            indy_issuer_create_claim_offer(command_handle,
+            indy_issuer_create_credential_offer(command_handle,
                                            wallet_handle,
                                            cred_def_id.as_ptr(),
                                            if rev_reg_id.is_some() { rev_reg_id_str.as_ptr() } else { null() },
@@ -162,16 +162,16 @@ impl AnoncredsUtils {
             return Err(err);
         }
 
-        let (err, claim_offer_json) = receiver.recv().unwrap();
+        let (err, credential_offer_json) = receiver.recv().unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        Ok(claim_offer_json)
+        Ok(credential_offer_json)
     }
 
-    pub fn prover_store_claim_offer(wallet_handle: i32, claim_offer_json: &str) -> Result<(), ErrorCode> {
+    pub fn prover_store_credential_offer(wallet_handle: i32, credential_offer_json: &str) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err| {
@@ -180,11 +180,11 @@ impl AnoncredsUtils {
 
         let (command_handle, cb) = CallbackUtils::closure_to_claim_offer_json_cb(cb);
 
-        let claim_offer_json = CString::new(claim_offer_json).unwrap();
+        let credential_offer_json = CString::new(credential_offer_json).unwrap();
 
-        let err = indy_prover_store_claim_offer(command_handle,
+        let err = indy_prover_store_credential_offer(command_handle,
                                                 wallet_handle,
-                                                claim_offer_json.as_ptr(),
+                                                credential_offer_json.as_ptr(),
                                                 cb);
 
         if err != ErrorCode::Success {
@@ -200,18 +200,18 @@ impl AnoncredsUtils {
         Ok(())
     }
 
-    pub fn prover_get_claim_offers(wallet_handle: i32, filter_json: &str) -> Result<String, ErrorCode> {
+    pub fn prover_get_credential_offers(wallet_handle: i32, filter_json: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, claim_offers_json| {
-            sender.send((err, claim_offers_json)).unwrap();
+        let cb = Box::new(move |err, credential_offers_json| {
+            sender.send((err, credential_offers_json)).unwrap();
         });
 
         let (command_handle, cb) = CallbackUtils::closure_to_prover_get_claim_offers_cb(cb);
 
         let filter_json = CString::new(filter_json).unwrap();
 
-        let err = indy_prover_get_claim_offers(command_handle,
+        let err = indy_prover_get_credential_offers(command_handle,
                                                wallet_handle,
                                                filter_json.as_ptr(),
                                                cb);
@@ -220,35 +220,35 @@ impl AnoncredsUtils {
             return Err(err);
         }
 
-        let (err, claim_offers_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let (err, credential_offers_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        Ok(claim_offers_json)
+        Ok(credential_offers_json)
     }
 
-    pub fn prover_create_and_store_claim_req(wallet_handle: i32, prover_did: &str, claim_offer_json: &str,
-                                             claim_def_json: &str, master_secret_name: &str) -> Result<String, ErrorCode> {
+    pub fn prover_create_and_store_credential_req(wallet_handle: i32, prover_did: &str, credential_offer_json: &str,
+                                             credential_def_json: &str, master_secret_name: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, claim_req_json| {
-            sender.send((err, claim_req_json)).unwrap();
+        let cb = Box::new(move |err, credential_req_json| {
+            sender.send((err, credential_req_json)).unwrap();
         });
 
         let (command_handle, cb) = CallbackUtils::closure_to_prover_create_claim_req_cb(cb);
 
         let prover_did = CString::new(prover_did).unwrap();
-        let claim_offer_json = CString::new(claim_offer_json).unwrap();
-        let claim_def_json = CString::new(claim_def_json).unwrap();
+        let credential_offer_json = CString::new(credential_offer_json).unwrap();
+        let credential_def_json = CString::new(credential_def_json).unwrap();
         let master_secret_name = CString::new(master_secret_name).unwrap();
 
-        let err = indy_prover_create_and_store_claim_req(command_handle,
+        let err = indy_prover_create_and_store_credential_req(command_handle,
                                                          wallet_handle,
                                                          prover_did.as_ptr(),
-                                                         claim_offer_json.as_ptr(),
-                                                         claim_def_json.as_ptr(),
+                                                         credential_offer_json.as_ptr(),
+                                                         credential_def_json.as_ptr(),
                                                          master_secret_name.as_ptr(),
                                                          cb);
 
@@ -256,32 +256,32 @@ impl AnoncredsUtils {
             return Err(err);
         }
 
-        let (err, claim_req_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let (err, credential_req_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        Ok(claim_req_json)
+        Ok(credential_req_json)
     }
 
-    pub fn issuer_create_claim(wallet_handle: i32, claim_req_json: &str, claim_values_json: &str,
+    pub fn issuer_create_credential(wallet_handle: i32, credential_req_json: &str, credential_values_json: &str,
                                tails_reader_handler: Option<i32>, user_revoc_index: Option<i32>) -> Result<(Option<String>, String), ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, revoc_reg_delta_json, xclaim_json| {
-            sender.send((err, revoc_reg_delta_json, xclaim_json)).unwrap();
+        let cb = Box::new(move |err, revoc_reg_delta_json, xcredential_json| {
+            sender.send((err, revoc_reg_delta_json, xcredential_json)).unwrap();
         });
 
         let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_cb(cb);
 
-        let claim_req_json = CString::new(claim_req_json).unwrap();
-        let claim_values_json = CString::new(claim_values_json).unwrap();
+        let credential_req_json = CString::new(credential_req_json).unwrap();
+        let credential_values_json = CString::new(credential_values_json).unwrap();
 
-        let err = indy_issuer_create_claim(command_handle,
+        let err = indy_issuer_create_credential(command_handle,
                                            wallet_handle,
-                                           claim_req_json.as_ptr(),
-                                           claim_values_json.as_ptr(),
+                                           credential_req_json.as_ptr(),
+                                           credential_values_json.as_ptr(),
                                            tails_reader_handler.unwrap_or(-1),
                                            user_revoc_index.unwrap_or(-1),
                                            cb);
@@ -290,16 +290,16 @@ impl AnoncredsUtils {
             return Err(err);
         }
 
-        let (err, revoc_reg_delta_json, claim_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let (err, revoc_reg_delta_json, credential_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        Ok((revoc_reg_delta_json, claim_json))
+        Ok((revoc_reg_delta_json, credential_json))
     }
 
-    pub fn prover_store_claim(wallet_handle: i32, id: &str, claim_json: &str, rev_reg_def_json: Option<&str>, rev_reg_entry_json: Option<&str>) -> Result<(), ErrorCode> {
+    pub fn prover_store_credential(wallet_handle: i32, id: &str, credential_json: &str, rev_reg_def_json: Option<&str>, rev_reg_entry_json: Option<&str>) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err| {
@@ -309,14 +309,14 @@ impl AnoncredsUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_prover_store_claim_cb(cb);
 
         let id = CString::new(id).unwrap();
-        let claim_json = CString::new(claim_json).unwrap();
+        let credential_json = CString::new(credential_json).unwrap();
         let rev_reg_def_json_str = rev_reg_def_json.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let rev_reg_entry_json_str = rev_reg_entry_json.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
-        let err = indy_prover_store_claim(command_handle,
+        let err = indy_prover_store_credential(command_handle,
                                           wallet_handle,
                                           id.as_ptr(),
-                                          claim_json.as_ptr(),
+                                          credential_json.as_ptr(),
                                           if rev_reg_def_json.is_some() { rev_reg_def_json_str.as_ptr() } else { null() },
                                           if rev_reg_entry_json.is_some() { rev_reg_entry_json_str.as_ptr() } else { null() },
                                           cb);
@@ -334,18 +334,18 @@ impl AnoncredsUtils {
         Ok(())
     }
 
-    pub fn prover_get_claims(wallet_handle: i32, filter_json: &str) -> Result<String, ErrorCode> {
+    pub fn prover_get_credentials(wallet_handle: i32, filter_json: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, claims_json| {
-            sender.send((err, claims_json)).unwrap();
+        let cb = Box::new(move |err, credentials_json| {
+            sender.send((err, credentials_json)).unwrap();
         });
 
         let (command_handle, cb) = CallbackUtils::closure_to_prover_get_claims(cb);
 
         let filter_json = CString::new(filter_json).unwrap();
 
-        let err = indy_prover_get_claims(command_handle,
+        let err = indy_prover_get_credentials(command_handle,
                                          wallet_handle,
                                          filter_json.as_ptr(),
                                          cb);
@@ -354,27 +354,27 @@ impl AnoncredsUtils {
             return Err(err);
         }
 
-        let (err, claims_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let (err, credentials_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        Ok(claims_json)
+        Ok(credentials_json)
     }
 
-    pub fn prover_get_claims_for_proof_req(wallet_handle: i32, proof_request_json: &str) -> Result<String, ErrorCode> {
+    pub fn prover_get_credentials_for_proof_req(wallet_handle: i32, proof_request_json: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
-        let cb = Box::new(move |err, claims_json| {
-            sender.send((err, claims_json)).unwrap();
+        let cb = Box::new(move |err, credentials_json| {
+            sender.send((err, credentials_json)).unwrap();
         });
 
         let (command_handle, cb) = CallbackUtils::closure_to_prover_get_claims_for_proof_req_cb(cb);
 
         let proof_request_json = CString::new(proof_request_json).unwrap();
 
-        let err = indy_prover_get_claims_for_proof_req(command_handle,
+        let err = indy_prover_get_credentials_for_proof_req(command_handle,
                                                        wallet_handle,
                                                        proof_request_json.as_ptr(),
                                                        cb);
@@ -383,18 +383,18 @@ impl AnoncredsUtils {
             return Err(err);
         }
 
-        let (err, claims_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let (err, credentials_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        Ok(claims_json)
+        Ok(credentials_json)
     }
 
-    pub fn prover_create_proof(wallet_handle: i32, proof_req_json: &str, requested_claims_json: &str,
-                               schemas_json: &str, master_secret_name: &str, claim_defs_json: &str,
-                               revoc_reg_entries_json: &str) -> Result<String, ErrorCode> {
+    pub fn prover_create_proof(wallet_handle: i32, proof_req_json: &str, requested_credentials_json: &str,
+                               schemas_json: &str, master_secret_name: &str, credential_defs_json: &str,
+                               rev_infos_json: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, proof_json| {
@@ -404,20 +404,20 @@ impl AnoncredsUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_prover_get_claims_for_proof_req_cb(cb);
 
         let proof_req_json = CString::new(proof_req_json).unwrap();
-        let requested_claims_json = CString::new(requested_claims_json).unwrap();
+        let requested_credentials_json = CString::new(requested_credentials_json).unwrap();
         let schemas_json = CString::new(schemas_json).unwrap();
         let master_secret_name = CString::new(master_secret_name).unwrap();
-        let claim_defs_json = CString::new(claim_defs_json).unwrap();
-        let revoc_regs_json = CString::new(revoc_reg_entries_json).unwrap();
+        let credential_defs_json = CString::new(credential_defs_json).unwrap();
+        let rev_infos_json = CString::new(rev_infos_json).unwrap();
 
         let err = indy_prover_create_proof(command_handle,
                                            wallet_handle,
                                            proof_req_json.as_ptr(),
-                                           requested_claims_json.as_ptr(),
+                                           requested_credentials_json.as_ptr(),
                                            schemas_json.as_ptr(),
                                            master_secret_name.as_ptr(),
-                                           claim_defs_json.as_ptr(),
-                                           revoc_regs_json.as_ptr(),
+                                           credential_defs_json.as_ptr(),
+                                           rev_infos_json.as_ptr(),
                                            cb);
 
         if err != ErrorCode::Success {
@@ -434,7 +434,7 @@ impl AnoncredsUtils {
     }
 
     pub fn verifier_verify_proof(proof_request_json: &str, proof_json: &str, schemas_json: &str,
-                                 claim_defs_json: &str, rev_reg_defs_json: &str, rev_reg_entries_json: &str) -> Result<bool, ErrorCode> {
+                                 credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str) -> Result<bool, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, valid| {
@@ -446,17 +446,17 @@ impl AnoncredsUtils {
         let proof_request_json = CString::new(proof_request_json).unwrap();
         let proof_json = CString::new(proof_json).unwrap();
         let schemas_json = CString::new(schemas_json).unwrap();
-        let claim_defs_json = CString::new(claim_defs_json).unwrap();
+        let credential_defs_json = CString::new(credential_defs_json).unwrap();
         let rev_reg_defs_json = CString::new(rev_reg_defs_json).unwrap();
-        let rev_reg_entries_json = CString::new(rev_reg_entries_json).unwrap();
+        let rev_regs_json = CString::new(rev_regs_json).unwrap();
 
         let err = indy_verifier_verify_proof(command_handle,
                                              proof_request_json.as_ptr(),
                                              proof_json.as_ptr(),
                                              schemas_json.as_ptr(),
-                                             claim_defs_json.as_ptr(),
+                                             credential_defs_json.as_ptr(),
                                              rev_reg_defs_json.as_ptr(),
-                                             rev_reg_entries_json.as_ptr(),
+                                             rev_regs_json.as_ptr(),
                                              cb);
 
         if err != ErrorCode::Success {
@@ -473,7 +473,7 @@ impl AnoncredsUtils {
     }
 
     pub fn indy_issuer_create_and_store_revoc_reg(wallet_handle: i32, issuer_did: &str, type_: Option<&str>, tag: &str,
-                                                  cred_def_id: &str, issuance_type: Option<&str>, max_claim_num: u32, tails_writer_config: &str) -> Result<(String, String), ErrorCode> {
+                                                  cred_def_id: &str, issuance_type: Option<&str>, max_credential_num: u32, tails_writer_config: &str) -> Result<(String, String), ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, revoc_reg_def_json, revoc_reg_json| {
@@ -497,7 +497,7 @@ impl AnoncredsUtils {
                                                          tag.as_ptr(),
                                                          cred_def_id.as_ptr(),
                                                          if issuance_type.is_some() { issuance_type_str.as_ptr() } else { null() },
-                                                         max_claim_num,
+                                                         max_credential_num,
                                                          tails_writer_type.as_ptr(),
                                                          tails_writer_config.as_ptr(),
                                                          cb);
@@ -515,7 +515,7 @@ impl AnoncredsUtils {
         Ok((revoc_reg_def_json, revoc_reg_json))
     }
 
-    pub fn issuer_revoke_claim(wallet_handle: i32, tails_reader_handle: i32, rev_reg_id: &str, user_revoc_index: u32) -> Result<String, ErrorCode> {
+    pub fn issuer_revoke_credential(wallet_handle: i32, tails_reader_handle: i32, rev_reg_id: &str, user_revoc_index: u32) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, revoc_reg_delta_json| {
@@ -526,7 +526,7 @@ impl AnoncredsUtils {
 
         let rev_reg_id = CString::new(rev_reg_id).unwrap();
 
-        let err = indy_issuer_revoke_claim(command_handle,
+        let err = indy_issuer_revoke_credential(command_handle,
                                            wallet_handle,
                                            tails_reader_handle,
                                            rev_reg_id.as_ptr(),
@@ -546,7 +546,8 @@ impl AnoncredsUtils {
         Ok(revoc_reg_delta_json)
     }
 
-    pub fn create_witness(wallet_handle: i32, tails_reader_handle: i32, rev_reg_def_json: &str, rev_reg_delta_json: &str, user_revoc_index: u32) -> Result<String, ErrorCode> {
+    pub fn create_revocation_info(wallet_handle: i32, tails_reader_handle: i32, rev_reg_def_json: &str,
+                                  rev_reg_delta_json: &str, timestamp: u64, user_revoc_index: u32) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, witness_json| {
@@ -558,13 +559,14 @@ impl AnoncredsUtils {
         let rev_reg_def_json = CString::new(rev_reg_def_json).unwrap();
         let rev_reg_delta_json = CString::new(rev_reg_delta_json).unwrap();
 
-        let err = indy_create_witness(command_handle,
-                                      wallet_handle,
-                                      tails_reader_handle,
-                                      rev_reg_def_json.as_ptr(),
-                                      rev_reg_delta_json.as_ptr(),
-                                      user_revoc_index,
-                                      cb);
+        let err = indy_create_revocation_info(command_handle,
+                                              wallet_handle,
+                                              tails_reader_handle,
+                                              rev_reg_def_json.as_ptr(),
+                                              rev_reg_delta_json.as_ptr(),
+                                              timestamp,
+                                              user_revoc_index,
+                                              cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -579,8 +581,8 @@ impl AnoncredsUtils {
         Ok(witness_json)
     }
 
-    pub fn update_witness(wallet_handle: i32, tails_reader_handle: i32, witness_json: &str, rev_reg_def_json: &str,
-                          rev_reg_delta_json: &str, user_revoc_index: u32) -> Result<String, ErrorCode> {
+    pub fn update_revocation_info(wallet_handle: i32, tails_reader_handle: i32, witness_json: &str, rev_reg_def_json: &str,
+                                  rev_reg_delta_json: &str, timestamp: u64, user_revoc_index: u32) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, witness_json| {
@@ -593,14 +595,15 @@ impl AnoncredsUtils {
         let rev_reg_def_json = CString::new(rev_reg_def_json).unwrap();
         let rev_reg_delta_json = CString::new(rev_reg_delta_json).unwrap();
 
-        let err = indy_update_witness(command_handle,
-                                      wallet_handle,
-                                      tails_reader_handle,
-                                      witness_json.as_ptr(),
-                                      rev_reg_def_json.as_ptr(),
-                                      rev_reg_delta_json.as_ptr(),
-                                      user_revoc_index,
-                                      cb);
+        let err = indy_update_revocation_info(command_handle,
+                                              wallet_handle,
+                                              tails_reader_handle,
+                                              witness_json.as_ptr(),
+                                              rev_reg_def_json.as_ptr(),
+                                              rev_reg_delta_json.as_ptr(),
+                                              timestamp,
+                                              user_revoc_index,
+                                              cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -615,7 +618,7 @@ impl AnoncredsUtils {
         Ok(updated_witness_json)
     }
 
-    pub fn store_witness(wallet_handle: i32, id: &str, witness_json: &str) -> Result<(), ErrorCode> {
+    pub fn store_revocation_info(wallet_handle: i32, id: &str, revocation_info_json: &str) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err| {
@@ -625,13 +628,13 @@ impl AnoncredsUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_prover_store_claim_cb(cb);
 
         let id = CString::new(id).unwrap();
-        let witness_json = CString::new(witness_json).unwrap();
+        let revocation_info_json = CString::new(revocation_info_json).unwrap();
 
-        let err = indy_store_witness(command_handle,
-                                     wallet_handle,
-                                     id.as_ptr(),
-                                     witness_json.as_ptr(),
-                                     cb);
+        let err = indy_store_revocation_info(command_handle,
+                                             wallet_handle,
+                                             id.as_ptr(),
+                                             revocation_info_json.as_ptr(),
+                                             cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -646,7 +649,7 @@ impl AnoncredsUtils {
         Ok(())
     }
 
-    pub fn get_witness(wallet_handle: i32, id: &str) -> Result<String, ErrorCode> {
+    pub fn get_revocation_info(wallet_handle: i32, id: &str, timestamp: Option<i64>) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, witness_json| {
@@ -657,10 +660,11 @@ impl AnoncredsUtils {
 
         let id = CString::new(id).unwrap();
 
-        let err = indy_get_witness(command_handle,
-                                   wallet_handle,
-                                   id.as_ptr(),
-                                   cb);
+        let err = indy_get_revocation_info(command_handle,
+                                           wallet_handle,
+                                           id.as_ptr(),
+                                           timestamp.unwrap_or(-1),
+                                           cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -747,7 +751,7 @@ impl AnoncredsUtils {
         }).unwrap()
     }
 
-    pub fn get_claim_offer(issuer_did: &str, schema_key: &SchemaKey) -> String {
+    pub fn get_credential_offer(issuer_did: &str, schema_key: &SchemaKey) -> String {
         format!(r#"{{
                     "issuer_did":"{}",
                     "schema_key":{{"name":"{}", "version":"{}", "did":"{}"}},
@@ -766,15 +770,15 @@ impl AnoncredsUtils {
                 issuer_did, schema_key.name, schema_key.version, schema_key.did)
     }
 
-    pub fn gvt_claim_offer() -> String {
-        AnoncredsUtils::get_claim_offer(ISSUER_DID, &AnoncredsUtils::gvt_schema_key())
+    pub fn gvt_credential_offer() -> String {
+        AnoncredsUtils::get_credential_offer(ISSUER_DID, &AnoncredsUtils::gvt_schema_key())
     }
 
-    pub fn xyz_claim_offer() -> String {
-        AnoncredsUtils::get_claim_offer(ISSUER_DID, &AnoncredsUtils::xyz_schema_key())
+    pub fn xyz_credential_offer() -> String {
+        AnoncredsUtils::get_credential_offer(ISSUER_DID, &AnoncredsUtils::xyz_schema_key())
     }
 
-    pub fn gvt_claim_values_json() -> &'static str {
+    pub fn gvt_credential_values_json() -> &'static str {
         r#"{
                "sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"],
                "name":["Alex","1139481716457488690172217916278103335"],
@@ -783,14 +787,14 @@ impl AnoncredsUtils {
         }"#
     }
 
-    pub fn xyz_claim_values_json() -> &'static str {
+    pub fn xyz_credential_values_json() -> &'static str {
         r#"{
                "status":["partial","51792877103171595686471452153480627530895"],
                "period":["8","8"]
         }"#
     }
 
-    pub fn gvt2_claim_values_json() -> &'static str {
+    pub fn gvt2_credential_values_json() -> &'static str {
         r#"{
                "sex":["male","2142657394558967239210949258394838228692050081607692519917028371144233115103"],
                "name":["Alexander","21332817548165488690172217217278169335"],
@@ -799,7 +803,7 @@ impl AnoncredsUtils {
         }"#
     }
 
-    pub fn gvt_claim_def_data_json() -> &'static str {
+    pub fn gvt_credential_def_data_json() -> &'static str {
         r#"{
             "primary":{
                 "n":"83469852984476956871633111285697420678256060723156580163068122759469567425381600849138438902552107548539766861666590365174848381535291010418041757276710240953030842046122202402016906205924972182252295487319094577329593677544393592632224714613427822130473474379696616183721440743475053734247824037725487533789856061706740833324717788602268746116297029721621398888459529131593826880823126900285858832457134377949183677639585442886904844793608783831753240185678448312284269486845497720949217396146132958861735347072722092449280372574205841746312833280031873247525372459800132930201998084029506922484661426185450002143461",
@@ -817,7 +821,7 @@ impl AnoncredsUtils {
         }"#
     }
 
-    pub fn claim_def_json() -> &'static str {
+    pub fn credential_def_json() -> &'static str {
         r#"{
             "ref":1,
             "origin":"NcYxiDXkpYi6ov5FcYDi1e",
@@ -877,7 +881,7 @@ impl AnoncredsUtils {
         r#"{
             "proof":{
                 "proofs":{
-                    "claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{
+                    "credential::58479554-187f-40d9-b0a5-a95cfb0338c3":{
                         "primary_proof":{
                             "eq_proof":{"revealed_attrs":{"name":"1139481716457488690172217916278103335"},"a_prime":"80401564260558483983794628158664845806393125691167675024527906210615204776868092566789307767601325086260531777605457298059939671624755239928848057947875953445797869574854365751051663611984607735255307096920094357120779812375573500489773454634756645206823074153240319316758529163584251907107473703779754778699279153037094140428648169418133281187947677937472972061954089873405836249023133445286756991574802740614183730141450546881449500189789970102133738133443822618072337620343825908790734460412932921199267304555521397418007577171242880211812703320270140386219809818196744216958369397014610013338422295772654405475023","e":"31151798717381512709903464053695613005379725796031086912986270617392167764097422442809244590980303622977555221812111085160553241592792901","v":"524407431684833626723631303096063196973911986967748096669183384949467719053669910411426601230736351335262754473490498825342793551112426427823428399937548938048089615644972537564428344526295733169691240937176356626523864731701111189536269488496019586818879697981955044502664124964896796783428945944075084807859935155837238670987272778459356531608865162828109489758902085206073584532002909678902616210042778963974064479140826712481297584040209095459963718975102750913306565864485279810056629704077428898739021040190774575868853629858297299392839284660771662690107106553362040805152261505268111067408422298806905178826507224233050991301274817252924123120887017757639206512015559321675322509820081151404696713509158685022511201565062671933414307463988209696457343022378430051265752251403461414881325357657438328740471164157220698425309006894962942640219890219594168419276308074677144722217081026358892787770650248878952483621","m":{"age":"10477979077744818183854012231360633424177093192344587159214818537659704987539982653663361680650769087122324965941845552897155693994859927792964720675888893623940580527766661802170","sex":"15368219775809326116045200104269422566086585069798988383076685221700842794654771075432385446820819836777771517356551059931242867733879324915651894894695726945279462946826404864068","height":"268172143999991481637372321419290603042446269013750825098514042757459298040087626745653681785038933035820421862976371452111736537699176931068992453946771945552540798204580069806"},"m1":"119095745403940293668103184388411799541118279558928018597628509118163496000813590825371995586347826189221837428823000332905316924389185590810015031744029496470545254805993327676570037596326743185389101389800942263689809725968264069601565478411709555274081560719927118853299543998608664701485475703881376151770","m2":"3166313665375815600922385342096456465402430622944571045536207479553790085339726549928012930073803465171492637049498407367742103524723152099973753540483894420905314750248333232361"},
                             "ge_proofs":[{"u":{"2":"6494171529848192644197417834173236605253723188808961394289041396341136802965710957759175642924978223517091081898946519122412445399638640485278379079647638538597635045303985779767","0":"7739508859260491061487569748588091139318989278758566530899756574128579312557203413565436003310787878172471425996601979342157451689172171025305431595131816910273398879776841751855","3":"9424758820140378077609053635383940574362083113571024891496206162696034958494400871955445981458978146571146602763357500412840538526390475379772903513687358736287298159312524034159","1":"9011979414559555265454106061917684716953356440811838475257096756618761731111646531136628099710567973381801256908067529269805992222342928842825929421929485785888403149296320711642"},"r":{"DELTA":"2119857977629302693157808821351328058251440215802746362450951329352726877165815663955490999790457576333458830301801261754696823614762123890412904169206391143688952648566814660498520188221060505840151491403269696751525874990487604723445355651918681212361562384420233903265612599812725766212744963540390806334870022328290970137051148373040320927100063898502086531019924715927190306801273252711777648467224661735618842887006436195147540705753550974655689586750013569294343535843195025962867299786380033532422131203367401906988124836294104501525520053613392691214421562815044433237816093079784307397782961917892254668290115653012265908717124278607660504580036193346698672079435538219972121355893074219968755049500875222141","2":"879097501989202140886939888802566536179834329508897124489020677433754766947767937608431979796722207676629625451150104784909666168153917345813160237337412296010679353735699663083287427507870244565918756969618964144516025526404618052053542009438548457492400344119561349471929199757453154204191407620539220514897529346602664135146454509169680801061111878075145734123580343470361019624175036825631373890661124315134340427076598351080893567995392248394683875116715114577054906406649006122102488431184007790011073389768061904597267545895265921673106871142463561948479668876241841045522543174660428236658891636170119227855493059358614089146415798861053408542832475696099851160385105386001523305465829676723036394820593263477","0":"1724016272047416140958096373304304971004826284109046259544344355102178044512441391364907122486655755929044720001281832600729467778103556397960700809066582436321515744527550472324028227472294258045699756170293405547851344921626775854114063087070898499913846456795761213291925373770081490280103876827479351849800210782799381740073719081199000612284788683993320623339686128531187019125095700122135094060470612862911102824801065698176788174959069186600426519872015152034176356923049531650418553748519941342115963599848111324793380438600664408464987023646615003553912544410140730587797458882329021327455905737414352355326238028222782957735440607899424838572541602600159016542488644761584240884783618700311735467659132540546","3":"2317535203964314926167241523636020444600002667629517624482931328850422196008281300859516069440995466415138723103558631951648519232327284208990029010060986032518946759289078833125920310350676484457972303378558158127406345804560689086460633931717939234025886786468170219981598030245042011840614339386724945679531091642132820284896626191109974537171662283750959028046143650291367908660204201563611944187723824430780626387525165408619587771059635528553832034409311888615502905143628507219523591091412192645348525327725381323865648645828460581593542176351568614465903523790649219812666979685223535464526901006270478687017672202058914176692964406859722580270696925877498058525086810338471380117323227744481903228027847825795","1":"1119193929864813751243160041764170298897380522230946444206167281178657213260394833843687899872857393015947283159245092452814155776571829885921814072299525859857844030379558685168895306445277750249341844789101670896570226707650318347992386244538723699686941887792682779028216548922683313576597384354842537728667739985216662699631842296096507821667149950956179957306177525178260912379909156360834120816956949271530622510333943914411903103069247646327625753995178999023427645468623522280255892736633780185163496867644317005801241786702434621502492159672660131289312665511793827552317714835658019088880972220344126692027952749318018900669839090109361161616086319604439015851316798257015063653414161203599184730094765941653"},"mj":"10477979077744818183854012231360633424177093192344587159214818537659704987539982653663361680650769087122324965941845552897155693994859927792964720675888893623940580527766661802170","alpha":"46280660038407959140964701167450659223532556136388451390393713283900546119670373626221864441898929302821705811144923685080534692512705456699843367809872982836890616398604933641265111106644805368974824737276965928297120628041257593166650593538539384316563258781595629888673792430276007730792093088812056156937735120078929629310611907731935101448992312370312134173482115524436767558802102266208152808607480693236511858269018733175523724309089010048330044458187371675333889670055578652283806685440133357512406700879353713629795062705271430695988191782837658895477702634883214188598350625843489120361660836956958750828038278027538830855628653513539929730230905015331221220017847248793929813230252015802389329428995718799619565984669228143200627972926117282688854152516298117476837960100343260648687249027349308513966440386556698667484082658689","t":{"DELTA":"46814992964714978733007076702016837564951956529003697497847838781899848384824991374342901164708655443686022921583406187082133141084994843502230809550055933825660668160300304112671478218513259983054489597176651737200716259733573469298437873515151377206364940530308167934399245072298875358347931404742292788785586833114480704138718996633638362933821933388459210678374952072108333767698704767907612549860590824123780096225591372365712106060039646448181221691765233478768574198237963457485496438076793333937013217675591500849193742006533651525421426481898699626618796271544860105422331629265388419155909716261466161258430","2":"59423006413504086085782234600502410213751379553855471973440165009200961757474676407242673622935614782362911290590560535490636029324125251850583605745046201217673654522625983661578962623803698461459190578519097656221453474955879823750445359506290522280566225253310030053812918275525607874059407284653434046369835156477189219911810464401689041140506062300317020407969423270374033482533711564673658146930272487464489365713112043565257807490520178903336328210031106311280471651300486164966423437275272281777742004535722142265580037959473078313965482591454009972765788975683031385823798895914265841131145707278751512534120","0":"56510878078818710798555570103060159621941668074271797077206591818472978018558098567975838757566260370093327989369045722406190165972775356924844244889146946158949660988214890388299203816110339909687790860564719380865809705044646711632599987968183128514431910561478715003212633874423067294596323864121737000450543142072142652163818450299889830999149821558252183477517484127000480272695698860647674027831262149565273068850774090998356019534296579838685977022988536930596918054160990243868372150609770079720240227817149126735182138479851227052696211125454858584118346950878092387488482897777914362341820607560926173967363","3":"63511079416489489495396586813126304469185174450150717746314545118902972011091412254834718868134635251731510764117528579641756327883640004345178347120290107941107152421856942264968771810665927914509411385404403747487862696526824127219640807008235054362138760656969613951620938020257273816713908815343872804442748694361381399025862438391456307852482826748664499083370705834755863016895566228300904018909174673301643617543662527772400085378252706897979609427451977654028887889811453690146157824251379525221390697200211891556653698308665831075787991412401737090471273439878635073797691350863566834141222438011402987450926","1":"30348838247529448929141877305241172943867610065951047292188826263950046630912426030349276970628525991007036685038199133783991618544554063310358191845473212966131475853690378885426974792306638181168558731807811629973716711132134244797541560013139884391800841941607502149630914097258613821336239993125960064136287579351403225717114920758719152701696123905042695943045383536065833292374624566478931465135875411483860059753175449604448434619593495399051968638830805689355610877075130302742512428461286121237297212174164897833936610857614962734658136750299346971377383141235020438750748045568800723867413392427848651081274"},"predicate":{"attr_name":"age","p_type":"GE","value":18}}]
@@ -891,45 +895,45 @@ impl AnoncredsUtils {
                 }
             },
             "requested_proof":{
-                "revealed_attrs":{"attr1_referent":["claim::58479554-187f-40d9-b0a5-a95cfb0338c3","Alex","1139481716457488690172217916278103335"]},
+                "revealed_attrs":{"attr1_referent":["credential::58479554-187f-40d9-b0a5-a95cfb0338c3","Alex","1139481716457488690172217916278103335"]},
                 "unrevealed_attrs":{},
                 "self_attested_attrs":{},
-                "predicates":{"predicate1_referent":"claim::58479554-187f-40d9-b0a5-a95cfb0338c3"}
+                "predicates":{"predicate1_referent":"credential::58479554-187f-40d9-b0a5-a95cfb0338c3"}
             },
-            "identifiers":{"claim::58479554-187f-40d9-b0a5-a95cfb0338c3":{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_key":{"name":"gvt","version":"1.0","did":"NcYxiDXkpYi6ov5FcYDi1e"}}}
+            "identifiers":{"credential::58479554-187f-40d9-b0a5-a95cfb0338c3":{"issuer_did":"NcYxiDXkpYi6ov5FcYDi1e","schema_key":{"name":"gvt","version":"1.0","did":"NcYxiDXkpYi6ov5FcYDi1e"}}}
         }"#
     }
 
-    pub fn get_unique_claims(proof_claims: &CredentialsForProofRequest) -> Vec<CredentialInfo> {
-        let attrs_claims =
-            proof_claims.attrs
+    pub fn get_unique_credentials(proof_credentials: &CredentialsForProofRequest) -> Vec<CredentialInfo> {
+        let attrs_credentials =
+            proof_credentials.attrs
                 .values()
-                .flat_map(|claims| claims)
-                .map(|claim| claim.clone())
+                .flat_map(|credentials| credentials)
+                .map(|&(ref credential, _)| credential.clone())
                 .collect::<Vec<CredentialInfo>>();
 
-        let predicates_claims =
-            proof_claims.predicates
+        let predicates_credentials =
+            proof_credentials.predicates
                 .values()
-                .flat_map(|claims| claims)
-                .map(|claim| claim.clone())
+                .flat_map(|credentials| credentials)
+                .map(|&(ref credential, _)| credential.clone())
                 .collect::<Vec<CredentialInfo>>();
 
-        attrs_claims.into_iter().collect::<HashSet<CredentialInfo>>()
-            .union(&predicates_claims.into_iter().collect::<HashSet<CredentialInfo>>())
+        attrs_credentials.into_iter().collect::<HashSet<CredentialInfo>>()
+            .union(&predicates_credentials.into_iter().collect::<HashSet<CredentialInfo>>())
             .map(|v| v.clone()).collect::<Vec<CredentialInfo>>()
     }
 
-    pub fn get_claim_for_attr_referent(claims_json: &str, referent: &str) -> CredentialInfo {
-        let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
-        let claims_for_referent = claims.attrs.get(referent).unwrap();
-        claims_for_referent[0].clone()
+    pub fn get_credential_for_attr_referent(credentials_json: &str, referent: &str) -> CredentialInfo {
+        let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+        let credentials_for_referent = credentials.attrs.get(referent).unwrap();
+        credentials_for_referent[0].0.clone()
     }
 
-    pub fn get_claim_for_predicate_referent(claims_json: &str, referent: &str) -> CredentialInfo {
-        let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
-        let claims_for_referent = claims.predicates.get(referent).unwrap();
-        claims_for_referent[0].clone()
+    pub fn get_credential_for_predicate_referent(credentials_json: &str, referent: &str) -> CredentialInfo {
+        let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+        let credentials_for_referent = credentials.predicates.get(referent).unwrap();
+        credentials_for_referent[0].0.clone()
     }
 
     pub fn tails_config() -> String {
@@ -955,113 +959,113 @@ impl AnoncredsUtils {
     //
     //                //2. Issuer1 Create GVT CredentialDefinition
     //                //TODO Fix it.....Convert String to &'static str
-    //                let issuer1_gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE,
+    //                let issuer1_gvt_credential_def_json = AnoncredsUtils::issuer_create_credential_definition(WALLET_HANDLE,
     //                                                                                                ISSUER_DID,
     //                                                                                                &AnoncredsUtils::gvt_schema_json(),
     //                                                                                                None, false).unwrap();
     //
     //                //3. Issuer1 Create XYZ CredentialDefinition
-    //                let issuer1_xyz_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE,
+    //                let issuer1_xyz_credential_def_json = AnoncredsUtils::issuer_create_credential_definition(WALLET_HANDLE,
     //                                                                                                ISSUER_DID,
     //                                                                                                &AnoncredsUtils::xyz_schema_json(),
     //                                                                                                None, false).unwrap();
     //
     //                //4. Issuer2 Create GVT CredentialDefinition
-    //                let issuer2_gvt_claim_def_json = AnoncredsUtils::issuer_create_claim_definition(WALLET_HANDLE,
+    //                let issuer2_gvt_credential_def_json = AnoncredsUtils::issuer_create_credential_definition(WALLET_HANDLE,
     //                                                                                                DID,
     //                                                                                                &AnoncredsUtils::gvt_schema_json(),
     //                                                                                                None, false).unwrap();
     //
     //                //5. Issuer1 Create GVT CredentialOffer
-    //                let issuer1_gvt_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
+    //                let issuer1_gvt_credential_offer = AnoncredsUtils::issuer_create_credential_offer(WALLET_HANDLE,
     //                                                                                        &AnoncredsUtils::gvt_schema_json(),
     //                                                                                        ISSUER_DID, DID_MY1).unwrap();
     //
     //                //6. Prover store Issuer1 GVT CredentialOffer
-    //                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer1_gvt_claim_offer).unwrap();
+    //                AnoncredsUtils::prover_store_credential_offer(WALLET_HANDLE, &issuer1_gvt_credential_offer).unwrap();
     //
     //                //7. Issuer1 Create XYZ CredentialOffer
-    //                let issuer1_xyz_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
+    //                let issuer1_xyz_credential_offer = AnoncredsUtils::issuer_create_credential_offer(WALLET_HANDLE,
     //                                                                                        &AnoncredsUtils::xyz_schema_json(),
     //                                                                                        ISSUER_DID, DID_MY1).unwrap();
     //
     //                //8. Prover store Issuer1 XYZ CredentialOffer
-    //                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer1_xyz_claim_offer).unwrap();
+    //                AnoncredsUtils::prover_store_credential_offer(WALLET_HANDLE, &issuer1_xyz_credential_offer).unwrap();
     //
     //                //9. Issuer2 Create GVT CredentialOffer
-    //                let issuer2_gvt_claim_offer = AnoncredsUtils::issuer_create_claim_offer(WALLET_HANDLE,
+    //                let issuer2_gvt_credential_offer = AnoncredsUtils::issuer_create_credential_offer(WALLET_HANDLE,
     //                                                                                        &AnoncredsUtils::gvt_schema_json(),
     //                                                                                        DID, DID_MY1).unwrap();
     //
     //                //10. Prover store Issuer2 GVT CredentialOffer
-    //                AnoncredsUtils::prover_store_claim_offer(WALLET_HANDLE, &issuer2_gvt_claim_offer).unwrap();
+    //                AnoncredsUtils::prover_store_credential_offer(WALLET_HANDLE, &issuer2_gvt_credential_offer).unwrap();
     //
     //                //11. Create MasterSecret
     //                AnoncredsUtils::prover_create_master_secret(WALLET_HANDLE, COMMON_MASTER_SECRET).unwrap();
     //
     //                // Issuer1 issue GVT Credential
     //                //12. Create and Store Credential Request
-    //                let issuer1_gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
+    //                let issuer1_gvt_credential_req = AnoncredsUtils::prover_create_and_store_credential_req(WALLET_HANDLE,
     //                                                                                              DID_MY1,
-    //                                                                                              &issuer1_gvt_claim_offer,
-    //                                                                                              &issuer1_gvt_claim_def_json,
+    //                                                                                              &issuer1_gvt_credential_offer,
+    //                                                                                              &issuer1_gvt_credential_def_json,
     //                                                                                              COMMON_MASTER_SECRET).unwrap();
-    //                let claim_values_json = AnoncredsUtils::gvt_claim_values_json();
+    //                let credential_values_json = AnoncredsUtils::gvt_credential_values_json();
     //
     //                //13. Issuer1 creates GVT Credential
-    //                let (_, claim_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_gvt_claim_req, &claim_values_json, None, None).unwrap();
+    //                let (_, credential_json) = AnoncredsUtils::issuer_create_credential(WALLET_HANDLE, &issuer1_gvt_credential_req, &credential_values_json, None, None).unwrap();
     //
     //                //14. Store Credential
-    //                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, CLAIM1_ID, &claim_json, None, None).unwrap();
+    //                AnoncredsUtils::prover_store_credential(WALLET_HANDLE, credential1_ID, &credential_json, None, None).unwrap();
     //
     //                // Issuer1 issue XYZ Credential
     //                //15. Create and Store Credential Request
-    //                let issuer1_xyz_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
+    //                let issuer1_xyz_credential_req = AnoncredsUtils::prover_create_and_store_credential_req(WALLET_HANDLE,
     //                                                                                              DID_MY1,
-    //                                                                                              &issuer1_xyz_claim_offer,
-    //                                                                                              &issuer1_xyz_claim_def_json,
+    //                                                                                              &issuer1_xyz_credential_offer,
+    //                                                                                              &issuer1_xyz_credential_def_json,
     //                                                                                              COMMON_MASTER_SECRET).unwrap();
-    //                let claim_values_json = AnoncredsUtils::xyz_claim_values_json();
+    //                let credential_values_json = AnoncredsUtils::xyz_credential_values_json();
     //
     //                //16. Create XYZ Credential
-    //                let (_, claim_2_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer1_xyz_claim_req, &claim_values_json, None, None).unwrap();
+    //                let (_, credential_2_json) = AnoncredsUtils::issuer_create_credential(WALLET_HANDLE, &issuer1_xyz_credential_req, &credential_values_json, None, None).unwrap();
     //
     //                //17. Store Credential
-    //                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, CLAIM2_ID, &claim_2_json, None, None).unwrap();
+    //                AnoncredsUtils::prover_store_credential(WALLET_HANDLE, credential2_ID, &credential_2_json, None, None).unwrap();
     //
     //                // Issuer2 issue GVT Credential
     //                //18. Create and Store Credential Request
-    //                let issuer2_gvt_claim_req = AnoncredsUtils::prover_create_and_store_claim_req(WALLET_HANDLE,
+    //                let issuer2_gvt_credential_req = AnoncredsUtils::prover_create_and_store_credential_req(WALLET_HANDLE,
     //                                                                                              DID_MY1,
-    //                                                                                              &issuer2_gvt_claim_offer,
-    //                                                                                              &issuer2_gvt_claim_def_json,
+    //                                                                                              &issuer2_gvt_credential_offer,
+    //                                                                                              &issuer2_gvt_credential_def_json,
     //                                                                                              COMMON_MASTER_SECRET).unwrap();
-    //                let claim_values_json = AnoncredsUtils::gvt2_claim_values_json();
+    //                let credential_values_json = AnoncredsUtils::gvt2_credential_values_json();
     //
     //                //19. Create XYZ Credential
-    //                let (_, claim_3_json) = AnoncredsUtils::issuer_create_claim(WALLET_HANDLE, &issuer2_gvt_claim_req, &claim_values_json, None, None).unwrap();
+    //                let (_, credential_3_json) = AnoncredsUtils::issuer_create_credential(WALLET_HANDLE, &issuer2_gvt_credential_req, &credential_values_json, None, None).unwrap();
     //
     //                //20. Store Credential
-    //                AnoncredsUtils::prover_store_claim(WALLET_HANDLE, CLAIM3_ID, &claim_3_json, None, None).unwrap();
+    //                AnoncredsUtils::prover_store_credential(WALLET_HANDLE, credential3_ID, &credential_3_json, None, None).unwrap();
     //
-    //                let res = mem::transmute(&issuer1_gvt_claim_def_json as &str);
-    //                mem::forget(issuer1_gvt_claim_def_json);
-    //                CLAIM_DEF_JSON = res;
+    //                let res = mem::transmute(&issuer1_gvt_credential_def_json as &str);
+    //                mem::forget(issuer1_gvt_credential_def_json);
+    //                credential_DEF_JSON = res;
     //
-    //                let res = mem::transmute(&issuer1_gvt_claim_offer as &str);
-    //                mem::forget(issuer1_gvt_claim_offer);
-    //                CLAIM_OFFER_JSON = res;
+    //                let res = mem::transmute(&issuer1_gvt_credential_offer as &str);
+    //                mem::forget(issuer1_gvt_credential_offer);
+    //                credential_OFFER_JSON = res;
     //
-    //                let res = mem::transmute(&issuer1_gvt_claim_req as &str);
-    //                mem::forget(issuer1_gvt_claim_req);
-    //                CLAIM_REQUEST_JSON = res;
+    //                let res = mem::transmute(&issuer1_gvt_credential_req as &str);
+    //                mem::forget(issuer1_gvt_credential_req);
+    //                credential_REQUEST_JSON = res;
     //
-    //                let res = mem::transmute(&claim_json as &str);
-    //                mem::forget(claim_json);
-    //                CLAIM_JSON = res;
+    //                let res = mem::transmute(&credential_json as &str);
+    //                mem::forget(credential_json);
+    //                credential_JSON = res;
     //            });
     //
-    //            (WALLET_HANDLE, CLAIM_DEF_JSON, CLAIM_OFFER_JSON, CLAIM_REQUEST_JSON, CLAIM_JSON)
+    //            (WALLET_HANDLE, credential_DEF_JSON, credential_OFFER_JSON, credential_REQUEST_JSON, credential_JSON)
     //        }
     //    }
 }
