@@ -8,14 +8,14 @@ test('abbreviate_verkey', async function (t) {
   t.is(await indy.abbreviate_verkey(did, verkey), '~HYwqs2vrTc8Tn4uBV7NBTe')
 
   var err = await t.throws(indy.abbreviate_verkey())
-  t.is(err.message, 'abbreviate_verkey expected 3 args')
+  t.is(err.message, 'Expected 3 arguments: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
 
   err = await t.throws(indy.abbreviate_verkey(did, verkey, did))
-  t.is(err.message, 'abbreviate_verkey expected 3 args')
+  t.is(err.message, 'Expected 3 arguments: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
 
   err = await t.throws(indy.abbreviate_verkey(1, verkey))
-  t.is(err.message, 'abbreviate_verkey arg 0 expected String')
+  t.is(err.message, 'Expected String for arg 0: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
 
   err = await t.throws(indy.abbreviate_verkey(did, 2))
-  t.is(err.message, 'abbreviate_verkey arg 1 expected String')
+  t.is(err.message, 'Expected String for arg 1: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
 })
