@@ -1,9 +1,9 @@
 from vcx.api.connection import Connection
 from demo.wait import wait_for_state
+from demo.vcxbase import VCXBase
 import json
 import asyncio
 from vcx.state import State
-from vcx.api.vcx_init import vcx_init
 from vcx.api.issuer_claim import IssuerClaim
 from vcx.api.schema import Schema
 from vcx.api.claim_def import ClaimDef
@@ -13,7 +13,7 @@ import qrcode
 ENTERPRISE_DID = '2hoqvcwupRTUNkXn6ArYzs'
 
 
-class Vcxdemo:
+class Vcxdemo(VCXBase):
 
     proof_requests = {}
     schemas = []
@@ -40,23 +40,9 @@ class Vcxdemo:
     def get_did(cls):
         return cls.did
 
-    @staticmethod
-    def get_loop():
-        if not hasattr(Vcxdemo.get_loop, "loop"):
-            Vcxdemo.get_loop.loop = asyncio.get_event_loop()
-        return Vcxdemo.get_loop.loop
-
-    @staticmethod
-    def init(path):
-        results = Vcxdemo.get_loop().run_until_complete(asyncio.gather(vcx_init(path)))
-        print(results)
-        return 1
-
     def create_qr_code(self, dest):
         img = qrcode.make(str(json.dumps(self.invite_details)))
         img.save(dest)
-
-
 
     async def _wait_for_claim_state(self, target_state):
         self.state['claim'] = await self.claim.update_state()
@@ -74,7 +60,6 @@ class Vcxdemo:
         print('\n %s \n' % str(json.dumps(self.invite_details)))
         self.create_qr_code('./qrcode1.png')
         self.state['connection'] = await self.wait_for_connection_state(State.Accepted)
-
 
     def connect(self):
         self.loop.run_until_complete(asyncio.gather(self.create_and_connect()))
@@ -168,16 +153,6 @@ class Vcxdemo:
         if len(res) > 0:
             return res[0]
 
-    @staticmethod
-    def _do_async_method(fn, kwargs):
-        res = Vcxdemo.get_loop().run_until_complete(asyncio.gather(fn(**kwargs)))
-        if len(res) > 0:
-            return res[0]
-
-    @staticmethod
-    async def _create_schema(source_id: str, name:str, attr:dict):
-        return await Schema.create(source_id, name, attr)
-
     @classmethod
     def create_schema(cls, source_id: str, name: str, attr: dict):
         res = Vcxdemo.get_loop().run_until_complete(asyncio.gather(Vcxdemo._create_schema(source_id, name, attr)))
@@ -187,10 +162,6 @@ class Vcxdemo:
     @classmethod
     def get_schema(cls, index):
         return cls.schemas[index]
-
-    @staticmethod
-    async def _serialize_schema(schema):
-        return await schema.serialize()
 
     @classmethod
     def serialize_schema(cls, schema_number):
@@ -217,18 +188,6 @@ class Vcxdemo:
     @classmethod
     def create_claim_def(cls, source_id, name, schema_number, revocation=False):
         cls.claim_defs[name] = Vcxdemo.get_loop().run_until_complete(ClaimDef.create(source_id, name, schema_number, revocation))
-
-    @staticmethod
-    def _create_attr(attr: str, did: str, schema_seq_number: int):
-        return {'schema_seq_no': schema_seq_number, 'name': attr, 'issuer_did': did}
-
-    @staticmethod
-    def format_proof_attrs(did: str, schema_seq_number: int, attr_list: list):
-        formatted_attrs = []
-        for a in attr_list:
-            formatted_attrs.append(Vcxdemo._create_attr(a, did, schema_seq_number))
-
-        return formatted_attrs
 
     def create_proof_request(self, source_id, name, proof_attr):
         res = Vcxdemo.get_loop().run_until_complete(asyncio.gather(Proof.create(source_id, name, proof_attr)))
@@ -267,8 +226,8 @@ class Vcxdemo:
 
     def wait_for_proof_state(self, proof_id, target_state):
         proof = self.get_proof_request(proof_id)
-        # Vcxdemo.get_loop().run_until_complete(asyncio.gather(self._wait_for_proof_state(proof_id, target_state)))
-        Vcxdemo.get_loop().run_until_complete(asyncio.gather(wait_for_state(proof, target_state)))
+        Vcxdemo.get_loop().run_until_complete(asyncio.gather(self._wait_for_proof_state(proof_id, target_state)))
+        # Vcxdemo.get_loop().run_until_complete(asyncio.gather(wait_for_state(proof, target_state)))
 
     def retrieve_proof(self, proof_id):
         proof = self.get_proof_request(proof_id)
@@ -279,9 +238,4 @@ class Vcxdemo:
         else:
             return None
 
-    @staticmethod
-    def lookup_schema(source_id, sequence_number):
-        res = Vcxdemo.get_loop().run_until_complete(asyncio.gather(Schema.lookup(source_id, sequence_number)))
-        if len(res) > 0:
-            return res[0]
 
