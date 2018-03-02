@@ -40,7 +40,6 @@ impl Verifier {
 
             let attrs_for_credential = Verifier::_get_revealed_attributes_for_credential(referent, &full_proof.requested_proof, proof_req)?;
             let predicates_for_credential = Verifier::_get_predicates_for_credential(referent, &full_proof.requested_proof, proof_req)?;
-
             let credential_schema = build_credential_schema(&credential_schema.attr_names)?;
             let sub_proof_request = build_sub_proof_request(&attrs_for_credential, &predicates_for_credential)?;
 
@@ -56,14 +55,13 @@ impl Verifier {
 
         let valid = proof_verifier.verify(&full_proof.proof, &proof_req.nonce)?;
 
-        info!("verify <<< valid: {:?}", valid);
 
         Ok(valid)
     }
 
     fn _get_revealed_attributes_for_credential(referent: &str,
                                                requested_proof: &RequestedProof,
-                                               proof_req: &ProofRequest) -> Result<Vec<String>, CommonError> {
+                                               proof_req: &ProofRequest) -> Result<Vec<AttributeInfo>, CommonError> {
         info!("_get_revealed_attributes_for_credential >>> referent: {:?}, requested_credentials: {:?}, proof_req: {:?}",
               referent, requested_proof, proof_req);
 
@@ -72,8 +70,8 @@ impl Verifier {
             .filter(|&(attr_referent, &(ref requested_referent, _, _))|
                 referent.eq(requested_referent) && proof_req.requested_attrs.contains_key(attr_referent))
             .map(|(attr_referent, &(ref requested_referent, _, _))|
-                proof_req.requested_attrs[attr_referent].name.clone())
-            .collect::<Vec<String>>();
+                proof_req.requested_attrs[attr_referent].clone())
+            .collect::<Vec<AttributeInfo>>();
 
         info!("_get_revealed_attributes_for_credential <<< revealed_attrs_for_credential: {:?}", revealed_attrs_for_credential);
 

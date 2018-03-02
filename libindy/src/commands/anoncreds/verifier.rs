@@ -18,7 +18,7 @@ pub enum VerifierCommand {
         String, // credential schemas json
         String, // credential defs jsons
         String, // rev reg defs json
-        String, // rev reg entries json
+        String, // rev reg json
         Box<Fn(Result<bool, IndyError>) + Send>)
 }
 
@@ -35,9 +35,9 @@ impl VerifierCommandExecutor {
 
     pub fn execute(&self, command: VerifierCommand) {
         match command {
-            VerifierCommand::VerifyProof(proof_request_json, proof_json, credential_schemas_json, credential_defs_json, rev_reg_defs_json, rev_reg_entries_json, cb) => {
+            VerifierCommand::VerifyProof(proof_request_json, proof_json, credential_schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json, cb) => {
                 trace!(target: "verifier_command_executor", "VerifyProof command received");
-                cb(self.verify_proof(&proof_request_json, &proof_json, &credential_schemas_json, &credential_defs_json, &rev_reg_defs_json, &rev_reg_entries_json));
+                cb(self.verify_proof(&proof_request_json, &proof_json, &credential_schemas_json, &credential_defs_json, &rev_reg_defs_json, &rev_regs_json));
             }
         };
     }
@@ -48,10 +48,10 @@ impl VerifierCommandExecutor {
                     credential_schemas_json: &str,
                     credential_defs_json: &str,
                     rev_reg_defs_json: &str,
-                    rev_reg_entries_json: &str) -> Result<bool, IndyError> {
+                    rev_regs_json: &str) -> Result<bool, IndyError> {
         trace!("verify_proof >>> proof_request_json: {:?}, proof_json: {:?}, credential_schemas_json: {:?}, credential_defs_json: {:?},  \
-               rev_reg_defs_json: {:?}, rev_reg_entries_json: {:?}",
-               proof_request_json, proof_json, credential_schemas_json, credential_defs_json, rev_reg_defs_json, rev_reg_entries_json);
+               rev_reg_defs_json: {:?}, rev_regs_json: {:?}",
+               proof_request_json, proof_json, credential_schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json);
 
         let proof_req: ProofRequest = ProofRequest::from_json(proof_request_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize ProofRequest: {:?}", err)))?;
@@ -65,8 +65,8 @@ impl VerifierCommandExecutor {
         let rev_reg_defs: HashMap<String, RevocationRegistryDefinitionValue> = serde_json::from_str(rev_reg_defs_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationRegistryDef: {:?}", err)))?;
 
-        let rev_regs: HashMap<String, RevocationRegistry> = serde_json::from_str(rev_reg_entries_json)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationRegistryEntry: {:?}", err)))?;
+        let rev_regs: HashMap<String, RevocationRegistry> = serde_json::from_str(rev_regs_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationRegistry: {:?}", err)))?;
 
         let proof_claims: FullProof = FullProof::from_json(&proof_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Proof: {:?}", err)))?;

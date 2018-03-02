@@ -394,7 +394,7 @@ impl AnoncredsUtils {
 
     pub fn prover_create_proof(wallet_handle: i32, proof_req_json: &str, requested_claims_json: &str,
                                schemas_json: &str, master_secret_name: &str, claim_defs_json: &str,
-                               revoc_reg_entries_json: &str) -> Result<String, ErrorCode> {
+                               rev_regs_json: &str) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, proof_json| {
@@ -408,14 +408,14 @@ impl AnoncredsUtils {
         let schemas_json = CString::new(schemas_json).unwrap();
         let master_secret_name = CString::new(master_secret_name).unwrap();
         let claim_defs_json = CString::new(claim_defs_json).unwrap();
-        let revoc_regs_json = CString::new(revoc_reg_entries_json).unwrap();
+        let revoc_regs_json = CString::new(rev_regs_json).unwrap();
 
         let err = indy_prover_create_proof(command_handle,
                                            wallet_handle,
                                            proof_req_json.as_ptr(),
                                            requested_claims_json.as_ptr(),
-                                           schemas_json.as_ptr(),
                                            master_secret_name.as_ptr(),
+                                           schemas_json.as_ptr(),
                                            claim_defs_json.as_ptr(),
                                            revoc_regs_json.as_ptr(),
                                            cb);
@@ -546,7 +546,8 @@ impl AnoncredsUtils {
         Ok(revoc_reg_delta_json)
     }
 
-    pub fn create_witness(wallet_handle: i32, tails_reader_handle: i32, rev_reg_def_json: &str, rev_reg_delta_json: &str, user_revoc_index: u32) -> Result<String, ErrorCode> {
+    pub fn create_revocation_info(wallet_handle: i32, tails_reader_handle: i32, rev_reg_def_json: &str,
+                                  rev_reg_delta_json: &str, timestamp: u64, user_revoc_index: u32) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, witness_json| {
@@ -558,29 +559,30 @@ impl AnoncredsUtils {
         let rev_reg_def_json = CString::new(rev_reg_def_json).unwrap();
         let rev_reg_delta_json = CString::new(rev_reg_delta_json).unwrap();
 
-        let err = indy_create_witness(command_handle,
-                                      wallet_handle,
-                                      tails_reader_handle,
-                                      rev_reg_def_json.as_ptr(),
-                                      rev_reg_delta_json.as_ptr(),
-                                      user_revoc_index,
-                                      cb);
+        let err = indy_create_revocation_info(command_handle,
+                                              wallet_handle,
+                                              tails_reader_handle,
+                                              rev_reg_def_json.as_ptr(),
+                                              rev_reg_delta_json.as_ptr(),
+                                              timestamp,
+                                              user_revoc_index,
+                                              cb);
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        let (err, witness_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let (err, revocation_info_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        Ok(witness_json)
+        Ok(revocation_info_json)
     }
 
-    pub fn update_witness(wallet_handle: i32, tails_reader_handle: i32, witness_json: &str, rev_reg_def_json: &str,
-                          rev_reg_delta_json: &str, user_revoc_index: u32) -> Result<String, ErrorCode> {
+    pub fn update_revocation_info(wallet_handle: i32, tails_reader_handle: i32, witness_json: &str, rev_reg_def_json: &str,
+                                  rev_reg_delta_json: &str, timestamp: u64, user_revoc_index: u32) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, witness_json| {
@@ -589,18 +591,19 @@ impl AnoncredsUtils {
 
         let (command_handle, cb) = CallbackUtils::closure_to_issuer_revoke_claim_cb(cb);
 
-        let witness_json = CString::new(witness_json).unwrap();
+        let revocation_info_json = CString::new(witness_json).unwrap();
         let rev_reg_def_json = CString::new(rev_reg_def_json).unwrap();
         let rev_reg_delta_json = CString::new(rev_reg_delta_json).unwrap();
 
-        let err = indy_update_witness(command_handle,
-                                      wallet_handle,
-                                      tails_reader_handle,
-                                      witness_json.as_ptr(),
-                                      rev_reg_def_json.as_ptr(),
-                                      rev_reg_delta_json.as_ptr(),
-                                      user_revoc_index,
-                                      cb);
+        let err = indy_update_revocation_info(command_handle,
+                                              wallet_handle,
+                                              tails_reader_handle,
+                                              revocation_info_json.as_ptr(),
+                                              rev_reg_def_json.as_ptr(),
+                                              rev_reg_delta_json.as_ptr(),
+                                              timestamp,
+                                              user_revoc_index,
+                                              cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -615,7 +618,7 @@ impl AnoncredsUtils {
         Ok(updated_witness_json)
     }
 
-    pub fn store_witness(wallet_handle: i32, id: &str, witness_json: &str) -> Result<(), ErrorCode> {
+    pub fn store_revocation_info(wallet_handle: i32, id: &str, rev_info_json: &str) -> Result<(), ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err| {
@@ -625,13 +628,13 @@ impl AnoncredsUtils {
         let (command_handle, cb) = CallbackUtils::closure_to_prover_store_claim_cb(cb);
 
         let id = CString::new(id).unwrap();
-        let witness_json = CString::new(witness_json).unwrap();
+        let rev_info_json = CString::new(rev_info_json).unwrap();
 
-        let err = indy_store_witness(command_handle,
-                                     wallet_handle,
-                                     id.as_ptr(),
-                                     witness_json.as_ptr(),
-                                     cb);
+        let err = indy_store_revocation_info(command_handle,
+                                             wallet_handle,
+                                             id.as_ptr(),
+                                             rev_info_json.as_ptr(),
+                                             cb);
 
         if err != ErrorCode::Success {
             return Err(err);
@@ -646,7 +649,7 @@ impl AnoncredsUtils {
         Ok(())
     }
 
-    pub fn get_witness(wallet_handle: i32, id: &str) -> Result<String, ErrorCode> {
+    pub fn get_revocation_info(wallet_handle: i32, id: &str, timestamp: Option<i64>) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, witness_json| {
@@ -657,22 +660,23 @@ impl AnoncredsUtils {
 
         let id = CString::new(id).unwrap();
 
-        let err = indy_get_witness(command_handle,
-                                   wallet_handle,
-                                   id.as_ptr(),
-                                   cb);
+        let err = indy_get_revocation_info(command_handle,
+                                           wallet_handle,
+                                           id.as_ptr(),
+                                           timestamp.unwrap_or(-1),
+                                           cb);
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        let (err, witness_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        let (err, revocation_info_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
 
         if err != ErrorCode::Success {
             return Err(err);
         }
 
-        Ok(witness_json)
+        Ok(revocation_info_json)
     }
 
     pub fn get_composite_id(issuer_did: &str, schema_key: &SchemaKey) -> String {
@@ -905,14 +909,14 @@ impl AnoncredsUtils {
             proof_claims.attrs
                 .values()
                 .flat_map(|claims| claims)
-                .map(|claim| claim.clone())
+                .map(|&(ref claim, _)| claim.clone())
                 .collect::<Vec<CredentialInfo>>();
 
         let predicates_claims =
             proof_claims.predicates
                 .values()
                 .flat_map(|claims| claims)
-                .map(|claim| claim.clone())
+                .map(|&(ref claim, _)| claim.clone())
                 .collect::<Vec<CredentialInfo>>();
 
         attrs_claims.into_iter().collect::<HashSet<CredentialInfo>>()
@@ -923,13 +927,13 @@ impl AnoncredsUtils {
     pub fn get_claim_for_attr_referent(claims_json: &str, referent: &str) -> CredentialInfo {
         let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
         let claims_for_referent = claims.attrs.get(referent).unwrap();
-        claims_for_referent[0].clone()
+        claims_for_referent[0].clone().0
     }
 
     pub fn get_claim_for_predicate_referent(claims_json: &str, referent: &str) -> CredentialInfo {
         let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
         let claims_for_referent = claims.predicates.get(referent).unwrap();
-        claims_for_referent[0].clone()
+        claims_for_referent[0].clone().0
     }
 
     pub fn tails_config() -> String {

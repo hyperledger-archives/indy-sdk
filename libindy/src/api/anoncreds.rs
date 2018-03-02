@@ -622,7 +622,7 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
 ///         "signature_correctness_proof": <signature_correctness_proof>
 ///     }
 /// rev_reg_def_json: revocation registry definition json
-/// rev_reg_entry_json: revocation registry entry json
+/// rev_reg_json: revocation registry entry json
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -638,14 +638,14 @@ pub extern fn indy_prover_store_claim(command_handle: i32,
                                       id: *const c_char,
                                       claims_json: *const c_char,
                                       rev_reg_def_json: *const c_char,
-                                      rev_reg_entry_json: *const c_char,
+                                      rev_reg_json: *const c_char,
                                       cb: Option<extern fn(
                                           xcommand_handle: i32, err: ErrorCode
                                       )>) -> ErrorCode {
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(claims_json, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(rev_reg_def_json, ErrorCode::CommonInvalidParam5);
-    check_useful_opt_c_str!(rev_reg_entry_json, ErrorCode::CommonInvalidParam6);
+    check_useful_opt_c_str!(rev_reg_json, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
@@ -654,7 +654,7 @@ pub extern fn indy_prover_store_claim(command_handle: i32,
             id,
             claims_json,
             rev_reg_def_json,
-            rev_reg_entry_json,
+            rev_reg_json,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
                 cb(command_handle, err)
@@ -823,6 +823,7 @@ pub extern fn indy_prover_get_claims_for_proof_req(command_handle: i32,
 ///         "requested_attr3_referent": <attr_info>,
 ///         "requested_predicate_1_referent": <predicate_info>,
 ///         "requested_predicate_2_referent": <predicate_info>,
+///         freshness
 ///     }
 /// requested_claims_json: either a credential or self-attested attribute for each requested attribute
 ///     {
@@ -913,18 +914,18 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
                                        wallet_handle: i32,
                                        proof_req_json: *const c_char,
                                        requested_claims_json: *const c_char,
-                                       schemas_json: *const c_char,
                                        master_secret_name: *const c_char,
+                                       schemas_json: *const c_char,
                                        claim_defs_json: *const c_char,
-                                       rev_reg_entries_json: *const c_char,
+                                       rev_info_json: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                             proof_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(proof_req_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(requested_claims_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam6);
     check_useful_c_str!(claim_defs_json, ErrorCode::CommonInvalidParam7);
-    check_useful_c_str!(rev_reg_entries_json, ErrorCode::CommonInvalidParam8);
+    check_useful_c_str!(rev_info_json, ErrorCode::CommonInvalidParam8);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
     let result = CommandExecutor::instance()
@@ -932,10 +933,10 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
             wallet_handle,
             proof_req_json,
             requested_claims_json,
-            schemas_json,
             master_secret_name,
+            schemas_json,
             claim_defs_json,
-            rev_reg_entries_json,
+            rev_info_json,
             Box::new(move |result| {
                 let (err, proof_json) = result_to_err_code_1!(result, String::new());
                 let proof_json = CStringUtils::string_to_cstring(proof_json);
@@ -1003,7 +1004,7 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
 ///             "claim_proof2_referent": <rev_reg_def>,
 ///             "claim_proof3_referent": <rev_reg_def>
 ///         }
-/// rev_reg_entries_json: all revocation registry entries json participating in the proof
+/// rev_regs_json: all revocation registry entries json participating in the proof
 ///         {
 ///             "claim_proof1_referent": <rev_reg_entry>,
 ///             "claim_proof2_referent": <rev_reg_entry>,
@@ -1025,7 +1026,7 @@ pub extern fn indy_verifier_verify_proof(command_handle: i32,
                                          schemas_json: *const c_char,
                                          credential_defs_jsons: *const c_char,
                                          rev_reg_defs_json: *const c_char,
-                                         rev_reg_entries_json: *const c_char,
+                                         rev_regs_json: *const c_char,
                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                               valid: bool)>) -> ErrorCode {
     check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam2);
@@ -1033,7 +1034,7 @@ pub extern fn indy_verifier_verify_proof(command_handle: i32,
     check_useful_c_str!(schemas_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(credential_defs_jsons, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(rev_reg_defs_json, ErrorCode::CommonInvalidParam6);
-    check_useful_c_str!(rev_reg_entries_json, ErrorCode::CommonInvalidParam7);
+    check_useful_c_str!(rev_regs_json, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let result = CommandExecutor::instance()
@@ -1043,7 +1044,7 @@ pub extern fn indy_verifier_verify_proof(command_handle: i32,
             schemas_json,
             credential_defs_jsons,
             rev_reg_defs_json,
-            rev_reg_entries_json,
+            rev_regs_json,
             Box::new(move |result| {
                 let (err, valid) = result_to_err_code_1!(result, false);
                 cb(command_handle, err, valid)
@@ -1054,66 +1055,33 @@ pub extern fn indy_verifier_verify_proof(command_handle: i32,
 }
 
 #[no_mangle]
-pub extern fn indy_create_witness(command_handle: i32,
-                                  wallet_handle: i32,
-                                  tails_reader_handle: i32,
-                                  rev_reg_def_json: *const c_char,
-                                  rev_reg_delta_json: *const c_char,
-                                  rev_idx: u32,
-                                  cb: Option<extern fn(
-                                      xcommand_handle: i32, err: ErrorCode,
-                                      witness_json: *const c_char
-                                  )>) -> ErrorCode {
+pub extern fn indy_create_revocation_info(command_handle: i32,
+                                          wallet_handle: i32,
+                                          tails_reader_handle: i32,
+                                          rev_reg_def_json: *const c_char,
+                                          rev_reg_delta_json: *const c_char,
+                                          timestamp: u64,
+                                          rev_idx: u32,
+                                          cb: Option<extern fn(
+                                              xcommand_handle: i32, err: ErrorCode,
+                                              witness_json: *const c_char
+                                          )>) -> ErrorCode {
     check_useful_c_str!(rev_reg_def_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(rev_reg_delta_json, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
-
-    let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::CreateWitness(
-            wallet_handle,
-            tails_reader_handle,
-            rev_reg_def_json,
-            rev_reg_delta_json,
-            rev_idx,
-            Box::new(move |result| {
-                let (err, witness_json) = result_to_err_code_1!(result, String::new());
-                let witness_json = CStringUtils::string_to_cstring(witness_json);
-                cb(command_handle, err, witness_json.as_ptr())
-            })
-        ))));
-
-    result_to_err_code!(result)
-}
-
-#[no_mangle]
-pub extern fn indy_update_witness(command_handle: i32,
-                                  wallet_handle: i32,
-                                  tails_reader_handle: i32,
-                                  witness_json: *const c_char,
-                                  rev_reg_def_json: *const c_char,
-                                  rev_reg_delta_json: *const c_char,
-                                  rev_idx: u32,
-                                  cb: Option<extern fn(
-                                      xcommand_handle: i32, err: ErrorCode,
-                                      updated_witness_json: *const c_char
-                                  )>) -> ErrorCode {
-    check_useful_c_str!(witness_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(rev_reg_def_json, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(rev_reg_delta_json, ErrorCode::CommonInvalidParam6);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::UpdateWitness(
+        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::CreateRevocationInfo(
             wallet_handle,
             tails_reader_handle,
-            witness_json,
             rev_reg_def_json,
             rev_reg_delta_json,
+            timestamp,
             rev_idx,
             Box::new(move |result| {
-                let (err, updated_witness_json) = result_to_err_code_1!(result, String::new());
-                let updated_witness_json = CStringUtils::string_to_cstring(updated_witness_json);
-                cb(command_handle, err, updated_witness_json.as_ptr())
+                let (err, rev_info_json) = result_to_err_code_1!(result, String::new());
+                let rev_info_json = CStringUtils::string_to_cstring(rev_info_json);
+                cb(command_handle, err, rev_info_json.as_ptr())
             })
         ))));
 
@@ -1121,20 +1089,57 @@ pub extern fn indy_update_witness(command_handle: i32,
 }
 
 #[no_mangle]
-pub extern fn indy_store_witness(command_handle: i32,
-                                 wallet_handle: i32,
-                                 id: *const c_char,
-                                 witness_json: *const c_char,
-                                 cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
+pub extern fn indy_update_revocation_info(command_handle: i32,
+                                          wallet_handle: i32,
+                                          tails_reader_handle: i32,
+                                          rev_info_json: *const c_char,
+                                          rev_reg_def_json: *const c_char,
+                                          rev_reg_delta_json: *const c_char,
+                                          timestamp: u64,
+                                          rev_idx: u32,
+                                          cb: Option<extern fn(
+                                              xcommand_handle: i32, err: ErrorCode,
+                                              updated_rev_info_json: *const c_char
+                                          )>) -> ErrorCode {
+    check_useful_c_str!(rev_info_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(rev_reg_def_json, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(rev_reg_delta_json, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::UpdateRevocationInfo(
+            wallet_handle,
+            tails_reader_handle,
+            rev_info_json,
+            rev_reg_def_json,
+            rev_reg_delta_json,
+            timestamp,
+            rev_idx,
+            Box::new(move |result| {
+                let (err, updated_rev_info_json) = result_to_err_code_1!(result, String::new());
+                let updated_rev_info_json = CStringUtils::string_to_cstring(updated_rev_info_json);
+                cb(command_handle, err, updated_rev_info_json.as_ptr())
+            })
+        ))));
+
+    result_to_err_code!(result)
+}
+
+#[no_mangle]
+pub extern fn indy_store_revocation_info(command_handle: i32,
+                                         wallet_handle: i32,
+                                         id: *const c_char,
+                                         rev_info_json: *const c_char,
+                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode)>) -> ErrorCode {
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(witness_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(rev_info_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::StoreWitness(
+        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::StoreRevocationInfo(
             wallet_handle,
             id,
-            witness_json,
+            rev_info_json,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
                 cb(command_handle, err)
@@ -1145,23 +1150,27 @@ pub extern fn indy_store_witness(command_handle: i32,
 }
 
 #[no_mangle]
-pub extern fn indy_get_witness(command_handle: i32,
-                               wallet_handle: i32,
-                               id: *const c_char,
-                               cb: Option<extern fn(
-                                   xcommand_handle: i32, err: ErrorCode,
-                                   witness_json: *const c_char)>) -> ErrorCode {
+pub extern fn indy_get_revocation_info(command_handle: i32,
+                                       wallet_handle: i32,
+                                       id: *const c_char,
+                                       timestamp: i64,
+                                       cb: Option<extern fn(
+                                           xcommand_handle: i32, err: ErrorCode,
+                                           rev_info_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let timestamp = if timestamp != -1 { Some(timestamp as u64) } else { None };
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::GetWitness(
+        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::GetRevocationInfo(
             wallet_handle,
             id,
+            timestamp,
             Box::new(move |result| {
-                let (err, witness_json) = result_to_err_code_1!(result, String::new());
-                let witness_json = CStringUtils::string_to_cstring(witness_json);
-                cb(command_handle, err, witness_json.as_ptr())
+                let (err, rev_info_json) = result_to_err_code_1!(result, String::new());
+                let rev_info_json = CStringUtils::string_to_cstring(rev_info_json);
+                cb(command_handle, err, rev_info_json.as_ptr())
             })
         ))));
 

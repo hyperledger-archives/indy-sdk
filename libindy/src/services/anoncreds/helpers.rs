@@ -2,7 +2,8 @@ extern crate indy_crypto;
 
 use errors::common::CommonError;
 
-use services::anoncreds::types::PredicateInfo;
+use services::anoncreds::types::{AttributeInfo, PredicateInfo};
+use services::anoncreds::constants::*;
 use self::indy_crypto::cl::{issuer, verifier, CredentialSchema, CredentialValues, SubProofRequest};
 
 use std::collections::{HashSet, HashMap};
@@ -26,11 +27,11 @@ pub fn build_credential_values(credential_values: &HashMap<String, Vec<String>>)
     Ok(credential_values_builder.finalize()?)
 }
 
-pub fn build_sub_proof_request(attrs_for_claim: &Vec<String>, predicates_for_claim: &Vec<PredicateInfo>) -> Result<SubProofRequest, CommonError> {
+pub fn build_sub_proof_request(attrs_for_claim: &Vec<AttributeInfo>, predicates_for_claim: &Vec<PredicateInfo>) -> Result<SubProofRequest, CommonError> {
     let mut sub_proof_request_builder = verifier::Verifier::new_sub_proof_request_builder()?;
 
     for attr in attrs_for_claim {
-        sub_proof_request_builder.add_revealed_attr(&attr)?
+        sub_proof_request_builder.add_revealed_attr(&attr.name)?
     }
 
     for predicate in predicates_for_claim {
@@ -38,4 +39,9 @@ pub fn build_sub_proof_request(attrs_for_claim: &Vec<String>, predicates_for_cla
     }
 
     Ok(sub_proof_request_builder.finalize()?)
+}
+
+pub fn build_id(identifier: &str, marker: &str, related_entity_id: Option<&str>, word1: &str, word2: &str) -> String {
+    let related_entity_id = related_entity_id.map(|s| format!("{}{}", s, DELIMITER)).unwrap_or(String::new());
+    format!("{}{}{}{}{}{}{}{}", identifier, DELIMITER, marker, DELIMITER, related_entity_id, word1, DELIMITER, word2)
 }

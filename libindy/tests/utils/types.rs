@@ -173,8 +173,8 @@ pub struct CredentialOfferInfo {
 }
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CredentialsForProofRequest {
-    pub attrs: HashMap<String, Vec<CredentialInfo>>,
-    pub predicates: HashMap<String, Vec<CredentialInfo>>
+    pub attrs: HashMap<String, Vec<(CredentialInfo, Option<u64>)>>,
+    pub predicates: HashMap<String, Vec<(CredentialInfo, Option<u64>)>>
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
