@@ -15,7 +15,6 @@ var normalizeType = function (typeSrc) {
     case 'indy_bool_t':
       return 'Boolean'
 
-
     case 'indy_handle_t':
       return 'IndyHandle'
 
@@ -197,8 +196,8 @@ hAST.forEach(function (fn) {
         break
       case 'Buffer':
         chkType('IsUint8Array')
-        cpp += '  const indy_u8_t* arg' + i + 'data = (indy_u8_t*)node::Buffer::Data(info[' + i + ']->ToObject());\n';
-        cpp += '  indy_u32_t arg' + i + 'size = node::Buffer::Length(info[' + i + ']);\n';
+        cpp += '  const indy_u8_t* arg' + i + 'data = (indy_u8_t*)node::Buffer::Data(info[' + i + ']->ToObject());\n'
+        cpp += '  indy_u32_t arg' + i + 'size = node::Buffer::Length(info[' + i + ']);\n'
         break
       default:
         throw new Error('Unhandled argument reading type: ' + type)
