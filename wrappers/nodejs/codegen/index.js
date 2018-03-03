@@ -15,9 +15,6 @@ var normalizeType = function (typeSrc) {
     case 'indy_bool_t':
       return 'Boolean'
 
-    case 'indy_u32_t':
-    case 'indy_i32_t':
-      return 'Number'
 
     case 'indy_handle_t':
       return 'IndyHandle'
@@ -26,7 +23,9 @@ var normalizeType = function (typeSrc) {
       return 'IndyError'
 
     case 'void':
-      return 'Void'
+    case 'indy_u32_t':
+    case 'indy_i32_t':
+      return typeSrc
 
     case 'Buffer':
       return 'Buffer'
@@ -99,7 +98,7 @@ hAST.forEach(function (fn) {
   jsCbArgs = fixBufferArgs(jsCbArgs)
 
   var humanArgs = jsArgs.map(arg => arg.name)
-  humanArgs.push('cb(err, ' + jsCbArgs.map(arg => arg.name) + ')')
+  humanArgs.push('cb(err' + jsCbArgs.map(arg => ', ' + arg.name).join('') + ')')
   var humanDescription = jsName + '(' + humanArgs.join(', ') + ')'
 
   var cppReturnThrow = function (msg) {
@@ -107,13 +106,13 @@ hAST.forEach(function (fn) {
     return '    return Nan::ThrowError(Nan::New(' + errmsg + ').ToLocalChecked());\n'
   }
 
-  cpp += 'void ' + jsName + '_cb(indy_handle_t xcommand_handle, indy_error_t xerr, '
+  cpp += 'void ' + jsName + '_cb(indy_handle_t xcommand_handle, indy_error_t xerr'
   cpp += jsCbArgs.map(function (arg, i) {
     if (arg.type === 'Buffer') {
-      return 'const indy_u8_t* arg' + i + 'data, indy_u32_t arg' + i + 'len'
+      return ', const indy_u8_t* arg' + i + 'data, indy_u32_t arg' + i + 'size'
     }
-    return arg.type + ' arg' + i
-  }).join(', ')
+    return ', ' + arg.type + ' arg' + i
+  }).join('')
   cpp += ') {\n'
   cpp += '  if(cbmap.count(xcommand_handle) == 0){\n'
   cpp += '    return;\n'
@@ -146,11 +145,14 @@ hAST.forEach(function (fn) {
       break
     case 'Buffer':
       cpp += '    icb->type = CB_BUFFER;\n'
-      // TODO
+      cpp += '    icb->buffer0data = (char*)arg0data;\n'
+      cpp += '    icb->buffer0size = arg0size;\n'
       break
     case 'String+Buffer':
       cpp += '    icb->type = CB_STRING_BUFFER;\n'
-      // TODO
+      cpp += '    icb->str0 = copyCStr(arg0);\n'
+      cpp += '    icb->buffer0data = (char*)arg1data;\n'
+      cpp += '    icb->buffer0size = arg1size;\n'
       break
     default:
       throw new Error('Unhandled callback args type: ' + cbArgTypes)
@@ -179,18 +181,24 @@ hAST.forEach(function (fn) {
         break
       case 'IndyHandle':
         chkType('IsNumber')
-        // TODO
+        cpp += '  indy_handle_t arg' + i + ' = info[' + i + ']->Int32Value();\n'
         break
-      case 'Number':
-        chkType('IsNumber')
-        // TODO
+      case 'indy_u32_t':
+        chkType('IsUint32')
+        cpp += '  indy_u32_t arg' + i + ' = info[' + i + ']->Uint32Value();\n'
+        break
+      case 'indy_i32_t':
+        chkType('IsInt32')
+        cpp += '  indy_i32_t arg' + i + ' = info[' + i + ']->Int32Value();\n'
         break
       case 'Boolean':
         chkType('IsBoolean')
-        // TODO
+        cpp += '  indy_bool_t arg' + i + ' = info[' + i + ']->IsTrue();\n'
         break
       case 'Buffer':
-        // TODO
+        chkType('IsUint8Array')
+        cpp += '  const indy_u8_t* arg' + i + 'data = (indy_u8_t*)node::Buffer::Data(info[' + i + ']->ToObject());\n';
+        cpp += '  indy_u32_t arg' + i + 'size = node::Buffer::Length(info[' + i + ']);\n';
         break
       default:
         throw new Error('Unhandled argument reading type: ' + type)
@@ -201,7 +209,14 @@ hAST.forEach(function (fn) {
   cpp += '  }\n'
   cpp += '  Nan::Callback* callback = new Nan::Callback(Nan::To<v8::Function>(info[' + jsArgs.length + ']).ToLocalChecked());\n'
   cpp += '  indy_handle_t ch = getCommandHandle();\n'
-  cpp += '  indyCalled(ch, callback, ' + fn.name + '(ch, arg0, arg1, ' + jsName + '_cb));\n'
+  cpp += '  indyCalled(ch, callback, ' + fn.name + '(ch'
+  cpp += jsArgs.map(function (arg, i) {
+    if (arg.type === 'Buffer') {
+      return ', arg' + i + 'data, arg' + i + 'size'
+    }
+    return ', arg' + i
+  }).join('')
+  cpp += ', ' + jsName + '_cb));\n'
   cpp += '}\n\n'
 
   exportFunctions.push(jsName)
