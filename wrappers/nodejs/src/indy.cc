@@ -50,22 +50,7 @@ NAUV_WORK_CB(mainLoopReentry) {
 
     IndyCallback* icb = (struct IndyCallback*)async->data;
 
-    int argc = 1;
-    switch(icb->type){
-        case CB_NONE:
-            argc = 1;
-            break;
-        case CB_STRING:
-        case CB_BOOLEAN:
-        case CB_HANDLE:
-        case CB_BUFFER:
-            argc = 2;
-            break;
-        case CB_STRING_BUFFER:
-        case CB_STRING_STRING:
-            argc = 3;
-            break;
-    }
+    int argc = icb->type == CB_NONE ? 1 : 2;
 
     v8::Local<v8::Array> tuple;
     v8::Local<v8::Value> argv[argc];
