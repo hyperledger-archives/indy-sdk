@@ -29,7 +29,7 @@ struct IndyCallback {
 
     indy_handle_t handle0;
 
-    const char* buffer0data;
+    char* buffer0data;
     uint32_t    buffer0size;
 };
 
@@ -67,6 +67,7 @@ NAUV_WORK_CB(mainLoopReentry) {
             break;
     }
 
+    v8::Local<v8::Array> tuple;
     v8::Local<v8::Value> argv[argc];
     argv[0] = Nan::New<v8::Number>(icb->err);
     switch(icb->type){
@@ -77,16 +78,25 @@ NAUV_WORK_CB(mainLoopReentry) {
             argv[1] = Nan::New<v8::String>(icb->str0).ToLocalChecked();
             break;
         case CB_BOOLEAN:
+            argv[1] = Nan::New<v8::Boolean>(icb->bool0);
             break;
         case CB_HANDLE:
+            argv[1] = Nan::New<v8::Number>(icb->handle0);
             break;
         case CB_BUFFER:
+            argv[1] = Nan::NewBuffer(icb->buffer0data, icb->buffer0size).ToLocalChecked();
             break;
         case CB_STRING_BUFFER:
+            tuple = Nan::New<v8::Array>();
+            tuple->Set(0, Nan::New<v8::String>(icb->str0).ToLocalChecked());
+            tuple->Set(0, Nan::NewBuffer(icb->buffer0data, icb->buffer0size).ToLocalChecked());
+            argv[1] = tuple;
             break;
         case CB_STRING_STRING:
-            argv[1] = Nan::New<v8::String>(icb->str0).ToLocalChecked();
-            argv[2] = Nan::New<v8::String>(icb->str1).ToLocalChecked();
+            tuple = Nan::New<v8::Array>();
+            tuple->Set(0, Nan::New<v8::String>(icb->str0).ToLocalChecked());
+            tuple->Set(1, Nan::New<v8::String>(icb->str1).ToLocalChecked());
+            argv[1] = tuple;
             break;
     }
 

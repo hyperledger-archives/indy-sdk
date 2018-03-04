@@ -1,40 +1,40 @@
 var indy = require('bindings')('indy')
 var errorCodes = require('./errorCodes.json')
 
+function IndyError (err) {
+  Error.call(this)
+  Error.captureStackTrace(this, this.constructor)
+  this.name = this.constructor.name
+  this.message = errorCodes['c' + err] || (err + '')
+}
+require('util').inherits(IndyError, Error)
+
 module.exports = {}
 module.exports.promise = {}
 
 Object.keys(indy).forEach(function (name) {
-  var nfn = indy[name]
-  if (typeof nfn !== 'function') {
+  var fn = indy[name]
+  if (typeof fn !== 'function') {
     return
   }
-  var fn = function () {
+  module.exports[name] = function () {
     var args = Array.prototype.slice.call(arguments)
     var cb = args[args.length - 1]
-
-    args[args.length - 1] = function (err) {
+    args[args.length - 1] = function (err, data) {
       if (err) {
-        if (errorCodes['c' + err]) {
-          cb(errorCodes['c' + err])
-        } else {
-          cb(err)
-        }
+        cb(new IndyError(err))
         return
       }
-      cb.apply(null, arguments)
+      cb(null, data)
     }
-
-    nfn.apply(null, args)
+    fn.apply(null, args)
   }
-
-  module.exports[name] = fn
 
   module.exports.promise[name] = function () {
     var args = Array.prototype.slice.call(arguments)
     return new Promise(function (resolve, reject) {
       args.push(function (err, data) {
-        if (err) reject(err)
+        if (err) reject(new IndyError(err))
         else resolve(data)
       })
       fn.apply(null, args)
