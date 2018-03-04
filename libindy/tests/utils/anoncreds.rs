@@ -35,13 +35,7 @@ pub const XYZ_SEQ_NO: i32 = 2;
 
 impl AnoncredsUtils {
     pub fn issuer_create_schema(issuer_did: &str, name: &str, version: &str, attr_names: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, credential_def_json| {
-            sender.send((err, credential_def_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_definition_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let issuer_did = CString::new(issuer_did).unwrap();
         let name = CString::new(name).unwrap();
@@ -56,27 +50,11 @@ impl AnoncredsUtils {
                                       attr_names.as_ptr(),
                                       cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, schema_json) = receiver.recv().unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(schema_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn issuer_create_credential_definition(wallet_handle: i32, issuer_did: &str, schema: &str, tag: &str, signature_type: Option<&str>, create_non_revoc: bool) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, credential_def_json| {
-            sender.send((err, credential_def_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_definition_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let schema = CString::new(schema).unwrap();
         let tag = CString::new(tag).unwrap();
@@ -93,17 +71,7 @@ impl AnoncredsUtils {
                                                    create_non_revoc,
                                                    cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, credential_def_json) = receiver.recv().unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(credential_def_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn prover_create_master_secret(wallet_handle: i32, master_secret_name: &str) -> Result<(), ErrorCode> {
@@ -117,13 +85,7 @@ impl AnoncredsUtils {
     }
 
     pub fn issuer_create_credential_offer(wallet_handle: i32, cred_def_id: &str, rev_reg_id: Option<&str>, prover_did: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, credential_def_json| {
-            sender.send((err, credential_def_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_offer_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let cred_def_id = CString::new(cred_def_id).unwrap();
         let rev_reg_id_str = rev_reg_id.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
@@ -137,27 +99,11 @@ impl AnoncredsUtils {
                                            prover_did.as_ptr(),
                                            cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, credential_offer_json) = receiver.recv().unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(credential_offer_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn prover_store_credential_offer(wallet_handle: i32, credential_offer_json: &str) -> Result<(), ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err| {
-            sender.send((err)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_claim_offer_json_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let credential_offer_json = CString::new(credential_offer_json).unwrap();
 
@@ -170,13 +116,7 @@ impl AnoncredsUtils {
     }
 
     pub fn prover_get_credential_offers(wallet_handle: i32, filter_json: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, credential_offers_json| {
-            sender.send((err, credential_offers_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_prover_get_claim_offers_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let filter_json = CString::new(filter_json).unwrap();
 
@@ -185,28 +125,12 @@ impl AnoncredsUtils {
                                                filter_json.as_ptr(),
                                                cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, credential_offers_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(credential_offers_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn prover_create_and_store_credential_req(wallet_handle: i32, prover_did: &str, credential_offer_json: &str,
                                              credential_def_json: &str, master_secret_name: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, credential_req_json| {
-            sender.send((err, credential_req_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_prover_create_claim_req_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let prover_did = CString::new(prover_did).unwrap();
         let credential_offer_json = CString::new(credential_offer_json).unwrap();
@@ -221,28 +145,12 @@ impl AnoncredsUtils {
                                                          master_secret_name.as_ptr(),
                                                          cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, credential_req_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(credential_req_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn issuer_create_credential(wallet_handle: i32, credential_req_json: &str, credential_values_json: &str,
                                tails_reader_handler: Option<i32>, user_revoc_index: Option<i32>) -> Result<(Option<String>, String), ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, revoc_reg_delta_json, xcredential_json| {
-            sender.send((err, revoc_reg_delta_json, xcredential_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_issuer_create_claim_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_opt_string_string();
 
         let credential_req_json = CString::new(credential_req_json).unwrap();
         let credential_values_json = CString::new(credential_values_json).unwrap();
@@ -255,21 +163,11 @@ impl AnoncredsUtils {
                                            user_revoc_index.unwrap_or(-1),
                                            cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, revoc_reg_delta_json, credential_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok((revoc_reg_delta_json, credential_json))
+        super::results::result_to_opt_string_string(err, receiver)
     }
 
     pub fn prover_store_credential(wallet_handle: i32, id: &str, credential_json: &str, rev_reg_def_json: Option<&str>, rev_reg_entry_json: Option<&str>) -> Result<(), ErrorCode> {
-        let (sender, receiver) = channel();
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let id = CString::new(id).unwrap();
         let credential_json = CString::new(credential_json).unwrap();
@@ -288,13 +186,7 @@ impl AnoncredsUtils {
     }
 
     pub fn prover_get_credentials(wallet_handle: i32, filter_json: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, credentials_json| {
-            sender.send((err, credentials_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_prover_get_claims(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let filter_json = CString::new(filter_json).unwrap();
 
@@ -303,27 +195,11 @@ impl AnoncredsUtils {
                                          filter_json.as_ptr(),
                                          cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, credentials_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(credentials_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn prover_get_credentials_for_proof_req(wallet_handle: i32, proof_request_json: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, credentials_json| {
-            sender.send((err, credentials_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_prover_get_claims_for_proof_req_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let proof_request_json = CString::new(proof_request_json).unwrap();
 
@@ -332,23 +208,13 @@ impl AnoncredsUtils {
                                                        proof_request_json.as_ptr(),
                                                        cb);
 
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        let (err, credentials_json) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
-
-        if err != ErrorCode::Success {
-            return Err(err);
-        }
-
-        Ok(credentials_json)
+        super::results::result_to_string(err, receiver)
     }
 
     pub fn prover_create_proof(wallet_handle: i32, proof_req_json: &str, requested_credentials_json: &str,
                                schemas_json: &str, master_secret_name: &str, credential_defs_json: &str,
                                rev_infos_json: &str) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let proof_req_json = CString::new(proof_req_json).unwrap();
         let requested_credentials_json = CString::new(requested_credentials_json).unwrap();
@@ -372,7 +238,7 @@ impl AnoncredsUtils {
 
     pub fn verifier_verify_proof(proof_request_json: &str, proof_json: &str, schemas_json: &str,
                                  credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str) -> Result<bool, ErrorCode> {
-        let (sender, receiver) = channel();
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_bool();
 
         let proof_request_json = CString::new(proof_request_json).unwrap();
         let proof_json = CString::new(proof_json).unwrap();
@@ -395,7 +261,7 @@ impl AnoncredsUtils {
 
     pub fn indy_issuer_create_and_store_revoc_reg(wallet_handle: i32, issuer_did: &str, type_: Option<&str>, tag: &str,
                                                   cred_def_id: &str, issuance_type: Option<&str>, max_credential_num: u32, tails_writer_config: &str) -> Result<(String, String), ErrorCode> {
-        let (sender, receiver) = channel();
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
 
         let tails_writer_type = CString::new("default").unwrap();
         let tails_writer_config = CString::new(tails_writer_config).unwrap();
@@ -421,13 +287,7 @@ impl AnoncredsUtils {
     }
 
     pub fn issuer_revoke_credential(wallet_handle: i32, tails_reader_handle: i32, rev_reg_id: &str, user_revoc_index: u32) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
-
-        let cb = Box::new(move |err, revoc_reg_delta_json| {
-            sender.send((err, revoc_reg_delta_json)).unwrap();
-        });
-
-        let (command_handle, cb) = CallbackUtils::closure_to_issuer_revoke_claim_cb(cb);
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let rev_reg_id = CString::new(rev_reg_id).unwrap();
 
@@ -443,7 +303,7 @@ impl AnoncredsUtils {
 
     pub fn create_revocation_info(wallet_handle: i32, tails_reader_handle: i32, rev_reg_def_json: &str,
                                   rev_reg_delta_json: &str, timestamp: u64, user_revoc_index: u32) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let rev_reg_def_json = CString::new(rev_reg_def_json).unwrap();
         let rev_reg_delta_json = CString::new(rev_reg_delta_json).unwrap();
@@ -462,7 +322,7 @@ impl AnoncredsUtils {
 
     pub fn update_revocation_info(wallet_handle: i32, tails_reader_handle: i32, witness_json: &str, rev_reg_def_json: &str,
                                   rev_reg_delta_json: &str, timestamp: u64, user_revoc_index: u32) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let witness_json = CString::new(witness_json).unwrap();
         let rev_reg_def_json = CString::new(rev_reg_def_json).unwrap();
@@ -482,7 +342,7 @@ impl AnoncredsUtils {
     }
 
     pub fn store_revocation_info(wallet_handle: i32, id: &str, revocation_info_json: &str) -> Result<(), ErrorCode> {
-        let (sender, receiver) = channel();
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let id = CString::new(id).unwrap();
         let revocation_info_json = CString::new(revocation_info_json).unwrap();
@@ -497,7 +357,7 @@ impl AnoncredsUtils {
     }
 
     pub fn get_revocation_info(wallet_handle: i32, id: &str, timestamp: Option<i64>) -> Result<String, ErrorCode> {
-        let (sender, receiver) = channel();
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let id = CString::new(id).unwrap();
 

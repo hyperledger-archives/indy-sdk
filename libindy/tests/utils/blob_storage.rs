@@ -20,12 +20,12 @@ impl BlobStorageUtils {
         let location = CString::new(location).unwrap();
         let hash = CString::new(hash).unwrap();
 
-        let err = indy_open_reader(command_handle,
-                                   type_.as_ptr(),
-                                   config_json.as_ptr(),
-                                   location.as_ptr(),
-                                   hash.as_ptr(),
-                                   cb);
+        let err = indy_blob_storage_open_reader(command_handle,
+                                                type_.as_ptr(),
+                                                config_json.as_ptr(),
+                                                location.as_ptr(),
+                                                hash.as_ptr(),
+                                                cb);
 
         super::results::result_to_int(err, receiver)
     }
