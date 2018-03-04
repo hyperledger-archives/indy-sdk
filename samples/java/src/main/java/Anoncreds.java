@@ -55,8 +55,7 @@ class Anoncreds {
 		proverCreateMasterSecret(proverWallet, masterSecret).get();
 
 		//6. Prover store Claim Offer
-		//		Strng claimOffer = issuerCreateClaimOffer(wallet, schemaJson, issuerDid, proverDid).get();
-		String claimOffer = String.format("{\"issuer_did\":\"%s\", \"schema_key\":%s}", issuerDid, schemaKey);
+		String claimOffer = issuerCreateClaimOffer(issuerWallet, schemaJson, issuerDid, proverDid).get();
 		proverStoreClaimOffer(proverWallet, claimOffer).get();
 
 		//7. Prover get Claim Offers
