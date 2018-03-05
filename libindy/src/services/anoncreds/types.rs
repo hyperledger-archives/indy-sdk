@@ -1,6 +1,5 @@
 extern crate indy_crypto;
 
-use errors::common::CommonError;
 use std::collections::{HashMap, HashSet};
 
 use self::indy_crypto::cl::*;
@@ -131,18 +130,6 @@ pub struct CredentialDefinition {
     pub value: CredentialDefinitionValue
 }
 
-impl CredentialDefinition {
-    pub fn clone(&self) -> Result<CredentialDefinition, CommonError> {
-        Ok(CredentialDefinition {
-            id: self.id.clone(),
-            schema_id: self.schema_id.clone(),
-            signature_type: self.signature_type.clone(),
-            tag: self.tag.clone(),
-            value: self.value.clone()?,
-        })
-    }
-}
-
 impl JsonEncodable for CredentialDefinition {}
 
 impl<'a> JsonDecodable<'a> for CredentialDefinition {}
@@ -151,15 +138,6 @@ impl<'a> JsonDecodable<'a> for CredentialDefinition {}
 pub struct CredentialDefinitionValue {
     pub primary: CredentialPrimaryPublicKey,
     pub revocation: Option<CredentialRevocationPublicKey>
-}
-
-impl CredentialDefinitionValue {
-    pub fn clone(&self) -> Result<CredentialDefinitionValue, CommonError> {
-        Ok(CredentialDefinitionValue {
-            primary: self.primary.clone()?,
-            revocation: self.revocation.clone()
-        })
-    }
 }
 
 impl JsonEncodable for CredentialDefinitionValue {}
@@ -269,13 +247,6 @@ impl<'a> JsonDecodable<'a> for IssuanceTypes {}
 impl IssuanceTypes {
     pub fn to_bool(&self) -> bool {
         self.clone() == IssuanceTypes::ISSUANCE_BY_DEFAULT
-    }
-
-    pub fn to_str(&self) -> &'static str {
-        match self {
-            &IssuanceTypes::ISSUANCE_BY_DEFAULT => "ISSUANCE_BY_DEFAULT",
-            &IssuanceTypes::ISSUANCE_ON_DEMAND => "ISSUANCE_ON_DEMAND"
-        }
     }
 }
 

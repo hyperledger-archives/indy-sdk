@@ -20,7 +20,13 @@ impl Prover {
     }
 
     pub fn new_master_secret(&self) -> Result<MasterSecret, CommonError> {
-        Ok(CryptoProver::new_master_secret()?)
+        trace!("new_master_secret >>> ");
+
+        let master_secret = CryptoProver::new_master_secret()?;
+
+        trace!("new_master_secret <<< master_secret: {:?} ", master_secret);
+
+        Ok(master_secret)
     }
 
     pub fn new_credential_request(&self,
@@ -29,7 +35,7 @@ impl Prover {
                                   credential_offer: &CredentialOffer) -> Result<(BlindedMasterSecret,
                                                                                  MasterSecretBlindingData,
                                                                                  BlindedMasterSecretCorrectnessProof), CommonError> {
-        info!("new_credential_request >>> credential_def: {:?}, master_secret: {:?}, credential_offer: {:?}",
+        trace!("new_credential_request >>> credential_def: {:?}, master_secret: {:?}, credential_offer: {:?}",
               credential_def, master_secret, credential_offer);
 
         let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.value.primary, credential_def.value.revocation.as_ref())?;
@@ -40,7 +46,7 @@ impl Prover {
                                               &master_secret,
                                               &credential_offer.nonce)?;
 
-        info!("new_credential_request <<< blinded_ms: {:?}, master_secret_blinding_data: {:?}, blinded_ms_correctness_proof: {:?}",
+        trace!("new_credential_request <<< blinded_ms: {:?}, master_secret_blinding_data: {:?}, blinded_ms_correctness_proof: {:?}",
               blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof);
 
         Ok((blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof))
@@ -54,8 +60,8 @@ impl Prover {
                               rev_reg_def: Option<&RevocationRegistryDefinition>,
                               rev_reg: Option<&RevocationRegistry>,
                               witness: Option<&Witness>) -> Result<(), CommonError> {
-        info!("process_credential >>> credential: {:?}, credential_request_metadata: {:?}, master_secret: {:?}, credential_def: {:?}, rev_reg_def: {:?}, \
-        rev_reg: {:?}, witness: {:?}", credential, credential_request_metadata, master_secret, credential_def, rev_reg_def, rev_reg, witness);
+        trace!("process_credential >>> credential: {:?}, credential_request_metadata: {:?}, master_secret: {:?}, credential_def: {:?}, rev_reg_def: {:?}, \
+               rev_reg: {:?}, witness: {:?}", credential, credential_request_metadata, master_secret, credential_def, rev_reg_def, rev_reg, witness);
 
         let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.value.primary, credential_def.value.revocation.as_ref())?;
         let credential_values = build_credential_values(&credential.values)?;
@@ -71,7 +77,7 @@ impl Prover {
                                                    rev_reg,
                                                    witness)?;
 
-        info!("process_credential <<< ");
+        trace!("process_credential <<< ");
 
         Ok(())
     }
@@ -79,7 +85,7 @@ impl Prover {
     pub fn get_credentials_for_proof_req(&self,
                                          proof_request: &ProofRequest,
                                          credentials: &mut Vec<CredentialInfo>) -> Result<CredentialsForProofRequest, CommonError> {
-        info!("get_credentials_for_proof_req >>> proof_request: {:?}, credentials: {:?}", proof_request, credentials);
+        trace!("get_credentials_for_proof_req >>> proof_request: {:?}, credentials: {:?}", proof_request, credentials);
 
         let mut credentials_for_proof_request = CredentialsForProofRequest {
             attrs: HashMap::new(),
@@ -93,7 +99,7 @@ impl Prover {
                     Prover::_credential_value_for_attribute(&credential.attrs, &requested_attr.name).is_some() &&
                         self._credential_satisfy_restrictions(credential, &requested_attr.restrictions))
                 .map(|credential| {
-                    let freshness = Prover::get_freshness(proof_request.freshness, requested_attr.freshness);
+                    let freshness = Prover::_get_freshness(proof_request.freshness, requested_attr.freshness);
                     RequestedCredential { cred_info: credential.clone(), freshness }
                 })
                 .collect::<Vec<RequestedCredential>>();
@@ -111,7 +117,7 @@ impl Prover {
                 } && self._credential_satisfy_restrictions(credential, &requested_predicate.restrictions);
 
                 if satisfy {
-                    let freshness = Prover::get_freshness(proof_request.freshness, requested_predicate.freshness);
+                    let freshness = Prover::_get_freshness(proof_request.freshness, requested_predicate.freshness);
                     credentials_for_predicate.push(RequestedCredential { cred_info: credential.clone(), freshness });
                 }
             }
@@ -119,12 +125,8 @@ impl Prover {
             credentials_for_proof_request.predicates.insert(predicate_id.clone(), credentials_for_predicate);
         }
 
-        info!("get_credentials_for_proof_req <<< credentials_for_proof_requerst: {:?}", credentials_for_proof_request);
+        trace!("get_credentials_for_proof_req <<< credentials_for_proof_request: {:?}", credentials_for_proof_request);
         Ok(credentials_for_proof_request)
-    }
-
-    fn get_freshness(global_freshness: Option<u64>, local_freshness: Option<u64>) -> Option<u64> {
-        local_freshness.or(global_freshness.or(None))
     }
 
     pub fn create_proof(&self,
@@ -135,7 +137,7 @@ impl Prover {
                         schemas: &HashMap<String, Schema>,
                         credential_defs: &HashMap<String, CredentialDefinition>,
                         rev_infos: &HashMap<String, HashMap<u64, RevocationInfo>>) -> Result<FullProof, AnoncredsError> {
-        info!("create_proof >>> credentials: {:?}, proof_req: {:?}, schemas: {:?}, credential_defs: {:?}, rev_infos: {:?}, \
+        trace!("create_proof >>> credentials: {:?}, proof_req: {:?}, schemas: {:?}, credential_defs: {:?}, rev_infos: {:?}, \
                requested_credentials: {:?}, master_secret: {:?}",
               credentials, proof_req, schemas, credential_defs, rev_infos, requested_credentials, master_secret);
 
@@ -208,13 +210,25 @@ impl Prover {
             identifiers
         };
 
-        info!("create_proof <<< full_proof: {:?}", full_proof);
+        trace!("create_proof <<< full_proof: {:?}", full_proof);
 
         Ok(full_proof)
     }
 
+    fn _get_freshness(global_freshness: Option<u64>, local_freshness: Option<u64>) -> Option<u64> {
+        trace!("_get_freshness >>> global_freshness: {:?}, local_freshness: {:?}", global_freshness, local_freshness);
+
+        let freshness = local_freshness.or(global_freshness.or(None));
+
+        trace!("_get_freshness <<< freshness: {:?}", freshness);
+
+        freshness
+    }
+
     pub fn _prepare_credentials_for_proving(requested_credentials: &RequestedCredentials,
                                             proof_req: &ProofRequest) -> HashMap<ProvingCredentialKey, (Vec<RequestedAttributeInfo>, Vec<RequestedPredicateInfo>)> {
+        trace!("_prepare_credentials_for_proving >>> requested_credentials: {:?}, proof_req: {:?}", requested_credentials, proof_req);
+
         let mut credentials_for_proving: HashMap<ProvingCredentialKey, (Vec<RequestedAttributeInfo>, Vec<RequestedPredicateInfo>)> = HashMap::new();
 
         for (attr_referent, requested_attr) in requested_credentials.requested_attrs.iter() {
@@ -254,23 +268,31 @@ impl Prover {
             };
         }
 
+        trace!("_prepare_credentials_for_proving <<< credentials_for_proving: {:?}", credentials_for_proving);
+
         credentials_for_proving
     }
 
     fn _credential_value_for_attribute(credential_attrs: &HashMap<String, String>,
                                        requested_attr: &str) -> Option<String> {
+        trace!("_credential_value_for_attribute >>> credential_attrs: {:?}, requested_attr: {:?}", credential_attrs, requested_attr);
+
         let _attr_common_view = |attr: &str|
             attr.replace(" ", "").to_lowercase();
 
-        credential_attrs.iter()
+        let res = credential_attrs.iter()
             .find(|&(ref key, _)| _attr_common_view(key) == _attr_common_view(&requested_attr))
-            .map(|(_, value)| value.to_string())
+            .map(|(_, value)| value.to_string());
+
+        trace!("_credential_value_for_attribute <<< res: {:?}", res);
+
+        res
     }
 
     fn _credential_satisfy_restrictions(&self,
                                         credential_info: &CredentialInfo,
                                         restrictions: &Option<Vec<Filter>>) -> bool {
-        info!("_credential_satisfy_restrictions >>> credential_info: {:?}, restrictions: {:?}", credential_info, restrictions);
+        trace!("_credential_satisfy_restrictions >>> credential_info: {:?}, restrictions: {:?}", credential_info, restrictions);
 
         let res = match restrictions {
             &Some(ref restrictions) => restrictions.iter().any(|restriction|
@@ -278,7 +300,7 @@ impl Prover {
             &None => true
         };
 
-        info!("_credential_satisfy_restrictions <<< res: {:?}", res);
+        trace!("_credential_satisfy_restrictions <<< res: {:?}", res);
 
         res
     }
@@ -286,7 +308,7 @@ impl Prover {
     pub fn satisfy_restriction<T>(&self,
                                   object: &T,
                                   restriction: &Filter) -> bool where T: Filtering {
-        info!("satisfy_restriction >>> restriction: {:?}", restriction);
+        trace!("satisfy_restriction >>> restriction: {:?}", restriction);
 
         let mut res = true;
         {
@@ -301,25 +323,25 @@ impl Prover {
             check_condition(restriction.issuer_did.as_ref().map(String::as_str), &object.cred_def_id());
         }
 
-        info!("satisfy_restriction >>> res: {:?}", res);
+        trace!("satisfy_restriction >>> res: {:?}", res);
 
         res
     }
 
     fn _attribute_satisfy_predicate(predicate: &PredicateInfo,
                                     attribute_value: &String) -> Result<bool, CommonError> {
-        info!("_attribute_satisfy_predicate >>> predicate: {:?}, attribute_value: {:?}", predicate, attribute_value);
+        trace!("_attribute_satisfy_predicate >>> predicate: {:?}, attribute_value: {:?}", predicate, attribute_value);
 
         let res = match predicate.p_type.as_str() {
             ">=" => Ok({
                 let attribute_value = attribute_value.parse::<i32>()
-                    .map_err(|err| CommonError::InvalidStructure(format!("Invalid format of predicate attribute: {}", attribute_value)))?;
+                    .map_err(|_| CommonError::InvalidStructure(format!("Invalid format of predicate attribute: {}", attribute_value)))?;
                 attribute_value >= predicate.value
             }),
             _ => return Err(CommonError::InvalidStructure(format!("Invalid predicate type: {:?}", predicate.p_type)))
         };
 
-        info!("_attribute_satisfy_predicate <<< res: {:?}", res);
+        trace!("_attribute_satisfy_predicate <<< res: {:?}", res);
 
         res
     }
@@ -330,6 +352,10 @@ impl Prover {
                                credential: &Credential,
                                sub_proof_id: &str,
                                requested_proof: &mut RequestedProof) -> Result<(), CommonError> {
+        trace!("_update_requested_proof >>> req_attrs_for_credential: {:?}, req_predicates_for_credential: {:?}, proof_req: {:?}, credential: {:?}, \
+               sub_proof_id: {:?}, requested_proof: {:?}",
+              req_attrs_for_credential, req_predicates_for_credential, proof_req, credential, sub_proof_id, requested_proof);
+
         for attr_info in req_attrs_for_credential {
             if attr_info.revealed.clone() {
                 let attribute = &proof_req.requested_attrs[&attr_info.attr_referent];
@@ -350,11 +376,16 @@ impl Prover {
             requested_proof.predicates.insert(predicate_info.predicate_referent.clone(), sub_proof_id.to_string());
         }
 
+        trace!("_update_requested_proof <<<");
+
         Ok(())
     }
 
     fn _build_sub_proof_request(req_attrs_for_credential: &Vec<RequestedAttributeInfo>,
                                 req_predicates_for_credential: &Vec<RequestedPredicateInfo>) -> Result<SubProofRequest, CommonError> {
+        trace!("_build_sub_proof_request <<< req_attrs_for_credential: {:?}, req_predicates_for_credential: {:?}",
+              req_attrs_for_credential, req_predicates_for_credential);
+
         let mut sub_proof_request_builder = verifier::Verifier::new_sub_proof_request_builder()?;
 
         for attr in req_attrs_for_credential {
@@ -367,6 +398,11 @@ impl Prover {
             sub_proof_request_builder.add_predicate(&predicate.predicate_info.attr_name, "GE", predicate.predicate_info.value)?;
         }
 
-        Ok(sub_proof_request_builder.finalize()?)
+        let sub_proof_request = sub_proof_request_builder.finalize()?;
+
+        trace!("_update_requested_proof <<< sub_proof_request: {:?}", sub_proof_request);
+
+
+        Ok(sub_proof_request)
     }
 }
