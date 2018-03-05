@@ -34,8 +34,8 @@ pub const GVT_SEQ_NO: i32 = 1;
 pub const XYZ_SEQ_NO: i32 = 2;
 
 impl AnoncredsUtils {
-    pub fn issuer_create_schema(issuer_did: &str, name: &str, version: &str, attr_names: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+    pub fn issuer_create_schema(issuer_did: &str, name: &str, version: &str, attr_names: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
 
         let issuer_did = CString::new(issuer_did).unwrap();
         let name = CString::new(name).unwrap();
@@ -50,28 +50,30 @@ impl AnoncredsUtils {
                                       attr_names.as_ptr(),
                                       cb);
 
-        super::results::result_to_string(err, receiver)
+        super::results::result_to_string_string(err, receiver)
     }
 
-    pub fn issuer_create_credential_definition(wallet_handle: i32, issuer_did: &str, schema: &str, tag: &str, signature_type: Option<&str>, create_non_revoc: bool) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+    pub fn issuer_create_credential_definition(wallet_handle: i32, issuer_did: &str, schema: &str, tag: &str,
+                                               signature_type: Option<&str>, config: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
 
         let schema = CString::new(schema).unwrap();
         let tag = CString::new(tag).unwrap();
         let signature_type_str = signature_type.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let issuer_did = CString::new(issuer_did).unwrap();
+        let config = CString::new(config).unwrap();
 
         let err =
             indy_issuer_create_and_store_credential_def(command_handle,
-                                                   wallet_handle,
-                                                   issuer_did.as_ptr(),
-                                                   schema.as_ptr(),
-                                                   tag.as_ptr(),
-                                                   if signature_type.is_some() { signature_type_str.as_ptr() } else { null() },
-                                                   create_non_revoc,
-                                                   cb);
+                                                        wallet_handle,
+                                                        issuer_did.as_ptr(),
+                                                        schema.as_ptr(),
+                                                        tag.as_ptr(),
+                                                        if signature_type.is_some() { signature_type_str.as_ptr() } else { null() },
+                                                        config.as_ptr(),
+                                                        cb);
 
-        super::results::result_to_string(err, receiver)
+        super::results::result_to_string_string(err, receiver)
     }
 
     pub fn prover_create_master_secret(wallet_handle: i32, master_secret_name: &str) -> Result<(), ErrorCode> {
@@ -93,11 +95,11 @@ impl AnoncredsUtils {
 
         let err =
             indy_issuer_create_credential_offer(command_handle,
-                                           wallet_handle,
-                                           cred_def_id.as_ptr(),
-                                           if rev_reg_id.is_some() { rev_reg_id_str.as_ptr() } else { null() },
-                                           prover_did.as_ptr(),
-                                           cb);
+                                                wallet_handle,
+                                                cred_def_id.as_ptr(),
+                                                if rev_reg_id.is_some() { rev_reg_id_str.as_ptr() } else { null() },
+                                                prover_did.as_ptr(),
+                                                cb);
 
         super::results::result_to_string(err, receiver)
     }
@@ -108,9 +110,9 @@ impl AnoncredsUtils {
         let credential_offer_json = CString::new(credential_offer_json).unwrap();
 
         let err = indy_prover_store_credential_offer(command_handle,
-                                                wallet_handle,
-                                                credential_offer_json.as_ptr(),
-                                                cb);
+                                                     wallet_handle,
+                                                     credential_offer_json.as_ptr(),
+                                                     cb);
 
         super::results::result_to_empty(err, receiver)
     }
@@ -121,15 +123,15 @@ impl AnoncredsUtils {
         let filter_json = CString::new(filter_json).unwrap();
 
         let err = indy_prover_get_credential_offers(command_handle,
-                                               wallet_handle,
-                                               filter_json.as_ptr(),
-                                               cb);
+                                                    wallet_handle,
+                                                    filter_json.as_ptr(),
+                                                    cb);
 
         super::results::result_to_string(err, receiver)
     }
 
     pub fn prover_create_and_store_credential_req(wallet_handle: i32, prover_did: &str, credential_offer_json: &str,
-                                             credential_def_json: &str, master_secret_name: &str) -> Result<String, ErrorCode> {
+                                                  credential_def_json: &str, master_secret_name: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let prover_did = CString::new(prover_did).unwrap();
@@ -138,49 +140,47 @@ impl AnoncredsUtils {
         let master_secret_name = CString::new(master_secret_name).unwrap();
 
         let err = indy_prover_create_and_store_credential_req(command_handle,
-                                                         wallet_handle,
-                                                         prover_did.as_ptr(),
-                                                         credential_offer_json.as_ptr(),
-                                                         credential_def_json.as_ptr(),
-                                                         master_secret_name.as_ptr(),
-                                                         cb);
+                                                              wallet_handle,
+                                                              prover_did.as_ptr(),
+                                                              credential_offer_json.as_ptr(),
+                                                              credential_def_json.as_ptr(),
+                                                              master_secret_name.as_ptr(),
+                                                              cb);
 
         super::results::result_to_string(err, receiver)
     }
 
     pub fn issuer_create_credential(wallet_handle: i32, credential_req_json: &str, credential_values_json: &str,
-                               tails_reader_handler: Option<i32>, user_revoc_index: Option<i32>) -> Result<(Option<String>, String), ErrorCode> {
+                                    tails_reader_handler: Option<i32>, user_revoc_index: Option<i32>) -> Result<(Option<String>, String), ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_opt_string_string();
 
         let credential_req_json = CString::new(credential_req_json).unwrap();
         let credential_values_json = CString::new(credential_values_json).unwrap();
 
         let err = indy_issuer_create_credential(command_handle,
-                                           wallet_handle,
-                                           credential_req_json.as_ptr(),
-                                           credential_values_json.as_ptr(),
-                                           tails_reader_handler.unwrap_or(-1),
-                                           user_revoc_index.unwrap_or(-1),
-                                           cb);
+                                                wallet_handle,
+                                                credential_req_json.as_ptr(),
+                                                credential_values_json.as_ptr(),
+                                                tails_reader_handler.unwrap_or(-1),
+                                                user_revoc_index.unwrap_or(-1),
+                                                cb);
 
         super::results::result_to_opt_string_string(err, receiver)
     }
 
-    pub fn prover_store_credential(wallet_handle: i32, id: &str, credential_json: &str, rev_reg_def_json: Option<&str>, rev_reg_entry_json: Option<&str>) -> Result<(), ErrorCode> {
+    pub fn prover_store_credential(wallet_handle: i32, id: &str, credential_json: &str, rev_reg_def_json: Option<&str>) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
         let id = CString::new(id).unwrap();
         let credential_json = CString::new(credential_json).unwrap();
         let rev_reg_def_json_str = rev_reg_def_json.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-        let rev_reg_entry_json_str = rev_reg_entry_json.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = indy_prover_store_credential(command_handle,
-                                          wallet_handle,
-                                          id.as_ptr(),
-                                          credential_json.as_ptr(),
-                                          if rev_reg_def_json.is_some() { rev_reg_def_json_str.as_ptr() } else { null() },
-                                          if rev_reg_entry_json.is_some() { rev_reg_entry_json_str.as_ptr() } else { null() },
-                                          cb);
+                                               wallet_handle,
+                                               id.as_ptr(),
+                                               credential_json.as_ptr(),
+                                               if rev_reg_def_json.is_some() { rev_reg_def_json_str.as_ptr() } else { null() },
+                                               cb);
 
         super::results::result_to_empty(err, receiver)
     }
@@ -191,9 +191,9 @@ impl AnoncredsUtils {
         let filter_json = CString::new(filter_json).unwrap();
 
         let err = indy_prover_get_credentials(command_handle,
-                                         wallet_handle,
-                                         filter_json.as_ptr(),
-                                         cb);
+                                              wallet_handle,
+                                              filter_json.as_ptr(),
+                                              cb);
 
         super::results::result_to_string(err, receiver)
     }
@@ -204,9 +204,9 @@ impl AnoncredsUtils {
         let proof_request_json = CString::new(proof_request_json).unwrap();
 
         let err = indy_prover_get_credentials_for_proof_req(command_handle,
-                                                       wallet_handle,
-                                                       proof_request_json.as_ptr(),
-                                                       cb);
+                                                            wallet_handle,
+                                                            proof_request_json.as_ptr(),
+                                                            cb);
 
         super::results::result_to_string(err, receiver)
     }
@@ -260,16 +260,18 @@ impl AnoncredsUtils {
     }
 
     pub fn indy_issuer_create_and_store_revoc_reg(wallet_handle: i32, issuer_did: &str, type_: Option<&str>, tag: &str,
-                                                  cred_def_id: &str, issuance_type: Option<&str>, max_credential_num: u32, tails_writer_config: &str) -> Result<(String, String), ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
+                                                  cred_def_id: &str, config_json: &str, tails_writer_config: &str)
+                                                  -> Result<(String, String, String), ErrorCode> {
+        let (receiver, command_handle, cb) =
+            CallbackUtils::_closure_to_cb_ec_string_string_string();
 
         let tails_writer_type = CString::new("default").unwrap();
         let tails_writer_config = CString::new(tails_writer_config).unwrap();
         let issuer_did = CString::new(issuer_did).unwrap();
         let type_str = type_.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-        let issuance_type_str = issuance_type.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let tag = CString::new(tag).unwrap();
         let cred_def_id = CString::new(cred_def_id).unwrap();
+        let config_json = CString::new(config_json).unwrap();
 
         let err = indy_issuer_create_and_store_revoc_reg(command_handle,
                                                          wallet_handle,
@@ -277,13 +279,12 @@ impl AnoncredsUtils {
                                                          if type_.is_some() { type_str.as_ptr() } else { null() },
                                                          tag.as_ptr(),
                                                          cred_def_id.as_ptr(),
-                                                         if issuance_type.is_some() { issuance_type_str.as_ptr() } else { null() },
-                                                         max_credential_num,
+                                                         config_json.as_ptr(),
                                                          tails_writer_type.as_ptr(),
                                                          tails_writer_config.as_ptr(),
                                                          cb);
 
-        super::results::result_to_string_string(err, receiver)
+        super::results::result_to_string_string_string(err, receiver)
     }
 
     pub fn issuer_revoke_credential(wallet_handle: i32, tails_reader_handle: i32, rev_reg_id: &str, user_revoc_index: u32) -> Result<String, ErrorCode> {
@@ -292,11 +293,11 @@ impl AnoncredsUtils {
         let rev_reg_id = CString::new(rev_reg_id).unwrap();
 
         let err = indy_issuer_revoke_credential(command_handle,
-                                           wallet_handle,
-                                           tails_reader_handle,
-                                           rev_reg_id.as_ptr(),
-                                           user_revoc_index,
-                                           cb);
+                                                wallet_handle,
+                                                tails_reader_handle,
+                                                rev_reg_id.as_ptr(),
+                                                user_revoc_index,
+                                                cb);
 
         super::results::result_to_string(err, receiver)
     }
@@ -372,6 +373,18 @@ impl AnoncredsUtils {
 
     pub fn get_composite_id(issuer_did: &str, schema_key: &SchemaKey) -> String {
         format!("{}:{}:{}:{}", issuer_did, schema_key.name, schema_key.version, schema_key.did)
+    }
+
+    pub fn default_cred_def_config() -> &'static str {
+        r#"{"support_revocation": false}"#
+    }
+
+    pub fn revocation_cred_def_config() -> &'static str {
+        r#"{"support_revocation": true}"#
+    }
+
+    pub fn default_rev_reg_config() -> &'static str {
+        r#"{"max_cred_num": 5}"#
     }
 
     pub fn gvt_schema_key() -> SchemaKey {
@@ -600,14 +613,14 @@ impl AnoncredsUtils {
             proof_credentials.attrs
                 .values()
                 .flat_map(|credentials| credentials)
-                .map(|&(ref credential, _)| credential.clone())
+                .map(|ref credential| credential.cred_info.clone())
                 .collect::<Vec<CredentialInfo>>();
 
         let predicates_credentials =
             proof_credentials.predicates
                 .values()
                 .flat_map(|credentials| credentials)
-                .map(|&(ref credential, _)| credential.clone())
+                .map(|ref credential| credential.cred_info.clone())
                 .collect::<Vec<CredentialInfo>>();
 
         attrs_credentials.into_iter().collect::<HashSet<CredentialInfo>>()
@@ -618,13 +631,13 @@ impl AnoncredsUtils {
     pub fn get_credential_for_attr_referent(credentials_json: &str, referent: &str) -> CredentialInfo {
         let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
         let credentials_for_referent = credentials.attrs.get(referent).unwrap();
-        credentials_for_referent[0].0.clone()
+        credentials_for_referent[0].cred_info.clone()
     }
 
     pub fn get_credential_for_predicate_referent(credentials_json: &str, referent: &str) -> CredentialInfo {
         let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
         let credentials_for_referent = credentials.predicates.get(referent).unwrap();
-        credentials_for_referent[0].0.clone()
+        credentials_for_referent[0].cred_info.clone()
     }
 
     pub fn tails_config() -> String {

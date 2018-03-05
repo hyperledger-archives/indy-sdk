@@ -75,9 +75,9 @@ impl Verifier {
 
         let revealed_attrs_for_credential = requested_proof.revealed_attrs
             .iter()
-            .filter(|&(attr_referent, &(ref requested_referent, _, _))|
-                referent.eq(requested_referent) && proof_req.requested_attrs.contains_key(attr_referent))
-            .map(|(attr_referent, &(ref requested_referent, _, _))|
+            .filter(|&(attr_referent, ref revealed_attr_info)|
+                referent.eq(&revealed_attr_info.referent) && proof_req.requested_attrs.contains_key(attr_referent))
+            .map(|(attr_referent, _)|
                 proof_req.requested_attrs[attr_referent].clone())
             .collect::<Vec<AttributeInfo>>();
 

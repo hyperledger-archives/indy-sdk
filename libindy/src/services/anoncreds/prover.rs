@@ -81,8 +81,10 @@ impl Prover {
                                          credentials: &mut Vec<CredentialInfo>) -> Result<CredentialsForProofRequest, CommonError> {
         info!("get_credentials_for_proof_req >>> proof_request: {:?}, credentials: {:?}", proof_request, credentials);
 
-        let mut found_attributes: HashMap<String, Vec<(CredentialInfo, Option<u64>)>> = HashMap::new();
-        let mut found_predicates: HashMap<String, Vec<(CredentialInfo, Option<u64>)>> = HashMap::new();
+        let mut credentials_for_proof_request = CredentialsForProofRequest {
+            attrs: HashMap::new(),
+            predicates: HashMap::new()
+        };
 
         for (attr_id, requested_attr) in &proof_request.requested_attrs {
             let credentials_for_attribute = credentials
@@ -92,44 +94,37 @@ impl Prover {
                         self._credential_satisfy_restrictions(credential, &requested_attr.restrictions))
                 .map(|credential| {
                     let freshness = Prover::get_freshness(proof_request.freshness, requested_attr.freshness);
-                    (credential.clone(), freshness)
+                    RequestedCredential { cred_info: credential.clone(), freshness }
                 })
-                .collect::<Vec<(CredentialInfo, Option<u64>)>>();
+                .collect::<Vec<RequestedCredential>>();
 
-            found_attributes.insert(attr_id.clone(), credentials_for_attribute);
+            credentials_for_proof_request.attrs.insert(attr_id.clone(), credentials_for_attribute);
         }
 
         for (predicate_id, requested_predicate) in &proof_request.requested_predicates {
-            let mut credentials_for_predicate: Vec<(CredentialInfo, Option<u64>)> = Vec::new();
+            let mut credentials_for_predicate: Vec<RequestedCredential> = Vec::new();
 
             for credential in credentials.iter_mut() {
-                let mut satisfy = match Prover::_credential_value_for_attribute(&credential.attrs, &requested_predicate.attr_name) {
+                let satisfy = match Prover::_credential_value_for_attribute(&credential.attrs, &requested_predicate.attr_name) {
                     Some(attribute_value) => Prover::_attribute_satisfy_predicate(&requested_predicate, &attribute_value)?,
                     None => false
-                };
-
-                satisfy = satisfy && self._credential_satisfy_restrictions(credential, &requested_predicate.restrictions);
+                } && self._credential_satisfy_restrictions(credential, &requested_predicate.restrictions);
 
                 if satisfy {
                     let freshness = Prover::get_freshness(proof_request.freshness, requested_predicate.freshness);
-                    credentials_for_predicate.push((credential.clone(), freshness));
+                    credentials_for_predicate.push(RequestedCredential { cred_info: credential.clone(), freshness });
                 }
             }
 
-            found_predicates.insert(predicate_id.clone(), credentials_for_predicate);
+            credentials_for_proof_request.predicates.insert(predicate_id.clone(), credentials_for_predicate);
         }
-
-        let credentials_for_proof_request = CredentialsForProofRequest {
-            attrs: found_attributes,
-            predicates: found_predicates
-        };
 
         info!("get_credentials_for_proof_req <<< credentials_for_proof_requerst: {:?}", credentials_for_proof_request);
         Ok(credentials_for_proof_request)
     }
 
     fn get_freshness(global_freshness: Option<u64>, local_freshness: Option<u64>) -> Option<u64> {
-        global_freshness.or(local_freshness.or(None))
+        local_freshness.or(global_freshness.or(None))
     }
 
     pub fn create_proof(&self,
@@ -222,15 +217,15 @@ impl Prover {
                                             proof_req: &ProofRequest) -> HashMap<ProvingCredentialKey, (Vec<RequestedAttributeInfo>, Vec<RequestedPredicateInfo>)> {
         let mut credentials_for_proving: HashMap<ProvingCredentialKey, (Vec<RequestedAttributeInfo>, Vec<RequestedPredicateInfo>)> = HashMap::new();
 
-        for (attr_referent, &(ref proving_cred_key, revealed)) in requested_credentials.requested_attrs.iter() {
+        for (attr_referent, requested_attr) in requested_credentials.requested_attrs.iter() {
             let attr_info = proof_req.requested_attrs.get(attr_referent.as_str()).unwrap();
             let req_attr_info = RequestedAttributeInfo {
                 attr_referent: attr_referent.clone(),
                 attr_info: attr_info.clone(),
-                revealed
+                revealed: requested_attr.revealed.clone()
             };
 
-            match credentials_for_proving.entry(proving_cred_key.clone()) {
+            match credentials_for_proving.entry(ProvingCredentialKey { cred_id: requested_attr.cred_id.clone(), timestamp: requested_attr.timestamp.clone() }) {
                 Entry::Occupied(cred_for_proving) => {
                     let &mut (ref mut attributes_for_credential, _) = cred_for_proving.into_mut();
                     attributes_for_credential.push(req_attr_info);
@@ -339,10 +334,13 @@ impl Prover {
             if attr_info.revealed.clone() {
                 let attribute = &proof_req.requested_attrs[&attr_info.attr_referent];
                 let attribute_values = &credential.values[&attribute.name];
-                let raw_value = &attribute_values[0];
-                let encoded_value = &attribute_values[1];
 
-                requested_proof.revealed_attrs.insert(attr_info.attr_referent.clone(), (sub_proof_id.to_string(), raw_value.clone(), encoded_value.clone()));
+                requested_proof.revealed_attrs.insert(attr_info.attr_referent.clone(),
+                                                      RevealedAttributeInfo {
+                                                          referent: sub_proof_id.to_string(),
+                                                          raw: attribute_values.raw.clone(),
+                                                          encoded: attribute_values.encoded.clone()
+                                                      });
             } else {
                 requested_proof.unrevealed_attrs.insert(attr_info.attr_referent.clone(), sub_proof_id.to_string());
             }

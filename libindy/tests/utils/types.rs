@@ -160,8 +160,8 @@ pub struct SchemaData {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CredentialOffer {
-    pub issuer_did: String,
-    pub schema_key: SchemaKey,
+    pub cred_def_id: String,
+    pub rev_reg_id: Option<String>,
     pub key_correctness_proof: CredentialKeyCorrectnessProof,
     pub nonce: Nonce
 }
@@ -173,8 +173,14 @@ pub struct CredentialOfferInfo {
 }
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CredentialsForProofRequest {
-    pub attrs: HashMap<String, Vec<(CredentialInfo, Option<u64>)>>,
-    pub predicates: HashMap<String, Vec<(CredentialInfo, Option<u64>)>>
+    pub attrs: HashMap<String, Vec<RequestedCredential>>,
+    pub predicates: HashMap<String, Vec<RequestedCredential>>
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RequestedCredential {
+    pub cred_info: CredentialInfo,
+    pub freshness: Option<u64>
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
@@ -203,10 +209,17 @@ pub struct FullProof {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RequestedProof {
-    pub revealed_attrs: HashMap<String, (String, String, String)>,
+    pub revealed_attrs: HashMap<String, RevealedAttributeInfo>,
     pub unrevealed_attrs: HashMap<String, String>,
     pub self_attested_attrs: HashMap<String, String>,
     pub predicates: HashMap<String, String>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RevealedAttributeInfo {
+    pub referent: String,
+    pub raw: String,
+    pub encoded: String
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]

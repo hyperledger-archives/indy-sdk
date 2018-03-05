@@ -73,7 +73,7 @@ impl Issuer {
                                credential_priv_key: &CredentialPrivateKey,
                                master_secret_blinding_nonce: &Nonce,
                                credential_request: &CredentialRequest,
-                               credential_values: &HashMap<String, Vec<String>>,
+                               credential_values: &HashMap<String, AttributeValues>,
                                rev_idx: Option<u32>,
                                rev_reg_def: Option<&RevocationRegistryDefinition>,
                                rev_reg: Option<&mut RevocationRegistry>,

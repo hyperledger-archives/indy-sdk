@@ -36,7 +36,7 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
                                         version: *const c_char,
                                         attr_names: *const c_char,
                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                             schema_json: *const c_char)>) -> ErrorCode {
+                                                             id: *const c_char, schema_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
@@ -52,9 +52,10 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
                     version,
                     attr_names,
                     Box::new(move |result| {
-                        let (err, schema_json) = result_to_err_code_1!(result, String::new());
+                        let (err, id, schema_json) = result_to_err_code_2!(result, String::new(), String::new());
+                        let id = CStringUtils::string_to_cstring(id);
                         let schema_json = CStringUtils::string_to_cstring(schema_json);
-                        cb(command_handle, err, schema_json.as_ptr())
+                        cb(command_handle, err, id.as_ptr(), schema_json.as_ptr())
                     })
                 ))));
 
@@ -71,7 +72,10 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
 /// schema_json: schema as a json
 /// tag:
 /// type_: (optional) signature type. Currently only 'CL' is supported.
-/// support_revocation: whether to request non-revocation credential.
+/// config_json: config json.
+///     {
+///         "support_revocation": boolean
+///     }
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -88,13 +92,15 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
                                                           schema_json: *const c_char,
                                                           tag: *const c_char,
                                                           type_: *const c_char,
-                                                          support_revocation: bool,
+                                                          config_json: *const c_char,
                                                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                               id: *const c_char,
                                                                                credential_def_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(schema_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(tag, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(type_, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(config_json, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let result = CommandExecutor::instance()
@@ -106,11 +112,12 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
                     schema_json,
                     tag,
                     type_,
-                    support_revocation,
+                    config_json,
                     Box::new(move |result| {
-                        let (err, credential_def_json) = result_to_err_code_1!(result, String::new());
+                        let (err, id, credential_def_json) = result_to_err_code_2!(result, String::new(), String::new());
+                        let id = CStringUtils::string_to_cstring(id);
                         let credential_def_json = CStringUtils::string_to_cstring(credential_def_json);
-                        cb(command_handle, err, credential_def_json.as_ptr())
+                        cb(command_handle, err, id.as_ptr(), credential_def_json.as_ptr())
                     })
                 ))));
 
@@ -127,11 +134,13 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
 /// type_: (optional) registry type. Currently only 'CL_ACCUM' is supported.
 /// tag:
 /// cred_def_id: id of stored in ledger credential definition
-/// issuance_type: (optional) type of issuance. Currently supported:
-///     1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
-///                             Revocation Registry is updated only during revocation.
-///     2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
-/// max_cred_num: maximum number of credentials the new registry can process.
+/// config_json: {
+///     "issuance_type": (optional) type of issuance. Currently supported:
+///         1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
+///                                 Revocation Registry is updated only during revocation.
+///         2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
+///     "max_cred_num": maximum number of credentials the new registry can process.
+/// }
 /// tails_writer_type:
 /// tails_writer_config:
 /// cb: Callback that takes command result as parameter.
@@ -150,21 +159,21 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                                                      type_: *const c_char,
                                                      tag: *const c_char,
                                                      cred_def_id: *const c_char,
-                                                     issuance_type: *const c_char,
-                                                     max_cred_num: u32,
+                                                     config_json: *const c_char,
                                                      tails_writer_type: *const c_char,
                                                      tails_writer_config: *const c_char,
                                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                          id: *const c_char,
                                                                           revoc_reg_def_json: *const c_char,
                                                                           revoc_reg_entry_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(type_, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(tag, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam6);
-    check_useful_opt_c_str!(issuance_type, ErrorCode::CommonInvalidParam7);
-    check_useful_opt_c_str!(tails_writer_type, ErrorCode::CommonInvalidParam9);
-    check_useful_c_str!(tails_writer_config, ErrorCode::CommonInvalidParam10);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam11);
+    check_useful_c_str!(config_json, ErrorCode::CommonInvalidParam7);
+    check_useful_opt_c_str!(tails_writer_type, ErrorCode::CommonInvalidParam8);
+    check_useful_c_str!(tails_writer_config, ErrorCode::CommonInvalidParam9);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam10);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
@@ -175,15 +184,15 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                     type_,
                     tag,
                     cred_def_id,
-                    issuance_type,
-                    max_cred_num,
+                    config_json,
                     tails_writer_type,
                     tails_writer_config,
                     Box::new(move |result| {
-                        let (err, revoc_reg_def_json, revoc_reg_json) = result_to_err_code_2!(result, String::new(), String::new());
+                        let (err, id, revoc_reg_def_json, revoc_reg_json) = result_to_err_code_3!(result, String::new(), String::new(), String::new());
+                        let id = CStringUtils::string_to_cstring(id);
                         let revoc_reg_def_json = CStringUtils::string_to_cstring(revoc_reg_def_json);
                         let revoc_reg_json = CStringUtils::string_to_cstring(revoc_reg_json);
-                        cb(command_handle, err, revoc_reg_def_json.as_ptr(), revoc_reg_json.as_ptr())
+                        cb(command_handle, err, id.as_ptr(), revoc_reg_def_json.as_ptr(), revoc_reg_json.as_ptr())
                     })
                 ))));
 
@@ -263,8 +272,8 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: i32,
 /// credential_values_json: a credential containing attribute values for each of requested attribute names.
 ///     Example:
 ///     {
-///      "attr1" : ["value1", "value1_as_int"],
-///      "attr2" : ["value2", "value2_as_int"]
+///      "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
+///      "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
 ///     }
 /// tails_reader_handle:
 /// user_revoc_index: index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
@@ -662,15 +671,13 @@ pub extern fn indy_prover_store_credential(command_handle: i32,
                                            id: *const c_char,
                                            credentials_json: *const c_char,
                                            rev_reg_def_json: *const c_char,
-                                           rev_reg_json: *const c_char,
                                            cb: Option<extern fn(
                                                xcommand_handle: i32, err: ErrorCode
                                            )>) -> ErrorCode {
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(credentials_json, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(rev_reg_def_json, ErrorCode::CommonInvalidParam5);
-    check_useful_opt_c_str!(rev_reg_json, ErrorCode::CommonInvalidParam6);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::StoreCredential(
@@ -678,7 +685,6 @@ pub extern fn indy_prover_store_credential(command_handle: i32,
             id,
             credentials_json,
             rev_reg_def_json,
-            rev_reg_json,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
                 cb(command_handle, err)
@@ -914,12 +920,20 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
 /// There ais also aggregated proof part common for all credential proofs.
 ///     {
 ///         "requested": {
-///             "requested_attr1_id": [credential_proof1_referent, revealed_attr1, revealed_attr1_as_int],
-///             "requested_attr2_id": [self_attested_attribute],
-///             "requested_attr3_id": [credential_proof2_referent]
-///             "requested_attr4_id": [credential_proof2_referent, revealed_attr4, revealed_attr4_as_int],
-///             "requested_predicate_1_referent": [credential_proof2_referent],
-///             "requested_predicate_2_referent": [credential_proof3_referent],
+///             "revealed_attrs": {
+///                 "requested_attr1_id": [credential_proof1_referent, revealed_attr1, revealed_attr1_as_int],
+///                 "requested_attr4_id": [credential_proof2_referent, revealed_attr4, revealed_attr4_as_int],
+///             },
+///             "unrevealed_attrs": {
+///                 "requested_attr3_id": [credential_proof2_referent]
+///             },
+///             "self_attested_attrs": {
+///                 "requested_attr2_id": [self_attested_attribute],
+///             },
+///             "requested_predicates": {
+///                 "requested_predicate_1_referent": [credential_proof2_referent],
+///                 "requested_predicate_2_referent": [credential_proof3_referent],
+///             }
 ///         }
 ///         "proof": {
 ///             "proofs": {

@@ -2,7 +2,7 @@ extern crate indy_crypto;
 
 use errors::common::CommonError;
 
-use services::anoncreds::types::{AttributeInfo, PredicateInfo};
+use services::anoncreds::types::{AttributeInfo, PredicateInfo, AttributeValues};
 use services::anoncreds::constants::*;
 use self::indy_crypto::cl::{issuer, verifier, CredentialSchema, CredentialValues, SubProofRequest};
 
@@ -16,13 +16,10 @@ pub fn build_credential_schema(attrs: &HashSet<String>) -> Result<CredentialSche
     Ok(credential_schema_builder.finalize()?)
 }
 
-pub fn build_credential_values(credential_values: &HashMap<String, Vec<String>>) -> Result<CredentialValues, CommonError> {
+pub fn build_credential_values(credential_values: &HashMap<String, AttributeValues>) -> Result<CredentialValues, CommonError> {
     let mut credential_values_builder = issuer::Issuer::new_credential_values_builder()?;
     for (attr, values) in credential_values {
-        let dec_val = values.get(1)
-            .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?;
-
-        credential_values_builder.add_value(&attr, &dec_val)?;
+        credential_values_builder.add_value(&attr, &values.encoded)?;
     }
     Ok(credential_values_builder.finalize()?)
 }

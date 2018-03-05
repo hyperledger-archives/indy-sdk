@@ -168,7 +168,7 @@ impl<'a> JsonDecodable<'a> for CredentialDefinitionValue {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Credential {
-    pub values: HashMap<String, Vec<String>>,
+    pub values: HashMap<String, AttributeValues>,
     pub signature: CredentialSignature,
     pub signature_correctness_proof: SignatureCorrectnessProof,
     pub cred_def_id: String,
@@ -190,13 +190,19 @@ pub struct PredicateInfo {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CredentialsForProofRequest {
-    pub attrs: HashMap<String, Vec<(CredentialInfo, Option<u64>)>>,
-    pub predicates: HashMap<String, Vec<(CredentialInfo, Option<u64>)>>
+    pub attrs: HashMap<String, Vec<RequestedCredential>>,
+    pub predicates: HashMap<String, Vec<RequestedCredential>>
 }
 
 impl JsonEncodable for CredentialsForProofRequest {}
 
 impl<'a> JsonDecodable<'a> for CredentialsForProofRequest {}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RequestedCredential {
+    pub cred_info: CredentialInfo,
+    pub freshness: Option<u64>
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProofRequest {
@@ -280,6 +286,16 @@ pub struct RevocationRegistryDefinitionValuePublicKeys {
 }
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
+pub struct RevocationRegistryConfig {
+    pub issuance_type: Option<String>,
+    pub max_cred_num: u32
+}
+
+impl JsonEncodable for RevocationRegistryConfig {}
+
+impl<'a> JsonDecodable<'a> for RevocationRegistryConfig {}
+
+#[derive(Deserialize, Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RevocationRegistryDefinition {
     pub id: String,
@@ -310,7 +326,7 @@ impl<'a> JsonDecodable<'a> for RevocationRegistryDefinitionValue {}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RequestedCredentials {
     pub self_attested_attributes: HashMap<String, String>,
-    pub requested_attrs: HashMap<String, (ProvingCredentialKey, bool)>,
+    pub requested_attrs: HashMap<String, RequestedAttribute>,
     pub requested_predicates: HashMap<String, ProvingCredentialKey>
 }
 
@@ -319,8 +335,15 @@ impl JsonEncodable for RequestedCredentials {}
 impl<'a> JsonDecodable<'a> for RequestedCredentials {}
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct RequestedAttribute {
+    pub cred_id: String,
+    pub timestamp: Option<u64>,
+    pub revealed: bool
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RequestedProof {
-    pub revealed_attrs: HashMap<String, (String, String, String)>,
+    pub revealed_attrs: HashMap<String, RevealedAttributeInfo>,
     pub unrevealed_attrs: HashMap<String, String>,
     pub self_attested_attrs: HashMap<String, String>,
     pub predicates: HashMap<String, String>
@@ -338,6 +361,13 @@ pub struct Schema {
 impl JsonEncodable for Schema {}
 
 impl<'a> JsonDecodable<'a> for Schema {}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CredentialDefinitionConfig {
+    pub support_revocation: bool
+}
+
+impl<'a> JsonDecodable<'a> for CredentialDefinitionConfig {}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RequestedAttributeInfo {
@@ -368,3 +398,16 @@ pub struct RevocationInfo {
 impl JsonEncodable for RevocationInfo {}
 
 impl<'a> JsonDecodable<'a> for RevocationInfo {}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AttributeValues {
+    pub raw: String,
+    pub encoded: String
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RevealedAttributeInfo {
+    pub referent: String,
+    pub raw: String,
+    pub encoded: String
+}

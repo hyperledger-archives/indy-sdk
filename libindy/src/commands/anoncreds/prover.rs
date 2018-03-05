@@ -40,7 +40,6 @@ pub enum ProverCommand {
         String, // id
         String, // credentials json
         Option<String>, // revocation registry definition json
-        Option<String>, // revocation registry entry json
         Box<Fn(Result<(), IndyError>) + Send>),
     GetCredentials(
         i32, // wallet handle
@@ -128,13 +127,9 @@ impl ProverCommandExecutor {
                 cb(self.create_and_store_credential_request(wallet_handle, &prover_did, &credential_offer_json,
                                                             &credential_def_json, &master_secret_name));
             }
-            ProverCommand::StoreCredential(wallet_handle, id, credential_json, rev_reg_def_json, rev_reg_entry_json, cb) => {
+            ProverCommand::StoreCredential(wallet_handle, id, credential_json, rev_reg_def_json, cb) => {
                 trace!(target: "prover_command_executor", "StoreCredential command received");
-                cb(self.store_credential(wallet_handle,
-                                         &id,
-                                         &credential_json,
-                                         rev_reg_def_json.as_ref().map(String::as_str),
-                                         rev_reg_entry_json.as_ref().map(String::as_str)));
+                cb(self.store_credential(wallet_handle, &id, &credential_json, rev_reg_def_json.as_ref().map(String::as_str)));
             }
             ProverCommand::GetCredentials(wallet_handle, filter_json, cb) => {
                 trace!(target: "prover_command_executor", "GetCredentials command received");
@@ -151,19 +146,19 @@ impl ProverCommandExecutor {
                                      &master_secret_name, &credential_defs_json, &rev_infos_json));
             }
             ProverCommand::CreateRevocationInfo(wallet_handle, tails_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, rev_idx, cb) => {
-                trace!(target: "prover_command_executor", "CreateWitness command received");
+                trace!(target: "prover_command_executor", "CreateRevocationInfo command received");
                 cb(self.create_revocation_info(wallet_handle, tails_reader_handle, &rev_reg_def_json, &rev_reg_delta_json, timestamp, rev_idx));
             }
             ProverCommand::UpdateRevocationInfo(wallet_handle, tails_reader_handle, witness_json, rev_reg_def_json, rev_reg_delta_json, timestamp, rev_idx, cb) => {
-                trace!(target: "prover_command_executor", "UpdateWitness command received");
+                trace!(target: "prover_command_executor", "UpdateRevocationInfo command received");
                 cb(self.update_revocation_info(wallet_handle, tails_reader_handle, &witness_json, &rev_reg_def_json, &rev_reg_delta_json, timestamp, rev_idx));
             }
             ProverCommand::StoreRevocationInfo(wallet_handle, id, witness_json, cb) => {
-                trace!(target: "prover_command_executor", "StoreWitness command received");
+                trace!(target: "prover_command_executor", "StoreRevocationInfo( command received");
                 cb(self.store_revocation_info(wallet_handle, &id, &witness_json));
             }
             ProverCommand::GetRevocationInfo(wallet_handle, id, timestamp, cb) => {
-                trace!(target: "prover_command_executor", "GetWitness command received");
+                trace!(target: "prover_command_executor", "GetRevocationInfo command received");
                 cb(self.get_revocation_info(wallet_handle, &id, timestamp));
             }
         };
@@ -290,10 +285,9 @@ impl ProverCommandExecutor {
                         wallet_handle: i32,
                         id: &str,
                         credential_json: &str,
-                        rev_reg_def_json: Option<&str>,
-                        rev_reg_entry_json: Option<&str>) -> Result<(), IndyError> {
-        trace!("store_credential >>> wallet_handle: {:?}, credential_json: {:?}, rev_reg_def_json: {:?}, rev_reg_entry_json: {:?}",
-               wallet_handle, credential_json, rev_reg_def_json, rev_reg_entry_json);
+                        rev_reg_def_json: Option<&str>) -> Result<(), IndyError> {
+        trace!("store_credential >>> wallet_handle: {:?}, credential_json: {:?}, rev_reg_def_json: {:?}",
+               wallet_handle, credential_json, rev_reg_def_json);
 
         let mut credential: Credential = Credential::from_json(&credential_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Credential: {:?}", err)))?;
@@ -302,13 +296,6 @@ impl ProverCommandExecutor {
             Some(r_reg_def_json) =>
                 Some(RevocationRegistryDefinition::from_json(&r_reg_def_json)
                     .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize RevocationRegistryDefinition: {:?}", err)))?),
-            None => None
-        };
-
-        let rev_reg = match rev_reg_entry_json {
-            Some(r_reg_entry_json) =>
-                Some(RevocationRegistry::from_json(&r_reg_entry_json)
-                    .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize RevocationRegistry: {:?}", err)))?),
             None => None
         };
 
@@ -321,15 +308,16 @@ impl ProverCommandExecutor {
         let credential_def: CredentialDefinition =
             self.wallet_service.get_object(wallet_handle, &format!("credential_definition::{}", credential.cred_def_id), "CredentialDefinition", &mut String::new())?;
 
-        let witness = self.wallet_service.get_opt_object::<RevocationInfo>(wallet_handle, &format!("witness::{}", &id), "Witness", &mut String::new())?;
+        let rev_info =
+            self.wallet_service.get_opt_object::<RevocationInfo>(wallet_handle, &format!("revocation_info::{}", &id), "RevocationInfo", &mut String::new())?;
 
         self.anoncreds_service.prover.process_credential(&mut credential,
                                                          &credential_request_metadata,
                                                          &master_secret,
                                                          &credential_def,
                                                          rev_reg_def.as_ref(),
-                                                         rev_reg.as_ref(),
-                                                         witness.as_ref().map(|r_info| &r_info.witness))?;
+                                                         rev_info.as_ref().map(|r_info| &r_info.rev_reg),
+                                                         rev_info.as_ref().map(|r_info| &r_info.witness))?;
 
         self.wallet_service.set_object(wallet_handle, &format!("credential::{}", &id), &credential, "Credential")?;
 
@@ -373,7 +361,7 @@ impl ProverCommandExecutor {
 
             let mut credential_values: HashMap<String, String> = HashMap::new();
             for (attr, values) in credential.values {
-                credential_values.insert(attr.clone(), values[0].clone());
+                credential_values.insert(attr.clone(), values.raw.clone());
             }
 
             credentials_info.push(
@@ -470,14 +458,14 @@ impl ProverCommandExecutor {
         let rev_info: RevocationInfo = RevocationInfo::from_json(rev_info_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationInfo: {:?}", err)))?;
 
-        self.wallet_service.set(wallet_handle, &format!("witness::{}::{}", &id, rev_info.timestamp), rev_info_json)?;
+        self.wallet_service.set(wallet_handle, &format!("revocation_info::{}::{}", &id, rev_info.timestamp), rev_info_json)?;
 
-        let credential_offer_jsons: Vec<(String, String)> = self.wallet_service.list(wallet_handle, &format!("witness::{}", &id))?;
+        let revocation_info_jsons: Vec<(String, String)> = self.wallet_service.list(wallet_handle, &format!("revocation_info::{}", &id))?;
 
-        if !credential_offer_jsons.iter()
+        if !revocation_info_jsons.iter()
             .any(|&(ref cred_id, _)|
                 cred_id.rsplit("::").collect::<Vec<&str>>()[0].parse::<u64>().unwrap() > rev_info.timestamp) {
-            self.wallet_service.set(wallet_handle, &format!("witness::{}", &id), rev_info_json)?;
+            self.wallet_service.set(wallet_handle, &format!("revocation_info::{}", &id), rev_info_json)?;
         }
 
         trace!("store_revocation_info <<<");
@@ -490,13 +478,13 @@ impl ProverCommandExecutor {
                            id: &str,
                            timestamp: Option<u64>) -> Result<String, IndyError> {
         trace!("get_revocation_info >>> wallet_handle: {:?}, id: {:?}, timestamp: {:?}", wallet_handle, id, timestamp);
-        let timestamp = timestamp.map(|t| format!("::{}", t)).unwrap_or(String::new());
-        let rev_info_json = self.wallet_service.get(wallet_handle, &format!("witness::{}{}", id, timestamp))?;
 
-        let witness_json = self.wallet_service.get(wallet_handle, &format!("witness::{}", id))?;
+        let timestamp = timestamp.map(|t| format!("::{}", t)).unwrap_or(String::new());
+
+        let rev_info_json = self.wallet_service.get(wallet_handle, &format!("revocation_info::{}{}", id, timestamp))?;
+
         trace!("get_revocation_info <<< rev_info_json: {:?}", rev_info_json);
 
-        trace!("store_witness <<< witness_json: {:?}", witness_json);
         Ok(rev_info_json)
     }
 
@@ -551,7 +539,6 @@ impl ProverCommandExecutor {
             self.wallet_service.get_object(wallet_handle, &format!("master_secret::{}", master_secret_name), "MasterSecret", &mut String::new())?;
 
         let mut credentials: HashMap<String, Credential> = HashMap::new();
-        let mut witnesses: HashMap<String, RevocationInfo> = HashMap::new();
 
         for key_id in credential_defs.keys() {
             let credential: Credential = self.wallet_service.get_object(wallet_handle, &format!("credential::{}", &key_id), "Credential", &mut String::new())?;
