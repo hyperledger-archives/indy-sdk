@@ -76,7 +76,7 @@ extern fn open_wallet_storage(name: *const c_char,
 /// id: the id of entity
 /// value: the value of entity
 /// metadata: (optional) the entity metadata
-/// tags: (optional) the entity tags used for search as json: 
+/// tags: (optional) the entity tags used for search as json:
 ///  {
 ///    "tagName1": "tag value 1", // string value
 ///    "tagName2": 123, // numeric value
@@ -152,9 +152,11 @@ extern fn wallet_storage_get_wallet_entity(storage_handle: u32,
 ///  }
 /// options_json: //TODO: FIXME: Think about replacing by bitmaks
 ///  {
+///    skip: (optional, 0 by default) Skip first "skip" wallet entities,
+///    limit: (optional, 100 by default) limit amount of entities to retrieve,
 ///    retrieveEntities: (optional, true by default) If false only "counts" will be calculated,
 ///    retrieveValue: (optional, true by default) Retrieve entity value,
-///    retrieveMetadata: (optional, true by default) Retrieve entity metadata
+///    retrieveMetadata: (optional, true by default) Retrieve entity metadata,
 ///  }
 /// search_handle_p: pointer to store wallet search handle
 extern fn wallet_storage_search_entities(storage_handle: u32,
@@ -171,11 +173,51 @@ extern fn wallet_storage_search_entities(storage_handle: u32,
 extern fn wallet_storage_close(storage_handle: u32) -> ErrorCode
 ```
 
+### Wallet Search API
+
+```Rust
+/// Get total count of entities that corresponds to wallet search query
+///
+/// storage_handle: opened storage handle (See open_wallet_storage)
+/// search_handle: wallet search handle (See wallet_storage_search_entities)
+wallet_search_get_total_count(storage_handle: u32,
+                              search_handle: u32) -> u32
+```
+
+```Rust
+/// Get count of entities that were actually retrieved
+///
+/// storage_handle: opened storage handle (See open_wallet_storage)
+/// search_handle: wallet search handle (See wallet_storage_search_entities)
+wallet_search_get_count(storage_handle: u32,
+                              search_handle: u32) -> u32
+```
+
+```Rust
+/// Get the next wallet entity handle retrieved by this wallet search. 
+/// If no more entities -1 will be returned.
+///
+/// storage_handle: opened storage handle (See open_wallet_storage)
+/// search_handle: wallet search handle (See wallet_storage_search_entities)
+wallet_search_next_wallet_entity(storage_handle: u32,
+                                 search_handle: u32) -> u32
+```
+
+```Rust
+/// Free wallet search (make search handle invalid)
+///
+/// storage_handle: opened storage handle (See open_wallet_storage)
+/// search_handle: wallet search handle (See wallet_storage_search_entities)
+wallet_search_free(storage_handle: u32,
+                   search_handle: u32) -> ErrorCode
+```
+
 ### Wallet Entity API
 
 ```Rust
 /// Get an id for retrieved wallet entity
 ///
+/// storage_handle: opened storage handle (See open_wallet_storage)
 /// entity_handle: retrieved entity handle (See wallet_storage_get_wallet_entity)
 wallet_entity_get_id(storage_handle: u32,
                      entity_handle: u32) -> *const c_char
@@ -184,6 +226,7 @@ wallet_entity_get_id(storage_handle: u32,
 ```Rust
 /// Get an value for retrieved wallet entity
 ///
+/// storage_handle: opened storage handle (See open_wallet_storage)
 /// entity_handle: retrieved entity handle (See wallet_storage_get_wallet_entity)
 wallet_entity_get_value(storage_handle: u32,
                         entity_handle: u32) -> *const c_char
@@ -192,6 +235,7 @@ wallet_entity_get_value(storage_handle: u32,
 ```Rust
 /// Get an metadata for retrieved wallet entity
 ///
+/// storage_handle: opened storage handle (See open_wallet_storage)
 /// entity_handle: retrieved entity handle (See wallet_storage_get_wallet_entity)
 wallet_entity_get_metadata(storage_handle: u32,
                            entity_handle: u32) -> *const c_char
@@ -200,7 +244,8 @@ wallet_entity_get_metadata(storage_handle: u32,
 ```Rust
 /// Free retrieved wallet entity (make retrieved entity handle invalid)
 ///
+/// storage_handle: opened storage handle (See open_wallet_storage)
 /// entity_handle: retrieved entity handle (See wallet_storage_get_wallet_entity)
 wallet_entity_free(storage_handle: u32,
-                   entity_handle: u32) -> *const c_char
+                   entity_handle: u32) -> ErrorCode
 ```
