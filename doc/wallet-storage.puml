@@ -1,0 +1,36 @@
+@startuml Wallet Storage API
+
+interface WalletStorageType {
+    +create_wallet_storage(name, config, cred)
+    +delete_wallet_storage(name, config, cred)
+    +open_wallet_storage(name, config, r_config, cred) -> WalletStorage
+}
+
+interface WalletStorage {
+    +create_wallet_entity(type, id, value, mdata, tags)
+    +update_wallet_entity(type, id, value, mdata, tags)
+    +delete_wallet_entity(type, id)
+    +get_wallet_entity(type, id, options) -> WalletEntity
+    +search_wallet_entities(type, query, options) -> WalletSearch
+    +close()
+}
+WalletStorage --* WalletStorageType
+
+interface WalletSearch {
+    +get_total_count() -> u32
+    +get_count() -> u32
+    +next_wallet_entity() -> WalletEntity
+    +free()
+}
+WalletSearch --* WalletStorage
+
+interface WalletEntity {
+    +get_id() -> str
+    +get_value() -> str
+    +get_metadata() -> str
+    +free()
+}
+WalletEntity --* WalletStorage
+WalletEntity --* WalletSearch
+
+@enduml

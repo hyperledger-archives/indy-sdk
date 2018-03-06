@@ -23,9 +23,13 @@ Also proposals enhances our API to efficient and flexible search with paging sup
 * Native OpenSSL style object-oriented C interface
 * Try to avoid unnecessary json and re-allocation
 
-## Wallet Storage interface
+## Interface Entities
 
-To plug wallet storage use should implement and register the following callbacks:
+<img src="./wallet-storage.svg">
+
+## C Interface
+
+To plug wallet storage use should implement and register the following C callbacks:
 
 ### Wallet Storage Type API
 
@@ -194,7 +198,7 @@ wallet_search_get_count(storage_handle: u32,
 ```
 
 ```Rust
-/// Get the next wallet entity handle retrieved by this wallet search. 
+/// Get the next wallet entity handle retrieved by this wallet search.
 /// If no more entities -1 will be returned.
 ///
 /// storage_handle: opened storage handle (See open_wallet_storage)
