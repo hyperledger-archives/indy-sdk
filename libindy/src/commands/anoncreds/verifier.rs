@@ -65,10 +65,10 @@ impl VerifierCommandExecutor {
         let rev_reg_defs: HashMap<String, RevocationRegistryDefinition> = serde_json::from_str(rev_reg_defs_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationRegistryDef: {:?}", err)))?;
 
-        let rev_regs: HashMap<String, RevocationRegistry> = serde_json::from_str(rev_reg_entries_json)
+        let rev_regs: HashMap<String, HashMap<u64, RevocationRegistry>> = serde_json::from_str(rev_reg_entries_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationRegistryEntry: {:?}", err)))?;
 
-        let proof_claims: FullProof = FullProof::from_json(&proof_json)
+        let proof: FullProof = FullProof::from_json(&proof_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Proof: {:?}", err)))?;
 
         if credential_schemas.keys().collect::<HashSet<&String>>() != credential_defs.keys().collect::<HashSet<&String>>() {
@@ -84,21 +84,21 @@ impl VerifierCommandExecutor {
                 .collect::<HashSet<String>>();
 
         let received_revealed_attrs: HashSet<String> =
-            proof_claims.requested_proof.revealed_attrs
+            proof.requested_proof.revealed_attrs
                 .keys()
                 .map(|referent| referent.clone())
                 .into_iter()
                 .collect::<HashSet<String>>();
 
         let received_unrevealed_attrs: HashSet<String> =
-            proof_claims.requested_proof.unrevealed_attrs
+            proof.requested_proof.unrevealed_attrs
                 .keys()
                 .map(|referent| referent.clone())
                 .into_iter()
                 .collect::<HashSet<String>>();
 
         let received_self_attested_attrs: HashSet<String> =
-            proof_claims.requested_proof.self_attested_attrs
+            proof.requested_proof.self_attested_attrs
                 .keys()
                 .map(|referent| referent.clone())
                 .into_iter()
@@ -125,7 +125,7 @@ impl VerifierCommandExecutor {
                 .collect::<HashSet<String>>();
 
         let received_predicates: HashSet<String> =
-            proof_claims.requested_proof.predicates
+            proof.requested_proof.predicates
                 .keys()
                 .map(|referent| referent.clone())
                 .into_iter()
@@ -136,7 +136,7 @@ impl VerifierCommandExecutor {
                 format!("Requested predicates {:?} do not correspond to received {:?}", requested_predicates, received_predicates))));
         }
 
-        let result = self.anoncreds_service.verifier.verify(&proof_claims,
+        let result = self.anoncreds_service.verifier.verify(&proof,
                                                             &proof_req,
                                                             &credential_schemas,
                                                             &credential_defs,

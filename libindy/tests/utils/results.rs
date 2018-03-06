@@ -72,6 +72,34 @@ pub fn result_to_string_string(err: ErrorCode, receiver: Receiver<(ErrorCode, St
     Ok((val, val2))
 }
 
+pub fn result_to_string_string_string(err: ErrorCode, receiver: Receiver<(ErrorCode, String, String, String)>) -> Result<(String, String, String), ErrorCode> {
+    if err != ErrorCode::Success {
+        return Err(err);
+    }
+
+    let (err, val, val2, val3) = receiver.recv().unwrap();
+
+    if err != ErrorCode::Success {
+        return Err(err);
+    }
+
+    Ok((val, val2, val3))
+}
+
+pub fn result_to_opt_string_string(err: ErrorCode, receiver: Receiver<(ErrorCode, Option<String>, String)>) -> Result<(Option<String>, String), ErrorCode> {
+    if err != ErrorCode::Success {
+        return Err(err);
+    }
+
+    let (err, val, val2) = receiver.recv().unwrap();
+
+    if err != ErrorCode::Success {
+        return Err(err);
+    }
+
+    Ok((val, val2))
+}
+
 pub fn result_to_string_opt_string(err: ErrorCode, receiver: Receiver<(ErrorCode, String, Option<String>)>) -> Result<(String, Option<String>), ErrorCode> {
     if err != ErrorCode::Success {
         return Err(err);

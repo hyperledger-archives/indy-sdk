@@ -5,7 +5,6 @@ from src.utils import get_pool_genesis_txn_path
 import logging
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 
 async def demo():
