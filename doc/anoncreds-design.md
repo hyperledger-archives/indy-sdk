@@ -11,7 +11,7 @@ Here you can find the requirements and design for Indy SDK Anoncreds workflow (i
 
 Anoncreds protocol links:
 
-* [Anoncreds Workflow](#anoncreds-worflow)
+* [Anoncreds Workflow](#anoncreds-workflow)
 * [Anoncreds Requirements](https://github.com/hyperledger/indy-node/blob/master/design/anoncreds.md#requirements)
 * Indy Node Anoncreds transactions:
   * [SCHEMA](https://github.com/hyperledger/indy-node/blob/master/design/anoncreds.md##schema)
@@ -113,8 +113,7 @@ pub extern fn indy_issuer_create_and_store_cred_def(command_handle: i32,
                                                     config_json: *const c_char,
                                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                          cred_def_id: *const c_char,
-                                                                         cred_def_json: *const c_char
-                                                     )>) -> ErrorCode
+                                                                         cred_def_json: *const c_char)>) -> ErrorCode
 ```
 
 ```Rust
@@ -138,6 +137,7 @@ pub extern fn indy_issuer_create_and_store_cred_def(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to user context
 /// wallet_handle: wallet handler (created by open_wallet)
+/// blob_storage_writer_handle: pre-configured blob storage writer instance handle that will allow to write generated tails
 /// xtype: revocation registry type (optional, default value depends on claim definition type). Supported types are:
 /// - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' claim definition type
 /// config_json: type-specific configuration of revocation registry as json:
@@ -146,7 +146,6 @@ pub extern fn indy_issuer_create_and_store_cred_def(command_handle: i32,
 ///   - issuanceByDefault: issuance type (optional, default true). If:
 ///       - true: all indices are assumed to be issued and initial accumulator is calculated over all indices; Revocation registry is updated only during revocation
 ///       - false: nothing is issued initially accumulator is 1
-/// blob_storage_writer_handle: pre-configured blob storage writer instance handle that will allow to write generated tails
 /// cb: Callback that takes command result as parameter
 ///
 /// #Returns
@@ -161,16 +160,15 @@ pub extern fn indy_issuer_create_and_store_cred_def(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                                                      wallet_handle: i32,
+                                                     blob_storage_writer_handle: i32,
                                                      cred_def_id:  *const c_char,
                                                      tag: *const c_char,
                                                      xtype: *const c_char,
                                                      config_json: *const c_char,
-                                                     blob_storage_writer_handle: i32,
                                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                           revoc_reg_def_id: *const c_char,
                                                                           revoc_reg_def_json: *const c_char,
-                                                                          revoc_reg_entry_json: *const c_char
-                                                     )>) -> ErrorCode
+                                                                          revoc_reg_entry_json: *const c_char)>) -> ErrorCode
 ```
 
 ```Rust
@@ -182,35 +180,97 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// will be returned as json intended to be send to Prover.
 ///
 /// #Params
-/// command_handle: command handle to map callback to user context.
-/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context
+/// wallet_handle: wallet handler (created by open_wallet)
 /// cred_def_id: id of credential definition
 /// rev_reg_id: id of revocation registry definition
 /// prover_did: a DID of the target Prover
-/// cb: Callback that takes command result as parameter.
+/// cb: Callback that takes command result as parameter
 ///
 /// #Returns
 /// credential offer json:
-///        {
-///            "issuer_did": string,
-///            "schema_key" : {name: string, version: string, did: string},
-///            "nonce": string,
-///            "key_correctness_proof" : <key_correctness_proof>
-///        }
+///   {
+///     "issuer_did": string,
+///     "schema_key" : {name: string, version: string, did: string},
+///     "nonce": string,
+///     "key_correctness_proof" : <key_correctness_proof>
+///    }
 ///
 /// #Errors
 /// Common*
 /// Wallet*
 /// Anoncreds*
 #[no_mangle]
-pub extern fn indy_issuer_create_claim_offer(command_handle: i32,
-                                             wallet_handle: i32,
-                                             cred_def_id: *const c_char,
-                                             rev_reg_def_id: *const c_char,
-                                             prover_did: *const c_char,
-                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                  claim_offer_json: *const c_char
-                                             )>) -> ErrorCode
+pub extern fn indy_issuer_create_cred_offer(command_handle: i32,
+                                            wallet_handle: i32,
+                                            cred_def_id: *const c_char,
+                                            rev_reg_def_id: *const c_char,
+                                            prover_did: *const c_char,
+                                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                 claim_offer_json: *const c_char)>) -> ErrorCode
+```
+
+```Rust
+/// Create credential for the Prover by signing given credential values by
+/// corresponded credential definition keys and update revocation registry.
+///
+/// The 
+/// 
+/// This calls updates revocation regi
+///
+/// #Params
+/// wallet_handle: wallet handler (created by open_wallet).
+/// tails_reader_handle:
+/// command_handle: command handle to map callback to user context.
+/// claim_req_json: a credential request with a blinded secret
+/// from the user (returned by prover_create_and_store_claim_req).
+/// Also contains schema_key and issuer_did
+///     Example:
+///     {
+///      "blinded_ms" : <blinded_master_secret>,
+///      "schema_key" : {name: string, version: string, did: string},
+///      "issuer_did" : string,
+///      "prover_did" : string,
+///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+///      "nonce": string
+///    }
+/// claim_values_json: a credential containing attribute values for each of requested attribute names.
+///     Example:
+///     {
+///      "attr1" : ["value1", "value1_as_int"],
+///      "attr2" : ["value2", "value2_as_int"]
+///     }
+/// user_revoc_index: index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Revocation registry update json with a newly issued credential
+/// Credential json containing signed credential values, issuer_did, schema_key, and revoc_reg_seq_no
+/// used for issuance
+///     {
+///         "values": <see claim_values_json above>,
+///         "signature": <signature>,
+///         "revoc_reg_seq_no": int,
+///         "issuer_did", string,
+///         "schema_key" : {name: string, version: string, did: string},
+///         "signature_correctness_proof": <signature_correctness_proof>
+///     }
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_issuer_create_cred(command_handle: i32,
+                                      wallet_handle: i32,
+                                      claim_req_json: *const c_char,
+                                      claim_values_json: *const c_char,
+                                      tails_reader_handle: i32,
+                                      user_revoc_index: i32,
+                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                           user_revoc_index: i32,
+                                                           revoc_reg_delta_json: *const c_char,
+                                                           claim_json: *const c_char)>) -> ErrorCode
 ```
 
 ### Blob Storage
