@@ -51,7 +51,7 @@ impl<'a> JsonDecodable<'a> for CredentialOffer {}
 
 impl Filtering for CredentialOffer {
     fn schema_id(&self) -> String { get_parts(&self.cred_def_id)[2..6].join(":").to_string() }
-    fn schema_did(&self) -> String { get_parts(&self.cred_def_id)[3].to_string() }
+    fn schema_did(&self) -> String { get_parts(&self.cred_def_id)[2].to_string() }
     fn schema_name(&self) -> String { get_parts(&self.cred_def_id)[4].to_string() }
     fn schema_version(&self) -> String { get_parts(&self.cred_def_id)[5].to_string() }
     fn issuer_did(&self) -> String { get_parts(&self.cred_def_id)[0].to_string() }
@@ -68,7 +68,7 @@ pub struct CredentialInfo {
 
 impl Filtering for CredentialInfo {
     fn schema_id(&self) -> String { get_parts(&self.cred_def_id)[2..6].join(":").to_string() }
-    fn schema_did(&self) -> String { get_parts(&self.cred_def_id)[3].to_string() }
+    fn schema_did(&self) -> String { get_parts(&self.cred_def_id)[2].to_string() }
     fn schema_name(&self) -> String { get_parts(&self.cred_def_id)[4].to_string() }
     fn schema_version(&self) -> String { get_parts(&self.cred_def_id)[5].to_string() }
     fn issuer_did(&self) -> String { get_parts(&self.cred_def_id)[0].to_string() }

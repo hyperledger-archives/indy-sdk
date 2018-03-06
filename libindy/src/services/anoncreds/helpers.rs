@@ -24,14 +24,14 @@ pub fn build_credential_values(credential_values: &HashMap<String, AttributeValu
     Ok(credential_values_builder.finalize()?)
 }
 
-pub fn build_sub_proof_request(attrs_for_claim: &Vec<AttributeInfo>, predicates_for_claim: &Vec<PredicateInfo>) -> Result<SubProofRequest, CommonError> {
+pub fn build_sub_proof_request(attrs_for_credential: &Vec<AttributeInfo>, predicates_for_credential: &Vec<PredicateInfo>) -> Result<SubProofRequest, CommonError> {
     let mut sub_proof_request_builder = verifier::Verifier::new_sub_proof_request_builder()?;
 
-    for attr in attrs_for_claim {
+    for attr in attrs_for_credential {
         sub_proof_request_builder.add_revealed_attr(&attr.name)?
     }
 
-    for predicate in predicates_for_claim {
+    for predicate in predicates_for_credential {
         sub_proof_request_builder.add_predicate(&predicate.attr_name, "GE", predicate.value)?;
     }
 

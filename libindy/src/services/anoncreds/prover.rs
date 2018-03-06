@@ -317,10 +317,12 @@ impl Prover {
                     res = res && actual.eq(ex);
                 };
 
-            check_condition(restriction.schema_name.as_ref().map(String::as_str), &object.schema_id());
-            check_condition(restriction.schema_version.as_ref().map(String::as_str), &object.schema_id());
-            check_condition(restriction.schema_did.as_ref().map(String::as_str), &object.schema_id());
-            check_condition(restriction.issuer_did.as_ref().map(String::as_str), &object.cred_def_id());
+            check_condition(restriction.schema_id.as_ref().map(String::as_str), &object.schema_id());
+            check_condition(restriction.schema_name.as_ref().map(String::as_str), &object.schema_name());
+            check_condition(restriction.schema_version.as_ref().map(String::as_str), &object.schema_version());
+            check_condition(restriction.schema_did.as_ref().map(String::as_str), &object.schema_did());
+            check_condition(restriction.issuer_did.as_ref().map(String::as_str), &object.issuer_did());
+            check_condition(restriction.cred_def_id.as_ref().map(String::as_str), &object.cred_def_id());
         }
 
         trace!("satisfy_restriction >>> res: {:?}", res);

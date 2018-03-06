@@ -460,13 +460,13 @@ impl ProverCommandExecutor {
 
         self.wallet_service.set(wallet_handle, &format!("revocation_info::{}::{}", &id, rev_info.timestamp), rev_info_json)?;
 
-        let revocation_info_jsons: Vec<(String, String)> = self.wallet_service.list(wallet_handle, &format!("revocation_info::{}", &id))?;
+        let revocation_info_jsons: Vec<(String, String)> = self.wallet_service.list(wallet_handle, &format!("revocation_info::{}::", &id))?;
 
         if !revocation_info_jsons.iter()
             .any(|&(ref cred_id, _)|
                 cred_id.rsplit("::").collect::<Vec<&str>>()[0].parse::<u64>().unwrap() > rev_info.timestamp) {
-            self.wallet_service.set(wallet_handle, &format!("revocation_info::{}", &id), rev_info_json)?;
-        }
+                self.wallet_service.set(wallet_handle, &format!("revocation_info::{}", &id), rev_info_json)?;
+            }
 
         trace!("store_revocation_info <<<");
 

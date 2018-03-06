@@ -50,20 +50,20 @@ pub enum IssuerCommand {
         Option<String>, // revocation registry id
         String, // prover did
         Box<Fn(Result<String, IndyError>) + Send>),
-    CreateClaim(
+    CreateCredential(
         i32, // wallet handle
         String, // credential req json
         String, // credential json
         Option<i32>, // tails reader handle
         Option<u32>, // user revoc index
         Box<Fn(Result<(Option<String>, String), IndyError>) + Send>),
-    RevokeClaim(
+    RevokeCredential(
         i32, // wallet handle
         i32, // tails reader handle
         String, // revocation registry id
         u32, // user revoc index
         Box<Fn(Result<String, IndyError>) + Send>),
-    RecoverClaim(
+    RecoverCredential(
         i32, // wallet handle
         i32, // tails reader handle
         String, // revocation registry id
@@ -101,7 +101,7 @@ impl IssuerCommandExecutor {
                 cb(self.create_schema(&issuer_did, &name, &version, &attr_names));
             }
             IssuerCommand::CreateAndStoreCredentialDefinition(wallet_handle, issuer_did, schema_json, tag, type_, config_json, cb) => {
-                trace!(target: "issuer_command_executor", "CreateAndStoreClaimDef command received");
+                trace!(target: "issuer_command_executor", "CreateAndStoreCredentialDefinition command received");
                 cb(self.create_and_store_credential_definition(wallet_handle, &issuer_did, &schema_json, &tag,
                                                                type_.as_ref().map(String::as_str), &config_json));
             }
@@ -121,16 +121,16 @@ impl IssuerCommandExecutor {
                 trace!(target: "issuer_command_executor", "CreateCredentialOffer command received");
                 cb(self.create_credential_offer(wallet_handle, &cred_def_id, rev_reg_id.as_ref().map(String::as_str), &prover_did));
             }
-            IssuerCommand::CreateClaim(wallet_handle, credential_req_json, credential_json, tails_reader_handle, rev_idx, cb) => {
-                info!(target: "issuer_command_executor", "CreateClaim command received");
+            IssuerCommand::CreateCredential(wallet_handle, credential_req_json, credential_json, tails_reader_handle, rev_idx, cb) => {
+                info!(target: "issuer_command_executor", "CreateCredential command received");
                 cb(self.new_credential(wallet_handle, &credential_req_json, &credential_json, tails_reader_handle, rev_idx));
             }
-            IssuerCommand::RevokeClaim(wallet_handle, tails_reader_handle, rev_reg_id, user_revoc_index, cb) => {
-                trace!(target: "issuer_command_executor", "RevokeClaim command received");
+            IssuerCommand::RevokeCredential(wallet_handle, tails_reader_handle, rev_reg_id, user_revoc_index, cb) => {
+                trace!(target: "issuer_command_executor", "RevokeCredential command received");
                 cb(self.revoke_credential(wallet_handle, tails_reader_handle, &rev_reg_id, user_revoc_index));
             }
-            IssuerCommand::RecoverClaim(wallet_handle, tails_reader_handle, rev_reg_id, user_revoc_index, cb) => {
-                trace!(target: "issuer_command_executor", "RecoverClaim command received");
+            IssuerCommand::RecoverCredential(wallet_handle, tails_reader_handle, rev_reg_id, user_revoc_index, cb) => {
+                trace!(target: "issuer_command_executor", "RecoverCredential command received");
                 cb(self.recovery_credential(wallet_handle, tails_reader_handle, &rev_reg_id, user_revoc_index));
             }
         };

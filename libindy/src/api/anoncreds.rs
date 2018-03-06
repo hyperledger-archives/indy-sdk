@@ -314,7 +314,7 @@ pub extern fn indy_issuer_create_credential(command_handle: i32,
     let user_revoc_index = if user_revoc_index != -1 { Some(user_revoc_index as u32) } else { None };
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateClaim(
+        .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateCredential(
             wallet_handle,
             credential_req_json,
             credential_values_json,
@@ -365,7 +365,7 @@ pub extern fn indy_issuer_revoke_credential(command_handle: i32,
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
             AnoncredsCommand::Issuer(
-                IssuerCommand::RevokeClaim(
+                IssuerCommand::RevokeCredential(
                     wallet_handle,
                     tails_reader_handle,
                     rev_reg_id,
@@ -415,7 +415,7 @@ pub extern fn indy_issuer_recover_credential(command_handle: i32,
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
             AnoncredsCommand::Issuer(
-                IssuerCommand::RecoverClaim(
+                IssuerCommand::RecoverCredential(
                     wallet_handle,
                     tails_reader_handle,
                     rev_reg_id,

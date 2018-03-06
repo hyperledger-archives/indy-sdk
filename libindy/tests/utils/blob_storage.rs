@@ -1,13 +1,11 @@
 extern crate libc;
 
-use std::sync::mpsc::channel;
 use std::ffi::CString;
 
 use indy::api::blob_storage::*;
 use indy::api::ErrorCode;
 
 use utils::callback::CallbackUtils;
-use utils::timeout::TimeoutUtils;
 
 pub struct BlobStorageUtils {}
 
