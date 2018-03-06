@@ -182,6 +182,20 @@ describe('An issuerClaim', async function () {
     assert.equal(error.message, 'Object not ready for specified action')
   })
 
+  it('will throw error on serialize when issuer_claim has been released', async () => {
+    const sourceId = 'SendSerializeDeserialize'
+    const connection = await Connection.create({id: '123'})
+    const claim = await IssuerClaim.create({ ...config, sourceId })
+    await claim.sendOffer(connection)
+    try {
+      await claim.serialize()
+    } catch (error) {
+      assert.equal(error.vcxCode, 1015)
+      assert.equal(error.vcxFunction, 'vcx_issuer_claim_serialize')
+      assert.equal(error.message, 'Invalid Issuer Claim Handle')
+    }
+  })
+
   it('sending claim with valid claim offer should have state VcxStateAccepted', async function () {
     let connection = await Connection.create({id: '123'})
     await connection.connect({ sms: true })
