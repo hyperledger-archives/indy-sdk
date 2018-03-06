@@ -5,7 +5,7 @@ and storage layers. This design proposes to restrict our plugged interface by ha
 All encryption will be performed in libindy. It will simplify plugged wallets and warranty good security level
 for 3d party wallets implementations.
 
-Also proposals enhances our API to efficient and flexible search with paging support.
+Also proposals enhances our API for efficient and flexible search with paging support.
 
 ## Goals and ideas
 
@@ -29,7 +29,7 @@ Also proposals enhances our API to efficient and flexible search with paging sup
 
 ## C Interface
 
-To plug wallet storage use should implement and register the following C callbacks:
+To plug wallet storage user should implement and register the following C callbacks:
 
 ### Wallet Storage Type API
 
