@@ -56,7 +56,7 @@ class IssuerClaim(VcxStateful):
         return await self._get_state(IssuerClaim, 'vcx_issuer_claim_get_state')
 
     def release(self) -> None:
-        self._release(IssuerClaim, 'vcx_claim_issuer_release')
+        self._release(IssuerClaim, 'vcx_issuer_claim_release')
 
     async def send_offer(self, connection: Connection):
         if not hasattr(IssuerClaim.send_offer, "cb"):

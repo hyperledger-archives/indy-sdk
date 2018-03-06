@@ -358,8 +358,8 @@ pub extern fn vcx_issuer_claim_deserialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_claim_issuer_release(claim_handle: u32) -> u32 {
-    info!("vcx_claim_issuer_release(claim_handle: {})", claim_handle);
+pub extern fn vcx_issuer_claim_release(claim_handle: u32) -> u32 {
+    info!("(vcx_issuer_claim_release claim_handle: {})", claim_handle);
     issuer_claim::release(claim_handle)
 }
 

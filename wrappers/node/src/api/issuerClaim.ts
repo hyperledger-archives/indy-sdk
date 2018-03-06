@@ -44,16 +44,17 @@ export interface IClaimData {
   handle: number
   schema_seq_no: number
   claim_attributes: string
-  claim_name: string,
+  claim_name: string
   issuer_did: string
   state: StateType
+  msg_uid: string
 }
 
 /**
  * @class Class representing an Issuer Claim
  */
 export class IssuerClaim extends VCXBaseWithState {
-  protected _releaseFn = rustAPI().vcx_connection_release
+  protected _releaseFn = rustAPI().vcx_issuer_claim_release
   protected _updateStFn = rustAPI().vcx_issuer_claim_update_state
   protected _getStFn = rustAPI().vcx_issuer_claim_get_state
   protected _serializeFn = rustAPI().vcx_issuer_claim_serialize

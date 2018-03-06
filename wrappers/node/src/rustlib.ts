@@ -53,6 +53,7 @@ export interface IFFIEntryPoint {
   vcx_connection_get_state: (commandId: number, handle: string, cb: any) => number,
   vcx_connection_invite_details: (commandId: number, handle: string, abbreviated: boolean, cb: any) => number,
   // issuer
+  vcx_issuer_claim_release: (handle: string) => number,
   vcx_issuer_claim_deserialize: (commandId: number, data: string, cb: any) => number,
   vcx_issuer_claim_serialize: (commandId: number, handle: string, cb: any) => number,
   vcx_issuer_claim_update_state: (commandId: number, handle: string, cb: any) => number,
@@ -119,6 +120,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
     FFI_CALLBACK_PTR]],
   vcx_issuer_send_claim_offer: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CONNECTION_HANDLE,
     FFI_CALLBACK_PTR]],
+  vcx_issuer_claim_release: [FFI_ERROR_CODE, [FFI_CLAIM_HANDLE]],
   // proof
   vcx_proof_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_CALLBACK_PTR]],
