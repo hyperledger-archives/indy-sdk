@@ -1119,7 +1119,7 @@ pub extern fn indy_create_revocation_info(command_handle: i32,
                                           rev_idx: u32,
                                           cb: Option<extern fn(
                                               xcommand_handle: i32, err: ErrorCode,
-                                              witness_json: *const c_char
+                                              rev_info_json: *const c_char
                                           )>) -> ErrorCode {
     check_useful_c_str!(rev_reg_def_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(rev_reg_delta_json, ErrorCode::CommonInvalidParam5);
