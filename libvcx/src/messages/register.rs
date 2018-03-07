@@ -47,7 +47,7 @@ struct RegisterResponse {
 pub fn connect_register_provision(endpoint: &str,
                                   agency_did: &str,
                                   agency_vk: &str,
-                                  wallet_name: &str,
+                                  wallet_name: Option<String>,
                                   seed: Option<String>,
                                   issuer_seed: Option<String>,
                                   wallet_key: Option<String>) -> Result<String,u32> {
@@ -55,11 +55,16 @@ pub fn connect_register_provision(endpoint: &str,
     ::utils::logger::LoggerUtils::init();
     settings::set_defaults();
 
-    settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, endpoint);
-    settings::set_config_value(settings::CONFIG_WALLET_NAME, wallet_name);
-    settings::set_config_value(settings::CONFIG_AGENCY_PAIRWISE_DID, agency_did);
-    settings::set_config_value(settings::CONFIG_AGENCY_PAIRWISE_VERKEY, agency_vk);
-    settings::set_config_value(settings::CONFIG_AGENT_PAIRWISE_VERKEY, agency_vk);
+    let (wallet_name_string, wallet_name) = match wallet_name {
+        Some(x) => (format!("\"wallet_name\":\"{}\",", x), x),
+        None => ("".to_string(), settings::DEFAULT_WALLET_NAME.to_string()),
+    };
+
+    settings::set_config_value(settings::CONFIG_AGENCY_ENDPOINT, endpoint);
+    settings::set_config_value(settings::CONFIG_WALLET_NAME, &wallet_name);
+    settings::set_config_value(settings::CONFIG_AGENCY_DID, agency_did);
+    settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, agency_vk);
+    settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, agency_vk);
 
     let mut wallet_key_string = String::new();
     match wallet_key {
@@ -88,8 +93,8 @@ pub fn connect_register_provision(endpoint: &str,
     let issuer_seed_opt = if issuer_seed.len() > 0 {Some(issuer_seed.as_ref())} else {None};
     let (issuer_did, issuer_vk) = SignusUtils::create_and_store_my_did(wallet::get_wallet_handle(), issuer_seed_opt).unwrap();
 
-    settings::set_config_value(settings::CONFIG_ENTERPRISE_DID,&my_did);
-    settings::set_config_value(settings::CONFIG_ENTERPRISE_VERKEY,&my_vk);
+    settings::set_config_value(settings::CONFIG_INSTITUTION_DID,&my_did);
+    settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY,&my_vk);
 
     /* STEP 1 - CONNECT */
 
@@ -110,7 +115,7 @@ pub fn connect_register_provision(endpoint: &str,
     let agency_pw_vk = response.from_vk.to_owned();
     let agency_pw_did = response.from_did.to_owned();
 
-    settings::set_config_value(settings::CONFIG_AGENT_PAIRWISE_VERKEY,&agency_pw_vk);
+    settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY,&agency_pw_vk);
 
     /* STEP 2 - REGISTER */
 
@@ -145,27 +150,27 @@ pub fn connect_register_provision(endpoint: &str,
 
     let final_config = format!("{{\
     {}\
-    \"agent_endpoint\":\"{}\",\
-    \"agency_pairwise_did\":\"{}\",\
-    \"agency_pairwise_verkey\":\"{}\",\
-    \"enterprise_did_agent\":\"{}\",\
-    \"agent_enterprise_verkey\":\"{}\",\
-    \"wallet_name\":\"{}\",\
-    \"enterprise_did\":\"{}\",\
+    {}\
+    \"agency_endpoint\":\"{}\",\
+    \"agency_did\":\"{}\",\
+    \"agency_verkey\":\"{}\",\
+    \"sdk_to_remote_did\":\"{}\",\
+    \"sdk_to_remote_verkey\":\"{}\",\
+    \"institution_did\":\"{}\",\
     \"enterprise_verkey\":\"{}\",\
-    \"agent_pairwise_did\":\"{}\",\
-    \"agent_pairwise_verkey\":\"{}\",\
-    \"enterprise_name\":\"<CHANGE_ME>\",\
-    \"logo_url\":\"<CHANGE_ME>\",\
+    \"remote_to_sdk_did\":\"{}\",\
+    \"remote_to_sdk_verkey\":\"{}\",\
+    \"institution_name\":\"<CHANGE_ME>\",\
+    \"institution_logo_url\":\"<CHANGE_ME>\",\
     \"genesis_path\":\"<CHANGE_ME>\"\
     }}",
         wallet_key_string,
+        wallet_name_string,
         endpoint,
         agency_did,
         agency_vk,
         my_did,
         my_vk,
-        wallet_name,
         issuer_did,
         issuer_vk,
         agent_did,
@@ -189,14 +194,13 @@ mod tests {
         let agency_did = "Ab8TvZa3Q19VNkQVzAWVL7";
         let agency_vk = "5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf";
         let host = "http://www.whocares.org";
-        let wallet_name = "test_connect_register_provision";
         let wallet_key = Some("test_key".to_string());
 
         httpclient::set_next_u8_response(PROVISION_RESPONSE.to_vec());
         httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec());
         httpclient::set_next_u8_response(PROVISION_RESPONSE.to_vec());
 
-        let result = connect_register_provision(&host, &agency_did, &agency_vk, &wallet_name, wallet_key, None, None).unwrap();
+        let result = connect_register_provision(&host, &agency_did, &agency_vk, None, wallet_key, None, None).unwrap();
         assert!(result.len() > 0);
         println!("result: {}", result);
 
@@ -213,7 +217,7 @@ mod tests {
         let host = "https://enym-eagency.pdev.evernym.com";
         let wallet_name = "test_real_connect_register_provision";
 
-        let result = connect_register_provision(&host, &agency_did, &agency_vk, &wallet_name, None, Some(DEMO_ISSUER_PW_SEED.to_string()), None).unwrap();
+        let result = connect_register_provision(&host, &agency_did, &agency_vk, Some(wallet_name.to_string()), None, Some(DEMO_ISSUER_PW_SEED.to_string()), None).unwrap();
         assert!(result.len() > 0);
         println!("result: {}", result);
 

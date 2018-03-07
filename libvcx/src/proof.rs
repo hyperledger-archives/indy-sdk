@@ -224,7 +224,7 @@ impl Proof {
         self.proof_request = Some(proof_obj);
         let data = connection::generate_encrypted_payload(&self.prover_vk, &self.remote_vk, &proof_request, "PROOF_REQUEST")?;
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_CLAIM_OFFER_RESPONSE.to_vec()); }
-        let title = format!("{} wants you to share {}", settings::get_config_value(settings::CONFIG_ENTERPRISE_NAME).unwrap(), self.name);
+        let title = format!("{} wants you to share {}", settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap(), self.name);
 
         match messages::send_message().to(&self.prover_did)
             .to_vk(&self.prover_vk)

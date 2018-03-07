@@ -43,7 +43,7 @@ pub extern fn vcx_claimdef_create(command_handle: u32,
         check_useful_c_str!(issuer_did, error::INVALID_OPTION.code_num);
         issuer_did.to_owned()
     } else {
-        match settings::get_config_value(settings::CONFIG_ENTERPRISE_DID) {
+        match settings::get_config_value(settings::CONFIG_INSTITUTION_DID) {
             Ok(x) => x,
             Err(x) => return x
         }
@@ -262,7 +262,7 @@ mod tests {
         let wallet_handle = get_wallet_handle();
         let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_ISSUER_PW_SEED)).unwrap();
         SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_AGENT_PW_SEED)).unwrap();
-        settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, &my_did);
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
         assert_eq!(vcx_claimdef_create(0,
                                        CString::new("qqqqq").unwrap().into_raw(),
                                        CString::new("Test Claim Def").unwrap().into_raw(),

@@ -40,22 +40,22 @@ fn demo(){
     let invite_details = api::connection::vcx_connection_invite_details;
 
     let random_int: u32 = rand::random();
-    let logo_url = format!("https://robohash.org/{}?set=set3", random_int);
+    let institution_logo_url = format!("https://robohash.org/{}?set=set3", random_int);
 
     // Init DEV ENV  *********************************************************************
     let config_string: String = json!({
-        "agent_endpoint":"https://enym-eagency.pdev.evernym.com",
-        "agency_pairwise_did":"YRuVCckY6vfZfX9kcQZe3u",
-        "agency_pairwise_verkey":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v",
-        "enterprise_did_agent":"AQ2EZRY9JQ4ssjmZPL5MiU",
-        "agent_enterprise_verkey":"684CRDu3k4TGBzNU99JTqM8cVS4ZtRwC7eZHEvZjzMRX",
+        "agency_endpoint":"https://enym-eagency.pdev.evernym.com",
+        "agency_did":"YRuVCckY6vfZfX9kcQZe3u",
+        "agency_verkey":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v",
+        "sdk_to_remote_did":"AQ2EZRY9JQ4ssjmZPL5MiU",
+        "sdk_to_remote_verkey":"684CRDu3k4TGBzNU99JTqM8cVS4ZtRwC7eZHEvZjzMRX",
         "wallet_name":"my_real_wallet",
-        "enterprise_did":"2hoqvcwupRTUNkXn6ArYzs",
+        "institution_did":"2hoqvcwupRTUNkXn6ArYzs",
         "enterprise_verkey":"vrWGArMA3toVoZrYGSAMjR2i9KjBS66bZWyWuYJJYPf",
-        "agent_pairwise_did":"7csYfSY8b4hvqnu5K8nGQP",
-        "agent_pairwise_verkey":"4cDwBvDZy9aWWKf2uCYTSgffCNt7ffmY9nrMTHmqsG8z",
-        "enterprise_name":"Evernym",
-        "logo_url":logo_url,
+        "remote_to_sdk_did":"7csYfSY8b4hvqnu5K8nGQP",
+        "remote_to_sdk_verkey":"4cDwBvDZy9aWWKf2uCYTSgffCNt7ffmY9nrMTHmqsG8z",
+        "institution_name":"Evernym",
+        "institution_logo_url":institution_logo_url,
         "genesis_path": self::vcx::utils::constants::GENESIS_PATH
     }).to_string();
 

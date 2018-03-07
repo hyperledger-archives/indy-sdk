@@ -10,25 +10,25 @@ use url::Url;
 
 
 pub static CONFIG_POOL_NAME: &'static str = "pool_name";
-pub static CONFIG_POOL_CONFIG_NAME: &'static str = "config_name";
 pub static CONFIG_WALLET_NAME: &'static str = "wallet_name";
 pub static CONFIG_WALLET_TYPE: &'static str = "wallet_type";
-pub static CONFIG_AGENT_ENDPOINT: &'static str = "agent_endpoint";
-pub static CONFIG_AGENCY_PAIRWISE_DID: &'static str = "agency_pairwise_did";
-pub static CONFIG_AGENCY_PAIRWISE_VERKEY: &'static str = "agency_pairwise_verkey";
-pub static CONFIG_AGENT_PAIRWISE_DID: &'static str = "agent_pairwise_did";
-pub static CONFIG_AGENT_PAIRWISE_VERKEY: &'static str = "agent_pairwise_verkey";
-pub static CONFIG_ENTERPRISE_DID: &'static str = "enterprise_did";
-pub static CONFIG_ENTERPRISE_DID_AGENCY: &'static str = "enterprise_did_agency";
-pub static CONFIG_ENTERPRISE_DID_AGENT: &'static str = "enterprise_did_agent";
-pub static CONFIG_ENTERPRISE_NAME: &'static str = "enterprise_name";
-pub static CONFIG_LOGO_URL: &'static str = "logo_url";
+pub static CONFIG_AGENCY_ENDPOINT: &'static str = "agency_endpoint";
+pub static CONFIG_AGENCY_DID: &'static str = "agency_did";
+pub static CONFIG_AGENCY_VERKEY: &'static str = "agency_verkey";
+pub static CONFIG_REMOTE_TO_SDK_DID: &'static str = "remote_to_sdk_did";
+pub static CONFIG_REMOTE_TO_SDK_VERKEY: &'static str = "remote_to_sdk_verkey";
+pub static CONFIG_SDK_TO_REMOTE_DID: &'static str = "sdk_to_remote_did"; // functionally not used
+pub static CONFIG_SDK_TO_REMOTE_VERKEY: &'static str = "sdk_to_remote_verkey";
+pub static CONFIG_INSTITUTION_DID: &'static str = "institution_did";
+pub static CONFIG_INSTITUTION_VERKERY: &'static str = "institution_verkey"; // functionally not used
+pub static CONFIG_INSTITUTION_NAME: &'static str = "institution_name";
+pub static CONFIG_INSTITUTION_LOGO_URL: &'static str = "institution_logo_url";
 pub static CONFIG_ENABLE_TEST_MODE: &'static str = "enable_test_mode";
-pub static CONFIG_ENTERPRISE_VERKEY: &'static str = "agent_enterprise_verkey";
 pub static CONFIG_GENESIS_PATH: &str = "genesis_path";
 pub static CONFIG_WALLET_KEY: &str = "wallet_key";
 pub static CONFIG_LOG_CONFIG: &str = "log_config";
 pub static DEFAULT_GENESIS_PATH: &str = "/tmp/genesis.txn";
+pub static DEFAULT_WALLET_NAME: &str = "LIBVCX_SDK_WALLET";
 pub static UNINITIALIZED_WALLET_KEY: &str = "<KEY_IS_NOT_SET>";
 
 lazy_static! {
@@ -41,21 +41,18 @@ pub fn set_defaults() -> u32 {
     let mut settings = SETTINGS.write().unwrap();
 
     settings.set_default(CONFIG_POOL_NAME,"pool1");
-    settings.set_default(CONFIG_POOL_CONFIG_NAME,"");
-    settings.set_default(CONFIG_WALLET_NAME,"wallet1");
+    settings.set_default(CONFIG_WALLET_NAME,DEFAULT_WALLET_NAME);
     settings.set_default(CONFIG_WALLET_TYPE,"default");
-    settings.set_default(CONFIG_AGENT_ENDPOINT,"http://127.0.0.1:8080");
-    settings.set_default(CONFIG_AGENCY_PAIRWISE_DID,"QRyASgXVV6Hoo6zkQTZCWm");
-    settings.set_default(CONFIG_AGENCY_PAIRWISE_VERKEY,"3BVdD7SGNenA1NDK4Z8Kf9A33uVoGZcKrfJa5vELJZVm");
-    settings.set_default(CONFIG_AGENT_PAIRWISE_DID,"8xUi3QNchFXzfhCgbALpBr");
-    settings.set_default(CONFIG_AGENT_PAIRWISE_VERKEY,"5LXDnRUM7k651nBmhcRraKThVAZYqepaW99zCBYosuwX");
-    settings.set_default(CONFIG_ENTERPRISE_DID,"2hoqvcwupRTUNkXn6ArYzs");
-    settings.set_default(CONFIG_ENTERPRISE_DID_AGENCY,"KkTVEE7RGg7z2d2hrfM2Hj");
-    settings.set_default(CONFIG_ENTERPRISE_DID_AGENT,"515rg5tehHwzJK5ZKwtkBb");
-    settings.set_default(CONFIG_ENTERPRISE_NAME,"default");
-    settings.set_default(CONFIG_LOGO_URL,"http://www.evernym.com");
+    settings.set_default(CONFIG_AGENCY_ENDPOINT,"http://127.0.0.1:8080");
+    settings.set_default(CONFIG_AGENCY_DID,"QRyASgXVV6Hoo6zkQTZCWm");
+    settings.set_default(CONFIG_AGENCY_VERKEY,"3BVdD7SGNenA1NDK4Z8Kf9A33uVoGZcKrfJa5vELJZVm");
+    settings.set_default(CONFIG_REMOTE_TO_SDK_DID,"8xUi3QNchFXzfhCgbALpBr");
+    settings.set_default(CONFIG_REMOTE_TO_SDK_VERKEY,"5LXDnRUM7k651nBmhcRraKThVAZYqepaW99zCBYosuwX");
+    settings.set_default(CONFIG_INSTITUTION_DID,"2hoqvcwupRTUNkXn6ArYzs");
+    settings.set_default(CONFIG_INSTITUTION_NAME,"default");
+    settings.set_default(CONFIG_INSTITUTION_LOGO_URL,"http://www.evernym.com");
     settings.set_default(CONFIG_ENABLE_TEST_MODE,"false");
-    settings.set_default(CONFIG_ENTERPRISE_VERKEY,"2zoa6G7aMfX8GnUEpDxxunFHE7fZktRiiHk1vgMRH2tm");
+    settings.set_default(CONFIG_SDK_TO_REMOTE_VERKEY,"2zoa6G7aMfX8GnUEpDxxunFHE7fZktRiiHk1vgMRH2tm");
     settings.set_default(CONFIG_GENESIS_PATH, DEFAULT_GENESIS_PATH);
     settings.set_default(CONFIG_WALLET_KEY,UNINITIALIZED_WALLET_KEY);
 
@@ -79,34 +76,28 @@ fn validate_config() -> Result<u32, String> {
         let mut valid = true;
         if setting.0 == CONFIG_POOL_NAME && !is_valid(setting.1) {
             valid = false;
-        } else if setting.0 == CONFIG_POOL_CONFIG_NAME {
-            valid = true;
         } else if setting.0 == CONFIG_WALLET_NAME && !is_valid(setting.1) {
             valid = false;
-        } else if setting.0 == CONFIG_AGENT_ENDPOINT {
+        } else if setting.0 == CONFIG_AGENCY_ENDPOINT {
             match Url::parse(setting.1) {
                 Err(x) => valid = false,
                 Ok(_) => valid = true,
             }
         } else if setting.0 == CONFIG_LOG_CONFIG {
             println!("log_config set to {}", setting.1);
-        } else if setting.0 == CONFIG_ENTERPRISE_DID && !is_valid(setting.1) {
+        } else if setting.0 == CONFIG_INSTITUTION_DID && !is_valid(setting.1) {
             valid = false;
-        } else if setting.0 == CONFIG_ENTERPRISE_DID_AGENCY && !is_valid(setting.1) {
+        } else if setting.0 == CONFIG_AGENCY_VERKEY && !is_valid(setting.1) {
             valid = false;
-        } else if setting.0 == CONFIG_ENTERPRISE_DID_AGENT && !is_valid(setting.1) {
+        } else if setting.0 == CONFIG_REMOTE_TO_SDK_VERKEY && !is_valid(setting.1) {
             valid = false;
-        } else if setting.0 == CONFIG_AGENCY_PAIRWISE_VERKEY && !is_valid(setting.1) {
+        } else if setting.0 == CONFIG_AGENCY_DID && !is_valid(setting.1) {
             valid = false;
-        } else if setting.0 == CONFIG_AGENT_PAIRWISE_VERKEY && !is_valid(setting.1) {
+        } else if setting.0 == CONFIG_REMOTE_TO_SDK_DID && !is_valid(setting.1) {
             valid = false;
-        } else if setting.0 == CONFIG_AGENCY_PAIRWISE_DID && !is_valid(setting.1) {
-            valid = false;
-        } else if setting.0 == CONFIG_AGENT_PAIRWISE_DID && !is_valid(setting.1) {
-            valid = false;
-        } else if setting.0 == CONFIG_ENTERPRISE_NAME {
+        } else if setting.0 == CONFIG_INSTITUTION_NAME {
             valid = true;
-        } else if setting.0 == CONFIG_LOGO_URL {
+        } else if setting.0 == CONFIG_INSTITUTION_LOGO_URL {
             match Url::parse(setting.1) {
                 Err(x) => valid = false,
                 Ok(_) => valid = true,
@@ -304,7 +295,7 @@ pub mod tests {
 
     #[test]
     fn test_invalid_url() {
-        let a = "logo_url";
+        let a = "institution_logo_url";
 
         remove_file_if_exists(DEFAULT_GENESIS_PATH);
 
@@ -320,7 +311,7 @@ pub mod tests {
         };
 
         //throw in some invalid content to test the validation code
-        let content = "{ \"logo_url\" : \"wrong_url\" }";
+        let content = "{ \"institution_logo_url\" : \"wrong_url\" }";
 
         match file.write_all(content.as_bytes()) {
             Err(why) => panic!("couldn't write to sample config file: {}", why.description()),
@@ -328,7 +319,7 @@ pub mod tests {
         }
 
         match process_config_file(&config_path) {
-            Err(v) => assert_eq!(v, "logo_url has invalid setting: wrong_url"),
+            Err(v) => assert_eq!(v, "institution_logo_url has invalid setting: wrong_url"),
             Ok(_) => println!("expected invalid URL"), //fail if we get here
         }
         //        assert!(process_config_file(&config_path) == Err(ParseError::InvalidIpv6Address));
@@ -339,9 +330,9 @@ pub mod tests {
     #[test]
     fn test_process_file_with_pairwise_configs() {
         set_defaults();
-        let a = "agency_pairwise_did";
+        let a = "agency_did";
         let a_rtn = "72x8p4HubxzUK1dwxcc5FU";
-        let b = "agent_pairwise_verkey";
+        let b = "remote_to_sdk_verkey";
         let b_rtn = "U22jM6Cea2YVixjWwHN9wq";
         let config_path = "/tmp/test_init.json";
         let path = Path::new(config_path);
@@ -351,10 +342,10 @@ pub mod tests {
             Ok(file) => file,
         };
 
-        let content = "{ \"agency_pairwise_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"agent_pairwise_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
-        \"enterprise_did_agency\" : \"RF3JM851T4EQmhh8CdagSP\", \"enterprise_did_agent\" : \"AB3JM851T4EQmhh8CdagSP\", \"enterprise_name\" : \"enterprise\",\
-        \"logo_url\" : \"https://s19.postimg.org/ykyz4x8jn/evernym.png\", \"agency_pairwise_verkey\" : \"7118p4HubxzUK1dwxcc5FU\",\
-        \"agent_pairwise_verkey\" : \"U22jM6Cea2YVixjWwHN9wq\"}";
+        let content = "{ \"agency_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"remote_to_sdk_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
+        \"sdk_to_remote_did\" : \"AB3JM851T4EQmhh8CdagSP\", \"institution_name\" : \"enterprise\",\
+        \"institution_logo_url\" : \"https://s19.postimg.org/ykyz4x8jn/evernym.png\", \"agency_verkey\" : \"7118p4HubxzUK1dwxcc5FU\",\
+        \"remote_to_sdk_verkey\" : \"U22jM6Cea2YVixjWwHN9wq\"}";
 
         match file.write_all(content.as_bytes()) {
             Err(why) => panic!("couldn't write to sample config file: {}", why.description()),

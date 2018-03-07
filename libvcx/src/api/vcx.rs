@@ -21,23 +21,21 @@ use std::path::Path;
 ///
 /// wallet_type
 ///
-/// agent_endpoint: the url to interact with the agent
+/// agency_endpoint: the url to interact with the agency environment
 ///
-/// enterprise_did_agency: did for enterprise pairwise relationship with an agency
+/// agency_did: public did for the agency
 ///
-/// agency_pairwise_did: did for the agency pairwise relationship with an enterprise
+/// agency_verkey: public verkey for the agency
 ///
-/// agency_pairwise_verkey: verkey for the agency pairwise relationship with an enterprise
+/// sdk_to_remote_did: did for enterprise pairwise relationship with an agent
 ///
-/// enterprise_did_agent: did for enterprise pairwise relationship with an agent
+/// remote_to_sdk_did: did for the agent pairwise relationship with an enterprise
 ///
-/// agent_pairwise_did: did for the agent pairwise relationship with an enterprise
+/// remote_to_sdk_verkey: verkey for the agent pairwise relationship with an enterprise
 ///
-/// agent_pairwise_verkey: verkey for the agent pairwise relationship with an enterprise
+/// institution_name: enterprise's name
 ///
-/// enterprise_name: enterprise's name
-///
-/// logo_url: url for enterprise's logo
+/// institution_logo_url: url for enterprise's logo
 ///
 /// An example file is at libvcx/sample_config/config.json
 ///
@@ -85,11 +83,6 @@ pub extern fn vcx_init (command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    let config_name = match settings::get_config_value(settings::CONFIG_POOL_CONFIG_NAME) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
-
     let pool_name = match settings::get_config_value(settings::CONFIG_POOL_NAME) {
         Err(x) => return x,
         Ok(v) => v,
@@ -105,42 +98,32 @@ pub extern fn vcx_init (command_handle: u32,
         Ok(v) => v,
     };
 
-        let agency_pairwise_did = match settings::get_config_value(settings::CONFIG_AGENCY_PAIRWISE_DID) {
+        let agency_did = match settings::get_config_value(settings::CONFIG_AGENCY_DID) {
         Err(x) => return x,
         Ok(v) => v,
     };
 
-    let agent_pairwise_did = match settings::get_config_value(settings::CONFIG_AGENT_PAIRWISE_DID) {
+    let remote_to_sdk_did = match settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID) {
         Err(x) => return x,
         Ok(v) => v,
     };
 
-    let agency_ver_key = match settings::get_config_value(settings::CONFIG_AGENCY_PAIRWISE_VERKEY) {
+    let agency_ver_key = match settings::get_config_value(settings::CONFIG_AGENCY_VERKEY) {
         Err(x) => return x,
         Ok(v) => v,
     };
 
-    let agent_ver_key = match settings::get_config_value(settings::CONFIG_AGENT_PAIRWISE_VERKEY) {
+    let agent_ver_key = match settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY) {
         Err(x) => return x,
         Ok(v) => v,
     };
 
-    let enterprise_did_agency = match settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENCY) {
+    let institution_name = match settings::get_config_value(settings::CONFIG_INSTITUTION_NAME) {
         Err(x) => return x,
         Ok(v) => v,
     };
 
-    let enterprise_did_agent = match settings::get_config_value(settings::CONFIG_ENTERPRISE_DID_AGENT) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
-
-    let enterprise_name = match settings::get_config_value(settings::CONFIG_ENTERPRISE_NAME) {
-        Err(x) => return x,
-        Ok(v) => v,
-    };
-
-    let logo_url = match settings::get_config_value(settings::CONFIG_LOGO_URL) {
+    let logo_url = match settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL) {
         Err(x) => return x,
         Ok(v) => v,
     };
@@ -269,9 +252,9 @@ mod tests {
         };
 
         let content = "{ \"pool_name\" : \"my_pool\", \"config_name\":\"config1\", \"wallet_name\":\"my_wallet\", \
-        \"agency_pairwise_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"agent_pairwise_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
-        \"enterprise_did_agency\" : \"RF3JM851T4EQmhh8CdagSP\", \"enterprise_did_agent\" : \"AB3JM851T4EQmhh8CdagSP\", \"enterprise_name\" : \"evernym enterprise\",\
-        \"agency_pairwise_verkey\" : \"7118p4HubxzUK1dwxcc5FU\", \"agent_pairwise_verkey\" : \"U22jM6Cea2YVixjWwHN9wq\"}";
+        \"agency_did\" : \"72x8p4HubxzUK1dwxcc5FU\", \"remote_to_sdk_did\" : \"UJGjM6Cea2YVixjWwHN9wq\", \
+        \"sdk_to_remote_did\" : \"AB3JM851T4EQmhh8CdagSP\", \"institution_name\" : \"evernym enterprise\",\
+        \"agency_verkey\" : \"7118p4HubxzUK1dwxcc5FU\", \"remote_to_sdk_verkey\" : \"U22jM6Cea2YVixjWwHN9wq\"}";
         match file.write_all(content.as_bytes()) {
             Err(why) => panic!("couldn't write to sample config file: {}", why.description()),
             Ok(_) => println!("sample config ready"),
@@ -311,7 +294,7 @@ mod tests {
         let result = vcx_init(0,ptr::null(),Some(init_cb));
         assert_eq!(result,error::INVALID_CONFIGURATION.code_num);
         thread::sleep(Duration::from_secs(1));
-        wallet::delete_wallet("wallet1").unwrap();
+        wallet::delete_wallet(settings::DEFAULT_WALLET_NAME).unwrap();
 
     }
 

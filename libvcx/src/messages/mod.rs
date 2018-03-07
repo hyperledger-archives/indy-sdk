@@ -176,9 +176,9 @@ pub fn extract_json_payload(data: &Vec<u8>) -> Result<String, u32> {
 }
 
 pub fn bundle_for_agency(message: Vec<u8>, did: &str) -> Result<Vec<u8>, u32> {
-    let agency_vk = settings::get_config_value(settings::CONFIG_AGENCY_PAIRWISE_VERKEY).unwrap();
-    let agent_vk = settings::get_config_value(settings::CONFIG_AGENT_PAIRWISE_VERKEY).unwrap();
-    let my_vk = settings::get_config_value(settings::CONFIG_ENTERPRISE_VERKEY).unwrap();
+    let agency_vk = settings::get_config_value(settings::CONFIG_AGENCY_VERKEY).unwrap();
+    let agent_vk = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY).unwrap();
+    let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).unwrap();
 
     debug!("pre encryption msg: {:?}", message);
     let msg = crypto::prep_msg(wallet::get_wallet_handle(), &my_vk, &agent_vk, &message[..])?;
@@ -214,13 +214,13 @@ pub fn bundle_for_agent(message: Vec<u8>, pw_vk: &str, agent_did: &str, agent_vk
 
     let msg = Bundled::create(inner).encode()?;
 
-    let to_did = settings::get_config_value(settings::CONFIG_AGENT_PAIRWISE_DID).unwrap();
+    let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID).unwrap();
     bundle_for_agency(msg, &to_did)
 }
 
 pub fn unbundle_from_agency(message: Vec<u8>) -> Result<Vec<Vec<u8>>, u32> {
 
-    let my_vk = settings::get_config_value(settings::CONFIG_ENTERPRISE_VERKEY).unwrap();
+    let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).unwrap();
 
     let data = crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, &message[..])?;
 

@@ -71,7 +71,7 @@ impl GetMessages{
     }
 
     pub fn send_secure(&mut self) -> Result<Vec<Message>, u32> {
-        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).unwrap());
 
         let data = match self.msgpack() {
             Ok(x) => x,

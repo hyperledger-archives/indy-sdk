@@ -489,7 +489,6 @@ pub mod tests {
     use settings;
     use connection::build_connection;
     use utils::libindy::signus::SignusUtils;
-    use utils::libindy::wallet::init_wallet;
     use utils::libindy::anoncreds::libindy_create_and_store_claim_def;
     use claim_request::ClaimRequest;
     use utils::constants::*;
@@ -520,7 +519,7 @@ pub mod tests {
     pub fn util_put_claim_def_in_issuer_wallet(schema_seq_num: u32, wallet_handle: i32) {
         let stored_xclaim = String::from("");
 
-        let issuer_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID).unwrap();
+        let issuer_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
         libindy_create_and_store_claim_def(wallet_handle, issuer_did, SCHEMAS_JSON.to_string(), None, false).unwrap();
     }
@@ -528,13 +527,6 @@ pub mod tests {
     fn set_default_and_enable_test_mode() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-    }
-
-    fn stand_up_a_wallet() -> (String, i32, String) {
-        let wallet_name = String::from("wallet1");
-        let wallet_handle = init_wallet(&wallet_name).unwrap();
-        let (did, _) = SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();
-        (wallet_name, wallet_handle, did)
     }
 
     pub fn create_standard_issuer_claim() -> IssuerClaim {
@@ -627,7 +619,7 @@ pub mod tests {
         let test_name = "test_send_a_claim";
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-        settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, "QTrbV4raAcND4DWWzBmdsh");
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, "QTrbV4raAcND4DWWzBmdsh");
 
         let claim_req:ClaimRequest = match ClaimRequest::from_str(&CLAIM_REQ_STRING) {
             Ok(x) => x,
@@ -734,7 +726,7 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         wallet::init_wallet("a_test_wallet").unwrap();
         let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e".to_owned();
-        settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, &issuer_did);
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &issuer_did);
         let schema_str = SCHEMA;
         let mut issuer_claim = create_standard_issuer_claim();
         issuer_claim.claim_id = String::from(DEFAULT_CLAIM_ID);
@@ -770,7 +762,7 @@ pub mod tests {
         // TODO: Is this duplicate of the above test?
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, "NcYxiDXkpYi6ov5FcYDi1e");
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, "NcYxiDXkpYi6ov5FcYDi1e");
         wallet::init_wallet("test_issuer_claim_request_changes_reflect_in_claim").unwrap();
         let wallet_handle = wallet::get_wallet_handle();
 
@@ -793,7 +785,7 @@ pub mod tests {
         let (n1, n2) = normalize_claims(&claim_payload, &X_CLAIM_JSON);
         debug!("claim_payload: {}", claim_payload);
         assert_eq!(n1, n2);
-        let claim_payload_with_from_did = append_value(&claim_payload, "from_did", &settings::CONFIG_ENTERPRISE_DID);
+        let claim_payload_with_from_did = append_value(&claim_payload, "from_did", &settings::CONFIG_INSTITUTION_DID);
         debug!("claim_payload_with_from_did: {:?}",claim_payload_with_from_did.unwrap());
 
         wallet::delete_wallet("test_issuer_claim_request_changes_reflect_in_claim").unwrap();
@@ -833,7 +825,7 @@ pub mod tests {
         let test_name = "test_that_TEST_MODE_ENABLED_bypasses_libindy_create_claim";
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-        settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, "QTrbV4raAcND4DWWzBmdsh");
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, "QTrbV4raAcND4DWWzBmdsh");
 
         let mut claim = create_standard_issuer_claim();
         claim.state = VcxStateType::VcxStateRequestReceived;

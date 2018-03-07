@@ -283,8 +283,8 @@ pub fn update_agent_profile(handle: u32) -> Result<u32, u32> {
 
     match messages::update_data()
         .to(&pw_did)
-        .name(&settings::get_config_value(settings::CONFIG_ENTERPRISE_NAME).unwrap())
-        .logo_url(&settings::get_config_value(settings::CONFIG_LOGO_URL).unwrap())
+        .name(&settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap())
+        .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL).unwrap())
         .send_secure() {
         Ok(_) => Ok(error::SUCCESS.code_num),
         Err(x) => Err(x),
@@ -370,7 +370,7 @@ pub fn parse_acceptance_details(handle: u32, message: &Message) -> Result<Sender
     debug!("parsing acceptance details for message {:?}", message);
     if message.payload.is_none() {return Err(error::INVALID_MSGPACK.code_num); }
 
-    let my_vk = settings::get_config_value(settings::CONFIG_ENTERPRISE_VERKEY).unwrap();
+    let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).unwrap();
     let payload = messages::to_u8(message.payload.as_ref().unwrap());
     let payload = crypto::parse_msg(wallet::get_wallet_handle(),&my_vk,&payload)?;
 
@@ -398,7 +398,7 @@ pub fn update_state(handle: u32) -> Result<u32, u32> {
     let agent_did = get_agent_did(handle)?;
     let agent_vk = get_agent_verkey(handle)?;
 
-    let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+    let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).unwrap());
 
     match messages::get_messages()
         .to(&pw_did)
@@ -780,16 +780,16 @@ mod tests {
         let agent_vk = "49mui8cB48JvLnnWzRmMGzWXuXDUKaVHsQi6N4Hyof8c";
         let host = "https://enym-eagency.pdev.evernym.com";
 
-        settings::set_config_value(settings::CONFIG_ENTERPRISE_DID,my_did);
-        settings::set_config_value(settings::CONFIG_ENTERPRISE_VERKEY,my_vk);
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT,host);
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID,my_did);
+        settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY,my_vk);
+        settings::set_config_value(settings::CONFIG_AGENCY_ENDPOINT,host);
         settings::set_config_value(settings::CONFIG_WALLET_NAME,"my_real_wallet");
-        settings::set_config_value(settings::CONFIG_AGENT_PAIRWISE_VERKEY,agent_vk);
-        settings::set_config_value(settings::CONFIG_AGENT_PAIRWISE_DID,agent_did);
-        settings::set_config_value(settings::CONFIG_AGENCY_PAIRWISE_DID, agency_did);
-        settings::set_config_value(settings::CONFIG_AGENCY_PAIRWISE_VERKEY, agency_vk);
+        settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY,agent_vk);
+        settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_DID,agent_did);
+        settings::set_config_value(settings::CONFIG_AGENCY_DID, agency_did);
+        settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, agency_vk);
 
-        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).unwrap());
         wallet::init_wallet("my_real_wallet").unwrap();
 
         let handle = build_connection("test_real_connection_create".to_owned()).unwrap();
