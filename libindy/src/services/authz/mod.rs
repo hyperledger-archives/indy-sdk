@@ -51,7 +51,7 @@ impl AuthzService {
             Some(ref info) => {
                 let (vk, sk) = match self.crypto_service.get_crypto_name_and_keypair(&info.crypto_type, &info.seed) {
                     Ok((_, vk, sk)) => (vk, sk),
-                    Err(err) => return Err(AuthzError::CryptoError(err)),
+                    Err(err) => return Err(AuthzError::SignusError(err)),
                 };
 
                 let (comm, blinding_factor) = match info.secret {
@@ -66,7 +66,7 @@ impl AuthzService {
             None => {
                 let (vk, sk) = match self.crypto_service.get_crypto_name_and_keypair(&None, &None) {
                     Ok((_, vk, sk)) => (vk, sk),
-                    Err(err) => return Err(AuthzError::CryptoError(err)),
+                    Err(err) => return Err(AuthzError::SignusError(err)),
                 };
                 (vk, sk, None, None, None)
             }

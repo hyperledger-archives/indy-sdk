@@ -114,11 +114,12 @@ impl CryptoCommandExecutor {
     }
 
     fn create_key(&self, wallet_handle: i32, key_info_json: String) -> Result<String, IndyError> {
-        let key_info = KeyInfo::from_json(&key_info_json)
+        /*let key_info = KeyInfo::from_json(&key_info_json)
             .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::InvalidStructure(
-                    format!("Invalid KeyInfo json: {}", err.description())))?;
+                    format!("Invalid KeyInfo json: {}", err.description())))?;*/
+        let key_info = SignusService::get_key_info_from_json(key_info_json)?;
 
         let key = self.signus_service.create_key(&key_info)?;
         self._wallet_set_key(wallet_handle, &key)?;

@@ -1,3 +1,5 @@
+extern crate base64;
+
 mod ed25519;
 pub mod types;
 
@@ -12,10 +14,12 @@ use self::types::{
 
 use utils::crypto::base58::Base58;
 use utils::crypto::verkey_builder::build_full_verkey;
+use utils::json::JsonDecodable;
 
 use errors::common::CommonError;
 use errors::signus::SignusError;
 
+use std::error::Error;
 use std::collections::HashMap;
 use std::str;
 
@@ -45,6 +49,61 @@ impl SignusService {
         SignusService {
             crypto_types: crypto_types
         }
+    }
+
+    pub fn get_crypto_type_name<'a>(crypto_type: &'a Option<String>) -> (&'a str) {
+        crypto_type.as_ref().map(String::as_str).unwrap_or(DEFAULT_CRYPTO_TYPE)
+    }
+
+    pub fn get_crypto_type_name_from_verkey<'a>(verkey: &'a String) -> (&'a str) {
+        if verkey.contains(":") {
+            let splits: Vec<&str> = verkey.split(":").collect();
+            splits[1]
+        } else {
+            DEFAULT_CRYPTO_TYPE
+        }
+    }
+
+    pub fn get_verkey_and_crypto_type_name_from_verkey<'a>(verkey: &'a str) -> (&'a str, &'a str) {
+        if verkey.contains(":") {
+            let splits: Vec<&str> = verkey.split(":").collect();
+            (splits[0], splits[1])
+        } else {
+            (verkey, DEFAULT_CRYPTO_TYPE)
+        }
+    }
+
+    pub fn is_crypto_type_supported(&self, crypto_type_name: &str) -> bool {
+        self.crypto_types.contains_key(crypto_type_name)
+    }
+
+    pub fn get_crypto_type(&self, crypto_type_name: &str) -> &Box<CryptoType> {
+        self.crypto_types.get(crypto_type_name).unwrap()
+    }
+
+    pub fn get_key_info_from_json(key_info_json: String) -> Result<KeyInfo, CommonError> {
+        KeyInfo::from_json(&key_info_json)
+            .map_err(map_err_trace!())
+            .map_err(|err|
+                CommonError::InvalidStructure(
+                    format!("Invalid KeyInfo json: {}", err.description())))
+    }
+
+    pub fn get_crypto_name_and_keypair<'a>(&self, crypto_type: &'a Option<String>,
+                                           seed: &'a Option<String>) -> Result<(&'a str, Vec<u8>, Vec<u8>), SignusError> {
+        let crypto_type_name = SignusService::get_crypto_type_name(&crypto_type);
+
+        if !self.is_crypto_type_supported(crypto_type_name) {
+            return Err(
+                SignusError::UnknownCryptoError(
+                    format!("contains unknown crypto: {}", crypto_type_name)));
+        }
+
+        let crypto_type = self.get_crypto_type(crypto_type_name);
+
+        let seed = SignusService::deserialize_seed(seed.as_ref().map(String::as_ref))?;
+        let (vk, sk) = crypto_type.create_key(seed.as_ref().map(Vec::as_slice))?;
+        Ok((crypto_type_name, vk, sk))
     }
 
     pub fn create_key(&self, key_info: &KeyInfo) -> Result<Key, SignusError> {
@@ -312,6 +371,21 @@ impl SignusService {
         }
 
         Ok(())
+    }
+
+    pub fn deserialize_seed(seed: Option<&str>) -> Result<Option<Vec<u8>>, SignusError> {
+        // TODO: Fixme: This looks like its checking for seed to be bas64 or otherwise and convert
+        // base64 to raw bytes but a base64 string does not always end in `=`, the `=` is only needed for padding.
+        Ok(match seed {
+            Some(ref seed) =>
+                if seed.ends_with("=") {
+                    Some(base64::decode(&seed)
+                        .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Seed from Base64 string: {:?}", err)))?)
+                } else {
+                    Some(seed.as_bytes().to_vec())
+                },
+            None => None
+        })
     }
 }
 

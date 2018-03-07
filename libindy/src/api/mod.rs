@@ -9,7 +9,7 @@ pub mod pool;
 pub mod signus;
 pub mod wallet;
 
-//pub mod authz;
+pub mod authz;
 
 
 #[derive(Debug, PartialEq, Copy, Clone)]

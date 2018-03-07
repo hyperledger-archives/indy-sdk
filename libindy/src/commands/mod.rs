@@ -11,6 +11,7 @@ pub mod signus;
 pub mod wallet;
 pub mod pairwise;
 
+pub mod authz;
 
 use commands::agent::{AgentCommand, AgentCommandExecutor};
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
@@ -21,6 +22,8 @@ use commands::signus::{SignusCommand, SignusCommandExecutor};
 use commands::wallet::{WalletCommand, WalletCommandExecutor};
 use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 
+use commands::authz::{AuthzCommand, AuthzCommandExecutor};
+
 use errors::common::CommonError;
 
 use services::anoncreds::AnoncredsService;
@@ -28,6 +31,8 @@ use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::signus::SignusService;
 use services::ledger::LedgerService;
+
+use services::authz::AuthzService;
 
 use std::error::Error;
 use std::sync::mpsc::{Sender, channel};
@@ -44,7 +49,8 @@ pub enum Command {
     Pool(PoolCommand),
     Signus(SignusCommand),
     Wallet(WalletCommand),
-    Pairwise(PairwiseCommand)
+    Pairwise(PairwiseCommand),
+    Authz(AuthzCommand)
 }
 
 pub struct CommandExecutor {
@@ -77,7 +83,8 @@ impl CommandExecutor {
                 let signus_service = Rc::new(SignusService::new());
                 let ledger_service = Rc::new(LedgerService::new());
 
-                let agent_command_executor = AgentCommandExecutor::new(signus_service.clone(), wallet_service.clone());
+                let authz_service = Rc::new(AuthzService::new(signus_service.clone()));
+
                 let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), pool_service.clone(), wallet_service.clone());
                 let crypto_command_executor = CryptoCommandExecutor::new(wallet_service.clone(), signus_service.clone());
                 let ledger_command_executor = LedgerCommandExecutor::new(pool_service.clone(), signus_service.clone(), wallet_service.clone(), ledger_service.clone());
@@ -85,6 +92,9 @@ impl CommandExecutor {
                 let signus_command_executor = SignusCommandExecutor::new(pool_service.clone(), wallet_service.clone(), signus_service.clone(), ledger_service.clone());
                 let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
                 let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
+                let agent_command_executor = AgentCommandExecutor::new(signus_service.clone(), wallet_service.clone());
+
+                let authz_command_executor = AuthzCommandExecutor::new(pool_service.clone(), wallet_service.clone(), signus_service.clone(), ledger_service.clone(), authz_service.clone());
 
                 loop {
                     match receiver.recv() {
@@ -119,6 +129,10 @@ impl CommandExecutor {
                         Ok(Command::Pairwise(cmd)) => {
                             info!("PairwiseCommand command received");
                             pairwise_command_executor.execute(cmd);
+                        }
+                        Ok(Command::Authz(cmd)) => {
+                            info!("AuthzCommand command received");
+                            authz_command_executor.execute(cmd);
                         }
                         Ok(Command::Exit) => {
                             info!("Exit command received");

@@ -8,6 +8,9 @@ use std::str;
 
 use errors::common::CommonError;
 use errors::signus::SignusError;
+use errors::wallet::WalletError;
+use errors::indy::IndyError;
+
 use self::indy_crypto::errors::IndyCryptoError;
 
 use api::ErrorCode;
@@ -95,7 +98,24 @@ impl From<SignusError> for AuthzError {
 impl From<indy_crypto::errors::IndyCryptoError> for AuthzError {
     fn from(err: indy_crypto::errors::IndyCryptoError) -> Self {
         match err {
-            _ => AuthzError::CommonError(CommonError::InvalidState("Invalid error code".to_string()))
+            _ => AuthzError::CommonError(CommonError::InvalidState("Invalid crypto error".to_string()))
+        }
+    }
+}
+
+
+impl From<WalletError> for AuthzError {
+    fn from(err: WalletError) -> Self {
+        match err {
+            _ => AuthzError::CommonError(CommonError::InvalidStructure("Invalid wallet error".to_string()))
+        }
+    }
+}
+
+impl From<IndyError> for AuthzError {
+    fn from(err: IndyError) -> Self {
+        match err {
+            _ => AuthzError::CommonError(CommonError::InvalidStructure("Invalid generic indy error".to_string()))
         }
     }
 }

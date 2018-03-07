@@ -1,4 +1,5 @@
 extern crate serde_json;
+extern crate indy_crypto;
 
 use self::serde_json::Value;
 
@@ -25,6 +26,8 @@ use std::rc::Rc;
 use utils::crypto::base58::Base58;
 
 use utils::crypto::signature_serializer::serialize_signature;
+use self::indy_crypto::bn::{BigNumber};
+
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
@@ -440,7 +443,7 @@ impl LedgerCommandExecutor {
         info!("build_agent_authz_request >>> submitter: {:?}, address: {:?}, verkey: {:?}, auth: {:?}, comm: {:?}",
               submitter, address, verkey, auth, comm);
 
-        self.crypto_service.validate_key(submitter)?;
+        self.signus_service.validate_key(submitter)?;
         // TODO: Need some validation
         let address = BigNumber::from_dec(address)?;
         let comm = comm.as_ref().map(|s| BigNumber::from_dec(s).unwrap());
@@ -460,7 +463,7 @@ impl LedgerCommandExecutor {
                                      address: &str) -> Result<String, IndyError> {
         info!("build_get_agent_authz_request >>> submitter: {:?}, address: {:?}", submitter, address);
 
-        self.crypto_service.validate_did(submitter)?;
+        self.signus_service.validate_did(submitter)?;
         // TODO: Need some validation
         let address = BigNumber::from_dec(address)?;
         let res = self.ledger_service.build_get_agent_authz_request(submitter,
@@ -476,7 +479,7 @@ impl LedgerCommandExecutor {
                                            accum_id: &str) -> Result<String, IndyError> {
         info!("build_get_agent_authz_accum_request >>> submitter: {:?}, accum_id: {:?}", submitter, accum_id);
 
-        self.crypto_service.validate_did(submitter)?;
+        self.signus_service.validate_did(submitter)?;
         // TODO: Need some validation
         let res = self.ledger_service.build_get_agent_authz_accum_request(submitter,
                                                                           accum_id)?;

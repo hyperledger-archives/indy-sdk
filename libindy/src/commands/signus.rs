@@ -256,10 +256,11 @@ impl SignusCommandExecutor {
                           my_did: &str) -> Result<String, IndyError> {
         self.signus_service.validate_did(my_did)?;
 
-        let key_info: KeyInfo = KeyInfo::from_json(key_info_json)
+        /*let key_info: KeyInfo = KeyInfo::from_json(key_info_json)
             .map_err(map_err_trace!())
             .map_err(|err|
-                CommonError::InvalidStructure(format!("Invalid KeyInfo json: {}", err.description())))?;
+                CommonError::InvalidStructure(format!("Invalid KeyInfo json: {}", err.description())))?;*/
+        let key_info = SignusService::get_key_info_from_json(key_info_json.to_string())?;
 
         let my_did = self._wallet_get_my_did(wallet_handle, my_did)?;
 

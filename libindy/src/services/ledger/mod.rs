@@ -12,7 +12,6 @@ use utils::json::JsonDecodable;
 use utils::crypto::base58::Base58;
 use serde_json::Value;
 use services::ledger::constants::NYM;
-use self::indy_crypto::utils::json::JsonDecodable;
 use self::indy_crypto::bn::BigNumber;
 use std::collections::HashMap;
 

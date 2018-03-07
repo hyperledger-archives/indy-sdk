@@ -603,7 +603,7 @@ impl CallbackUtils {
         }
 
         extern "C" fn agent_message_callback(conn_handle: i32, err: ErrorCode, msg: *const c_char) {
-            info!("CallbackUtils::agent_message_callback");
+//            info!("CallbackUtils::agent_message_callback");
             let mut callbacks = CALLBACKS.lock().unwrap();
             let msg = unsafe { CStr::from_ptr(msg).to_str().unwrap().to_string() };
             let cb_id: i32 = *CLOSURE_CB_MAP.lock().unwrap().get(&conn_handle).unwrap();
@@ -1408,5 +1408,73 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(get_key_metadata_callback))
+    }
+
+    // ------------------------------------------------ AUTHZ -------------------------
+
+    pub fn closure_to_create_and_store_policy_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32, Option<extern fn(command_handle: i32,
+                                                                                                                             err: ErrorCode,
+                                                                                                                             address: *const c_char)>) {
+        lazy_static! {
+            static ref CREATE_AND_STORE_MY_POLICY_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn create_and_store_my_polciy_callback(command_handle: i32, err: ErrorCode, address: *const c_char) {
+            let mut callbacks = CREATE_AND_STORE_MY_POLICY_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let address = unsafe { CStr::from_ptr(address).to_str().unwrap().to_string() };
+            cb(err, address)
+        }
+
+        let mut callbacks = CREATE_AND_STORE_MY_POLICY_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(create_and_store_my_polciy_callback))
+    }
+
+    pub fn closure_to_get_policy_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                             Option<extern fn(command_handle: i32,
+                                                                                                              err: ErrorCode,
+                                                                                                              policy: *const c_char)>) {
+        lazy_static! {
+            static ref GET_POLICY_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn get_policy_callback(command_handle: i32, err: ErrorCode, policy: *const c_char) {
+            let mut callbacks = GET_POLICY_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let policy = unsafe { CStr::from_ptr(policy).to_str().unwrap().to_string() };
+            cb(err, policy)
+        }
+
+        let mut callbacks = GET_POLICY_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(get_policy_callback))
+    }
+
+    pub fn closure_to_add_agent_to_policy_in_wallet_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
+                                                                                                            Option<extern fn(command_handle: i32,
+                                                                                                                             err: ErrorCode,
+                                                                                                                             agent_verkey: *const c_char
+                                                                                                                             )>) {
+        lazy_static! {
+            static ref CREATE_AND_ADD_AGENT_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn create_and_add_agent_callback(command_handle: i32, err: ErrorCode, agent_verkey: *const c_char) {
+            let mut callbacks = CREATE_AND_ADD_AGENT_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let agent_verkey = unsafe { CStr::from_ptr(agent_verkey).to_str().unwrap().to_string() };
+            cb(err, agent_verkey)
+        }
+
+        let mut callbacks = CREATE_AND_ADD_AGENT_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(create_and_add_agent_callback))
     }
 }
