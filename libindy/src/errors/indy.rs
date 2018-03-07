@@ -1,9 +1,14 @@
+extern crate indy_crypto;
+
+use self::indy_crypto::errors::IndyCryptoError;
 use errors::anoncreds::AnoncredsError;
 use errors::common::CommonError;
 use errors::ledger::LedgerError;
 use errors::pool::PoolError;
 use errors::signus::SignusError;
 use errors::wallet::WalletError;
+
+use errors::authz::AuthzError;
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -13,23 +18,27 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum IndyError {
+    IndyCryptoError(IndyCryptoError),
     AnoncredsError(AnoncredsError),
     CommonError(CommonError),
     LedgerError(LedgerError),
     PoolError(PoolError),
     SignusError(SignusError),
     WalletError(WalletError),
+    AuthzError(AuthzError),
 }
 
 impl fmt::Display for IndyError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
+            IndyError::IndyCryptoError(ref err) => err.fmt(f),
             IndyError::AnoncredsError(ref err) => err.fmt(f),
             IndyError::CommonError(ref err) => err.fmt(f),
             IndyError::LedgerError(ref err) => err.fmt(f),
             IndyError::PoolError(ref err) => err.fmt(f),
             IndyError::SignusError(ref err) => err.fmt(f),
-            IndyError::WalletError(ref err) => err.fmt(f)
+            IndyError::WalletError(ref err) => err.fmt(f),
+            IndyError::AuthzError(ref err) => err.fmt(f)
         }
     }
 }
@@ -37,23 +46,27 @@ impl fmt::Display for IndyError {
 impl error::Error for IndyError {
     fn description(&self) -> &str {
         match *self {
+            IndyError::IndyCryptoError(ref err) => err.description(),
             IndyError::AnoncredsError(ref err) => err.description(),
             IndyError::CommonError(ref err) => err.description(),
             IndyError::LedgerError(ref err) => err.description(),
             IndyError::PoolError(ref err) => err.description(),
             IndyError::SignusError(ref err) => err.description(),
-            IndyError::WalletError(ref err) => err.description()
+            IndyError::WalletError(ref err) => err.description(),
+            IndyError::AuthzError(ref err) => err.description()
         }
     }
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
+            IndyError::IndyCryptoError(ref err) => Some(err),
             IndyError::AnoncredsError(ref err) => Some(err),
             IndyError::CommonError(ref err) => Some(err),
             IndyError::LedgerError(ref err) => Some(err),
             IndyError::PoolError(ref err) => Some(err),
             IndyError::SignusError(ref err) => Some(err),
-            IndyError::WalletError(ref err) => Some(err)
+            IndyError::WalletError(ref err) => Some(err),
+            IndyError::AuthzError(ref err) => Some(err)
         }
     }
 }
@@ -62,12 +75,14 @@ impl ToErrorCode for IndyError {
     fn to_error_code(&self) -> ErrorCode {
         error!("Casting error to ErrorCode: {}", self);
         match *self {
+            IndyError::IndyCryptoError(ref err) => ErrorCode::CommonIOError,
             IndyError::AnoncredsError(ref err) => err.to_error_code(),
             IndyError::CommonError(ref err) => err.to_error_code(),
             IndyError::LedgerError(ref err) => err.to_error_code(),
             IndyError::PoolError(ref err) => err.to_error_code(),
             IndyError::SignusError(ref err) => err.to_error_code(),
-            IndyError::WalletError(ref err) => err.to_error_code()
+            IndyError::WalletError(ref err) => err.to_error_code(),
+            IndyError::AuthzError(ref err) => err.to_error_code()
         }
     }
 }
@@ -105,5 +120,17 @@ impl From<LedgerError> for IndyError {
 impl From<SignusError> for IndyError {
     fn from(err: SignusError) -> IndyError {
         IndyError::SignusError(err)
+    }
+}
+
+impl From<AuthzError> for IndyError {
+    fn from(err: AuthzError) -> IndyError {
+        IndyError::AuthzError(err)
+    }
+}
+
+impl From<IndyCryptoError> for IndyError {
+    fn from(err: IndyCryptoError) -> IndyError {
+        IndyError::IndyCryptoError(err)
     }
 }

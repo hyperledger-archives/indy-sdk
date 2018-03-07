@@ -1,32 +1,20 @@
 extern crate time;
 extern crate serde_json;
+extern crate indy_crypto;
 
 pub mod merkletree;
 pub mod types;
 pub mod constants;
 
-use self::types::{
-    AttribOperation,
-    GetAttribOperation,
-    GetNymOperation,
-    GetSchemaOperationData,
-    GetSchemaOperation,
-    Request,
-    SchemaOperation,
-    SchemaOperationData,
-    ClaimDefOperation,
-    ClaimDefOperationData,
-    GetClaimDefOperation,
-    GetDdoOperation,
-    NodeOperation,
-    NodeOperationData,
-    GetTxnOperation
-};
+use self::types::*;
 use errors::common::CommonError;
 use utils::json::JsonDecodable;
 use utils::crypto::base58::Base58;
 use serde_json::Value;
 use services::ledger::constants::NYM;
+use self::indy_crypto::utils::json::JsonDecodable;
+use self::indy_crypto::bn::BigNumber;
+use std::collections::HashMap;
 
 trait LedgerSerializer {
     fn serialize(&self) -> String;
@@ -183,6 +171,32 @@ impl LedgerService {
 
     fn get_req_id() -> u64 {
         time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64
+    }
+
+    // ------------------------------------------------ AUTHZ -------------------------
+
+    pub fn build_agent_authz_request(&self, identifier: &str, address: BigNumber, verkey: Option<&str>,
+                                     authz: Option<u32>, comm: Option<BigNumber>) -> Result<String, CommonError> {
+
+        let operation = AgentAuthzOperation::new(address,
+                                                 verkey.as_ref().map(|s| s.to_string()),
+                                                 authz, comm);
+        Request::build_request(identifier.to_string(), operation)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid agent_authz request json: {:?}", err)))
+    }
+
+    pub fn build_get_agent_authz_request(&self, identifier: &str, address: BigNumber) -> Result<String, CommonError> {
+
+        let operation = GetAgentAuthzOperation::new(address);
+        Request::build_request(identifier.to_string(), operation)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid get agent_authz request json: {:?}", err)))
+    }
+
+    pub fn build_get_agent_authz_accum_request(&self, identifier: &str, accum_id: &str) -> Result<String, CommonError> {
+
+        let operation = GetAgentAuthzAccumOperation::new(accum_id.to_string());
+        Request::build_request(identifier.to_string(), operation)
+            .map_err(|err| CommonError::InvalidState(format!("Invalid get agent_authz accumulator request json: {:?}", err)))
     }
 }
 
@@ -400,5 +414,96 @@ mod tests {
         assert!(get_txn_request.is_ok());
         let get_txn_request = get_txn_request.unwrap();
         assert!(get_txn_request.contains(expected_result));
+    }
+
+    // ------------------------------------------------ AUTHZ -------------------------
+
+
+    #[test]
+    fn build_agent_authz_request_works_with_defaults_omitted() {
+        let ledger_service = LedgerService::new();
+        let identifier = "2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3";
+        let address = BigNumber::from_dec("678112").unwrap();
+
+        let expected_result = r#""identifier":"2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3","operation":{"type":"30000","address":"678112"},"protocolVersion":1"#;
+
+        let request = ledger_service.build_agent_authz_request(identifier,
+                                                               address, None, None, None);
+        assert!(request.is_ok());
+        assert!(request.unwrap().contains(expected_result));
+    }
+
+    #[test]
+    fn build_agent_authz_request_works_with_defaults_present() {
+        let ledger_service = LedgerService::new();
+        let identifier = "2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3";
+        let address = BigNumber::from_dec("678112").unwrap();
+        let verkey = "2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3";
+        let auth = 1;
+        let comm = BigNumber::from_dec("59").unwrap();
+        let expected_result = r#""identifier":"2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3","operation":{"type":"30000","address":"678112","verkey":"2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3","authz":1,"comm":"59"},"protocolVersion":1"#;
+
+        let request = ledger_service.build_agent_authz_request(identifier,
+                                                               address, Some(verkey),
+                                                               Some(auth), Some(comm));
+        assert!(request.is_ok());
+        assert!(request.unwrap().contains(expected_result));
+    }
+
+    #[test]
+    fn build_agent_authz_request_works_with_different_verkey() {
+        let ledger_service = LedgerService::new();
+        let identifier = "2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3";
+        let address = BigNumber::from_dec("678112").unwrap();
+        let verkey = "CGT9kooAdiw3AWWABrWSgKFe9BxCpAgkfRuJkwpvCJCz";
+        let auth = 4;
+        let comm = BigNumber::from_dec("59").unwrap();
+        let expected_result = r#""identifier":"2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3","operation":{"type":"30000","address":"678112","verkey":"CGT9kooAdiw3AWWABrWSgKFe9BxCpAgkfRuJkwpvCJCz","authz":4,"comm":"59"},"protocolVersion":1"#;
+
+        let request = ledger_service.build_agent_authz_request(identifier,
+                                                               address, Some(verkey),
+                                                               Some(auth), Some(comm));
+        assert!(request.is_ok());
+        assert!(request.unwrap().contains(expected_result));
+    }
+
+    #[test]
+    fn build_agent_authz_request_works_without_commitment() {
+        let ledger_service = LedgerService::new();
+        let identifier = "2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3";
+        let address = BigNumber::from_dec("678112").unwrap();
+        let verkey = "CGT9kooAdiw3AWWABrWSgKFe9BxCpAgkfRuJkwpvCJCz";
+        let auth = 8;
+        let expected_result = r#""identifier":"2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3","operation":{"type":"30000","address":"678112","verkey":"CGT9kooAdiw3AWWABrWSgKFe9BxCpAgkfRuJkwpvCJCz","authz":8},"protocolVersion":1"#;
+
+        let request = ledger_service.build_agent_authz_request(identifier,
+                                                               address, Some(verkey),
+                                                               Some(auth), None);
+        assert!(request.is_ok());
+        assert!(request.unwrap().contains(expected_result));
+    }
+
+    #[test]
+    fn build_get_agent_authz_request_works() {
+        let ledger_service = LedgerService::new();
+        let identifier = "2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3";
+        let address = BigNumber::from_dec("678112").unwrap();
+        let expected_result = r#""identifier":"2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3","operation":{"type":"30001","address":"678112"},"protocolVersion":1"#;
+
+        let request = ledger_service.build_get_agent_authz_request(identifier, address);
+        assert!(request.is_ok());
+        assert!(request.unwrap().contains(expected_result));
+    }
+
+    #[test]
+    fn build_get_agent_authz_accum_request_works() {
+        let ledger_service = LedgerService::new();
+        let identifier = "2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3";
+        let accum_id = "accum_1";
+        let expected_result = r#""identifier":"2aNqq2CuPtM3weJvGUfPViZJKibE5FuZGacgNoUjxDz3","operation":{"type":"30002","accum_id":"accum_1"},"protocolVersion":1"#;
+
+        let request = ledger_service.build_get_agent_authz_accum_request(identifier, accum_id);
+        assert!(request.is_ok());
+        assert!(request.unwrap().contains(expected_result));
     }
 }

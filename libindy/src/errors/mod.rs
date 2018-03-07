@@ -6,6 +6,8 @@ pub mod signus;
 pub mod indy;
 pub mod wallet;
 
+pub mod authz;
+
 use api::ErrorCode;
 
 pub trait ToErrorCode {

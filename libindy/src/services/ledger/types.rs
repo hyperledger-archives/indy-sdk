@@ -1,20 +1,13 @@
 extern crate serde_json;
+extern crate indy_crypto;
+
+use services::ledger::constants::*;
 
 use services::anoncreds::types::{PublicKey, RevocationPublicKey};
 use utils::json::{JsonEncodable, JsonDecodable};
-use services::ledger::constants::{
-    NODE,
-    NYM,
-    ATTRIB,
-    SCHEMA,
-    GET_ATTR,
-    GET_DDO,
-    GET_NYM,
-    GET_SCHEMA,
-    CLAIM_DEF,
-    GET_CLAIM_DEF,
-    GET_TXN
-};
+use self::indy_crypto::bn::BigNumber;
+
+use std::collections::HashMap;
 
 #[derive(Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -480,3 +473,98 @@ impl JsonEncodable for Endpoint {}
 
 impl<'a> JsonDecodable<'a> for Endpoint {}
 
+
+// ------------------------------------------------ AUTHZ -------------------------
+
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct AgentAuthzOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub address: BigNumber,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verkey: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub authz: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comm: Option<BigNumber>
+}
+
+impl AgentAuthzOperation {
+    pub fn new(address: BigNumber, verkey: Option<String>, authz: Option<u32>,
+               comm: Option<BigNumber>) -> AgentAuthzOperation {
+        AgentAuthzOperation {
+            _type: AGENT_AUTHZ.to_string(),
+            address,
+            verkey,
+            authz,
+            comm,
+        }
+    }
+}
+
+impl JsonEncodable for AgentAuthzOperation {}
+
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct GetAgentAuthzOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub address: BigNumber
+}
+
+impl GetAgentAuthzOperation {
+    pub fn new(address: BigNumber) -> GetAgentAuthzOperation {
+        GetAgentAuthzOperation {
+            _type: GET_AGENT_AUTHZ.to_string(),
+            address
+        }
+    }
+}
+
+impl JsonEncodable for GetAgentAuthzOperation {}
+
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetAgentAuthzResult {
+    pub identifier: String,
+    pub req_id: u64,
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub data: Vec<(String, u32, BigNumber)>,
+}
+
+impl<'a> JsonDecodable<'a> for GetAgentAuthzResult {}
+
+
+#[derive(Serialize, PartialEq, Debug)]
+pub struct GetAgentAuthzAccumOperation {
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub accum_id: String
+}
+
+impl GetAgentAuthzAccumOperation {
+    pub fn new(accum_id: String) -> GetAgentAuthzAccumOperation {
+        GetAgentAuthzAccumOperation {
+            _type: GET_AGENT_AUTHZ_ACCUM.to_string(),
+            accum_id
+        }
+    }
+}
+
+impl JsonEncodable for GetAgentAuthzAccumOperation {}
+
+
+#[derive(Deserialize, Eq, PartialEq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct GetAgentAuthzAccumResult {
+    pub identifier: String,
+    pub req_id: u64,
+    #[serde(rename = "type")]
+    pub _type: String,
+    pub data: BigNumber,
+}
+
+impl<'a> JsonDecodable<'a> for GetAgentAuthzAccumResult {}

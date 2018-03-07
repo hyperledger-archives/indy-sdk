@@ -57,3 +57,10 @@ macro_rules! check_useful_opt_c_str {
         };
     }
 }
+
+// Macro for optional integer type that converts any negative integer to None.
+macro_rules! check_useful_opt_c_int {
+    ($x:ident) => {
+        let $x = if $x >= 0 { Some($x as u32) }  else { None };
+    }
+}

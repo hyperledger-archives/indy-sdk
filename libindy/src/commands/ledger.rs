@@ -102,7 +102,25 @@ pub enum LedgerCommand {
     BuildGetTxnRequest(
         String, // submitter did
         i32, // data
+        Box<Fn(Result<String, IndyError>) + Send>),
+    // ------------------------------------------------ AUTHZ --------------------------------------
+
+    BuildAgentAuthzRequest(
+        String, // submitter
+        String, // address
+        Option<String>, // verkey
+        Option<u32>, // authz
+        Option<String>, // comm
+        Box<Fn(Result<String, IndyError>) + Send>),
+    BuildGetAgentAuthzRequest(
+        String, // submitter
+        String, // address
+        Box<Fn(Result<String, IndyError>) + Send>),
+    BuildGetAgentAuthzAccumRequest(
+        String, // submitter
+        String, // accumulator id
         Box<Fn(Result<String, IndyError>) + Send>)
+
 }
 
 pub struct LedgerCommandExecutor {
@@ -199,6 +217,23 @@ impl LedgerCommandExecutor {
             LedgerCommand::BuildGetTxnRequest(submitter_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetTxnRequest command received");
                 self.build_get_txn_request(&submitter_did, data, cb);
+            }
+            // ------------------------------------------------ AUTHZ -------------------------
+
+            LedgerCommand::BuildAgentAuthzRequest(submitter, address, verkey, auth, comm, cb) => {
+                info!(target: "ledger_command_executor", "BuildAgentAuthzRequest command received");
+                cb(self.build_agent_authz_request(&submitter, &address,
+                                                  verkey.as_ref().map(String::as_str),
+                                                  auth,
+                                                  comm.as_ref().map(String::as_str)));
+            }
+            LedgerCommand::BuildGetAgentAuthzRequest(submitter, address, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetAgentAuthzRequest command received");
+                cb(self.build_get_agent_authz_request(&submitter, &address));
+            }
+            LedgerCommand::BuildGetAgentAuthzAccumRequest(submitter, accum_id, cb) => {
+                info!(target: "ledger_command_executor", "BuildGetAgentAuthzAccumRequest command received");
+                cb(self.build_get_agent_authz_accum_request(&submitter, &accum_id));
             }
         };
     }
@@ -392,5 +427,62 @@ impl LedgerCommandExecutor {
         cb(self.ledger_service.build_get_txn_request(submitter_did,
                                                      data
         ).map_err(|err| IndyError::CommonError(err)))
+    }
+
+    // ------------------------------------------------ AUTHZ --------------------------------------
+
+    fn build_agent_authz_request(&self,
+                                 submitter: &str,
+                                 address: &str,
+                                 verkey: Option<&str>,
+                                 auth: Option<u32>,
+                                 comm: Option<&str>) -> Result<String, IndyError> {
+        info!("build_agent_authz_request >>> submitter: {:?}, address: {:?}, verkey: {:?}, auth: {:?}, comm: {:?}",
+              submitter, address, verkey, auth, comm);
+
+        self.crypto_service.validate_key(submitter)?;
+        // TODO: Need some validation
+        let address = BigNumber::from_dec(address)?;
+        let comm = comm.as_ref().map(|s| BigNumber::from_dec(s).unwrap());
+        let res = self.ledger_service.build_agent_authz_request(submitter,
+                                                                address,
+                                                                verkey,
+                                                                auth,
+                                                                comm)?;
+
+        info!("build_agent_authz_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_get_agent_authz_request(&self,
+                                     submitter: &str,
+                                     address: &str) -> Result<String, IndyError> {
+        info!("build_get_agent_authz_request >>> submitter: {:?}, address: {:?}", submitter, address);
+
+        self.crypto_service.validate_did(submitter)?;
+        // TODO: Need some validation
+        let address = BigNumber::from_dec(address)?;
+        let res = self.ledger_service.build_get_agent_authz_request(submitter,
+                                                                    address)?;
+
+        info!("build_get_agent_authz_request <<< res: {:?}", res);
+
+        Ok(res)
+    }
+
+    fn build_get_agent_authz_accum_request(&self,
+                                           submitter: &str,
+                                           accum_id: &str) -> Result<String, IndyError> {
+        info!("build_get_agent_authz_accum_request >>> submitter: {:?}, accum_id: {:?}", submitter, accum_id);
+
+        self.crypto_service.validate_did(submitter)?;
+        // TODO: Need some validation
+        let res = self.ledger_service.build_get_agent_authz_accum_request(submitter,
+                                                                          accum_id)?;
+
+        info!("build_get_agent_authz_accum_request <<< res: {:?}", res);
+
+        Ok(res)
     }
 }

@@ -9,6 +9,9 @@ pub mod pool;
 pub mod signus;
 pub mod wallet;
 
+//pub mod authz;
+
+
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
 pub enum ErrorCode
@@ -124,5 +127,19 @@ pub enum ErrorCode
 
     // Signus errors
     // Unknown format of DID entity keys
-    SignusUnknownCryptoError = 500
+    SignusUnknownCryptoError = 500,
+
+    // TODO: Reconsider: Should be moved to a different enum and use composition here?
+    // ------------------------------------------------ AUTHZ -------------------------
+
+    // Attempt to create duplicate policy address
+    PolicyDoesNotExistError = 3000,
+
+    PolicyAlreadyExistsError = 3001,
+
+    AgentDoesNotExistError = 3002,
+
+    AgentAlreadyExistsError = 3003,
+
+    AgentHasNoSecretError = 3004,
 }
