@@ -34,7 +34,7 @@ async def test_serialize_with_bad_handle():
         claim_def.handle = 0
         await claim_def.serialize()
     assert ErrorCode.InvalidClaimDefHandle == e.value.error_code
-
+    assert 'Invalid Claim Definition handle' == e.value.error_msg
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -52,7 +52,7 @@ async def test_deserialize_with_invalid_data():
         data = {'invalid': -99}
         await ClaimDef.deserialize(data)
     assert ErrorCode.InvalidClaimDef == e.value.error_code
-
+    assert 'Claim Def not in valid json' == e.value.error_msg
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -73,4 +73,5 @@ async def test_release():
         claim_def.release()
         await claim_def.serialize()
     assert ErrorCode.InvalidClaimDefHandle == e.value.error_code
+    assert 'Invalid Claim Definition handle' == e.value.error_msg
 

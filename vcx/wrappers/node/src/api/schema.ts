@@ -91,7 +91,7 @@ export class Schema extends VCXBase {
       await schema.getSchemaNo()
       return schema
     } catch (err) {
-      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_schema_create')
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_schema_create')
     }
   }
 
@@ -117,7 +117,7 @@ export class Schema extends VCXBase {
       }
       return await super._deserialize(Schema, schema, schemaParams)
     } catch (err) {
-      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_schema_deserialize')
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_schema_deserialize')
     }
   }
 
@@ -160,7 +160,7 @@ export class Schema extends VCXBase {
       newSchema._handle = JSON.stringify(schemaObj.handle)
       return newSchema
     } catch (err) {
-      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_schema_get_attributes')
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_schema_get_attributes')
     }
   }
 
@@ -178,7 +178,7 @@ export class Schema extends VCXBase {
       const data: ISchemaObj = JSON.parse(await super._serialize())
       return data
     } catch (err) {
-      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_schema_serialize')
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_schema_serialize')
     }
   }
 
@@ -203,7 +203,7 @@ export class Schema extends VCXBase {
         )
       return schemaNo
     } catch (err) {
-      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_proof_create')
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_proof_create')
     }
   }
 

@@ -39,6 +39,7 @@ async def test_serialize_with_bad_handle():
         issuer_claim.handle = 0
         await issuer_claim.serialize()
     assert ErrorCode.InvalidIssuerClaimHandle == e.value.error_code
+    assert 'Invalid Claim Issuer Handle' == e.value.error_msg
 
 
 @pytest.mark.asyncio
@@ -60,6 +61,7 @@ async def test_deserialize_with_invalid_data():
         data = {'invalid': -99}
         await IssuerClaim.deserialize(data)
     assert ErrorCode.InvalidJson == e.value.error_code
+    assert 'Invalid JSON string' == e.value.error_msg
 
 
 @pytest.mark.asyncio
@@ -87,6 +89,7 @@ async def test_update_state_with_invalid_handle():
         issuer_claim.handle = 0
         await issuer_claim.update_state()
     assert ErrorCode.InvalidIssuerClaimHandle == e.value.error_code
+    assert 'Invalid Claim Issuer Handle' == e.value.error_msg
 
 
 @pytest.mark.asyncio
@@ -105,7 +108,7 @@ async def test_issuer_claim_release():
         issuer_claim.release()
         await issuer_claim.serialize()
     assert ErrorCode.InvalidIssuerClaimHandle == e.value.error_code
-
+    assert 'Invalid Claim Issuer Handle' == e.value.error_msg
 
 
 @pytest.mark.asyncio
@@ -131,7 +134,7 @@ async def test_send_offer_with_invalid_state():
         issuer_claim2 = await IssuerClaim.deserialize(data)
         await issuer_claim2.send_offer(connection)
     assert ErrorCode.NotReady == e.value.error_code
-
+    assert 'Object not ready for specified action' == e.value.error_msg
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -141,6 +144,7 @@ async def test_send_offer_with_bad_connection():
         issuer_claim = await IssuerClaim.create(source_id, attrs, schema_no, name)
         await issuer_claim.send_offer(connection)
     assert ErrorCode.InvalidConnectionHandle == e.value.error_code
+    assert 'Invalid Connection Handle' == e.value.error_msg
 
 
 @pytest.mark.asyncio

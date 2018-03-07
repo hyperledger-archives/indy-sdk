@@ -26,5 +26,6 @@ class ErrorCode(IntEnum):
 class VcxError(Exception):
     # error_code: ErrorCode
 
-    def __init__(self, error_code: ErrorCode):
+    def __init__(self, error_code: ErrorCode, error_msg: str):
         self.error_code = error_code
+        self.error_msg = error_msg

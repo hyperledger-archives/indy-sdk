@@ -28,7 +28,7 @@ def do_call(name: str, *args):
 
     if err != ErrorCode.Success:
         logger.warning("_do_call: Function %s returned error %i", name, err)
-        future.set_exception(VcxError(ErrorCode(err)))
+        future.set_exception(VcxError(ErrorCode(err), error_message(err)))
 
     logger.debug("do_call: <<< %s", future)
     return future
@@ -46,18 +46,17 @@ def release(name, handle):
         raise VcxError(ErrorCode(err))
 
 
-async def error_message(error_code: int) -> str:
+def error_message(error_code: int) -> str:
     logger = logging.getLogger(__name__)
-    if not hasattr(error_message, "cb"):
-        logger.debug("{}: Creating callback".format('vcx_error_message'))
-        error_message.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
+    name = 'vcx_error_c_message'
     c_error_code = c_uint32(error_code)
+    c_err_msg = getattr(_cdll(), name)(c_error_code)
 
-    msg = await do_call('vcx_error_message',
-                        c_error_code,
-                        error_message.cb)
-    return msg.decode()
+    err_msg = cast(c_err_msg , c_char_p).value.decode()
+    logger.debug("error_message: Function %s returned error_message: %i", name, err_msg)
+
+    return err_msg
 
 
 def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
@@ -85,7 +84,7 @@ def _cxs_loop_callback(command_handle: int, err, *args):
         print("_indy_loop_callback: Future was cancelled earlier")
     else:
         if err != ErrorCode.Success:
-            future.set_exception(VcxError(ErrorCode(err)))
+            future.set_exception(VcxError(ErrorCode(err), error_message(err)))
         else:
             if len(args) == 0:
                 res = None
