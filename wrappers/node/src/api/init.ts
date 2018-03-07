@@ -31,6 +31,6 @@ export async function initVcx (configPath: string, options: IInitVCXOptions = {}
       })
     )
   } catch (err) {
-    throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_init')
+    throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_init')
   }
 }

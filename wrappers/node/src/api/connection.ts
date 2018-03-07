@@ -62,7 +62,7 @@ export class Connection extends VCXBaseWithState {
       await connection._create((cb) => rustAPI().vcx_connection_create(commandHandle, recipientInfo.id, cb))
       return connection
     } catch (err) {
-      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_connection_create')
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_create')
     }
   }
 
@@ -84,7 +84,7 @@ export class Connection extends VCXBaseWithState {
       const connection = await super._deserialize(Connection, connectionData)
       return connection
     } catch (err) {
-      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_connection_deserialize')
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_deserialize')
     }
   }
 
@@ -121,7 +121,7 @@ export class Connection extends VCXBaseWithState {
           })
         )
     } catch (err) {
-      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_connection_connect')
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_connect')
     }
   }
 
@@ -139,7 +139,7 @@ export class Connection extends VCXBaseWithState {
       const data: IConnectionData = JSON.parse(await super._serialize())
       return data
     } catch (err) {
-      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_connection_serialize')
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_serialize')
     }
   }
 
@@ -154,7 +154,7 @@ export class Connection extends VCXBaseWithState {
     try {
       await this._updateState()
     } catch (err) {
-      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_connection_updateState')
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_updateState')
     }
   }
 
@@ -169,7 +169,7 @@ export class Connection extends VCXBaseWithState {
     try {
       return await this._getState()
     } catch (err) {
-      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_connection_get_state')
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_get_state')
     }
   }
 
@@ -186,7 +186,7 @@ export class Connection extends VCXBaseWithState {
       const data: string = await this._inviteDetails(abbr)
       return data
     } catch (err) {
-      throw new VCXInternalError(err, await VCXBase.errorMessage(err), 'vcx_connection_invite_details')
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_invite_details')
     }
   }
 

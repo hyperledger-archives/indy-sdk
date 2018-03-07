@@ -16,24 +16,8 @@ export abstract class VCXBase extends GCWatcher {
     this._sourceId = sourceId
   }
 
-  static async errorMessage (errorCode: number): Promise<string> {
-    let rc = null
-    const data = await createFFICallbackPromise<string>(
-        (resolve, reject, cb) => {
-          rc = rustAPI().vcx_error_message(0, errorCode, cb)
-          if (rc) {
-            reject(rc)
-          }
-        },
-        (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'string'], (handle, err, errorMsg) => {
-          if (err) {
-            reject(err)
-            return
-          }
-          resolve(errorMsg)
-        })
-    )
-    return data
+  static errorMessage (errorCode: number): string {
+    return rustAPI().vcx_error_c_message(errorCode)
   }
 
   static async _deserialize<T extends VCXBase = any, P = object> (

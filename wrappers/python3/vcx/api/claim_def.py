@@ -1,6 +1,7 @@
 from ctypes import *
 from vcx.error import VcxError, ErrorCode
 from vcx.api.vcx_base import VcxBase
+from vcx.common import error_message
 
 import json
 
@@ -60,7 +61,7 @@ class ClaimDef(VcxBase):
                                                     schema_no)
             return claim_def
         except KeyError:
-            raise VcxError(ErrorCode.InvalidClaimDef)
+            raise VcxError(ErrorCode.InvalidClaimDef, error_message(ErrorCode.InvalidClaimDef))
 
     async def serialize(self) -> dict:
         return await self._serialize(ClaimDef, 'vcx_claimdef_serialize')

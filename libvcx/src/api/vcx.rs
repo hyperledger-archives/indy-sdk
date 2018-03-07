@@ -9,6 +9,7 @@ use settings;
 use std::thread;
 use std::path::Path;
 
+
 /// Initializes VCX with config file
 ///
 /// Possible values in the Config file: ->
@@ -202,22 +203,10 @@ pub extern fn vcx_reset() -> u32 {
 }
 
 #[no_mangle]
-pub extern fn vcx_error_message(command_handle: u32,
-                                error_code: u32,
-                                cb: Option<extern fn(xcommand_handle: u32, err: u32, msg: *const c_char)>) -> u32 {
-
-    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-
-    info!("vcx_error_message(command_handle: {}, error_code: {})", command_handle, error_code);
-    thread::spawn( move|| {
-        let msg = error::error_message(&error_code);
-        let c_msg = CStringUtils::string_to_cstring(msg.to_string());
-        cb(command_handle, error::SUCCESS.code_num, c_msg.as_ptr());
-    });
-
-    error::SUCCESS.code_num
+pub extern fn vcx_error_c_message(error_code: u32) -> *const c_char {
+    info!("vcx_error_message(error_code: {})", error_code);
+    error::error_c_message(&error_code).as_ptr()
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -321,36 +310,21 @@ mod tests {
         assert_eq!(wallet::get_wallet_handle(), 0);
     }
 
-    extern "C" fn error_msg_cb(handle: u32, err: u32, msg: *const c_char) {
-        assert_eq!(err, 0);
-        if msg.is_null() {
-            panic!("error message is is null");
-        }
-        check_useful_c_str!(msg, ());
-        println!("successfully called error_msg_cb: {}", msg);
-    }
-
-    extern "C" fn unknown_error_msg_cb(handle: u32, err: u32, msg: *const c_char) {
-        assert_eq!(err, 0);
-        if msg.is_null() {
-            panic!("error message is is null");
-        }
-        check_useful_c_str!(msg, ());
-        assert_eq!(msg, error::UNKNOWN_ERROR.message);
-        println!("successfully called unknown_error_msg_cb: {}", msg);
-    }
-
     #[test]
-    fn test_vcx_error_message() {
+    fn test_error_c_message() {
         settings::set_defaults();
-        assert_eq!(vcx_error_message(0, 0, Some(error_msg_cb)), 0);
-        thread::sleep(Duration::from_millis(200));
-    }
+        let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(0)).unwrap().unwrap();
+        assert_eq!(c_message,error::SUCCESS.message);
 
-    #[test]
-    fn test_vcx_error_message_with_invalid_rc() {
-        settings::set_defaults();
-        assert_eq!(vcx_error_message(0, 9999999, Some(unknown_error_msg_cb)), 0);
-        thread::sleep(Duration::from_millis(200));
+        let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(1001)).unwrap().unwrap();
+        assert_eq!(c_message,error::UNKNOWN_ERROR.message);
+
+        let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(100100)).unwrap().unwrap();
+        assert_eq!(c_message,error::UNKNOWN_ERROR.message);
+
+        let c_message = CStringUtils::c_str_to_string(vcx_error_c_message(1021)).unwrap().unwrap();
+        assert_eq!(c_message,error::INVALID_ATTRIBUTES_STRUCTURE.message);
+
+
     }
 }
