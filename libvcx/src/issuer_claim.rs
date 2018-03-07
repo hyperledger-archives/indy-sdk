@@ -615,6 +615,33 @@ pub mod tests {
     }
 
     #[test]
+    fn test_retry_send_claim_offer() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+
+        let connection_handle = build_connection("test_send_claim_offer".to_owned()).unwrap();
+
+        let claim_id = DEFAULT_CLAIM_ID;
+
+        let handle = issuer_claim_create(0,
+                                         None,
+                                         "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
+                                         "claim_name".to_string(),
+                                         "{\"attr\":\"value\"}".to_owned()).unwrap();
+
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        assert_eq!(send_claim_offer(handle, connection_handle), Err(error::UNKNOWN_LIBINDY_ERROR.code_num));
+        assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
+        assert_eq!(get_offer_uid(handle).unwrap(), "");
+
+        // Can retry after initial failure
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        assert_eq!(send_claim_offer(handle, connection_handle).unwrap(), error::SUCCESS.code_num);
+        assert_eq!(get_state(handle), VcxStateType::VcxStateOfferSent as u32);
+        assert_eq!(get_offer_uid(handle).unwrap(), "ntc2ytb");
+    }
+
+    #[test]
     fn test_send_a_claim() {
         let test_name = "test_send_a_claim";
         settings::set_defaults();
@@ -636,6 +663,46 @@ pub mod tests {
             Ok(_) => assert_eq!(0, 0),
             Err(x) => {
                 println!("error message: {}", error::error_message(&x));
+                assert_eq!(x, 0)
+            },
+        };
+        assert_eq!(claim.msg_uid, "ntc2ytb");
+        assert_eq!(claim.state, VcxStateType::VcxStateAccepted);
+    }
+
+    #[test]
+    fn test_claim_can_be_resent_after_failure() {
+
+        let test_name = "test_send_a_claim";
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, "QTrbV4raAcND4DWWzBmdsh");
+
+        let claim_req:ClaimRequest = match ClaimRequest::from_str(&CLAIM_REQ_STRING) {
+            Ok(x) => x,
+            Err(_) => panic!("error with claim request"),
+        };
+        let issuer_did = claim_req.issuer_did;
+
+        let mut claim = create_standard_issuer_claim();
+        claim.state = VcxStateType::VcxStateRequestReceived;
+
+        let connection_handle = build_connection("test_send_claim_offer".to_owned()).unwrap();
+
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        match claim.send_claim(connection_handle) {
+            Ok(_) => assert_eq!(0, 1),
+            Err(x) => {
+                assert_eq!(x, error::UNKNOWN_LIBINDY_ERROR.code_num)
+            },
+        };
+        assert_eq!(claim.msg_uid, "1234");
+        assert_eq!(claim.state, VcxStateType::VcxStateRequestReceived);
+        // Retry sending the claim, use the mocked http. Show that you can retry sending the claim
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        match claim.send_claim(connection_handle) {
+            Ok(_) => assert_eq!(0, 0),
+            Err(x) => {
                 assert_eq!(x, 0)
             },
         };
