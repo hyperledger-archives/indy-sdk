@@ -60,18 +60,18 @@ fn demo_full(){
 
     // Init SDK  *********************************************************************
     let config_string: String = json!({
-       "agent_endpoint": "https://enym-eagency.pdev.evernym.com",
-       "logo_url":logo_url,
-       "agent_enterprise_verkey": "By1CvKuLFRRdqMyGsmu8naVQQQfSH4MYna4K7d4KDvfy",
-       "enterprise_did": "2hoqvcwupRTUNkXn6ArYzs",
-       "agent_pairwise_did": "NUHiPAuSi8XoPRPGnECPUo",
-       "enterprise_name":"Evernym",
-       "enterprise_did_agent": "M7uZU89SUdsav7i4hVZtXp",
-       "agency_pairwise_verkey": "4hmBc54YanNhQHTD66u6XDp1NSgQm1BacPFbE7b5gtat",
+       "agency_endpoint": "https://enym-eagency.pdev.evernym.com",
+       "institution_logo_url":logo_url,
+       "sdk_to_remote_verkey": "By1CvKuLFRRdqMyGsmu8naVQQQfSH4MYna4K7d4KDvfy",
+       "institution_did": "2hoqvcwupRTUNkXn6ArYzs",
+       "remote_to_sdk_did": "NUHiPAuSi8XoPRPGnECPUo",
+       "institution_name":"Evernym",
+       "sdk_to_remote_did": "M7uZU89SUdsav7i4hVZtXp",
+       "agency_verkey": "4hmBc54YanNhQHTD66u6XDp1NSgQm1BacPFbE7b5gtat",
        "wallet_name": "my_real_wallet",
-       "agency_pairwise_did": "7o2xT9Qtp83cJUJMUBTF3M",
+       "agency_did": "7o2xT9Qtp83cJUJMUBTF3M",
        "enterprise_verkey": "vrWGArMA3toVoZrYGSAMjR2i9KjBS66bZWyWuYJJYPf",
-       "agent_pairwise_verkey": "Chj1oQYdmbTXKG96Fpo8C2sd6fRrt9UyCrbmuo4vzroK",
+       "remote_to_sdk_verkey": "Chj1oQYdmbTXKG96Fpo8C2sd6fRrt9UyCrbmuo4vzroK",
        "genesis_path":self::vcx::utils::constants::GENESIS_PATH
       }).to_string();
 
@@ -442,17 +442,14 @@ fn create_schema_and_claimdef() -> u32 {
 #[allow(dead_code)]
 fn init_sdk(){
     // Init SDK  *********************************************************************
-    let issuer_did = "TCwEv4tiAuA5DfC7VTdu83";
-    let config_string = format!("{{\"agent_endpoint\":\"{}\",\
-        \"agency_pairwise_did\":\"72x8p4HubxzUK1dwxcc5FU\",\
-        \"agent_pairwise_did\":\"UJGjM6Cea2YVixjWwHN9wq\",\
-        \"enterprise_did_agency\":\"{}\",\
-        \"enterprise_did_agent\":\"JmvnKLYj7b7e5ywLxkRMjM\",\
-        \"enterprise_name\":\"enterprise\",\
-        \"logo_url\":\"https://s19.postimg.org/ykyz4x8jn/evernym.png\",\
-        \"agency_pairwise_verkey\":\"7118p4HubxzUK1dwxcc5FU\",\
-        \"agent_pairwise_verkey\":\"U22jM6Cea2YVixjWwHN9wq\"}}", "https://agency-ea-sandbox.evernym.com",
-                                issuer_did);
+    let config_string = format!("{{\"agency_endpoint\":\"{}\",\
+        \"agency_did\":\"72x8p4HubxzUK1dwxcc5FU\",\
+        \"remote_to_sdk_did\":\"UJGjM6Cea2YVixjWwHN9wq\",\
+        \"sdk_to_remote_did\":\"JmvnKLYj7b7e5ywLxkRMjM\",\
+        \"institution_name\":\"enterprise\",\
+        \"institution_logo_url\":\"https://s19.postimg.org/ykyz4x8jn/evernym.png\",\
+        \"agency_verkey\":\"7118p4HubxzUK1dwxcc5FU\",\
+        \"remote_to_sdk_verkey\":\"U22jM6Cea2YVixjWwHN9wq\"}}", "https://agency-ea-sandbox.evernym.com");
     let mut file = NamedTempFileOptions::new()
         .suffix(".json")
         .create()

@@ -72,14 +72,14 @@ def test_demo():
     random_enterprise_name = get_random_name()
     genesis_path = settings['genesis_path']
     enterprise_config = {
-        'enterprise_name': random_enterprise_name,
-        'logo_url': 'https://robohash.org/' + random_enterprise_name,
+        'institution_name': random_enterprise_name,
+        'institution_logo_url': 'https://robohash.org/' + random_enterprise_name,
         'genesis_path': genesis_path,
         'wallet_name': settings['wallet_name'],
         'wallet_key': settings['wallet_key']
     }
     vcx_config_json = update_json_values(enterprise_config, config_dev)
-    assert vcx_config_json['enterprise_name'] == random_enterprise_name
+    assert vcx_config_json['institution_name'] == random_enterprise_name
     write_json_to_file(vcx_config_json, 'utils/vcxconfig.json', sort_keys=True)
 
     schema_name = 'Club Membership'
@@ -321,15 +321,15 @@ def test_utils_create_config():
     image_hash= '12345'
     random_name = get_random_name()
     config = {
-        'logo_url': 'https://robohash.org/' + image_hash,
-        'enterprise_name': random_name
+        'institution_logo_url': 'https://robohash.org/' + image_hash,
+        'institution_name': random_name
     }
     create_vcx_config_json(config)
     assert filename in os.listdir(dir)
     with open(os.path.join(dir, filename), 'r') as in_file:
         config = json.load(in_file)
-        assert config['logo_url'] == 'https://robohash.org/' + image_hash
-        assert config['enterprise_name'] == random_name
+        assert config['institution_logo_url'] == 'https://robohash.org/' + image_hash
+        assert config['institution_name'] == random_name
     print(get_random_name())
 
 

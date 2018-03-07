@@ -13,7 +13,7 @@ pub struct Config {
     agency_url: String,
     agency_did: String,
     agency_verkey: String,
-    wallet_name: String,
+    wallet_name: Option<String>,
     wallet_key: Option<String>,
     agent_seed: Option<String>,
     enterprise_seed: Option<String>,
@@ -30,7 +30,7 @@ pub extern fn vcx_provision_agent(json:    *const c_char) -> *mut c_char {
         },
     };
 
-    match connect_register_provision(&my_config.agency_url, &my_config.agency_did, &my_config.agency_verkey, &my_config.wallet_name, my_config.agent_seed, my_config.enterprise_seed, my_config.wallet_key) {
+    match connect_register_provision(&my_config.agency_url, &my_config.agency_did, &my_config.agency_verkey, my_config.wallet_name, my_config.agent_seed, my_config.enterprise_seed, my_config.wallet_key) {
         Err(e) => {
             error!("Provision Agent Error {}.", e);
             return ptr::null_mut();

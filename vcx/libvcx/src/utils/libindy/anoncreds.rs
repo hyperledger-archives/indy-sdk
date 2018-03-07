@@ -165,7 +165,7 @@ mod tests {
         let mut issuer_claim = create_standard_issuer_claim();
         issuer_claim.claim_id = String::from("id");
         let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e".to_owned();
-        settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, &issuer_did);
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &issuer_did);
         init_wallet("test_wallet").unwrap();
         let wallet_handle = get_wallet_handle();
         SignusUtils::create_and_store_my_did(wallet_handle, None).unwrap();

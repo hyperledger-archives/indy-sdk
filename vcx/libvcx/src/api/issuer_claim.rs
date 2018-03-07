@@ -53,7 +53,7 @@ pub extern fn vcx_issuer_create_claim(command_handle: u32,
         check_useful_c_str!(issuer_did, error::INVALID_OPTION.code_num);
         issuer_did.to_owned()
     } else {
-        match settings::get_config_value(settings::CONFIG_ENTERPRISE_DID) {
+        match settings::get_config_value(settings::CONFIG_INSTITUTION_DID) {
             Ok(x) => x,
             Err(x) => return x
         }
@@ -475,7 +475,7 @@ mod tests {
     fn test_vcx_issuer_send_a_claim() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, DEFAULT_DID);
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
         use claim_request::ClaimRequest;
 
         let test_name = "test_vcx_issuer_send_a_claim";
@@ -491,7 +491,7 @@ mod tests {
             Err(_) => panic!("error with claim request"),
         };
         // set claim request to have the same did as enterprise did (and sam as claim def)
-        claim_request.issuer_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID).clone().unwrap();
+        claim_request.issuer_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).clone().unwrap();
         claim_request.schema_seq_no = 15;
         issuer_claim::set_claim_request(handle, claim_request).unwrap();
         assert_eq!(issuer_claim::get_state(handle),VcxStateType::VcxStateRequestReceived as u32);
@@ -539,8 +539,8 @@ mod tests {
 
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        settings::set_config_value(settings::CONFIG_AGENT_ENDPOINT, mockito::SERVER_URL);
-        settings::set_config_value(settings::CONFIG_ENTERPRISE_DID,"8XFh8yBzrpJQmNyZzgoTqB");
+        settings::set_config_value(settings::CONFIG_AGENCY_ENDPOINT, mockito::SERVER_URL);
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID,"8XFh8yBzrpJQmNyZzgoTqB");
 
         let original_issuer_claim_str = "{\"source_id\":\"test_vcx_issue_claim_fails_without_claim_def_in_wallet\",\"handle\":123,\"claim_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"msg_uid\":\"\",\"schema_seq_no\":32,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"issued_did\":\"\",\"state\":3}";
         let handle = issuer_claim::from_string(original_issuer_claim_str).unwrap();
@@ -548,7 +548,7 @@ mod tests {
         /* align claim request and claim def ***********************************/
         let mut claim_request = create_claim_request_from_str(CLAIM_REQ_STRING);
         // set claim request to have the same did as enterprise did (and sam as claim def)
-        claim_request.issuer_did = settings::get_config_value(settings::CONFIG_ENTERPRISE_DID).clone().unwrap();
+        claim_request.issuer_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).clone().unwrap();
         // set claim request to have the same sequence number as the schema sequence number
         claim_request.schema_seq_no = schema_seq_num as i32;
         assert_eq!(claim_request.schema_seq_no, schema_seq_num as i32);
@@ -557,7 +557,7 @@ mod tests {
         let schema = create_default_schema(schema_seq_num);
         let wallet_name = create_dummy_wallet(test_name);
 //        put_claim_def_in_issuer_wallet(&settings::get_config_value(
-//            settings::CONFIG_ENTERPRISE_DID).unwrap(), &schema, get_wallet_handle());
+//            settings::CONFIG_INSTITUTION_DID).unwrap(), &schema, get_wallet_handle());
         /**********************************************************************/
         connection::set_pw_did(connection_handle, "8XFh8yBzrpJQmNyZzgoTqB");
 
@@ -587,7 +587,7 @@ mod tests {
 
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, DEFAULT_DID);
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
         assert_eq!(vcx_issuer_create_claim(0,
                                            ptr::null(),
                                            DEFAULT_SCHEMA_SEQ_NO,

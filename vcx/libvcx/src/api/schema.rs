@@ -36,7 +36,7 @@ pub extern fn vcx_schema_create(command_handle: u32,
     check_useful_c_str!(schema_name, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(schema_data, error::INVALID_OPTION.code_num);
-    let issuer_did = match settings::get_config_value(settings::CONFIG_ENTERPRISE_DID) {
+    let issuer_did = match settings::get_config_value(settings::CONFIG_INSTITUTION_DID) {
         Ok(x) => x,
         Err(x) => return x
     };
@@ -367,7 +367,7 @@ mod tests {
         let wallet_handle = get_wallet_handle();
         let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_ISSUER_PW_SEED)).unwrap();
         SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_AGENT_PW_SEED)).unwrap();
-        settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, &my_did);
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
         let data = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#.to_string();
         assert_eq!(vcx_schema_create(0,
                                      CString::new("Test Source ID").unwrap().into_raw(),
@@ -386,7 +386,7 @@ mod tests {
         let wallet_handle = get_wallet_handle();
         let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_ISSUER_PW_SEED)).unwrap();
         SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_AGENT_PW_SEED)).unwrap();
-        settings::set_config_value(settings::CONFIG_ENTERPRISE_DID, &my_did);
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
         let data = r#"{"name":"Claim For Driver's License","version":"1.0","attr_names":["address1","address2","city","state","zip"]}"#.to_string();
         assert_eq!(vcx_schema_create(0,
                                      CString::new("Test Source ID").unwrap().into_raw(),

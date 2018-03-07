@@ -81,7 +81,7 @@ impl UpdateProfileData{
     }
 
     pub fn send_secure(&mut self) -> Result<Vec<String>, u32> {
-        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENT_ENDPOINT).unwrap());
+        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).unwrap());
 
         let data = match self.msgpack() {
             Ok(x) => x,
@@ -125,7 +125,7 @@ impl GeneralMessage for UpdateProfileData{
         debug!("update profile inner bundle: {:?}", data);
         let msg = Bundled::create(data).encode()?;
 
-        let to_did = settings::get_config_value(settings::CONFIG_AGENT_PAIRWISE_DID).unwrap();
+        let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID).unwrap();
         bundle_for_agency(msg, &to_did)
     }
 }
@@ -179,9 +179,9 @@ mod tests {
         SignusUtils::store_their_did_from_parts(my_wallet, agent_did.as_ref(), agent_vk.as_ref()).unwrap();
         SignusUtils::store_their_did_from_parts(my_wallet, agency_did.as_ref(), agency_vk.as_ref()).unwrap();
 
-        settings::set_config_value(settings::CONFIG_AGENCY_PAIRWISE_VERKEY, &agency_vk);
-        settings::set_config_value(settings::CONFIG_AGENT_PAIRWISE_VERKEY, &agent_vk);
-        settings::set_config_value(settings::CONFIG_ENTERPRISE_VERKEY, &my_vk);
+        settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
+        settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
+        settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY, &my_vk);
 
         let msg = update_data()
             .to(agent_did.as_ref())

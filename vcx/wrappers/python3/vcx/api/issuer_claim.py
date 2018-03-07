@@ -26,7 +26,7 @@ class IssuerClaim(VcxStateful):
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
         c_schema_no = c_uint32(schema_no)
-        # default enterprise_did in config is used as issuer_did
+        # default institution_did in config is used as issuer_did
         c_issuer_did = None
         c_data = c_char_p(json.dumps(attrs).encode('utf-8'))
         c_name = c_char_p(name.encode('utf-8'))

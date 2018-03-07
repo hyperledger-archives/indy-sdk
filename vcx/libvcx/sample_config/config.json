@@ -2,12 +2,11 @@
    "pool_name":"my_pool",
    "config_name":"my_config",
    "wallet_name":"my_wallet",
-   "agency_pairwise_did":"72x8p4HubxzUK1dwxcc5FU",
-   "agent_pairwise_did":"UJGjM6Cea2YVixjWwHN9wq",
-   "enterprise_did_agency":"RF3JM851T4EQmhh8CdagSP",
-   "enterprise_did_agent":"AB3JM851T4EQmhh8CdagSP",
-   "enterprise_name":"enterprise",
-   "agency_pairwise_verkey":"7118p4HubxzUK1dwxcc5FU",
-   "agent_pairwise_verkey":"U22jM6Cea2YVixjWwHN9wq",
-   "logo_url":"http://www.evernym.com"
+   "agency_did":"72x8p4HubxzUK1dwxcc5FU",
+   "remote_to_sdk_did":"UJGjM6Cea2YVixjWwHN9wq",
+   "sdk_to_remote_did":"AB3JM851T4EQmhh8CdagSP",
+   "institution_name":"enterprise",
+   "agency_verkey":"7118p4HubxzUK1dwxcc5FU",
+   "remote_to_sdk_verkey":"U22jM6Cea2YVixjWwHN9wq",
+   "institution_logo_url":"http://www.evernym.com"
 }
