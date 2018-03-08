@@ -19,7 +19,7 @@ test('pool', async function (t) {
     'genesis_txn': pool.file
   })), void 0)
 
-  var poolH = await indy.open_pool_ledger(pool.name, "null")
+  var poolH = await indy.open_pool_ledger(pool.name, 'null')
   t.truthy(poolH >= 0)
 
   err = await t.throws(indy.delete_pool_ledger_config(pool.name))

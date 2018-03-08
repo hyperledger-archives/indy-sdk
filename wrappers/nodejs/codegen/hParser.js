@@ -18,19 +18,19 @@ fs.readdirSync(dir).forEach(function (file) {
 
 // split it into lines and remove comments and # lines
 var lines = hText
-    .split('\n')
-    .map(function (line) {
-      return line
-            .replace(/\s+/g, ' ')
-            .trim()
-            .replace(/^#.*$/g, '')
-            .replace(/\/\/.*$/g, '')
-            .replace(/\s+/g, ' ')
-            .trim()
-    })
-    .filter(function (line) {
-      return line.length > 0
-    })
+  .split('\n')
+  .map(function (line) {
+    return line
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^#.*$/g, '')
+      .replace(/\/\/.*$/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  })
+  .filter(function (line) {
+    return line.length > 0
+  })
 
 // extract all inside the `extern "C" { (.*) }`
 var externCText = ''
@@ -51,13 +51,13 @@ while (i < lines.length) {
 
 // extern functions on their own lines
 var functionLines = (' ' + externCText.replace(/\n/g, ' ').replace(/\s+/g, ' '))
-    .split('extern')
-    .map(function (line) {
-      return line.replace(/\s+/g, ' ').trim()
-    })
-    .filter(function (line) {
-      return line.length > 0
-    })
+  .split('extern')
+  .map(function (line) {
+    return line.replace(/\s+/g, ' ').trim()
+  })
+  .filter(function (line) {
+    return line.length > 0
+  })
 
 // parse a function args string until it hits the closing ")"
 var parseArgs = function (src) {

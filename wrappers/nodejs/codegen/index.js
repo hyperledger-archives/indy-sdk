@@ -2,12 +2,12 @@ var fs = require('fs')
 var path = require('path')
 
 var OUT_FILE = path.resolve(__dirname, '../src/indy_codegen.h')
+var README_FILE = path.resolve(__dirname, '../README.md')
 
 var hAST = require('./hParser')
 
 var normalizeType = function (typeSrc) {
-  typeSrc = typeSrc.replace(/[^a-z0-9_*]/ig, '')
-  switch (typeSrc) {
+  switch (typeSrc.replace(/[^a-z0-9_*]/ig, '')) {
     case 'constchar*':
     case 'constchar*const':
       return 'String'
@@ -30,6 +30,29 @@ var normalizeType = function (typeSrc) {
       return 'Buffer'
   }
   throw new Error('normalizeType doesn\'t handle: ' + typeSrc)
+}
+
+var toHumanType = function (typeSrc) {
+  switch (typeSrc.replace(/[^a-z0-9_*]/ig, '')) {
+    case 'constchar*':
+    case 'constchar*const':
+      return 'String'
+
+    case 'indy_bool_t':
+      return 'Boolean'
+
+    case 'indy_error_t':
+      return 'IndyError'
+
+    case 'indy_handle_t':
+    case 'indy_u32_t':
+    case 'indy_i32_t':
+      return 'Number'
+
+    case 'Buffer':
+      return 'Buffer'
+  }
+  throw new Error('toHumanType doesn\'t handle: ' + typeSrc)
 }
 
 var fixBufferArgs = function (args) {
@@ -55,6 +78,7 @@ var fixBufferArgs = function (args) {
 
 var exportFunctions = []
 var cpp = ''
+var readme = ''
 
 hAST.forEach(function (fn) {
   if (fn.name === 'indy_register_wallet_type') {
@@ -97,8 +121,29 @@ hAST.forEach(function (fn) {
   jsCbArgs = fixBufferArgs(jsCbArgs)
 
   var humanArgs = jsArgs.map(arg => arg.name)
-  humanArgs.push('cb(err' + jsCbArgs.map(arg => ', ' + arg.name).join('') + ')')
+  var humanCb = 'cb(err'
+  if (jsCbArgs.length === 1) {
+    humanCb += ', ' + jsCbArgs[0].name
+  } else if (jsCbArgs.length > 1) {
+    humanCb += ', [' + jsCbArgs.map(arg => arg.name).join(', ') + ']'
+  }
+  humanCb += ')'
+  humanArgs.push(humanCb)
   var humanDescription = jsName + '(' + humanArgs.join(', ') + ')'
+
+  readme += '#### ' + humanDescription.replace(/_/g, '\\_') + '\n'
+  var readmeArg = function (arg) {
+    return '`' + arg.name + '`: ' + toHumanType(arg.type)
+  }
+  jsArgs.forEach(function (arg) {
+    readme += '* ' + readmeArg(arg) + '\n'
+  })
+  if (jsCbArgs.length === 1) {
+    readme += '* __->__ ' + readmeArg(jsCbArgs[0]) + '\n'
+  } else if (jsCbArgs.length > 1) {
+    readme += '* __->__ [' + jsCbArgs.map(readmeArg).join(', ') + ']\n'
+  }
+  readme += '\n'
 
   var cppReturnThrow = function (msg) {
     var errmsg = JSON.stringify(msg + ': ' + humanDescription)
@@ -229,3 +274,21 @@ cpp += '}\n'
 cpp += 'NODE_MODULE(indy, InitAll)\n'
 
 fs.writeFileSync(OUT_FILE, cpp, 'utf8')
+
+var readmeOut = []
+var inBlock = false
+fs.readFileSync(README_FILE, 'utf8').split('\n').forEach(function (line) {
+  if (/CODEGEN-START/.test(line)) {
+    readmeOut.push(line)
+    readmeOut.push(readme)
+    inBlock = true
+  }
+  if (/CODEGEN-END/.test(line)) {
+    inBlock = false
+  }
+  if (!inBlock) {
+    readmeOut.push(line)
+  }
+})
+
+fs.writeFileSync(README_FILE, readmeOut.join('\n'), 'utf8')

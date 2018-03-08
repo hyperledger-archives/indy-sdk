@@ -5,7 +5,13 @@ function IndyError (err) {
   Error.call(this)
   Error.captureStackTrace(this, this.constructor)
   this.name = this.constructor.name
-  this.message = errorCodes['c' + err] || (err + '')
+  if (errorCodes['c' + err]) {
+    this.message = errorCodes['c' + err]
+    this.indy_code = err
+    this.indy_name = errorCodes['c' + err]
+  } else {
+    this.message = (err + '')
+  }
 }
 require('util').inherits(IndyError, Error)
 
