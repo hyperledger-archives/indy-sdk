@@ -9,11 +9,29 @@
       "sources": [
         "src/indy.cc"
       ],
-      "link_settings": {
-        "libraries": [
-          "<(module_root_dir)/libindy.so"
-        ]
-      }
+      "conditions": [
+        ["OS=='linux'", {
+          "link_settings": {
+            "libraries": [
+              "<(module_root_dir)/libindy.so"
+            ]
+          }
+        }],
+        ["OS=='mac'", {
+          "link_settings": {
+            "libraries": [
+              "<(module_root_dir)/libindy.dylib"
+            ]
+          }
+        }],
+        ["OS=='win'", {
+          "link_settings": {
+            "libraries": [
+              "<(module_root_dir)/libindy.dll"
+            ]
+          }
+        }]
+      ]
     }
   ]
 }

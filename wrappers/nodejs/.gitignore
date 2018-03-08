@@ -1,4 +1,6 @@
 /libindy.so
+/libindy.dylib
+/libindy.dll
 node_modules/
 build/
 build-pre-gyp/
