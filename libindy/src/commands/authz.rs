@@ -46,6 +46,12 @@ pub enum AuthzCommand {
         String, // verkey
         bool, // add commitment to the signing of the given verkey
         Box<Fn(Result<String, IndyError>) + Send>), // Return agent verkey as String
+    UpdateAgentWitness(
+        i32, // wallet handle
+        String, // policy address
+        String, // verkey
+        String, // the new witness
+        Box<Fn(Result<String, IndyError>) + Send>), // Return agent verkey as String
     GetPolicy(
         i32, // wallet handle
         String,  // policy address
@@ -88,6 +94,11 @@ impl AuthzCommandExecutor {
                 cb(self.add_add_agent_to_policy(wallet_handle, &policy_addr,
                                                 &verkey,
                                                 add_commitment));
+            }
+            AuthzCommand::UpdateAgentWitness(wallet_handle, policy_addr, verkey, witness, cb) => {
+                info!("AddAgentToPolicy command received");
+                cb(self.update_agent_witness(wallet_handle, &policy_addr,
+                                                &verkey, &witness));
             }
             AuthzCommand::GetPolicy(wallet_handle, policy_addr, cb) => {
                 info!("GetPolicy command received");
@@ -153,6 +164,18 @@ impl AuthzCommandExecutor {
         let mut policy = self._get_policy_from_wallet(wallet_handle,
                                                       policy_addr.to_string())?;
         self.authz_service.add_new_agent_to_policy_with_verkey(&mut policy, verkey.to_string(), secret)?;
+        self._set_policy_in_wallet(wallet_handle, policy)?;
+        Ok(verkey.to_string())
+    }
+
+    fn update_agent_witness(&self, wallet_handle: i32,
+                               policy_addr: &str,
+                               verkey: &str,
+                               witness: &str,) -> Result<String, IndyError> {
+        let mut policy = self._get_policy_from_wallet(wallet_handle,
+                                                      policy_addr.to_string())?;
+        let witness = BigNumber::from_dec(witness)?;
+        self.authz_service.update_agent_witness(&mut policy, verkey.to_string(), &witness)?;
         self._set_policy_in_wallet(wallet_handle, policy)?;
         Ok(verkey.to_string())
     }

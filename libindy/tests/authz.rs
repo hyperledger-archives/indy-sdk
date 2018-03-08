@@ -1,4 +1,5 @@
 extern crate indy;
+extern crate indy_crypto;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
 use indy::api as api;
@@ -25,6 +26,7 @@ use utils::constants::*;
 use indy::api::ErrorCode;
 
 use serde_json::{Value, Error};
+use self::indy_crypto::bn::BigNumber;
 
 
 #[cfg(feature = "local_nodes_pool")]
@@ -113,12 +115,31 @@ mod high_cases {
             let agents = &policy2["agents"];
             println!("{:?}", agents);
 
-            let agent2 = &agents[verkey2];
+            let agent2 = &agents[&verkey2];
             println!("{:?}", agent2);
             assert_ne!(agent2["secret"], Value::Null);
             assert_ne!(agent2["blinding_factor"], Value::Null);
             assert_ne!(agent2["double_commitment"], Value::Null);
             assert_eq!(agent2["witness"], Value::Null);
+
+            let witness = BigNumber::rand(1024).unwrap().to_dec().unwrap();
+            AuthzUtils::update_agent_witness_in_wallet(wallet_handle, &policy_address,
+                                                       &vk2, &witness).unwrap();
+
+            let policy_json3 = AuthzUtils::get_policy_from_wallet(wallet_handle,
+                                                                  &policy_address).unwrap();
+            println!("{:?}", policy_json3);
+
+            let policy3: Value = serde_json::from_str(&policy_json3).unwrap();
+            println!("{:?}", policy3);
+
+            let agents = &policy3["agents"];
+            let agent3 = &agents[&verkey2];
+            println!("{:?}", agent3);
+            assert_ne!(agent3["secret"], Value::Null);
+            assert_ne!(agent3["blinding_factor"], Value::Null);
+            assert_ne!(agent3["double_commitment"], Value::Null);
+            assert_ne!(agent3["witness"], Value::Null);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 

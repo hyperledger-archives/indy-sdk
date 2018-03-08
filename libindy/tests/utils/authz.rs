@@ -91,4 +91,33 @@ impl AuthzUtils {
         }
         Ok(agent_verkey)
     }
+
+    pub fn update_agent_witness_in_wallet(wallet_handle: i32, policy_address: &str,
+                                         verkey: &str, witness: &str) -> Result<String, ErrorCode> {
+        let (sender, receiver) = channel();
+        let cb = Box::new(move |err, agent_verkey| {
+            sender.send((err, agent_verkey)).unwrap();
+        });
+        let (command_handle, callback) = CallbackUtils::closure_to_update_agent_witness_in_wallet_cb(cb);
+
+        let policy_address = CString::new(policy_address).unwrap();
+        let verkey = CString::new(verkey).unwrap();
+        let witness = CString::new(witness).unwrap();
+
+        let err = indy_update_agent_witness(command_handle,
+                                               wallet_handle,
+                                               policy_address.as_ptr(),
+                                               verkey.as_ptr(),
+                                                witness.as_ptr(),
+                                               callback);
+
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        let (err, agent_verkey) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        if err != ErrorCode::Success {
+            return Err(err);
+        }
+        Ok(agent_verkey)
+    }
 }
