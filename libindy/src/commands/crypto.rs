@@ -226,7 +226,19 @@ impl CryptoCommandExecutor {
     }
 
     fn _wallet_get_key(&self, wallet_handle: i32, key: &str) -> Result<Key, IndyError> {
-        let key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", key))?;
+        /*let key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", key))?;
+
+        let res = Key::from_json(&key_json)
+            .map_err(map_err_trace!())
+            .map_err(|err|
+                CommonError::InvalidState(
+                    format!("Can't deserialize Key: {}", err.description())))?;
+        Ok(res)*/
+        CryptoCommandExecutor::__wallet_get_key(self.wallet_service.clone(), wallet_handle, key)
+    }
+
+    pub fn __wallet_get_key(wallet_service: Rc<WalletService>, wallet_handle: i32, key: &str) -> Result<Key, IndyError> {
+        let key_json = wallet_service.get(wallet_handle, &format!("key::{}", key))?;
 
         let res = Key::from_json(&key_json)
             .map_err(map_err_trace!())

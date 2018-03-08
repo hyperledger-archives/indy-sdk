@@ -19,7 +19,7 @@ use utils::authz::AuthzUtils;
 use utils::test::TestUtils;
 use utils::pool::PoolUtils;
 use utils::ledger::LedgerUtils;
-use utils::anoncreds::AnoncredsUtils;
+use utils::crypto::CryptoUtils;
 use utils::constants::*;
 
 use indy::api::ErrorCode;
@@ -76,7 +76,9 @@ mod high_cases {
             let policy_address = policy["address"].as_str().unwrap();
             println!("{:?}", &policy_address);
 
-            let verkey1 = AuthzUtils::add_agent_to_policy_in_wallet(wallet_handle, &policy_address, None, None).unwrap();
+            let vk1 = CryptoUtils::create_key(wallet_handle, None).unwrap();
+
+            let verkey1 = AuthzUtils::add_agent_to_policy_in_wallet(wallet_handle, &policy_address, &vk1, false).unwrap();
 
             let policy_json1 = AuthzUtils::get_policy_from_wallet(wallet_handle,
                                                                   &policy_address).unwrap();
@@ -96,12 +98,10 @@ mod high_cases {
             assert_eq!(agent1["double_commitment"], Value::Null);
             assert_eq!(agent1["witness"], Value::Null);
 
-            let ms_name = "master_secret_name1";
-
-            AnoncredsUtils::prover_create_master_secret(wallet_handle, &ms_name).unwrap();
+            let vk2 = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
             let verkey2 = AuthzUtils::add_agent_to_policy_in_wallet(wallet_handle, &policy_address,
-                                                                    None, Some(ms_name)).unwrap();
+                                                                    &vk2, true).unwrap();
 
             let policy_json2 = AuthzUtils::get_policy_from_wallet(wallet_handle,
                                                                   &policy_address).unwrap();

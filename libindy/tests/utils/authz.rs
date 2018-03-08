@@ -65,7 +65,7 @@ impl AuthzUtils {
     }
 
     pub fn add_agent_to_policy_in_wallet(wallet_handle: i32, policy_address: &str,
-                                         key_json: Option<&str>, master_secret_name: Option<&str>) -> Result<String, ErrorCode> {
+                                         verkey: &str, add_commitment: bool) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
         let cb = Box::new(move |err, agent_verkey| {
             sender.send((err, agent_verkey)).unwrap();
@@ -73,19 +73,13 @@ impl AuthzUtils {
         let (command_handle, callback) = CallbackUtils::closure_to_add_agent_to_policy_in_wallet_cb(cb);
 
         let policy_address = CString::new(policy_address).unwrap();
-        /*let key_json = CString::new(key_json).unwrap();
-        let master_secret_name = CString::new(master_secret_name).unwrap();*/
-
-        let key_json_str = key_json.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("{}").unwrap());
-        let master_secret_name_str = master_secret_name.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let verkey = CString::new(verkey).unwrap();
 
         let err = indy_add_new_agent_to_policy(command_handle,
                                   wallet_handle,
                                   policy_address.as_ptr(),
-                                               /*key_json.as_ptr(),
-                                               master_secret_name.as_ptr(),*/
-                                               if key_json.is_some() { key_json_str.as_ptr() } else { null() },
-                                               if master_secret_name.is_some() { master_secret_name_str.as_ptr() } else { null() },
+                                               verkey.as_ptr(),
+                                               add_commitment,
                                   callback);
 
         if err != ErrorCode::Success {

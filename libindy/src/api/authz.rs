@@ -35,21 +35,20 @@ pub  extern fn indy_create_and_store_new_policy(command_handle: i32,
 pub  extern fn indy_add_new_agent_to_policy(command_handle: i32,
                                             wallet_handle: i32,
                                             policy_address: *const c_char,
-                                            key_json: *const c_char,
-                                            master_secret_name: *const c_char,  // TODO: Need a generic way to specify any secret
+                                            verkey: *const c_char,
+                                            add_commitment: bool,  // TODO: Need a generic way to specify any secret
                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                            vk: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(policy_address, ErrorCode::CommonInvalidParam2);
-    check_useful_opt_c_str!(key_json, ErrorCode::CommonInvalidParam3);
-    check_useful_opt_c_str!(master_secret_name, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(verkey, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()
         .send(Command::Authz(AuthzCommand::AddAgentToStoredPolicy(
             wallet_handle,
             policy_address,
-            key_json,
-            master_secret_name,
+            verkey,
+            add_commitment,
             Box::new(move |result| {
                 let (err, policy) = result_to_err_code_1!(result, String::new());
                 let policy = CStringUtils::string_to_cstring(policy);

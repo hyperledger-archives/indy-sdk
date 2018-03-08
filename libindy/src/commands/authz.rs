@@ -25,6 +25,9 @@ use std::cell::RefCell;
 
 use commands::ledger::LedgerCommand;
 use commands::{Command, CommandExecutor};
+use commands::crypto::CryptoCommandExecutor;
+
+
 use std::collections::HashMap;
 use utils::sequence::SequenceUtils;
 use utils::crypto::base58::Base58;
@@ -40,8 +43,8 @@ pub enum AuthzCommand {
     AddAgentToStoredPolicy(
         i32, // wallet handle
         String, // policy address
-        Option<String>, // key_json
-        Option<String>, // master secret name
+        String, // verkey
+        bool, // add commitment to the signing of the given verkey
         Box<Fn(Result<String, IndyError>) + Send>), // Return agent verkey as String
     GetPolicy(
         i32, // wallet handle
@@ -80,11 +83,11 @@ impl AuthzCommandExecutor {
                 info!("CreateAndStorePolicyAddress command received");
                 cb(self.create_and_store_policy(wallet_handle));
             }
-            AuthzCommand::AddAgentToStoredPolicy(wallet_handle, policy_addr, key_json, master_secret_name, cb) => {
+            AuthzCommand::AddAgentToStoredPolicy(wallet_handle, policy_addr, verkey, add_commitment, cb) => {
                 info!("AddAgentToPolicy command received");
                 cb(self.add_add_agent_to_policy(wallet_handle, &policy_addr,
-                                                key_json.as_ref().map(String::as_str),
-                                                master_secret_name.as_ref().map(String::as_str)));
+                                                &verkey,
+                                                add_commitment));
             }
             AuthzCommand::GetPolicy(wallet_handle, policy_addr, cb) => {
                 info!("GetPolicy command received");
@@ -100,7 +103,7 @@ impl AuthzCommandExecutor {
         Ok(s)
     }
 
-    fn add_add_agent_to_policy(&self, wallet_handle: i32,
+    /*fn add_add_agent_to_policy(&self, wallet_handle: i32,
                                policy_addr: &str,
                                key_json: Option<&str>,
                                master_secret_name: Option<&str>,) -> Result<String, IndyError> {
@@ -130,6 +133,28 @@ impl AuthzCommandExecutor {
         };
         self._set_policy_in_wallet(wallet_handle, policy)?;
         Ok(verkey)
+    }*/
+
+    fn add_add_agent_to_policy(&self, wallet_handle: i32,
+                               policy_addr: &str,
+                               verkey: &str,
+                               add_commitment: bool,) -> Result<String, IndyError> {
+        let secret = if add_commitment {
+            let k = CryptoCommandExecutor::__wallet_get_key(self.wallet_service.clone(),
+                                                            wallet_handle, verkey)?;
+            let sk = k.signkey;
+            let sk_raw = Base58::decode(&sk)?;
+            let sk_num = BigNumber::from_bytes(sk_raw.as_slice())?;
+            Some(sk_num)
+        } else {
+            None
+        };
+
+        let mut policy = self._get_policy_from_wallet(wallet_handle,
+                                                      policy_addr.to_string())?;
+        self.authz_service.add_new_agent_to_policy_with_verkey(&mut policy, verkey.to_string(), secret)?;
+        self._set_policy_in_wallet(wallet_handle, policy)?;
+        Ok(verkey.to_string())
     }
 
     fn get_policy_from_wallet(&self, wallet_handle: i32, policy_addr: String) -> Result<String, IndyError> {

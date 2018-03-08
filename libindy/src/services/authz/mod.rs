@@ -10,6 +10,7 @@ use utils::crypto::base58::Base58;
 
 use services::signus::SignusService;
 use services::signus::types::Key;
+use services::signus::types::KeyInfo;
 
 pub mod types;
 pub mod constants;
@@ -86,6 +87,20 @@ impl AuthzService {
         Ok(key)
     }
 
+    pub fn add_new_agent_to_policy_with_verkey(&self, policy: &mut Policy, verkey: String,
+                                               secret: Option<BigNumber>) -> Result<String, AuthzError> {
+        let (comm, blinding_factor) = match secret {
+            Some(ref s) => {
+                let (c, b) = AuthzService::get_double_commitment_to_secret(&s, &policy.address)?;
+                (Some(c), Some(b))
+            },
+            None => (None, None)
+        };
+        let agent = PolicyAgent::new(verkey.clone(), secret, comm, blinding_factor, None);
+        policy.agents.insert(agent.verkey.clone(), agent);
+        Ok(verkey)
+    }
+
     pub fn update_agent_witness(&self, policy: &mut Policy, agent_key:String, witness: &BigNumber)  -> Result<(), AuthzError> {
         match policy.agents.get_mut(&agent_key) {
             Some(agent) => {
@@ -103,7 +118,6 @@ impl AuthzService {
                 AuthzError::AgentDoesNotExistError(
                     format!("Policy has no agent with key: {}", agent_key)))
         }
-
     }
 }
 
@@ -200,6 +214,28 @@ mod tests {
         {
             let agent3 = new_policy.agents.get(&key3.verkey).unwrap();
             check_new_agent(agent3, key3.verkey, true);
+        }
+
+        let k0 = authz_service.crypto_service.create_key(&KeyInfo::new(None, None)).unwrap();
+        let (vk, sk) = (k0.verkey, k0.signkey);
+        let sk_raw = Base58::decode(&sk).unwrap();
+        let sk_num = BigNumber::from_bytes(sk_raw.as_slice()).unwrap();
+        let key4 = authz_service.add_new_agent_to_policy_with_verkey(&mut new_policy, vk.clone(), Some(sk_num)).unwrap();
+        assert_eq!(vk, key4);
+        assert_eq!(new_policy.agents.len(), 4);
+        {
+            let agent4 = new_policy.agents.get(&vk).unwrap();
+            check_new_agent(agent4, vk, false);
+        }
+
+        let k1 = authz_service.crypto_service.create_key(&KeyInfo::new(None, None)).unwrap();
+        let vk1 = k1.verkey;
+        let key5 = authz_service.add_new_agent_to_policy_with_verkey(&mut new_policy, vk1.clone(), None).unwrap();
+        assert_eq!(vk1, key5);
+        assert_eq!(new_policy.agents.len(), 5);
+        {
+            let agent5 = new_policy.agents.get(&vk1).unwrap();
+            check_new_agent(agent5, vk1, true);
         }
     }
 
