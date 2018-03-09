@@ -150,7 +150,7 @@ hAST.forEach(function (fn) {
     return '    return Nan::ThrowError(Nan::New(' + errmsg + ').ToLocalChecked());\n'
   }
 
-  cpp += 'void ' + jsName + '_cb(indy_handle_t xcommand_handle, indy_error_t xerr'
+  cpp += 'void ' + jsName + '_cb(indy_handle_t handle, indy_error_t xerr'
   cpp += jsCbArgs.map(function (arg, i) {
     if (arg.type === 'Buffer') {
       return ', const indy_u8_t* arg' + i + 'data, indy_u32_t arg' + i + 'size'
@@ -158,10 +158,10 @@ hAST.forEach(function (fn) {
     return ', ' + arg.type + ' arg' + i
   }).join('')
   cpp += ') {\n'
-  cpp += '  if(cbmap.count(xcommand_handle) == 0){\n'
+  cpp += '  IndyCallback* icb = IndyCallback::getCallback(handle);\n'
+  cpp += '  if(icb == nullptr){\n'
   cpp += '    return;\n'
   cpp += '  }\n'
-  cpp += '  IndyCallback* icb = cbmap[xcommand_handle];\n'
   cpp += '  icb->err = xerr;\n'
   cpp += '  if(icb->err == 0){\n'
 
@@ -252,8 +252,6 @@ hAST.forEach(function (fn) {
   cpp += '    return Nan::ThrowError(Nan::New("' + jsName + ' arg ' + jsArgs.length + ' expected callback Function").ToLocalChecked());\n'
   cpp += '  }\n'
   cpp += '  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[' + jsArgs.length + ']).ToLocalChecked());\n'
-  cpp += '  cbmap[icb->command_handle] = icb;\n'
-  cpp += '  uv_async_init(uv_default_loop(), &icb->uvHandle, mainLoopReentry);\n'
   cpp += '  indyCalled(icb, ' + fn.name + '(icb->command_handle'
   cpp += jsArgs.map(function (arg, i) {
     if (arg.type === 'Buffer') {
