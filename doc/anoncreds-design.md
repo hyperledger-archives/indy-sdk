@@ -49,6 +49,7 @@ Anoncreds protocol links:
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context
+/// issuer_did: DID of schema issuer
 /// name: a name the schema
 /// version: a version of the schema
 /// attrs: a list of schema attributes descriptions
@@ -88,7 +89,7 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
 /// issuer_did: a DID of the issuer signing claim_def transaction to the Ledger
 /// schema_json: credential schema as a json
 /// tag: allows to distinct between credential definitions for the same issuer and schema
-/// xtype: credential definition type (optional, 'CL' by default) that defines claims signature and revocation math. Supported types are:
+/// type_: credential definition type (optional, 'CL' by default) that defines claims signature and revocation math. Supported types are:
 /// - 'CL': Camenisch-Lysyanskaya credential signature type
 /// config_json: type-specific configuration of credential definition as json:
 /// - 'CL':
@@ -109,7 +110,7 @@ pub extern fn indy_issuer_create_and_store_cred_def(command_handle: i32,
                                                     issuer_did: *const c_char,
                                                     schema_json: *const c_char,
                                                     tag: *const c_char,
-                                                    xtype: *const c_char,
+                                                    type_: *const c_char,
                                                     config_json: *const c_char,
                                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                          cred_def_id: *const c_char,
@@ -138,7 +139,7 @@ pub extern fn indy_issuer_create_and_store_cred_def(command_handle: i32,
 /// command_handle: command handle to map callback to user context
 /// wallet_handle: wallet handler (created by open_wallet)
 /// blob_storage_writer_handle: pre-configured blob storage writer instance handle that will allow to write generated tails
-/// xtype: revocation registry type (optional, default value depends on claim definition type). Supported types are:
+/// type_: revocation registry type (optional, default value depends on claim definition type). Supported types are:
 /// - 'CL_ACCUM': Type-3 pairing based accumulator. Default for 'CL' claim definition type
 /// config_json: type-specific configuration of revocation registry as json:
 /// - 'CL_ACCUM':
@@ -163,7 +164,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                                                      blob_storage_writer_handle: i32,
                                                      cred_def_id:  *const c_char,
                                                      tag: *const c_char,
-                                                     xtype: *const c_char,
+                                                     type_: *const c_char,
                                                      config_json: *const c_char,
                                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                           revoc_reg_def_id: *const c_char,
@@ -172,29 +173,26 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 ```
 
 ```Rust
-/// Create credential offer entity that will be used by Prover for
+/// Create credential offer that will be used by Prover for
 /// claim request creation. Offer includes nonce and key correctness proof
 /// for authentication between protocol steps and integrity checking.
-///
-/// Credential offer entity contains private and public parts. Private part will be stored in the wallet. Public part
-/// will be returned as json intended to be send to Prover.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context
 /// wallet_handle: wallet handler (created by open_wallet)
-/// cred_def_id: id of credential definition
-/// rev_reg_id: id of revocation registry definition
-/// prover_did: a DID of the target Prover
+/// cred_def_id: id of credential definition stored in the wallet
+/// rev_reg_id: id of revocation registry definition stored in the wallet
 /// cb: Callback that takes command result as parameter
 ///
 /// #Returns
 /// credential offer json:
 ///   {
-///     "issuer_did": string,
-///     "schema_key" : {name: string, version: string, did: string},
+///     "cred_def_id": string,
+///     "rev_reg_def_id" : Optional<string>,
+///     // Fields below can depend on Cred Def type
 ///     "nonce": string,
 ///     "key_correctness_proof" : <key_correctness_proof>
-///    }
+///   }
 ///
 /// #Errors
 /// Common*
@@ -205,55 +203,48 @@ pub extern fn indy_issuer_create_cred_offer(command_handle: i32,
                                             wallet_handle: i32,
                                             cred_def_id: *const c_char,
                                             rev_reg_def_id: *const c_char,
-                                            prover_did: *const c_char,
                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                  claim_offer_json: *const c_char)>) -> ErrorCode
 ```
 
 ```Rust
-/// Create credential for the Prover by signing given credential values by
-/// corresponded credential definition keys and update revocation registry.
+/// Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.
 ///
-/// The 
-/// 
-/// This calls updates revocation regi
+/// Cred Request must match Cred Offer. The credential definition and revocation registry definition
+/// referenced in Cred Offer and Cred Request
+/// must be already created and stored into the wallet.
+///
+/// Information for this credential revocation will be store in the wallet as part of revocation registry under
+/// generated cred_revoc_id local for this wallet.
+///
+/// This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
+/// Note that it is possible to accumulate deltas to reduce ledger load.
 ///
 /// #Params
-/// wallet_handle: wallet handler (created by open_wallet).
-/// tails_reader_handle:
 /// command_handle: command handle to map callback to user context.
-/// claim_req_json: a credential request with a blinded secret
-/// from the user (returned by prover_create_and_store_claim_req).
-/// Also contains schema_key and issuer_did
+/// wallet_handle: wallet handler (created by open_wallet).
+/// blob_storage_reader_handle: pre-configured blob storage reader instance handle that will allow to read revocation tails
+/// cred_offer_json: a cred offer created by indy_issuer_create_cred_offer
+/// cred_req_json: a credential request created by indy_prover_create_cred_request
+/// cred_values_json: a credential containing attribute values for each of requested attribute names.
 ///     Example:
 ///     {
-///      "blinded_ms" : <blinded_master_secret>,
-///      "schema_key" : {name: string, version: string, did: string},
-///      "issuer_did" : string,
-///      "prover_did" : string,
-///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
-///      "nonce": string
-///    }
-/// claim_values_json: a credential containing attribute values for each of requested attribute names.
-///     Example:
-///     {
-///      "attr1" : ["value1", "value1_as_int"],
-///      "attr2" : ["value2", "value2_as_int"]
+///      "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
+///      "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
 ///     }
-/// user_revoc_index: index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// Revocation registry update json with a newly issued credential
-/// Credential json containing signed credential values, issuer_did, schema_key, and revoc_reg_seq_no
-/// used for issuance
+/// revoc_id: local id for revocation info (Can be used for revocation of this cred)
+/// revoc_reg_delta_json: Revocation registry update json with a newly issued credential
+/// cred_json: Credential json containing signed credential values
 ///     {
-///         "values": <see claim_values_json above>,
+///         "cred_def_id": string,
+///         "rev_reg_def_id", Optional<string>,
+///         "values": <see credential_values_json above>,
 ///         "signature": <signature>,
-///         "revoc_reg_seq_no": int,
-///         "issuer_did", string,
-///         "schema_key" : {name: string, version: string, did: string},
-///         "signature_correctness_proof": <signature_correctness_proof>
+///         "signature_correctness_proof": <signature_correctness_proof>,
+///         "revoc_idx": // TODO: FIXME: Think how to share it in a secure way
 ///     }
 ///
 /// #Errors
@@ -263,14 +254,185 @@ pub extern fn indy_issuer_create_cred_offer(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_issuer_create_cred(command_handle: i32,
                                       wallet_handle: i32,
-                                      claim_req_json: *const c_char,
-                                      claim_values_json: *const c_char,
-                                      tails_reader_handle: i32,
-                                      user_revoc_index: i32,
+                                      blob_storage_reader_handle: i32,
+                                      cred_offer_json: *const c_char,
+                                      cred_req_json: *const c_char,
+                                      cred_values_json: *const c_char,
                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                           user_revoc_index: i32,
+                                                           cred_revoc_id: *const c_char,
                                                            revoc_reg_delta_json: *const c_char,
-                                                           claim_json: *const c_char)>) -> ErrorCode
+                                                           cred_json: *const c_char)>) -> ErrorCode
+```
+
+```Rust
+/// Revoke a credential identified by a cred_revoc_id (returned by indy_issuer_create_cred).
+///
+/// The corresponding credential definition and revocation registry must be already
+/// created an stored into the wallet.
+///
+/// This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
+/// Note that it is possible to accumulate deltas to reduce ledger load.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// blob_storage_reader_handle: pre-configured blob storage reader instance handle that will allow to read revocation tails
+/// rev_reg_id: id of revocation registry stored in wallet
+/// tails_reader_handle:
+/// user_revoc_index: index of the user in the revocation registry
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// revoc_reg_delta_json: Revocation registry delta json with a revoked credential
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_issuer_revoke_cred(command_handle: i32,
+                                      wallet_handle: i32,
+                                      blob_storage_reader_handle: i32,
+                                      cred_revoc_id: *const c_char,
+                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                           revoc_reg_delta_json: *const c_char)>) -> ErrorCode
+```
+
+```Rust
+/// Recover a credential identified by a cred_revoc_id (returned by indy_issuer_create_cred).
+///
+/// The corresponding credential definition and revocation registry must be already
+/// created an stored into the wallet.
+/// 
+/// This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
+/// Note that it is possible to accumulate deltas to reduce ledger load.
+///
+/// #Params
+/// wallet_handle: wallet handler (created by open_wallet).
+/// command_handle: command handle to map callback to user context.
+/// rev_reg_id: id of revocation registry stored in wallet
+/// tails_reader_handle:
+/// user_revoc_index: index of the user in the revocation registry
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// revoc_reg_delta_json: Revocation registry delta json with a revoked credential
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_issuer_recover_credential(command_handle: i32,
+                                             wallet_handle: i32,
+                                             blob_storage_reader_handle: i32,
+                                             cred_revoc_id: *const c_char,
+                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                  revoc_reg_delta_json: *const c_char)>) -> ErrorCode
+```
+
+### Prover
+
+```Rust
+/// Creates a master secret and stores it in the wallet.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// master_secret_id: (optional, if not present random one will be generated) new master id
+///
+/// #Returns
+/// master_secret_id: Id of generated master secret
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_prover_create_master_secret(command_handle: i32,
+                                               wallet_handle: i32,
+                                               master_secret_id: *const c_char,
+                                               cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                    master_secret_id: *const c_char)>) -> ErrorCode
+```
+
+```Rust
+/// Creates a clam request for the given credential offer.
+///
+/// The method creates a blinded master secret for a master secret identified by a provided name.
+/// The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
+/// The blinded master secret is a part of the credential request.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context
+/// wallet_handle: wallet handler (created by open_wallet)
+/// prover_did: a DID of the prover
+/// cred_offer_json: a cred offer created by indy_issuer_create_cred_offer
+/// cred_def_json: credential definition json created by indy_issuer_create_and_store_cred_def
+/// master_secret_id: the id of the master secret stored in the wallet
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// cred_req_json: Credential request json
+///     {
+///      "cred_def_id" : string,
+///      "rev_reg_id" : Optional<string>,
+///      "prover_did" : string,
+///       // Fields below are depend on anoncreds crypto type
+///      "blinded_ms" : <blinded_master_secret>,
+///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+///      "nonce": string
+///    }
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_prover_create_cred_req(command_handle: i32,
+                                          wallet_handle: i32,
+                                          prover_did: *const c_char,
+                                          cred_offer_json: *const c_char,
+                                          cred_def_json: *const c_char,
+                                          master_secret_id: *const c_char,
+                                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                cred_req_json: *const c_char)>) -> ErrorCode
+```
+
+```Rust
+/// Check credential provided by Issuer for the given credential request,
+/// updates the credential by a master secret and stores in a secure wallet.
+///
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+/// wallet_handle: wallet handler (created by open_wallet).
+/// id: (optional, default is a random one) identifier by which credential will be stored in the wallet
+/// cred_req_json: a credential request created by indy_prover_create_cred_request
+/// cred_json: credential json created by indy_issuer_create_cred
+/// schema_json: a schema that was used for credential issuance
+/// cred_def_json: credential definition json created by indy_issuer_create_and_store_cred_def
+/// rev_reg_def_json: revocation registry definition json created by indy_issuer_create_and_store_revoc_reg
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// cred_id: identifier by which credential is stored in the wallet
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_prover_store_cred(command_handle: i32,
+                                     wallet_handle: i32,
+                                     cred_id: *const c_char,
+                                     cred_req_json: *const c_char,
+                                     cred_json: *const c_char,
+                                     cred_schema_json: *const c_char,
+                                     cred_def_json: *const c_char,
+                                     rev_reg_def_json: *const c_char,
+                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                          cred_id: *const c_char)>) -> ErrorCode
 ```
 
 ### Blob Storage
