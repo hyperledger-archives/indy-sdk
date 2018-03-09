@@ -1,7 +1,5 @@
 # Indy SDK for Node.js
 
-[![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
-
 Native bindings for hyperledger indy.
 
 *Work-In-Progress* currently only linux is supported.
@@ -413,6 +411,8 @@ These errors are based of the libindy error codes defined [here](https://github.
 [//]: # (CODEGEN-END - don't edit by hand see `codegen/index.js`)
 
 ## How to contribute to this wrapper
+
+[![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
 Setup an Indy SDK environment, and start the local nodes.
  * [ubuntu](https://github.com/hyperledger/indy-sdk/blob/master/doc/ubuntu-build.md)

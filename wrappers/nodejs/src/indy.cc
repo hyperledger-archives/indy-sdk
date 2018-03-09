@@ -148,8 +148,9 @@ void indyCalled(IndyCallback* icb, indy_error_t res) {
 
 char* copyCStr(const char* original){
     size_t len = strlen(original);
-    char* tmp = new char[len];
+    char* tmp = new char[len + 1];
     strncpy(tmp, original, len);
+    tmp[len] = '\0';
     return tmp;
 }
 
