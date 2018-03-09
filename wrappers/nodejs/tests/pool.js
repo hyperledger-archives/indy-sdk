@@ -7,14 +7,17 @@ test('pool', async function (t) {
   t.is(err.message, 'Expected 3 arguments: create_pool_ledger_config(config_name, config, cb(err))')
 
   err = await t.throws(indy.create_pool_ledger_config('', ''))
-  t.is(err + '', 'IndyError: CommonInvalidParam2')
+  t.is(err.indy_name, 'CommonInvalidParam2')
 
   err = await t.throws(indy.create_pool_ledger_config('not_a_real_pool', JSON.stringify({
     'genesis_txn': '/not/a/real/file.txn'
   })))
-  t.is(err + '', 'IndyError: CommonIOError')
+  t.is(err.indy_name, 'CommonIOError')
 
   var pool = await makeTestPool()
+
+  t.is(JSON.parse(await indy.list_pools()).map(p => p.pool).indexOf(pool.name), -1)
+
   t.is(await indy.create_pool_ledger_config(pool.name, JSON.stringify({
     'genesis_txn': pool.file
   })), void 0)
@@ -22,8 +25,14 @@ test('pool', async function (t) {
   var poolH = await indy.open_pool_ledger(pool.name, 'null')
   t.truthy(poolH >= 0)
 
+  err = await t.throws(indy.refresh_pool_ledger(-1))
+  t.is(err.indy_name, 'PoolLedgerInvalidPoolHandle')
+  await indy.refresh_pool_ledger(poolH)
+
+  t.truthy(JSON.parse(await indy.list_pools()).map(p => p.pool).indexOf(pool.name) >= 0)
+
   err = await t.throws(indy.delete_pool_ledger_config(pool.name))
-  t.is(err + '', 'IndyError: CommonInvalidState')
+  t.is(err.indy_name, 'CommonInvalidState')
 
   await indy.close_pool_ledger(poolH)
 
