@@ -207,14 +207,17 @@ impl ProverCommandExecutor {
     }
 
     fn _create_master_secret(&self, wallet_handle: i32, master_secret_name: &str) -> Result<(), IndyError> {
-        if self.wallet_service.get(wallet_handle, &format!("{}::{}", MASTER_SECRET_WALLET_KEY_PREFIX, master_secret_name)).is_ok() {
+        if self.wallet_service.get(wallet_handle,
+                                   &ProverCommandExecutor::_master_secret_name_to_wallet_key(
+                                       master_secret_name)).is_ok() {
             return Err(IndyError::AnoncredsError(AnoncredsError::MasterSecretDuplicateNameError(
                 format!("Master Secret already exists {}", master_secret_name))));
         };
 
         let master_secret = self.anoncreds_service.prover.generate_master_secret()?;
 
-        self.wallet_service.set(wallet_handle, &format!("{}::{}", MASTER_SECRET_WALLET_KEY_PREFIX, master_secret_name), &master_secret.to_dec()?)?;
+        self.wallet_service.set(wallet_handle,
+                                &ProverCommandExecutor::_master_secret_name_to_wallet_key(master_secret_name), &master_secret.to_dec()?)?;
 
         Ok(())
     }
@@ -236,7 +239,8 @@ impl ProverCommandExecutor {
                                        claim_offer_json: &str,
                                        claim_def_json: &str,
                                        master_secret_name: &str) -> Result<String, IndyError> {
-        let master_secret_str = self.wallet_service.get(wallet_handle, &format!("{}::{}", MASTER_SECRET_WALLET_KEY_PREFIX, &master_secret_name))?;
+        let master_secret_str = self.wallet_service.get(wallet_handle,
+                                                        &ProverCommandExecutor::_master_secret_name_to_wallet_key(master_secret_name))?;
 
         let master_secret = BigNumber::from_dec(&master_secret_str)
             .map_err(map_err_trace!())
@@ -506,7 +510,8 @@ impl ProverCommandExecutor {
             claims.insert(claim_uuid.clone(), claim);
         }
 
-        let ms = self.wallet_service.get(wallet_handle, &format!("{}::{}", MASTER_SECRET_WALLET_KEY_PREFIX, master_secret_name))?;
+        let ms = self.wallet_service.get(wallet_handle,
+                                         &ProverCommandExecutor::_master_secret_name_to_wallet_key(master_secret_name))?;
 
         let ms: BigNumber = BigNumber::from_dec(&ms)?;
 
@@ -533,5 +538,9 @@ impl ProverCommandExecutor {
             .map_err(|err| CommonError::InvalidState(format!("Invalid proof_claims: {}", err.to_string())))?;
 
         Ok(proof_claims_json)
+    }
+
+    fn _master_secret_name_to_wallet_key(master_secret_name: &str) -> String {
+        format!("{}::{:?}", MASTER_SECRET_WALLET_KEY_PREFIX, master_secret_name)
     }
 }

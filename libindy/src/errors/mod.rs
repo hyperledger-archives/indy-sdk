@@ -8,6 +8,8 @@ pub mod wallet;
 
 pub mod authz;
 
+pub mod sss;
+
 use api::ErrorCode;
 
 pub trait ToErrorCode {

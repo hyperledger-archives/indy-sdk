@@ -28,10 +28,10 @@ impl AuthzService {
     pub fn new(crypto_service: Rc<SignusService>) -> AuthzService { AuthzService { crypto_service } }
 
     pub fn get_double_commitment_to_secret(secret: &BigNumber, policy_address: &BigNumber) -> Result<(BigNumber, BigNumber), AuthzError> {
-        let g_1 = BigNumber::from_dec(G_1).unwrap();
-        let g_2 = BigNumber::from_dec(G_2).unwrap();
-        let h_1 = BigNumber::from_dec(H_1).unwrap();
-        let h_2 = BigNumber::from_dec(H_2).unwrap();
+        let g_1 = BigNumber::from_dec(G_1_1).unwrap();
+        let g_2 = BigNumber::from_dec(G_2_1).unwrap();
+        let h_1 = BigNumber::from_dec(G_1_2).unwrap();
+        let h_2 = BigNumber::from_dec(G_2_2).unwrap();
         let mod_1 = BigNumber::from_dec(P_1).unwrap();
         let mod_2 = BigNumber::from_dec(P_2).unwrap();
         let mut ctx = BigNumber::new_context()?;

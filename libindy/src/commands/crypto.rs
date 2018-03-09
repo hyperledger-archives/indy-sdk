@@ -114,11 +114,6 @@ impl CryptoCommandExecutor {
     }
 
     fn create_key(&self, wallet_handle: i32, key_info_json: String) -> Result<String, IndyError> {
-        /*let key_info = KeyInfo::from_json(&key_info_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidStructure(
-                    format!("Invalid KeyInfo json: {}", err.description())))?;*/
         let key_info = SignusService::get_key_info_from_json(key_info_json)?;
 
         let key = self.signus_service.create_key(&key_info)?;
@@ -221,24 +216,17 @@ impl CryptoCommandExecutor {
                 CommonError::InvalidState(
                     format!("Can't serialize Key: {}", err.description())))?;
 
-        self.wallet_service.set(wallet_handle, &format!("key::{}", key.verkey), &key_json)?;
+        self.wallet_service.set(wallet_handle,
+                                &CryptoCommandExecutor::_verkey_to_wallet_key(&key.verkey), &key_json)?;
         Ok(())
     }
 
     fn _wallet_get_key(&self, wallet_handle: i32, key: &str) -> Result<Key, IndyError> {
-        /*let key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", key))?;
-
-        let res = Key::from_json(&key_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidState(
-                    format!("Can't deserialize Key: {}", err.description())))?;
-        Ok(res)*/
         CryptoCommandExecutor::__wallet_get_key(self.wallet_service.clone(), wallet_handle, key)
     }
 
     pub fn __wallet_get_key(wallet_service: Rc<WalletService>, wallet_handle: i32, key: &str) -> Result<Key, IndyError> {
-        let key_json = wallet_service.get(wallet_handle, &format!("key::{}", key))?;
+        let key_json = wallet_service.get(wallet_handle, &CryptoCommandExecutor::_verkey_to_wallet_key(key))?;
 
         let res = Key::from_json(&key_json)
             .map_err(map_err_trace!())
@@ -249,12 +237,20 @@ impl CryptoCommandExecutor {
     }
 
     fn _wallet_set_key_metadata(&self, wallet_handle: i32, verkey: &str, metadata: &str) -> Result<(), IndyError> {
-        self.wallet_service.set(wallet_handle, &format!("key::{}::metadata", verkey), metadata)?;
+        self.wallet_service.set(wallet_handle, &CryptoCommandExecutor::_verkey_metadata_to_wallet_key(verkey), metadata)?;
         Ok(())
     }
 
     fn _wallet_get_key_metadata(&self, wallet_handle: i32, verkey: &str) -> Result<String, IndyError> {
-        let res = self.wallet_service.get(wallet_handle, &format!("key::{}::metadata", verkey))?;
+        let res = self.wallet_service.get(wallet_handle, &CryptoCommandExecutor::_verkey_metadata_to_wallet_key(verkey))?;
         Ok(res)
+    }
+
+    pub fn _verkey_to_wallet_key(verkey: &str) -> String {
+        format!("key::{}", verkey)
+    }
+
+    pub fn _verkey_metadata_to_wallet_key(verkey: &str) -> String {
+        format!("key::{}::metadata", verkey)
     }
 }

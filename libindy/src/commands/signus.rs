@@ -16,6 +16,7 @@ use std::cell::RefCell;
 
 use commands::ledger::LedgerCommand;
 use commands::{Command, CommandExecutor};
+use commands::crypto::CryptoCommandExecutor;
 use std::collections::HashMap;
 use utils::sequence::SequenceUtils;
 
@@ -256,10 +257,6 @@ impl SignusCommandExecutor {
                           my_did: &str) -> Result<String, IndyError> {
         self.signus_service.validate_did(my_did)?;
 
-        /*let key_info: KeyInfo = KeyInfo::from_json(key_info_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidStructure(format!("Invalid KeyInfo json: {}", err.description())))?;*/
         let key_info = SignusService::get_key_info_from_json(key_info_json.to_string())?;
 
         let my_did = self._wallet_get_my_did(wallet_handle, my_did)?;
@@ -803,12 +800,14 @@ impl SignusCommandExecutor {
                 CommonError::InvalidState(
                     format!("Can't serialize Key: {}", err.description())))?;
 
-        self.wallet_service.set(wallet_handle, &format!("key::{}", key.verkey), &key_json)?;
+        self.wallet_service.set(wallet_handle,
+                                &CryptoCommandExecutor::_verkey_to_wallet_key(&key.verkey), &key_json)?;
         Ok(())
     }
 
     fn _wallet_get_key(&self, wallet_handle: i32, key: &str) -> Result<Key, IndyError> {
-        let key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", key))?;
+        let key_json = self.wallet_service.get(wallet_handle,
+                                               &CryptoCommandExecutor::_verkey_to_wallet_key(key))?;
 
         let res = Key::from_json(&key_json)
             .map_err(map_err_trace!())

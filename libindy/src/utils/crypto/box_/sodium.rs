@@ -8,6 +8,7 @@ use self::sodiumoxide::crypto::box_;
 use self::sodiumoxide::crypto::sign;
 use self::sodiumoxide::randombytes;
 use utils::byte_array::_clone_into_array;
+use self::sodiumoxide::crypto::sign::ed25519::{SECRETKEYBYTES, SEEDBYTES};
 
 extern {
     // TODO: fix hack:
@@ -19,6 +20,9 @@ extern {
     pub fn crypto_sign_ed25519_sk_to_curve25519(
         curve25519_sk: *mut [u8; 32],
         ed25519_sk: *const [u8; 64]) -> c_int;
+    pub fn crypto_sign_ed25519_sk_to_seed(
+        seed: *mut [u8; SEEDBYTES],
+        ed25519_sk: *const [u8; SECRETKEYBYTES]) -> c_int;
 }
 
 pub struct CryptoBox {}
@@ -132,6 +136,21 @@ impl CryptoBox {
         }
         Ok(to.iter().cloned().collect())
     }
+
+    // Convert an ed25519 signing key to the seed
+    pub fn ed25519_sk_to_seed(sk: &[u8]) -> Result<Vec<u8>, CommonError> {
+        if sk.len() != SECRETKEYBYTES {
+            return Err(CommonError::InvalidStructure(format!("Invalid signing key")));
+        }
+
+        let mut from: [u8; SECRETKEYBYTES] = [0; SECRETKEYBYTES];
+        from.clone_from_slice(sk);
+        let mut to: [u8; SEEDBYTES] = [0; SEEDBYTES];
+        unsafe {
+            crypto_sign_ed25519_sk_to_seed(&mut to, &from);
+        }
+        Ok(to.iter().cloned().collect())
+    }
 }
 
 
@@ -190,5 +209,15 @@ mod tests {
         let skc_test = CryptoBox::sk_to_curve25519(&sk).unwrap();
         let skc_exp = vec!(144, 112, 64, 101, 69, 167, 61, 44, 220, 148, 58, 187, 108, 73, 11, 247, 130, 161, 158, 40, 100, 1, 40, 27, 76, 148, 209, 240, 195, 35, 153, 121);
         assert_eq!(skc_exp, skc_test);
+    }
+
+    #[test]
+    fn ed25519_sk_to_seed_works() {
+        for _ in 0..20usize {
+            let seed = randombytes::randombytes(SEEDBYTES);
+            let (_, secret_key) = CryptoBox::create_key_pair_for_signature(Some(&seed)).unwrap();
+            let recreated_seed = CryptoBox::ed25519_sk_to_seed(&secret_key).unwrap();
+            assert_eq!(seed, recreated_seed);
+        }
     }
 }

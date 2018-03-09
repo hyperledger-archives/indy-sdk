@@ -13,6 +13,8 @@ pub mod pairwise;
 
 pub mod authz;
 
+pub mod sss;
+
 use commands::agent::{AgentCommand, AgentCommandExecutor};
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
 use commands::crypto::{CryptoCommand, CryptoCommandExecutor};

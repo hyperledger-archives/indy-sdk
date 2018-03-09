@@ -16,7 +16,7 @@ use services::authz::AuthzService;
 use services::authz::types::{Policy, PolicyAgentInfo};
 
 use services::authz::constants::AUTHZ_ADDRESS_WALLET_KEY_PREFIX;
-use services::anoncreds::constants::MASTER_SECRET_WALLET_KEY_PREFIX;
+//use services::anoncreds::constants::MASTER_SECRET_WALLET_KEY_PREFIX;
 
 use std::error::Error;
 use std::rc::Rc;

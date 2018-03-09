@@ -5,3 +5,5 @@ pub mod ledger;
 pub mod signus;
 
 pub mod authz;
+
+pub mod sss;

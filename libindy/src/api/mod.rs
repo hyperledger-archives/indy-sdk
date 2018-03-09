@@ -142,4 +142,8 @@ pub enum ErrorCode
     AgentAlreadyExistsError = 3003,
 
     AgentHasNoSecretError = 3004,
+
+    // ------------------------------------------------ SSS -------------------------
+    MGreaterThanN = 4000,
+
 }
