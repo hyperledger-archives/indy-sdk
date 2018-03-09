@@ -19,7 +19,7 @@ test('abbreviate_verkey', async function (t) {
   err = await t.throws(indy.abbreviate_verkey(did, 2))
   t.is(err.message, 'Expected String for arg 1: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
 
-  err = await t.throws(indy.abbreviate_verkey("?", "?"))
+  err = await t.throws(indy.abbreviate_verkey('?', '?'))
   t.is(err + '', 'IndyError: CommonInvalidStructure')
   t.is(err.indy_code, 113)
   t.is(err.indy_name, 'CommonInvalidStructure')

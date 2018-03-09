@@ -202,7 +202,7 @@ hAST.forEach(function (fn) {
       throw new Error('Unhandled callback args type: ' + cbArgTypes)
   }
   cpp += '  }\n'
-  cpp += '  uv_async_send(icb->uvHandle);\n'
+  cpp += '  uv_async_send(&icb->uvHandle);\n'
   cpp += '}\n'
   cpp += 'NAN_METHOD(' + jsName + ') {\n'
   cpp += '  if(info.Length() != ' + (jsArgs.length + 1) + '){\n'
@@ -249,11 +249,12 @@ hAST.forEach(function (fn) {
     }
   })
   cpp += '  if(!info[' + jsArgs.length + ']->IsFunction()) {\n'
-  cpp += '    return Nan::ThrowError(Nan::New("abbreviate_verkey arg ' + jsArgs.length + ' expected Function").ToLocalChecked());\n'
+  cpp += '    return Nan::ThrowError(Nan::New("' + jsName + ' arg ' + jsArgs.length + ' expected callback Function").ToLocalChecked());\n'
   cpp += '  }\n'
-  cpp += '  Nan::Callback* callback = new Nan::Callback(Nan::To<v8::Function>(info[' + jsArgs.length + ']).ToLocalChecked());\n'
-  cpp += '  indy_handle_t ch = getCommandHandle();\n'
-  cpp += '  indyCalled(ch, callback, ' + fn.name + '(ch'
+  cpp += '  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[' + jsArgs.length + ']).ToLocalChecked());\n'
+  cpp += '  cbmap[icb->command_handle] = icb;\n'
+  cpp += '  uv_async_init(uv_default_loop(), &icb->uvHandle, mainLoopReentry);\n'
+  cpp += '  indyCalled(icb, ' + fn.name + '(icb->command_handle'
   cpp += jsArgs.map(function (arg, i) {
     if (arg.type === 'Buffer') {
       return ', arg' + i + 'data, arg' + i + 'size'

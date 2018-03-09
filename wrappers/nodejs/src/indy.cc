@@ -13,10 +13,35 @@ enum IndyCallbackType {
     CB_STRING_STRING
 };
 
-struct IndyCallback {
+indy_handle_t next_command_handle = 0;
+
+class IndyCallback : public Nan::AsyncResource {
+  public:
+    IndyCallback(v8::Local<v8::Function> callback_) : Nan::AsyncResource("IndyCallback") {
+        callback.Reset(callback_);
+        uvHandle.data = this;
+        type = CB_NONE;
+        next_command_handle++;
+        command_handle = next_command_handle;
+    }
+
+    ~IndyCallback() {
+        callback.Reset();
+
+        delete str0;
+        str0 = NULL;
+
+        delete str1;
+        str1 = NULL;
+
+        delete buffer0data;
+        buffer0data = NULL;
+    }
+
+
     indy_handle_t command_handle;
-    Nan::Callback* callback;
-    uv_async_t* uvHandle;
+    Nan::Persistent<v8::Function> callback;
+    uv_async_t uvHandle;
 
     indy_error_t err;
 
@@ -29,26 +54,24 @@ struct IndyCallback {
 
     indy_handle_t handle0;
 
-    char* buffer0data;
-    uint32_t    buffer0size;
+    char*    buffer0data;
+    uint32_t buffer0size;
 };
 
 std::map<indy_handle_t, IndyCallback*> cbmap;
 
-indy_handle_t next_command_handle = 0;
-indy_handle_t getCommandHandle(){
-    next_command_handle++;
-    return next_command_handle;
-}
 
 void freeUvHandle (uv_handle_t* handle) {
-    free(handle);
+    // TODO fixme
+    // IndyCallback* icb = static_cast<IndyCallback*>(handle->data);
+    // delete icb;
 };
 
 NAUV_WORK_CB(mainLoopReentry) {
     Nan::HandleScope scope;
 
-    IndyCallback* icb = (struct IndyCallback*)async->data;
+    IndyCallback* icb = static_cast<IndyCallback*>(async->data);
+    cbmap.erase(icb->command_handle);
 
     int argc = icb->type == CB_NONE ? 1 : 2;
 
@@ -85,47 +108,19 @@ NAUV_WORK_CB(mainLoopReentry) {
             break;
     }
 
-    icb->callback->Call(argc, argv);
+    v8::Local<v8::Object> target = Nan::New<v8::Object>();
+    v8::Local<v8::Function> callback = Nan::New(icb->callback);
+    icb->runInAsyncScope(target, callback, argc, argv);
 
-
-    cbmap.erase(icb->command_handle);
-
-    delete icb->callback;
-    icb->callback = NULL;
-
-    delete icb->str0;
-    icb->str0 = NULL;
-
-    delete icb->str1;
-    icb->str1 = NULL;
-
-    delete icb->buffer0data;
-    icb->buffer0data = NULL;
-
-    uv_close((uv_handle_t*)icb->uvHandle, freeUvHandle);
+    uv_close(reinterpret_cast<uv_handle_t*>(&icb->uvHandle), freeUvHandle);
 }
 
-void indyCalled(indy_handle_t ch, Nan::Callback* callback, indy_error_t res) {
-
-    if(res != 0){
-        v8::Local<v8::Value> argv[] = {
-            Nan::New<v8::Number>(res)
-        };
-        callback->Call(1, argv);
-        delete callback;
+void indyCalled(IndyCallback* icb, indy_error_t res) {
+    if(res == 0) {
         return;
     }
-
-    IndyCallback* icb = new IndyCallback();
-    icb->command_handle = ch;
-    icb->callback = callback;
-    icb->uvHandle = (uv_async_t*)malloc(sizeof(uv_async_t));
-    icb->uvHandle->data = (void *)icb;
-    icb->type = CB_NONE;
-
-    uv_async_init(uv_default_loop(), icb->uvHandle, mainLoopReentry);
-
-    cbmap[icb->command_handle] = icb;
+    icb->err = res;
+    uv_async_send(&icb->uvHandle);
 }
 
 char* copyCStr(const char* original){
