@@ -219,9 +219,14 @@ hAST.forEach(function (fn) {
 
     switch (type) {
       case 'String':
-        chkType('IsString')
-        cpp += '  Nan::Utf8String arg' + i + 'UTF(info[' + i + ']);\n'
-        cpp += '  const char* arg' + i + ' = (const char*)(*arg' + i + 'UTF);\n'
+        cpp += '  Nan::Utf8String* arg' + i + 'UTF = nullptr;\n'
+        cpp += '  const char* arg' + i + ' = nullptr;\n'
+        cpp += '  if(info[' + i + ']->IsString()){\n'
+        cpp += '    arg' + i + 'UTF = new Nan::Utf8String(info[' + i + ']);\n'
+        cpp += '    arg' + i + ' = (const char*)(**arg' + i + 'UTF);\n'
+        cpp += '  } else if(!info[' + i + ']->IsNull() && !info[' + i + ']->IsUndefined()){\n'
+        cpp += cppReturnThrow('Expected String or null for arg ' + i)
+        cpp += '  }\n'
         break
       case 'IndyHandle':
         chkType('IsNumber')
@@ -260,6 +265,25 @@ hAST.forEach(function (fn) {
     return ', arg' + i
   }).join('')
   cpp += ', ' + jsName + '_cb));\n'
+
+  jsArgs.forEach(function (arg, i) {
+    var type = normalizeType(arg.type)
+    switch (type) {
+      case 'String':
+        cpp += '  delete arg' + i + 'UTF;\n'
+        break
+      case 'Buffer':
+        // TODO
+        break
+      case 'IndyHandle':
+      case 'indy_u32_t':
+      case 'indy_i32_t':
+      case 'Boolean':
+        break
+      default:
+        throw new Error('Unhandled argument cleanup for type: ' + type)
+    }
+  })
   cpp += '}\n\n'
 
   exportFunctions.push(jsName)

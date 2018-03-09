@@ -14,12 +14,20 @@ test('abbreviate_verkey', async function (t) {
   t.is(err.message, 'Expected 3 arguments: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
 
   err = await t.throws(indy.abbreviate_verkey(1, verkey))
-  t.is(err.message, 'Expected String for arg 0: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
+  t.is(err.message, 'Expected String or null for arg 0: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
 
   err = await t.throws(indy.abbreviate_verkey(did, 2))
-  t.is(err.message, 'Expected String for arg 1: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
+  t.is(err.message, 'Expected String or null for arg 1: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
 
-  err = await t.throws(indy.abbreviate_verkey('?', '?'))
+  err = await t.throws(indy.abbreviate_verkey(null, verkey))
+  t.is(err.indy_name, 'CommonInvalidParam3')
+  err = await t.throws(indy.abbreviate_verkey(void 0, verkey))
+  t.is(err.indy_name, 'CommonInvalidParam3')
+
+  err = await t.throws(indy.abbreviate_verkey(did, null))
+  t.is(err.indy_name, 'CommonInvalidParam4')
+
+  err = await t.throws(indy.abbreviate_verkey('?', verkey))
   t.is(err + '', 'IndyError: CommonInvalidStructure')
   t.is(err.indy_code, 113)
   t.is(err.indy_name, 'CommonInvalidStructure')
