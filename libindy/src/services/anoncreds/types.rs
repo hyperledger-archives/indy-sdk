@@ -40,7 +40,7 @@ pub trait Filtering {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CredentialOffer {
     pub cred_def_id: String,
-    pub rev_reg_id: Option<String>,
+    pub issuer_did: String,
     pub key_correctness_proof: CredentialKeyCorrectnessProof,
     pub nonce: Nonce
 }
@@ -54,7 +54,7 @@ impl Filtering for CredentialOffer {
     fn schema_did(&self) -> String { get_parts(&self.cred_def_id)[2].to_string() }
     fn schema_name(&self) -> String { get_parts(&self.cred_def_id)[4].to_string() }
     fn schema_version(&self) -> String { get_parts(&self.cred_def_id)[5].to_string() }
-    fn issuer_did(&self) -> String { get_parts(&self.cred_def_id)[0].to_string() }
+    fn issuer_did(&self) -> String { self.issuer_did.to_string() }
     fn cred_def_id(&self) -> String { self.cred_def_id.to_string() }
 }
 
@@ -62,6 +62,7 @@ impl Filtering for CredentialOffer {
 pub struct CredentialInfo {
     pub referent: String,
     pub attrs: HashMap<String, String>,
+    pub issuer_did: String,
     pub cred_def_id: String,
     pub rev_reg_id: Option<String>
 }
@@ -71,7 +72,7 @@ impl Filtering for CredentialInfo {
     fn schema_did(&self) -> String { get_parts(&self.cred_def_id)[2].to_string() }
     fn schema_name(&self) -> String { get_parts(&self.cred_def_id)[4].to_string() }
     fn schema_version(&self) -> String { get_parts(&self.cred_def_id)[5].to_string() }
-    fn issuer_did(&self) -> String { get_parts(&self.cred_def_id)[0].to_string() }
+    fn issuer_did(&self) -> String { self.issuer_did.to_string() }
     fn cred_def_id(&self) -> String { self.cred_def_id.to_string() }
 }
 
@@ -82,8 +83,8 @@ fn get_parts(id: &str) -> Vec<&str> {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialRequest {
     pub prover_did: String,
+    pub issuer_did: String,
     pub cred_def_id: String,
-    pub rev_reg_id: Option<String>,
     pub blinded_ms: BlindedMasterSecret,
     pub blinded_ms_correctness_proof: BlindedMasterSecretCorrectnessProof,
     pub nonce: Nonce,
@@ -149,6 +150,7 @@ pub struct Credential {
     pub values: HashMap<String, AttributeValues>,
     pub signature: CredentialSignature,
     pub signature_correctness_proof: SignatureCorrectnessProof,
+    pub issuer_did: String,
     pub cred_def_id: String,
     pub rev_reg_id: Option<String>
 }

@@ -145,5 +145,6 @@ pub struct SchemaData {
 
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct CredentialOfferInfo {
-    pub cred_def_id: String
+    pub cred_def_id: String,
+    pub issuer_did: String,
 }

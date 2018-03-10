@@ -6,19 +6,20 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_verifier_verify_proof_works_for_correct_proof(proof_req, claim_def, gvt_schema, schema_key):
+async def test_verifier_verify_proof_works_for_correct_proof(proof_req, credential_def, gvt_schema, gvt_schema_id,
+                                                             issuer_1_gvt_cred_def_id):
     schemas = {
-        "claim::277478db-bf57-42c3-8530-b1b13cfe0bfd": gvt_schema
+        "credential::277478db-bf57-42c3-8530-b1b13cfe0bfd": gvt_schema
     }
 
-    claim_defs = {
-        "claim::277478db-bf57-42c3-8530-b1b13cfe0bfd": claim_def
+    credential_defs = {
+        "credential::277478db-bf57-42c3-8530-b1b13cfe0bfd": credential_def
     }
 
     proof = {
         "proof": {
             "proofs": {
-                "claim::277478db-bf57-42c3-8530-b1b13cfe0bfd": {
+                "credential::277478db-bf57-42c3-8530-b1b13cfe0bfd": {
                     "primary_proof": {
                         "eq_proof": {
                             "revealed_attrs": {
@@ -148,42 +149,45 @@ async def test_verifier_verify_proof_works_for_correct_proof(proof_req, claim_de
         },
         "requested_proof": {
             "revealed_attrs": {
-                "attr1_referent": ["claim::277478db-bf57-42c3-8530-b1b13cfe0bfd", "Alex",
-                                   "1139481716457488690172217916278103335"]
+                "attr1_referent":
+                    {"referent": "credential::277478db-bf57-42c3-8530-b1b13cfe0bfd", "raw": "Alex",
+                     "encoded": "1139481716457488690172217916278103335"}
             }, "unrevealed_attrs": {},
             "self_attested_attrs": {},
             "predicates": {
-                "predicate1_referent": "claim::277478db-bf57-42c3-8530-b1b13cfe0bfd"
+                "predicate1_referent": "credential::277478db-bf57-42c3-8530-b1b13cfe0bfd"
             }
         },
         "identifiers":
-            {"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd": {"issuer_did": "NcYxiDXkpYi6ov5FcYDi1e",
-                                                             "schema_key": schema_key}}
+            {"credential::277478db-bf57-42c3-8530-b1b13cfe0bfd": {"cred_def_id": issuer_1_gvt_cred_def_id,
+                                                                  "schema_id": gvt_schema_id}}
     }
 
     valid = await verifier_verify_proof(json.dumps(proof_req), json.dumps(proof),
-                                        json.dumps(schemas), json.dumps(claim_defs), "{}")
+                                        json.dumps(schemas), json.dumps(credential_defs), "{}", "{}")
 
     assert valid
 
 
 @pytest.mark.asyncio
-async def test_verifier_verify_proof_works_for_proof_does_not_correspond_to_request(claim_def, gvt_schema, schema_key):
+async def test_verifier_verify_proof_works_for_proof_does_not_correspond_to_request(credential_def, gvt_schema,
+                                                                                    gvt_schema_id,
+                                                                                    issuer_1_gvt_cred_def_id):
     from tests.anoncreds.conftest import proof_req
-    xproof_req = proof_req(180, schema_key)
+    xproof_req = proof_req(180)
 
     schemas = {
-        "claim::277478db-bf57-42c3-8530-b1b13cfe0bfd": gvt_schema
+        "credential::277478db-bf57-42c3-8530-b1b13cfe0bfd": gvt_schema
     }
 
-    claim_defs = {
-        "claim::277478db-bf57-42c3-8530-b1b13cfe0bfd": claim_def
+    credential_defs = {
+        "credential::277478db-bf57-42c3-8530-b1b13cfe0bfd": credential_def
     }
 
     proof = {
         "proof": {
             "proofs": {
-                "claim::277478db-bf57-42c3-8530-b1b13cfe0bfd": {
+                "credential::277478db-bf57-42c3-8530-b1b13cfe0bfd": {
                     "primary_proof": {
                         "eq_proof": {
                             "revealed_attrs": {
@@ -313,37 +317,40 @@ async def test_verifier_verify_proof_works_for_proof_does_not_correspond_to_requ
         },
         "requested_proof": {
             "revealed_attrs": {
-                "attr1_referent": ["claim::277478db-bf57-42c3-8530-b1b13cfe0bfd", "Alex",
-                                   "1139481716457488690172217916278103335"]
+                "attr1_referent":
+                    {"referent": "credential::277478db-bf57-42c3-8530-b1b13cfe0bfd", "raw": "Alex",
+                     "encoded": "1139481716457488690172217916278103335"}
             }, "unrevealed_attrs": {},
             "self_attested_attrs": {},
             "predicates": {
-                "predicate1_referent": "claim::277478db-bf57-42c3-8530-b1b13cfe0bfd"
+                "predicate1_referent": "credential::277478db-bf57-42c3-8530-b1b13cfe0bfd"
             }
         },
-        "identifiers": {"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":
-                            {"issuer_did": "NcYxiDXkpYi6ov5FcYDi1e", "schema_key": schema_key}}
+        "identifiers":
+            {"credential::277478db-bf57-42c3-8530-b1b13cfe0bfd": {"cred_def_id": issuer_1_gvt_cred_def_id,
+                                                                  "schema_id": gvt_schema_id}}
     }
 
     with pytest.raises(IndyError) as e:
         await verifier_verify_proof(json.dumps(xproof_req), json.dumps(proof),
-                                    json.dumps(schemas), json.dumps(claim_defs), "{}")
+                                    json.dumps(schemas), json.dumps(credential_defs), "{}", "{}")
 
     assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
-async def test_verifier_verify_proof_works_for_wrong_proof(proof_req, claim_def, gvt_schema, schema_key):
+async def test_verifier_verify_proof_works_for_wrong_proof(proof_req, credential_def, gvt_schema, gvt_schema_id,
+                                                           issuer_1_gvt_cred_def_id):
     schemas = {
-        "claim::277478db-bf57-42c3-8530-b1b13cfe0bfd": gvt_schema
+        "credential::277478db-bf57-42c3-8530-b1b13cfe0bfd": gvt_schema
     }
-    claim_defs = {
-        "claim::277478db-bf57-42c3-8530-b1b13cfe0bfd": claim_def
+    credential_defs = {
+        "credential::277478db-bf57-42c3-8530-b1b13cfe0bfd": credential_def
     }
     proof = {
         "proof": {
             "proofs": {
-                "claim::277478db-bf57-42c3-8530-b1b13cfe0bfd": {
+                "credential::277478db-bf57-42c3-8530-b1b13cfe0bfd": {
                     "primary_proof": {
                         "eq_proof": {
                             "revealed_attrs": {
@@ -403,19 +410,21 @@ async def test_verifier_verify_proof_works_for_wrong_proof(proof_req, claim_def,
         },
         "requested_proof": {
             "revealed_attrs": {
-                "attr1_referent": ["claim::277478db-bf57-42c3-8530-b1b13cfe0bfd", "Alex",
-                                   "1139481716457488690172217916278103335"]
+                "attr1_referent":
+                    {"referent": "credential::277478db-bf57-42c3-8530-b1b13cfe0bfd", "raw": "Alex",
+                     "encoded": "1139481716457488690172217916278103335"}
             }, "unrevealed_attrs": {},
             "self_attested_attrs": {},
             "predicates": {
-                "predicate1_referent": "claim::277478db-bf57-42c3-8530-b1b13cfe0bfd"
+                "predicate1_referent": "credential::277478db-bf57-42c3-8530-b1b13cfe0bfd"
             }
         },
-        "identifiers": {"claim::277478db-bf57-42c3-8530-b1b13cfe0bfd":
-                            {"issuer_did": "NcYxiDXkpYi6ov5FcYDi1e", "schema_key": schema_key}}
+        "identifiers":
+            {"credential::277478db-bf57-42c3-8530-b1b13cfe0bfd": {"cred_def_id": issuer_1_gvt_cred_def_id,
+                                                                  "schema_id": gvt_schema_id}}
     }
 
     valid = await verifier_verify_proof(json.dumps(proof_req), json.dumps(proof),
-                                        json.dumps(schemas), json.dumps(claim_defs), "{}")
+                                        json.dumps(schemas), json.dumps(credential_defs), "{}", "{}")
 
     assert not valid

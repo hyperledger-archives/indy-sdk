@@ -164,6 +164,9 @@ impl From<indy_crypto::errors::IndyCryptoError> for CommonError {
             IndyCryptoError::InvalidParam7(err) => CommonError::InvalidParam7(err),
             IndyCryptoError::InvalidParam8(err) => CommonError::InvalidParam8(err),
             IndyCryptoError::InvalidParam9(err) => CommonError::InvalidParam9(err),
+            IndyCryptoError::InvalidState(err) => CommonError::InvalidState(err),
+            IndyCryptoError::InvalidStructure(err) => CommonError::InvalidStructure(err),
+            IndyCryptoError::IOError(err) => CommonError::IOError(err),
             _ => CommonError::InvalidStructure("Invalid error code".to_string())
         }
     }

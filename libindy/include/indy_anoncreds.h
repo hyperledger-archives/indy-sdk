@@ -52,7 +52,7 @@ extern "C" {
     extern indy_error_t indy_issuer_create_credential_offer(indy_handle_t command_handle,
                                                             indy_handle_t wallet_handle,
                                                             const char *  cred_def_id,
-                                                            const char *  rev_reg_id,
+                                                            const char *  issuer_did,
                                                             const char *  prover_did,
 
                                                             void           (*cb)(indy_handle_t xcommand_handle,
@@ -64,7 +64,8 @@ extern "C" {
                                                       indy_handle_t wallet_handle,
                                                       const char *  credential_req_json,
                                                       const char *  credential_values_json,
-                                                      indy_handle_t    tails_reader_handle,
+                                                      const char *  rev_reg_id,
+                                                      indy_handle_t ails_reader_handle,
                                                       indy_i32_t    user_revoc_index,
 
                                                       void           (*cb)(indy_handle_t xcommand_handle,

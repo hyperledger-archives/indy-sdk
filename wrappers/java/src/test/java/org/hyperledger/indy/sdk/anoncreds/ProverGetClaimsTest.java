@@ -14,8 +14,6 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverGetClaimsWorksForEmptyFilter() throws Exception {
 
-		initCommonWallet();
-
 		String claims = Anoncreds.proverGetClaims(wallet, "{}").get();
 
 		JSONArray claimsArray = new JSONArray(claims);
@@ -25,8 +23,6 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 	@Test
 	public void testProverGetClaimsWorksForFilterByIssuer() throws Exception {
-
-		initCommonWallet();
 
 		String filter = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
 
@@ -40,9 +36,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverGetClaimsWorksForFilterBySchema() throws Exception {
 
-		initCommonWallet();
-
-		String filter = String.format("{\"schema_key\":%s}", gvtSchemaKey);
+		String filter = String.format("{\"schema_id\":\"%s\"}", gvtSchemaId);
 
 		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
 
@@ -52,11 +46,9 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 	}
 
 	@Test
-	public void testProverGetClaimsWorksForFilterByPartOfSchema() throws Exception {
+	public void testProverGetClaimsWorksForFilterBySchemaName() throws Exception {
 
-		initCommonWallet();
-
-		String filter = "{\"schema_key\": {\"name\":\"gvt\"}}";
+		String filter = "{\"schema_name\": \"gvt\"}";
 
 		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
 
@@ -66,11 +58,9 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 	}
 
 	@Test
-	public void testProverGetClaimsWorksForFilterByIssuerAndSchema() throws Exception {
+	public void testProverGetClaimsWorksForFilterByCredDefId() throws Exception {
 
-		initCommonWallet();
-
-		String filter = String.format("{\"issuer_did\":\"%s\", \"schema_key\":%s}", issuerDid, gvtSchemaKey);
+		String filter = String.format("{\"cred_def_id\":\"%s\"}", issuer1gvtClaimDefId);
 
 		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
 
@@ -81,8 +71,6 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 	@Test
 	public void testProverGetClaimsWorksForEmptyResult() throws Exception {
-
-		initCommonWallet();
 
 		String filter = String.format("{\"issuer_did\":\"%s\"}", issuerDid + "a");
 
@@ -96,12 +84,10 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverGetClaimsWorksForInvalidFilterJson() throws Exception {
 
-		initCommonWallet();
-
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String filter = "{\"schema_key\":\"gvt\"}";
+		String filter = "{\"schema_name\":gvt}";
 
 		Anoncreds.proverGetClaims(wallet, filter).get();
 	}

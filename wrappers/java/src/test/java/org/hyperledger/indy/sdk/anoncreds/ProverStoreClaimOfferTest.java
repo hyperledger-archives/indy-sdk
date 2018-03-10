@@ -12,8 +12,6 @@ public class ProverStoreClaimOfferTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverStoreClaimOfferWorks() throws Exception {
 
-		initCommonWallet();
-
 		Anoncreds.proverStoreClaimOffer(wallet, issuer1GvtClaimOffer).get();
 	}
 

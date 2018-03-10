@@ -100,18 +100,18 @@ impl AnoncredsUtils {
         super::results::result_to_empty(err, receiver)
     }
 
-    pub fn issuer_create_credential_offer(wallet_handle: i32, cred_def_id: &str, rev_reg_id: Option<&str>, prover_did: &str) -> Result<String, ErrorCode> {
+    pub fn issuer_create_credential_offer(wallet_handle: i32, cred_def_id: &str, issuer_did: &str, prover_did: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let cred_def_id = CString::new(cred_def_id).unwrap();
-        let rev_reg_id_str = rev_reg_id.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let issuer_did = CString::new(issuer_did).unwrap();
         let prover_did = CString::new(prover_did).unwrap();
 
         let err =
             indy_issuer_create_credential_offer(command_handle,
                                                 wallet_handle,
                                                 cred_def_id.as_ptr(),
-                                                if rev_reg_id.is_some() { rev_reg_id_str.as_ptr() } else { null() },
+                                                issuer_did.as_ptr(),
                                                 prover_did.as_ptr(),
                                                 cb);
 
@@ -164,17 +164,19 @@ impl AnoncredsUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn issuer_create_credential(wallet_handle: i32, credential_req_json: &str, credential_values_json: &str,
+    pub fn issuer_create_credential(wallet_handle: i32, credential_req_json: &str, credential_values_json: &str, rev_reg_id: Option<&str>,
                                     tails_reader_handler: Option<i32>, user_revoc_index: Option<i32>) -> Result<(Option<String>, String), ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_opt_string_string();
 
         let credential_req_json = CString::new(credential_req_json).unwrap();
         let credential_values_json = CString::new(credential_values_json).unwrap();
+        let rev_reg_id_str = rev_reg_id.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = indy_issuer_create_credential(command_handle,
                                                 wallet_handle,
                                                 credential_req_json.as_ptr(),
                                                 credential_values_json.as_ptr(),
+                                                if rev_reg_id.is_some() { rev_reg_id_str.as_ptr() } else { null() },
                                                 tails_reader_handler.unwrap_or(-1),
                                                 user_revoc_index.unwrap_or(-1),
                                                 cb);
@@ -316,7 +318,7 @@ impl AnoncredsUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn create_revocation_info(wallet_handle: i32, tails_reader_handle: i32, rev_reg_def_json: &str,
+    pub fn create_revocation_info(tails_reader_handle: i32, rev_reg_def_json: &str,
                                   rev_reg_delta_json: &str, timestamp: u64, user_revoc_index: u32) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
@@ -324,7 +326,6 @@ impl AnoncredsUtils {
         let rev_reg_delta_json = CString::new(rev_reg_delta_json).unwrap();
 
         let err = indy_create_revocation_info(command_handle,
-                                              wallet_handle,
                                               tails_reader_handle,
                                               rev_reg_def_json.as_ptr(),
                                               rev_reg_delta_json.as_ptr(),
@@ -335,7 +336,7 @@ impl AnoncredsUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn update_revocation_info(wallet_handle: i32, tails_reader_handle: i32, rev_info_json: &str, rev_reg_def_json: &str,
+    pub fn update_revocation_info(tails_reader_handle: i32, rev_info_json: &str, rev_reg_def_json: &str,
                                   rev_reg_delta_json: &str, timestamp: u64, user_revoc_index: u32) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
@@ -344,7 +345,6 @@ impl AnoncredsUtils {
         let rev_reg_delta_json = CString::new(rev_reg_delta_json).unwrap();
 
         let err = indy_update_revocation_info(command_handle,
-                                              wallet_handle,
                                               tails_reader_handle,
                                               rev_info_json.as_ptr(),
                                               rev_reg_def_json.as_ptr(),
@@ -451,20 +451,21 @@ impl AnoncredsUtils {
     }
 
     pub fn issuer_1_gvt_cred_offer_info() -> CredentialOfferInfo {
-        CredentialOfferInfo { cred_def_id: AnoncredsUtils::issuer_1_gvt_cred_def_id() }
+        CredentialOfferInfo { cred_def_id: AnoncredsUtils::issuer_1_gvt_cred_def_id(), issuer_did: ISSUER_DID.to_string() }
     }
 
     pub fn issuer_1_xyz_cred_offer_info() -> CredentialOfferInfo {
-        CredentialOfferInfo { cred_def_id: AnoncredsUtils::issuer_1_xyz_cred_def_id() }
+        CredentialOfferInfo { cred_def_id: AnoncredsUtils::issuer_1_xyz_cred_def_id(), issuer_did: ISSUER_DID.to_string() }
     }
 
     pub fn issuer_2_gvt_cred_offer_info() -> CredentialOfferInfo {
-        CredentialOfferInfo { cred_def_id: AnoncredsUtils::issuer_2_gvt_cred_def_id() }
+        CredentialOfferInfo { cred_def_id: AnoncredsUtils::issuer_2_gvt_cred_def_id(), issuer_did: ISSUER_DID_2.to_string() }
     }
 
-    pub fn get_credential_offer(cred_def_id: &str) -> String {
+    pub fn get_credential_offer(cred_def_id: &str, issuer_did: &str) -> String {
         format!(r#"{{
                     "cred_def_id":"{}",
+                    "issuer_did":"{}",
                     "nonce": "123456789",
                     "key_correctness_proof": {{
                         "c": "40983841062403114696351105468714473190092945361781922980284036284848255102181",
@@ -476,19 +477,19 @@ impl AnoncredsUtils {
                             "sex":"80391464088175985479491145491149691676821702211894975540979533937774408491785219834122762944971811095537317848654416410580026667952335862665033546961195841179049138780634877378888139872391903804566992942049889566118414459535461354834916790111149556147862372720479995171424595620702416860508557772658191427975040372006893431243929350584258325646184152369207604974849840003307909256680303811690743921237117427932325288396536300357224457903672928805464748280413883820982138162562660615091490216949908906589977916965927522227509078411025411863914347809289131586019476288990589861921562466467956967324009607175203666778312423056471533641756179235960697838324279027572094105302470967687825859737087"
                         }}
                     }}
-                   }}"#, cred_def_id)
+                   }}"#, cred_def_id, issuer_did)
     }
 
     pub fn issuer_1_gvt_credential_offer() -> String {
-        AnoncredsUtils::get_credential_offer(&AnoncredsUtils::issuer_1_gvt_cred_def_id())
+        AnoncredsUtils::get_credential_offer(&AnoncredsUtils::issuer_1_gvt_cred_def_id(), ISSUER_DID)
     }
 
     pub fn issuer_1_xyz_credential_offer() -> String {
-        AnoncredsUtils::get_credential_offer(&AnoncredsUtils::issuer_1_xyz_cred_def_id())
+        AnoncredsUtils::get_credential_offer(&AnoncredsUtils::issuer_1_xyz_cred_def_id(), ISSUER_DID)
     }
 
     pub fn issuer_2_gvt_credential_offer() -> String {
-        AnoncredsUtils::get_credential_offer(&AnoncredsUtils::issuer_2_gvt_cred_def_id())
+        AnoncredsUtils::get_credential_offer(&AnoncredsUtils::issuer_2_gvt_cred_def_id(), ISSUER_DID_2)
     }
 
     pub fn gvt_credential_values() -> HashMap<String, AttributeValues> {
@@ -530,6 +531,7 @@ impl AnoncredsUtils {
 
     pub fn issuer_1_gvt_credential() -> CredentialInfo {
         CredentialInfo {
+            issuer_did: ISSUER_DID.to_string(),
             cred_def_id: AnoncredsUtils::issuer_1_gvt_cred_def_id(),
             referent: CREDENTIAL1_ID.to_string(),
             rev_reg_id: None,
@@ -544,6 +546,7 @@ impl AnoncredsUtils {
 
     pub fn issuer_1_xyz_credential() -> CredentialInfo {
         CredentialInfo {
+            issuer_did: ISSUER_DID.to_string(),
             cred_def_id: AnoncredsUtils::issuer_1_xyz_cred_def_id(),
             referent: CREDENTIAL2_ID.to_string(),
             rev_reg_id: None,
@@ -556,6 +559,7 @@ impl AnoncredsUtils {
 
     pub fn issuer_2_gvt_credential() -> CredentialInfo {
         CredentialInfo {
+            issuer_did: ISSUER_DID_2.to_string(),
             cred_def_id: AnoncredsUtils::issuer_2_gvt_cred_def_id(),
             referent: CREDENTIAL3_ID.to_string(),
             rev_reg_id: None,
@@ -643,7 +647,7 @@ impl AnoncredsUtils {
                 }}
             }},
             "requested_proof":{{
-                "revealed_attrs":{{"attr1_referent":["{}","Alex","1139481716457488690172217916278103335"]}},
+                "revealed_attrs":{{"attr1_referent":{{"referent":"{}", "raw":"Alex", "encoded":"1139481716457488690172217916278103335"}}}},
                 "unrevealed_attrs":{{}},
                 "self_attested_attrs":{{}},
                 "predicates":{{"predicate1_referent":"{}"}}
@@ -672,11 +676,23 @@ impl AnoncredsUtils {
         credentials_for_referent[0].cred_info.clone()
     }
 
-    pub fn tails_config() -> String {
+    pub fn tails_writer_config() -> String {
         let mut base_dir = env::home_dir().unwrap();
         base_dir.push("tails");
 
         format!(r#"{{"base_dir":"{}", "uri_pattern":""}}"#, base_dir.to_str().unwrap())
+    }
+
+    pub fn full_delta(rev_reg: &str, max_cred_num: u32) -> String {
+        let revoc_reg: serde_json::Value = serde_json::from_str(&rev_reg).unwrap();
+        let accum = revoc_reg["accum"].as_str().unwrap();
+        let mut issued = Vec::new();
+        for i in 1..max_cred_num + 1 {
+            issued.push(i);
+        }
+
+
+        format!(r#"{{"accum":{:?}, "issued":{:?}}}"#, accum, issued)
     }
 
     pub fn init_common_wallet() -> (i32, &'static str, &'static str, &'static str, &'static str) {
@@ -723,7 +739,7 @@ impl AnoncredsUtils {
                 //5. Issuer1 Create GVT CredentialOffer
                 let issuer1_gvt_credential_offer = AnoncredsUtils::issuer_create_credential_offer(WALLET_HANDLE,
                                                                                                   &issuer1_gvt_cred_deg_id,
-                                                                                                  None,
+                                                                                                  ISSUER_DID,
                                                                                                   DID_MY1).unwrap();
 
                 //6. Prover store Issuer1 GVT CredentialOffer
@@ -732,7 +748,7 @@ impl AnoncredsUtils {
                 //7. Issuer1 Create XYZ CredentialOffer
                 let issuer1_xyz_credential_offer = AnoncredsUtils::issuer_create_credential_offer(WALLET_HANDLE,
                                                                                                   &issuer1_xyz_cred_deg_id,
-                                                                                                  None,
+                                                                                                  ISSUER_DID,
                                                                                                   DID_MY1).unwrap();
 
                 //8. Prover store Issuer1 XYZ CredentialOffer
@@ -741,7 +757,7 @@ impl AnoncredsUtils {
                 //9. Issuer2 Create GVT CredentialOffer
                 let issuer2_gvt_credential_offer = AnoncredsUtils::issuer_create_credential_offer(WALLET_HANDLE,
                                                                                                   &issuer2_gvt_cred_def_id,
-                                                                                                  None,
+                                                                                                  ISSUER_DID_2,
                                                                                                   DID_MY1).unwrap();
 
                 //10. Prover store Issuer2 GVT CredentialOffer
@@ -760,7 +776,12 @@ impl AnoncredsUtils {
                 let credential_values_json = AnoncredsUtils::gvt_credential_values_json();
 
                 //13. Issuer1 creates GVT Credential
-                let (_, credential_json) = AnoncredsUtils::issuer_create_credential(WALLET_HANDLE, &issuer1_gvt_credential_req, &credential_values_json, None, None).unwrap();
+                let (_, credential_json) = AnoncredsUtils::issuer_create_credential(WALLET_HANDLE,
+                                                                                    &issuer1_gvt_credential_req,
+                                                                                    &credential_values_json,
+                                                                                    None,
+                                                                                    None,
+                                                                                    None).unwrap();
 
                 //14. Store Credential
                 AnoncredsUtils::prover_store_credential(WALLET_HANDLE, CREDENTIAL1_ID, &credential_json, None).unwrap();
@@ -775,7 +796,12 @@ impl AnoncredsUtils {
                 let credential_values_json = AnoncredsUtils::xyz_credential_values_json();
 
                 //16. Create XYZ Credential
-                let (_, credential_2_json) = AnoncredsUtils::issuer_create_credential(WALLET_HANDLE, &issuer1_xyz_credential_req, &credential_values_json, None, None).unwrap();
+                let (_, credential_2_json) = AnoncredsUtils::issuer_create_credential(WALLET_HANDLE,
+                                                                                      &issuer1_xyz_credential_req,
+                                                                                      &credential_values_json,
+                                                                                      None,
+                                                                                      None,
+                                                                                      None).unwrap();
 
                 //17. Store Credential
                 AnoncredsUtils::prover_store_credential(WALLET_HANDLE, CREDENTIAL2_ID, &credential_2_json, None).unwrap();
@@ -790,7 +816,12 @@ impl AnoncredsUtils {
                 let credential_values_json = AnoncredsUtils::gvt2_credential_values_json();
 
                 //19. Create XYZ Credential
-                let (_, credential_3_json) = AnoncredsUtils::issuer_create_credential(WALLET_HANDLE, &issuer2_gvt_credential_req, &credential_values_json, None, None).unwrap();
+                let (_, credential_3_json) = AnoncredsUtils::issuer_create_credential(WALLET_HANDLE,
+                                                                                      &issuer2_gvt_credential_req,
+                                                                                      &credential_values_json,
+                                                                                      None,
+                                                                                      None,
+                                                                                      None).unwrap();
 
                 //20. Store Credential
                 AnoncredsUtils::prover_store_credential(WALLET_HANDLE, CREDENTIAL3_ID, &credential_3_json, None).unwrap();
