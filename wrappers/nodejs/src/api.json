@@ -1,0 +1,1210 @@
+{
+  "errors": {
+    "c100": "CommonInvalidParam1",
+    "c101": "CommonInvalidParam2",
+    "c102": "CommonInvalidParam3",
+    "c103": "CommonInvalidParam4",
+    "c104": "CommonInvalidParam5",
+    "c105": "CommonInvalidParam6",
+    "c106": "CommonInvalidParam7",
+    "c107": "CommonInvalidParam8",
+    "c108": "CommonInvalidParam9",
+    "c109": "CommonInvalidParam10",
+    "c110": "CommonInvalidParam11",
+    "c111": "CommonInvalidParam12",
+    "c112": "CommonInvalidState",
+    "c113": "CommonInvalidStructure",
+    "c114": "CommonIOError",
+    "c200": "WalletInvalidHandle",
+    "c201": "WalletUnknownTypeError",
+    "c202": "WalletTypeAlreadyRegisteredError",
+    "c203": "WalletAlreadyExistsError",
+    "c204": "WalletNotFoundError",
+    "c205": "WalletIncompatiblePoolError",
+    "c206": "WalletAlreadyOpenedError",
+    "c207": "WalletAccessFailed",
+    "c300": "PoolLedgerNotCreatedError",
+    "c301": "PoolLedgerInvalidPoolHandle",
+    "c302": "PoolLedgerTerminated",
+    "c303": "LedgerNoConsensusError",
+    "c304": "LedgerInvalidTransaction",
+    "c305": "LedgerSecurityError",
+    "c306": "PoolLedgerConfigAlreadyExistsError",
+    "c307": "PoolLedgerTimeout",
+    "c400": "AnoncredsRevocationRegistryFullError",
+    "c401": "AnoncredsInvalidUserRevocIndex",
+    "c402": "AnoncredsAccumulatorIsFull",
+    "c403": "AnoncredsNotIssuedError",
+    "c404": "AnoncredsMasterSecretDuplicateNameError",
+    "c405": "AnoncredsProofRejected",
+    "c406": "AnoncredsClaimRevoked",
+    "c407": "AnoncredsClaimDefAlreadyExistsError",
+    "c500": "UnknownCryptoTypeError",
+    "c600": "DidAlreadyExistsError"
+  },
+  "functions": {
+    "indy_issuer_create_and_store_claim_def": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "issuer_did", "type": "const char*"},
+        {"name": "schema_json", "type": "const char*", "json": true},
+        {"name": "signature_type", "type": "const char*"},
+        {"name": "create_non_revoc", "type": "indy_bool_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "claim_def_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_issuer_create_and_store_revoc_reg": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "issuer_did", "type": "const char*"},
+        {"name": "schema_json", "type": "const char*", "json": true},
+        {"name": "max_claim_num", "type": "indy_u32_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "revoc_reg_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_issuer_create_claim_offer": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "schema_json", "type": "const char*", "json": true},
+        {"name": "issuer_did", "type": "const char*"},
+        {"name": "prover_did", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "claim_offer_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_issuer_create_claim": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "claim_req_json", "type": "const char*", "json": true},
+        {"name": "claim_json", "type": "const char*", "json": true},
+        {"name": "user_revoc_index", "type": "indy_i32_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "revoc_reg_update_json", "type": "const char*", "json": true},
+            {"name": "xclaim_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_issuer_revoke_claim": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "issuer_did", "type": "const char*"},
+        {"name": "schema_json", "type": "const char*", "json": true},
+        {"name": "user_revoc_index", "type": "indy_u32_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "revoc_reg_update_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_prover_store_claim_offer": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "claim_offer_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_prover_get_claim_offers": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "filter_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "claim_offers_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_prover_create_master_secret": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "master_secret_name", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_prover_create_and_store_claim_req": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "prover_did", "type": "const char*"},
+        {"name": "claim_offer_json", "type": "const char*", "json": true},
+        {"name": "claim_def_json", "type": "const char*", "json": true},
+        {"name": "master_secret_name", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "claim_req_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_prover_store_claim": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "claims_json", "type": "const char*", "json": true},
+        {"name": "rev_reg_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_prover_get_claims": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "filter_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "claims_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_prover_get_claims_for_proof_req": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "proof_request_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "claims_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_prover_create_proof": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "proof_req_json", "type": "const char*", "json": true},
+        {"name": "requested_claims_json", "type": "const char*", "json": true},
+        {"name": "schemas_json", "type": "const char*", "json": true},
+        {"name": "master_secret_name", "type": "const char*"},
+        {"name": "claim_defs_json", "type": "const char*", "json": true},
+        {"name": "revoc_regs_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "proof_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_verifier_verify_proof": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "proof_request_json", "type": "const char*", "json": true},
+        {"name": "proof_json", "type": "const char*", "json": true},
+        {"name": "schemas_json", "type": "const char*", "json": true},
+        {"name": "claim_defs_jsons", "type": "const char*", "json": true},
+        {"name": "revoc_regs_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "valid", "type": "indy_bool_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_create_key": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "key_json", "type": "const char *const", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "command_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "vk", "type": "const char *const"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_set_key_metadata": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "verkey", "type": "const char *const"},
+        {"name": "metadata", "type": "const char *const"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "command_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_get_key_metadata": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "verkey", "type": "const char *const"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "command_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "metadata", "type": "const char *const"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_crypto_sign": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "my_vk", "type": "const char*"},
+        {"name": "message_raw", "type": "const indy_u8_t*"},
+        {"name": "message_len", "type": "indy_u32_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "signature_raw", "type": "const indy_u8_t*"},
+            {"name": "signature_len", "type": "indy_u32_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_crypto_verify": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "their_vk", "type": "const char*"},
+        {"name": "message_raw", "type": "const indy_u8_t*"},
+        {"name": "message_len", "type": "indy_u32_t"},
+        {"name": "signature_raw", "type": "const indy_u8_t*"},
+        {"name": "signature_len", "type": "indy_u32_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "valid", "type": "indy_bool_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_crypto_auth_crypt": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "my_vk", "type": "const char*"},
+        {"name": "their_vk", "type": "const char*"},
+        {"name": "message_raw", "type": "const indy_u8_t*"},
+        {"name": "message_len", "type": "indy_u32_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "encrypted_msg_raw", "type": "const indy_u8_t*"},
+            {"name": "encrypted_msg_len", "type": "indy_u32_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_crypto_auth_decrypt": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "my_vk", "type": "const char*"},
+        {"name": "encrypted_msg_raw", "type": "const indy_u8_t*"},
+        {"name": "encrypted_msg_len", "type": "indy_u32_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "their_vk", "type": "const char*"},
+            {"name": "decrypted_msg_raw", "type": "const indy_u8_t*"},
+            {"name": "decrypted_msg_len", "type": "indy_u32_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_crypto_anon_crypt": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "their_vk", "type": "const char*"},
+        {"name": "message_raw", "type": "const indy_u8_t*"},
+        {"name": "message_len", "type": "indy_u32_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "encrypted_msg_raw", "type": "const indy_u8_t*"},
+            {"name": "encrypted_msg_len", "type": "indy_u32_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_crypto_anon_decrypt": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "my_vk", "type": "const char*"},
+        {"name": "encrypted_msg", "type": "const indy_u8_t*"},
+        {"name": "encrypted_len", "type": "indy_u32_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "decrypted_msg_raw", "type": "const indy_u8_t*"},
+            {"name": "decrypted_msg_len", "type": "indy_u32_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_create_and_store_my_did": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "did_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "did", "type": "const char *const"},
+            {"name": "verkey", "type": "const char *const"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_replace_keys_start": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "did", "type": "const char*"},
+        {"name": "identity_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "verkey", "type": "const char *const"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_replace_keys_apply": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "did", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_store_their_did": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "identity_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_key_for_did": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "pool_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "did", "type": "const char *const"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "command_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "key", "type": "const char *const"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_key_for_local_did": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "did", "type": "const char *const"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "command_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "key", "type": "const char *const"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_set_endpoint_for_did": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "did", "type": "const char *const"},
+        {"name": "address", "type": "const char *const"},
+        {"name": "transport_key", "type": "const char *const"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "command_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_get_endpoint_for_did": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "pool_handle", "type": "indy_handle_t"},
+        {"name": "did", "type": "const char *const"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "command_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "address", "type": "const char *const"},
+            {"name": "transport_vk", "type": "const char *const"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_set_did_metadata": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "did", "type": "const char *const"},
+        {"name": "metadata", "type": "const char *const"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "command_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_get_did_metadata": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "did", "type": "const char *const"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "command_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "metadata", "type": "const char *const"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_get_my_did_with_meta": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "my_did", "type": "const char *const"},
+        {
+          "name": "fn",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "did_with_meta", "type": "const char *const"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_list_my_dids_with_meta": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {
+          "name": "fn",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "dids", "type": "const char *const"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_abbreviate_verkey": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "did", "type": "const char *const"},
+        {"name": "full_verkey", "type": "const char *const"},
+        {
+          "name": "fn",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "verkey", "type": "const char *const"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_sign_and_submit_request": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "pool_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "request_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_result_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_submit_request": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "pool_handle", "type": "indy_handle_t"},
+        {"name": "request_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_result_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_sign_request": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "request_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "signed_request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_get_ddo_request": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "target_did", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_result_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_nym_request": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "target_did", "type": "const char*"},
+        {"name": "verkey", "type": "const char*"},
+        {"name": "alias", "type": "const char*"},
+        {"name": "role", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_attrib_request": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "target_did", "type": "const char*"},
+        {"name": "hash", "type": "const char*"},
+        {"name": "raw", "type": "const char*"},
+        {"name": "enc", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_get_attrib_request": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "target_did", "type": "const char*"},
+        {"name": "hash", "type": "const char*"},
+        {"name": "raw", "type": "const char*"},
+        {"name": "enc", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_get_nym_request": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "target_did", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_schema_request": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "data", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_get_schema_request": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "dest", "type": "const char*"},
+        {"name": "data", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_claim_def_txn": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "xref", "type": "indy_i32_t"},
+        {"name": "signature_type", "type": "const char*"},
+        {"name": "data", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_get_claim_def_txn": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "xref", "type": "indy_i32_t"},
+        {"name": "signature_type", "type": "const char*"},
+        {"name": "origin", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_node_request": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "target_did", "type": "const char*"},
+        {"name": "data", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_get_txn_request": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "data", "type": "indy_i32_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_pool_config_request": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "writes", "type": "indy_bool_t"},
+        {"name": "force", "type": "indy_bool_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_pool_upgrade_request": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "name", "type": "const char*"},
+        {"name": "version", "type": "const char*"},
+        {"name": "action", "type": "const char*"},
+        {"name": "sha256", "type": "const char*"},
+        {"name": "timeout", "type": "indy_i32_t"},
+        {"name": "schedule", "type": "const char*"},
+        {"name": "justification", "type": "const char*"},
+        {"name": "reinstall", "type": "indy_bool_t"},
+        {"name": "force", "type": "indy_bool_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_is_pairwise_exists": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "their_did", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "exists", "type": "indy_bool_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_create_pairwise": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "their_did", "type": "const char*"},
+        {"name": "my_did", "type": "const char*"},
+        {"name": "metadata", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_list_pairwise": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "list_pairwise", "type": "const char*"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_get_pairwise": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "their_did", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "pairwise_info_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_set_pairwise_metadata": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "their_did", "type": "const char*"},
+        {"name": "metadata", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_create_pool_ledger_config": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "config_name", "type": "const char*"},
+        {"name": "config", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_open_pool_ledger": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "config_name", "type": "const char*"},
+        {"name": "config", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "pool_handle", "type": "indy_handle_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_refresh_pool_ledger": {
+      "params": [
+        {"name": "command_hangle", "type": "indy_handle_t"},
+        {"name": "handle", "type": "indy_handle_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_list_pools": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {
+          "name": "fn",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "pools", "type": "const char *const"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_close_pool_ledger": {
+      "params": [
+        {"name": "command_hangle", "type": "indy_handle_t"},
+        {"name": "handle", "type": "indy_handle_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_delete_pool_ledger_config": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "config_name", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_register_wallet_type": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "xtype", "type": "const char*"},
+        {
+          "name": "createFn",
+          "params": [
+            {"name": "name", "type": "const char*"},
+            {"name": "config", "type": "const char*"},
+            {"name": "credentials", "type": "const char*"}
+          ],
+          "ret": "indy_error_t"
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_create_wallet": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "pool_name", "type": "const char*"},
+        {"name": "name", "type": "const char*"},
+        {"name": "xtype", "type": "const char*"},
+        {"name": "config", "type": "const char*"},
+        {"name": "credentials", "type": "const char*"},
+        {
+          "name": "fn",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_open_wallet": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "name", "type": "const char*"},
+        {"name": "runtime_config", "type": "const char*"},
+        {"name": "credentials", "type": "const char*"},
+        {
+          "name": "fn",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "handle", "type": "indy_handle_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_list_wallets": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {
+          "name": "fn",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "wallets", "type": "const char *const"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_close_wallet": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "handle", "type": "indy_handle_t"},
+        {
+          "name": "fn",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_delete_wallet": {
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "name", "type": "const char*"},
+        {"name": "credentials", "type": "const char*"},
+        {
+          "name": "fn",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    }
+  }
+}

@@ -1,5 +1,5 @@
 var test = require('ava')
-var indy = require('../').promise
+var indy = require('../')
 var cuid = require('cuid')
 var initTestPool = require('./helpers/initTestPool')
 

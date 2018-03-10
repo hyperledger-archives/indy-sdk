@@ -1,11 +1,12 @@
 //
 // ABANDON ALL HOPE, ALL YE WHO ENTER HERE
 //
-// This is just a quick-n-dirty parser to bootstrap hAST.json
+// This is just a quick-n-dirty parser to bootstrap src/api.json
 // This code may be thrown away, so don't love it.
 //
 var fs = require('fs')
 var path = require('path')
+var stringify = require('json-stringify-pretty-compact')
 
 // concatenate all the .h files into one string
 var hText = ''
@@ -59,9 +60,9 @@ var functionLines = (' ' + externCText.replace(/\n/g, ' ').replace(/\s+/g, ' '))
     return line.length > 0
   })
 
-// parse a function args string until it hits the closing ")"
-var parseArgs = function (src) {
-  var args = []
+// parse a function params string until it hits the closing ")"
+var parseParams = function (src) {
+  var params = []
   var buff = ''
 
   var push = function () {
@@ -70,16 +71,21 @@ var parseArgs = function (src) {
       return
     }
     if (/\(|\)/.test(buff)) {
-      throw new Error('Unexpected argument buffer: ' + buff)
+      throw new Error('Unexpected param buffer: ' + buff)
     }
     var i = buff.lastIndexOf(' ')
-    args.push({
+    var o = {
       name: buff.substring(i).trim(),
-      type: buff.substring(0, i)
-    })
+      type: buff.substring(0, i).replace(/ \*$/, '*')
+    }
+    if (/json/i.test(o.name)) {
+      o.json = true
+    }
+    params.push(o)
     buff = ''
   }
 
+  var o
   var c
   var i = 0
   while (i < src.length) {
@@ -93,22 +99,28 @@ var parseArgs = function (src) {
     }
     var m = /^ *(void|indy_error_t) *\( *\*([^)]+)\) *\(/i.exec(buff)
     if (m) {
-      args.push({
+      o = {
         name: m[2],
-        type: 'Function',
-        args: parseArgs(src.substr(i + 1)),
-        returnType: m[1]
-      })
+        params: parseParams(src.substr(i + 1)),
+        ret: m[1]
+      }
+      if (o.ret === 'void') {
+        delete o.ret
+      }
+      params.push(o)
       buff = ''
       break
     }
     i++
   }
   push()
-  return args
+  return params
 }
 
-var AST = []
+var api = {
+  errors: {},
+  functions: {}
+}
 
 functionLines.forEach(function (line) {
   var m = /^(indy_error_t) (\w+) ?\((.*\));$/.exec(line)
@@ -116,12 +128,35 @@ functionLines.forEach(function (line) {
     throw new Error('Unexpected function line: ' + line)
   }
 
-  AST.push({
-    name: m[2],
-    type: 'Function',
-    args: parseArgs(m[3]),
-    returnType: m[1]
-  })
+  api.functions[m[2]] = {
+    params: parseParams(m[3]),
+    ret: m[1]
+  }
 })
 
-module.exports = AST
+// now parse the error codes
+
+fs.readFileSync(path.resolve(__dirname, '../../../libindy/include/indy_mod.h'), 'utf8')
+  .split('\n')
+  .map(function (line) {
+    return line
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^#.*$/g, '')
+      .replace(/\/\/.*$/g, '')
+      .replace(/\s+/g, ' ')
+      .replace(/,/g, '')
+      .trim()
+  })
+  .filter(function (line) {
+    return line.length > 0
+  })
+  .slice(3, -1)
+  .map(function (line) {
+    return line.split('=').map(part => part.trim()).reverse()
+  })
+  .forEach(function (pair) {
+    api.errors['c' + pair[0]] = pair[1]
+  })
+
+fs.writeFileSync(path.resolve(__dirname, '../src/api.json'), stringify(api, {maxLength: 100}), 'utf8')

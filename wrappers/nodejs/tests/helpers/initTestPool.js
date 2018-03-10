@@ -1,4 +1,4 @@
-var indy = require('../../').promise
+var indy = require('../../')
 var makeTestPool = require('./makeTestPool')
 
 module.exports = async function () {

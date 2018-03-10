@@ -1,5 +1,5 @@
 var test = require('ava')
-var indy = require('../').promise
+var indy = require('../')
 
 test('abbreviate_verkey', async function (t) {
   var did = 'VsKV7grR1BUE29mG2Fm2kX'
@@ -8,16 +8,17 @@ test('abbreviate_verkey', async function (t) {
   t.is(await indy.abbreviate_verkey(did, verkey), '~HYwqs2vrTc8Tn4uBV7NBTe')
 
   var err = await t.throws(indy.abbreviate_verkey())
-  t.is(err.message, 'Expected 3 arguments: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
+  t.is(err.message, 'CommonInvalidParam3')
 
-  err = await t.throws(indy.abbreviate_verkey(did, verkey, did))
-  t.is(err.message, 'Expected 3 arguments: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
+  err = await t.throws(function () {
+    indy.abbreviate_verkey(1, verkey)
+  }, Error)
+  t.is(err.message, 'Expected String or null for did: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
 
-  err = await t.throws(indy.abbreviate_verkey(1, verkey))
-  t.is(err.message, 'Expected String or null for arg 0: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
-
-  err = await t.throws(indy.abbreviate_verkey(did, 2))
-  t.is(err.message, 'Expected String or null for arg 1: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
+  err = await t.throws(function () {
+    indy.abbreviate_verkey(did, [1, 2, 3])
+  }, Error)
+  t.is(err.message, 'Expected String or null for full_verkey: abbreviate_verkey(did, full_verkey, cb(err, verkey))')
 
   err = await t.throws(indy.abbreviate_verkey(null, verkey))
   t.is(err.indy_name, 'CommonInvalidParam3')
