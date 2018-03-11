@@ -15,6 +15,10 @@ var full_verkey = '...'
 indy.abbreviate_verkey(did, full_verkey, function(err, verkey){
   ..
 })
+
+// if you do not provide a callback, a Promise is returned
+
+var verkey = await indy.abbreviate_verkey(did, full_verkey)
 ```
 
 ### IndyError

@@ -37,30 +37,16 @@ class IndyCallback : public Nan::AsyncResource {
         handle = next_handle;
         icbmap[handle] = this;
         uv_async_init(uv_default_loop(), &uvHandle, onMainLoopReentry);
+        str0 = nullptr;
+        str1 = nullptr;
+        buffer0data = nullptr;
     }
 
     ~IndyCallback() {
         callback.Reset();
-        switch(type){
-            case CB_STRING:
-                delete str0;
-                break;
-            case CB_BUFFER:
-                free(buffer0data);
-                break;
-            case CB_STRING_BUFFER:
-                delete str0;
-                free(buffer0data);
-                break;
-            case CB_STRING_STRING:
-                delete str0;
-                delete str1;
-                break;
-            case CB_NONE:
-            case CB_BOOLEAN:
-            case CB_HANDLE:
-                break;
-        }
+        delete str0;
+        delete str1;
+        free(buffer0data);
     }
 
     void cbNone(indy_error_t xerr){
@@ -136,7 +122,6 @@ class IndyCallback : public Nan::AsyncResource {
 
     Nan::Persistent<v8::Function> callback;
     uv_async_t uvHandle;
-
 
     IndyCallbackType type;
     indy_error_t err;
@@ -217,5 +202,5 @@ void indyCalled(IndyCallback* icb, indy_error_t res) {
     icb->cbNone(res);
 }
 
-// Now inject the generated C++ code (see /codegen/index.js)
+// Now inject the generated C++ code (see /codegen/cpp.js)
 #include "indy_codegen.h"
