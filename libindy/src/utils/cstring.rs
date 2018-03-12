@@ -64,3 +64,11 @@ macro_rules! check_useful_opt_c_int {
         let $x = if $x >= 0 { Some($x as u32) }  else { None };
     }
 }
+
+
+// Macro for usize integer type.
+macro_rules! check_usize_c_int {
+    ($x:ident, $e:expr) => {
+        let $x = if $x > 0 { $x as usize }  else { return $e };
+    }
+}

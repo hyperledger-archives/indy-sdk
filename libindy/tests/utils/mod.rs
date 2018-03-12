@@ -17,6 +17,8 @@ pub mod constants;
 
 pub mod authz;
 
+pub mod sss;
+
 #[macro_use]
 #[allow(unused_macros)]
 #[path = "../../src/utils/test.rs"]

@@ -10,6 +10,7 @@ pub mod signus;
 pub mod wallet;
 
 pub mod authz;
+pub mod sss;
 
 
 #[derive(Debug, PartialEq, Copy, Clone)]

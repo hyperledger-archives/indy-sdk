@@ -1,4 +1,5 @@
 extern crate indy_crypto;
+extern crate serde_json;
 
 use self::indy_crypto::errors::IndyCryptoError;
 use errors::anoncreds::AnoncredsError;
@@ -132,5 +133,13 @@ impl From<AuthzError> for IndyError {
 impl From<IndyCryptoError> for IndyError {
     fn from(err: IndyCryptoError) -> IndyError {
         IndyError::IndyCryptoError(err)
+    }
+}
+
+impl From<serde_json::Error> for IndyError {
+    fn from(err: serde_json::Error) -> Self {
+        match err {
+            _ => IndyError::CommonError(CommonError::InvalidStructure("Invalid json error".to_string()))
+        }
     }
 }

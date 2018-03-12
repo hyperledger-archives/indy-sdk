@@ -25,6 +25,7 @@ use commands::wallet::{WalletCommand, WalletCommandExecutor};
 use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 
 use commands::authz::{AuthzCommand, AuthzCommandExecutor};
+use commands::sss::{SSSCommand, SSSCommandExecutor};
 
 use errors::common::CommonError;
 
@@ -52,7 +53,8 @@ pub enum Command {
     Signus(SignusCommand),
     Wallet(WalletCommand),
     Pairwise(PairwiseCommand),
-    Authz(AuthzCommand)
+    Authz(AuthzCommand),
+    SSS(SSSCommand)
 }
 
 pub struct CommandExecutor {
@@ -98,6 +100,8 @@ impl CommandExecutor {
 
                 let authz_command_executor = AuthzCommandExecutor::new(pool_service.clone(), wallet_service.clone(), signus_service.clone(), ledger_service.clone(), authz_service.clone());
 
+                let sss_command_executor = SSSCommandExecutor::new(wallet_service.clone(), signus_service.clone());
+
                 loop {
                     match receiver.recv() {
                         Ok(Command::Agent(cmd)) => {
@@ -135,6 +139,10 @@ impl CommandExecutor {
                         Ok(Command::Authz(cmd)) => {
                             info!("AuthzCommand command received");
                             authz_command_executor.execute(cmd);
+                        }
+                        Ok(Command::SSS(cmd)) => {
+                            info!("SSSCommand command received");
+                            sss_command_executor.execute(cmd);
                         }
                         Ok(Command::Exit) => {
                             info!("Exit command received");

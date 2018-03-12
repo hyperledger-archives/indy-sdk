@@ -216,8 +216,9 @@ impl CryptoCommandExecutor {
                 CommonError::InvalidState(
                     format!("Can't serialize Key: {}", err.description())))?;
 
+        let wallet_key = CryptoCommandExecutor::_verkey_to_wallet_key(&key.verkey);
         self.wallet_service.set(wallet_handle,
-                                &CryptoCommandExecutor::_verkey_to_wallet_key(&key.verkey), &key_json)?;
+                                &wallet_key, &key_json)?;
         Ok(())
     }
 

@@ -9,7 +9,6 @@ use indy::api::ErrorCode;
 
 use utils::callback::CallbackUtils;
 use utils::timeout::TimeoutUtils;
-use utils::ledger::LedgerUtils;
 
 pub struct AuthzUtils {}
 
@@ -20,10 +19,6 @@ impl AuthzUtils {
             create_and_store_policy.send((err, address)).unwrap();
         });
         let (create_and_store_policy_command_handle, create_and_store_policy_callback) = CallbackUtils::closure_to_create_and_store_policy_cb(create_and_store_my_policy);
-
-        /*let my_did_json = seed.map_or("{}".to_string(), |seed| format!("{{\"seed\":\"{}\" }}", seed));
-
-        let my_did_json = CString::new(my_did_json).unwrap();*/
 
         let err =
             indy_create_and_store_new_policy(create_and_store_policy_command_handle,

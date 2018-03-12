@@ -23,13 +23,11 @@ use std::rc::Rc;
 use std::str;
 use std::cell::RefCell;
 
-use commands::ledger::LedgerCommand;
 use commands::{Command, CommandExecutor};
 use commands::crypto::CryptoCommandExecutor;
 
 
 use std::collections::HashMap;
-use utils::sequence::SequenceUtils;
 use utils::crypto::base58::Base58;
 
 

@@ -1419,7 +1419,7 @@ impl CallbackUtils {
             static ref CREATE_AND_STORE_MY_POLICY_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
         }
 
-        extern "C" fn create_and_store_my_polciy_callback(command_handle: i32, err: ErrorCode, address: *const c_char) {
+        extern "C" fn create_and_store_my_policy_callback(command_handle: i32, err: ErrorCode, address: *const c_char) {
             let mut callbacks = CREATE_AND_STORE_MY_POLICY_CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let address = unsafe { CStr::from_ptr(address).to_str().unwrap().to_string() };
@@ -1430,7 +1430,7 @@ impl CallbackUtils {
         let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
         callbacks.insert(command_handle, closure);
 
-        (command_handle, Some(create_and_store_my_polciy_callback))
+        (command_handle, Some(create_and_store_my_policy_callback))
     }
 
     pub fn closure_to_get_policy_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32,
@@ -1499,5 +1499,70 @@ impl CallbackUtils {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(update_agent_callback))
+    }
+
+    // ------------------------------------------------ SSS -------------------------
+
+    pub fn closure_to_store_shards_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32, Option<extern fn(command_handle: i32,
+                                                                                                                          err: ErrorCode,
+                                                                                                                          verkey: *const c_char)>) {
+        lazy_static! {
+            static ref STORE_SHARDS_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn store_shards(command_handle: i32, err: ErrorCode, verkey: *const c_char) {
+            let mut callbacks = STORE_SHARDS_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let verkey = unsafe { CStr::from_ptr(verkey).to_str().unwrap().to_string() };
+            cb(err, verkey)
+        }
+
+        let mut callbacks = STORE_SHARDS_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(store_shards))
+    }
+
+    pub fn closure_to_get_shards_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32, Option<extern fn(command_handle: i32,
+                                                                                                               err: ErrorCode,
+                                                                                                             shards_json: *const c_char)>) {
+        lazy_static! {
+            static ref GET_SHARDS_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn get_shards(command_handle: i32, err: ErrorCode, shards_json: *const c_char) {
+            let mut callbacks = GET_SHARDS_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let shards_json = unsafe { CStr::from_ptr(shards_json).to_str().unwrap().to_string() };
+            cb(err, shards_json)
+        }
+
+        let mut callbacks = GET_SHARDS_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(get_shards))
+    }
+
+    pub fn closure_to_recover_secret_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32, Option<extern fn(command_handle: i32,
+                                                                                                             err: ErrorCode,
+                                                                                                             secret: *const c_char)>) {
+        lazy_static! {
+            static ref RECOVER_SECRET_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn recover_secret(command_handle: i32, err: ErrorCode, secret: *const c_char) {
+            let mut callbacks = RECOVER_SECRET_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let secret = unsafe { CStr::from_ptr(secret).to_str().unwrap().to_string() };
+            cb(err, secret)
+        }
+
+        let mut callbacks = RECOVER_SECRET_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(recover_secret))
     }
 }

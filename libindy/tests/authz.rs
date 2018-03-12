@@ -38,7 +38,7 @@ mod high_cases {
     mod policy_creation {
         use super::*;
 
-        // TODO: Tests contain duplicateed setup code, fix it
+        // TODO: Tests contain duplicated setup code, fix it
 
         #[test]
         fn indy_policy_creation_works() {
