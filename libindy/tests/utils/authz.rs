@@ -2,7 +2,6 @@ extern crate libc;
 
 use std::sync::mpsc::channel;
 use std::ffi::CString;
-use std::ptr::null;
 
 use indy::api::authz::*;
 use indy::api::ErrorCode;
@@ -28,7 +27,7 @@ impl AuthzUtils {
         if err != ErrorCode::Success {
             return Err(err);
         }
-        let (err, address) = create_and_store_policy_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        let (err, address) = create_and_store_policy_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
         if err != ErrorCode::Success {
             return Err(err);
         }
@@ -52,7 +51,7 @@ impl AuthzUtils {
         if err != ErrorCode::Success {
             return Err(err);
         }
-        let (err, policy) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        let (err, policy) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
         if err != ErrorCode::Success {
             return Err(err);
         }
@@ -80,7 +79,7 @@ impl AuthzUtils {
         if err != ErrorCode::Success {
             return Err(err);
         }
-        let (err, agent_verkey) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        let (err, agent_verkey) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
         if err != ErrorCode::Success {
             return Err(err);
         }
@@ -109,7 +108,7 @@ impl AuthzUtils {
         if err != ErrorCode::Success {
             return Err(err);
         }
-        let (err, agent_verkey) = receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        let (err, agent_verkey) = receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
         if err != ErrorCode::Success {
             return Err(err);
         }

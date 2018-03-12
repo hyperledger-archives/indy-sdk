@@ -49,15 +49,10 @@ mod high_cases {
                                                                   &vk).unwrap();
             println!("{:?}", &shards_json);
 
-            let secret = SSSUtils::get_recover_secret_from_shards(wallet_handle, &shards_json).unwrap();
-            println!("{:?}", &secret);
-
-//            let secret_json = str::from_utf8(Base58::decode(*secret)).unwrap();
-            let secret_json_str = &secret.from_base58().unwrap();
-            let secret_json = str::from_utf8(secret_json_str).unwrap();
+            let secret_json = SSSUtils::get_recover_secret_from_shards(&shards_json).unwrap();
             println!("{:?}", &secret_json);
 
-            let v: Value = serde_json::from_str(secret_json).unwrap();
+            let v: Value = serde_json::from_str(&secret_json).unwrap();
             let s = v[format!("__key__::{}", verkey)].as_str().unwrap();
             assert_eq!(MY1_SEED, str::from_utf8(&s.from_base58().unwrap()).unwrap());
 

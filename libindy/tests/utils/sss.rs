@@ -33,7 +33,7 @@ impl SSSUtils {
         if err != ErrorCode::Success {
             return Err(err);
         }
-        let (err, vk) = store_shards_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        let (err, vk) = store_shards_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
         if err != ErrorCode::Success {
             return Err(err);
         }
@@ -58,14 +58,14 @@ impl SSSUtils {
         if err != ErrorCode::Success {
             return Err(err);
         }
-        let (err, shards_json) = get_shards_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        let (err, shards_json) = get_shards_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
         if err != ErrorCode::Success {
             return Err(err);
         }
         Ok(shards_json)
     }
 
-    pub fn get_recover_secret_from_shards(wallet_handle: i32, shards_json: &str) -> Result<String, ErrorCode> {
+    pub fn get_recover_secret_from_shards(shards_json: &str) -> Result<String, ErrorCode> {
         let (recover_secret, recover_secret_receiver) = channel();
         let cb = Box::new(move |err, shards_json| {
             recover_secret.send((err, shards_json)).unwrap();
@@ -82,7 +82,7 @@ impl SSSUtils {
         if err != ErrorCode::Success {
             return Err(err);
         }
-        let (err, secret) = recover_secret_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        let (err, secret) = recover_secret_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
         if err != ErrorCode::Success {
             return Err(err);
         }

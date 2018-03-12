@@ -16,6 +16,7 @@ use errors::ToErrorCode;
 
 use std::error;
 use std::fmt;
+use std::str;
 
 #[derive(Debug)]
 pub enum IndyError {
@@ -140,6 +141,14 @@ impl From<serde_json::Error> for IndyError {
     fn from(err: serde_json::Error) -> Self {
         match err {
             _ => IndyError::CommonError(CommonError::InvalidStructure("Invalid json error".to_string()))
+        }
+    }
+}
+
+impl From<str::Utf8Error> for IndyError {
+    fn from(err: str::Utf8Error) -> Self {
+        match err {
+            _ => IndyError::CommonError(CommonError::InvalidStructure("Invalid utf-8 string error".to_string()))
         }
     }
 }

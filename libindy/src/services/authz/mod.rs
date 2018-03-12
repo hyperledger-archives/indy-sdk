@@ -251,7 +251,7 @@ mod tests {
             check_new_agent(agent, key1.verkey.clone(), false);
         }
         let witness1 = BigNumber::rand(1024).unwrap();
-        authz_service.update_agent_witness(&mut new_policy, key1.verkey.clone(), &witness1);
+        authz_service.update_agent_witness(&mut new_policy, key1.verkey.clone(), &witness1).unwrap();
         {
             let agent = new_policy.agents.get(&key1.verkey).unwrap();
 //            assert_eq!(agent.witness.unwrap().to_bytes(), witness1.to_bytes());

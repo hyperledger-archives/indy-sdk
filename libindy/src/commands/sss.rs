@@ -93,9 +93,10 @@ impl SSSCommandExecutor {
             None => Map::new()
         };
 
-        self.update_msg_with_secret_key(wallet_handle, &mut msg, verkey);
+        self.update_msg_with_secret_key(wallet_handle, &mut msg, verkey)?;
 
         let updated_json = json!(msg).to_string();
+        println!("Sharding {:?}", &updated_json);
         let shares = shard_secret(m, n, &updated_json.as_bytes().to_vec(), false)?;
         let shares_json = json!(shares).to_string();
         let wallet_key = SSSCommandExecutor::_verkey_to_wallet_key(&verkey);
@@ -113,7 +114,7 @@ impl SSSCommandExecutor {
     fn recover_secret_from_shards(&self, shards_json: &str) -> Result<String, IndyError> {
         let shards: Vec<Share> = serde_json::from_str(shards_json)?;
         let recovered_secret = recover_secret(shards, false)?;
-        Ok(Base58::encode(&recovered_secret))
+        Ok(str::from_utf8(&recovered_secret)?.to_string())
     }
 
     fn update_msg_with_secret_key(&self, wallet_handle: i32, msg: &mut Map<String, Value>, verkey: &str) -> Result<(), IndyError> {
@@ -121,7 +122,6 @@ impl SSSCommandExecutor {
                                                         wallet_handle, verkey)?;
         let sk = Base58::decode(&k.signkey)?;
         let seed = CryptoBox::ed25519_sk_to_seed(&Vec::from(&sk as &[u8]))?;
-//        msg[&SSSCommandExecutor::_secret_key_in_msg(verkey)] = serde_json::Value::String(Base58::encode(&seed));
         msg.insert(SSSCommandExecutor::_secret_key_in_msg(verkey), serde_json::Value::String(Base58::encode(&seed)));
         Ok(())
     }
