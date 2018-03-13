@@ -652,7 +652,7 @@ public class Ledger extends IndyJava.API {
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_build_claim_def_txn(
+		int result = LibIndy.api.indy_build_credential_def_txn(
 				commandHandle,
 				submitterDid,
 				xref,
@@ -688,7 +688,7 @@ public class Ledger extends IndyJava.API {
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_build_get_claim_def_txn(
+		int result = LibIndy.api.indy_build_get_credential_def_txn(
 				commandHandle,
 				submitterDid,
 				xref,

@@ -59,7 +59,6 @@ pub enum ProverCommand {
         String, // rev info json
         Box<Fn(Result<String, IndyError>) + Send>),
     CreateRevocationInfo(
-        i32, // wallet handle
         i32, // tails reader _handle
         String, // revocation registry definition json
         String, // revocation registry delta json
@@ -67,7 +66,6 @@ pub enum ProverCommand {
         u32, //rev_idx
         Box<Fn(Result<String, IndyError>) + Send>),
     UpdateRevocationInfo(
-        i32, // wallet handle
         i32, // tails reader _handle
         String, // witness json
         String, // revocation registry definition json
@@ -145,13 +143,13 @@ impl ProverCommandExecutor {
                 cb(self.create_proof(wallet_handle, &proof_req_json, &requested_credentials_json, &schemas_json,
                                      &master_secret_name, &credential_defs_json, &rev_infos_json));
             }
-            ProverCommand::CreateRevocationInfo(wallet_handle, tails_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, rev_idx, cb) => {
+            ProverCommand::CreateRevocationInfo(tails_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, rev_idx, cb) => {
                 trace!(target: "prover_command_executor", "CreateRevocationInfo command received");
-                cb(self.create_revocation_info(wallet_handle, tails_reader_handle, &rev_reg_def_json, &rev_reg_delta_json, timestamp, rev_idx));
+                cb(self.create_revocation_info(tails_reader_handle, &rev_reg_def_json, &rev_reg_delta_json, timestamp, rev_idx));
             }
-            ProverCommand::UpdateRevocationInfo(wallet_handle, tails_reader_handle, witness_json, rev_reg_def_json, rev_reg_delta_json, timestamp, rev_idx, cb) => {
+            ProverCommand::UpdateRevocationInfo(tails_reader_handle, witness_json, rev_reg_def_json, rev_reg_delta_json, timestamp, rev_idx, cb) => {
                 trace!(target: "prover_command_executor", "UpdateRevocationInfo command received");
-                cb(self.update_revocation_info(wallet_handle, tails_reader_handle, &witness_json, &rev_reg_def_json, &rev_reg_delta_json, timestamp, rev_idx));
+                cb(self.update_revocation_info(tails_reader_handle, &witness_json, &rev_reg_def_json, &rev_reg_delta_json, timestamp, rev_idx));
             }
             ProverCommand::StoreRevocationInfo(wallet_handle, id, witness_json, cb) => {
                 trace!(target: "prover_command_executor", "StoreRevocationInfo( command received");
@@ -171,6 +169,8 @@ impl ProverCommandExecutor {
 
         let credential_offer: CredentialOffer = CredentialOffer::from_json(credential_offer_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialOffer: {:?}", err)))?;
+
+        self.crypto_service.validate_did(&credential_offer.issuer_did)?;
 
         self.wallet_service.set(wallet_handle, &format!("credential_offer::{}", &credential_offer.cred_def_id), &credential_offer_json)?;
 
@@ -253,8 +253,8 @@ impl ProverCommandExecutor {
 
         let credential_request = CredentialRequest {
             prover_did: prover_did.to_string(),
+            issuer_did: credential_offer.issuer_did.to_string(),
             cred_def_id: credential_offer.cred_def_id.clone(),
-            rev_reg_id: credential_offer.rev_reg_id.clone(),
             blinded_ms,
             blinded_ms_correctness_proof,
             nonce
@@ -368,6 +368,7 @@ impl ProverCommandExecutor {
                 CredentialInfo {
                     referent: referent.replace("credential::", ""),
                     attrs: credential_values,
+                    issuer_did: credential.issuer_did.clone(),
                     cred_def_id: credential.cred_def_id.clone(),
                     rev_reg_id: credential.rev_reg_id.as_ref().map(|s| s.to_string())
                 });
@@ -379,14 +380,13 @@ impl ProverCommandExecutor {
     }
 
     fn create_revocation_info(&self,
-                              wallet_handle: i32,
                               tails_reader_handle: i32,
                               rev_reg_def: &str,
                               rev_reg_delta_json: &str,
                               timestamp: u64,
                               rev_idx: u32) -> Result<String, IndyError> {
-        trace!("create_witness >>> wallet_handle: {:?}, tails_reader_handle: {:?}, rev_reg_def: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, rev_idx: {:?}",
-               wallet_handle, tails_reader_handle, rev_reg_def, rev_reg_delta_json, timestamp, rev_idx);
+        trace!("create_witness >>> , tails_reader_handle: {:?}, rev_reg_def: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, rev_idx: {:?}",
+               tails_reader_handle, rev_reg_def, rev_reg_delta_json, timestamp, rev_idx);
 
         let revocation_registry_definition: RevocationRegistryDefinition = RevocationRegistryDefinition::from_json(rev_reg_def)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDefinition: {:?}", err)))?;
@@ -414,15 +414,14 @@ impl ProverCommandExecutor {
     }
 
     fn update_revocation_info(&self,
-                              wallet_handle: i32,
                               tails_reader_handle: i32,
                               rev_info_json: &str,
                               rev_reg_def_json: &str,
                               rev_reg_delta_json: &str,
                               timestamp: u64,
                               rev_idx: u32) -> Result<String, IndyError> {
-        trace!("update_revocation_info >>> wallet_handle: {:?}, tails_reader_handle: {:?}, rev_reg_def_json: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, rev_idx: {:?}",
-               wallet_handle, tails_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, rev_idx);
+        trace!("update_revocation_info >>> tails_reader_handle: {:?}, rev_reg_def_json: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, rev_idx: {:?}",
+               tails_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, rev_idx);
 
         let mut rev_info: RevocationInfo = RevocationInfo::from_json(rev_info_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationInfo: {:?}", err)))?;

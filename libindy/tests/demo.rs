@@ -18,6 +18,7 @@ mod utils;
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
+use utils::anoncreds_types::{CredentialsForProofRequest, FullProof};
 
 use indy::api::ErrorCode;
 use indy::api::anoncreds::*;
@@ -32,9 +33,7 @@ use indy::api::did::*;
 use utils::callback::CallbackUtils;
 
 use std::ptr::null;
-use std::sync::mpsc::channel;
 use std::ffi::CString;
-use utils::types::CredentialsForProofRequest;
 
 #[cfg(feature = "local_nodes_pool")]
 use std::thread;
@@ -42,13 +41,14 @@ use std::thread;
 #[test]
 fn anoncreds_demo_works() {
     TestUtils::cleanup_storage();
-    let (issuer_create_claim_definition_receiver, issuer_create_claim_definition_command_handle, issuer_create_claim_definition_callback) = CallbackUtils::_closure_to_cb_ec_string();
+    let (issuer_create_schema_receiver, issuer_create_schema_command_handle, issuer_create_schema_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
+    let (issuer_create_claim_definition_receiver, issuer_create_claim_definition_command_handle, issuer_create_claim_definition_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
     let (issuer_create_claim_offer_receiver, issuer_create_claim_offer_command_handle, issuer_create_claim_offer_callback) = CallbackUtils::_closure_to_cb_ec_string();
     let (create_wallet_receiver, create_wallet_command_handle, create_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
     let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = CallbackUtils::_closure_to_cb_ec_i32();
     let (prover_create_master_secret_receiver, prover_create_master_secret_command_handle, prover_create_master_secret_callback) = CallbackUtils::_closure_to_cb_ec();
     let (prover_create_claim_req_receiver, prover_create_claim_req_command_handle, prover_create_claim_req_callback) = CallbackUtils::_closure_to_cb_ec_string();
-    let (issuer_create_claim_receiver, issuer_create_claim_command_handle, issuer_create_claim_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
+    let (issuer_create_claim_receiver, issuer_create_claim_command_handle, issuer_create_claim_callback) = CallbackUtils::_closure_to_cb_ec_opt_string_string();
     let (prover_store_claim_receiver, prover_store_claim_command_handle, prover_store_claim_callback) = CallbackUtils::_closure_to_cb_ec();
     let (prover_get_claims_for_proof_req_receiver, prover_get_claims_for_proof_req_command_handle, prover_get_claims_for_proof_req_callback) = CallbackUtils::_closure_to_cb_ec_string();
     let (prover_create_proof_receiver, prover_create_proof_command_handle, prover_create_proof_callback) = CallbackUtils::_closure_to_cb_ec_string();
@@ -86,37 +86,45 @@ fn anoncreds_demo_works() {
     let (err, wallet_handle) = open_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    let schema_seq_no = 1;
     let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
     let prover_did = "VsKV7grR1BUE29mG2Fm2kX";
+    let schema_name = "gvt";
+    let version = "1.0";
+    let attrs = r#"["name", "age", "sex", "height"]"#;
 
-    let schema = format!(r#"{{
-                                    "seqNo":{},
-                                    "dest":"{}",
-                                    "data":{{
-                                        "name":"gvt",
-                                        "version":"1.0",
-                                        "attr_names":["age","sex","height","name"]
-                                    }}
-                                 }}"#, schema_seq_no, issuer_did);
-
-    // 3. Issuer create Credential Definition for Schema
+    // 3. Issuer create Schema
     let err =
-        indy_issuer_create_and_store_claim_def(issuer_create_claim_definition_command_handle,
-                                               wallet_handle,
-                                               CString::new(issuer_did.clone()).unwrap().as_ptr(),
-                                               CString::new(schema.clone()).unwrap().as_ptr(),
-                                               null(),
-                                               false,
-                                               issuer_create_claim_definition_callback);
+        indy_issuer_create_schema(issuer_create_schema_command_handle,
+                                  CString::new(issuer_did.clone()).unwrap().as_ptr(),
+                                  CString::new(schema_name.clone()).unwrap().as_ptr(),
+                                  CString::new(version.clone()).unwrap().as_ptr(),
+                                  CString::new(attrs.clone()).unwrap().as_ptr(),
+                                  issuer_create_schema_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, claim_def_json) = issuer_create_claim_definition_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, _, schema_json) = issuer_create_schema_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
+    // 4. Issuer create Credential Definition for Schema
+    let tag = r#"TAG1"#;
+    let config = r#"{ "support_revocation": false }"#;
+
+    let err =
+        indy_issuer_create_and_store_credential_def(issuer_create_claim_definition_command_handle,
+                                                    wallet_handle,
+                                                    CString::new(issuer_did.clone()).unwrap().as_ptr(),
+                                                    CString::new(schema_json.clone()).unwrap().as_ptr(),
+                                                    CString::new(tag.clone()).unwrap().as_ptr(),
+                                                    null(),
+                                                    CString::new(config.clone()).unwrap().as_ptr(),
+                                                    issuer_create_claim_definition_callback);
+
+    assert_eq!(ErrorCode::Success, err);
+    let (err, claim_def_id, claim_def_json) = issuer_create_claim_definition_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    assert_eq!(ErrorCode::Success, err);
+
+    // 5. Prover create Master Secret
     let master_secret_name = "master_secret";
-
-    // 4. Prover create Master Secret
     let err =
         indy_prover_create_master_secret(prover_create_master_secret_command_handle,
                                          wallet_handle,
@@ -127,122 +135,118 @@ fn anoncreds_demo_works() {
     let err = prover_create_master_secret_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    // 5. Issuer create Credential Offer
+    // 6. Issuer create Credential Offer
     let err =
-        indy_issuer_create_claim_offer(issuer_create_claim_offer_command_handle,
-                                       wallet_handle,
-                                       CString::new(schema.clone()).unwrap().as_ptr(),
-                                       CString::new(issuer_did.clone()).unwrap().as_ptr(),
-                                       CString::new(prover_did.clone()).unwrap().as_ptr(),
-                                       issuer_create_claim_offer_callback);
+        indy_issuer_create_credential_offer(issuer_create_claim_offer_command_handle,
+                                            wallet_handle,
+                                            CString::new(claim_def_id.clone()).unwrap().as_ptr(),
+                                            CString::new(issuer_did.clone()).unwrap().as_ptr(),
+                                            CString::new(prover_did.clone()).unwrap().as_ptr(),
+                                            issuer_create_claim_offer_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claim_offer_json) = issuer_create_claim_offer_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    // 6. Prover create Credential Request
+    // 7. Prover create Credential Request
     let err =
-        indy_prover_create_and_store_claim_req(prover_create_claim_req_command_handle,
-                                               wallet_handle,
-                                               CString::new(prover_did).unwrap().as_ptr(),
-                                               CString::new(claim_offer_json).unwrap().as_ptr(),
-                                               CString::new(claim_def_json.clone()).unwrap().as_ptr(),
-                                               CString::new(master_secret_name).unwrap().as_ptr(),
-                                               prover_create_claim_req_callback);
+        indy_prover_create_and_store_credential_req(prover_create_claim_req_command_handle,
+                                                    wallet_handle,
+                                                    CString::new(prover_did).unwrap().as_ptr(),
+                                                    CString::new(claim_offer_json).unwrap().as_ptr(),
+                                                    CString::new(claim_def_json.clone()).unwrap().as_ptr(),
+                                                    CString::new(master_secret_name).unwrap().as_ptr(),
+                                                    prover_create_claim_req_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claim_req_json) = prover_create_claim_req_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
+    // 8. Issuer create Credential for Credential Request
     let claim_json = r#"{
-                               "sex":["male","5944657099558967239210949258394887428692050081607692519917050011144233115103"],
-                               "name":["Alex","1139481716457488690172217916278103335"],
-                               "height":["175","175"],
-                               "age":["28","28"]
+                               "sex":{"raw":"male", "encoded":"5944657099558967239210949258394887428692050081607692519917050011144233115103"},
+                               "name":{"raw":"Alex", "encoded":"1139481716457488690172217916278103335"},
+                               "height":{"raw":"175", "encoded":"175"},
+                               "age":{"raw":"28", "encoded":"28"}
                              }"#;
-
-    // 7. Issuer create Credential for Credential Request
     let err =
-        indy_issuer_create_claim(issuer_create_claim_command_handle,
-                                 wallet_handle,
-                                 CString::new(claim_req_json).unwrap().as_ptr(),
-                                 CString::new(claim_json).unwrap().as_ptr(),
-                                 -1,
-                                 -1,
-                                 issuer_create_claim_callback);
+        indy_issuer_create_credential(issuer_create_claim_command_handle,
+                                      wallet_handle,
+                                      CString::new(claim_req_json).unwrap().as_ptr(),
+                                      CString::new(claim_json).unwrap().as_ptr(),
+                                      null(),
+                                      -1,
+                                      -1,
+                                      issuer_create_claim_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, _, xclaim_json) = issuer_create_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    // 7. Prover process and store Credential
+    // 9. Prover process and store Credential
     let id = "123456789";
     let err =
-        indy_prover_store_claim(prover_store_claim_command_handle,
-                                wallet_handle,
-                                CString::new(id).unwrap().as_ptr(),
-                                CString::new(xclaim_json).unwrap().as_ptr(),
-                                null(),
-                                null(),
-                                prover_store_claim_callback);
+        indy_prover_store_credential(prover_store_claim_command_handle,
+                                     wallet_handle,
+                                     CString::new(id).unwrap().as_ptr(),
+                                     CString::new(xclaim_json).unwrap().as_ptr(),
+                                     null(),
+                                     prover_store_claim_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let err = prover_store_claim_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    let proof_req_json = format!(r#"{{
-                                               "nonce":"123432421212",
-                                               "name":"proof_req_1",
-                                               "version":"0.1",
-                                               "requested_attrs":{{
-                                                    "attr1_referent":{{
-                                                        "name":"name",
-                                                        "restrictions":[{{"issuer_did":"{}",
-                                                                        "schema_key":{{
-                                                                            "name":"gvt",
-                                                                            "version":"1.0",
-                                                                            "did":"{}"
-                                                                        }}
-                                                        }}]
-                                                    }}
-                                               }},
-                                               "requested_predicates":{{
-                                                   "predicate1_referent":{{
-                                                       "attr_name":"age",
-                                                       "p_type":">=",
-                                                       "value":18
-                                                   }}
-                                               }}
-                                           }}"#, issuer_did, issuer_did);
+    let proof_req_json = r#"{
+                                       "nonce":"123432421212",
+                                       "name":"proof_req_1",
+                                       "version":"0.1",
+                                       "requested_attrs":{
+                                            "attr1_referent":{
+                                                "name":"name"
+                                            }
+                                       },
+                                       "requested_predicates":{
+                                           "predicate1_referent":{
+                                               "attr_name":"age",
+                                               "p_type":">=",
+                                               "value":18
+                                           }
+                                       }
+                                   }"#;
 
-    // 8. Prover gets Claims for Proof Request
+    // 10. Prover gets Claims for Proof Request
     let err =
-        indy_prover_get_claims_for_proof_req(prover_get_claims_for_proof_req_command_handle,
-                                             wallet_handle,
-                                             CString::new(proof_req_json.clone()).unwrap().as_ptr(),
-                                             prover_get_claims_for_proof_req_callback);
+        indy_prover_get_credentials_for_proof_req(prover_get_claims_for_proof_req_command_handle,
+                                                  wallet_handle,
+                                                  CString::new(proof_req_json.clone()).unwrap().as_ptr(),
+                                                  prover_get_claims_for_proof_req_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claims_json) = prover_get_claims_for_proof_req_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
+
     let claims: CredentialsForProofRequest = serde_json::from_str(&claims_json).unwrap();
     let claims_for_attr_1 = claims.attrs.get("attr1_referent").unwrap();
     assert_eq!(1, claims_for_attr_1.len());
 
-    let claim = claims_for_attr_1[0].clone();
+    let credential = claims_for_attr_1[0].cred_info.clone();
 
     let requested_claims_json = format!(r#"{{
-                                                    "self_attested_attributes":{{}},
-                                                    "requested_attrs":{{"attr1_referent":["{}",true]}},
-                                                    "requested_predicates":{{"predicate1_referent":"{}"}}
-                                                  }}"#, claim.referent, claim.referent);
+                                                  "self_attested_attributes":{{}},
+                                                  "requested_attrs":{{
+                                                        "attr1_referent":{{ "cred_id":"{}", "revealed":true }}
+                                                  }},
+                                                  "requested_predicates":{{
+                                                        "predicate1_referent":{{ "cred_id":"{}" }}
+                                                  }}
+                                                }}"#, credential.referent, credential.referent);
 
-    let schemas_json = format!(r#"{{"{}":{}}}"#, claim.referent, schema);
-    let claim_defs_json = format!(r#"{{"{}":{}}}"#, claim.referent, claim_def_json);
-    let revoc_regs_jsons = "{}";
-    let revoc_entries_jsons = "{}";
+    let schemas_json = format!(r#"{{"{}":{}}}"#, credential.referent, schema_json);
+    let claim_defs_json = format!(r#"{{"{}":{}}}"#, credential.referent, claim_def_json);
+    let revoc_infos_jsons = "{}";
 
-    // 9. Prover create Proof for Proof Request
+    // 11. Prover create Proof for Proof Request
     let err =
         indy_prover_create_proof(prover_create_proof_command_handle,
                                  wallet_handle,
@@ -251,22 +255,34 @@ fn anoncreds_demo_works() {
                                  CString::new(schemas_json.clone()).unwrap().as_ptr(),
                                  CString::new(master_secret_name).unwrap().as_ptr(),
                                  CString::new(claim_defs_json.clone()).unwrap().as_ptr(),
-                                 CString::new(revoc_regs_jsons.clone()).unwrap().as_ptr(),
+                                 CString::new(revoc_infos_jsons.clone()).unwrap().as_ptr(),
                                  prover_create_proof_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, proof_json) = prover_create_proof_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
-    // 10. Verifier verify proof
+    // 12. Verifier verify proof
+    let proof: FullProof = serde_json::from_str(&proof_json).unwrap();
+
+    let revealed_attr_1 = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap();
+    assert_eq!("Alex", revealed_attr_1.raw);
+
+    let id = revealed_attr_1.referent.clone();
+
+    let schemas_json = format!(r#"{{"{}":{}}}"#, id, schema_json);
+    let claim_defs_json = format!(r#"{{"{}":{}}}"#, id, claim_def_json);
+    let rev_reg_defs_json = "{}";
+    let rev_regs_json = "{}";
+
     let err =
         indy_verifier_verify_proof(verifier_verify_proof_command_handle,
                                    CString::new(proof_req_json).unwrap().as_ptr(),
                                    CString::new(proof_json).unwrap().as_ptr(),
                                    CString::new(schemas_json).unwrap().as_ptr(),
                                    CString::new(claim_defs_json).unwrap().as_ptr(),
-                                   CString::new(revoc_regs_jsons).unwrap().as_ptr(),
-                                   CString::new(revoc_entries_jsons).unwrap().as_ptr(),
+                                   CString::new(rev_reg_defs_json).unwrap().as_ptr(),
+                                   CString::new(rev_regs_json).unwrap().as_ptr(),
                                    verifier_verify_proof_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -274,7 +290,7 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
     assert!(result);
 
-    // 11. Close wallet
+    // 13. Close wallet
     let res = indy_close_wallet(close_wallet_command_handle, wallet_handle, close_wallet_callback);
     assert_eq!(res, ErrorCode::Success);
     let res = close_wallet_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();

@@ -15,8 +15,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForRevealedAttribute() throws Exception {
 
-		initCommonWallet();
-
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
@@ -37,8 +35,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeInUpperCase() throws Exception {
-
-		initCommonWallet();
 
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -61,8 +57,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeContainsSpaces() throws Exception {
 
-		initCommonWallet();
-
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
@@ -84,8 +78,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForNotFoundAttribute() throws Exception {
 
-		initCommonWallet();
-
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
@@ -106,8 +98,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForPredicate() throws Exception {
-
-		initCommonWallet();
 
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -132,8 +122,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForPredicateAttrInUpperCase() throws Exception {
 
-		initCommonWallet();
-
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
@@ -156,8 +144,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForPredicateAttrContainsSpaces() throws Exception {
-
-		initCommonWallet();
 
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -182,8 +168,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForNotSatisfiedPredicate() throws Exception {
 
-		initCommonWallet();
-
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
@@ -206,8 +190,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForMultiplyAttributesAndPredicates() throws Exception {
-
-		initCommonWallet();
 
 		String proofRequest = "{" +
 				"               \"nonce\":\"123432421212\"," +
@@ -243,8 +225,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForEmptyRequest() throws Exception {
 
-		initCommonWallet();
-
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
@@ -264,8 +244,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeBySpecificIssuer() throws Exception {
 
-		initCommonWallet();
-
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
@@ -288,9 +266,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeBySpecificSchema() throws Exception {
-
-		initCommonWallet();
+	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeBySchemaId() throws Exception {
 
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -299,11 +275,11 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_attrs\":{" +
 				"                   \"attr1_referent\":{" +
 				"                       \"name\":\"name\"," +
-				"                       \"restrictions\":[{\"schema_key\":%s}]" +
+				"                       \"restrictions\":[{\"schema_id\":\"%s\"}]" +
 				"                   }" +
 				"               }," +
 				"              \"requested_predicates\":{}" +
-				"          }", gvtSchemaKey);
+				"          }", gvtSchemaId);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -314,9 +290,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeByPartOfSchema() throws Exception {
-
-		initCommonWallet();
+	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeBySchemaName() throws Exception {
 
 		String proofRequest = "{" +
 				"               \"nonce\":\"123432421212\"," +
@@ -325,7 +299,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"               \"requested_attrs\":{" +
 				"                    \"attr1_referent\":{" +
 				"                        \"name\":\"name\"," +
-				"                        \"restrictions\":[{\"schema_key\":{\"name\":\"gvt\"}}]" +
+				"                        \"restrictions\":[{\"schema_name\":\"gvt\"}]" +
 				"                    }" +
 				"                }," +
 				"               \"requested_predicates\":{}" +
@@ -342,8 +316,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeByMultipleSchemas() throws Exception {
 
-		initCommonWallet();
-
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
@@ -351,11 +323,11 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_attrs\":{" +
 				"                   \"attr1_referent\":{" +
 				"                       \"name\":\"name\"," +
-				"                       \"restrictions\":[{\"schema_key\":%s}, {\"schema_key\":%s}]" +
+				"                       \"restrictions\":[{\"schema_id\":\"%s\"}, {\"schema_id\":\"%s\"}]" +
 				"                   }" +
 				"               }," +
 				"              \"requested_predicates\":{}" +
-				"          }", gvtSchemaKey, xyzSchemaKey);
+				"          }", gvtSchemaId, xyzSchemaId);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -366,9 +338,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeBySpecificSchemaIssuerPair() throws Exception {
-
-		initCommonWallet();
+	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeByCredDefId() throws Exception {
 
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -377,11 +347,11 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_attrs\":{" +
 				"                   \"attr1_referent\":{" +
 				"                       \"name\":\"name\"," +
-				"                       \"restrictions\":[{\"schema_key\":%s, \"issuer_did\":\"%s\"}]" +
+				"                       \"restrictions\":[{\"cred_def_id\":\"%s\"}]" +
 				"                   }" +
 				"               }," +
 				"              \"requested_predicates\":{}" +
-				"          }", gvtSchemaKey, issuerDid);
+				"          }", issuer1gvtClaimDefId);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -394,8 +364,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeBySpecificSchemaOrSpecificIssuer() throws Exception {
 
-		initCommonWallet();
-
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
@@ -403,11 +371,11 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_attrs\":{" +
 				"                   \"attr1_referent\":{" +
 				"                       \"name\":\"name\"," +
-				"                       \"restrictions\":[{\"schema_key\":%s}, {\"issuer_did\":\"%s\"}]" +
+				"                       \"restrictions\":[{\"schema_id\":\"%s\"}, {\"issuer_did\":\"%s\"}]" +
 				"                   }" +
 				"               }," +
 				"              \"requested_predicates\":{}" +
-				"          }", gvtSchemaKey, issuerDid);
+				"          }", gvtSchemaId, issuerDid);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -419,8 +387,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForPredicateBySpecificIssuer() throws Exception {
-
-		initCommonWallet();
 
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -444,9 +410,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForPredicateBySpecificSchema() throws Exception {
-
-		initCommonWallet();
+	public void testProverGetClaimsForProofRequestWorksForPredicateBySchemaId() throws Exception {
 
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -456,10 +420,10 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
 				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
-				"                       \"restrictions\":[{\"schema_key\":%s}]" +
+				"                       \"restrictions\":[{\"schema_id\":\"%s\"}]" +
 				"                   }" +
 				"              }" +
-				"          }", gvtSchemaKey);
+				"          }", gvtSchemaId);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -472,8 +436,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForPredicateByMultipleSchemas() throws Exception {
 
-		initCommonWallet();
-
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
@@ -482,10 +444,10 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
 				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
-				"                       \"restrictions\":[{\"schema_key\":%s}, {\"schema_key\":%s}]" +
+				"                       \"restrictions\":[{\"schema_id\":\"%s\"}, {\"schema_id\":\"%s\"}]" +
 				"                   }" +
 				"              }" +
-				"          }", gvtSchemaKey, xyzSchemaKey);
+				"          }", gvtSchemaId, xyzSchemaId);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -496,9 +458,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForPredicateBySpecificIssuerSchemaPair() throws Exception {
-
-		initCommonWallet();
+	public void testProverGetClaimsForProofRequestWorksForPredicateBySpecificCredDefId() throws Exception {
 
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -508,10 +468,10 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
 				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
-				"                       \"restrictions\":[{\"schema_key\":%s, \"issuer_did\":\"%s\"}]" +
+				"                       \"restrictions\":[{\"cred_def_id\":\"%s\"}]" +
 				"                   }" +
 				"              }" +
-				"          }", gvtSchemaKey, issuerDid);
+				"          }", issuer1gvtClaimDefId);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -524,8 +484,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForPredicateBySpecificIssuerOrSpecificSchema() throws Exception {
 
-		initCommonWallet();
-
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
@@ -534,10 +492,10 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
 				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
-				"                       \"restrictions\":[{\"schema_key\":%s}, {\"issuer_did\":\"%s\"}]" +
+				"                       \"restrictions\":[{\"schema_id\":\"%s\"}, {\"issuer_did\":\"%s\"}]" +
 				"                   }" +
 				"              }" +
-				"          }", gvtSchemaKey, issuerDid);
+				"          }", gvtSchemaId, issuerDid);
 
 		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
 
@@ -549,8 +507,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForInvalidProofRequest() throws Exception {
-
-		initCommonWallet();
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
@@ -567,8 +523,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 
 	@Test
 	public void testProverGetClaimsForProofRequestWorksForInvalidPredicateType() throws Exception {
-
-		initCommonWallet();
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));

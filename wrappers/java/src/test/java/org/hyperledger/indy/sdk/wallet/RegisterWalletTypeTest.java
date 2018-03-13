@@ -48,37 +48,42 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		Wallet.createWallet(POOL, walletName, type, null, null).get();
 		Wallet wallet = Wallet.openWallet(walletName, null, null).get();
 
-		// 2. Issuer creates Claim Definition
-		String gvtSchemaJson = String.format(SCHEMA_TEMPLATE, 1, DID, "gvt", "[\"age\",\"sex\",\"height\",\"name\"]");
-		String claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, DID, gvtSchemaJson, null, false).get();
+		// 2. Issuer creates Schema
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(DID, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
+		String gvtSchemaJson = createSchemaResult.getSchemaJson();
 
-		// 3. Issuer creates Claim Offer
-		String claimOffer = Anoncreds.issuerCreateClaimOffer(wallet, gvtSchemaJson, DID, DID_MY1).get();
+		// 3. Issuer creates Claim Definition
+		AnoncredsResults.IssuerCreateAndStoreClaimDefResult createClaimDefResult = Anoncreds.issuerCreateAndStoreClaimDef(wallet, DID, gvtSchemaJson, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		String claimDefId = createClaimDefResult.getClaimDefId();
+		String claimDef = createClaimDefResult.getClaimDefJson();
 
-		// 4. Issuer stores Claim Offer
+		// 4. Issuer creates Claim Offer
+		String claimOffer = Anoncreds.issuerCreateClaimOffer(wallet, claimDefId, DID, DID_MY1).get();
+
+		// 5. Issuer stores Claim Offer
 		Anoncreds.proverStoreClaimOffer(wallet, claimOffer).get();
 
-		// 5. Issuer creates Master Secret
+		// 6. Issuer creates Master Secret
 		String masterSecretName = "master_secret_name";
 		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
 
-		// 6. Prover creates Claim Request
+		// 7. Prover creates Claim Request
 		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, DID_MY1, claimOffer, claimDef, masterSecretName).get();
 
-		// 7. Issuer creates Claim
-		String claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
-				"                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
-				"                 \"height\":[\"175\",\"175\"],\n" +
-				"                 \"age\":[\"28\",\"28\"]\n" +
+		// 8. Issuer creates Claim
+		String gvtClaimValues = "{\n" +
+				"               \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
+				"               \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
+				"               \"height\":[\"175\",\"175\"],\n" +
+				"               \"age\":[\"28\",\"28\"]\n" +
 				"        }";
-
-		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, claim, - 1).get();
+		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, gvtClaimValues, null, - 1, - 1).get();
 		String claimJson = createClaimResult.getClaimJson();
 
-		// 8. Prover stores Claim
-		Anoncreds.proverStoreClaim(wallet, claimJson, null).get();
+		// 9. Prover stores Claim
+		Anoncreds.proverStoreClaim(wallet, "id1", claimJson, null).get();
 
-		// 9. Prover gets Claim
+		// 10. Prover gets Claim
 		String claims = Anoncreds.proverGetClaims(wallet, String.format("{\"issuer_did\":\"%s\"}", DID)).get();
 
 		JSONArray claimsArray = new JSONArray(claims);

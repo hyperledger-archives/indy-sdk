@@ -12,35 +12,39 @@ use utils::cstring::CStringUtils;
 use self::libc::c_char;
 use std::ptr;
 
-/// Create credential schema.
+/// Create credential schema entity that describes credential attributes list and allows credentials
+/// interoperability.
+///
+/// Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
+/// to Indy distributed ledger.
 ///
 /// #Params
-/// command_handle: command handle to map callback to user context.
-/// issuer_did: a DID of the issuer signing schema transaction to the Ledger
-/// name: human-readable name of schema.
-/// name: version of schema.
-/// attr_names: list of attributes schema contains.
-/// cb: Callback that takes command result as parameter.
+/// command_handle: command handle to map callback to user context
+/// issuer_did: DID of schema issuer
+/// name: a name the schema
+/// version: a version of the schema
+/// attrs: a list of schema attributes descriptions
+/// cb: Callback that takes command result as parameter
 ///
 /// #Returns
-/// schema json containing.
+/// schema_id: identifier of created schema
+/// schema_json: schema as json
 ///
 /// #Errors
 /// Common*
-/// Wallet*
 /// Anoncreds*
 #[no_mangle]
 pub extern fn indy_issuer_create_schema(command_handle: i32,
                                         issuer_did: *const c_char,
                                         name: *const c_char,
                                         version: *const c_char,
-                                        attr_names: *const c_char,
+                                        attrs: *const c_char,
                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                              id: *const c_char, schema_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(version, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(attr_names, ErrorCode::CommonInvalidParam5);
+    check_useful_c_str!(attrs, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let result = CommandExecutor::instance()
@@ -50,7 +54,7 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
                     issuer_did,
                     name,
                     version,
-                    attr_names,
+                    attrs,
                     Box::new(move |result| {
                         let (err, id, schema_json) = result_to_err_code_2!(result, String::new(), String::new());
                         let id = CStringUtils::string_to_cstring(id);
@@ -205,7 +209,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// cred_def_id: id of stored in ledger credential definition
-/// rev_reg_id: (Optional) id of stored in ledger revocation registry definition
+/// issuer_did: a DID of the issuer of credential
 /// prover_did: a DID of the target user
 /// cb: Callback that takes command result as parameter.
 ///
@@ -213,7 +217,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 /// credential offer json:
 ///        {
 ///            "cred_def_id": string,
-///            "rev_reg_id" : Optional<string>,
+///            "issuer_did" : string,
 ///            "nonce": string,
 ///            "key_correctness_proof" : <key_correctness_proof>
 ///        }
@@ -226,13 +230,13 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
 pub extern fn indy_issuer_create_credential_offer(command_handle: i32,
                                                   wallet_handle: i32,
                                                   cred_def_id: *const c_char,
-                                                  rev_reg_id: *const c_char,
+                                                  issuer_did: *const c_char,
                                                   prover_did: *const c_char,
                                                   cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                        credential_offer_json: *const c_char
                                                   )>) -> ErrorCode {
     check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam3);
-    check_useful_opt_c_str!(rev_reg_id, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(issuer_did, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(prover_did, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
@@ -240,7 +244,7 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: i32,
         .send(Command::Anoncreds(AnoncredsCommand::Issuer(IssuerCommand::CreateCredentialOffer(
             wallet_handle,
             cred_def_id,
-            rev_reg_id,
+            issuer_did,
             prover_did,
             Box::new(move |result| {
                 let (err, credential_offer_json) = result_to_err_code_1!(result, String::new());
@@ -264,7 +268,7 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: i32,
 ///     {
 ///      "blinded_ms" : <blinded_master_secret>,
 ///      "cred_def_id" : string,
-///      "rev_reg_id" : Optional<string>,
+///      "issuer_did" : string,
 ///      "prover_did" : string,
 ///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
 ///      "nonce": string
@@ -275,6 +279,7 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: i32,
 ///      "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
 ///      "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
 ///     }
+/// rev_reg_id: (Optional) id of stored in ledger revocation registry definition
 /// tails_reader_handle:
 /// user_revoc_index: index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
 /// cb: Callback that takes command result as parameter.
@@ -286,6 +291,7 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: i32,
 ///     {
 ///         "values": <see credential_values_json above>,
 ///         "signature": <signature>,
+///         "issuer_did": string,
 ///         "cred_def_id": string,
 ///         "rev_reg_id", Optional<string>,
 ///         "signature_correctness_proof": <signature_correctness_proof>
@@ -300,14 +306,16 @@ pub extern fn indy_issuer_create_credential(command_handle: i32,
                                             wallet_handle: i32,
                                             credential_req_json: *const c_char,
                                             credential_values_json: *const c_char,
+                                            rev_reg_id: *const c_char,
                                             tails_reader_handle: i32,
                                             user_revoc_index: i32,
                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                 revoc_reg_delta_json: *const c_char, //TODO must be OPTIONAL
+                                                                 revoc_reg_delta_json: *const c_char,
                                                                  credential_json: *const c_char
                                             )>) -> ErrorCode {
     check_useful_c_str!(credential_req_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(credential_values_json, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(rev_reg_id, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let tails_reader_handle = if tails_reader_handle != -1 { Some(tails_reader_handle) } else { None };
@@ -318,6 +326,7 @@ pub extern fn indy_issuer_create_credential(command_handle: i32,
             wallet_handle,
             credential_req_json,
             credential_values_json,
+            rev_reg_id,
             tails_reader_handle,
             user_revoc_index,
             Box::new(move |result| {
@@ -493,7 +502,7 @@ pub extern fn indy_prover_store_credential_offer(command_handle: i32,
 ///        {
 ///            [{
 ///                 "cred_def_id": string,
-///                 "rev_reg_id" : Optional<string>,
+///                 "issuer_did": string,
 ///                 "nonce": string,
 ///                 "key_correctness_proof" : <key_correctness_proof>
 ///            }]
@@ -592,7 +601,7 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 ///     {
 ///      "blinded_ms" : <blinded_master_secret>,
 ///      "cred_def_id" : string,
-///      "rev_reg_id" : Optional<string>,
+///      "issuer_did" : string,
 ///      "prover_did" : string,
 ///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
 ///      "nonce": string
@@ -716,11 +725,11 @@ pub extern fn indy_prover_store_credential(command_handle: i32,
 /// #Returns
 /// credentials json
 ///     [{
+///         "referent": string,
 ///         "values": <see credential_values_json above>,
-///         "signature": <signature>,
+///         "issuer_did": string,
 ///         "cred_def_id": string,
-///         "rev_reg_id", Optional<string>,
-///         "signature_correctness_proof": <signature_correctness_proof>
+///         "rev_reg_id", Optional<string>
 ///     }]
 /// #Errors
 /// Annoncreds*
@@ -778,12 +787,8 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 ///         "name": attribute name, (case insensitive and ignore spaces)
 ///         "freshness": (Optional)
 ///         "restrictions": [
-///             {
-///                 "schema_key" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)
-///                 "issuer_did": string (Optional)
-///             }
-///         ]  (Optional) - if specified, credential must be created for one of the given
-///                         schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
+///             <see filter json above>
+///         ]  (Optional) - if specified, credential must satisfy to one of the given restriction.
 ///     }
 /// predicate_info:
 ///     {
@@ -792,12 +797,8 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 ///         "value": requested value of attribute
 ///         "freshness": (Optional)
 ///         "restrictions": [
-///             {
-///                 "schema_key" : {name: string (Optional), version: string (Optional), did: string (Optional)} (Optional)
-///                 "issuer_did": string (Optional)
-///             }
-///         ]  (Optional) - if specified, credential must be created for one of the given
-///                         schema_key/issuer_did pairs, or just schema_key, or just issuer_did.
+///             <see filter json above>
+///         ]  (Optional) - if specified, credential must satisfy to one of the given restriction.
 ///     }
 /// #Returns
 /// json with credentials for the given pool request.
@@ -815,6 +816,7 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 ///     {
 ///         "referent": <string>,
 ///         "attrs": [{"attr_name" : "attr_raw_value"}],
+///         "issuer_did": string,
 ///         "cred_def_id": string,
 ///         "rev_reg_id": Optional<int>
 ///     }
@@ -897,17 +899,17 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
 ///         "credential2_referent_in_wallet": <credential_def2>,
 ///         "credential3_referent_in_wallet": <credential_def3>,
 ///     }
-/// revoc_regs_jsons: all revocation registry jsons participating in the proof request
+/// revoc_infos_jsons: all revocation registry jsons participating in the proof request
 ///     {
 ///         "credential1_referent_in_wallet": {
-///             "freshness1": <revoc_reg1>,
-///             "freshness2": <revoc_reg2>,
+///             "freshness1": <revoc_info1>,
+///             "freshness2": <revoc_info2>,
 ///         },
 ///         "credential2_referent_in_wallet": {
-///             "freshness3": <revoc_reg3>
+///             "freshness3": <revoc_info3>
 ///         },
 ///         "credential3_referent_in_wallet": {
-///             "freshness4": <revoc_reg4>
+///             "freshness4": <revoc_info4>
 ///         },
 ///     }
 /// cb: Callback that takes command result as parameter.
@@ -921,14 +923,14 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
 ///     {
 ///         "requested": {
 ///             "revealed_attrs": {
-///                 "requested_attr1_id": [credential_proof1_referent, revealed_attr1, revealed_attr1_as_int],
-///                 "requested_attr4_id": [credential_proof2_referent, revealed_attr4, revealed_attr4_as_int],
+///                 "requested_attr1_id": {referent: string, raw: string, encoded: string},
+///                 "requested_attr4_id": {referent: string, raw: string, encoded: string},
 ///             },
 ///             "unrevealed_attrs": {
-///                 "requested_attr3_id": [credential_proof2_referent]
+///                 "requested_attr3_id": referent
 ///             },
 ///             "self_attested_attrs": {
-///                 "requested_attr2_id": [self_attested_attribute],
+///                 "requested_attr2_id": self_attested_value,
 ///             },
 ///             "requested_predicates": {
 ///                 "requested_predicate_1_referent": [credential_proof2_referent],
@@ -1111,7 +1113,6 @@ pub extern fn indy_verifier_verify_proof(command_handle: i32,
 
 #[no_mangle]
 pub extern fn indy_create_revocation_info(command_handle: i32,
-                                          wallet_handle: i32,
                                           tails_reader_handle: i32,
                                           rev_reg_def_json: *const c_char,
                                           rev_reg_delta_json: *const c_char,
@@ -1121,13 +1122,12 @@ pub extern fn indy_create_revocation_info(command_handle: i32,
                                               xcommand_handle: i32, err: ErrorCode,
                                               rev_info_json: *const c_char
                                           )>) -> ErrorCode {
-    check_useful_c_str!(rev_reg_def_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(rev_reg_delta_json, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
+    check_useful_c_str!(rev_reg_def_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(rev_reg_delta_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::CreateRevocationInfo(
-            wallet_handle,
             tails_reader_handle,
             rev_reg_def_json,
             rev_reg_delta_json,
@@ -1145,7 +1145,6 @@ pub extern fn indy_create_revocation_info(command_handle: i32,
 
 #[no_mangle]
 pub extern fn indy_update_revocation_info(command_handle: i32,
-                                          wallet_handle: i32,
                                           tails_reader_handle: i32,
                                           rev_info_json: *const c_char,
                                           rev_reg_def_json: *const c_char,
@@ -1156,14 +1155,13 @@ pub extern fn indy_update_revocation_info(command_handle: i32,
                                               xcommand_handle: i32, err: ErrorCode,
                                               updated_rev_info_json: *const c_char
                                           )>) -> ErrorCode {
-    check_useful_c_str!(rev_info_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(rev_reg_def_json, ErrorCode::CommonInvalidParam5);
-    check_useful_c_str!(rev_reg_delta_json, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(rev_info_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(rev_reg_def_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(rev_reg_delta_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::UpdateRevocationInfo(
-            wallet_handle,
             tails_reader_handle,
             rev_info_json,
             rev_reg_def_json,

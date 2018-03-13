@@ -12,43 +12,35 @@ public class ProverCreateAndStoreClaimReqTest extends AnoncredsIntegrationTest {
 
 	@Test
 	public void testProverCreateAndStoreClaimReqWorks() throws Exception {
-
-		initCommonWallet();
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, issuer1GvtClaimOffer, claimDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, issuer1GvtClaimOffer, issuer1gvtClaimDef, masterSecretName).get();
 	}
 
 	@Test
 	public void testProverCreateAndStoreClaimReqWorksForClaimDefDoesNotCorrespondToClaimOfferDifferentIssuer() throws Exception {
 
-		initCommonWallet();
-
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, issuer2GvtClaimOffer, claimDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, issuer2GvtClaimOffer, issuer1gvtClaimDef, masterSecretName).get();
 	}
 
 	@Test
 	public void testProverCreateAndStoreClaimReqWorksForInvalidClaimOffer() throws Exception {
-
-		initCommonWallet();
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String claimOffer = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
 
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, claimDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, claimOffer, issuer1gvtClaimDef, masterSecretName).get();
 	}
 
 	@Test
 	public void testProverCreateAndStoreClaimReqWorksForInvalidMasterSecret() throws Exception {
 
-		initCommonWallet();
-
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, issuer1GvtClaimOffer, claimDef, masterSecretName + "a").get();
+		Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, issuer1GvtClaimOffer, issuer1gvtClaimDef, masterSecretName + "a").get();
 	}
 }

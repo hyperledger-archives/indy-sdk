@@ -17,43 +17,41 @@ public class AnoncredsIntegrationTest {
 	@Rule
 	public Timeout globalTimeout = new Timeout(2, TimeUnit.MINUTES);
 
+	private static Boolean walletOpened = false;
+
 	static Wallet wallet;
-	static String claimDef;
+	static String issuer1gvtClaimDefId;
+	static String issuer2gvtClaimDefId;
+	static String issuer1xyzClaimDef;
+	static String issuer1gvtClaimDef;
 	static String issuer1GvtClaimOffer;
 	static String issuer1XyzClaimOffer;
 	static String issuer2GvtClaimOffer;
 	static String claimRequest;
 	static String claim;
-
-	private static Boolean walletOpened = false;
-
+	static String gvtSchemaId;
+	static String gvtSchemaJson;
+	static String xyzSchemaId;
+	static String xyzSchemaJson;
 	String masterSecretName = "master_secret_name";
 	String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
-	String proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrT";
-	private String issuerDid2 = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-	private String schemaTemplate = "{\n" +
-			"                    \"seqNo\":%d,\n" +
-			"                    \"dest\":\"%s\",\n" +
-			"                    \"data\": {\n" +
-			"                        \"name\":\"%s\",\n" +
-			"                        \"version\":\"1.0\",\n" +
-			"                        \"attr_names\":%s\n" +
-			"                    }\n" +
-			"                }";
-	String gvtSchemaJson = String.format(schemaTemplate, 1, issuerDid, "gvt", "[\"age\",\"sex\",\"height\",\"name\"]");
-	private String xyzSchemaJson = String.format(schemaTemplate, 2, issuerDid2, "xyz", "[\"status\",\"period\"]");
-	private String schemaKeyTemplate = "{\"name\":\"%s\",\"version\":\"1.0\",\"did\":\"%s\"}";
-	String gvtSchemaKey = String.format(schemaKeyTemplate, "gvt", issuerDid);
-	String xyzSchemaKey = String.format(schemaKeyTemplate, "xyz", issuerDid2);
+	String proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
+	String defaultCredentialDefConfig = "{\"support_revocation\":false}";
+	String tag = "tag1";
+	String gvtSchemaName = "gvt";
+	String schemaVersion = "1.0";
+	String gvtSchemaAttributes = "[\"name\", \"age\", \"sex\", \"height\"]";
+	String claimId1 = "id1";
+	String claimId2 = "id2";
 	String gvtClaimValuesJson = "{\n" +
-			"               \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
-			"               \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
-			"               \"height\":[\"175\",\"175\"],\n" +
-			"               \"age\":[\"28\",\"28\"]\n" +
+			"               \"sex\":{\"raw\":\"male\",\"encoded\":\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"},\n" +
+			"               \"name\":{\"raw\":\"Alex\",\"encoded\":\"1139481716457488690172217916278103335\"},\n" +
+			"               \"height\":{\"raw\":\"175\",\"encoded\":\"175\"},\n" +
+			"               \"age\":{\"raw\":\"28\",\"encoded\":\"28\"}\n" +
 			"        }";
 	String xyzClaimValuesJson = "{\n" +
-			"               \"status\":[\"partial\",\"51792877103171595686471452153480627530895\"],\n" +
-			"               \"period\":[\"8\",\"8\"]\n" +
+			"               \"status\":{\"raw\":\"partial\",\"encoded\":\"51792877103171595686471452153480627530895\"},\n" +
+			"               \"period\":{\"raw\":\"8\",\"encoded\":\"8\"}\n" +
 			"        }";
 	String proofRequest = "{\n" +
 			"                   \"nonce\":\"123432421212\",\n" +
@@ -68,22 +66,14 @@ public class AnoncredsIntegrationTest {
 			"               }";
 	String requestedClaimsJsonTemplate = "{" +
 			"\"self_attested_attributes\":{}," +
-			"\"requested_attrs\":{\"attr1_referent\":[\"%s\", true]}," +
-			"\"requested_predicates\":{\"predicate1_referent\":\"%s\"}" +
+			"\"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true}}," +
+			"\"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\"}}" +
 			"}";
 
-	@BeforeClass
-	public static void setUp() throws Exception {
+	@Before
+	public void setUp() throws Exception {
 		InitHelper.init();
-	}
-
-	@AfterClass
-	public static void cleanUp() throws Exception {
-
-		if (walletOpened) {
-			wallet.closeWallet().get();
-			walletOpened = false;
-		}
+		initCommonWallet();
 	}
 
 	void initCommonWallet() throws Exception {
@@ -99,18 +89,35 @@ public class AnoncredsIntegrationTest {
 		Wallet.createWallet("default", walletName, "default", null, null).get();
 		wallet = Wallet.openWallet(walletName, null, null).get();
 
+		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, gvtSchemaName, schemaVersion, gvtSchemaAttributes).get();
+		gvtSchemaId = createSchemaResult.getSchemaId();
+		gvtSchemaJson = createSchemaResult.getSchemaJson();
+
+		String xyzSchemaAttributes = "[\"status\", \"period\"]";
+		String xyzSchemaName = "xyz";
+		createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, xyzSchemaName, schemaVersion, xyzSchemaAttributes).get();
+		xyzSchemaId = createSchemaResult.getSchemaId();
+		xyzSchemaJson = createSchemaResult.getSchemaJson();
+
 		//Issue GVT claim by Issuer1
-		claimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, gvtSchemaJson, null, false).get();
+		AnoncredsResults.IssuerCreateAndStoreClaimDefResult issuerCreateAndStoreClaimDefResult = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, gvtSchemaJson, tag, null, defaultCredentialDefConfig).get();
+		issuer1gvtClaimDefId = issuerCreateAndStoreClaimDefResult.getClaimDefId();
+		issuer1gvtClaimDef = issuerCreateAndStoreClaimDefResult.getClaimDefJson();
 
-		//Issue XYZ claim bu Issuer1
-		String xyzClaimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, xyzSchemaJson, null, false).get();
+		//Issue XYZ claim by Issuer1
+		issuerCreateAndStoreClaimDefResult = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid, xyzSchemaJson, tag, null, defaultCredentialDefConfig).get();
+		String issuer1xyzClaimDefId = issuerCreateAndStoreClaimDefResult.getClaimDefId();
+		issuer1xyzClaimDef = issuerCreateAndStoreClaimDefResult.getClaimDefJson();
 
-		//Issue GVT claim bu Issuer2
-		String gvtClaimDef = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid2, gvtSchemaJson, null, false).get();
+		//Issue GVT claim by Issuer2
+		String issuerDid2 = "VsKV7grR1BUE29mG2Fm2kX";
+		issuerCreateAndStoreClaimDefResult = Anoncreds.issuerCreateAndStoreClaimDef(wallet, issuerDid2, gvtSchemaJson, tag, null, defaultCredentialDefConfig).get();
+		issuer2gvtClaimDefId = issuerCreateAndStoreClaimDefResult.getClaimDefId();
+		String issuer2gvtClaimDef = issuerCreateAndStoreClaimDefResult.getClaimDefJson();
 
-		issuer1GvtClaimOffer = Anoncreds.issuerCreateClaimOffer(wallet, gvtSchemaJson, issuerDid, proverDid).get();
-		issuer1XyzClaimOffer = Anoncreds.issuerCreateClaimOffer(wallet, xyzSchemaJson, issuerDid, proverDid).get();
-		issuer2GvtClaimOffer = Anoncreds.issuerCreateClaimOffer(wallet, gvtSchemaJson, issuerDid2, proverDid).get();
+		issuer1GvtClaimOffer = Anoncreds.issuerCreateClaimOffer(wallet, issuer1gvtClaimDefId, issuerDid, proverDid).get();
+		issuer1XyzClaimOffer = Anoncreds.issuerCreateClaimOffer(wallet, issuer1xyzClaimDefId, issuerDid, proverDid).get();
+		issuer2GvtClaimOffer = Anoncreds.issuerCreateClaimOffer(wallet, issuer2gvtClaimDefId, issuerDid2, proverDid).get();
 
 		Anoncreds.proverStoreClaimOffer(wallet, issuer1GvtClaimOffer).get();
 		Anoncreds.proverStoreClaimOffer(wallet, issuer1XyzClaimOffer).get();
@@ -118,33 +125,34 @@ public class AnoncredsIntegrationTest {
 
 		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
 
-		claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, issuer1GvtClaimOffer, claimDef, masterSecretName).get();
+		claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, issuer1GvtClaimOffer, issuer1gvtClaimDef, masterSecretName).get();
 
-		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, gvtClaimValuesJson, - 1).get();
+		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, gvtClaimValuesJson, null, - 1, - 1).get();
 		claim = createClaimResult.getClaimJson();
 
-		Anoncreds.proverStoreClaim(wallet, claim, null).get();
+		Anoncreds.proverStoreClaim(wallet, claimId1, claim, null).get();
 
-		String xyzClaimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, issuer1XyzClaimOffer, xyzClaimDef, masterSecretName).get();
+		String xyzClaimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, issuer1XyzClaimOffer, issuer1xyzClaimDef, masterSecretName).get();
 
-		createClaimResult = Anoncreds.issuerCreateClaim(wallet, xyzClaimRequest, xyzClaimValuesJson, - 1).get();
+		createClaimResult = Anoncreds.issuerCreateClaim(wallet, xyzClaimRequest, xyzClaimValuesJson, null, - 1, - 1).get();
 		String claimJson = createClaimResult.getClaimJson();
 
-		Anoncreds.proverStoreClaim(wallet, claimJson, null).get();
+		Anoncreds.proverStoreClaim(wallet, claimId2, claimJson, null).get();
 
-		String gvtClaimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, issuer2GvtClaimOffer, gvtClaimDef, masterSecretName).get();
+		String gvtClaimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, proverDid, issuer2GvtClaimOffer, issuer2gvtClaimDef, masterSecretName).get();
 
 		String claim = "{" +
-				"           \"sex\":[\"male\",\"2142657394558967239210949258394838228692050081607692519917028371144233115103\"],\n" +
-				"           \"name\":[\"Alexander\",\"21332817548165488690172217217278169335\"],\n" +
-				"           \"height\":[\"170\",\"170\"],\n" +
-				"           \"age\":[\"28\",\"28\"]\n" +
+				"           \"sex\":{\"raw\":\"male\",\"encoded\":\"2142657394558967239210949258394838228692050081607692519917028371144233115103\"},\n" +
+				"           \"name\":{\"raw\":\"Alexander\",\"encoded\":\"21332817548165488690172217217278169335\"},\n" +
+				"           \"height\":{\"raw\":\"170\",\"encoded\":\"170\"},\n" +
+				"           \"age\":{\"raw\":\"28\",\"encoded\":\"28\"}\n" +
 				"   }";
 
-		createClaimResult = Anoncreds.issuerCreateClaim(wallet, gvtClaimRequest, claim, - 1).get();
+		createClaimResult = Anoncreds.issuerCreateClaim(wallet, gvtClaimRequest, claim, null, - 1, - 1).get();
 		claimJson = createClaimResult.getClaimJson();
 
-		Anoncreds.proverStoreClaim(wallet, claimJson, null).get();
+		String claimId3 = "id3";
+		Anoncreds.proverStoreClaim(wallet, claimId3, claimJson, null).get();
 
 		walletOpened = true;
 	}

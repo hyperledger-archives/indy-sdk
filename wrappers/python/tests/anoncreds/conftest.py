@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from typing import Optional
 
 from indy import anoncreds
 from tests.conftest import path_home as x_path_home, pool_name as x_pool_name, wallet_name as x_wallet_name, \
@@ -64,13 +65,48 @@ def wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, walle
 
 
 @pytest.fixture(scope="module")
+def default_cred_def_config():
+    return json.dumps({"support_revocation": False})
+
+
+@pytest.fixture(scope="module")
+def revocation_cred_def_config():
+    return json.dumps({"support_revocation": True})
+
+
+@pytest.fixture(scope="module")
+def default_rev_reg_config():
+    return json.dumps({"max_cred_num": 5})
+
+
+@pytest.fixture(scope="module")
+def tag():
+    return "tag1"
+
+
+@pytest.fixture(scope="module")
+def id_credential_1():
+    return "id_credential_1"
+
+
+@pytest.fixture(scope="module")
+def id_credential_2():
+    return "id_credential_2"
+
+
+@pytest.fixture(scope="module")
+def id_credential_3():
+    return "id_credential_3"
+
+
+@pytest.fixture(scope="module")
 def issuer_did():
     return "NcYxiDXkpYi6ov5FcYDi1e"
 
 
 @pytest.fixture(scope="module")
 def issuer_did_2():
-    return "NcYxiDXkpYi6ov5FcYDi1e3"
+    return "VsKV7grR1BUE29mG2Fm2kX"
 
 
 @pytest.fixture(scope="module")
@@ -78,14 +114,50 @@ def prover_did():
     return "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"
 
 
-@pytest.fixture(scope="module")
-def schema_seq_no():
-    return 1
+def build_id(identifier: str, marker: str, related_entity_id: Optional[str], word1: str, word2: str):
+    delimiter = ":"
+    related_entity_id = related_entity_id + delimiter if related_entity_id else ""
+    return identifier + delimiter + marker + delimiter + related_entity_id + word1 + delimiter + word2
 
 
 @pytest.fixture(scope="module")
-def schema_seq_no_2():
-    return 2
+def gvt_schema_id(issuer_did):
+    return build_id(issuer_did, "1", None, "gvt", "1.0")
+
+
+@pytest.fixture(scope="module")
+def gvt_schema(gvt_schema_id):
+    return {
+        "id": gvt_schema_id,
+        "name": "gvt",
+        "version": "1.0",
+        "attrNames": ["name", "age", "sex", "height"]
+    }
+
+
+@pytest.fixture(scope="module")
+def gvt_schema_json(gvt_schema):
+    return json.dumps(gvt_schema)
+
+
+@pytest.fixture(scope="module")
+def xyz_schema_id(issuer_did):
+    return build_id(issuer_did, "1", None, "xyz", "1.0")
+
+
+@pytest.fixture(scope="module")
+def xyz_schema(xyz_schema_id):
+    return {
+        "id": xyz_schema_id,
+        "name": "xyz",
+        "version": "1.0",
+        "attrNames": ["status", "period"]
+    }
+
+
+@pytest.fixture(scope="module")
+def xyz_schema_json(issuer_did, xyz_schema_id, xyz_schema):
+    return json.dumps(xyz_schema)
 
 
 @pytest.fixture(scope="module")
@@ -104,37 +176,24 @@ def master_secret_name_2():
 
 
 @pytest.fixture(scope="module")
-def schema_key(issuer_did):
-    return {
-        'name': 'gvt',
-        'version': '1.0',
-        'did': issuer_did
-    }
+def issuer_1_gvt_cred_def_id(issuer_did, gvt_schema_id):
+    return build_id(issuer_did, "2", gvt_schema_id, "CL", "tag1")
 
 
 @pytest.fixture(scope="module")
-def schema_key_json(schema_key):
-    return json.dumps(schema_key)
+def issuer_1_xyz_cred_def_id(issuer_did, xyz_schema_id):
+    return build_id(issuer_did, "2", xyz_schema_id, "CL", "tag1")
 
 
 @pytest.fixture(scope="module")
-def xyz_schema_key(issuer_did):
-    return {
-        'name': 'xyz',
-        'version': '1.0',
-        'did': issuer_did
-    }
+def issuer_2_gvt_cred_def_id(issuer_did_2, gvt_schema_id):
+    return build_id(issuer_did_2, "2", gvt_schema_id, "CL", "tag1")
 
 
-@pytest.fixture(scope="module")
-def schema_key_json(schema_key):
-    return json.dumps(schema_key)
-
-
-def claim_offer(issuer_did, schema_key):
+def credential_offer(issuer_did, credential_def_id):
     return {
         "issuer_did": issuer_did,
-        "schema_key": schema_key,
+        "credential_def_id": credential_def_id,
         "nonce": "12345678",
         "key_correctness_proof": {
             "c": "40983841062403114696351105468714473190092945361781922980284036284848255102181",
@@ -150,122 +209,78 @@ def claim_offer(issuer_did, schema_key):
 
 
 @pytest.fixture(scope="module")
-def claim_offer_issuer_1_schema_1(issuer_did, schema_key, prover_did):
-    return claim_offer(issuer_did, schema_key)
+def credential_offer_issuer_1_gvt_credential_def(issuer_did, issuer_1_gvt_cred_def_id):
+    return credential_offer(issuer_did, issuer_1_gvt_cred_def_id)
 
 
 @pytest.fixture(scope="module")
-def claim_offer_issuer_1_schema_1_json(claim_offer_issuer_1_schema_1):
-    return json.dumps(claim_offer_issuer_1_schema_1)
+def credential_offer_issuer_1_gvt_credential_def_json(credential_offer_issuer_1_schema_1):
+    return json.dumps(credential_offer_issuer_1_schema_1)
 
 
 @pytest.fixture(scope="module")
-def claim_offer_issuer_1_schema_2(issuer_did, xyz_schema_key, prover_did):
-    return claim_offer(issuer_did, xyz_schema_key)
+def credential_offer_issuer_1_xyz_credential_def(issuer_did, issuer_1_xyz_cred_def_id):
+    return credential_offer(issuer_did, issuer_1_xyz_cred_def_id)
 
 
 @pytest.fixture(scope="module")
-def claim_offer_issuer_1_schema_2_json(claim_offer_issuer_1_schema_2):
-    return json.dumps(claim_offer_issuer_1_schema_2)
+def credential_offer_issuer_1_xyz_credential_def_json(credential_offer_issuer_1_schema_2):
+    return json.dumps(credential_offer_issuer_1_schema_2)
 
 
 @pytest.fixture(scope="module")
-def claim_offer_issuer_2_schema_1(issuer_did_2, schema_key, prover_did):
-    return claim_offer(issuer_did_2, schema_key)
+def credential_offer_issuer_2_gvt_credential_def(issuer_did_2, issuer_2_gvt_cred_def_id):
+    return credential_offer(issuer_did_2, issuer_2_gvt_cred_def_id)
 
 
 @pytest.fixture(scope="module")
-def claim_offer_issuer_2_schema_1_json(claim_offer_issuer_2_schema_1):
-    return json.dumps(claim_offer_issuer_2_schema_1)
+def credential_offer_issuer_2_gvt_credential_def_json(credential_offer_issuer_2_schema_1):
+    return json.dumps(credential_offer_issuer_2_schema_1)
 
 
 @pytest.fixture(scope="module")
-def claim_offer_prover_2(prover_did, xyz_schema_key):
-    return claim_offer(prover_did, xyz_schema_key)
-
-
-@pytest.fixture(scope="module")
-def claim_offer_prover_2_json(claim_offer_prover_2):
-    return json.dumps(claim_offer_prover_2)
-
-
-@pytest.fixture(scope="module")
-def gvt_schema(schema_seq_no: int, issuer_did: str):
+def gvt_credential():
     return {
-        "seqNo": schema_seq_no,
-        "dest": issuer_did,
-        "data": {
-            "name": "gvt",
-            "version": "1.0",
-            "attr_names": ["age", "sex", "height", "name"]
-        }
+        "sex": {
+            "raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050011144233115103"},
+        "name": {"raw": "Alex", "encoded": "1139481716457488690172217916278103335"},
+        "height": {"raw": "175", "encoded": "175"},
+        "age": {"raw": "28", "encoded": "28"}
     }
 
 
 @pytest.fixture(scope="module")
-def xyz_schema(schema_seq_no: int, issuer_did: str):
+def gvt_credential_json(gvt_credential):
+    return json.dumps(gvt_credential)
+
+
+@pytest.fixture(scope="module")
+def gvt_credential_2():
     return {
-        "seqNo": 2,
-        "dest": issuer_did,
-        "data": {
-            "name": "xyz",
-            "version": "1.0",
-            "attr_names": ["period", "status"]
-        }
+        "sex": {
+            "raw": "male", "encoded": "2142657394558967239210949258394838228692050081607692519917028371144233115103"},
+        "name": {"raw": "Alexander", "encoded": "21332817548165488690172217217278169335"},
+        "height": {"raw": "170", "encoded": "170"},
+        "age": {"raw": "28", "encoded": "28"}
     }
 
 
 @pytest.fixture(scope="module")
-def gvt_schema_json(gvt_schema):
-    return json.dumps(gvt_schema)
+def gvt_2_credential_json(gvt_credential):
+    return json.dumps(gvt_credential)
 
 
 @pytest.fixture(scope="module")
-def xyz_schema_json(xyz_schema):
-    return json.dumps(xyz_schema)
-
-
-@pytest.fixture(scope="module")
-def gvt_claim():
+def xyz_credential():
     return {
-        "sex": ["male", "5944657099558967239210949258394887428692050081607692519917050011144233115103"],
-        "name": ["Alex", "1139481716457488690172217916278103335"],
-        "height": ["175", "175"],
-        "age": ["28", "28"]
+        "status": {"raw": "partial", "encoded": "51792877103171595686471452153480627530895"},
+        "period": {"raw": "8", "encoded": "8"}
     }
 
 
 @pytest.fixture(scope="module")
-def gvt_claim_json(gvt_claim):
-    return json.dumps(gvt_claim)
-
-
-@pytest.fixture(scope="module")
-def gvt_claim_2():
-    return {
-        "sex": ["male", "2142657394558967239210949258394838228692050081607692519917028371144233115103"],
-        "name": ["Alexander", "21332817548165488690172217217278169335"],
-        "height": ["170", "170"],
-        "age": ["28", "28"]
-    }
-
-
-@pytest.fixture(scope="module")
-def gvt_2_claim_json(gvt_claim):
-    return json.dumps(gvt_claim)
-
-
-@pytest.fixture(scope="module")
-def xyz_claim():
-    return {
-        "status": ["partial", "51792877103171595686471452153480627530895"],
-        "period": ["8", "8"]
-    }
-
-
-@pytest.fixture(scope="module")
-def xyz_claim_json(xyz_claim):
-    return json.dumps(xyz_claim)
+def xyz_credential_json(xyz_credential):
+    return json.dumps(xyz_credential)
 
 
 @pytest.fixture(scope="module")
@@ -274,17 +289,13 @@ def predicate_value():
 
 
 @pytest.fixture(scope="module")
-def proof_req(predicate_value, schema_key):
+def proof_req(predicate_value):
     return {
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
         "requested_attrs": {
-            "attr1_referent":
-                {
-                    "name": "name",
-                    "restrictions": [{"schema_key": schema_key}]
-                }
+            "attr1_referent": {"name": "name"}
         },
         "requested_predicates": {
             "predicate1_referent": {
@@ -302,12 +313,13 @@ def proof_req_json(proof_req):
 
 
 @pytest.fixture(scope="module")
-def claim_def(issuer_did):
+def credential_def(gvt_schema_id, issuer_1_gvt_cred_def_id):
     return {
-        "ref": 1,
-        "signature_type": "CL",
-        "origin": issuer_did,
-        "data": {
+        "id": issuer_1_gvt_cred_def_id,
+        "schemaId": gvt_schema_id,
+        "type": "CL",
+        "tag": "TAG_1",
+        "value": {
             "primary": {
                 "n": "94759924268422840873493186881483285628376767714620627055233230078254863658476446487556117977593248501523199451418346650764648601684276437772084327637083000213497377603495837360299641742248892290843802071224822481683143989223918276185323177379400413928352871249494885563503003839960930062341074783742062464846448855510814252519824733234277681749977392772900212293652238651538092092030867161752390937372967233462027620699196724949212432236376627703446877808405786247217818975482797381180714523093913559060716447170497587855871901716892114835713057965087473682457896508094049813280368069805661739141591558517233009123957",
                 "s": "3589207374161609293256840431433442367968556468254553005135697551692970564853243905310862234226531556373974144223993822323573625466428920716249949819187529684239371465431718456502388533731367046146704547241076626874082510133130124364613881638153345624380195335138152993132904167470515345775215584510356780117368593105284564368954871044494967246738070895990267205643985529060025311535539534155086912661927003271053443110788963970349858709526217650537936123121324492871282397691771309596632805099306241616501610166028401599243350835158479028294769235556557248339060399322556412171888114265194198405765574333538019124846",
@@ -327,57 +339,73 @@ def claim_def(issuer_did):
 
 
 @pytest.fixture(scope="module")
-def claim_def_json(claim_def):
-    return json.dumps(claim_def)
+def credential_def_json(credential_def):
+    return json.dumps(credential_def)
 
 
 @pytest.fixture(scope="module")
-async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, gvt_claim_json, gvt_2_claim_json,
-                              xyz_claim_json, issuer_did, issuer_did_2, master_secret_name, prover_did):
-    # Create GVT Claim by Issuer1
-    claim_def_json = await anoncreds.issuer_create_and_store_claim_def(
-        wallet_handle, issuer_did, gvt_schema_json, None, False)
+async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, gvt_credential_json,
+                              gvt_2_credential_json, xyz_credential_json, issuer_did, issuer_did_2, master_secret_name,
+                              prover_did, tag, default_cred_def_config, id_credential_1, id_credential_2,
+                              id_credential_3):
+    # Create GVT credential by Issuer1
+    (issuer1_gvt_cred_deg_id, issuer1_gvt_credential_def_json) = \
+        await anoncreds.issuer_create_and_store_credential_def(wallet_handle, issuer_did, gvt_schema_json, tag,
+                                                               None, default_cred_def_config)
 
-    # Create XYZ Claim by Issuer1
-    claim_def_json_2 = await anoncreds.issuer_create_and_store_claim_def(
-        wallet_handle, issuer_did, xyz_schema_json, None, False)
+    # Create XYZ credential by Issuer1
+    (issuer1_xyz_cred_deg_id, issuer1_xyz_credential_def_json) = \
+        await anoncreds.issuer_create_and_store_credential_def(wallet_handle, issuer_did, xyz_schema_json, tag,
+                                                               None, default_cred_def_config)
 
-    # Create GVT Claim by Issuer2
-    claim_def_json_3 = await anoncreds.issuer_create_and_store_claim_def(
-        wallet_handle, issuer_did_2, gvt_schema_json, None, False)
+    # Create GVT credential by Issuer2
+    (issuer2_gvt_cred_def_id, issuer2_gvt_credential_def_json) = \
+        await anoncreds.issuer_create_and_store_credential_def(wallet_handle, issuer_did_2, gvt_schema_json, tag,
+                                                               None, default_cred_def_config)
 
-    issuer_1_gvt_claim_offer_json = \
-        await anoncreds.issuer_create_claim_offer(wallet_handle, gvt_schema_json, issuer_did, prover_did)
-    issuer_1_xyz_claim_offer_json = \
-        await anoncreds.issuer_create_claim_offer(wallet_handle, xyz_schema_json, issuer_did, prover_did)
-    issuer_2_gvt_claim_offer_json = \
-        await anoncreds.issuer_create_claim_offer(wallet_handle, gvt_schema_json, issuer_did_2, prover_did)
+    issuer_1_gvt_credential_offer_json = \
+        await anoncreds.issuer_create_credential_offer(wallet_handle, issuer1_gvt_cred_deg_id, issuer_did, prover_did)
+    issuer_1_xyz_credential_offer_json = \
+        await anoncreds.issuer_create_credential_offer(wallet_handle, issuer1_xyz_cred_deg_id, issuer_did, prover_did)
+    issuer_2_gvt_credential_offer_json = \
+        await anoncreds.issuer_create_credential_offer(wallet_handle, issuer2_gvt_cred_def_id, issuer_did_2, prover_did)
 
-    await anoncreds.prover_store_claim_offer(wallet_handle, issuer_1_gvt_claim_offer_json)
-    await anoncreds.prover_store_claim_offer(wallet_handle, issuer_1_xyz_claim_offer_json)
-    await anoncreds.prover_store_claim_offer(wallet_handle, issuer_2_gvt_claim_offer_json)
+    await anoncreds.prover_store_credential_offer(wallet_handle, issuer_1_gvt_credential_offer_json)
+    await anoncreds.prover_store_credential_offer(wallet_handle, issuer_1_xyz_credential_offer_json)
+    await anoncreds.prover_store_credential_offer(wallet_handle, issuer_2_gvt_credential_offer_json)
 
     await anoncreds.prover_create_master_secret(wallet_handle, master_secret_name)
 
-    claim_req = await anoncreds.prover_create_and_store_claim_req(
-        wallet_handle, prover_did, issuer_1_gvt_claim_offer_json, claim_def_json, master_secret_name)
+    credential_req = \
+        await anoncreds.prover_create_and_store_credential_req(wallet_handle, prover_did,
+                                                               issuer_1_gvt_credential_offer_json,
+                                                               issuer1_gvt_credential_def_json, master_secret_name)
 
-    (_, claim_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req, gvt_claim_json, -1)
+    (_, credential_json) = await anoncreds.issuer_create_credential(wallet_handle, credential_req, gvt_credential_json,
+                                                                    None, None, -1)
 
-    await anoncreds.prover_store_claim(wallet_handle, claim_json, None)
+    await anoncreds.prover_store_credential(wallet_handle, id_credential_1, credential_json, None)
 
-    claim_req_2 = await anoncreds.prover_create_and_store_claim_req(
-        wallet_handle, prover_did, issuer_1_xyz_claim_offer_json, claim_def_json_2, master_secret_name)
+    credential_req_2 = \
+        await anoncreds.prover_create_and_store_credential_req(wallet_handle, prover_did,
+                                                               issuer_1_xyz_credential_offer_json,
+                                                               issuer1_xyz_credential_def_json,
+                                                               master_secret_name)
 
-    (_, claim_2_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req_2, xyz_claim_json, -1)
+    (_, credential_2_json) = await anoncreds.issuer_create_credential(wallet_handle, credential_req_2,
+                                                                      xyz_credential_json, None, None, -1)
 
-    await anoncreds.prover_store_claim(wallet_handle, claim_2_json, None)
+    await anoncreds.prover_store_credential(wallet_handle, id_credential_2, credential_2_json, None)
 
-    claim_req_3 = await anoncreds.prover_create_and_store_claim_req(
-        wallet_handle, prover_did, issuer_2_gvt_claim_offer_json, claim_def_json_3, master_secret_name)
+    credential_req_3 = \
+        await anoncreds.prover_create_and_store_credential_req(wallet_handle, prover_did,
+                                                               issuer_2_gvt_credential_offer_json,
+                                                               issuer2_gvt_credential_def_json,
+                                                               master_secret_name)
 
-    (_, claim_3_json) = await anoncreds.issuer_create_claim(wallet_handle, claim_req_3, gvt_2_claim_json, -1)
+    (_, credential_3_json) = await anoncreds.issuer_create_credential(wallet_handle, credential_req_3,
+                                                                      gvt_2_credential_json, None, None, -1)
 
-    await anoncreds.prover_store_claim(wallet_handle, claim_3_json, None)
+    await anoncreds.prover_store_credential(wallet_handle, id_credential_3, credential_3_json, None)
 
-    return claim_def_json, issuer_1_gvt_claim_offer_json, claim_req, claim_json,
+    return issuer1_gvt_credential_def_json, issuer_1_gvt_credential_offer_json, credential_req, credential_json,
