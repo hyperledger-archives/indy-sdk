@@ -1,6 +1,6 @@
 {
   "name": "indy-sdk",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Native bindings for hyperledger indy",
   "author": "hyperledger",
   "license": "Apache-2.0",
@@ -24,7 +24,7 @@
     "codegen"
   ],
   "scripts": {
-    "prepublish": "cp -r ../../libindy/include/ .",
+    "prepublish": "cp -r ../../libindy/include/ . && node codegen",
     "preinstall": "node codegen",
     "install": "node-gyp rebuild",
     "test": "standard && ava --fail-fast tests",
