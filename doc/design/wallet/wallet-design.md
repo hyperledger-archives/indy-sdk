@@ -22,7 +22,7 @@ data into the wallet.
 * Allow plugging of different storages with native OpenSSL style object-oriented C interface for.
   Try to avoid unnecessary json and re-allocation.
 * Allow efficient and flexible search for entities with pagination support.
-* Expose public API to store application specific data into the wallet.This API shouldn't
+* Expose public API to store application specific data into the wallet. This API shouldn't
   have an access to secrets stored by libindy.
 
 ## Wallet Components
@@ -42,7 +42,8 @@ or indy_create_and_store_cred_def. Endpoints:
 
 ## Generic Wallet API
 
-This API is intended to store and read application specific identity data in the wallet
+This API is intended to store and read application specific identity data in the wallet.
+This API shouldn't have an access to secrets stored by Secret Entities API.
 
 TODO: FIXME: Define it!!!
 
