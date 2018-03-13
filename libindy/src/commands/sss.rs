@@ -1,13 +1,8 @@
 extern crate indy_crypto;
 extern crate serde_json;
 
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use self::indy_crypto::sss::{shard_secret, recover_secret, Share};
-use errors::common::CommonError;
-use errors::wallet::WalletError;
 use errors::indy::IndyError;
-use services::signus::types::{KeyInfo, Key};
-use services::ledger::types::{Reply, };
 use services::wallet::WalletService;
 use services::signus::SignusService;
 
@@ -18,12 +13,8 @@ use std::cell::RefCell;
 
 use serde_json::{Value, Map};
 
-use commands::ledger::LedgerCommand;
-use commands::{Command, CommandExecutor};
 use commands::crypto::CryptoCommandExecutor;
 
-use std::collections::HashMap;
-use utils::sequence::SequenceUtils;
 use utils::crypto::base58::Base58;
 use utils::crypto::box_::CryptoBox;
 
@@ -52,8 +43,7 @@ pub enum SSSCommand {
 
 pub struct SSSCommandExecutor {
     wallet_service: Rc<WalletService>,
-    crypto_service: Rc<SignusService>,
-    deferred_commands: RefCell<HashMap<i32, SSSCommand>>,
+    crypto_service: Rc<SignusService>
 }
 
 impl SSSCommandExecutor {
@@ -61,8 +51,7 @@ impl SSSCommandExecutor {
                crypto_service: Rc<SignusService>) -> SSSCommandExecutor {
         SSSCommandExecutor {
             wallet_service,
-            crypto_service,
-            deferred_commands: RefCell::new(HashMap::new()),
+            crypto_service
         }
     }
 

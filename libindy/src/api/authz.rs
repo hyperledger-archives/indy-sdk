@@ -7,7 +7,6 @@ use commands::authz::AuthzCommand;
 use utils::cstring::CStringUtils;
 
 use self::libc::c_char;
-use std::ptr;
 
 
 #[no_mangle]

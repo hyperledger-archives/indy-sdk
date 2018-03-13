@@ -64,7 +64,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_new_agent_works() {
+        fn indy_adding_new_agent_works() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
@@ -78,8 +78,8 @@ mod high_cases {
             let policy_address = policy["address"].as_str().unwrap();
             println!("{:?}", &policy_address);
 
+            // Add new agent but not commitment
             let vk1 = CryptoUtils::create_key(wallet_handle, None).unwrap();
-
             let verkey1 = AuthzUtils::add_agent_to_policy_in_wallet(wallet_handle, &policy_address, &vk1, false).unwrap();
 
             let policy_json1 = AuthzUtils::get_policy_from_wallet(wallet_handle,
@@ -100,8 +100,8 @@ mod high_cases {
             assert_eq!(agent1["double_commitment"], Value::Null);
             assert_eq!(agent1["witness"], Value::Null);
 
+            // Add new agent with commitment
             let vk2 = CryptoUtils::create_key(wallet_handle, None).unwrap();
-
             let verkey2 = AuthzUtils::add_agent_to_policy_in_wallet(wallet_handle, &policy_address,
                                                                     &vk2, true).unwrap();
 
@@ -122,6 +122,7 @@ mod high_cases {
             assert_ne!(agent2["double_commitment"], Value::Null);
             assert_eq!(agent2["witness"], Value::Null);
 
+            // Update agent's witness
             let witness = BigNumber::rand(1024).unwrap().to_dec().unwrap();
             AuthzUtils::update_agent_witness_in_wallet(wallet_handle, &policy_address,
                                                        &vk2, &witness).unwrap();
@@ -139,7 +140,7 @@ mod high_cases {
             assert_ne!(agent3["secret"], Value::Null);
             assert_ne!(agent3["blinding_factor"], Value::Null);
             assert_ne!(agent3["double_commitment"], Value::Null);
-            assert_ne!(agent3["witness"], Value::Null);
+            assert_eq!(agent3["witness"].as_str().unwrap(), &witness);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 

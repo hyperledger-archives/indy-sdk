@@ -3,10 +3,7 @@ extern crate indy_crypto;
 use self::indy_crypto::bn::{BigNumber};
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use errors::common::CommonError;
-use errors::authz::AuthzError;
-use errors::wallet::WalletError;
 use errors::indy::IndyError;
-use services::signus::types::{KeyInfo, Key};
 use services::ledger::types::{Reply, };
 use services::pool::PoolService;
 use services::wallet::WalletService;
@@ -23,7 +20,6 @@ use std::rc::Rc;
 use std::str;
 use std::cell::RefCell;
 
-use commands::{Command, CommandExecutor};
 use commands::crypto::CryptoCommandExecutor;
 
 
