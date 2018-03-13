@@ -1,8 +1,25 @@
 # Indy SDK for Node.js
 
+[![stability - experimental][https://img.shields.io/badge/stability-experimental-orange.svg]][https://nodejs.org/api/documentation.html#documentation_stability_index]
+
 Native bindings for hyperledger indy.
 
-*Work-In-Progress* currently only linux is supported.
+## Installing
+
+This module has a native compile step. It compiles C++ code and dynamically links to `libindy` on your system.
+
+You will need:
+
+* C++ build tools and python 2. See [this](https://github.com/nodejs/node-gyp#installation) for platform recommendations.
+* `libindy` on your system in a shared library path i.e. for linux `/usr/lib/libindy.so`
+
+Then you can install via npm:
+
+```sh
+npm install --save indy-sdk
+```
+
+This is still experimental, please submit issues to: https://github.com/Picolab/indy-sdk/issues
 
 ## API
 
@@ -22,10 +39,11 @@ var verkey = await indy.abbreviate_verkey(did, full_verkey)
 ```
 
 ### IndyError
-These errors are based of the libindy error codes defined [here](https://github.com/hyperledger/indy-sdk/blob/master/libindy/include/indy_mod.h).
 
-`err.indy_code` - the code number from libindy
-`err.indy_name` - the name string for the code
+These errors are based on libindy error codes defined [here](https://github.com/hyperledger/indy-sdk/blob/master/libindy/include/indy_mod.h).
+
+* `err.indy_code` - the code number from libindy
+* `err.indy_name` - the name string for the code
 
 [//]: # (CODEGEN-START - don't edit by hand see `codegen/index.js`)
 #### issuer\_create\_and\_store\_claim\_def(wallet\_handle, issuer\_did, schema\_json, signature\_type, create\_non\_revoc, cb(err, claim\_def\_json))
@@ -420,10 +438,13 @@ These errors are based of the libindy error codes defined [here](https://github.
 
 Setup an Indy SDK environment, and start the local nodes.
  * [ubuntu](https://github.com/hyperledger/indy-sdk/blob/master/doc/ubuntu-build.md)
+ * [osx](https://github.com/hyperledger/indy-sdk/blob/master/doc/mac-build.md)
+ * [windows](https://github.com/hyperledger/indy-sdk/blob/master/doc/windows-build.md)
 
-To run tests you'll also want to start the test pool.
+To run tests you'll need to start a test pool.
 
 ```sh
+$ cp -r ../../libindy/include/ .
 $ npm i
 $ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 npm test
 ```
