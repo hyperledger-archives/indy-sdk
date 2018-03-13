@@ -212,7 +212,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
 
                 sh '''
                     python3.5 -m pip install --user -e .
-                    LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
                 '''
             }
         }
@@ -227,7 +227,7 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name, stash
                 sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run"
 
                 echo "${env_name} Indy Cli Test: Run tests"
-                sh "LD_LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release"
+                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
 
                 if (stashBuildResults) {
                     stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
@@ -263,7 +263,7 @@ def windowsTesting() {
                             "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "INDY_CRYPTO_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "MILAGRO_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "ZMQPW_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "LIBZMQ_PREFIX=$WORKSPACE\\libindy\\prebuilt",
                             "SODIUM_LIB_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
