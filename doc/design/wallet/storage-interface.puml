@@ -1,4 +1,4 @@
-@startuml Wallet Storage API
+@startuml stotage-interface
 
 interface WalletStorageType {
     +create_wallet_storage(name, config, cred)
@@ -7,8 +7,8 @@ interface WalletStorageType {
 }
 
 interface WalletStorage {
-    +create_wallet_entity(type, id, value, mdata, tags)
-    +update_wallet_entity(type, id, value, mdata, tags)
+    +create_wallet_entity(type, id, value, tags)
+    +update_wallet_entity(type, id, value, tags)
     +delete_wallet_entity(type, id)
     +get_wallet_entity(type, id, options) -> WalletEntity
     +search_wallet_entities(type, query, options) -> WalletSearch
@@ -27,7 +27,7 @@ WalletSearch --* WalletStorage
 interface WalletEntity {
     +get_id() -> str
     +get_value() -> str
-    +get_metadata() -> str
+    +get_tags() -> str
     +free()
 }
 WalletEntity --* WalletStorage

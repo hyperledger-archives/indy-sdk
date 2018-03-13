@@ -7,31 +7,52 @@ for 3d party wallets implementations.
 
 Also proposals enhances our API for efficient and flexible search with paging support.
 
+Also proposals enhances our API to support storing of application specific
+data into the wallet.
+
 ## Goals and ideas
 
-* Simplify plugged wallets and warranty security level for 3d party wallets implementation
-* Perform all encryption on libindy level:
-  * Entity ids will be always encrypted
-  * Entity values will be always encrypted
-  * Entity metadata will be always encrypted
-  * Tag names will be always encrypted
-  * Tag values will be **optionally** encrypted. If user wants to perform some complex searches it can be possible
-    to include some additional un-encrypted tags
-* Allow plugging of different storages
-* Allow efficient and flexible search for entities
-* Allow pagination
-* Native OpenSSL style object-oriented C interface
-* Try to avoid unnecessary json and re-allocation
+* Simplify plugged wallets and warranty security level for 3d party wallets implementation by perform all
+  encryption on libindy level:
+  * Entity ids will be always encrypted.
+  * Entity values will be always encrypted.
+  * Tag names will be always encrypted.
+  * Tag values will be **optionally** encrypted. If user wants to perform some complex searches it can
+    be possible to include some additional un-encrypted tags.
+* Allow plugging of different storages with native OpenSSL style object-oriented C interface for.
+  Try to avoid unnecessary json and re-allocation.
+* Allow efficient and flexible search for entities with pagination support.
+* Expose public API to store application specific data into the wallet.This API shouldn't
+  have an access to secrets stored by libindy.
 
-## Interface Entities
+## Wallet Components
 
-<img src="./wallet-storage.svg">
+![Wallet Components](./wallet-components.svg)
 
-## C Interface
+## Secret Entities API
+
+It is our existing endpoints for secrets creation and access like indy_create_and_store_did
+or indy_create_and_store_cred_def. Endpoints:
+
+1. Allow to create a secret into the wallet
+1. Return entity id and optionally public part (if needed)
+1. Allow to search for stored secrets ids (if needed)
+1. Allow to reference secret by id in crypto calls that require this secret
+1. Don't allow to get stored secret back
+
+## Generic Wallet API
+
+This API is intended to store and read application specific identity data in the wallet
+
+TODO: FIXME: Define it!!!
+
+## Storage Interface
+
+Interface entities are:
+
+![Storage Interface](./storage-interface.svg)
 
 To plug wallet storage user should implement and register the following C callbacks:
-
-### Wallet Storage Type API
 
 ```Rust
 /// Create the wallet storage (For example, database creation)
@@ -70,8 +91,6 @@ extern fn open_wallet_storage(name: *const c_char,
                               storage_handle_p: *mut u32) -> ErrorCode
 ```
 
-### Wallet Storage API
-
 ```Rust
 /// Create a new entity in the wallet storage
 ///
@@ -79,7 +98,6 @@ extern fn open_wallet_storage(name: *const c_char,
 /// type_: allows to separate different entity types collections
 /// id: the id of entity
 /// value: the value of entity
-/// metadata: (optional) the entity metadata
 /// tags: (optional) the entity tags used for search as json:
 ///  {
 ///    "tagName1": "tag value 1", // string value
@@ -89,7 +107,6 @@ extern fn wallet_storage_create_wallet_entity(storage_handle: u32,
                                               type_: *const c_char,
                                               id: *const c_char,
                                               value: *const c_char,
-                                              metadata: *const c_char,
                                               tags: *const c_char) -> ErrorCode
 ```
 
@@ -100,13 +117,11 @@ extern fn wallet_storage_create_wallet_entity(storage_handle: u32,
 /// type_: allows to separate different entity types collections
 /// id: the id of entity
 /// value: (optional) the new value of entity
-/// metadata: (optional) the new entity metadata
 /// tags: (optional) the new entity tags (see wallet_storage_create_wallet_entity)
 extern fn wallet_storage_update_wallet_entity(storage_handle: u32,
                                               type_: *const c_char,
                                               id: *const c_char,
                                               value: *const c_char,
-                                              metadata: *const c_char,
                                               tags: *const c_char) -> ErrorCode
 ```
 
@@ -130,7 +145,7 @@ extern fn wallet_storage_delete_wallet_entity(storage_handle: u32,
 /// options_json: //TODO: FIXME: Think about replacing by bitmaks
 ///  {
 ///    retrieveValue: (optional, true by default) Retrieve entity value,
-///    retrieveMetadata: (optional, true by default) Retrieve entity metadata
+///    retrieveTags: (optional, true by default) Retrieve entity tags
 ///  }
 /// entity_handle_p: pointer to store retrieved entity handle
 extern fn wallet_storage_get_wallet_entity(storage_handle: u32,
@@ -160,7 +175,7 @@ extern fn wallet_storage_get_wallet_entity(storage_handle: u32,
 ///    limit: (optional, 100 by default) limit amount of entities to retrieve,
 ///    retrieveEntities: (optional, true by default) If false only "counts" will be calculated,
 ///    retrieveValue: (optional, true by default) Retrieve entity value,
-///    retrieveMetadata: (optional, true by default) Retrieve entity metadata,
+///    retrieveTags: (optional, true by default) Retrieve entity tags,
 ///  }
 /// search_handle_p: pointer to store wallet search handle
 extern fn wallet_storage_search_entities(storage_handle: u32,
@@ -176,8 +191,6 @@ extern fn wallet_storage_search_entities(storage_handle: u32,
 /// storage_handle: opened storage handle (See open_wallet_storage)
 extern fn wallet_storage_close(storage_handle: u32) -> ErrorCode
 ```
-
-### Wallet Search API
 
 ```Rust
 /// Get total count of entities that corresponds to wallet search query
@@ -216,8 +229,6 @@ wallet_search_free(storage_handle: u32,
                    search_handle: u32) -> ErrorCode
 ```
 
-### Wallet Entity API
-
 ```Rust
 /// Get an id for retrieved wallet entity
 ///
@@ -237,12 +248,12 @@ wallet_entity_get_value(storage_handle: u32,
 ```
 
 ```Rust
-/// Get an metadata for retrieved wallet entity
+/// Get an tags for retrieved wallet entity
 ///
 /// storage_handle: opened storage handle (See open_wallet_storage)
 /// entity_handle: retrieved entity handle (See wallet_storage_get_wallet_entity)
-wallet_entity_get_metadata(storage_handle: u32,
-                           entity_handle: u32) -> *const c_char
+wallet_entity_get_tags(storage_handle: u32,
+                       entity_handle: u32) -> *const c_char
 ```
 
 ```Rust
@@ -252,4 +263,21 @@ wallet_entity_get_metadata(storage_handle: u32,
 /// entity_handle: retrieved entity handle (See wallet_storage_get_wallet_entity)
 wallet_entity_free(storage_handle: u32,
                    entity_handle: u32) -> ErrorCode
+```
+
+## Wallet Query Language
+
+```
+query = {subquery}
+subquery = {subquery, ..., subquery} - WHERE subquery AND ... AND subquery
+subquery = $or: [{subquery},..., {subquery}] - WHERE subquery OR ... OR subquery
+subquery = $not: {subquery} - Where NOT (subquery)
+subquery = "tagName": tagValue - WHERE tagName == tagValue
+subquery = "tagName": {$neq: tagValue} - WHERE tagName != tagValue
+subquery = "tagName": {$gt: tagValue} - WHERE tagName > tagValue
+subquery = "tagName": {$gte: tagValue} - WHERE tagName >= tagValue
+subquery = "tagName": {$lt: tagValue} - WHERE tagName < tagValue
+subquery = "tagName": {$lte: tagValue} - WHERE tagName <= tagValue
+subquery = "tagName": {$like: tagValue} - WHERE tagName LIKE tagValue
+subquery = "tagName": {$in: [tagValue, ..., tagValue]} - WHERE tagName IN (tagValue, ..., tagValue)
 ```
