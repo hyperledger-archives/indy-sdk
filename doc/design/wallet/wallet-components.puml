@@ -49,10 +49,10 @@ package "Indy SDK" {
 
     () "Storage Interface" as i_storage_api
     wallet_service ..> i_storage_api
-}
 
-[Default Storage] as default_storage
-i_storage_api -- default_storage 
+    [Default Storage] as default_storage
+    default_storage - i_storage_api
+}
 
 [Enterprise Storage] as enterprise_storage
 i_storage_api -- enterprise_storage 
