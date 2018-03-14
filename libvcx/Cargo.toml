@@ -39,6 +39,7 @@ rmp = "0.8"
 rmp-serde = "0.13.7"
 base64 = "0.8.0"
 openssl = "0.9"
+rusqlite = "0.13.0"
 
 [build-dependencies]
 serde = "1.0"
@@ -48,7 +49,6 @@ serde_derive = "1.0"
 
 [dev-dependencies]
 tempfile = "2.2"
-rusqlcipher = "0.14.6"
 
 [package.metadata.deb]
 maintainer = "Mark Hadley<mark.hadley@evernym.com>, Devin Fisher, Ryan Marsh, Doug Wightman"

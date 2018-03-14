@@ -20,7 +20,7 @@ pub static CONFIG_REMOTE_TO_SDK_VERKEY: &'static str = "remote_to_sdk_verkey";
 pub static CONFIG_SDK_TO_REMOTE_DID: &'static str = "sdk_to_remote_did"; // functionally not used
 pub static CONFIG_SDK_TO_REMOTE_VERKEY: &'static str = "sdk_to_remote_verkey";
 pub static CONFIG_INSTITUTION_DID: &'static str = "institution_did";
-pub static CONFIG_INSTITUTION_VERKERY: &'static str = "institution_verkey"; // functionally not used
+pub static CONFIG_INSTITUTION_VERKEY: &'static str = "institution_verkey"; // functionally not used
 pub static CONFIG_INSTITUTION_NAME: &'static str = "institution_name";
 pub static CONFIG_INSTITUTION_LOGO_URL: &'static str = "institution_logo_url";
 pub static CONFIG_ENABLE_TEST_MODE: &'static str = "enable_test_mode";
@@ -40,21 +40,45 @@ pub fn set_defaults() -> u32 {
     // if this fails the program should exit
     let mut settings = SETTINGS.write().unwrap();
 
-    settings.set_default(CONFIG_POOL_NAME,"pool1");
-    settings.set_default(CONFIG_WALLET_NAME,DEFAULT_WALLET_NAME);
-    settings.set_default(CONFIG_WALLET_TYPE,"default");
-    settings.set_default(CONFIG_AGENCY_ENDPOINT,"http://127.0.0.1:8080");
-    settings.set_default(CONFIG_AGENCY_DID,"QRyASgXVV6Hoo6zkQTZCWm");
-    settings.set_default(CONFIG_AGENCY_VERKEY,"3BVdD7SGNenA1NDK4Z8Kf9A33uVoGZcKrfJa5vELJZVm");
-    settings.set_default(CONFIG_REMOTE_TO_SDK_DID,"8xUi3QNchFXzfhCgbALpBr");
-    settings.set_default(CONFIG_REMOTE_TO_SDK_VERKEY,"5LXDnRUM7k651nBmhcRraKThVAZYqepaW99zCBYosuwX");
-    settings.set_default(CONFIG_INSTITUTION_DID,"2hoqvcwupRTUNkXn6ArYzs");
-    settings.set_default(CONFIG_INSTITUTION_NAME,"default");
-    settings.set_default(CONFIG_INSTITUTION_LOGO_URL,"http://www.evernym.com");
-    settings.set_default(CONFIG_ENABLE_TEST_MODE,"false");
-    settings.set_default(CONFIG_SDK_TO_REMOTE_VERKEY,"2zoa6G7aMfX8GnUEpDxxunFHE7fZktRiiHk1vgMRH2tm");
+    settings.set_default(CONFIG_POOL_NAME, "pool1");
+    settings.set_default(CONFIG_WALLET_NAME, DEFAULT_WALLET_NAME);
+    settings.set_default(CONFIG_WALLET_TYPE, "default");
+    settings.set_default(CONFIG_AGENCY_ENDPOINT, "http://127.0.0.1:8080");
+    settings.set_default(CONFIG_AGENCY_DID, "QRyASgXVV6Hoo6zkQTZCWm");
+    settings.set_default(CONFIG_AGENCY_VERKEY, "3BVdD7SGNenA1NDK4Z8Kf9A33uVoGZcKrfJa5vELJZVm");
+    settings.set_default(CONFIG_REMOTE_TO_SDK_DID, "8xUi3QNchFXzfhCgbALpBr");
+    settings.set_default(CONFIG_REMOTE_TO_SDK_VERKEY, "5LXDnRUM7k651nBmhcRraKThVAZYqepaW99zCBYosuwX");
+    settings.set_default(CONFIG_INSTITUTION_DID, "2hoqvcwupRTUNkXn6ArYzs");
+    settings.set_default(CONFIG_INSTITUTION_NAME, "default");
+    settings.set_default(CONFIG_INSTITUTION_LOGO_URL, "http://www.evernym.com");
+    settings.set_default(CONFIG_ENABLE_TEST_MODE, "false");
+    settings.set_default(CONFIG_SDK_TO_REMOTE_VERKEY, "2zoa6G7aMfX8GnUEpDxxunFHE7fZktRiiHk1vgMRH2tm");
     settings.set_default(CONFIG_GENESIS_PATH, DEFAULT_GENESIS_PATH);
-    settings.set_default(CONFIG_WALLET_KEY,UNINITIALIZED_WALLET_KEY);
+    settings.set_default(CONFIG_WALLET_KEY, UNINITIALIZED_WALLET_KEY);
+
+    error::SUCCESS.code_num
+}
+
+pub fn set_to_defaults() -> u32 {
+
+    // if this fails the program should exit
+    let mut settings = SETTINGS.write().unwrap();
+
+    settings.set(CONFIG_POOL_NAME,"pool1");
+    settings.set(CONFIG_WALLET_NAME,DEFAULT_WALLET_NAME);
+    settings.set(CONFIG_WALLET_TYPE,"default");
+    settings.set(CONFIG_AGENCY_ENDPOINT,"http://127.0.0.1:8080");
+    settings.set(CONFIG_AGENCY_DID,"QRyASgXVV6Hoo6zkQTZCWm");
+    settings.set(CONFIG_AGENCY_VERKEY,"3BVdD7SGNenA1NDK4Z8Kf9A33uVoGZcKrfJa5vELJZVm");
+    settings.set(CONFIG_REMOTE_TO_SDK_DID,"8xUi3QNchFXzfhCgbALpBr");
+    settings.set(CONFIG_REMOTE_TO_SDK_VERKEY,"5LXDnRUM7k651nBmhcRraKThVAZYqepaW99zCBYosuwX");
+    settings.set(CONFIG_INSTITUTION_DID,"2hoqvcwupRTUNkXn6ArYzs");
+    settings.set(CONFIG_INSTITUTION_NAME,"default");
+    settings.set(CONFIG_INSTITUTION_LOGO_URL,"http://www.evernym.com");
+    settings.set(CONFIG_ENABLE_TEST_MODE,"false");
+    settings.set(CONFIG_SDK_TO_REMOTE_VERKEY,"2zoa6G7aMfX8GnUEpDxxunFHE7fZktRiiHk1vgMRH2tm");
+    settings.set(CONFIG_GENESIS_PATH, DEFAULT_GENESIS_PATH);
+    settings.set(CONFIG_WALLET_KEY,UNINITIALIZED_WALLET_KEY);
 
     error::SUCCESS.code_num
 }
@@ -66,7 +90,7 @@ fn is_valid(value: &str) -> bool {
     true
 }
 
-fn validate_config() -> Result<u32, String> {
+pub fn validate_config() -> Result<u32, String> {
     let mut error = String::new();
 
     //if this fails the program should exit
@@ -219,6 +243,7 @@ pub mod tests {
 
         // set defaults
         set_defaults();
+        set_to_defaults();
         assert_eq!(get_config_value(CONFIG_GENESIS_PATH).unwrap(), DEFAULT_GENESIS_PATH);
 
         // validate the default config.

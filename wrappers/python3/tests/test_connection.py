@@ -8,7 +8,7 @@ from ctypes import *
 
 source_id = '123'
 phone_number = '8019119191'
-
+details = "{\"id\":\"njjmmdg\",\"s\":{\"d\":\"JZho9BzVAEk8jJ1hwrrDiZ\",\"dp\":{\"d\":\"JDF8UHPBTXigvtJWeeMJzx\",\"k\":\"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4\",\"s\":\"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg==\"},\"l\":\"https://robohash.org/123\",\"n\":\"Evernym\",\"v\":\"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1\"},\"sa\":{\"d\":\"YRuVCckY6vfZfX9kcQZe3u\",\"e\":\"52.38.32.107:80/agency/msg\",\"v\":\"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v\"},\"sc\":\"MS-101\",\"sm\":\"message created\",\"t\":\"there\"}"
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -25,6 +25,12 @@ async def test_connection_connect():
     invite_details = await connection.connect(phone_number)
     assert invite_details
 
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_connection_with_invite_connect():
+    connection = await Connection.create_with_details(source_id, details)
+    invite = await connection.connect(phone_number)
+    assert invite
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -138,19 +144,3 @@ async def test_update_state_with_invalid_handle():
 async def test_get_state():
     connection = await Connection.create(source_id)
     assert await connection.get_state() == State.Initialized
-
-
-@pytest.mark.asyncio
-@pytest.mark.usefixtures('vcx_init_test_mode')
-async def test_invite_details_with_abbr():
-    connection = await Connection.create(source_id)
-    details = await connection.invite_details(True)
-    assert details.get('s').get('dp')
-
-
-@pytest.mark.asyncio
-@pytest.mark.usefixtures('vcx_init_test_mode')
-async def test_invite_details_without_abbr():
-    connection = await Connection.create(source_id)
-    details = await connection.invite_details(False)
-    assert details.get('senderAgencyDetail')

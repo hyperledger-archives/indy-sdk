@@ -27,6 +27,19 @@ class Connection(VcxStateful):
                                         c_params)
 
     @staticmethod
+    async def create_with_details(source_id: str, invite_details: str):
+        constructor_params = (source_id,)
+
+        c_source_id = c_char_p(source_id.encode('utf-8'))
+        c_invite_details = c_char_p(invite_details.encode('utf-8'))
+
+        c_params = (c_source_id, c_invite_details, )
+
+        return await Connection._create( "vcx_connection_create_with_invite",
+                                        constructor_params,
+                                        c_params)
+
+    @staticmethod
     async def deserialize(data: dict):
         return await Connection._deserialize("vcx_connection_deserialize",
                                              json.dumps(data),

@@ -460,7 +460,7 @@ mod tests {
         let handle = issuer_claim::from_string(DEFAULT_SERIALIZED_ISSUER_CLAIM).unwrap();
         assert_eq!(issuer_claim::get_state(handle),VcxStateType::VcxStateInitialized as u32);
 
-        let connection_handle = connection::build_connection("test_send_claim_offer".to_owned()).unwrap();
+        let connection_handle = connection::build_connection("test_send_claim_offer").unwrap();
 
         assert_eq!(vcx_issuer_send_claim_offer(0,handle,connection_handle,Some(send_offer_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(1000));
@@ -498,7 +498,7 @@ mod tests {
         /**********************************************************************/
 
         // create connection
-        let connection_handle = connection::build_connection("test_send_claim".to_owned()).unwrap();
+        let connection_handle = connection::build_connection("test_send_claim").unwrap();
 
         // send the claim
         assert_eq!(vcx_issuer_send_claim(0, handle, connection_handle, Some(send_offer_cb)), error::SUCCESS.code_num);

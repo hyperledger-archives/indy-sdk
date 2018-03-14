@@ -20,6 +20,9 @@ struct CreateMsgPayload {
     #[serde(rename = "@type")]
     msg_type: MsgType,
     mtype: String,
+    #[serde(rename = "replyToMsgId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reply_to_msg_id: Option<String>
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
@@ -35,7 +38,7 @@ pub struct KeyDlgProofPayload {
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
-struct MsgDetailPayload {
+struct SendMsgDetailPayload {
     #[serde(rename = "@type")]
     msg_type: MsgType,
     #[serde(rename = "keyDlgProof")]
@@ -43,6 +46,18 @@ struct MsgDetailPayload {
     #[serde(rename = "phoneNo")]
     #[serde(skip_serializing_if = "Option::is_none")]
     phone: Option<String>,
+}
+
+#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
+#[serde(rename_all = "camelCase")]
+struct AcceptMsgDetailPayload {
+    #[serde(rename = "@type")]
+    msg_type: MsgType,
+    #[serde(rename = "keyDlgProof")]
+    key_proof: KeyDlgProofPayload,
+    sender_detail: Option<SenderDetail>,
+    sender_agency_detail: Option<SenderAgencyDetail>,
+    answer_status_code: Option<String>
 }
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
@@ -56,9 +71,18 @@ struct SendMsgPayload {
 #[serde(rename_all = "camelCase")]
 struct SendInvitePayload{
     create_payload: CreateMsgPayload,
-    msg_detail_payload: MsgDetailPayload,
+    msg_detail_payload: SendMsgDetailPayload,
     send_payload: SendMsgPayload,
 }
+
+#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
+#[serde(rename_all = "camelCase")]
+struct AcceptInvitePayload{
+    create_payload: CreateMsgPayload,
+    msg_detail_payload: AcceptMsgDetailPayload,
+    send_payload: SendMsgPayload,
+}
+
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
@@ -66,9 +90,22 @@ pub struct SendInvite {
     #[serde(rename = "to")]
     to_did: String,
     to_vk: String,
-    agent_payload: String,
     #[serde(skip_serializing, default)]
     payload: SendInvitePayload,
+    #[serde(skip_serializing, default)]
+    validate_rc: u32,
+    agent_did: String,
+    agent_vk: String,
+}
+
+#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
+#[serde(rename_all = "camelCase")]
+pub struct AcceptInvite {
+    #[serde(rename = "to")]
+    to_did: String,
+    to_vk: String,
+    #[serde(skip_serializing, default)]
+    payload: AcceptInvitePayload,
     #[serde(skip_serializing, default)]
     validate_rc: u32,
     agent_did: String,
@@ -91,19 +128,19 @@ pub struct SenderDetail {
 #[serde(rename_all = "camelCase")]
 pub struct SenderAgencyDetail {
     #[serde(rename = "DID")]
-    did: String,
+    pub did: String,
     #[serde(rename = "verKey")]
-    verkey: String,
-    endpoint: String,
+    pub verkey: String,
+    pub endpoint: String,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
 pub struct InviteDetail {
     status_code: String,
-    conn_req_id: String,
+    pub conn_req_id: String,
     pub sender_detail: SenderDetail,
-    sender_agency_detail: SenderAgencyDetail,
+    pub sender_agency_detail: SenderAgencyDetail,
     target_name: String,
     status_msg: String,
 }
@@ -115,6 +152,14 @@ pub struct MsgDetailResponse {
     msg_type: MsgType,
     pub invite_detail: InviteDetail,
     url_to_invite_detail: String,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
+#[serde(rename_all = "camelCase")]
+pub struct MsgCreateResponse {
+    #[serde(rename = "@type")]
+    pub msg_type: MsgType,
+    pub uid: String,
 }
 
 impl InviteDetail {
@@ -151,14 +196,13 @@ impl SendInvite{
             to_did: String::new(),
             to_vk: String::new(),
             payload: SendInvitePayload {
-                create_payload: CreateMsgPayload { msg_type: MsgType { name: "CREATE_MSG".to_string(), ver: "1.0".to_string(), } , mtype: "connReq".to_string(), } ,
-                msg_detail_payload: MsgDetailPayload {
+                create_payload: CreateMsgPayload { msg_type: MsgType { name: "CREATE_MSG".to_string(), ver: "1.0".to_string(), } , mtype: "connReq".to_string(), reply_to_msg_id: None } ,
+                msg_detail_payload: SendMsgDetailPayload {
                     msg_type: MsgType { name: "MSG_DETAIL".to_string(), ver: "1.0".to_string(), } ,
                     key_proof: KeyDlgProofPayload { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() , } ,
                     phone: None, } ,
                 send_payload: SendMsgPayload { msg_type: MsgType { name: "SEND_MSG".to_string(), ver: "1.0".to_string(), }, } ,
             },
-            agent_payload: String::new(),
             validate_rc: error::SUCCESS.code_num,
             agent_did: String::new(),
             agent_vk: String::new(),
@@ -223,9 +267,133 @@ impl SendInvite{
     }
 }
 
+impl AcceptInvite{
+
+    pub fn create() -> AcceptInvite {
+        AcceptInvite {
+            to_did: String::new(),
+            to_vk: String::new(),
+            payload: AcceptInvitePayload {
+                create_payload: CreateMsgPayload { msg_type: MsgType { name: "CREATE_MSG".to_string(), ver: "1.0".to_string(), } , mtype: "connReqAnswer".to_string(), reply_to_msg_id: None } ,
+                msg_detail_payload: AcceptMsgDetailPayload
+                {
+                    msg_type: MsgType { name: "MSG_DETAIL".to_string(), ver: "1.0".to_string(), } ,
+                    key_proof: KeyDlgProofPayload { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() , },
+                    sender_detail: None,
+                    sender_agency_detail: None,
+                    answer_status_code: None
+                },
+                send_payload: SendMsgPayload { msg_type: MsgType { name: "SEND_MSG".to_string(), ver: "1.0".to_string(), }, } ,
+            },
+            validate_rc: error::SUCCESS.code_num,
+            agent_did: String::new(),
+            agent_vk: String::new(),
+        }
+    }
+
+    pub fn key_delegate(&mut self, key: &str) -> &mut Self{
+        match validation::validate_key_delegate(key){
+            Ok(x) => {
+                self.payload.msg_detail_payload.key_proof.agent_delegated_key = x;
+                self
+            }
+            Err(x) => {
+                self.validate_rc = x;
+                self
+            }
+        }
+    }
+
+    pub fn sender_details(&mut self, details: &SenderDetail) -> &mut Self {
+        self.payload.msg_detail_payload.sender_detail = Some(details.clone());
+        self
+    }
+
+    pub fn sender_agency_details(&mut self, details: &SenderAgencyDetail) -> &mut Self {
+        self.payload.msg_detail_payload.sender_agency_detail = Some(details.clone());
+        self
+    }
+
+    pub fn answer_status_code(&mut self, code: &str) -> &mut Self {
+        self.payload.msg_detail_payload.answer_status_code = Some(code.to_owned());
+        self
+    }
+
+    pub fn reply_to(&mut self, id: &str) -> &mut Self {
+        self.payload.create_payload.reply_to_msg_id = Some(id.to_owned());
+        self
+    }
+
+    pub fn generate_signature(&mut self) -> Result<u32, u32> {
+        let signature = format!("{}{}", self.payload.msg_detail_payload.key_proof.agent_did, self.payload.msg_detail_payload.key_proof.agent_delegated_key);
+        let signature = crypto::sign(wallet::get_wallet_handle(), &self.to_did, signature.as_bytes())?;
+        let signature = base64::encode(&signature);
+        self.payload.msg_detail_payload.key_proof.signature = signature.to_string();
+        Ok(error::SUCCESS.code_num)
+    }
+
+    pub fn send_secure(&mut self) -> Result<String, u32> {
+        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).unwrap());
+
+        let data = match self.msgpack() {
+            Ok(x) => x,
+            Err(x) => return Err(x),
+        };
+
+        if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(ACCEPT_INVITE_RESPONSE.to_vec()); }
+
+        match httpclient::post_u8(&data, &url) {
+            Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
+            Ok(response) => {
+                parse_send_accept_response(response)
+            },
+        }
+    }
+}
+
+
 //Todo: Every GeneralMessage extension, duplicates code
 impl GeneralMessage for SendInvite{
     type Msg = SendInvite;
+
+    fn set_agent_did(&mut self, did: String) {
+        self.agent_did = did;
+        self.payload.msg_detail_payload.key_proof.agent_did = self.agent_did.to_string();
+    }
+
+    fn set_agent_vk(&mut self, vk: String) {
+        self.agent_vk = vk;
+        self.payload.msg_detail_payload.key_proof.agent_delegated_key = self.agent_vk.to_string();
+    }
+
+    fn set_to_did(&mut self, to_did: String){ self.to_did = to_did; }
+    fn set_to_vk(&mut self, to_vk: String) { self.to_vk = to_vk; }
+    fn set_validate_rc(&mut self, rc: u32){ self.validate_rc = rc; }
+
+    fn msgpack(&mut self) -> Result<Vec<u8>,u32> {
+        if self.validate_rc != error::SUCCESS.code_num {
+            return Err(self.validate_rc)
+        }
+
+        self.generate_signature()?;
+
+        debug!("connection invitation details: {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap_or("failure".to_string()));
+        let create = encode::to_vec_named(&self.payload.create_payload).unwrap();
+        let details = encode::to_vec_named(&self.payload.msg_detail_payload).unwrap();
+        let send = encode::to_vec_named(&self.payload.send_payload).unwrap();
+
+        let mut bundle = Bundled::create(create);
+        bundle.bundled.push(details);
+        bundle.bundled.push(send);
+
+        let msg = bundle.encode()?;
+
+        bundle_for_agent(msg, &self.to_vk, &self.agent_did, &self.agent_vk)
+    }
+}
+
+impl GeneralMessage for AcceptInvite{
+    type Msg = AcceptInvite;
 
     fn set_agent_did(&mut self, did: String) {
         self.agent_did = did;
@@ -287,6 +455,27 @@ fn parse_send_invite_response(response: Vec<u8>) -> Result<String, u32> {
     }
 }
 
+const ACCEPT_BUNDLE_LEN: usize = 2;
+fn parse_send_accept_response(response: Vec<u8>) -> Result<String, u32> {
+    let data = unbundle_from_agency(response)?;
+
+    if data.len() != ACCEPT_BUNDLE_LEN {
+        error!("expected {} messages (got {})",ACCEPT_BUNDLE_LEN, data.len());
+        return Err(error::INVALID_MSGPACK.code_num);
+    }
+    debug!("create msg response: {:?}", data[0]);
+    let mut de = Deserializer::new(&data[0][..]);
+    let response: MsgCreateResponse = match Deserialize::deserialize(&mut de) {
+        Ok(x) => x,
+        Err(x) => {
+            error!("Could not parse messagepack: {}", x);
+            return Err(error::INVALID_MSGPACK.code_num)
+        },
+    };
+
+    Ok(response.uid.to_owned())
+}
+
 pub fn parse_invitation_acceptance_details(payload: Vec<u8>) -> Result<SenderDetail,u32> {
     #[serde(rename_all = "camelCase")]
     #[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
@@ -315,17 +504,12 @@ mod tests {
     fn test_send_invite_set_values_and_post(){
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let agency_wallet = wallet::init_wallet("test_send_invite_set_values_and_serialize_agency").unwrap();
-        let agent_wallet = wallet::init_wallet("test_send_invite_set_values_and_serialize_agent").unwrap();
         let my_wallet = wallet::init_wallet("test_send_invite_set_values_and_serialize_mine").unwrap();
 
         let (user_did, user_vk) = SignusUtils::create_and_store_my_did(my_wallet,None).unwrap();
-        let (agent_did, agent_vk) = SignusUtils::create_and_store_my_did(agent_wallet, Some(MY2_SEED)).unwrap();
+        let (agent_did, agent_vk) = SignusUtils::create_and_store_my_did(my_wallet, Some(MY2_SEED)).unwrap();
         let (my_did, my_vk) = SignusUtils::create_and_store_my_did(my_wallet, Some(MY1_SEED)).unwrap();
-        let (agency_did, agency_vk) = SignusUtils::create_and_store_my_did(agency_wallet, Some(MY3_SEED)).unwrap();
-
-        SignusUtils::store_their_did_from_parts(my_wallet, agent_did.as_ref(), agent_vk.as_ref()).unwrap();
-        SignusUtils::store_their_did_from_parts(my_wallet, agency_did.as_ref(), agency_vk.as_ref()).unwrap();
+        let (agency_did, agency_vk) = SignusUtils::create_and_store_my_did(my_wallet, Some(MY3_SEED)).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
@@ -343,8 +527,6 @@ mod tests {
         assert!(msg.len() > 0);
 
         wallet::delete_wallet("test_send_invite_set_values_and_serialize_mine").unwrap();
-        wallet::delete_wallet("test_send_invite_set_values_and_serialize_agent").unwrap();
-        wallet::delete_wallet("test_send_invite_set_values_and_serialize_agency").unwrap();
     }
 
     #[test]

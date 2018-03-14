@@ -10,6 +10,7 @@ class ErrorCode(IntEnum):
     NotReady = 1005,
     InvalidOption = 1007,
     InvalidDid = 1008,
+    CouldNotConnect = 1010,
     InvalidIssuerClaimHandle = 1015,
     InvalidJson = 1016,
     InvalidProofHandle = 1017,

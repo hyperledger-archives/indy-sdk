@@ -59,57 +59,6 @@ pub static INVALID_SELF_ATTESTED_VAL: Error = Error{code_num: 1046, message: "Se
 pub static INVALID_PREDICATE: Error = Error{code_num: 1047, message: "Predicate in proof is invalid"};
 
 lazy_static! {
-    static ref ERROR_MESSAGES: HashMap<u32, &'static str> = {
-        let mut m = HashMap::new();
-        insert_message(&mut m, &SUCCESS);
-        insert_message(&mut m, &UNKNOWN_ERROR);
-        insert_message(&mut m, &CONNECTION_ERROR);
-        insert_message(&mut m, &INVALID_CONNECTION_HANDLE);
-        insert_message(&mut m, &INVALID_CONFIGURATION);
-        insert_message(&mut m, &NOT_READY);
-        insert_message(&mut m, &NO_ENDPOINT);
-        insert_message(&mut m, &INVALID_OPTION);
-        insert_message(&mut m, &INVALID_DID);
-        insert_message(&mut m, &INVALID_VERKEY);
-        insert_message(&mut m, &POST_MSG_FAILURE);
-        insert_message(&mut m, &INVALID_NONCE);
-        insert_message(&mut m, &INVALID_KEY_DELEGATE);
-        insert_message(&mut m, &INVALID_URL);
-        insert_message(&mut m, &NOT_BASE58);
-        insert_message(&mut m, &INVALID_ISSUER_CLAIM_HANDLE);
-        insert_message(&mut m, &INVALID_JSON);
-        insert_message(&mut m, &INVALID_MESSAGES);
-        insert_message(&mut m, &INVALID_MSGPACK);
-        insert_message(&mut m, &INVALID_ATTRIBUTES_STRUCTURE);
-        insert_message(&mut m, &INVALID_PROOF_HANDLE);
-        insert_message(&mut m, &INVALID_CLAIM_REQUEST);
-        insert_message(&mut m, &BIG_NUMBER_ERROR);
-        insert_message(&mut m, &INVALID_PROOF);
-        insert_message(&mut m, &INVALID_GENESIS_TXN_PATH);
-        insert_message(&mut m, &CREATE_POOL_CONFIG);
-        insert_message(&mut m, &INVALID_PROOF_CLAIM_DATA);
-        insert_message(&mut m, &CREATE_POOL_CONFIG_PARAMETERS);
-        insert_message(&mut m, &INDY_SUBMIT_REQUEST_ERR);
-        insert_message(&mut m, &BUILD_CLAIM_DEF_REQ_ERR);
-        insert_message(&mut m, &NO_POOL_OPEN);
-        insert_message(&mut m, &INVALID_SCHEMA);
-        insert_message(&mut m, &FAILED_PROOF_COMPLIANCE);
-        insert_message(&mut m, &INVALID_HTTP_RESPONSE);
-        insert_message(&mut m, &CREATE_CLAIM_DEF_ERR);
-        insert_message(&mut m, &UNKNOWN_LIBINDY_ERROR);
-        insert_message(&mut m, &TIMEOUT_LIBINDY_ERROR);
-        insert_message(&mut m, &INVALID_CLAIM_DEF_JSON);
-        insert_message(&mut m, &INVALID_CLAIM_DEF_HANDLE);
-        insert_message(&mut m, &CLAIM_DEF_ALREADY_CREATED);
-        insert_message(&mut m, &INVALID_SCHEMA_SEQ_NO);
-        insert_message(&mut m, &INVALID_SCHEMA_CREATION);
-        insert_message(&mut m, &INVALID_SCHEMA_HANDLE);
-        insert_message(&mut m, &ALREADY_INITIALIZED);
-        insert_message(&mut m, &INVALID_INVITE_DETAILS);
-        insert_message(&mut m, &INVALID_MASTER_SECRET);
-        m
-    };
-
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
        let mut m = HashMap::new();
         insert_c_message(&mut m, &SUCCESS);
@@ -195,18 +144,6 @@ impl fmt::Display for Error {
     }
 }
 
-/// Finds a static string message for a unique Error code_num. This function allows for finding
-/// this message without having the original Error struct.
-///
-/// Intended for use with wrappers that receive an error code without a message through a
-/// c-callable interface.
-pub fn error_message(code_num:&u32) -> &'static str {
-    match ERROR_MESSAGES.get(code_num) {
-        Some(msg) => msg,
-        None => UNKNOWN_ERROR.message
-    }
-}
-
 pub fn error_c_message(code_num:&u32) -> &CString {
     match ERROR_C_MESSAGES.get(code_num) {
         Some(msg) => &msg,
@@ -214,9 +151,16 @@ pub fn error_c_message(code_num:&u32) -> &CString {
     }
 }
 
+pub fn error_message(code_num:&u32) -> String {
+    match ERROR_C_MESSAGES.get(code_num) {
+        Some(msg) => msg.to_str().unwrap().to_string(),
+        None => error_message(&UNKNOWN_ERROR.code_num),
+    }
+}
+
 pub fn error_string(code_num:u32) -> String {
-    match ERROR_MESSAGES.get(&code_num) {
-        Some(msg) => format!("{}-{}", code_num, msg),
+    match ERROR_C_MESSAGES.get(&code_num) {
+        Some(msg) => format!("{}-{}", code_num, msg.to_str().unwrap_or(UNKNOWN_ERROR.message)),
         None => format!("{}-{}", code_num, UNKNOWN_ERROR.message),
     }
 }

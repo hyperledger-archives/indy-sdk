@@ -46,6 +46,7 @@ export interface IFFIEntryPoint {
   // connection
   vcx_connection_connect: (commandId: number, handle: string, data: string, cb: any) => number,
   vcx_connection_create: (commandId: number, data: string, cb: any) => number,
+  vcx_connection_create_with_invite: (commandId: number, data: string, invite: string, cb: any) => number,
   vcx_connection_deserialize: (commandId: number, data: string, cb: any) => number,
   vcx_connection_release: (handle: string) => number,
   vcx_connection_serialize: (commandId: number, handle: string, cb: any) => number,
@@ -102,6 +103,8 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_connection_connect: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CONNECTION_DATA,
     FFI_CALLBACK_PTR]],
   vcx_connection_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_connection_create_with_invite: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_STRING_DATA,
+    FFI_CALLBACK_PTR]],
   vcx_connection_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_connection_release: [FFI_ERROR_CODE, [FFI_CONNECTION_HANDLE]],
   vcx_connection_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
