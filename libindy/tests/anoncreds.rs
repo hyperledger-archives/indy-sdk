@@ -938,7 +938,7 @@ mod medium_cases {
                                                                         &claim_offer_json,
                                                                         &claim_def,
                                                                         "invalid_master_secret_name");
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::KeyNotFoundInWalletError);
         }
     }
 
@@ -989,7 +989,7 @@ mod medium_cases {
                                 "signature":{{"primary_claim":{{"m2":"1","a":"1","e":"2","v":"3"}},"non_revocation_claim":null}}}}"#, ISSUER_DID);
 
             let res = AnoncredsUtils::prover_store_claim(wallet_handle, &claim_json);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::KeyNotFoundInWalletError);
         }
 
         #[test]
@@ -1217,7 +1217,7 @@ mod medium_cases {
                                                           "invalid_master_secret_name",
                                                           &claim_defs_json,
                                                           &revoc_regs_jsons);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::KeyNotFoundInWalletError);
         }
 
         #[test]

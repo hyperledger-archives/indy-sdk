@@ -161,7 +161,7 @@ impl InmemWallet {
         let wallet = wallets.get(&wallet_context.name).unwrap();
 
         if !wallet.contains_key(&key) {
-            return ErrorCode::WalletNotFoundError;
+            return ErrorCode::KeyNotFoundInWalletError;
         }
 
         let ref value = wallet.get(&key).unwrap().value;
@@ -191,13 +191,13 @@ impl InmemWallet {
         let wallet = wallets.get(&wallet_context.name).unwrap();
 
         if !wallet.contains_key(&key) {
-            return ErrorCode::WalletNotFoundError;
+            return ErrorCode::KeyNotFoundInWalletError;
         }
 
         let ref record = wallet.get(&key).unwrap();
 
         if time::get_time().sub(record.time_created).num_seconds() > wallet_context.freshness_time {
-            return ErrorCode::WalletNotFoundError;
+            return ErrorCode::KeyNotFoundInWalletError;
         }
 
         unsafe { *value_ptr = CString::new(record.value.as_str()).unwrap().into_raw(); }

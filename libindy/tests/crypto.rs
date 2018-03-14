@@ -197,7 +197,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = CryptoUtils::get_key_metadata(wallet_handle, VERKEY);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::KeyNotFoundInWalletError, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -247,7 +247,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = CryptoUtils::crypto_sign(wallet_handle, VERKEY, MESSAGE.as_bytes());
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::KeyNotFoundInWalletError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -327,7 +327,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = CryptoUtils::crypto_box(wallet_handle, VERKEY_MY1, VERKEY_MY2, MESSAGE.as_bytes());
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::KeyNotFoundInWalletError, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -377,7 +377,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = CryptoUtils::crypto_box_open(wallet_handle, VERKEY_MY1, VERKEY_TRUSTEE, ENCRYPTED_MESSAGE, NONCE);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::KeyNotFoundInWalletError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -504,7 +504,7 @@ mod high_cases {
 
             let encrypted_message = CryptoUtils::crypto_box_seal(VERKEY_MY1, MESSAGE.as_bytes()).unwrap();
             let res = CryptoUtils::crypto_box_seal_open(wallet_handle, VERKEY_MY1, &encrypted_message);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::KeyNotFoundInWalletError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 

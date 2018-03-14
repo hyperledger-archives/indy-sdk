@@ -198,7 +198,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = SignusUtils::key_for_local_did(wallet_handle, DID);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::KeyNotFoundInWalletError, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -539,7 +539,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = SignusUtils::get_did_metadata(wallet_handle, DID);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::KeyNotFoundInWalletError, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -743,7 +743,7 @@ mod high_cases {
 
             let (my_did, _) = SignusUtils::create_my_did(wallet_handle, "{}").unwrap();
 
-            assert_eq!(SignusUtils::replace_keys_apply(wallet_handle, &my_did).unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(SignusUtils::replace_keys_apply(wallet_handle, &my_did).unwrap_err(), ErrorCode::KeyNotFoundInWalletError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -760,7 +760,7 @@ mod high_cases {
 
             SignusUtils::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
 
-            assert_eq!(SignusUtils::replace_keys_apply(wallet_handle, DID).unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(SignusUtils::replace_keys_apply(wallet_handle, DID).unwrap_err(), ErrorCode::KeyNotFoundInWalletError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -917,7 +917,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = SignusUtils::sign(wallet_handle, DID, MESSAGE.as_bytes());
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::KeyNotFoundInWalletError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -1447,7 +1447,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = SignusUtils::replace_keys_start(wallet_handle, DID, "{}");
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::KeyNotFoundInWalletError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -1624,7 +1624,7 @@ mod medium_cases {
             SignusUtils::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
             let res = SignusUtils::encrypt(wallet_handle, -1, DID, DID_TRUSTEE, MESSAGE.as_bytes());
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::KeyNotFoundInWalletError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -1680,7 +1680,7 @@ mod medium_cases {
             SignusUtils::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
             let res = SignusUtils::decrypt(wallet_handle, -1, DID, DID_TRUSTEE, ENCRYPTED_MESSAGE, NONCE);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::KeyNotFoundInWalletError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -1772,7 +1772,7 @@ mod medium_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = SignusUtils::decrypt_sealed(wallet_handle, DID, ENCRYPTED_MESSAGE);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
+            assert_eq!(res.unwrap_err(), ErrorCode::KeyNotFoundInWalletError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 

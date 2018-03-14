@@ -23,7 +23,7 @@ use utils::constants::*;
 
 use indy::api::ErrorCode;
 
-use serde_json::{Value, Error};
+use serde_json::Value;
 
 use std::str;
 

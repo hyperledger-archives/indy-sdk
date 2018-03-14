@@ -106,7 +106,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
             let res = AgentUtils::prep_msg(wallet_handle, VERKEY_MY2, VERKEY, MESSAGE.as_bytes());
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::KeyNotFoundInWalletError, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -286,7 +286,7 @@ mod high_cases {
             let encrypted_msg = AgentUtils::prep_anonymous_msg(VERKEY, &MESSAGE.as_bytes()).unwrap();
 
             let res = AgentUtils::parse_msg(wallet_handle, VERKEY, &encrypted_msg);
-            assert_eq!(ErrorCode::WalletNotFoundError, res.unwrap_err());
+            assert_eq!(ErrorCode::KeyNotFoundInWalletError, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 

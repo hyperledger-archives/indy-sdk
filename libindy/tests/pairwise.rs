@@ -72,7 +72,7 @@ mod high_cases {
 
             SignusUtils::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
-            assert_eq!(ErrorCode::WalletNotFoundError, PairwiseUtils::create_pairwise(wallet_handle, DID_TRUSTEE, DID, None).unwrap_err());
+            assert_eq!(ErrorCode::KeyNotFoundInWalletError, PairwiseUtils::create_pairwise(wallet_handle, DID_TRUSTEE, DID, None).unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -87,7 +87,7 @@ mod high_cases {
 
             let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
 
-            assert_eq!(ErrorCode::WalletNotFoundError, PairwiseUtils::create_pairwise(wallet_handle, DID, &my_did, None).unwrap_err());
+            assert_eq!(ErrorCode::KeyNotFoundInWalletError, PairwiseUtils::create_pairwise(wallet_handle, DID, &my_did, None).unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -262,7 +262,7 @@ mod high_cases {
 
             SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
 
-            assert_eq!(ErrorCode::WalletNotFoundError, PairwiseUtils::get_pairwise(wallet_handle, DID_TRUSTEE).unwrap_err());
+            assert_eq!(ErrorCode::KeyNotFoundInWalletError, PairwiseUtils::get_pairwise(wallet_handle, DID_TRUSTEE).unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -352,7 +352,7 @@ mod high_cases {
 
             SignusUtils::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
 
-            assert_eq!(ErrorCode::WalletNotFoundError, PairwiseUtils::set_pairwise_metadata(wallet_handle, DID_TRUSTEE, Some(METADATA)).unwrap_err());
+            assert_eq!(ErrorCode::KeyNotFoundInWalletError, PairwiseUtils::set_pairwise_metadata(wallet_handle, DID_TRUSTEE, Some(METADATA)).unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 

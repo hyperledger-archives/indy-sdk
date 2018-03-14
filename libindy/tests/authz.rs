@@ -25,7 +25,7 @@ use utils::constants::*;
 
 use indy::api::ErrorCode;
 
-use serde_json::{Value, Error};
+use serde_json::Value;
 use self::indy_crypto::bn::BigNumber;
 
 

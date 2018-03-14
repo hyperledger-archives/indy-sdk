@@ -80,7 +80,7 @@ pub enum ErrorCode
     WalletAlreadyExistsError = 203,
 
     // Requested entity id isn't present in wallet
-    WalletNotFoundError = 204,
+    KeyNotFoundInWalletError = 204,
 
     // Trying to use wallet with pool that has different name
     WalletIncompatiblePoolError = 205,

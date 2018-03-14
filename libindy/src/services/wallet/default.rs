@@ -80,16 +80,7 @@ impl Wallet for DefaultWallet {
     }
 
     fn get(&self, key: &str) -> Result<String, WalletError> {
-        let record = _open_connection(self.name.as_str(), &self.credentials)?
-            .query_row(
-                "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
-                &[&key.to_string()], |row| {
-                    DefaultWalletRecord {
-                        key: row.get(0),
-                        value: row.get(1),
-                        time_created: row.get(2)
-                    }
-                })?;
+        let record = _get_record(&self.name, &self.credentials, key)?;
         Ok(record.value)
     }
 
@@ -115,22 +106,11 @@ impl Wallet for DefaultWallet {
     }
 
     fn get_not_expired(&self, key: &str) -> Result<String, WalletError> {
-        let record = _open_connection(self.name.as_str(), &self.credentials)?
-            .query_row(
-                "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
-                &[&key.to_string()], |row| {
-                    DefaultWalletRecord {
-                        key: row.get(0),
-                        value: row.get(1),
-                        time_created: row.get(2)
-                    }
-                })?;
-
+        let record = _get_record(&self.name, &self.credentials, key)?;
         if self.config.freshness_time != 0
             && time::get_time().sub(record.time_created).num_seconds() > self.config.freshness_time {
             return Err(WalletError::NotFound(key.to_string()))
         }
-
         return Ok(record.value)
     }
 
@@ -231,6 +211,25 @@ fn _open_connection(name: &str, credentials: &DefaultWalletCredentials) -> Resul
         }
     }
 }
+
+fn _get_record(name: &str, credentials: &DefaultWalletCredentials, key: &str) -> Result<DefaultWalletRecord, WalletError> {
+    let connection = _open_connection(name, credentials)?;
+    match connection.query_row(
+        "SELECT key, value, time_created FROM wallet WHERE key = ?1 LIMIT 1",
+        &[&key.to_string()], |row| {
+            DefaultWalletRecord {
+                key: row.get(0),
+                value: row.get(1),
+                time_created: row.get(2)
+            }
+        }) {
+        Ok(record) => Ok(record),
+        Err(err) => {
+            Err(WalletError::NotFound(format!("{}: looked for {}", err.description(), key.to_string())))
+        }
+    }
+}
+
 
 fn _export_encrypted_to_unencrypted(conn: Connection, name: &str) -> Result<Connection, WalletError> {
     let mut path = EnvironmentUtils::wallet_path(name);

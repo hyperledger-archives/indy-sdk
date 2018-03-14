@@ -631,7 +631,7 @@ mod tests {
         let wallet_handle = wallet_service.open("wallet1", None, None).unwrap();
 
         let res = wallet_service.get(wallet_handle, "key1");
-        assert_match!(Err(WalletError::PluggedWallerError(ErrorCode::WalletNotFoundError)), res);
+        assert_match!(Err(WalletError::PluggedWallerError(ErrorCode::KeyNotFoundInWalletError)), res);
 
         TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();
@@ -790,7 +790,7 @@ mod tests {
         thread::sleep(Duration::new(2, 0));
 
         let res = wallet_service.get_not_expired(wallet_handle, "key1");
-        assert_match!(Err(WalletError::PluggedWallerError(ErrorCode::WalletNotFoundError)), res);
+        assert_match!(Err(WalletError::PluggedWallerError(ErrorCode::KeyNotFoundInWalletError)), res);
 
         TestUtils::cleanup_indy_home();
         InmemWallet::cleanup();

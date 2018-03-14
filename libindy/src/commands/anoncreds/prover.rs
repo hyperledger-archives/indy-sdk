@@ -541,6 +541,6 @@ impl ProverCommandExecutor {
     }
 
     fn _master_secret_name_to_wallet_key(master_secret_name: &str) -> String {
-        format!("{}::{:?}", MASTER_SECRET_WALLET_KEY_PREFIX, master_secret_name)
+        format!("{}::{}", MASTER_SECRET_WALLET_KEY_PREFIX, master_secret_name)
     }
 }
