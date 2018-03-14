@@ -1,9 +1,22 @@
+from indy.helpers import log_args
 from .libindy import do_call, create_cb
 
 from typing import Optional
 from ctypes import *
 
 import logging
+
+
+def attach_callback(func, logger):
+    if not hasattr(func, "cb"):
+        logger.debug('{}: Creating callback'.format(func.__name__))
+        func.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+
+async def call_c_func(c_func_name, func, logger, *args):
+    res = (await do_call(c_func_name, *args, func.cb)).decode()
+    logger.debug("{}: <<< res: {}".format(func.__name__, res))
+    return res
 
 
 async def sign_and_submit_request(pool_handle: int,
@@ -25,31 +38,20 @@ async def sign_and_submit_request(pool_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("sign_and_submit_request: >>> pool_handle: %r, wallet_handle: %r, submitter_did: %r, request_json: %r",
-                 pool_handle,
-                 wallet_handle,
-                 submitter_did,
-                 request_json)
-
-    if not hasattr(sign_and_submit_request, "cb"):
-        logger.debug("sign_and_submit_request: Creating callback")
-        sign_and_submit_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    log_args(logger)
+    attach_callback(sign_and_submit_request, logger)
 
     c_pool_handle = c_int32(pool_handle)
     c_wallet_handle = c_int32(wallet_handle)
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_request_json = c_char_p(request_json.encode('utf-8'))
 
-    request_result = await do_call('indy_sign_and_submit_request',
-                                   c_pool_handle,
-                                   c_wallet_handle,
-                                   c_submitter_did,
-                                   c_request_json,
-                                   sign_and_submit_request.cb)
-
-    res = request_result.decode()
-    logger.debug("sign_and_submit_request: <<< res: %r", res)
-    return res
+    return await call_c_func('indy_sign_and_submit_request',
+                             sign_and_submit_request, logger,
+                             c_pool_handle,
+                             c_wallet_handle,
+                             c_submitter_did,
+                             c_request_json)
 
 
 async def submit_request(pool_handle: int,
@@ -64,25 +66,16 @@ async def submit_request(pool_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("submit_request: >>> pool_handle: %r, request_json: %r",
-                 pool_handle,
-                 request_json)
-
-    if not hasattr(submit_request, "cb"):
-        logger.debug("submit_request: Creating callback")
-        submit_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    log_args(logger)
+    attach_callback(submit_request, logger)
 
     c_pool_handle = c_int32(pool_handle)
     c_request_json = c_char_p(request_json.encode('utf-8'))
 
-    request_result = await do_call('indy_submit_request',
-                                   c_pool_handle,
-                                   c_request_json,
-                                   submit_request.cb)
-
-    res = request_result.decode()
-    logger.debug("submit_request: <<< res: %r", res)
-    return res
+    return await call_c_func('indy_submit_request', submit_request, logger,
+                             c_pool_handle,
+                             c_request_json,
+                             )
 
 
 async def sign_request(wallet_handle: int,
@@ -101,28 +94,17 @@ async def sign_request(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("sign_request: >>> wallet_handle: %r, submitter_did: %r, request_json: %r",
-                 wallet_handle,
-                 submitter_did,
-                 request_json)
-
-    if not hasattr(sign_request, "cb"):
-        logger.debug("sign_and_submit_request: Creating callback")
-        sign_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    log_args(logger)
+    attach_callback(sign_request, logger)
 
     c_wallet_handle = c_int32(wallet_handle)
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_request_json = c_char_p(request_json.encode('utf-8'))
 
-    request_result = await do_call('indy_sign_request',
-                                   c_wallet_handle,
-                                   c_submitter_did,
-                                   c_request_json,
-                                   sign_request.cb)
-
-    res = request_result.decode()
-    logger.debug("sign_request: <<< res: %r", res)
-    return res
+    return await call_c_func('indy_sign_request', sign_request, logger,
+                             c_wallet_handle,
+                             c_submitter_did,
+                             c_request_json)
 
 
 async def build_get_ddo_request(submitter_did: str,
@@ -136,25 +118,16 @@ async def build_get_ddo_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_ddo_request: >>> submitter_did: %r, target_did: %r",
-                 submitter_did,
-                 target_did)
-
-    if not hasattr(build_get_ddo_request, "cb"):
-        logger.debug("build_get_ddo_request: Creating callback")
-        build_get_ddo_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    log_args(logger)
+    attach_callback(build_get_ddo_request, logger)
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_target_did = c_char_p(target_did.encode('utf-8'))
 
-    request_json = await do_call('indy_build_get_ddo_request',
-                                 c_submitter_did,
-                                 c_target_did,
-                                 build_get_ddo_request.cb)
-
-    res = request_json.decode()
-    logger.debug("build_get_ddo_request: <<< res: %r", res)
-    return res
+    return await call_c_func('indy_build_get_ddo_request',
+                             build_get_ddo_request, logger,
+                             c_submitter_did,
+                             c_target_did)
 
 
 async def build_nym_request(submitter_did: str,
@@ -174,16 +147,8 @@ async def build_nym_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_nym_request: >>> submitter_did: %r, target_did: %r, ver_key: %r, alias: %r, role: %r",
-                 submitter_did,
-                 target_did,
-                 ver_key,
-                 alias,
-                 role)
-
-    if not hasattr(build_nym_request, "cb"):
-        logger.debug("build_nym_request: Creating callback")
-        build_nym_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    log_args(logger)
+    attach_callback(build_nym_request, logger)
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_target_did = c_char_p(target_did.encode('utf-8'))
@@ -191,17 +156,12 @@ async def build_nym_request(submitter_did: str,
     c_alias = c_char_p(alias.encode('utf-8')) if alias is not None else None
     c_role = c_char_p(role.encode('utf-8')) if role is not None else None
 
-    request_json = await do_call('indy_build_nym_request',
-                                 c_submitter_did,
-                                 c_target_did,
-                                 c_ver_key,
-                                 c_alias,
-                                 c_role,
-                                 build_nym_request.cb)
-
-    res = request_json.decode()
-    logger.debug("build_nym_request: <<< res: %r", res)
-    return res
+    return await call_c_func('indy_build_nym_request', build_nym_request, logger,
+                             c_submitter_did,
+                             c_target_did,
+                             c_ver_key,
+                             c_alias,
+                             c_role)
 
 
 async def build_attrib_request(submitter_did: str,
@@ -221,16 +181,8 @@ async def build_attrib_request(submitter_did: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_attrib_request: >>> submitter_did: %r, target_did: %r, hash: %r, raw: %r, enc: %r",
-                 submitter_did,
-                 target_did,
-                 xhash,
-                 raw,
-                 enc)
-
-    if not hasattr(build_attrib_request, "cb"):
-        logger.debug("build_attrib_request: Creating callback")
-        build_attrib_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    log_args(logger)
+    attach_callback(build_attrib_request, logger)
 
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_target_did = c_char_p(target_did.encode('utf-8'))
@@ -238,17 +190,12 @@ async def build_attrib_request(submitter_did: str,
     c_raw = c_char_p(raw.encode('utf-8')) if raw is not None else None
     c_enc = c_char_p(enc.encode('utf-8')) if enc is not None else None
 
-    request_json = await do_call('indy_build_attrib_request',
-                                 c_submitter_did,
-                                 c_target_did,
-                                 c_hash,
-                                 c_raw,
-                                 c_enc,
-                                 build_attrib_request.cb)
-
-    res = request_json.decode()
-    logger.debug("build_attrib_request: <<< res: %r", res)
-    return res
+    return await call_c_func('indy_build_attrib_request', build_attrib_request,
+                             logger, c_submitter_did,
+                             c_target_did,
+                             c_hash,
+                             c_raw,
+                             c_enc)
 
 
 async def build_get_attrib_request(submitter_did: str,

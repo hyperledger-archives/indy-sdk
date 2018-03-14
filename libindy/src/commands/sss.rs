@@ -115,8 +115,8 @@ impl SSSCommandExecutor {
         Ok(())
     }
 
-    fn _secret_key_in_msg(verkey: &str) -> String {
-        format!("{}::{}", SSS_SECRET_NAME_IN_SHARD, verkey)
+    fn _secret_key_in_msg(secret_name: &str) -> String {
+        format!("{}::{}", SSS_SECRET_NAME_IN_SHARD, secret_name)
     }
 
     fn _verkey_to_wallet_key(verkey: &str) -> String {
