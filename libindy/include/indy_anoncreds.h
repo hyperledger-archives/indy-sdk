@@ -6,7 +6,6 @@ extern "C" {
 #endif
     
     extern indy_error_t indy_issuer_create_schema(indy_handle_t command_handle,
-                                                  indy_handle_t wallet_handle,
                                                   const char *  issuer_did,
                                                   const char *  name,
                                                   const char *  version,
@@ -137,7 +136,8 @@ extern "C" {
 
     extern indy_error_t indy_prover_store_credential(indy_handle_t command_handle,
                                                      indy_handle_t wallet_handle,
-                                                     const char *  credentials_json,
+                                                     const char *  credential_id,
+                                                     const char *  credential_json,
                                                      const char *  rev_reg_def_json,
 
                                                      void           (*cb)(indy_handle_t xcommand_handle,
@@ -182,6 +182,7 @@ extern "C" {
     extern indy_error_t indy_verifier_verify_proof(indy_handle_t command_handle,
                                                    const char *  proof_request_json,
                                                    const char *  proof_json,
+                                                   const char *  schemas_json,
                                                    const char *  credential_defs_jsons,
                                                    const char *  rev_reg_defs_json,
                                                    const char *  rev_regs_json,
@@ -193,7 +194,6 @@ extern "C" {
 
 
     extern indy_error_t indy_create_revocation_info(indy_handle_t command_handle,
-                                                    indy_handle_t wallet_handle,
                                                     indy_i32_t tails_reader_handle,
                                                     const char *  rev_reg_def_json,
                                                     const char *  rev_reg_delta_json,
@@ -207,7 +207,6 @@ extern "C" {
 
 
     extern indy_error_t indy_update_revocation_info(indy_handle_t command_handle,
-                                                    indy_handle_t wallet_handle,
                                                     indy_i32_t tails_reader_handle,
                                                     const char *  rev_info_json,
                                                     const char *  rev_reg_def_json,

@@ -11,44 +11,72 @@
 
 + (AnoncredsUtils *)sharedInstance;
 
-- (NSString *)getGvtSchemaKey;
+- (NSString *)buildSchemaId:(NSString *)identifier
+                       name:(NSString *)name
+                    version:(NSString *)version;
 
-- (NSString *)getGvtSchemaJson:(NSNumber *)seqNo;
+- (NSString *)buildClaimDefId:(NSString *)identifier
+                     schemaId:(NSString *)schemaId
+                         type:(NSString *)type
+                          tag:(NSString *)tag;
 
-- (NSString *)getSchemaJson:(NSString *)schemaName;
+- (NSString *)defaultClaimDefConfig;
+
+- (NSString *)getGvtSchemaId;
+
+- (NSString *)getXyzSchemaId;
+
+- (NSString *)getGvtSchemaJson;
+
+- (NSString *)getXyzSchemaJson;
+
+- (NSString *)getIssuer1GvtCredDefId;
+
+- (NSString *)getIssuer1XyzCredDefId;
+
+- (NSString *)getIssuer2GvtCredDefId;
 
 - (NSString *)getClaimOfferJson:(NSString *)issuerDid
-                      schemaKey:(NSString *)schemaKey;
+                      credDefId:(NSString *)credDefId;
 
-- (NSString *)getXyzSchemaKey;
+- (NSString *)getGvtClaimValuesJson;
 
-- (NSString *)getGvtClaimJson;
+- (NSString *)getXyzClaimValuesJson;
 
-- (NSString *)getXyzSchemaJson:(NSNumber *)schemaSeqNo;
-
-- (NSString *)getXyzClaimJson;
+- (NSString *)getGvt2ClaimValuesJson;
 
 - (NSString *)getGvtClaimDef;
 
-- (NSString *)getGvtClaimRequest;
+- (NSError *)issuerCreateClaimWithWalletHandle:(IndyHandle)walletHandle
+                                  claimReqJson:(NSString *)claimReqJson
+                               claimValuesJson:(NSString *)claimValuesJson
+                                      revRegId:(NSString *)revRegId
+                             tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                                userRevocIndex:(NSNumber *)userRevocIndex
+                                  outClaimJson:(NSString **)xClaimJson
+                          outRevocRegDeltaJSON:(NSString **)revocRegDeltaJson;
 
-- (NSString *)getClaimDefIdForIssuerDid:(NSString *)issuerDid
-                            schemaSeqNo:(NSNumber *)schemaSeqNo;
+- (NSError *)issuerCreateSchemaForIssuerDID:(NSString *)issuerDid
+                                       name:(NSString *)name
+                                    version:(NSString *)version
+                                      attrs:(NSString *)attrs
+                                   schemaId:(NSString **)schemaId
+                                 schemaJson:(NSString **)schemaJson;
 
+- (NSError *)issuerCreateClaimDefinifionWithWalletHandle:(IndyHandle)walletHandle
+                                               issuerDid:(NSString *)issuerDid
+                                              schemaJson:(NSString *)schemaJson
+                                                     tag:(NSString *)tag
+                                                    type:(NSString *)type
+                                              configJson:(NSString *)configJson
+                                              claimDefId:(NSString **)claimDefId
+                                            claimDefJson:(NSString **)claimDefJson;
 
-/**
- 
- @param proofClaims Dictionary with format:
- {
- "requested_attr1_referent": [claim1, claim2],
- "requested_attr2_referent": [],
- "requested_attr3_referent": [claim3],
- "requested_predicate_1_referent": [claim1, claim3],
- }
- @return Array of unique claims
- */
-- (NSArray *)getUniqueClaimsFrom:(NSDictionary *)proofClaims;
-
+- (NSError *)issuerCreateClaimOfferWithWalletHandle:(IndyHandle)walletHandle
+                                         claimDefId:(NSString *)claimDefId
+                                          issuerDid:(NSString *)issuerDid
+                                          proverDid:(NSString *)proverDid
+                                     claimOfferJson:(NSString **)claimOfferJson;
 
 - (NSError *)proverCreateMasterSecretNamed:(NSString *)masterSecretName
                               walletHandle:(IndyHandle)walletHandle;
@@ -67,32 +95,13 @@
                                     walletHandle:(IndyHandle)walletHandle
                                  outClaimReqJson:(NSString **)outJson;
 
-- (NSError *)issuerCreateClaimWithWalletHandle:(IndyHandle)walletHandle
-                                  claimReqJson:(NSString *)claimReqJson
-                                     claimJson:(NSString *)claimJson
-                                userRevocIndex:(NSNumber *)userRevocIndex
-                                  outClaimJson:(NSString **)xClaimJson
-                         outRevocRegUpdateJSON:(NSString **)revocRegUpdateJSON;
-
-- (NSError *)issuerCreateClaimDefinifionWithWalletHandle:(IndyHandle)walletHandle
-                                               issuerDid:(NSString *)issuerDid
-                                              schemaJson:(NSString *)schemaJson
-                                           signatureType:(NSString *)signatureType
-                                          createNonRevoc:(BOOL)createNonRevoc
-                                            claimDefJson:(NSString **)claimDefJson;
-
-- (NSError *)issuerCreateClaimOfferWithWalletHandle:(IndyHandle)walletHandle
-                                         schemaJson:(NSString *)schemaJson
-                                          issuerDid:(NSString *)issuerDid
-                                          proverDid:(NSString *)proverDid
-                                     claimOfferJson:(NSString **)claimOfferJson;
-
 - (NSError *)proverStoreClaimWithWalletHandle:(IndyHandle)walletHandle
-                                   claimsJson:(NSString *)str
-                                   revRegJSON:(NSString *)revRegJSON;
+                                      claimId:(NSString *)claimId
+                                   claimsJson:(NSString *)claimsJson
+                                revRegDefJSON:(NSString *)revRegDefJSON;
 
 - (NSError *)proverGetClaimsForProofReqWithWalletHandle:(IndyHandle)walletHandle
-                                       proofRequestJson:(NSString *)str
+                                       proofRequestJson:(NSString *)proofRequestJson
                                           outClaimsJson:(NSString **)outClaimsJson;
 
 - (NSError *)proverGetClaimsForWalletHandle:(IndyHandle)walletHandle
@@ -105,13 +114,14 @@
                                    schemasJson:(NSString *)schemasJson
                               masterSecretName:(NSString *)masterSecreteName
                                  claimDefsJson:(NSString *)claimDefsJson
-                                 revocRegsJson:(NSString *)revocRegsJson
+                                revocInfosJSON:(NSString *)revocInfosJSON
                                   outProofJson:(NSString **)outProofJson;
 
 - (NSError *)verifierVerifyProof:(NSString *)proofRequestJson
                        proofJson:(NSString *)proofJson
                      schemasJson:(NSString *)schemasJson
                    claimDefsJson:(NSString *)claimDefsJson
+                revocRegDefsJSON:(NSString *)revocRegDefsJSON
                    revocRegsJson:(NSString *)revocRegsJson
                         outValid:(BOOL *)isValid;
 

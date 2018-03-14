@@ -9,6 +9,12 @@
 
 @interface IndyAnoncreds : NSObject
 
++ (void)issuerCreateSchemaForIssuerDID:(NSString *)issuerDID
+                                  name:(NSString *)name
+                               version:(NSString *)version
+                                 attrs:(NSString *)attrs
+                            completion:(void (^)(NSError *error, NSString *schemaId, NSString *schemaJSON))completion;
+
 /**
  Creates keys (both primary and revocation) for the given schema and signature type (currently only CL signature type is supported).
  Stores the keys together with signature type and schema in a secure wallet as a claim definition.
@@ -24,10 +30,11 @@
 */
 + (void)issuerCreateAndStoreClaimDefForIssuerDID:(NSString *)issuerDID
                                       schemaJSON:(NSString *)schemaJSON
-                                   signatureType:(NSString *)signatureType
-                                  createNonRevoc:(BOOL)createNonRevoc
+                                             tag:(NSString *)tag
+                                            type:(NSString *)type
+                                      configJSON:(NSString *)configJSON
                                     walletHandle:(IndyHandle)walletHandle
-                                      completion:(void (^)(NSError *error, NSString *claimDefJSON))completion;
+                                      completion:(void (^)(NSError *error, NSString *claimDefId, NSString *claimDefJSON))completion;
 
 /**
  Creates a new revocation registry for the given claim definition.
@@ -40,10 +47,14 @@
  @param completion Callback that takes command result as parameter. Returns revoc registry json and unique number identifying the revocation registry in the wallet.
  */
 + (void)issuerCreateAndStoreRevocRegForIssuerDid:(NSString *)issuerDID
-                                      schemaJSON:(NSString *)schemaJSON
-                                     maxClaimNum:(NSNumber *)maxClaimNum
+                                            type:(NSString *)type
+                                             tag:(NSString *)tag
+                                       credDefId:(NSString *)credDefId
+                                      configJSON:(NSString *)configJSON
+                                 tailsWriterType:(NSString *)tailsWriterType
+                               tailsWriterConfig:(NSString *)tailsWriterConfig
                                     walletHandle:(IndyHandle)walletHandle
-                                      completion:(void (^)(NSError *error, NSString *revocRegJSON))completion;
+                                      completion:(void (^)(NSError *error, NSString *revocRegID, NSString *revocRegDefJSON, NSString *revocRegEntryJSON))completion;
 
 /**
  Create claim offer and store it in wallet.
@@ -64,7 +75,7 @@
 */
 + (void)issuerCreateClaimOfferForProverDID:(NSString *)proverDID
                                  issuerDID:(NSString *)issuerDID
-                                schemaJSON:(NSString *)schemaJSON
+                                 credDefId:(NSString *)credDefId
                               walletHandle:(IndyHandle)walletHandle
                                 completion:(void (^)(NSError *error, NSString *claimOfferJSON))completion;
 
@@ -114,10 +125,12 @@
  used for issuance.
  */
 + (void)issuerCreateClaimWithRequest:(NSString *)claimRequestJSON
-                           claimJSON:(NSString *)claimJSON
+                     claimValuesJSON:(NSString *)claimValuesJSON
+                            revRegId:(NSString *)revRegId
+                   tailsReaderHandle:(NSNumber *)tailsReaderHandle
                       userRevocIndex:(NSNumber *)userRevocIndex
                         walletHandle:(IndyHandle)walletHandle
-                          completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON, NSString *xclaimJSON))completion;
+                          completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON, NSString *xclaimJSON))completion;
 
 /**
  Revokes a user identified by a revoc_id in a given revoc-registry.
@@ -130,11 +143,11 @@
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter. Returns revocation registry update json with a revoked claim.
  */
-+ (void)issuerRevokeClaimForIssuerDID:(NSString *)issuerDID
-                           schemaJSON:(NSString *)schemaJSON
-                       userRevocIndex:(NSNumber *)userRevocIndex
-                         walletHandle:(IndyHandle)walletHandle
-                           completion:(void (^)(NSError *error, NSString *revocRegUpdateJSON))completion;
++ (void)issuerRevokeClaimForRevRegId:(NSString *)revRegId
+                   tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                      userRevocIndex:(NSNumber *)userRevocIndex
+                        walletHandle:(IndyHandle)walletHandle
+                          completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion;
 
 /**
  Stores a claim offer from the given issuer in a secure storage.
@@ -268,7 +281,8 @@
  @param completion Callback that takes command result as parameter.
  */
 + (void)proverStoreClaim:(NSString *)claimsJson
-              revRegJSON:(NSString *)revRegJSON
+                 claimId:(NSString *)claimId
+           revRegDefJSON:(NSString *)revRegDefJSON
             walletHandle:(IndyHandle)walletHandle
               completion:(void (^)(NSError *error))completion;
 
@@ -457,7 +471,7 @@
                         schemasJSON:(NSString *)schemasJSON
                    masterSecretName:(NSString *)masterSecretName
                       claimDefsJSON:(NSString *)claimDefsJSON
-                      revocRegsJSON:(NSString *)revocRegsJSON
+                     revocInfosJSON:(NSString *)revocInfosJSON
                        walletHandle:(IndyHandle)walletHandle
                          completion:(void (^)(NSError *error, NSString *proofJSON))completion;
 
@@ -545,6 +559,33 @@
                          proofJSON:(NSString *)proofJSON
                        schemasJSON:(NSString *)schemasJSON
                      claimDefsJSON:(NSString *)claimDefsJSON
+                  revocRegDefsJSON:(NSString *)revocRegDefsJSON
                      revocRegsJSON:(NSString *)revocRegsJSON
                         completion:(void (^)(NSError *error, BOOL valid))completion;
+
++ (void)issuerCreateRevocationInfoForTimestamp:(NSNumber *)timestamp
+                                 revRegDefJSON:(NSString *)revRegDefJSON
+                               revRegDeltaJSON:(NSString *)revRegDeltaJSON
+                             tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                                        revIdx:(NSNumber *)revIdx
+                                    completion:(void (^)(NSError *error, NSString *revInfo))completion;
+
++ (void)issuerUpdateRevocationInfoForTimestamp:(NSNumber *)timestamp
+                                   revInfoJSON:(NSString *)revInfoJSON
+                                 revRegDefJSON:(NSString *)revRegDefJSON
+                               revRegDeltaJSON:(NSString *)revRegDeltaJSON
+                             tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                                        revIdx:(NSNumber *)revIdx
+                                    completion:(void (^)(NSError *error, NSString *updatedRevInfo))completion;
+
++ (void)issuerStoreRevocationInfoForId:(NSString *)id
+                           revInfoJSON:(NSString *)revInfoJSON
+                          walletHandle:(IndyHandle)walletHandle
+                            completion:(void (^)(NSError *error))completion;
+
++ (void)issuerGetRevocationInfoForId:(NSString *)id
+                           timestamp:(NSNumber *)timestamp
+                        walletHandle:(IndyHandle)walletHandle
+                          completion:(void (^)(NSError *error, NSString *revInfo))completion;
+
 @end
