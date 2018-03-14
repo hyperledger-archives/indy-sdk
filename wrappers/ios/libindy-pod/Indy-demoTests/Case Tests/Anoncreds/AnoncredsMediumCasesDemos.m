@@ -11,6 +11,7 @@
 #import "TestUtils.h"
 #import "WalletUtils.h"
 #import "AnoncredsUtils.h"
+#import "BlobStorageUtils.h"
 #import "NSDictionary+JSON.h"
 #import "NSString+Validation.h"
 #import "NSArray+JSON.h"
@@ -747,7 +748,7 @@
                                                      proofJson:proofJson
                                                    schemasJson:schemasJson
                                                  claimDefsJson:claimDefsJson
-                                                 revocRegDefsJSON:revocRegDefsJson
+                                              revocRegDefsJSON:revocRegDefsJson
                                                  revocRegsJson:revocRegsJson
                                                       outValid:&isValidJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::verifierVerifyProof() failed");
@@ -1060,6 +1061,261 @@
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::verifierVerifyProof() failed");
     XCTAssertTrue(isValidJson, @"proof is not verified!");
 
+    [TestUtils cleanupStorage];
+}
+
+- (void)testAnoncredsWorksForRevocationProof {
+    [TestUtils cleanupStorage];
+
+    NSString *poolName = [TestUtils pool];
+    IndyHandle issuerWalletHandle = 0;
+    IndyHandle proverWalletHandle = 0;
+    NSError *ret = nil;
+
+    //1. Create Issuer wallet, get wallet handle
+
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                                  xtype:nil
+                                                                 handle:&issuerWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
+
+    //2. Create Prover wallet, get wallet handle
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:poolName
+                                                                  xtype:nil
+                                                                 handle:&proverWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
+
+    // 3. Issuer create Schema
+    NSString *schemaId;
+    NSString *schemaJson;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateSchemaForIssuerDID:[TestUtils issuerDid]
+                                                                     name:@"gvt"
+                                                                  version:@"1.0"
+                                                                    attrs:@"[\"age\",\"sex\",\"height\",\"name\"]"
+                                                                 schemaId:&schemaId
+                                                               schemaJson:&schemaJson];
+    XCTAssertEqual(ret.code, Success, @"issuerCreateSchemaForIssuerDID failed");
+
+    XCTAssertTrue([schemaId isValid], @"invalid schemaId: %@", schemaId);
+    XCTAssertTrue([schemaJson isValid], @"invalid schemaJson: %@", schemaJson);
+
+    //4. Issuer create claim definition
+    NSString *claimDefId;
+    NSString *claimDefJSON;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:issuerWalletHandle
+                                                                             issuerDid:[TestUtils issuerDid]
+                                                                            schemaJson:schemaJson
+                                                                                   tag:@"TAG1"
+                                                                                  type:nil
+                                                                            configJson:@"{\"support_revocation\": true}"
+                                                                            claimDefId:&claimDefId
+                                                                          claimDefJson:&claimDefJSON];
+    XCTAssertEqual(ret.code, Success, @"issuerCreateClaimDefinifionWithWalletHandle failed");
+
+    //4. Issuer create revocation registry
+    NSString *configJson = @"{\"max_cred_num\":5, \"issuance_type\":\"ISSUANCE_ON_DEMAND\"}";
+    NSString *tailsWriterConfig = [NSString stringWithFormat:@"{\"base_dir\":\"%@\", \"uri_pattern\":\"\"}", [TestUtils tmpFilePathAppending:@"tails"]];
+
+    NSString *revocRefId;
+    NSString *revocRegDefJson;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateAndStoreRevocRegForWithWalletHandle:issuerWalletHandle
+                                                                                 issuerDid:[TestUtils issuerDid]
+                                                                                      type:nil
+                                                                                       tag:@"TAG1"
+                                                                                 credDefId:claimDefId
+                                                                                configJSON:configJson
+                                                                           tailsWriterType:@"default"
+                                                                         tailsWriterConfig:tailsWriterConfig
+                                                                                revocRegId:&revocRefId
+                                                                           revocRegDefJson:&revocRegDefJson
+                                                                         revocRegEntryJson:nil];
+    XCTAssertEqual(ret.code, Success, @"issuerCreateAndStoreRevocRegForWithWalletHandle failed");
+
+    //4. Prover create Master Secret
+
+    NSString *masterSecretName = @"prover_master_secret";
+
+    ret = [[AnoncredsUtils sharedInstance] proverCreateMasterSecretNamed:masterSecretName
+                                                            walletHandle:proverWalletHandle];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateMasterSecret() failed");
+
+    // 5. Issuer create Claim Offer
+    NSString *claimOfferJson = nil;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimOfferWithWalletHandle:issuerWalletHandle
+                                                                       claimDefId:claimDefId
+                                                                        issuerDid:[TestUtils issuerDid]
+                                                                        proverDid:[TestUtils proverDid]
+                                                                   claimOfferJson:&claimOfferJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreClaimDef() failed!");
+
+
+    //6. Prover store Claim Offer received from Issuer
+    ret = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:proverWalletHandle
+                                                  claimOfferJson:claimOfferJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaimOffer() failed");
+
+    //8. Prover create Claim Request
+    NSString *claimReq = nil;
+
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJSON
+                                                                     proverDid:[TestUtils proverDid]
+                                                                claimOfferJson:claimOfferJson
+                                                              masterSecretName:masterSecretName
+                                                                  walletHandle:proverWalletHandle
+                                                               outClaimReqJson:&claimReq];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq() failed");
+    XCTAssertTrue([claimReq isValid], @"invalid claimRequest: %@", claimReq);
+    NSLog(@"claimReqJson: %@", claimReq);
+
+    //9. Issuer create Tails reader
+    NSDictionary *revRegDef = [NSDictionary fromString:revocRegDefJson];
+    NSString *location = revRegDef[@"value"][@"tails_location"];
+    NSString *hash = revRegDef[@"value"][@"tails_hash"];
+
+    NSNumber *tailsReaderHandle = nil;
+    ret = [[BlobStorageUtils sharedInstance] openReaderWithType:@"default"
+                                                         config:tailsWriterConfig
+                                                       location:location
+                                                           hash:hash
+                                                         handle:&tailsReaderHandle];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::openReaderWithType() failed");
+
+    //9. Issuer create Claim
+    NSString *xclaimJson = nil;
+    NSString *revocRegDeltaJson = nil;
+    NSNumber *revIdx = @1;
+
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:issuerWalletHandle
+                                                                claimReqJson:claimReq
+                                                             claimValuesJson:[[AnoncredsUtils sharedInstance] getGvtClaimValuesJson]
+                                                                    revRegId:revocRefId
+                                                           tailsReaderHandle:tailsReaderHandle
+                                                              userRevocIndex:revIdx
+                                                                outClaimJson:&xclaimJson
+                                                        outRevocRegDeltaJSON:&revocRegDeltaJson];
+    XCTAssertTrue([xclaimJson isValid], @"invalid xClaimJson: %@", xclaimJson);
+    NSLog(@"xclaimJson: %@", xclaimJson);
+
+    // 10. Prover create Revocation Info
+    NSString *revocInfoJson = nil;
+    NSNumber *timestamp = @100;
+
+    ret = [[AnoncredsUtils sharedInstance] createRevocationInfoForTimestamp:timestamp
+                                                              revRegDefJSON:revocRegDefJson
+                                                            revRegDeltaJSON:revocRegDeltaJson
+                                                          tailsReaderHandle:tailsReaderHandle
+                                                                     revIdx:revIdx
+                                                                revInfoJson:&revocInfoJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::createRevocationInfoForTimestamp() failed");
+
+    // 10. Prover store revocation info
+    NSString *id = @"ClaimId1";
+    ret = [[AnoncredsUtils sharedInstance] storeRevocationInfoForWalletHandle:proverWalletHandle
+                                                                           id:id
+                                                                  revInfoJSON:revocInfoJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::storeRevocationInfoForWalletHandle() failed");
+
+    // 10. Prover store received Claim
+
+    ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:proverWalletHandle
+                                                                    claimId:@"ClaimId1"
+                                                                 claimsJson:xclaimJson
+                                                              revRegDefJSON:revocRegDefJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaim() failed");
+
+
+    // 11. Prover gets Claims for Proof Request
+    NSString *proofReqJson = [NSString stringWithFormat:@"{"\
+                             " \"nonce\":\"123432421212\","\
+                             " \"name\":\"proof_req_1\","\
+                             " \"version\":\"0.1\","\
+                             " \"requested_attrs\":"\
+                             "             {\"attr1_referent\":"\
+                             "                        {"\
+                             "                          \"name\":\"name\",\"restrictions\":[{\"schema_id\":\"%@\"}]"\
+                             "                        },"
+                                                                "              \"attr2_referent\":"
+                                                                "                        {"
+                                                                "                          \"name\":\"phone\""
+                                                                "                        }"
+                                                                "             },"\
+                             " \"requested_predicates\":"\
+                             "             {"\
+                             "              \"predicate1_referent\":"\
+                             "                      {\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}"\
+                             "             }"\
+                             "}", [[AnoncredsUtils sharedInstance] getGvtSchemaId]];
+
+    NSString *claimsJson = nil;
+
+    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:proverWalletHandle
+                                                                     proofRequestJson:proofReqJson
+                                                                        outClaimsJson:&claimsJson];
+    XCTAssertEqual(ret.code, Success, @"proverGetClaimsForProofReq() failed!");
+
+    NSDictionary *claims = [NSDictionary fromString:claimsJson];
+    XCTAssertTrue(claims, @"serialization failed");
+
+    NSDictionary *claims_for_attr_1 = [[[claims objectForKey:@"attrs"] objectForKey:@"attr1_referent"] objectAtIndex:0];
+    XCTAssertTrue(claims_for_attr_1, @"no object for key \"attr1_referent\"");
+    NSString *claimReferent = [[claims_for_attr_1 objectForKey:@"cred_info"] objectForKey:@"referent"];
+
+    // 12. Prover create Proof
+    NSString *requestedClaimsJson = [NSString stringWithFormat:@"{\
+                                     \"self_attested_attributes\":{\"attr2_referent\":\"value\"},\
+                                     \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true, \"timestamp\":%@}},\
+                                     \"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%@\", \"timestamp\":%@}}\
+                                     }", claimReferent, timestamp, claimReferent, timestamp];
+
+
+    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", claimReferent, schemaJson];
+
+    NSString *claimDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", claimReferent, claimDefJSON];
+
+    NSString *revocInfosJson = [NSString stringWithFormat:@"{\"%@\": {\"%@\": %@}}", claimReferent, timestamp, revocInfoJson];
+
+    NSString *proofJson;
+    ret = [[AnoncredsUtils sharedInstance] proverCreateProofWithWalletHandle:proverWalletHandle
+                                                                proofReqJson:proofReqJson
+                                                         requestedClaimsJson:requestedClaimsJson
+                                                                 schemasJson:schemasJson
+                                                            masterSecretName:masterSecretName
+                                                               claimDefsJson:claimDefsJson
+                                                              revocInfosJSON:revocInfosJson
+                                                                outProofJson:&proofJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateProof() failed");
+    XCTAssertTrue([proofJson isValid], @"invalid proofJson: %@", proofJson);
+
+    NSDictionary *proof = [NSDictionary fromString:proofJson];
+    NSDictionary *revealedAttr1 = [[[proof objectForKey:@"requested_proof"] objectForKey:@"revealed_attrs"] objectForKey:@"attr1_referent"];
+    NSString *raw = [revealedAttr1 objectForKey:@"raw"];
+    id = [revealedAttr1 objectForKey:@"referent"];
+
+    XCTAssertTrue([raw isEqualToString:@"Alex"]);
+
+    NSString *attestedAttrUUID = proof[@"requested_proof"][@"self_attested_attrs"][@"attr2_referent"];
+    XCTAssertTrue([attestedAttrUUID isEqualToString:@"value"]);
+
+    schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, schemaJson];
+
+    claimDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, claimDefJSON];
+
+    NSString *revocRegDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, revocRegDefJson];
+    NSString *revocRegsJson = [NSString stringWithFormat:@"{\"%@\": {\"%@\": %@}}", id, timestamp, revocRegDeltaJson];
+
+    // 13. Verifier verify proof
+    BOOL isValid = NO;
+
+    ret = [[AnoncredsUtils sharedInstance] verifierVerifyProof:proofReqJson
+                                                     proofJson:proofJson
+                                                   schemasJson:schemasJson
+                                                 claimDefsJson:claimDefsJson
+                                              revocRegDefsJSON:revocRegDefsJson
+                                                 revocRegsJson:revocRegsJson
+                                                      outValid:&isValid];
+
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::verifierVerifyProof() failed");
+    XCTAssertTrue(isValid, @"isValid == NO");
     [TestUtils cleanupStorage];
 }
 

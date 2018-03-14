@@ -149,6 +149,12 @@
                         walletHandle:(IndyHandle)walletHandle
                           completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion;
 
++ (void)issuerRecoverClaimForRevRegId:(NSString *)revRegId
+                    tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                       userRevocIndex:(NSNumber *)userRevocIndex
+                         walletHandle:(IndyHandle)walletHandle
+                           completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion;
+
 /**
  Stores a claim offer from the given issuer in a secure storage.
  
@@ -563,29 +569,29 @@
                      revocRegsJSON:(NSString *)revocRegsJSON
                         completion:(void (^)(NSError *error, BOOL valid))completion;
 
-+ (void)issuerCreateRevocationInfoForTimestamp:(NSNumber *)timestamp
-                                 revRegDefJSON:(NSString *)revRegDefJSON
-                               revRegDeltaJSON:(NSString *)revRegDeltaJSON
-                             tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                                        revIdx:(NSNumber *)revIdx
-                                    completion:(void (^)(NSError *error, NSString *revInfo))completion;
++ (void)createRevocationInfoForTimestamp:(NSNumber *)timestamp
+                           revRegDefJSON:(NSString *)revRegDefJSON
+                         revRegDeltaJSON:(NSString *)revRegDeltaJSON
+                       tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                                  revIdx:(NSNumber *)revIdx
+                              completion:(void (^)(NSError *error, NSString *revInfo))completion;
 
-+ (void)issuerUpdateRevocationInfoForTimestamp:(NSNumber *)timestamp
-                                   revInfoJSON:(NSString *)revInfoJSON
-                                 revRegDefJSON:(NSString *)revRegDefJSON
-                               revRegDeltaJSON:(NSString *)revRegDeltaJSON
-                             tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                                        revIdx:(NSNumber *)revIdx
-                                    completion:(void (^)(NSError *error, NSString *updatedRevInfo))completion;
++ (void)updateRevocationInfoForTimestamp:(NSNumber *)timestamp
+                             revInfoJSON:(NSString *)revInfoJSON
+                           revRegDefJSON:(NSString *)revRegDefJSON
+                         revRegDeltaJSON:(NSString *)revRegDeltaJSON
+                       tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                                  revIdx:(NSNumber *)revIdx
+                              completion:(void (^)(NSError *error, NSString *updatedRevInfo))completion;
 
-+ (void)issuerStoreRevocationInfoForId:(NSString *)id
-                           revInfoJSON:(NSString *)revInfoJSON
-                          walletHandle:(IndyHandle)walletHandle
-                            completion:(void (^)(NSError *error))completion;
++ (void)storeRevocationInfoForId:(NSString *)id
+                     revInfoJSON:(NSString *)revInfoJSON
+                    walletHandle:(IndyHandle)walletHandle
+                      completion:(void (^)(NSError *error))completion;
 
-+ (void)issuerGetRevocationInfoForId:(NSString *)id
-                           timestamp:(NSNumber *)timestamp
-                        walletHandle:(IndyHandle)walletHandle
-                          completion:(void (^)(NSError *error, NSString *revInfo))completion;
++ (void)getRevocationInfoForId:(NSString *)id
+                     timestamp:(NSNumber *)timestamp
+                  walletHandle:(IndyHandle)walletHandle
+                    completion:(void (^)(NSError *error, NSString *revInfo))completion;
 
 @end

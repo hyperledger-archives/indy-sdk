@@ -1601,7 +1601,8 @@
     [TestUtils cleanupStorage];
 }
 
-// MARK: - Claim def requests
+// MARK: - Claim def request
+
 - (void)testBuildClaimDefRequestWorksForCorrectDataJson {
     [TestUtils cleanupStorage];
     NSString *identifier = @"NcYxiDXkpYi6ov5FcYDi1e";
