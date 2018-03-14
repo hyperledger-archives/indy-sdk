@@ -387,9 +387,14 @@ mod high_cases {
 
             AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
+            let credential_offer = AnoncredsUtils::issuer_create_credential_offer(wallet_handle,
+                                                                                  &AnoncredsUtils::issuer_1_gvt_cred_def_id(),
+                                                                                  ISSUER_DID,
+                                                                                  DID_MY1).unwrap();
+
             let credential_req = AnoncredsUtils::prover_create_and_store_credential_req(prover_wallet_handle,
                                                                                         DID_MY1,
-                                                                                        credential_offer,
+                                                                                        &credential_offer,
                                                                                         credential_def_json,
                                                                                         COMMON_MASTER_SECRET).unwrap();
 
