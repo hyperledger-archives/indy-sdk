@@ -68,6 +68,30 @@ export class Connection extends VCXBaseWithState {
 
   /**
    * @memberof Connection
+   * @description Builds a generic Connection object.
+   * @static
+   * @async
+   * @function create
+   * @param {IRecipientInfo} recipientInfo
+   * @example <caption>Example of recipientInfo</caption>
+   * {id: "123"}
+   * @returns {Promise<Connection>} A Connection Object
+   */
+  static async create_with_invite ( recipientInfo: IRecipientInfo, invite: string): Promise<Connection> {
+    const connection = new Connection(recipientInfo.id)
+    const commandHandle = 0
+    try {
+      await connection._create((cb) => rustAPI().vcx_connection_create_with_invite(commandHandle,
+                                                 recipientInfo.id, invite, cb))
+
+      return connection
+    } catch (err) {
+      throw new VCXInternalError(err, VCXBase.errorMessage(err), 'vcx_connection_create_with_invite')
+    }
+  }
+
+  /**
+   * @memberof Connection
    * @description Builds a Connection object with defined attributes.
    * The attributes are often provided by a previous call to the serialize function
    * @static

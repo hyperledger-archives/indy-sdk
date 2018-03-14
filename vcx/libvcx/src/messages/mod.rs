@@ -18,6 +18,7 @@ use utils::error;
 use self::rmp_serde::encode;
 use self::create_key::CreateKeyMsg;
 use self::invite::SendInvite;
+use self::invite::AcceptInvite;
 use self::update_profile::UpdateProfileData;
 use self::get_message::GetMessages;
 use self::send_message::SendMessage;
@@ -310,7 +311,8 @@ pub trait GeneralMessage{
 }
 
 pub fn create_keys() -> CreateKeyMsg { CreateKeyMsg::create() }
-pub fn send_invite() -> SendInvite{ SendInvite::create() }
+pub fn send_invite() -> SendInvite { SendInvite::create() }
+pub fn accept_invite() -> AcceptInvite { AcceptInvite::create() }
 pub fn update_data() -> UpdateProfileData{ UpdateProfileData::create() }
 pub fn get_messages() -> GetMessages { GetMessages::create() }
 pub fn send_message() -> SendMessage { SendMessage::create() }

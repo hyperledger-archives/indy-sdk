@@ -1,7 +1,5 @@
 extern crate vcx;
-extern crate tempfile;
 extern crate libc;
-extern crate rand;
 #[macro_use]
 extern crate serde_json;
 
@@ -11,17 +9,12 @@ mod utils;
 use utils::demo::*;
 use utils::timeout::TimeoutUtils;
 
-use self::tempfile::NamedTempFileOptions;
-use std::io::Write;
-use std::thread;
 use std::time::Duration;
 use std::ffi::CString;
 use vcx::api;
 use std::sync::mpsc::channel;
-use vcx::utils::libindy::pool::open_sandbox_pool;
 
 static CLAIM_DATA: &str = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
-static CLAIM_DEF_ISSUER_DID: &str = "2hoqvcwupRTUNkXn6ArYzs";
 // STAGING is 245, SANDBOX is 36, DEV is 22
 static CLAIM_DEF_SCHEMA_SEQ_NUM: u32 = 22;
 
@@ -35,56 +28,21 @@ fn test_demo(){
 }
 
 fn demo(){
+    let wallet_name = "test_demo";
     let serialize_connection_fn = api::connection::vcx_connection_serialize;
     let serialize_claim_fn = api::issuer_claim::vcx_issuer_claim_serialize;
     let invite_details = api::connection::vcx_connection_invite_details;
 
-    let random_int: u32 = rand::random();
-    let institution_logo_url = format!("https://robohash.org/{}?set=set3", random_int);
-
+    self::vcx::utils::logger::LoggerUtils::init();
     // Init DEV ENV  *********************************************************************
-    let config_string: String = json!({
-        "agency_endpoint":"https://enym-eagency.pdev.evernym.com",
-        "agency_did":"YRuVCckY6vfZfX9kcQZe3u",
-        "agency_verkey":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v",
-        "sdk_to_remote_did":"AQ2EZRY9JQ4ssjmZPL5MiU",
-        "sdk_to_remote_verkey":"684CRDu3k4TGBzNU99JTqM8cVS4ZtRwC7eZHEvZjzMRX",
-        "wallet_name":"my_real_wallet",
-        "institution_did":"2hoqvcwupRTUNkXn6ArYzs",
-        "enterprise_verkey":"vrWGArMA3toVoZrYGSAMjR2i9KjBS66bZWyWuYJJYPf",
-        "remote_to_sdk_did":"7csYfSY8b4hvqnu5K8nGQP",
-        "remote_to_sdk_verkey":"4cDwBvDZy9aWWKf2uCYTSgffCNt7ffmY9nrMTHmqsG8z",
-        "institution_name":"Evernym",
-        "institution_logo_url":institution_logo_url,
-        "genesis_path": self::vcx::utils::constants::GENESIS_PATH
-    }).to_string();
-
-    let mut file = NamedTempFileOptions::new()
-        .suffix(".json")
-        .create()
-        .unwrap();
-
-    file.write_all(config_string.as_bytes()).unwrap();
-
-    open_sandbox_pool();
-    self::vcx::utils::libindy::pool::close().unwrap();
-
-    let path = CString::new(file.path().to_str().unwrap()).unwrap();
-    let r = api::vcx::vcx_init(0,path.as_ptr(),Some(generic_cb));
-    assert_eq!(r,0);
-    thread::sleep(Duration::from_secs(1));
-
-    // Creating a Trustee DID -> sufficient permissions to create ClaimDef
-//    let (trustee_did, trustee_verkey) = signus::SignusUtils::create_and_store_my_did(get_wallet_handle(), Some(r#"{"seed":"000000000000000000000000Trustee1"}"#))?;
-//    let (issuer_did, issuer_verkey) = signus::SignusUtils::create_and_store_my_did(get_wallet_handle(), Some(r#"{"seed":"000000000000000000000000Issuer01"}"#))?;
+    self::vcx::utils::devsetup::setup_dev_env(wallet_name);
 
     // Create Claim Offer ***************************************************************
     let source_id = "Name and Sex";
     let claim_name = "Name and Sex";
     let claim_data:serde_json::Value = serde_json::from_str(CLAIM_DATA).unwrap(); // this format will make it easier to modify in the futre
-    let ledger_issuer_did = CLAIM_DEF_ISSUER_DID.clone();
     let ledger_schema_seq_num = CLAIM_DEF_SCHEMA_SEQ_NUM;
-    let (err, claim_handle) = create_claim_offer(claim_name, source_id, claim_data, ledger_issuer_did, ledger_schema_seq_num);
+    let (err, claim_handle) = create_claim_offer(claim_name, source_id, claim_data, self::vcx::utils::devsetup::INSTITUTION_DID, ledger_schema_seq_num);
     assert_eq!(err, 0);
     assert!(claim_handle>0);
 
@@ -93,27 +51,27 @@ fn demo(){
        {
           "schema_seq_no":ledger_schema_seq_num,
           "name":"address1",
-          "issuer_did":ledger_issuer_did
+          "issuer_did":self::vcx::utils::devsetup::INSTITUTION_DID
        },
        {
           "schema_seq_no":ledger_schema_seq_num,
           "name":"address2",
-          "issuer_did":ledger_issuer_did
+          "issuer_did":self::vcx::utils::devsetup::INSTITUTION_DID
        },
        {
           "schema_seq_no":ledger_schema_seq_num,
           "name":"city",
-          "issuer_did":ledger_issuer_did
+          "issuer_did":self::vcx::utils::devsetup::INSTITUTION_DID
        },
        {
           "schema_seq_no":ledger_schema_seq_num,
           "name":"state",
-          "issuer_did":ledger_issuer_did
+          "issuer_did":self::vcx::utils::devsetup::INSTITUTION_DID
        },
        {
           "schema_seq_no":ledger_schema_seq_num,
           "name":"zip",
-          "issuer_did":ledger_issuer_did
+          "issuer_did":self::vcx::utils::devsetup::INSTITUTION_DID
        }
     ]).to_string();
     let (err, proof_handle) = create_proof_request(source_id, requested_attrs.as_str());
@@ -141,9 +99,9 @@ fn demo(){
     // Connect ************************************************************************
     let (sender, receiver) = channel();
     let (command_handle, cb) = closure_to_connect_cb(Box::new(move|err|{sender.send(err).unwrap();}));
-    let phone_number = "2053863441";
-    let connection_opt = json!({"phone":phone_number});
-//    let connection_opt = String::from("");
+    //let phone_number = "2053863441";
+    //let connection_opt = json!({"phone":phone_number});
+    let connection_opt = String::from("");
     let rc = api::connection::vcx_connection_connect(command_handle,
                                                      connection_handle,
                                                      CString::new(connection_opt.to_string()).unwrap().into_raw(),cb);
@@ -167,8 +125,6 @@ fn demo(){
     let claim_state = wait_for_updated_state(claim_handle, target_claim_state, api::issuer_claim::vcx_issuer_claim_update_state);
     assert_eq!(claim_state, target_claim_state);
 
-
-
     // Send Claim Offer ***************************************************************
     println!("ABOUT TO SEND CLAIM OFFER");
     std::thread::sleep(Duration::from_millis(5000));
@@ -186,6 +142,7 @@ fn demo(){
     receive_request_send_claim(connection_handle,claim_handle);
 
     send_proof_request_and_receive_proof(connection_handle, proof_handle);
+    self::vcx::utils::devsetup::cleanup_dev_env(wallet_name);
 }
 
 fn receive_request_send_claim(connection_handle: u32, claim_handle:u32){

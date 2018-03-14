@@ -296,7 +296,7 @@ mod tests {
         let req_predicates = "[{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\"}]";
 
         wallet::init_wallet("wallet1").unwrap();
-        let connection = ::connection::build_connection("h1".to_owned()).unwrap();
+        let connection = ::connection::build_connection("h1").unwrap();
         let claim = ::issuer_claim::issuer_claim_create(0,None,"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
         let proof = ::proof::create_proof(None,req_attr.to_owned(),req_predicates.to_owned(),"Optional".to_owned()).unwrap();
         let claimdef = ::claim_def::create_new_claimdef("SID".to_string(),"NAME".to_string(),15,"4fUDR9R7fjwELRvH9JT6HH".to_string(),false).unwrap();

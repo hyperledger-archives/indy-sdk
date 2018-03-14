@@ -600,7 +600,7 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        let connection_handle = build_connection("test_send_claim_offer".to_owned()).unwrap();
+        let connection_handle = build_connection("test_send_claim_offer").unwrap();
 
         let claim_id = DEFAULT_CLAIM_ID;
 
@@ -620,7 +620,7 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        let connection_handle = build_connection("test_send_claim_offer".to_owned()).unwrap();
+        let connection_handle = build_connection("test_send_claim_offer").unwrap();
 
         let claim_id = DEFAULT_CLAIM_ID;
 
@@ -657,7 +657,7 @@ pub mod tests {
         let mut claim = create_standard_issuer_claim();
         claim.state = VcxStateType::VcxStateRequestReceived;
 
-        let connection_handle = build_connection("test_send_claim_offer".to_owned()).unwrap();
+        let connection_handle = build_connection("test_send_claim_offer").unwrap();
 
         match claim.send_claim(connection_handle) {
             Ok(_) => assert_eq!(0, 0),
@@ -687,7 +687,7 @@ pub mod tests {
         let mut claim = create_standard_issuer_claim();
         claim.state = VcxStateType::VcxStateRequestReceived;
 
-        let connection_handle = build_connection("test_send_claim_offer".to_owned()).unwrap();
+        let connection_handle = build_connection("test_send_claim_offer").unwrap();
 
         set_libindy_rc(error::TIMEOUT_LIBINDY_ERROR.code_num);
         match claim.send_claim(connection_handle) {
@@ -731,7 +731,7 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        let connection_handle = build_connection("test_update_state_with_pending_claim_request".to_owned()).unwrap();
+        let connection_handle = build_connection("test_update_state_with_pending_claim_request").unwrap();
         let claim_req:ClaimRequest = ClaimRequest::from_str(CLAIM_REQ_STRING).unwrap();
         let mut claim = IssuerClaim {
             handle: 123,
@@ -896,7 +896,7 @@ pub mod tests {
         let mut claim = create_standard_issuer_claim();
         claim.state = VcxStateType::VcxStateRequestReceived;
 
-        let connection_handle = build_connection("test_send_claim_offer".to_owned()).unwrap();
+        let connection_handle = build_connection("test_send_claim_offer").unwrap();
 
         match claim.send_claim(connection_handle) {
             Ok(_) => assert_eq!(0, 0),

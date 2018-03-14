@@ -6,7 +6,7 @@ use utils::error;
 use utils::error::error_string;
 use std::ptr;
 use std::thread;
-use connection::{build_connection, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details};
+use connection::{build_connection, build_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details};
 
 /**
  * connection object
@@ -32,7 +32,7 @@ pub extern fn vcx_connection_create(command_handle: u32,
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
     info!("vcx_connection_create(command_handle: {}, source_id: {})", command_handle, source_id);
     thread::spawn(move|| {
-        match build_connection(source_id) {
+        match build_connection(&source_id) {
             Ok(handle) => {
                 info!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {})",
                       command_handle, error_string(0), handle);
@@ -43,6 +43,26 @@ pub extern fn vcx_connection_create(command_handle: u32,
                       command_handle, error_string(x), 0);
                 cb(command_handle, x, 0)
             },
+        };
+    });
+
+    error::SUCCESS.code_num
+}
+
+#[no_mangle]
+pub extern fn vcx_connection_create_with_invite(command_handle: u32,
+                                                source_id: *const c_char,
+                                                invite_details: *const c_char,
+                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, claim_handle: u32)>) -> u32 {
+
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(invite_details, error::INVALID_OPTION.code_num);
+    info!("vcx create connection with invite called");
+    thread::spawn(move|| {
+        match build_connection_with_invite(&source_id, &invite_details) {
+            Ok(handle) => cb(command_handle, error::SUCCESS.code_num, handle),
+            Err(x) => cb(command_handle, x, 0),
         };
     });
 
@@ -73,6 +93,7 @@ pub extern fn vcx_connection_connect(command_handle:u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
     if !is_valid_handle(connection_handle) {
+        error!("vcx_connection_get_state - invalid handle");
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
@@ -134,6 +155,7 @@ pub extern fn vcx_connection_serialize(command_handle: u32,
 
     info!("vcx_connection_serialize(command_handle: {}, connection_handle: {})", command_handle, connection_handle);
     if !is_valid_handle(connection_handle) {
+        error!("vcx_connection_get_state - invalid handle");
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
@@ -219,6 +241,7 @@ pub extern fn vcx_connection_update_state(command_handle: u32,
 
     info!("vcx_connection_update_state(command_handle: {}, connection_handle: {})", command_handle, connection_handle);
     if !is_valid_handle(connection_handle) {
+        error!("vcx_connection_get_state - invalid handle");
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
@@ -251,6 +274,7 @@ pub extern fn vcx_connection_get_state(command_handle: u32,
 
     info!("vcx_connection_get_state(command_handle: {}, connection_handle: {})", command_handle, connection_handle);
     if !is_valid_handle(connection_handle) {
+        error!("vcx_connection_get_state - invalid handle");
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
@@ -285,6 +309,7 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
     if !is_valid_handle(connection_handle) {
+        error!("vcx_connection_get_state - invalid handle");
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
@@ -377,7 +402,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let rc = vcx_connection_connect(0,0, CString::new("{}").unwrap().into_raw(),Some(connect_cb));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
-        let handle = build_connection("test_vcx_connection_connect".to_owned()).unwrap();
+        let handle = build_connection("test_vcx_connection_connect").unwrap();
         assert!(handle > 0);
         let rc = vcx_connection_connect(0,handle, CString::new("{}").unwrap().into_raw(),Some(connect_cb));
         thread::sleep(Duration::from_millis(500));
@@ -394,7 +419,7 @@ mod tests {
     fn test_vcx_connection_update_state() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_vcx_connection_update_state".to_owned()).unwrap();
+        let handle = build_connection("test_vcx_connection_update_state").unwrap();
         assert!(handle > 0);
         httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
         let rc = vcx_connection_update_state(0,handle,Some(update_state_cb));
@@ -424,7 +449,7 @@ mod tests {
     fn test_vcx_connection_serialize() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_vcx_connection_get_data".to_owned()).unwrap();
+        let handle = build_connection("test_vcx_connection_get_data").unwrap();
         assert!(handle > 0);
 
         let data = vcx_connection_serialize(0,handle, Some(serialize_cb));
@@ -436,7 +461,7 @@ mod tests {
     fn test_vcx_connection_release() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_vcx_connection_release".to_owned()).unwrap();
+        let handle = build_connection("test_vcx_connection_release").unwrap();
         assert!(handle > 0);
 
         let rc = vcx_connection_release(handle);
@@ -449,7 +474,8 @@ mod tests {
         assert_eq!(err, 0);
         assert!(connection_handle > 0);
         println!("successfully called deserialize_cb");
-        let string = r#"{"source_id":"test_vcx_connection_deserialialize_succeeds","handle":2829557145,"pw_did":"8XFh8yBzrpJQmNyZzgoTqB","pw_verkey":"EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A","did_endpoint":"","state":1,"uuid":"","endpoint":"","invite_detail":{"statusCode":"","connReqId":"","senderDetail":{"name":"","agentKeyDlgProof":{"agentDID":"","agentDelegatedKey":"","signature":""},"DID":"","logoUrl":"","verKey":""},"senderAgencyDetail":{"DID":"","verKey":"","endpoint":""},"targetName":"","statusMsg":""},"agent_did":"U5LXs4U7P9msh647kToezy","agent_vk":"FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq","their_pw_did":"","their_pw_verkey":""}"#;
+        let string = r#"{"source_id":"test_vcx_connection_deserialialize_succeeds","handle":2829557145,"pw_did":"8XFh8yBzrpJQmNyZzgoTqB","pw_verkey":"EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A","state":1,"uuid":"","endpoint":"","invite_detail":{"statusCode":"","connReqId":"","senderDetail":{"name":"","agentKeyDlgProof":{"agentDID":"","agentDelegatedKey":"","signature":""},"DID":"","logoUrl":"","verKey":""},"senderAgencyDetail":{"DID":"","verKey":"","endpoint":""},"targetName":"","statusMsg":""},"agent_did":"U5LXs4U7P9msh647kToezy","agent_vk":"FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq","their_pw_did":"","their_pw_verkey":""}"#;
+        //let string = r#"{"source_id":"test_vcx_connection_deserialialize_succeeds","handle":2829557145,"pw_did":"8XFh8yBzrpJQmNyZzgoTqB","pw_verkey":"EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A","did_endpoint":"","state":1,"uuid":"","endpoint":"","invite_detail":{"statusCode":"","connReqId":"","senderDetail":{"name":"","agentKeyDlgProof":{"agentDID":"","agentDelegatedKey":"","signature":""},"DID":"","logoUrl":"","verKey":""},"senderAgencyDetail":{"DID":"","verKey":"","endpoint":""},"targetName":"","statusMsg":""},"agent_did":"U5LXs4U7P9msh647kToezy","agent_vk":"FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq","their_pw_did":"","their_pw_verkey":""}"#;
 
         let new = to_string(connection_handle).unwrap();
         println!("original: {}",string);
@@ -476,7 +502,7 @@ mod tests {
     fn test_vcx_connection_get_state() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_vcx_connection_update_state".to_owned()).unwrap();
+        let handle = build_connection("test_vcx_connection_update_state").unwrap();
         assert!(handle > 0);
         let rc = vcx_connection_get_state(0,handle,Some(get_state_cb));
         assert_eq!(rc, error::SUCCESS.code_num);

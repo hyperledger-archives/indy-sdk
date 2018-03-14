@@ -147,16 +147,18 @@ describe('A Connection object with ', function () {
     assert.equal(await connection.getState(), StateType.Initialized)
   })
 
-  it('call to inviteDetail with abbr returns non-empty string', async () => {
+  it('call to inviteDetails with abbr returns non-empty string', async () => {
     const connection = await Connection.create({ id: 'Unique ID 999' })
     assert.notEqual(connection._handle, undefined)
+    await connection.connect({ sms: true })
     const details = await connection.inviteDetails(true)
     assert.include(details, '"dp":', 'expect to see this in output')
   })
 
-  it('call to inviteDetail without abbr returns non-empty string', async () => {
+  it('call to inviteDetails without abbr returns non-empty string', async () => {
     const connection = await Connection.create({ id: 'Unique ID 999' })
     assert.notEqual(connection._handle, undefined)
+    await connection.connect({ sms: true })
     const details = await connection.inviteDetails(false)
     assert.include(details, '"senderAgencyDetail":', 'expect to see this in output')
   })

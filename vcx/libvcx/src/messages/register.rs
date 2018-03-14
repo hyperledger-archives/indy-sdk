@@ -53,7 +53,6 @@ pub fn connect_register_provision(endpoint: &str,
                                   wallet_key: Option<String>) -> Result<String,u32> {
 
     ::utils::logger::LoggerUtils::init();
-    settings::set_defaults();
 
     let (wallet_name_string, wallet_name) = match wallet_name {
         Some(x) => (format!("\"wallet_name\":\"{}\",", x), x),

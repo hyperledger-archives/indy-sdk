@@ -499,7 +499,7 @@ mod tests {
         };
         assert_eq!(proof::get_state(handle),VcxStateType::VcxStateInitialized as u32);
 
-        let connection_handle = connection::build_connection("test_send_proof_request".to_owned()).unwrap();
+        let connection_handle = connection::build_connection("test_send_proof_request").unwrap();
         assert_eq!(vcx_proof_send_request(0,handle,connection_handle,Some(send_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(1000));
         assert_eq!(proof::get_state(handle),VcxStateType::VcxStateOfferSent as u32);
@@ -514,7 +514,7 @@ mod tests {
                                         REQUESTED_PREDICATES.to_owned(),
                                         "Name".to_owned()).unwrap();
         assert!(handle > 0);
-        let connection_handle = connection::build_connection("test_send_proof_request".to_owned()).unwrap();
+        let connection_handle = connection::build_connection("test_send_proof_request").unwrap();
         connection::set_pw_did(connection_handle, "XXFh7yBzrpJQmNyZzgoTqB");
 
         thread::sleep(Duration::from_millis(300));
@@ -527,7 +527,7 @@ mod tests {
     fn test_get_proof_returns_proof_with_proof_state_invalid() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let connection_handle = connection::build_connection("test_send_proof_request".to_owned()).unwrap();
+        let connection_handle = connection::build_connection("test_send_proof_request").unwrap();
         connection::set_pw_did(connection_handle, "XXFh7yBzrpJQmNyZzgoTqB");
         thread::sleep(Duration::from_millis(300));
 
