@@ -308,9 +308,10 @@ impl ProverCommandExecutor {
         let credential_def: CredentialDefinition =
             self.wallet_service.get_object(wallet_handle, &format!("credential_definition::{}", credential.cred_def_id), "CredentialDefinition", &mut String::new())?;
 
-        let rev_info =
-            self.wallet_service.get_opt_object::<RevocationInfo>(wallet_handle, &format!("revocation_info::{}", &id), "RevocationInfo", &mut String::new())?;
-
+        let mut rev_info = None;
+        if rev_reg_def_json.is_some(){
+            rev_info = self.wallet_service.get_opt_object::<RevocationInfo>(wallet_handle, &format!("revocation_info::{}", &id), "RevocationInfo", &mut String::new())?;
+        }
         self.anoncreds_service.prover.process_credential(&mut credential,
                                                          &credential_request_metadata,
                                                          &master_secret,

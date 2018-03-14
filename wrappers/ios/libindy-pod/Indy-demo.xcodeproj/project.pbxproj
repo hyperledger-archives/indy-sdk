@@ -22,7 +22,6 @@
 		5DB57B0D1F7120DE00EB4C90 /* Indy.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5DB57B0B1F7120DE00EB4C90 /* Indy.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5DB57B501F712A5200EB4C90 /* Base58Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B0F1F712A5100EB4C90 /* Base58Test.m */; };
 		5DB57B591F712A5200EB4C90 /* AnoncredsHighCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B1C1F712A5100EB4C90 /* AnoncredsHighCases.m */; };
-		5DB57B5A1F712A5200EB4C90 /* AnoncredsMediumCases.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B1D1F712A5100EB4C90 /* AnoncredsMediumCases.m */; };
 		5DB57B5B1F712A5200EB4C90 /* AnoncredsMediumCasesDemos.m in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B1E1F712A5100EB4C90 /* AnoncredsMediumCasesDemos.m */; };
 		5DB57B5C1F712A5200EB4C90 /* LedgerAttribRequest.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B201F712A5200EB4C90 /* LedgerAttribRequest.mm */; };
 		5DB57B5D1F712A5200EB4C90 /* LedgerHignCases.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5DB57B211F712A5200EB4C90 /* LedgerHignCases.mm */; };
@@ -116,7 +115,6 @@
 		5DB57B0B1F7120DE00EB4C90 /* Indy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Indy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5DB57B0F1F712A5100EB4C90 /* Base58Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base58Test.m; sourceTree = "<group>"; };
 		5DB57B1C1F712A5100EB4C90 /* AnoncredsHighCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsHighCases.m; sourceTree = "<group>"; };
-		5DB57B1D1F712A5100EB4C90 /* AnoncredsMediumCases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCases.m; sourceTree = "<group>"; };
 		5DB57B1E1F712A5100EB4C90 /* AnoncredsMediumCasesDemos.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnoncredsMediumCasesDemos.m; sourceTree = "<group>"; };
 		5DB57B201F712A5200EB4C90 /* LedgerAttribRequest.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerAttribRequest.mm; sourceTree = "<group>"; };
 		5DB57B211F712A5200EB4C90 /* LedgerHignCases.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LedgerHignCases.mm; sourceTree = "<group>"; };
@@ -275,7 +273,6 @@
 			isa = PBXGroup;
 			children = (
 				5DB57B1C1F712A5100EB4C90 /* AnoncredsHighCases.m */,
-				5DB57B1D1F712A5100EB4C90 /* AnoncredsMediumCases.m */,
 				5DB57B1E1F712A5100EB4C90 /* AnoncredsMediumCasesDemos.m */,
 			);
 			path = Anoncreds;
@@ -639,7 +636,6 @@
 				5DB57B5B1F712A5200EB4C90 /* AnoncredsMediumCasesDemos.m in Sources */,
 				5DB57B601F712A5200EB4C90 /* LedgerSchemaRequest.mm in Sources */,
 				5DB57B721F712A5200EB4C90 /* SequenceUtils.m in Sources */,
-				5DB57B5A1F712A5200EB4C90 /* AnoncredsMediumCases.m in Sources */,
 				5DB57B501F712A5200EB4C90 /* Base58Test.m in Sources */,
 				5DB57B6A1F712A5200EB4C90 /* CryptoDemo.mm in Sources */,
 				5DB57B761F712A5200EB4C90 /* NSArray+JSON.m in Sources */,

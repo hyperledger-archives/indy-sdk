@@ -27,6 +27,11 @@ extern void IndyWrapperCommon4PCallback(indy_handle_t xcommand_handle,
                                           const char *const arg1,
                                           const char *const arg2);
 
+extern void IndyWrapperCommon4PSCallback(indy_handle_t xcommand_handle,
+                                          indy_error_t err,
+                                          const char *const arg1,
+                                          const char *const arg2);
+
 extern void IndyWrapperCommon4PDataCallback(indy_handle_t xcommand_handle,
                                             indy_error_t err,
                                             const uint8_t *const arg1,

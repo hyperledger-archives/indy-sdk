@@ -48,8 +48,8 @@ public abstract class LibIndy {
 		public int indy_build_get_nym_request(int command_handle, String submitter_did, String target_did, Callback cb);
 		public int indy_build_schema_request(int command_handle, String submitter_did, String data, Callback cb);
 		public int indy_build_get_schema_request(int command_handle, String submitter_did, String dest, String data, Callback cb);
-		public int indy_build_credential_def_txn(int command_handle, String submitter_did, int xref, String signature_type, String data, Callback cb);
-		public int indy_build_get_credential_def_txn(int command_handle, String submitter_did, int xref, String signature_type, String origin, Callback cb);
+		public int indy_build_claim_def_txn(int command_handle, String submitter_did, int xref, String signature_type, String data, Callback cb);
+		public int indy_build_get_claim_def_txn(int command_handle, String submitter_did, int xref, String signature_type, String origin, Callback cb);
 		public int indy_build_node_request(int command_handle, String submitter_did, String target_did, String data, Callback cb);
 		public int indy_build_get_txn_request(int command_handle, String submitter_did, int data, Callback cb);
 		public int indy_build_pool_config_request(int command_handle, String submitter_did, boolean writes, boolean force, Callback cb);

@@ -806,7 +806,7 @@ mod high_cases {
 
             let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response_str).unwrap();
 
-            let claim_def_data_json = AnoncredsUtils::gvt_credential_values_json();
+            let claim_def_data_json = AnoncredsUtils::credential_def_value_json();
 
             let claim_def_request = LedgerUtils::build_claim_def_txn(&did, get_schema_response.result.seq_no.unwrap(),
                                                                      SIGNATURE_TYPE, &claim_def_data_json).unwrap();
@@ -840,7 +840,7 @@ mod high_cases {
             let get_schema_response: Reply<GetSchemaReplyResult> = serde_json::from_str(&get_schema_response_str).unwrap();
             let schema_seq_no = get_schema_response.result.seq_no.unwrap();
 
-            let claim_def_data_json = AnoncredsUtils::gvt_credential_values_json();
+            let claim_def_data_json = AnoncredsUtils::credential_def_value_json();
 
             let claim_def_request = LedgerUtils::build_claim_def_txn(&did, schema_seq_no,
                                                                      SIGNATURE_TYPE, &claim_def_data_json).unwrap();
