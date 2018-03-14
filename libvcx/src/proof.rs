@@ -482,7 +482,7 @@ pub fn generate_nonce() -> Result<String, u32> {
 mod tests {
     use super::*;
     use connection::build_connection;
-    use utils::libindy::pool;
+    use utils::libindy::{pool, set_libindy_rc};
     use messages::proofs::proof_message::{Attr};
 
     static REQUESTED_ATTRS: &'static str = "[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]";
@@ -938,17 +938,17 @@ mod tests {
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        assert_eq!(send_proof_request(handle, connection_handle), Err(error::UNKNOWN_LIBINDY_ERROR.code_num));
+        set_libindy_rc(error::TIMEOUT_LIBINDY_ERROR.code_num);
+        assert_eq!(send_proof_request(handle, connection_handle), Err(error::TIMEOUT_LIBINDY_ERROR.code_num));
         assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
         assert_eq!(get_proof_uuid(handle).unwrap(), "");
 
         // Retry sending proof request
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         assert_eq!(send_proof_request(handle, connection_handle).unwrap(), 0);
         assert_eq!(get_state(handle), VcxStateType::VcxStateOfferSent as u32);
         assert_eq!(get_proof_uuid(handle).unwrap(), "ntc2ytb");
     }
+
     #[test]
     fn test_get_proof_request_status_can_be_retried() {
         settings::set_defaults();
@@ -989,7 +989,7 @@ mod tests {
         assert_eq!(proof.get_proof_state(), ProofStateType::ProofInvalid as u32);
 
         // Changing the state and proof state to show that validation happens again
-        // and resets the values to received and Invaide
+        // and resets the values to received and Invalid
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
         httpclient::set_next_u8_response(UPDATE_PROOF_RESPONSE.to_vec());
         proof.state = VcxStateType::VcxStateOfferSent;

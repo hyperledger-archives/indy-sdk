@@ -11,6 +11,7 @@ mod error_codes;
 
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::fmt;
+use std::sync::Mutex;
 
 pub enum SigTypes {
     CL
@@ -25,6 +26,13 @@ impl fmt::Display for SigTypes {
     }
 }
 
+lazy_static!{
+    static ref NEXT_LIBINDY_RC: Mutex<Vec<i32>> = Mutex::new(vec![]);
+}
+
+pub fn mock_libindy_rc() -> u32 { NEXT_LIBINDY_RC.lock().unwrap().pop().unwrap_or(0) as u32 }
+
+pub fn set_libindy_rc(rc: u32) {NEXT_LIBINDY_RC.lock().unwrap().push(rc as i32);}
 
 static COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 
