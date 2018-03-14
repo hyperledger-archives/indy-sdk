@@ -488,6 +488,7 @@ pub fn convert_to_map(s:&str) -> Result<serde_json::Map<String, serde_json::Valu
 pub mod tests {
     use settings;
     use connection::build_connection;
+    use utils::libindy::{ set_libindy_rc };
     use utils::libindy::signus::SignusUtils;
     use utils::libindy::anoncreds::libindy_create_and_store_claim_def;
     use claim_request::ClaimRequest;
@@ -629,13 +630,12 @@ pub mod tests {
                                          "claim_name".to_string(),
                                          "{\"attr\":\"value\"}".to_owned()).unwrap();
 
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        assert_eq!(send_claim_offer(handle, connection_handle), Err(error::UNKNOWN_LIBINDY_ERROR.code_num));
+        set_libindy_rc(error::TIMEOUT_LIBINDY_ERROR.code_num);
+        assert_eq!(send_claim_offer(handle, connection_handle), Err(error::TIMEOUT_LIBINDY_ERROR.code_num));
         assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
         assert_eq!(get_offer_uid(handle).unwrap(), "");
 
         // Can retry after initial failure
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         assert_eq!(send_claim_offer(handle, connection_handle).unwrap(), error::SUCCESS.code_num);
         assert_eq!(get_state(handle), VcxStateType::VcxStateOfferSent as u32);
         assert_eq!(get_offer_uid(handle).unwrap(), "ntc2ytb");
@@ -689,17 +689,16 @@ pub mod tests {
 
         let connection_handle = build_connection("test_send_claim_offer".to_owned()).unwrap();
 
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        set_libindy_rc(error::TIMEOUT_LIBINDY_ERROR.code_num);
         match claim.send_claim(connection_handle) {
             Ok(_) => assert_eq!(0, 1),
             Err(x) => {
-                assert_eq!(x, error::UNKNOWN_LIBINDY_ERROR.code_num)
+                assert_eq!(x, error::TIMEOUT_LIBINDY_ERROR.code_num)
             },
         };
         assert_eq!(claim.msg_uid, "1234");
         assert_eq!(claim.state, VcxStateType::VcxStateRequestReceived);
         // Retry sending the claim, use the mocked http. Show that you can retry sending the claim
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         match claim.send_claim(connection_handle) {
             Ok(_) => assert_eq!(0, 0),
             Err(x) => {

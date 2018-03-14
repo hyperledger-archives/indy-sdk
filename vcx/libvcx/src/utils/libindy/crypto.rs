@@ -4,7 +4,7 @@ extern crate libc;
 use self::libc::c_char;
 use std::ffi::CString;
 use utils::timeout::TimeoutUtils;
-use utils::libindy::{ indy_function_eval };
+use utils::libindy::{ indy_function_eval, mock_libindy_rc};
 use utils::libindy::return_types::{ Return_I32_BIN, Return_I32_OPTSTR_BIN };
 use utils::libindy::error_codes::{ map_indy_error_code, map_string_error };
 use utils::error;
@@ -41,7 +41,11 @@ extern {
 }
 
 pub fn prep_msg(wallet_handle: i32, sender_vk: &str, recipient_vk: &str, msg: &[u8]) -> Result<Vec<u8>, u32> {
-    if settings::test_indy_mode_enabled() {return Ok(Vec::from(msg).to_owned())}
+    if settings::test_indy_mode_enabled() {
+        let rc = mock_libindy_rc();
+        if rc != 0 { return Err(rc) };
+        return Ok(Vec::from(msg).to_owned());
+    }
 
     debug!("prep_msg svk: {} rvk: {}",sender_vk, recipient_vk);
 
