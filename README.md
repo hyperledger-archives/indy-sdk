@@ -17,8 +17,8 @@ If you haven't done so already, please visit the main resource for all things "I
 ## Getting Started
 
 * [Indy Wiki Onboarding Page](https://wiki.hyperledger.org/projects/indy/documentation?&#onboarding_indy)
-* [Install Indy and set up a test network](https://github.com/hyperledger/indy-node/blob/stable/getting-started.md#install-indy)
-* [Libindy Getting-Started Guide](doc/getting-started/getting-started.md) 
+* [Install Indy with Walkthrough](https://github.com/hyperledger/indy-node/blob/stable/getting-started.md#install-indy)
+* [Libindy Getting Started Guide](doc/getting-started/getting-started.md) 
 
 ## Building the SDK
 
