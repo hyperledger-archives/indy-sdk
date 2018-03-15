@@ -255,16 +255,24 @@ impl LedgerCommandExecutor {
         }
     }
 
+    // Signs request using the verkey corresponding to the given DID, `submitter_did`.
+    // If `submitter_did` is not found, then `submitter_did` is treated as a verkey.
+    // TODO: Change `submitter_did` to `submitter`
     fn _sign_request(&self,
                      wallet_handle: i32,
                      submitter_did: &str,
                      request_json: &str,
     ) -> Result<String, IndyError> {
-        let my_did_json = self.wallet_service.get(wallet_handle, &format!("my_did::{}", submitter_did))?;
-        let my_did = Did::from_json(&my_did_json)
-            .map_err(|err| CommonError::InvalidState(format!("Invalid my_did_json: {}", err.to_string())))?;
+        let verkey = match self.wallet_service.get(wallet_handle, &format!("my_did::{}", submitter_did)) {
+            Ok(my_did_json) => {
+                let my_did = Did::from_json(&my_did_json)
+                    .map_err(|err| CommonError::InvalidState(format!("Invalid my_did_json: {}", err.to_string())))?;
+                my_did.verkey.to_string()
+            }
+            _ => submitter_did.to_string()
+        };
 
-        let my_key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", my_did.verkey))?;
+        let my_key_json = self.wallet_service.get(wallet_handle, &format!("key::{}", verkey))?;
         let my_key = Key::from_json(&my_key_json)
             .map_err(|err| CommonError::InvalidState(format!("Invalid my_key_json: {}", err.to_string())))?;
 

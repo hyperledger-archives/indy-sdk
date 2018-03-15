@@ -85,18 +85,15 @@ impl SSSCommandExecutor {
         self.update_msg_with_secret_key(wallet_handle, &mut msg, verkey)?;
 
         let updated_json = json!(msg).to_string();
-        println!("Sharding {:?}", &updated_json);
         let shares = shard_secret(m, n, &updated_json.as_bytes().to_vec(), false)?;
         let shares_json = json!(shares).to_string();
         let wallet_key = SSSCommandExecutor::_verkey_to_wallet_key(&verkey);
-        println!("Setting key {:?} value {:?}", &wallet_key, &shares_json);
         self.wallet_service.set(wallet_handle, &wallet_key, &shares_json)?;
         Ok(verkey.to_string())
     }
 
     fn get_shards_of_verkey(&self, wallet_handle: i32, verkey: &str) -> Result<String, IndyError> {
         let wallet_key = SSSCommandExecutor::_verkey_to_wallet_key(&verkey);
-        println!("Getting key {:?}", &wallet_key);
         Ok(self.wallet_service.get(wallet_handle, &wallet_key)?)
     }
 
