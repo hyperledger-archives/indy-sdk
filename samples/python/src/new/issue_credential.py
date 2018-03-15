@@ -1,19 +1,26 @@
 """
-Example demonstrating how to write Schema and Cred Definition on the ledger
+This sample is extensions of "write_schema_and_cred_def.py"
 
-As a setup, Steward (already on the ledger) adds Trust Anchor to the ledger.
+Shows how to issue a credential as a Trust Anchor which has created a Cred Definition
+for an existing Schema.
 
-After that, Steward builds the SCHEMA request to add new schema to the ledger.
-Once that succeeds, Trust Anchor uses anonymous credentials to issue and store
-claim definition for the Schema added by Steward.
+After Trust Anchor has successfully created and stored a Cred Definiton using Anonymous Credentials,
+Prover's wallet is created and opened, and used to generate Prover's Master Secret.
+After that, Trust Anchor generates Claim Offer for given Cred Definition, using Prover's DID
+Prover uses Claim Offer to create Claim Request
+Trust Anchor then uses Prover's Claim Request to issue a Claim.
+Finally, Prover stores Claim in its wallet.
 """
 
 
 import asyncio
 import json
 import pprint
+import sys
+sys.path.insert(0, '/home/vagrant/code/evernym/indy-sdk/wrappers/python')
 
-from indy import pool, ledger, wallet, signus, anoncreds
+
+from indy import pool, ledger, wallet, did, anoncreds
 from indy.error import IndyError
 
 
@@ -32,7 +39,7 @@ def print_log(value_color="", value_noncolor=""):
 
 
 
-async def write_schema_and_cred_def():
+async def issue_credential():
     try:
         # 1.
         print_log('\n1. Creates a new local pool ledger configuration that is used '
@@ -45,24 +52,24 @@ async def write_schema_and_cred_def():
         pool_handle = await pool.open_pool_ledger(config_name=pool_name, config=None)
 
         # 3.
-        print_log('\n3. Creating new secure wallet\n')
+        print_log('\n3. Creating new secure wallet_handle\n')
         await wallet.create_wallet(pool_name, wallet_name, None, None, None)
 
         # 4.
-        print_log('\n4. Open wallet and get handle from libindy\n')
+        print_log('\n4. Open wallet_handle and get handle from libindy\n')
         wallet_handle = await wallet.open_wallet(wallet_name, None, None)
 
         # 5.
         print_log('\n5. Generating and storing steward DID and verkey\n')
         steward_seed = '000000000000000000000000Steward1'
         did_json = json.dumps({'seed': steward_seed})
-        steward_did, steward_verkey = await signus.create_and_store_my_did(wallet_handle, did_json)
+        steward_did, steward_verkey = await did.create_and_store_my_did(wallet_handle, did_json)
         print_log('Steward DID: ', steward_did)
         print_log('Steward Verkey: ', steward_verkey)
 
         # 6.
         print_log('\n6. Generating and storing trust anchor DID and verkey\n')
-        trust_anchor_did, trust_anchor_verkey = await signus.create_and_store_my_did(wallet_handle, "{}")
+        trust_anchor_did, trust_anchor_verkey = await did.create_and_store_my_did(wallet_handle, "{}")
         print_log('Trust anchor DID: ', trust_anchor_did)
         print_log('Trust anchor Verkey: ', trust_anchor_verkey)
 
@@ -98,10 +105,8 @@ async def write_schema_and_cred_def():
             }
         }
         schema_data = schema['data']
-        print_log('Schema data: ')
-        pprint.pprint(schema_data)
         print_log('Schema: ')
-        pprint.pprint(schema)
+        pprint.pprint(schema_data)
         schema_request = await ledger.build_schema_request(steward_did, json.dumps(schema_data))
         print_log('Schema request: ')
         pprint.pprint(json.loads(schema_request))
@@ -113,22 +118,65 @@ async def write_schema_and_cred_def():
         pprint.pprint(json.loads(schema_response))
 
         # 11.
-        print_log('\n11. Creating and storing CRED DEFINITION using anoncreds as Trust Anchor, for the given Schema\n')
+        print_log('\n11. Creating and storing CLAIM DEFINITION using anoncreds as Trust Anchor, for the given schema')
         claim_def_json = await anoncreds.issuer_create_and_store_claim_def(wallet_handle, trust_anchor_did, json.dumps(schema), 'CL', False)
         print_log('Claim Definition: ')
         pprint.pprint(json.loads(claim_def_json))
 
         # 12.
-        print_log('\n12. Closing wallet and pool\n')
+        print_log('\nCreating Prover wallet and opening it to get the handle\n')
+        prover_did = 'VsKV7grR1BUE29mG2Fm2kX'
+        prover_wallet_name = 'prover_wallet'
+        await wallet.create_wallet(pool_name, prover_wallet_name, None, None, None)
+        prover_wallet_handle = await wallet.open_wallet(prover_wallet_name, None, None)
+
+        # 13.
+        print_log('\nProver is creating Master Secret\n')
+        master_secret_name = 'master_secret'
+        await anoncreds.prover_create_master_secret(prover_wallet_handle, master_secret_name)
+
+        # 14.
+        print_log('\nIssuer (Trust Anchor) is creating a Claim Offer for Prover\n')
+        schema_json = json.dumps(schema)
+        claim_offer_json = await anoncreds.issuer_create_claim_offer(wallet_handle, schema_json, trust_anchor_did, prover_did)
+        print_log('Claim Offer: ')
+        pprint.pprint(json.loads(claim_offer_json))
+        
+        # 15.
+        print_log('\nProver creates Claim Request\n')
+        claim_req_json = await anoncreds.prover_create_and_store_claim_req(prover_wallet_handle, prover_did, claim_offer_json, claim_def_json, master_secret_name)
+        print_log('Claim Request: ')
+        pprint.pprint(json.loads(claim_req_json))
+        
+        # 16.
+        print_log('\nIssuer (Trust Anchor) creates Claim for Claim Request\n')
+        claim_json = json.dumps({
+            'sex': ['male', '5944657099558967239210949258394887428692050081607692519917050011144233115103'],
+            'name': ['Alex', '1139481716457488690172217916278103335'],
+            'height': ['175', '175'],
+            'age': ['28', '28']
+        })
+        _, claim_json = await anoncreds.issuer_create_claim(wallet_handle, claim_req_json, claim_json, -1)
+        print_log('Claim: ')
+        pprint.pprint(json.loads(claim_json))
+
+        # 17.
+        print_log('\nProver processes and stores Claim\n')
+        await anoncreds.prover_store_claim(prover_wallet_handle, claim_json, None)
+
+        # 18..
+        print_log('\n13. Closing both wallet_handles and pool\n')
         await wallet.close_wallet(wallet_handle)
+        await wallet.close_wallet(prover_wallet_handle)
         await pool.close_pool_ledger(pool_handle)
 
         # 13.
-        print_log('\n13. Deleting created wallet\n')
+        print_log('\n14. Deleting created wallet_handles\n')
         await wallet.delete_wallet(wallet_name, None)
+        await wallet.delete_wallet(prover_wallet_name, None)
 
         # 14.
-        print_log('\n14. Deleting pool ledger config\n')
+        print_log('\n15. Deleting pool ledger config\n')
         await pool.delete_pool_ledger_config(pool_name)
 
     except IndyError as e:
@@ -137,7 +185,7 @@ async def write_schema_and_cred_def():
 
 def main():
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(write_schema_and_cred_def())
+    loop.run_until_complete(issue_credential())
     loop.close()
 
 

@@ -36,7 +36,7 @@ def print_log(value_color="", value_noncolor=""):
     print(HEADER + value_color + ENDC + str(value_noncolor))
 
 
-async def write_nym_and_query_verkey():
+async def rotate_key_on_the_ledger():
     try:
         # 1.
         print_log('1. Creates a new local pool ledger configuration that is used '
@@ -156,7 +156,7 @@ async def write_nym_and_query_verkey():
 
 def main():
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(write_nym_and_query_verkey())
+    loop.run_until_complete(rotate_key_on_the_ledger())
     loop.close()
 
 
