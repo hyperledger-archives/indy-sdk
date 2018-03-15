@@ -176,7 +176,7 @@ dependencies = [
  "sodiumoxide 0.0.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.38 (registry+https://github.com/rust-lang/crates.io-index)",
  "uuid 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "zmq-pw 0.9.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "zmq 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -633,24 +633,22 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "zmq-pw"
-version = "0.9.8"
+name = "zmq"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "zmq-pw-sys 0.9.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "zmq-sys 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
-name = "zmq-pw-sys"
-version = "0.9.8"
+name = "zmq-sys"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "libc 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)",
  "metadeps 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "pkg-config 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [metadata]
@@ -734,5 +732,5 @@ dependencies = [
 "checksum void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 "checksum winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "167dc9d6949a9b857f3451275e911c3f44255842c1f7a76f33c55103a909087a"
 "checksum winapi-build 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2d315eee3b34aca4797b2da6b13ed88266e6d612562a0c46390af8299fc699bc"
-"checksum zmq-pw 0.9.8 (registry+https://github.com/rust-lang/crates.io-index)" = "2d8628eaa83b4083fa0b104f472a8a65087a7142dcd4b4e07ebf8a9ebf709671"
-"checksum zmq-pw-sys 0.9.8 (registry+https://github.com/rust-lang/crates.io-index)" = "11ccf7167928c797388065b94561df757e557facd7b534f56cd9a19c2eaf0126"
+"checksum zmq 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)" = "3e6e33f05ebc9a1cb360e5db1f8ed6e5512ece86aed271654b0f171d04c24c23"
+"checksum zmq-sys 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)" = "c3cc251d25f3c6ffc54dfa3e8d808598825f8ccfee3a008dfc7866ffe325dcb3"

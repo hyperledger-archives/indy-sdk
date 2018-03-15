@@ -29,7 +29,7 @@ async def create_and_store_my_did(wallet_handle: int,
                       currently only 'ed25519' value is supported for this field)
             "cid": bool, (optional; if not set then false is used;)
         }
-    :return: DID, verkey (for verification of signature) and public_key (for decryption)
+    :return: DID and verkey (for verification of signature)
     """
 
     logger = logging.getLogger(__name__)

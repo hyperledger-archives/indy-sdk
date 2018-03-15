@@ -37,7 +37,7 @@ def windowsTesting() {
                             "INDY_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "INDY_CRYPTO_PREBUILT_DEPS_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "MILAGRO_DIR=$WORKSPACE\\libindy\\prebuilt",
-                            "ZMQPW_DIR=$WORKSPACE\\libindy\\prebuilt",
+                            "LIBZMQ_PREFIX=$WORKSPACE\\libindy\\prebuilt",
                             "SODIUM_LIB_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "OPENSSL_DIR=$WORKSPACE\\libindy\\prebuilt",
                             "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
@@ -288,7 +288,7 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
 
             sh '''
                 python3.5 -m pip install --user -e .
-                LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
             '''
         }
     }
@@ -302,7 +302,7 @@ def linuxCLITesting(env_name, network_name, testEnv) {
             sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
 
             echo "${env_name} Indy Cli Test: Run tests"
-            sh "LD_LIBRARY_PATH=./ RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test"
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
         }
     }
 }
@@ -383,5 +383,6 @@ def setupRustIOS() {
 def setupBrewPackages() {
     sh "brew switch libsodium 1.0.12"
     sh "brew switch openssl 1.0.2l"
+    sh "brew switch zeromq 4.2.3"
 }
 
