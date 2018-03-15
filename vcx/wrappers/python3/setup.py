@@ -1,16 +1,12 @@
 from setuptools import setup, find_packages
-
-
-with open('README.md') as f:
-    readme = f.read()
-
+import os
 setup(
     name='vcx',
-    version='0.1.0',
+    version=os.environ['VCX_VERSION'],
     description='Wrapper for libcxs',
-    long_description=readme,
-    author='Devin Fisher',
-    author_email='devin.fisher@evernym.com',
-    packages=find_packages(exclude=('tests', 'docs')),
-    include_package_data=True
+    long_description='None...for now',
+    author='Devin Fisher, Ryan Marsh, Mark Hadley, Doug Wightman',
+    author_email='ryan.marsh@evernym.com',
+    include_package_data=True,
+    packages=find_packages(exclude=['demo', 'tests'])
 )

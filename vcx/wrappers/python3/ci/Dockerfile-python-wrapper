@@ -11,9 +11,11 @@ RUN pip3 install pytest qrcode pytest-asyncio
 
 ENV PYTHONPATH=$PYTHONPATH:/python3
 
+RUN mkdir -p /scripts
+COPY ci/scripts/ /scripts
+
 COPY libvcx/target/debug/libvcx.so /usr/lib
 COPY wrappers/python3/ /python3
-
 WORKDIR /python3/tests
 
 CMD [ "/usr/bin/python3", "-m", "pytest", "-v"]
