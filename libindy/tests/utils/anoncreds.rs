@@ -17,7 +17,6 @@ use std::mem;
 use utils::constants::*;
 
 use std::collections::{HashSet, HashMap};
-use std::env;
 
 use super::anoncreds_types::{CredentialInfo, CredentialsForProofRequest, Schema, AttributeValues, CredentialDefinitionConfig, RevocationRegistryConfig};
 
