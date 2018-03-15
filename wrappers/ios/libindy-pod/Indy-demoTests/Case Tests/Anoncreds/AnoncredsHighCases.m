@@ -31,296 +31,296 @@
     [super tearDown];
 }
 
-// MARK: - Issuer create and store claim def
+// MARK: - Issuer create and store credential def
 
-- (void)testIssuerCreateAndStoreClaimDefWorks {
+- (void)testIssuerCreateAndStoreCredentialDefWorks {
     NSError *ret;
 
     // 1. init commmon wallet
     IndyHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. issuer create claim definition
+    // 2. issuer create credential definition
     NSString *schemaJson = [[AnoncredsUtils sharedInstance] getGvtSchemaJson];
 
-    NSString *claimDefId;
-    NSString *claimDefJSON;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:walletHandle
-                                                                             issuerDid:[TestUtils issuerDid]
-                                                                            schemaJson:schemaJson
-                                                                                   tag:@"CreateClaimDef"
-                                                                                  type:nil
-                                                                            configJson:[[AnoncredsUtils sharedInstance] defaultClaimDefConfig]
-                                                                            claimDefId:&claimDefId
-                                                                          claimDefJson:&claimDefJSON];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateClaimDefinifionWithWalletHandle failed");
-    XCTAssertTrue([claimDefJSON isValid], @"invalid claimDefJSON: %@", claimDefJSON);
+    NSString *credentialDefId;
+    NSString *credentialDefJSON;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialDefinitionWithWalletHandle:walletHandle
+                                                                                  issuerDid:[TestUtils issuerDid]
+                                                                                 schemaJson:schemaJson
+                                                                                        tag:@"CreateCredentialDef"
+                                                                                       type:nil
+                                                                                 configJson:[[AnoncredsUtils sharedInstance] defaultCredentialDefConfig]
+                                                                            credentialDefId:&credentialDefId
+                                                                          credentialDefJson:&credentialDefJSON];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateCredentialDefinifionWithWalletHandle failed");
+    XCTAssertTrue([credentialDefJSON isValid], @"invalid credentialDefJSON: %@", credentialDefJSON);
 }
 
-- (void)testIssuerCreateAndStoreClaimDefWorksForInvalidWallet {
+- (void)testIssuerCreateAndStoreCredentialDefWorksForInvalidWallet {
 
     NSError *ret;
 
     // 1. init commmon wallet
     IndyHandle walletHandle = 0;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. Create claim definition
+    // 2. Create credential definition
     IndyHandle invalidWalletHandle = walletHandle + 100;
     NSString *schemaJson = [[AnoncredsUtils sharedInstance] getGvtSchemaJson];
 
-    NSString *claimDefId;
-    NSString *claimDefJSON;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimDefinifionWithWalletHandle:invalidWalletHandle
-                                                                             issuerDid:[TestUtils issuerDid]
-                                                                            schemaJson:schemaJson
-                                                                                   tag:@"TAG1"
-                                                                                  type:nil
-                                                                            configJson:[[AnoncredsUtils sharedInstance] defaultClaimDefConfig]
-                                                                            claimDefId:&claimDefId
-                                                                          claimDefJson:&claimDefJSON];
-    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::issuerCreateClaimDefinifionWithWalletHandle failed: returned wrong error code");
+    NSString *credentialDefId;
+    NSString *credentialDefJSON;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialDefinitionWithWalletHandle:invalidWalletHandle
+                                                                                  issuerDid:[TestUtils issuerDid]
+                                                                                 schemaJson:schemaJson
+                                                                                        tag:[TestUtils tag]
+                                                                                       type:nil
+                                                                                 configJson:[[AnoncredsUtils sharedInstance] defaultCredentialDefConfig]
+                                                                            credentialDefId:&credentialDefId
+                                                                          credentialDefJson:&credentialDefJSON];
+    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::issuerCreateCredentialDefinifionWithWalletHandle failed: returned wrong error code");
 }
 
-// MARK: - Prover store claim offer
+// MARK: - Prover store credential offer
 
-- (void)testProverStoreClaimOfferWorks {
+- (void)testProverStoreCredentialOfferWorks {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
-    // 1. get wallet handle and claim offer
-    NSString *claimOfferJson;
+    // 1. get wallet handle and credential offer
+    NSString *credentialOfferJson;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:&claimOfferJson
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:&credentialOfferJson
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. Store claim offer
-    ret = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:walletHandle
-                                                  claimOfferJson:claimOfferJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaimOffer failed");
+    // 2. Store credential offer
+    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialOffer:walletHandle
+                                                  credentialOfferJson:credentialOfferJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredentialOffer failed");
 }
 
-- (void)testProverStoreClaimOfferWorksForInvalidJson {
+- (void)testProverStoreCredentialOfferWorksForInvalidJson {
 
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claim offer json
-    NSString *claimOfferJson = [NSString stringWithFormat:@"{\"issuer_did\":\"%@\"}", [TestUtils issuerDid]];
+    // 2. get credential offer json
+    NSString *credentialOfferJson = [NSString stringWithFormat:@"{\"issuer_did\":\"%@\"}", [TestUtils issuerDid]];
 
-    // 3. Store claim offer
-    ret = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:walletHandle
-                                                  claimOfferJson:claimOfferJson];
-    XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverStoreClaimOffer failed");
+    // 3. Store credential offer
+    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialOffer:walletHandle
+                                                  credentialOfferJson:credentialOfferJson];
+    XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverStoreCredentialOffer failed");
 
 
 }
 
-- (void)testProverStoreClaimOfferWorksForInvalidWallet {
+- (void)testProverStoreCredentialOfferWorksForInvalidWallet {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
-    // 1. get wallet handle and claim offer
-    NSString *claimOfferJson;
+    // 1. get wallet handle and credential offer
+    NSString *credentialOfferJson;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:&claimOfferJson
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:&credentialOfferJson
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. Store claim offer
+    // 2. Store credential offer
     IndyHandle invalidWalletHandle = walletHandle + 1;
-    ret = [[AnoncredsUtils sharedInstance] proverStoreClaimOffer:invalidWalletHandle
-                                                  claimOfferJson:claimOfferJson];
-    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverStoreClaimOffer failed");
+    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialOffer:invalidWalletHandle
+                                                  credentialOfferJson:credentialOfferJson];
+    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverStoreCredentialOffer failed");
 }
 
-// MARK: - Prover get claim offers
+// MARK: - Prover get credential offers
 
-- (void)testProverGetClaimOffersWorksForEmptyFilter {
+- (void)testProverGetCredentialOffersWorksForEmptyFilter {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claim offers
-    NSString *claimOffersJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimOffers:walletHandle
-                                                     filterJson:@"{}"
-                                             outClaimOffersJSON:&claimOffersJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimOffers failed");
-    XCTAssertTrue([claimOffersJson isValid], @"invalid claimOffersJson: %@", claimOffersJson);
+    // 2. get credential offers
+    NSString *credentialOffersJson;
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialOffers:walletHandle
+                                                          filterJson:@"{}"
+                                             outCredentialOffersJSON:&credentialOffersJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialOffers failed");
+    XCTAssertTrue([credentialOffersJson isValid], @"invalid credentialOffersJson: %@", credentialOffersJson);
 
     // 3. check obtained offers
-    NSDictionary *offers = [NSDictionary fromString:claimOffersJson];
+    NSDictionary *offers = [NSDictionary fromString:credentialOffersJson];
     NSArray *array = (NSArray *) offers;
-    XCTAssertEqual([array count], 3, @"wrong length of claim offers");
+    XCTAssertEqual([array count], 3, @"wrong length of credential offers");
 }
 
-- (void)testProverGetClaimOffersWorksForFilterByIssuer {
+- (void)testProverGetCredentialOffersWorksForFilterByIssuer {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claim offers
+    // 2. get credential offers
     NSString *filter = [NSString stringWithFormat:@"{\"issuer_did\":\"%@\"}", [TestUtils issuerDid]];
-    NSString *claimOffersJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimOffers:walletHandle
-                                                     filterJson:filter
-                                             outClaimOffersJSON:&claimOffersJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimOffers failed");
-    XCTAssertTrue([claimOffersJson isValid], @"invalid claimOffersJson: %@", claimOffersJson);
+    NSString *credentialOffersJson;
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialOffers:walletHandle
+                                                          filterJson:filter
+                                             outCredentialOffersJSON:&credentialOffersJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialOffers failed");
+    XCTAssertTrue([credentialOffersJson isValid], @"invalid credentialOffersJson: %@", credentialOffersJson);
 
     // 3. Check offers
-    NSDictionary *offers = [NSDictionary fromString:claimOffersJson];
+    NSDictionary *offers = [NSDictionary fromString:credentialOffersJson];
     NSArray *array = (NSArray *) offers;
-    XCTAssertEqual([array count], 2, @"wrong length of claim offers");
+    XCTAssertEqual([array count], 2, @"wrong length of credential offers");
 
     XCTAssertTrue([[NSString stringWithString:array[0][@"issuer_did"]] isEqualToString:[TestUtils issuerDid]]);
     XCTAssertTrue([[NSString stringWithString:array[1][@"issuer_did"]] isEqualToString:[TestUtils issuerDid]]);
 }
 
-- (void)testProverGetClaimOffersWorksForFilterBySchemaId {
+- (void)testProverGetCredentialOffersWorksForFilterBySchemaId {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claim offers
+    // 2. get credential offers
     NSString *filter = [NSString stringWithFormat:@"{\"schema_id\":\"%@\"}", [[AnoncredsUtils sharedInstance] getXyzSchemaId]];
-    NSString *claimOffersJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimOffers:walletHandle
-                                                     filterJson:filter
-                                             outClaimOffersJSON:&claimOffersJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimOffers failed");
-    XCTAssertTrue([claimOffersJson isValid], @"invalid claimOffersJson: %@", claimOffersJson);
+    NSString *credentialOffersJson;
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialOffers:walletHandle
+                                                          filterJson:filter
+                                             outCredentialOffersJSON:&credentialOffersJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialOffers failed");
+    XCTAssertTrue([credentialOffersJson isValid], @"invalid credentialOffersJson: %@", credentialOffersJson);
 
     // 3. Check offers
-    NSDictionary *offersDict = [NSDictionary fromString:claimOffersJson];
+    NSDictionary *offersDict = [NSDictionary fromString:credentialOffersJson];
     NSArray *offers = (NSArray *) offersDict;
-    XCTAssertEqual([offers count], 1, @"wrong length of claim offers");
+    XCTAssertEqual([offers count], 1, @"wrong length of credential offers");
 
     XCTAssertTrue([[NSString stringWithString:offers[0][@"cred_def_id"]] isEqualToString:[[AnoncredsUtils sharedInstance] getIssuer1XyzCredDefId]]);
 }
 
-- (void)testProverGetClaimOffersWorksForFilterByCredDefId {
+- (void)testProverGetCredentialOffersWorksForFilterByCredDefId {
 
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claim offers
+    // 2. get credential offers
     NSString *filter = [NSString stringWithFormat:@"{\"cred_def_id\":\"%@\"}", [[AnoncredsUtils sharedInstance] getIssuer1GvtCredDefId]];
-    NSString *claimOffersJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimOffers:walletHandle
-                                                     filterJson:filter
-                                             outClaimOffersJSON:&claimOffersJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimOffers failed");
-    XCTAssertTrue([claimOffersJson isValid], @"invalid claimOffersJson: %@", claimOffersJson);
+    NSString *credentialOffersJson;
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialOffers:walletHandle
+                                                          filterJson:filter
+                                             outCredentialOffersJSON:&credentialOffersJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialOffers failed");
+    XCTAssertTrue([credentialOffersJson isValid], @"invalid credentialOffersJson: %@", credentialOffersJson);
 
     // 3. Check offers
-    NSDictionary *offersJson = [NSDictionary fromString:claimOffersJson];
+    NSDictionary *offersJson = [NSDictionary fromString:credentialOffersJson];
     NSArray *offers = (NSArray *) offersJson;
-    XCTAssertEqual([offers count], 1, @"wrong length of claim offers");
+    XCTAssertEqual([offers count], 1, @"wrong length of credential offers");
 
     XCTAssertTrue([[NSString stringWithString:offers[0][@"cred_def_id"]] isEqualToString:[[AnoncredsUtils sharedInstance] getIssuer1GvtCredDefId]]);
 
 }
 
-- (void)testProverGetClaimOffersWorksForNoResults {
+- (void)testProverGetCredentialOffersWorksForNoResults {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed with code:%ld", (long) ret.code);
 
-    // 2. get claim offers
+    // 2. get credential offers
     NSString *filter = @"{\"issuer_did\":\"didissuer\"}";
-    NSString *claimOffersJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimOffers:walletHandle
-                                                     filterJson:filter
-                                             outClaimOffersJSON:&claimOffersJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimOffers failed with code:%ld", (long) ret.code);
-    XCTAssertTrue([claimOffersJson isValid], @"invalid claimOffersJson: %@", claimOffersJson);
+    NSString *credentialOffersJson;
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialOffers:walletHandle
+                                                          filterJson:filter
+                                             outCredentialOffersJSON:&credentialOffersJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialOffers failed with code:%ld", (long) ret.code);
+    XCTAssertTrue([credentialOffersJson isValid], @"invalid credentialOffersJson: %@", credentialOffersJson);
 
     // 3. Check offers
-    NSDictionary *offersJson = [NSDictionary fromString:claimOffersJson];
+    NSDictionary *offersJson = [NSDictionary fromString:credentialOffersJson];
     NSArray *offers = (NSArray *) offersJson;
-    XCTAssertEqual([offers count], 0, @"wrong length of claim offers");
+    XCTAssertEqual([offers count], 0, @"wrong length of credential offers");
 }
 
-- (void)testProverGetClaimOffersWorksForinvalidWalletHandle {
+- (void)testProverGetCredentialOffersWorksForinvalidWalletHandle {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed with code:%ld", (long) ret.code);
 
-    // 2. get claim offers
+    // 2. get credential offers
     IndyHandle invalidWalletHandle = walletHandle + 1;
-    NSString *claimOffersJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimOffers:invalidWalletHandle
-                                                     filterJson:@"{}"
-                                             outClaimOffersJSON:&claimOffersJson];
-    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverGetClaimOffers returned not WalletInvalidHandle code:%ld", (long) ret.code);
+    NSString *credentialOffersJson;
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialOffers:invalidWalletHandle
+                                                          filterJson:@"{}"
+                                             outCredentialOffersJSON:&credentialOffersJson];
+    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverGetCredentialOffers returned not WalletInvalidHandle code:%ld", (long) ret.code);
 }
 
 // MARK: - Prover create master secret
@@ -332,10 +332,10 @@
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed with code:%ld", (long) ret.code);
 
     // 2. create master secret
@@ -352,10 +352,10 @@
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed with code:%ld", (long) ret.code);
 
     // 2. create master secret
@@ -366,368 +366,368 @@
 
 }
 
-// MARK: - Prover create and store claim request
+// MARK: - Prover create and store credential request
 - (void)testProverCreateAndStoreRequestWorks {
 
     NSError *ret;
     IndyHandle walletHandle = 0;
-    NSString *claimDef;
+    NSString *credentialDef;
 
     // 1. get wallet handle
-    NSString *claimOffer;
+    NSString *credentialOffer;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:&claimDef
-                                                                  claimOfferJson:&claimOffer
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:&credentialDef
+                                                             credentialOfferJson:&credentialOffer
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed with code:%ld", (long) ret.code);
 
-    // 2. get claim request
-    NSString *claimRequestJson;
+    // 2. get credential request
+    NSString *credentialRequestJson;
 
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDef
-                                                                     proverDid:[TestUtils proverDid]
-                                                                claimOfferJson:claimOffer
-                                                              masterSecretName:[TestUtils commonMasterSecretName]
-                                                                  walletHandle:walletHandle
-                                                               outClaimReqJson:&claimRequestJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed with code:%ld", (long) ret.code);
-    XCTAssertTrue([claimRequestJson isValid], @"invalid claimRequestJson: %@", claimRequestJson);
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreCredentialReqWithDef:credentialDef
+                                                                          proverDid:[TestUtils proverDid]
+                                                                credentialOfferJson:credentialOffer
+                                                                   masterSecretName:[TestUtils commonMasterSecretName]
+                                                                       walletHandle:walletHandle
+                                                               outCredentialReqJson:&credentialRequestJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreCredentialReq failed with code:%ld", (long) ret.code);
+    XCTAssertTrue([credentialRequestJson isValid], @"invalid credentialRequestJson: %@", credentialRequestJson);
 }
 
-- (void)testProverCreateAndStoreClaimReqWorksForInvalidWallet {
+- (void)testProverCreateAndStoreCredentialReqWorksForInvalidWallet {
 
     NSError *ret;
     IndyHandle walletHandle = 0;
-    NSString *claimDef;
-    NSString *claimOffer;
+    NSString *credentialDef;
+    NSString *credentialOffer;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:&claimDef
-                                                                  claimOfferJson:&claimOffer
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:&credentialDef
+                                                             credentialOfferJson:&credentialOffer
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. create and store claim requets
+    // 2. create and store credential requets
     IndyHandle invalidWalletHandle = walletHandle + 1;
-    NSString *claimRequestJson;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDef
-                                                                     proverDid:[TestUtils proverDid]
-                                                                claimOfferJson:claimOffer
-                                                              masterSecretName:[TestUtils commonMasterSecretName]
-                                                                  walletHandle:invalidWalletHandle
-                                                               outClaimReqJson:&claimRequestJson];
-    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed");
+    NSString *credentialRequestJson;
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreCredentialReqWithDef:credentialDef
+                                                                          proverDid:[TestUtils proverDid]
+                                                                credentialOfferJson:credentialOffer
+                                                                   masterSecretName:[TestUtils commonMasterSecretName]
+                                                                       walletHandle:invalidWalletHandle
+                                                               outCredentialReqJson:&credentialRequestJson];
+    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverCreateAndStoreCredentialReq failed");
 
 }
 
-// MARK: - Issuer create claim
+// MARK: - Issuer create credential
 
-- (void)testIssuerCreateClaimWorks {
+- (void)testIssuerCreateCredentialWorks {
 
     NSError *ret;
     IndyHandle walletHandle = 0;
 
-    // 1. get wallet handle and claim request
-    NSString *claimRequest;
+    // 1. get wallet handle and credential request
+    NSString *credentialRequest;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:&claimRequest
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:&credentialRequest
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    NSString *claimJson = [[AnoncredsUtils sharedInstance] getGvtClaimValuesJson];
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:walletHandle
-                                                                claimReqJson:claimRequest
-                                                             claimValuesJson:[[AnoncredsUtils sharedInstance] getGvtClaimValuesJson]
-                                                                    revRegId:nil
-                                                           tailsReaderHandle:nil
-                                                              userRevocIndex:nil
-                                                                outClaimJson:&claimJson
-                                                        outRevocRegDeltaJSON:nil];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateClaimWithWalletHandle failed");
-    XCTAssertTrue([claimJson isValid], @"invalid claimJson: %@", claimJson);
+    NSString *credentialJson = [[AnoncredsUtils sharedInstance] getGvtCredentialValuesJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialWithWalletHandle:walletHandle
+                                                                credentialReqJson:credentialRequest
+                                                             credentialValuesJson:[[AnoncredsUtils sharedInstance] getGvtCredentialValuesJson]
+                                                                         revRegId:nil
+                                                                tailsReaderHandle:nil
+                                                                   userRevocIndex:nil
+                                                                outCredentialJson:&credentialJson
+                                                             outRevocRegDeltaJSON:nil];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateCredentialWithWalletHandle failed");
+    XCTAssertTrue([credentialJson isValid], @"invalid credentialJson: %@", credentialJson);
 }
 
-- (void)testIssuerCreateClaimWorksForClaimDoesNotCorrespondToClaimValues {
+- (void)testIssuerCreateCredentialWorksForCredentialDoesNotCorrespondToCredentialValues {
 
-    NSError *ret;
-    IndyHandle walletHandle = 0;
-
-    // 1. get wallet handle
-    NSString *claimRequest;
-    ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:&claimRequest
-                                                                       claimJson:nil];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
-
-    // 2. create claim
-    NSString *claimJson = [[AnoncredsUtils sharedInstance] getXyzClaimValuesJson];
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:walletHandle
-                                                                claimReqJson:claimRequest
-                                                             claimValuesJson:[[AnoncredsUtils sharedInstance] getXyzClaimValuesJson]
-                                                                    revRegId:nil
-                                                           tailsReaderHandle:nil
-                                                              userRevocIndex:nil
-                                                                outClaimJson:&claimJson
-                                                        outRevocRegDeltaJSON:nil];
-    XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::issuerCreateClaimWithWalletHandle returned wrong code");
-}
-
-- (void)testIssuerCreateClaimWorksForInvalidWalletHandle {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
-    NSString *claimRequest;
+    NSString *credentialRequest;
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:&claimRequest
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:&credentialRequest
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. create claim
-    NSString *claimJson = [[AnoncredsUtils sharedInstance] getGvtClaimValuesJson];
+    // 2. create credential
+    NSString *credentialJson = [[AnoncredsUtils sharedInstance] getXyzCredentialValuesJson];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialWithWalletHandle:walletHandle
+                                                                credentialReqJson:credentialRequest
+                                                             credentialValuesJson:[[AnoncredsUtils sharedInstance] getXyzCredentialValuesJson]
+                                                                         revRegId:nil
+                                                                tailsReaderHandle:nil
+                                                                   userRevocIndex:nil
+                                                                outCredentialJson:&credentialJson
+                                                             outRevocRegDeltaJSON:nil];
+    XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::issuerCreateCredentialWithWalletHandle returned wrong code");
+}
+
+- (void)testIssuerCreateCredentialWorksForInvalidWalletHandle {
+    NSError *ret;
+    IndyHandle walletHandle = 0;
+
+    // 1. get wallet handle
+    NSString *credentialRequest;
+    ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:&credentialRequest
+                                                                  credentialJson:nil];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
+
+    // 2. create credential
+    NSString *credentialJson = [[AnoncredsUtils sharedInstance] getGvtCredentialValuesJson];
 
     IndyHandle invalidWalletHandle = walletHandle + 1;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:invalidWalletHandle
-                                                                claimReqJson:claimRequest
-                                                             claimValuesJson:[[AnoncredsUtils sharedInstance] getGvtClaimValuesJson]
-                                                                    revRegId:nil
-                                                           tailsReaderHandle:nil
-                                                              userRevocIndex:nil
-                                                                outClaimJson:&claimJson
-                                                        outRevocRegDeltaJSON:nil];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialWithWalletHandle:invalidWalletHandle
+                                                                credentialReqJson:credentialRequest
+                                                             credentialValuesJson:[[AnoncredsUtils sharedInstance] getGvtCredentialValuesJson]
+                                                                         revRegId:nil
+                                                                tailsReaderHandle:nil
+                                                                   userRevocIndex:nil
+                                                                outCredentialJson:&credentialJson
+                                                             outRevocRegDeltaJSON:nil];
 
-    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::issuerCreateClaimWithWalletHandle returned wrong error code.");
+    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::issuerCreateCredentialWithWalletHandle returned wrong error code.");
 }
 
-// MARK: - Prover store claim
+// MARK: - Prover store credential
 
-- (void)testProverStoreClaimWorks {
+- (void)testProverStoreCredentialWorks {
 
     NSError *ret;
     IndyHandle walletHandle = 0;
-    NSString *claimDefJson;
-    NSString *claimOfferJson;
+    NSString *credentialDefJson;
+    NSString *credentialOfferJson;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:&claimDefJson
-                                                                  claimOfferJson:&claimOfferJson
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:&credentialDefJson
+                                                             credentialOfferJson:&credentialOfferJson
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
-    XCTAssertTrue([claimDefJson isValid], @"claimDefJson is wrong:%@", claimDefJson);
+    XCTAssertTrue([credentialDefJson isValid], @"credentialDefJson is wrong:%@", credentialDefJson);
 
-    // 2. get claim request
-    NSString *claimRequest;
-    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreClaimReqWithDef:claimDefJson
-                                                                     proverDid:[TestUtils proverDid]
-                                                                claimOfferJson:claimOfferJson
-                                                              masterSecretName:[TestUtils commonMasterSecretName]
-                                                                  walletHandle:walletHandle
-                                                               outClaimReqJson:&claimRequest];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreClaimReq failed");
-    XCTAssertTrue([claimRequest isValid], @"claimRequest is wrong:%@", claimRequest);
+    // 2. get credential request
+    NSString *credentialRequest;
+    ret = [[AnoncredsUtils sharedInstance] proverCreateAndStoreCredentialReqWithDef:credentialDefJson
+                                                                          proverDid:[TestUtils proverDid]
+                                                                credentialOfferJson:credentialOfferJson
+                                                                   masterSecretName:[TestUtils commonMasterSecretName]
+                                                                       walletHandle:walletHandle
+                                                               outCredentialReqJson:&credentialRequest];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateAndStoreCredentialReq failed");
+    XCTAssertTrue([credentialRequest isValid], @"credentialRequest is wrong:%@", credentialRequest);
 
-    // 4. create claim
-    NSString *claimJson;
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateClaimWithWalletHandle:walletHandle
-                                                                claimReqJson:claimRequest
-                                                             claimValuesJson:[[AnoncredsUtils sharedInstance] getGvtClaimValuesJson]
-                                                                    revRegId:nil
-                                                           tailsReaderHandle:nil
-                                                              userRevocIndex:nil
-                                                                outClaimJson:&claimJson
-                                                        outRevocRegDeltaJSON:nil];
+    // 4. create credential
+    NSString *credentialJson;
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialWithWalletHandle:walletHandle
+                                                                credentialReqJson:credentialRequest
+                                                             credentialValuesJson:[[AnoncredsUtils sharedInstance] getGvtCredentialValuesJson]
+                                                                         revRegId:nil
+                                                                tailsReaderHandle:nil
+                                                                   userRevocIndex:nil
+                                                                outCredentialJson:&credentialJson
+                                                             outRevocRegDeltaJSON:nil];
 
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateClaimWithWalletHandle failed");
-    XCTAssertTrue([claimJson isValid], @"claimJson is wrong:%@", claimJson);
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateCredentialWithWalletHandle failed");
+    XCTAssertTrue([credentialJson isValid], @"credentialJson is wrong:%@", credentialJson);
 
-    // 5. store claim
-    ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:walletHandle
-                                                                    claimId:@"ClaimIDNew1"
-                                                                 claimsJson:claimJson
-                                                              revRegDefJSON:nil];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreClaimWithWalletHandle failed");
+    // 5. store credential
+    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialWithWalletHandle:walletHandle
+                                                                    credentialId:@"CredentialIDNew1"
+                                                                 credentialsJson:credentialJson
+                                                                   revRegDefJSON:nil];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredentialWithWalletHandle failed");
 }
 
-- (void)testProverStoreClaimWorksForInvalidWalletHandle {
+- (void)testProverStoreCredentialWorksForInvalidWalletHandle {
 
     NSError *ret;
     IndyHandle walletHandle = 0;
-    NSString *claimDefJson;
-    NSString *claimJson;
+    NSString *credentialDefJson;
+    NSString *credentialJson;
 
-    // 1. get wallet handle and claim json
+    // 1. get wallet handle and credential json
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:&claimDefJson
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:&claimJson];
+                                                               credentialDefJson:&credentialDefJson
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:&credentialJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
-    XCTAssertTrue([claimDefJson isValid], @"claimDefJson is wrong:%@", claimDefJson);
+    XCTAssertTrue([credentialDefJson isValid], @"credentialDefJson is wrong:%@", credentialDefJson);
 
-    // 2. store claim
+    // 2. store credential
     IndyHandle invalidWalletHandle = walletHandle + 1;
-    ret = [[AnoncredsUtils sharedInstance] proverStoreClaimWithWalletHandle:invalidWalletHandle
-                                                                    claimId:@"ClaimIDNew1"
-                                                                 claimsJson:claimJson
-                                                              revRegDefJSON:nil];
-    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverStoreClaimWithWalletHandle failed");
+    ret = [[AnoncredsUtils sharedInstance] proverStoreCredentialWithWalletHandle:invalidWalletHandle
+                                                                    credentialId:[[AnoncredsUtils sharedInstance] credentialId1]
+                                                                 credentialsJson:credentialJson
+                                                                   revRegDefJSON:nil];
+    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverStoreCredentialWithWalletHandle failed");
 }
 
-// MARK: - Prover get claims
+// MARK: - Prover get credentials
 
-- (void)testProverGetClaimsWorksForEmptyFilter {
+- (void)testProverGetCredentialsWorksForEmptyFilter {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claims
-    NSString *claimsJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForWalletHandle:walletHandle
-                                                               filterJson:@"{}"
-                                                            outClaimsJson:&claimsJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimsForWalletHandle failed");
-    XCTAssertTrue([claimsJson isValid], @"claimsJson is wrong:%@", claimsJson);
+    // 2. get credentials
+    NSString *credentialsJson;
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForWalletHandle:walletHandle
+                                                                    filterJson:@"{}"
+                                                             outCredentilsJson:&credentialsJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForWalletHandle failed");
+    XCTAssertTrue([credentialsJson isValid], @"credentialsJson is wrong:%@", credentialsJson);
 
-    NSDictionary *claimsDict = [NSDictionary fromString:claimsJson];
-    NSArray *claims = (NSArray *) claimsDict;
+    NSDictionary *credentialsDict = [NSDictionary fromString:credentialsJson];
+    NSArray *credentials = (NSArray *) credentialsDict;
 
-    XCTAssertEqual([claims count], 3, @"claims count != 1");
+    XCTAssertEqual([credentials count], 3, @"credentials count != 1");
 }
 
-- (void)testProverGetClaimsWorksForFilterByIssuerDid {
+- (void)testProverGetCredentialsWorksForFilterByIssuerDid {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claims
-    NSString *claimsJson;
+    // 2. get credentials
+    NSString *credentialsJson;
     NSString *filter = [NSString stringWithFormat:@"{\"issuer_did\":\"%@\"}", [TestUtils issuer2Did]];
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForWalletHandle:walletHandle
-                                                               filterJson:filter
-                                                            outClaimsJson:&claimsJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimsForWalletHandle failed");
-    XCTAssertTrue([claimsJson isValid], @"claimsJson is wrong:%@", claimsJson);
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForWalletHandle:walletHandle
+                                                                    filterJson:filter
+                                                             outCredentilsJson:&credentialsJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForWalletHandle failed");
+    XCTAssertTrue([credentialsJson isValid], @"credentialsJson is wrong:%@", credentialsJson);
 
-    NSDictionary *claimsDict = [NSDictionary fromString:claimsJson];
-    NSArray *claims = (NSArray *) claimsDict;
+    NSDictionary *credentialsDict = [NSDictionary fromString:credentialsJson];
+    NSArray *credentials = (NSArray *) credentialsDict;
 
-    XCTAssertEqual([claims count], 1, @"claims count != 1");
+    XCTAssertEqual([credentials count], 1, @"credentials count != 1");
 }
 
-- (void)testProverGetClaimsWorksForFilterByClaimDefId {
+- (void)testProverGetCredentialsWorksForFilterByCredentialDefId {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claims
-    NSString *claimsJson;
+    // 2. get credentials
+    NSString *credentialsJson;
     NSString *filter = [NSString stringWithFormat:@"{\"cred_def_id\":\"%@\"}", [[AnoncredsUtils sharedInstance] getIssuer1GvtCredDefId]];
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForWalletHandle:walletHandle
-                                                               filterJson:filter
-                                                            outClaimsJson:&claimsJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimsForWalletHandle failed");
-    XCTAssertTrue([claimsJson isValid], @"claimsJson is wrong:%@", claimsJson);
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForWalletHandle:walletHandle
+                                                                    filterJson:filter
+                                                             outCredentilsJson:&credentialsJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForWalletHandle failed");
+    XCTAssertTrue([credentialsJson isValid], @"credentialsJson is wrong:%@", credentialsJson);
 
-    NSDictionary *claimsDict = [NSDictionary fromString:claimsJson];
-    NSArray *claims = (NSArray *) claimsDict;
+    NSDictionary *credentialsDict = [NSDictionary fromString:credentialsJson];
+    NSArray *credentials = (NSArray *) credentialsDict;
 
-    XCTAssertEqual([claims count], 1, @"claims count != 1");
+    XCTAssertEqual([credentials count], 1, @"credentials count != 1");
 }
 
-- (void)testProverGetClaimsWorksForEmptyResult {
+- (void)testProverGetCredentialsWorksForEmptyResult {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claims
-    NSString *claimsJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForWalletHandle:walletHandle
-                                                               filterJson:@"{\"issuer_did\":\"didissuer\"}"
-                                                            outClaimsJson:&claimsJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimsForWalletHandle failed");
-    XCTAssertTrue([claimsJson isValid], @"claimsJson is wrong:%@", claimsJson);
+    // 2. get credentials
+    NSString *credentialsJson;
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForWalletHandle:walletHandle
+                                                                    filterJson:@"{\"issuer_did\":\"didissuer\"}"
+                                                             outCredentilsJson:&credentialsJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForWalletHandle failed");
+    XCTAssertTrue([credentialsJson isValid], @"credentialsJson is wrong:%@", credentialsJson);
 
-    NSDictionary *claimsDict = [NSDictionary fromString:claimsJson];
-    NSArray *claims = (NSArray *) claimsDict;
+    NSDictionary *credentialsDict = [NSDictionary fromString:credentialsJson];
+    NSArray *credentials = (NSArray *) credentialsDict;
 
-    XCTAssertEqual([claims count], 0, @"claims count != 0");
+    XCTAssertEqual([credentials count], 0, @"credentials count != 0");
 }
 
-- (void)testProverGetClaimsWorksForInvalidWalletHandle {
+- (void)testProverGetCredentialsWorksForInvalidWalletHandle {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claims
-    NSString *claimsJson;
+    // 2. get credentials
+    NSString *credentialsJson;
     IndyHandle invalidWalletHandle = walletHandle + 1;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForWalletHandle:invalidWalletHandle
-                                                               filterJson:@"{}"
-                                                            outClaimsJson:&claimsJson];
-    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverGetClaimsForWalletHandle returned wrong code");
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForWalletHandle:invalidWalletHandle
+                                                                    filterJson:@"{}"
+                                                             outCredentilsJson:&credentialsJson];
+    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverGetCredentialsForWalletHandle returned wrong code");
 }
 
-// MARK: - Prover get claims for proof request
+// MARK: - Prover get credentials for proof request
 
-- (void)testProverGetClaimsForProofReqWorksForRevealedAttr {
+- (void)testProverGetCredentialsForProofReqWorksForRevealedAttr {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claims
+    // 2. get credentials
     NSString *proofRequest = [NSString stringWithFormat:@"{"
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
@@ -739,32 +739,32 @@
             "},"
             "\"requested_predicates\":{}"
             "}"];
-    NSString *claimsJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
-                                                                     proofRequestJson:proofRequest
-                                                                        outClaimsJson:&claimsJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimsForProofReqWithWalletHandle returned wrong code");
+    NSString *credentialsJson;
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReqWithWalletHandle:walletHandle
+                                                                          proofRequestJson:proofRequest
+                                                                        outCredentialsJson:&credentialsJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForProofReqWithWalletHandle returned wrong code");
 
-    // 3. check claims
-    NSDictionary *claims = [NSDictionary fromString:claimsJson];
-    XCTAssertEqual([[claims[@"attrs"] allValues] count], 1, @"attrs length != 1");
-    XCTAssertEqual([[claims[@"predicates"] allValues] count], 0, @"predicates length != 0");
-    XCTAssertEqual([claims[@"attrs"][@"attr1_referent"] count], 2, @"attr1_referent length != 2");
+    // 3. check credentials
+    NSDictionary *credentials = [NSDictionary fromString:credentialsJson];
+    XCTAssertEqual([[credentials[@"attrs"] allValues] count], 1, @"attrs length != 1");
+    XCTAssertEqual([[credentials[@"predicates"] allValues] count], 0, @"predicates length != 0");
+    XCTAssertEqual([credentials[@"attrs"][@"attr1_referent"] count], 2, @"attr1_referent length != 2");
 }
 
-- (void)testProverGetClaimsForProofReqWorksForNotFoundAttribute {
+- (void)testProverGetCredentialsForProofReqWorksForNotFoundAttribute {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claims
+    // 2. get credentials
     NSString *proofRequest = @"{"
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
@@ -776,32 +776,32 @@
             "},"
             "\"requested_predicates\":{}"
             "}";
-    NSString *claimsJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
-                                                                     proofRequestJson:proofRequest
-                                                                        outClaimsJson:&claimsJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimsForProofReqWithWalletHandle returned wrong code");
+    NSString *credentialsJson;
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReqWithWalletHandle:walletHandle
+                                                                          proofRequestJson:proofRequest
+                                                                        outCredentialsJson:&credentialsJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForProofReqWithWalletHandle returned wrong code");
 
-    // 3. check claims
-    NSDictionary *claims = [NSDictionary fromString:claimsJson];
-    XCTAssertEqual([[claims[@"attrs"] allValues] count], 1, @"attrs length != 1");
-    XCTAssertEqual([[claims[@"predicates"] allValues] count], 0, @"predicates length != 0");
-    XCTAssertEqual([claims[@"attrs"][@"attr1_referent"] count], 0, @"attr1_referent length != 1");
+    // 3. check credentials
+    NSDictionary *credentials = [NSDictionary fromString:credentialsJson];
+    XCTAssertEqual([[credentials[@"attrs"] allValues] count], 1, @"attrs length != 1");
+    XCTAssertEqual([[credentials[@"predicates"] allValues] count], 0, @"predicates length != 0");
+    XCTAssertEqual([credentials[@"attrs"][@"attr1_referent"] count], 0, @"attr1_referent length != 1");
 }
 
-- (void)testProverGetClaimsForProofReqWorksForSatisfyPredicate {
+- (void)testProverGetCredentialsForProofReqWorksForSatisfyPredicate {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claims
+    // 2. get credentials
     NSString *proofRequest = @"{"
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
@@ -809,32 +809,32 @@
             "\"requested_attrs\":{},"
             "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}"
             "}";
-    NSString *claimsJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
-                                                                     proofRequestJson:proofRequest
-                                                                        outClaimsJson:&claimsJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimsForProofReqWithWalletHandle returned wrong code");
+    NSString *credentialsJson;
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReqWithWalletHandle:walletHandle
+                                                                          proofRequestJson:proofRequest
+                                                                        outCredentialsJson:&credentialsJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForProofReqWithWalletHandle returned wrong code");
 
-    // 3. check claims
-    NSDictionary *claims = [NSDictionary fromString:claimsJson];
-    XCTAssertEqual([[claims[@"attrs"] allValues] count], 0, @"attrs length != 1");
-    XCTAssertEqual([[claims[@"predicates"] allValues] count], 1, @"predicates length != 0");
-    XCTAssertEqual([claims[@"predicates"][@"predicate1_referent"] count], 2, @"predicate1_referent length != 2");
+    // 3. check credentials
+    NSDictionary *credentials = [NSDictionary fromString:credentialsJson];
+    XCTAssertEqual([[credentials[@"attrs"] allValues] count], 0, @"attrs length != 1");
+    XCTAssertEqual([[credentials[@"predicates"] allValues] count], 1, @"predicates length != 0");
+    XCTAssertEqual([credentials[@"predicates"][@"predicate1_referent"] count], 2, @"predicate1_referent length != 2");
 }
 
-- (void)testProverGetClaimsForProofReqWorksForNotSatisfyPredicate {
+- (void)testProverGetCredentialsForProofReqWorksForNotSatisfyPredicate {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claims
+    // 2. get credentials
     NSString *proofRequest = @"{"
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
@@ -842,33 +842,33 @@
     "\"requested_attrs\":{},"
             "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":58}}"
             "}";
-    NSString *claimsJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
-                                                                     proofRequestJson:proofRequest
-                                                                        outClaimsJson:&claimsJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimsForProofReqWithWalletHandle returned wrong code");
+    NSString *credentialsJson;
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReqWithWalletHandle:walletHandle
+                                                                          proofRequestJson:proofRequest
+                                                                        outCredentialsJson:&credentialsJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForProofReqWithWalletHandle returned wrong code");
 
-    // 3. check claims
-    NSDictionary *claims = [NSDictionary fromString:claimsJson];
-    XCTAssertEqual([[claims[@"attrs"] allValues] count], 0, @"attrs length != 1");
-    XCTAssertEqual([[claims[@"predicates"] allValues] count], 1, @"predicates length != 0");
-    XCTAssertEqual([claims[@"predicates"][@"predicate1_referent"] count], 0, @"predicate1_referent length != 0");
+    // 3. check credentials
+    NSDictionary *credentials = [NSDictionary fromString:credentialsJson];
+    XCTAssertEqual([[credentials[@"attrs"] allValues] count], 0, @"attrs length != 1");
+    XCTAssertEqual([[credentials[@"predicates"] allValues] count], 1, @"predicates length != 0");
+    XCTAssertEqual([credentials[@"predicates"][@"predicate1_referent"] count], 0, @"predicate1_referent length != 0");
 }
 
 
-- (void)testProverGetClaimsForProofReqWorksForMultiplyAttributeAndPredicates {
+- (void)testProverGetCredentialsForProofReqWorksForMultiplyAttributeAndPredicates {
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claims
+    // 2. get credentials
     NSString *proofRequest = [NSString stringWithFormat:@"{"
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
@@ -881,36 +881,36 @@
             "\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18},"
             "\"predicate2_referent\":{\"attr_name\":\"height\",\"p_type\":\">=\",\"value\":160}"
             "}}"];
-    NSString *claimsJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
-                                                                     proofRequestJson:proofRequest
-                                                                        outClaimsJson:&claimsJson];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetClaimsForProofReqWithWalletHandle returned wrong code");
+    NSString *credentialsJson;
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReqWithWalletHandle:walletHandle
+                                                                          proofRequestJson:proofRequest
+                                                                        outCredentialsJson:&credentialsJson];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForProofReqWithWalletHandle returned wrong code");
 
-    // 3. check claims
-    NSDictionary *claims = [NSDictionary fromString:claimsJson];
-    XCTAssertEqual([[claims[@"attrs"] allValues] count], 2, @"attrs length != 2");
-    XCTAssertEqual([[claims[@"predicates"] allValues] count], 2, @"predicates length != 2");
-    XCTAssertEqual([claims[@"attrs"][@"attr1_referent"] count], 2, @"attr1_referent length != 2");
-    XCTAssertEqual([claims[@"attrs"][@"attr2_referent"] count], 2, @"attr2_referent length != 2");
-    XCTAssertEqual([claims[@"predicates"][@"predicate1_referent"] count], 2, @"predicate1_referent length != 2");
-    XCTAssertEqual([claims[@"predicates"][@"predicate2_referent"] count], 2, @"predicate2_referent length != 2");
+    // 3. check credentials
+    NSDictionary *credentials = [NSDictionary fromString:credentialsJson];
+    XCTAssertEqual([[credentials[@"attrs"] allValues] count], 2, @"attrs length != 2");
+    XCTAssertEqual([[credentials[@"predicates"] allValues] count], 2, @"predicates length != 2");
+    XCTAssertEqual([credentials[@"attrs"][@"attr1_referent"] count], 2, @"attr1_referent length != 2");
+    XCTAssertEqual([credentials[@"attrs"][@"attr2_referent"] count], 2, @"attr2_referent length != 2");
+    XCTAssertEqual([credentials[@"predicates"][@"predicate1_referent"] count], 2, @"predicate1_referent length != 2");
+    XCTAssertEqual([credentials[@"predicates"][@"predicate2_referent"] count], 2, @"predicate2_referent length != 2");
 }
 
-- (void)testProverGetClaimsForProofReqWorksForInvalidWalletHandle {
+- (void)testProverGetCredentialsForProofReqWorksForInvalidWalletHandle {
 
     NSError *ret;
     IndyHandle walletHandle = 0;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:nil
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:nil
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
 
-    // 2. get claims
+    // 2. get credentials
     NSString *proofRequest = @"{"
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
@@ -919,9 +919,9 @@
             "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}"
             "}";
     IndyHandle invalidWalletHandle = walletHandle + 1;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:invalidWalletHandle
-                                                                     proofRequestJson:proofRequest outClaimsJson:nil];
-    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverGetClaimsForProofReqWithWalletHandle returned wrong error code");
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReqWithWalletHandle:invalidWalletHandle
+                                                                          proofRequestJson:proofRequest outCredentialsJson:nil];
+    XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverGetCredentialsForProofReqWithWalletHandle returned wrong error code");
 
 }
 
@@ -930,18 +930,18 @@
 - (void)testProverCreateProofWorks {
     NSError *ret;
     IndyHandle walletHandle = 0;
-    NSString *claimDefJson;
+    NSString *credentialDefJson;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:&claimDefJson
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:&credentialDefJson
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
-    XCTAssertTrue([claimDefJson isValid], @"invalid claimDefJson: %@", claimDefJson);
+    XCTAssertTrue([credentialDefJson isValid], @"invalid credentialDefJson: %@", credentialDefJson);
 
-    // 2. get claims for proof request
+    // 2. get credentials for proof request
 
     NSString *proofRequest = @"{"
             "\"nonce\":\"123432421212\","
@@ -950,51 +950,48 @@
             "\"requested_attrs\":{\"attr1_referent\":{\"name\":\"name\"}},"
             "\"requested_predicates\":{\"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}}"
             "}";
-    NSString *claimsJson;
-    ret = [[AnoncredsUtils sharedInstance] proverGetClaimsForProofReqWithWalletHandle:walletHandle
-                                                                     proofRequestJson:proofRequest
-                                                                        outClaimsJson:&claimsJson];
-    NSString *claimId = @"ClaimId1";
-    NSString *requestedClaimsJson = [NSString stringWithFormat:@"{"\
+    NSString *credentialsJson;
+    ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReqWithWalletHandle:walletHandle
+                                                                          proofRequestJson:proofRequest
+                                                                        outCredentialsJson:&credentialsJson];
+    NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{"\
                                      "\"self_attested_attributes\":{},"\
                                      "\"requested_attrs\":{"\
                                         "\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},"\
                                     "\"requested_predicates\":{"\
                                         "\"predicate1_referent\":{\"cred_id\":\"%@\"}"\
-                                     "}}", claimId, claimId];
+                                     "}}", [[AnoncredsUtils sharedInstance] credentialId1], [[AnoncredsUtils sharedInstance] credentialId1]];
 
-    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", claimId, [[AnoncredsUtils sharedInstance] getGvtSchemaJson]];
-    NSString *claimDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", claimId, claimDefJson];
+    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", [[AnoncredsUtils sharedInstance] credentialId1], [[AnoncredsUtils sharedInstance] getGvtSchemaJson]];
+    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", [[AnoncredsUtils sharedInstance] credentialId1], credentialDefJson];
     NSString *revocInfosJsons = @"{}";
 
     NSString *proofJson;
     ret = [[AnoncredsUtils sharedInstance] proverCreateProofWithWalletHandle:walletHandle
                                                                 proofReqJson:proofRequest
-                                                         requestedClaimsJson:requestedClaimsJson
+                                                    requestedCredentialsJson:requestedCredentialsJson
                                                                  schemasJson:schemasJson
                                                             masterSecretName:[TestUtils commonMasterSecretName]
-                                                               claimDefsJson:claimDefsJson
+                                                          credentialDefsJson:credentialDefsJson
                                                               revocInfosJSON:revocInfosJsons
                                                                 outProofJson:&proofJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverCreateProofWithWalletHandle failed");
     XCTAssertTrue([proofJson isValid], @"invalid proofJson: %@", proofJson);
 }
 
-- (void)testProverCreateProofWorksForUsingNotSatisfyClaim {
+- (void)testProverCreateProofWorksForUsingNotSatisfyCredential {
     NSError *ret;
     IndyHandle walletHandle = 0;
-    NSString *claimDefJson;
+    NSString *credentialDefJson;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:&claimDefJson
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:&credentialDefJson
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
-    XCTAssertTrue([claimDefJson isValid], @"invalid claimDefJson: %@", claimDefJson);
-
-    NSString *claimId = @"ClaimId1";
+    XCTAssertTrue([credentialDefJson isValid], @"invalid credentialDefJson: %@", credentialDefJson);
 
     NSString *proofRequest = @"{"
             "\"nonce\":\"123432421212\","
@@ -1004,23 +1001,23 @@
             "\"requested_predicates\":{}"
             "}";
 
-    NSString *requestedClaimsJson = [NSString stringWithFormat:@"{"\
+    NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{"\
                                      "\"self_attested_attributes\":{},"\
                                      "\"requested_attrs\":{"\
                                         "\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},"\
-                                     "\"requested_predicates\":{}}", claimId];
+                                     "\"requested_predicates\":{}}", [[AnoncredsUtils sharedInstance] credentialId1]];
 
-    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", claimId, [[AnoncredsUtils sharedInstance] getGvtSchemaJson]];
-    NSString *claimDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", claimId, claimDefJson];
+    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", [[AnoncredsUtils sharedInstance] credentialId1], [[AnoncredsUtils sharedInstance] getGvtSchemaJson]];
+    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", [[AnoncredsUtils sharedInstance] credentialId1], credentialDefJson];
     NSString *revocInfosJsons = @"{}";
 
     NSString *proofJson;
     ret = [[AnoncredsUtils sharedInstance] proverCreateProofWithWalletHandle:walletHandle
                                                                 proofReqJson:proofRequest
-                                                         requestedClaimsJson:requestedClaimsJson
+                                                    requestedCredentialsJson:requestedCredentialsJson
                                                                  schemasJson:schemasJson
                                                             masterSecretName:[TestUtils commonMasterSecretName]
-                                                               claimDefsJson:claimDefsJson
+                                                          credentialDefsJson:credentialDefsJson
                                                               revocInfosJSON:revocInfosJsons
                                                                 outProofJson:&proofJson];
     XCTAssertEqual(ret.code, CommonInvalidStructure, @"AnoncredsUtils::proverCreateProofWithWalletHandle returned wrong code");
@@ -1030,18 +1027,18 @@
 
     NSError *ret;
     IndyHandle walletHandle = 0;
-    NSString *claimDefJson;
+    NSString *credentialDefJson;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:&claimDefJson
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:&credentialDefJson
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
-    XCTAssertTrue([claimDefJson isValid], @"invalid claimDefJson: %@", claimDefJson);
+    XCTAssertTrue([credentialDefJson isValid], @"invalid credentialDefJson: %@", credentialDefJson);
 
-    // 2. get claims for proof request
+    // 2. get credentials for proof request
     NSString *proofRequest = @"{"
             "\"nonce\":\"123432421212\","
             "\"name\":\"proof_req_1\","
@@ -1050,16 +1047,16 @@
             "\"requested_predicates\":{}"
             "}";
 
-    NSString *claimId = @"ClaimId1";
+    NSString *credentialId = @"CredentialId1";
 
-    NSString *requestedClaimsJson = [NSString stringWithFormat:@"{"\
+    NSString *requestedCredentialsJson = [NSString stringWithFormat:@"{"\
                                      "\"self_attested_attributes\":{},"\
                                      "\"requested_attrs\":{"\
                                         "\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},"\
-                                     "\"requested_predicates\":{}}", claimId];
+                                     "\"requested_predicates\":{}}", credentialId];
 
-    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", claimId, [[AnoncredsUtils sharedInstance] getGvtSchemaJson]];
-    NSString *claimDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", claimId, claimDefJson];
+    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialId, [[AnoncredsUtils sharedInstance] getGvtSchemaJson]];
+    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialId, credentialDefJson];
     NSString *revocInfosJsons = @"{}";
 
     // 3. create proof
@@ -1068,10 +1065,10 @@
 
     ret = [[AnoncredsUtils sharedInstance] proverCreateProofWithWalletHandle:invalidWalletHandle
                                                                 proofReqJson:proofRequest
-                                                         requestedClaimsJson:requestedClaimsJson
+                                                    requestedCredentialsJson:requestedCredentialsJson
                                                                  schemasJson:schemasJson
                                                             masterSecretName:[TestUtils commonMasterSecretName]
-                                                               claimDefsJson:claimDefsJson
+                                                          credentialDefsJson:credentialDefsJson
                                                               revocInfosJSON:revocInfosJsons
                                                                 outProofJson:&proofJson];
     XCTAssertEqual(ret.code, WalletInvalidHandle, @"AnoncredsUtils::proverCreateProofWithWalletHandle returned wrong code");
@@ -1081,16 +1078,16 @@
 - (void)testVerifierVerifyProofWorksForCorrectProof {
     NSError *ret;
     IndyHandle walletHandle = 0;
-    NSString *claimDefJson;
+    NSString *credentialDefJson;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:&claimDefJson
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:&credentialDefJson
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
-    XCTAssertTrue([claimDefJson isValid], @"invalid claimDefJson: %@", claimDefJson);
+    XCTAssertTrue([credentialDefJson isValid], @"invalid credentialDefJson: %@", credentialDefJson);
 
     // 2. verify proof
 
@@ -1110,11 +1107,11 @@
             "}";
 
 
-    NSString *claimDef = @"{\"id\":\"NcYxiDXkpYi6ov5FcYDi1e:2:NcYxiDXkpYi6ov5FcYDi1e:gvt:1:CL:TAG_1\",\"schemaId\":\"NcYxiDXkpYi6ov5FcYDi1e:gvt:1\",\"type\":\"CL\",\"tag\":\"TAG_1\",\"value\":{\"primary\":{\"n\":\"83700833261954142840883490294895166161595301731578998022262502712066776442890514325744286884197144798326414368014405751886855622105389299968962016434932215929671719982377213566105569947388216644079909281643650041788187098746961840411450942272990950663881633634695967313771568709791719832415691196006613061872217580015159326668870707429727718052538670621252863240380009721914996037137097764074847327414994867897029862524099326400599230496517275748726576865044646547575948006832245888394496484637725112875227352388732906515206524134299973521640981808602607767797461838791125103163246880592602246349912477596300221925281\",\"s\":\"51577844597428165224950247213739713017697817263052505822008472141885375360124708713237015426238558907393646642217464396827882029587872798688393901386020233337851425716622744208800923988402063042331810328754576977594738201111077898698670357826113122576540034863965148704561050678789353363396002680043829322189597404890414046290678587698475252039104265662355991953364086657697478701976860866979237315295373127740932599887679536942342018253925518322194136878729798111869095518966543456247951590663867805357123124475913654374213374751041539590433961525088634170724107188131376949258026545290354317749832311415250990164780\",\"rms\":\"62708414794538422026943562355906571554881830752849062463063917641676613902479491229637145851771930128327808147064140503158100571036282116638397969353349228925020048012395800852264983947986479849714387058861061034242192022705759403875689605612734501984741158738056172714426231433129979726629653681375665701705028679069521733305781044343001519335391197811473052518083306713323493336766202332476417248027975403719396975857246682971312037605116774850666238204315047288111325043386411766566477681558576375469258169775053419929433271605886306241119655198512577145876062966065581871314672888861154295655754837094932956805426\",\"r\":{\"height\":\"7494188622493963296371917167403489481700273059782054999455659466386532648382611786914343237242844878773430234638910045295358478625399697391585449023556522219075858680740645546795758181628981868954184260313152164031653595874294283262885339798434731903876494249293850867986870399677814154148567535559651088297572610075535852514290667435536599602759182312599231526717957528420962353399555892560660069225530124896146119913556820301264467039816331287604702401879088610932532894129594204847093247332825201633482082600376522831908067045247351373719763805226525727696839451033356886434970153609023330012153231016667329777696\",\"age\":\"43046580493164449821961705026387530718400962423879727006013946580835545832101569331369498984037749519211158406754939208296104507300631668137258362994203612534116672604355742579715019955935409355636621688964776800628565598346203942840267656899349137712767748817368845735656201367242542534635279763131516901403181429708581998366028577775710901657876749334400673065486555707081600694875642698628626665153188555931913999679166028466417167006140881133170951984403242763148060394279316818497553647532981619051273875000348303344274886985296929891179020792044187882266662869725597159101701220942643032293399612230392957570581\",\"sex\":\"31391934749268777097046095921329371256192556560798569606151655494000334218671922453509535334425317042318307374504839955690976647333546341369834768688635784140862983291552330278860624226449188642575498831752386208941406613814321749480509109201900035329797459779229058581915450415577005732788045738483099035786100628640371978086263122452921356849544792769452654842833600056471373685447335223378705910906125957737766421419437315127439980793505777939033365211586384773464903151776643617589982755373937461256077657573950063876991303871444299245075401364895496285926085382510741543391601676959655452384503068011979934904299\",\"name\":\"64840191664146986014724852820703243030122885784900045259945800604982240780213882839075029527730237693303411568455775358176681800981202303514798201517723103843389755391177416142616408575673840594667007246267969400671516741051469569038254235920709685371937127215998733852043413680284395500100531343570463969226739712267441866700485712180044264216527103402675699198099678041853150035796984466247681379666040861693728820386624059966279843155445343462554727993823292930187774999030025912062750634785781247559879913255618927306902136363693793213719920011348477522844420605936701667553189824313123043674515752876373195871501\"},\"rctxt\":\"13920125979496359383664089416368046657681178381336442748179982248090587205285324324319385460031681344719966280342706146885080211497557646733775315068928877946117771740999746266941852936734002809096478340345265332354968435653841555658979717252259856489574519747752076399872768043883082679544989654069519821636373428202935450859526735558087445491143414940123774990508370867355492079422429892097841461957589279524217790035579627150412018826222685692001964707919705792614905631165408310732388384665325591503572546353748867294759755431259001387311984646674572904572661231923735604585456892245402733390935721768635135049503\",\"z\":\"50109296960333342288026367833057996290823387533856893347356441132719853478925901265330098686202447936439713166809373460542432372819663794205473392135238719646136491620149885056265034742223048897220959566730659845455539891685421917703834066412587767428625819805714800636503521917315498708118955336538986979915466389840766558674135553950710428562937188174376705150160959711400066104198147552458983394499781679896880103474557745812410257278134246578495915433917231140731774952957708221646162686869495299299488019344103269536547263643347547484711709240083083547828111748533176817401632721994861304680045936924478972441786\"},\"revocation\":null}}";
+    NSString *credentialDef = @"{\"id\":\"NcYxiDXkpYi6ov5FcYDi1e:2:NcYxiDXkpYi6ov5FcYDi1e:gvt:1:CL:TAG_1\",\"schemaId\":\"NcYxiDXkpYi6ov5FcYDi1e:gvt:1\",\"type\":\"CL\",\"tag\":\"TAG_1\",\"value\":{\"primary\":{\"n\":\"83700833261954142840883490294895166161595301731578998022262502712066776442890514325744286884197144798326414368014405751886855622105389299968962016434932215929671719982377213566105569947388216644079909281643650041788187098746961840411450942272990950663881633634695967313771568709791719832415691196006613061872217580015159326668870707429727718052538670621252863240380009721914996037137097764074847327414994867897029862524099326400599230496517275748726576865044646547575948006832245888394496484637725112875227352388732906515206524134299973521640981808602607767797461838791125103163246880592602246349912477596300221925281\",\"s\":\"51577844597428165224950247213739713017697817263052505822008472141885375360124708713237015426238558907393646642217464396827882029587872798688393901386020233337851425716622744208800923988402063042331810328754576977594738201111077898698670357826113122576540034863965148704561050678789353363396002680043829322189597404890414046290678587698475252039104265662355991953364086657697478701976860866979237315295373127740932599887679536942342018253925518322194136878729798111869095518966543456247951590663867805357123124475913654374213374751041539590433961525088634170724107188131376949258026545290354317749832311415250990164780\",\"rms\":\"62708414794538422026943562355906571554881830752849062463063917641676613902479491229637145851771930128327808147064140503158100571036282116638397969353349228925020048012395800852264983947986479849714387058861061034242192022705759403875689605612734501984741158738056172714426231433129979726629653681375665701705028679069521733305781044343001519335391197811473052518083306713323493336766202332476417248027975403719396975857246682971312037605116774850666238204315047288111325043386411766566477681558576375469258169775053419929433271605886306241119655198512577145876062966065581871314672888861154295655754837094932956805426\",\"r\":{\"height\":\"7494188622493963296371917167403489481700273059782054999455659466386532648382611786914343237242844878773430234638910045295358478625399697391585449023556522219075858680740645546795758181628981868954184260313152164031653595874294283262885339798434731903876494249293850867986870399677814154148567535559651088297572610075535852514290667435536599602759182312599231526717957528420962353399555892560660069225530124896146119913556820301264467039816331287604702401879088610932532894129594204847093247332825201633482082600376522831908067045247351373719763805226525727696839451033356886434970153609023330012153231016667329777696\",\"age\":\"43046580493164449821961705026387530718400962423879727006013946580835545832101569331369498984037749519211158406754939208296104507300631668137258362994203612534116672604355742579715019955935409355636621688964776800628565598346203942840267656899349137712767748817368845735656201367242542534635279763131516901403181429708581998366028577775710901657876749334400673065486555707081600694875642698628626665153188555931913999679166028466417167006140881133170951984403242763148060394279316818497553647532981619051273875000348303344274886985296929891179020792044187882266662869725597159101701220942643032293399612230392957570581\",\"sex\":\"31391934749268777097046095921329371256192556560798569606151655494000334218671922453509535334425317042318307374504839955690976647333546341369834768688635784140862983291552330278860624226449188642575498831752386208941406613814321749480509109201900035329797459779229058581915450415577005732788045738483099035786100628640371978086263122452921356849544792769452654842833600056471373685447335223378705910906125957737766421419437315127439980793505777939033365211586384773464903151776643617589982755373937461256077657573950063876991303871444299245075401364895496285926085382510741543391601676959655452384503068011979934904299\",\"name\":\"64840191664146986014724852820703243030122885784900045259945800604982240780213882839075029527730237693303411568455775358176681800981202303514798201517723103843389755391177416142616408575673840594667007246267969400671516741051469569038254235920709685371937127215998733852043413680284395500100531343570463969226739712267441866700485712180044264216527103402675699198099678041853150035796984466247681379666040861693728820386624059966279843155445343462554727993823292930187774999030025912062750634785781247559879913255618927306902136363693793213719920011348477522844420605936701667553189824313123043674515752876373195871501\"},\"rctxt\":\"13920125979496359383664089416368046657681178381336442748179982248090587205285324324319385460031681344719966280342706146885080211497557646733775315068928877946117771740999746266941852936734002809096478340345265332354968435653841555658979717252259856489574519747752076399872768043883082679544989654069519821636373428202935450859526735558087445491143414940123774990508370867355492079422429892097841461957589279524217790035579627150412018826222685692001964707919705792614905631165408310732388384665325591503572546353748867294759755431259001387311984646674572904572661231923735604585456892245402733390935721768635135049503\",\"z\":\"50109296960333342288026367833057996290823387533856893347356441132719853478925901265330098686202447936439713166809373460542432372819663794205473392135238719646136491620149885056265034742223048897220959566730659845455539891685421917703834066412587767428625819805714800636503521917315498708118955336538986979915466389840766558674135553950710428562937188174376705150160959711400066104198147552458983394499781679896880103474557745812410257278134246578495915433917231140731774952957708221646162686869495299299488019344103269536547263643347547484711709240083083547828111748533176817401632721994861304680045936924478972441786\"},\"revocation\":null}}";
 
     NSString *schemasJson = [NSString stringWithFormat:@"{\"58479554-187f-40d9-b0a5-a95cfb0338c3\":%@}", [[AnoncredsUtils sharedInstance] getGvtSchemaJson]];
 
-    NSString *claimDefsJson = [NSString stringWithFormat:@"{\"58479554-187f-40d9-b0a5-a95cfb0338c3\":%@}", claimDef];
+    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"58479554-187f-40d9-b0a5-a95cfb0338c3\":%@}", credentialDef];
 
     NSString *revocRegDefsJSON = @"{}";
     NSString *revocRegsJson = @"{}";
@@ -1125,7 +1122,7 @@
     ret = [[AnoncredsUtils sharedInstance] verifierVerifyProof:proofRequest
                                                      proofJson:proofJson
                                                    schemasJson:schemasJson
-                                                 claimDefsJson:claimDefsJson
+                                            credentialDefsJson:credentialDefsJson
                                               revocRegDefsJSON:revocRegDefsJSON
                                                  revocRegsJson:revocRegsJson
                                                       outValid:&isValid];
@@ -1136,16 +1133,16 @@
 - (void)testVerifierVerifyProofWorksForProofDoesNotCorrespondToRequest {
     NSError *ret;
     IndyHandle walletHandle = 0;
-    NSString *claimDefJson;
+    NSString *credentialDefJson;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:&claimDefJson
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:&credentialDefJson
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
-    XCTAssertTrue([claimDefJson isValid], @"invalid claimDefJson: %@", claimDefJson);
+    XCTAssertTrue([credentialDefJson isValid], @"invalid credentialDefJson: %@", credentialDefJson);
 
     // 2. verify proof
 
@@ -1164,11 +1161,11 @@
         "}"\
     "}";
 
-    NSString *claimDef = @"\"{\"id\":\"NcYxiDXkpYi6ov5FcYDi1e:2:NcYxiDXkpYi6ov5FcYDi1e:gvt:1:CL:TAG_1\",\"schemaId\":\"NcYxiDXkpYi6ov5FcYDi1e:gvt:1\",\"type\":\"CL\",\"tag\":\"TAG_1\",\"value\":{\"primary\":{\"n\":\"83700833261954142840883490294895166161595301731578998022262502712066776442890514325744286884197144798326414368014405751886855622105389299968962016434932215929671719982377213566105569947388216644079909281643650041788187098746961840411450942272990950663881633634695967313771568709791719832415691196006613061872217580015159326668870707429727718052538670621252863240380009721914996037137097764074847327414994867897029862524099326400599230496517275748726576865044646547575948006832245888394496484637725112875227352388732906515206524134299973521640981808602607767797461838791125103163246880592602246349912477596300221925281\",\"s\":\"51577844597428165224950247213739713017697817263052505822008472141885375360124708713237015426238558907393646642217464396827882029587872798688393901386020233337851425716622744208800923988402063042331810328754576977594738201111077898698670357826113122576540034863965148704561050678789353363396002680043829322189597404890414046290678587698475252039104265662355991953364086657697478701976860866979237315295373127740932599887679536942342018253925518322194136878729798111869095518966543456247951590663867805357123124475913654374213374751041539590433961525088634170724107188131376949258026545290354317749832311415250990164780\",\"rms\":\"62708414794538422026943562355906571554881830752849062463063917641676613902479491229637145851771930128327808147064140503158100571036282116638397969353349228925020048012395800852264983947986479849714387058861061034242192022705759403875689605612734501984741158738056172714426231433129979726629653681375665701705028679069521733305781044343001519335391197811473052518083306713323493336766202332476417248027975403719396975857246682971312037605116774850666238204315047288111325043386411766566477681558576375469258169775053419929433271605886306241119655198512577145876062966065581871314672888861154295655754837094932956805426\",\"r\":{\"height\":\"7494188622493963296371917167403489481700273059782054999455659466386532648382611786914343237242844878773430234638910045295358478625399697391585449023556522219075858680740645546795758181628981868954184260313152164031653595874294283262885339798434731903876494249293850867986870399677814154148567535559651088297572610075535852514290667435536599602759182312599231526717957528420962353399555892560660069225530124896146119913556820301264467039816331287604702401879088610932532894129594204847093247332825201633482082600376522831908067045247351373719763805226525727696839451033356886434970153609023330012153231016667329777696\",\"age\":\"43046580493164449821961705026387530718400962423879727006013946580835545832101569331369498984037749519211158406754939208296104507300631668137258362994203612534116672604355742579715019955935409355636621688964776800628565598346203942840267656899349137712767748817368845735656201367242542534635279763131516901403181429708581998366028577775710901657876749334400673065486555707081600694875642698628626665153188555931913999679166028466417167006140881133170951984403242763148060394279316818497553647532981619051273875000348303344274886985296929891179020792044187882266662869725597159101701220942643032293399612230392957570581\",\"sex\":\"31391934749268777097046095921329371256192556560798569606151655494000334218671922453509535334425317042318307374504839955690976647333546341369834768688635784140862983291552330278860624226449188642575498831752386208941406613814321749480509109201900035329797459779229058581915450415577005732788045738483099035786100628640371978086263122452921356849544792769452654842833600056471373685447335223378705910906125957737766421419437315127439980793505777939033365211586384773464903151776643617589982755373937461256077657573950063876991303871444299245075401364895496285926085382510741543391601676959655452384503068011979934904299\",\"name\":\"64840191664146986014724852820703243030122885784900045259945800604982240780213882839075029527730237693303411568455775358176681800981202303514798201517723103843389755391177416142616408575673840594667007246267969400671516741051469569038254235920709685371937127215998733852043413680284395500100531343570463969226739712267441866700485712180044264216527103402675699198099678041853150035796984466247681379666040861693728820386624059966279843155445343462554727993823292930187774999030025912062750634785781247559879913255618927306902136363693793213719920011348477522844420605936701667553189824313123043674515752876373195871501\"},\"rctxt\":\"13920125979496359383664089416368046657681178381336442748179982248090587205285324324319385460031681344719966280342706146885080211497557646733775315068928877946117771740999746266941852936734002809096478340345265332354968435653841555658979717252259856489574519747752076399872768043883082679544989654069519821636373428202935450859526735558087445491143414940123774990508370867355492079422429892097841461957589279524217790035579627150412018826222685692001964707919705792614905631165408310732388384665325591503572546353748867294759755431259001387311984646674572904572661231923735604585456892245402733390935721768635135049503\",\"z\":\"50109296960333342288026367833057996290823387533856893347356441132719853478925901265330098686202447936439713166809373460542432372819663794205473392135238719646136491620149885056265034742223048897220959566730659845455539891685421917703834066412587767428625819805714800636503521917315498708118955336538986979915466389840766558674135553950710428562937188174376705150160959711400066104198147552458983394499781679896880103474557745812410257278134246578495915433917231140731774952957708221646162686869495299299488019344103269536547263643347547484711709240083083547828111748533176817401632721994861304680045936924478972441786\"},\"revocation\":null}}\"";
+    NSString *credentialDef = @"\"{\"id\":\"NcYxiDXkpYi6ov5FcYDi1e:2:NcYxiDXkpYi6ov5FcYDi1e:gvt:1:CL:TAG_1\",\"schemaId\":\"NcYxiDXkpYi6ov5FcYDi1e:gvt:1\",\"type\":\"CL\",\"tag\":\"TAG_1\",\"value\":{\"primary\":{\"n\":\"83700833261954142840883490294895166161595301731578998022262502712066776442890514325744286884197144798326414368014405751886855622105389299968962016434932215929671719982377213566105569947388216644079909281643650041788187098746961840411450942272990950663881633634695967313771568709791719832415691196006613061872217580015159326668870707429727718052538670621252863240380009721914996037137097764074847327414994867897029862524099326400599230496517275748726576865044646547575948006832245888394496484637725112875227352388732906515206524134299973521640981808602607767797461838791125103163246880592602246349912477596300221925281\",\"s\":\"51577844597428165224950247213739713017697817263052505822008472141885375360124708713237015426238558907393646642217464396827882029587872798688393901386020233337851425716622744208800923988402063042331810328754576977594738201111077898698670357826113122576540034863965148704561050678789353363396002680043829322189597404890414046290678587698475252039104265662355991953364086657697478701976860866979237315295373127740932599887679536942342018253925518322194136878729798111869095518966543456247951590663867805357123124475913654374213374751041539590433961525088634170724107188131376949258026545290354317749832311415250990164780\",\"rms\":\"62708414794538422026943562355906571554881830752849062463063917641676613902479491229637145851771930128327808147064140503158100571036282116638397969353349228925020048012395800852264983947986479849714387058861061034242192022705759403875689605612734501984741158738056172714426231433129979726629653681375665701705028679069521733305781044343001519335391197811473052518083306713323493336766202332476417248027975403719396975857246682971312037605116774850666238204315047288111325043386411766566477681558576375469258169775053419929433271605886306241119655198512577145876062966065581871314672888861154295655754837094932956805426\",\"r\":{\"height\":\"7494188622493963296371917167403489481700273059782054999455659466386532648382611786914343237242844878773430234638910045295358478625399697391585449023556522219075858680740645546795758181628981868954184260313152164031653595874294283262885339798434731903876494249293850867986870399677814154148567535559651088297572610075535852514290667435536599602759182312599231526717957528420962353399555892560660069225530124896146119913556820301264467039816331287604702401879088610932532894129594204847093247332825201633482082600376522831908067045247351373719763805226525727696839451033356886434970153609023330012153231016667329777696\",\"age\":\"43046580493164449821961705026387530718400962423879727006013946580835545832101569331369498984037749519211158406754939208296104507300631668137258362994203612534116672604355742579715019955935409355636621688964776800628565598346203942840267656899349137712767748817368845735656201367242542534635279763131516901403181429708581998366028577775710901657876749334400673065486555707081600694875642698628626665153188555931913999679166028466417167006140881133170951984403242763148060394279316818497553647532981619051273875000348303344274886985296929891179020792044187882266662869725597159101701220942643032293399612230392957570581\",\"sex\":\"31391934749268777097046095921329371256192556560798569606151655494000334218671922453509535334425317042318307374504839955690976647333546341369834768688635784140862983291552330278860624226449188642575498831752386208941406613814321749480509109201900035329797459779229058581915450415577005732788045738483099035786100628640371978086263122452921356849544792769452654842833600056471373685447335223378705910906125957737766421419437315127439980793505777939033365211586384773464903151776643617589982755373937461256077657573950063876991303871444299245075401364895496285926085382510741543391601676959655452384503068011979934904299\",\"name\":\"64840191664146986014724852820703243030122885784900045259945800604982240780213882839075029527730237693303411568455775358176681800981202303514798201517723103843389755391177416142616408575673840594667007246267969400671516741051469569038254235920709685371937127215998733852043413680284395500100531343570463969226739712267441866700485712180044264216527103402675699198099678041853150035796984466247681379666040861693728820386624059966279843155445343462554727993823292930187774999030025912062750634785781247559879913255618927306902136363693793213719920011348477522844420605936701667553189824313123043674515752876373195871501\"},\"rctxt\":\"13920125979496359383664089416368046657681178381336442748179982248090587205285324324319385460031681344719966280342706146885080211497557646733775315068928877946117771740999746266941852936734002809096478340345265332354968435653841555658979717252259856489574519747752076399872768043883082679544989654069519821636373428202935450859526735558087445491143414940123774990508370867355492079422429892097841461957589279524217790035579627150412018826222685692001964707919705792614905631165408310732388384665325591503572546353748867294759755431259001387311984646674572904572661231923735604585456892245402733390935721768635135049503\",\"z\":\"50109296960333342288026367833057996290823387533856893347356441132719853478925901265330098686202447936439713166809373460542432372819663794205473392135238719646136491620149885056265034742223048897220959566730659845455539891685421917703834066412587767428625819805714800636503521917315498708118955336538986979915466389840766558674135553950710428562937188174376705150160959711400066104198147552458983394499781679896880103474557745812410257278134246578495915433917231140731774952957708221646162686869495299299488019344103269536547263643347547484711709240083083547828111748533176817401632721994861304680045936924478972441786\"},\"revocation\":null}}\"";
 
     NSString *schemasJson = [NSString stringWithFormat:@"{\"58479554-187f-40d9-b0a5-a95cfb0338c3\":%@}", [[AnoncredsUtils sharedInstance] getGvtSchemaJson]];
 
-    NSString *claimDefsJson = [NSString stringWithFormat:@"{\"58479554-187f-40d9-b0a5-a95cfb0338c3\":%@}", claimDef];
+    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"58479554-187f-40d9-b0a5-a95cfb0338c3\":%@}", credentialDef];
 
     NSString *revocRegDefsJSON = @"{}";
     NSString *revocRegsJson = @"{}";
@@ -1179,7 +1176,7 @@
     ret = [[AnoncredsUtils sharedInstance] verifierVerifyProof:proofRequest
                                                      proofJson:proofJson
                                                    schemasJson:schemasJson
-                                                 claimDefsJson:claimDefsJson
+                                            credentialDefsJson:credentialDefsJson
                                               revocRegDefsJSON:revocRegDefsJSON
                                                  revocRegsJson:revocRegsJson
                                                       outValid:&isValid];
@@ -1190,16 +1187,16 @@
 
     NSError *ret;
     IndyHandle walletHandle = 0;
-    NSString *claimDefJson;
+    NSString *credentialDefJson;
 
     // 1. get wallet handle
     ret = [[AnoncredsUtils sharedInstance] initializeCommonWalletAndReturnHandle:&walletHandle
-                                                                    claimDefJson:&claimDefJson
-                                                                  claimOfferJson:nil
-                                                                    claimReqJson:nil
-                                                                       claimJson:nil];
+                                                               credentialDefJson:&credentialDefJson
+                                                             credentialOfferJson:nil
+                                                               credentialReqJson:nil
+                                                                  credentialJson:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::initializeCommonWalletAndReturnHandle failed");
-    XCTAssertTrue([claimDefJson isValid], @"invalid claimDefJson: %@", claimDefJson);
+    XCTAssertTrue([credentialDefJson isValid], @"invalid credentialDefJson: %@", credentialDefJson);
 
     // 2. verify proof
     NSString *proofRequest = @"{"\
@@ -1216,11 +1213,11 @@
                     "\"value\":18}}"\
             "}";
 
-    NSString *claimDef = @"\"{\"id\":\"NcYxiDXkpYi6ov5FcYDi1e:2:NcYxiDXkpYi6ov5FcYDi1e:gvt:1:CL:TAG_1\",\"schemaId\":\"NcYxiDXkpYi6ov5FcYDi1e:gvt:1\",\"type\":\"CL\",\"tag\":\"TAG_1\",\"value\":{\"primary\":{\"n\":\"83700833261954142840883490294895166161595301731578998022262502712066776442890514325744286884197144798326414368014405751886855622105389299968962016434932215929671719982377213566105569947388216644079909281643650041788187098746961840411450942272990950663881633634695967313771568709791719832415691196006613061872217580015159326668870707429727718052538670621252863240380009721914996037137097764074847327414994867897029862524099326400599230496517275748726576865044646547575948006832245888394496484637725112875227352388732906515206524134299973521640981808602607767797461838791125103163246880592602246349912477596300221925281\",\"s\":\"51577844597428165224950247213739713017697817263052505822008472141885375360124708713237015426238558907393646642217464396827882029587872798688393901386020233337851425716622744208800923988402063042331810328754576977594738201111077898698670357826113122576540034863965148704561050678789353363396002680043829322189597404890414046290678587698475252039104265662355991953364086657697478701976860866979237315295373127740932599887679536942342018253925518322194136878729798111869095518966543456247951590663867805357123124475913654374213374751041539590433961525088634170724107188131376949258026545290354317749832311415250990164780\",\"rms\":\"62708414794538422026943562355906571554881830752849062463063917641676613902479491229637145851771930128327808147064140503158100571036282116638397969353349228925020048012395800852264983947986479849714387058861061034242192022705759403875689605612734501984741158738056172714426231433129979726629653681375665701705028679069521733305781044343001519335391197811473052518083306713323493336766202332476417248027975403719396975857246682971312037605116774850666238204315047288111325043386411766566477681558576375469258169775053419929433271605886306241119655198512577145876062966065581871314672888861154295655754837094932956805426\",\"r\":{\"height\":\"7494188622493963296371917167403489481700273059782054999455659466386532648382611786914343237242844878773430234638910045295358478625399697391585449023556522219075858680740645546795758181628981868954184260313152164031653595874294283262885339798434731903876494249293850867986870399677814154148567535559651088297572610075535852514290667435536599602759182312599231526717957528420962353399555892560660069225530124896146119913556820301264467039816331287604702401879088610932532894129594204847093247332825201633482082600376522831908067045247351373719763805226525727696839451033356886434970153609023330012153231016667329777696\",\"age\":\"43046580493164449821961705026387530718400962423879727006013946580835545832101569331369498984037749519211158406754939208296104507300631668137258362994203612534116672604355742579715019955935409355636621688964776800628565598346203942840267656899349137712767748817368845735656201367242542534635279763131516901403181429708581998366028577775710901657876749334400673065486555707081600694875642698628626665153188555931913999679166028466417167006140881133170951984403242763148060394279316818497553647532981619051273875000348303344274886985296929891179020792044187882266662869725597159101701220942643032293399612230392957570581\",\"sex\":\"31391934749268777097046095921329371256192556560798569606151655494000334218671922453509535334425317042318307374504839955690976647333546341369834768688635784140862983291552330278860624226449188642575498831752386208941406613814321749480509109201900035329797459779229058581915450415577005732788045738483099035786100628640371978086263122452921356849544792769452654842833600056471373685447335223378705910906125957737766421419437315127439980793505777939033365211586384773464903151776643617589982755373937461256077657573950063876991303871444299245075401364895496285926085382510741543391601676959655452384503068011979934904299\",\"name\":\"64840191664146986014724852820703243030122885784900045259945800604982240780213882839075029527730237693303411568455775358176681800981202303514798201517723103843389755391177416142616408575673840594667007246267969400671516741051469569038254235920709685371937127215998733852043413680284395500100531343570463969226739712267441866700485712180044264216527103402675699198099678041853150035796984466247681379666040861693728820386624059966279843155445343462554727993823292930187774999030025912062750634785781247559879913255618927306902136363693793213719920011348477522844420605936701667553189824313123043674515752876373195871501\"},\"rctxt\":\"13920125979496359383664089416368046657681178381336442748179982248090587205285324324319385460031681344719966280342706146885080211497557646733775315068928877946117771740999746266941852936734002809096478340345265332354968435653841555658979717252259856489574519747752076399872768043883082679544989654069519821636373428202935450859526735558087445491143414940123774990508370867355492079422429892097841461957589279524217790035579627150412018826222685692001964707919705792614905631165408310732388384665325591503572546353748867294759755431259001387311984646674572904572661231923735604585456892245402733390935721768635135049503\",\"z\":\"50109296960333342288026367833057996290823387533856893347356441132719853478925901265330098686202447936439713166809373460542432372819663794205473392135238719646136491620149885056265034742223048897220959566730659845455539891685421917703834066412587767428625819805714800636503521917315498708118955336538986979915466389840766558674135553950710428562937188174376705150160959711400066104198147552458983394499781679896880103474557745812410257278134246578495915433917231140731774952957708221646162686869495299299488019344103269536547263643347547484711709240083083547828111748533176817401632721994861304680045936924478972441786\"},\"revocation\":null}}\"";
+    NSString *credentialDef = @"\"{\"id\":\"NcYxiDXkpYi6ov5FcYDi1e:2:NcYxiDXkpYi6ov5FcYDi1e:gvt:1:CL:TAG_1\",\"schemaId\":\"NcYxiDXkpYi6ov5FcYDi1e:gvt:1\",\"type\":\"CL\",\"tag\":\"TAG_1\",\"value\":{\"primary\":{\"n\":\"83700833261954142840883490294895166161595301731578998022262502712066776442890514325744286884197144798326414368014405751886855622105389299968962016434932215929671719982377213566105569947388216644079909281643650041788187098746961840411450942272990950663881633634695967313771568709791719832415691196006613061872217580015159326668870707429727718052538670621252863240380009721914996037137097764074847327414994867897029862524099326400599230496517275748726576865044646547575948006832245888394496484637725112875227352388732906515206524134299973521640981808602607767797461838791125103163246880592602246349912477596300221925281\",\"s\":\"51577844597428165224950247213739713017697817263052505822008472141885375360124708713237015426238558907393646642217464396827882029587872798688393901386020233337851425716622744208800923988402063042331810328754576977594738201111077898698670357826113122576540034863965148704561050678789353363396002680043829322189597404890414046290678587698475252039104265662355991953364086657697478701976860866979237315295373127740932599887679536942342018253925518322194136878729798111869095518966543456247951590663867805357123124475913654374213374751041539590433961525088634170724107188131376949258026545290354317749832311415250990164780\",\"rms\":\"62708414794538422026943562355906571554881830752849062463063917641676613902479491229637145851771930128327808147064140503158100571036282116638397969353349228925020048012395800852264983947986479849714387058861061034242192022705759403875689605612734501984741158738056172714426231433129979726629653681375665701705028679069521733305781044343001519335391197811473052518083306713323493336766202332476417248027975403719396975857246682971312037605116774850666238204315047288111325043386411766566477681558576375469258169775053419929433271605886306241119655198512577145876062966065581871314672888861154295655754837094932956805426\",\"r\":{\"height\":\"7494188622493963296371917167403489481700273059782054999455659466386532648382611786914343237242844878773430234638910045295358478625399697391585449023556522219075858680740645546795758181628981868954184260313152164031653595874294283262885339798434731903876494249293850867986870399677814154148567535559651088297572610075535852514290667435536599602759182312599231526717957528420962353399555892560660069225530124896146119913556820301264467039816331287604702401879088610932532894129594204847093247332825201633482082600376522831908067045247351373719763805226525727696839451033356886434970153609023330012153231016667329777696\",\"age\":\"43046580493164449821961705026387530718400962423879727006013946580835545832101569331369498984037749519211158406754939208296104507300631668137258362994203612534116672604355742579715019955935409355636621688964776800628565598346203942840267656899349137712767748817368845735656201367242542534635279763131516901403181429708581998366028577775710901657876749334400673065486555707081600694875642698628626665153188555931913999679166028466417167006140881133170951984403242763148060394279316818497553647532981619051273875000348303344274886985296929891179020792044187882266662869725597159101701220942643032293399612230392957570581\",\"sex\":\"31391934749268777097046095921329371256192556560798569606151655494000334218671922453509535334425317042318307374504839955690976647333546341369834768688635784140862983291552330278860624226449188642575498831752386208941406613814321749480509109201900035329797459779229058581915450415577005732788045738483099035786100628640371978086263122452921356849544792769452654842833600056471373685447335223378705910906125957737766421419437315127439980793505777939033365211586384773464903151776643617589982755373937461256077657573950063876991303871444299245075401364895496285926085382510741543391601676959655452384503068011979934904299\",\"name\":\"64840191664146986014724852820703243030122885784900045259945800604982240780213882839075029527730237693303411568455775358176681800981202303514798201517723103843389755391177416142616408575673840594667007246267969400671516741051469569038254235920709685371937127215998733852043413680284395500100531343570463969226739712267441866700485712180044264216527103402675699198099678041853150035796984466247681379666040861693728820386624059966279843155445343462554727993823292930187774999030025912062750634785781247559879913255618927306902136363693793213719920011348477522844420605936701667553189824313123043674515752876373195871501\"},\"rctxt\":\"13920125979496359383664089416368046657681178381336442748179982248090587205285324324319385460031681344719966280342706146885080211497557646733775315068928877946117771740999746266941852936734002809096478340345265332354968435653841555658979717252259856489574519747752076399872768043883082679544989654069519821636373428202935450859526735558087445491143414940123774990508370867355492079422429892097841461957589279524217790035579627150412018826222685692001964707919705792614905631165408310732388384665325591503572546353748867294759755431259001387311984646674572904572661231923735604585456892245402733390935721768635135049503\",\"z\":\"50109296960333342288026367833057996290823387533856893347356441132719853478925901265330098686202447936439713166809373460542432372819663794205473392135238719646136491620149885056265034742223048897220959566730659845455539891685421917703834066412587767428625819805714800636503521917315498708118955336538986979915466389840766558674135553950710428562937188174376705150160959711400066104198147552458983394499781679896880103474557745812410257278134246578495915433917231140731774952957708221646162686869495299299488019344103269536547263643347547484711709240083083547828111748533176817401632721994861304680045936924478972441786\"},\"revocation\":null}}\"";
 
     NSString *schemasJson = [NSString stringWithFormat:@"{\"58479554-187f-40d9-b0a5-a95cfb0338c3\":%@}", [[AnoncredsUtils sharedInstance] getGvtSchemaJson]];
 
-    NSString *claimDefsJson = [NSString stringWithFormat:@"{\"58479554-187f-40d9-b0a5-a95cfb0338c3\":%@}", claimDef];
+    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"58479554-187f-40d9-b0a5-a95cfb0338c3\":%@}", credentialDef];
 
     NSString *revocRegDefsJSON = @"{}";
     NSString *revocRegsJson = @"{}";
@@ -1231,7 +1228,7 @@
     ret = [[AnoncredsUtils sharedInstance] verifierVerifyProof:proofRequest
                                                      proofJson:proofJson
                                                    schemasJson:schemasJson
-                                                 claimDefsJson:claimDefsJson
+                                            credentialDefsJson:credentialDefsJson
                                               revocRegDefsJSON:revocRegDefsJSON
                                                  revocRegsJson:revocRegsJson
                                                       outValid:&isValid];

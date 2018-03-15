@@ -97,7 +97,7 @@ extern "C" {
     
     extern indy_error_t indy_prover_store_credential_offer(indy_handle_t command_handle,
                                                            indy_handle_t wallet_handle,
-                                                           const char *  claim_offer_json,
+                                                           const char *  credential_offer_json,
 
                                                            void           (*cb)(indy_handle_t xcommand_handle,
                                                                                 indy_error_t  err)

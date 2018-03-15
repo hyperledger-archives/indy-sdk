@@ -1802,7 +1802,7 @@
     getSchemaResponseJson = [NSDictionary toString:(NSDictionary *) getSchemaResponse[@"result"]];
 
     // 11. Create claim definition
-    NSString *claimDefJson = [[AnoncredsUtils sharedInstance] getGvtClaimDef];
+    NSString *claimDefJson = [[AnoncredsUtils sharedInstance] getGvtCredentialDef];
     NSDictionary *claimDef = [NSDictionary fromString:claimDefJson];
 
     NSMutableDictionary *claimDefData = [NSMutableDictionary new];
@@ -1953,7 +1953,7 @@
     getSchemaResponseJson = [NSDictionary toString:(NSDictionary *) getSchemaResponse[@"result"]];
 
     // 11. Create claim definition
-    NSString *claimDefJson = [[AnoncredsUtils sharedInstance] getGvtClaimDef];
+    NSString *claimDefJson = [[AnoncredsUtils sharedInstance] getGvtCredentialDef];
 
     NSDictionary *claimDef = [NSDictionary fromString:claimDefJson];
 
