@@ -64,7 +64,7 @@ extern "C" {
                                                       const char *  credential_req_json,
                                                       const char *  credential_values_json,
                                                       const char *  rev_reg_id,
-                                                      indy_handle_t ails_reader_handle,
+                                                      indy_i32_t tails_reader_handle,
                                                       indy_i32_t    user_revoc_index,
 
                                                       void           (*cb)(indy_handle_t xcommand_handle,
@@ -226,8 +226,7 @@ extern "C" {
                                                     const char *  rev_info_json,
 
                                                     void           (*cb)(indy_handle_t xcommand_handle,
-                                                                         indy_error_t  err,
-                                                                         const char*   updated_rev_info_json)
+                                                                         indy_error_t  err)
                                                     );
 
 
