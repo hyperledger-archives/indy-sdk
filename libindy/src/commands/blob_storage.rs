@@ -8,6 +8,7 @@ use services::blob_storage::BlobStorageService;
 
 use std::rc::Rc;
 
+#[allow(dead_code)] //FIXME
 pub enum BlobStorageCommand {
     OpenReader(
         String, // reader type
