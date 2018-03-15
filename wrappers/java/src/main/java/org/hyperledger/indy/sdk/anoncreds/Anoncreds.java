@@ -7,9 +7,9 @@ import org.hyperledger.indy.sdk.IndyJava;
 import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.ParamGuard;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateSchemaResult;
-import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreClaimDefResult;
+import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreCredentialDefResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreRevocRegResult;
-import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateClaimResult;
+import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateCredentialResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import com.sun.jna.Callback;
@@ -48,17 +48,17 @@ public class Anoncreds extends IndyJava.API {
 	};
 
 	/**
-	 * Callback used when issuerCreateAndStoreClaimDef completes.
+	 * Callback used when issuerCreateAndStoreCredentialDef completes.
 	 */
-	private static Callback issuerCreateAndStoreClaimDefCb = new Callback() {
+	private static Callback issuerCreateAndStoreCredentialDefCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String credential_def_id, String credential_def_json) {
 
-			CompletableFuture<IssuerCreateAndStoreClaimDefResult> future = (CompletableFuture<IssuerCreateAndStoreClaimDefResult>) removeFuture(xcommand_handle);
+			CompletableFuture<IssuerCreateAndStoreCredentialDefResult> future = (CompletableFuture<IssuerCreateAndStoreCredentialDefResult>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			IssuerCreateAndStoreClaimDefResult result = new IssuerCreateAndStoreClaimDefResult(credential_def_id, credential_def_json);
+			IssuerCreateAndStoreCredentialDefResult result = new IssuerCreateAndStoreCredentialDefResult(credential_def_id, credential_def_json);
 			future.complete(result);
 		}
 	};
@@ -80,9 +80,9 @@ public class Anoncreds extends IndyJava.API {
 	};
 
 	/**
-	 * Callback used when issuerCreateClaimOffer completes.
+	 * Callback used when issuerCreateCredentialOffer completes.
 	 */
-	private static Callback issuerCreateClaimOfferCb = new Callback() {
+	private static Callback issuerCreateCredentialOfferCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String credential_offer_json) {
@@ -96,25 +96,25 @@ public class Anoncreds extends IndyJava.API {
 	};
 
 	/**
-	 * Callback used when issuerCreateClaim completes.
+	 * Callback used when issuerCreateCredential completes.
 	 */
-	private static Callback issuerCreateClaimCb = new Callback() {
+	private static Callback issuerCreateCredentialCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String revoc_reg_delta_json, String xcredential_json) {
 
-			CompletableFuture<IssuerCreateClaimResult> future = (CompletableFuture<IssuerCreateClaimResult>) removeFuture(xcommand_handle);
+			CompletableFuture<IssuerCreateCredentialResult> future = (CompletableFuture<IssuerCreateCredentialResult>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			IssuerCreateClaimResult result = new IssuerCreateClaimResult(revoc_reg_delta_json, xcredential_json);
+			IssuerCreateCredentialResult result = new IssuerCreateCredentialResult(revoc_reg_delta_json, xcredential_json);
 			future.complete(result);
 		}
 	};
 
 	/**
-	 * Callback used when issuerRevokeClaim completes.
+	 * Callback used when issuerRevokeCredential completes.
 	 */
-	private static Callback issuerRevokeClaimCb = new Callback() {
+	private static Callback issuerRevokeCredentialCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String revoc_reg_delta_json) {
@@ -128,9 +128,9 @@ public class Anoncreds extends IndyJava.API {
 	};
 
 	/**
-	 * Callback used when issuerRecoverClaim completes.
+	 * Callback used when issuerRecoverCredential completes.
 	 */
-	private static Callback issuerRecoverClaimCb = new Callback() {
+	private static Callback issuerRecoverCredentialCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String revoc_reg_delta_json) {
@@ -144,9 +144,9 @@ public class Anoncreds extends IndyJava.API {
 	};
 
 	/**
-	 * Callback used when proverStoreClaimOffer completes.
+	 * Callback used when proverStoreCredentailOffer completes.
 	 */
-	private static Callback proverStoreClaimOfferCb = new Callback() {
+	private static Callback proverStoreCredentialOfferCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err) {
@@ -160,9 +160,9 @@ public class Anoncreds extends IndyJava.API {
 	};
 
 	/**
-	 * Callback used when proverGetClaimOffers completes.
+	 * Callback used when proverGetCredentialOffers completes.
 	 */
-	private static Callback proverGetClaimOffersCb = new Callback() {
+	private static Callback proverGetCredentialOffersCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String credential_offers_json) {
@@ -193,9 +193,9 @@ public class Anoncreds extends IndyJava.API {
 
 
 	/**
-	 * Callback used when proverCreateAndStoreClaimReq completes.
+	 * Callback used when proverCreateAndStoreCredentialReq completes.
 	 */
-	private static Callback proverCreateAndStoreClaimReqCb = new Callback() {
+	private static Callback proverCreateAndStoreCredentialReqCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String credential_req_json) {
@@ -209,9 +209,9 @@ public class Anoncreds extends IndyJava.API {
 	};
 
 	/**
-	 * Callback used when proverStoreClaim completes.
+	 * Callback used when proverStoreCredential completes.
 	 */
-	private static Callback proverStoreClaimCb = new Callback() {
+	private static Callback proverStoreCredentialCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err) {
@@ -225,9 +225,9 @@ public class Anoncreds extends IndyJava.API {
 	};
 
 	/**
-	 * Callback used when proverGetClaims completes.
+	 * Callback used when proverGetCredentials completes.
 	 */
-	private static Callback proverGetClaimsCb = new Callback() {
+	private static Callback proverGetCredentialsCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String credentialsJson) {
@@ -241,9 +241,9 @@ public class Anoncreds extends IndyJava.API {
 	};
 
 	/**
-	 * Callback used when proverGetClaimsForProofReq completes.
+	 * Callback used when proverGetCredentialsForProofReq completes.
 	 */
-	private static Callback proverGetClaimsForProofReqCb = new Callback() {
+	private static Callback proverGetCredentialsForProofReqCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, String credentialsJson) {
@@ -396,16 +396,16 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Create keys (both primary and revocation) for the given schema and signature type (currently only CL signature type is supported).
 	 *
-	 * @param wallet         The wallet.
-	 * @param issuerDid      The DID of the issuer.
-	 * @param schemaJson     The JSON schema for the credential.
+	 * @param wallet     The wallet.
+	 * @param issuerDid  The DID of the issuer.
+	 * @param schemaJson The JSON schema for the credential.
 	 * @param tag
-	 * @param type          (optional) Signature type. Currently only 'CL' is supported.
-	 * @param configJson    Config json. {"support_revocation": boolean}
+	 * @param type       (optional) Signature type. Currently only 'CL' is supported.
+	 * @param configJson Config json. {"support_revocation": boolean}
 	 * @return A future resolving to a Id and JSON string containing the credential definition.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<IssuerCreateAndStoreClaimDefResult> issuerCreateAndStoreClaimDef(
+	public static CompletableFuture<IssuerCreateAndStoreCredentialDefResult> issuerCreateAndStoreCredentialDef(
 			Wallet wallet,
 			String issuerDid,
 			String schemaJson,
@@ -419,7 +419,7 @@ public class Anoncreds extends IndyJava.API {
 		ParamGuard.notNullOrWhiteSpace(tag, "tag");
 		ParamGuard.notNullOrWhiteSpace(configJson, "configJson");
 
-		CompletableFuture<IssuerCreateAndStoreClaimDefResult> future = new CompletableFuture<IssuerCreateAndStoreClaimDefResult>();
+		CompletableFuture<IssuerCreateAndStoreCredentialDefResult> future = new CompletableFuture<IssuerCreateAndStoreCredentialDefResult>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -432,7 +432,7 @@ public class Anoncreds extends IndyJava.API {
 				tag,
 				type,
 				configJson,
-				issuerCreateAndStoreClaimDefCb);
+				issuerCreateAndStoreCredentialDefCb);
 
 		checkResult(result);
 
@@ -442,18 +442,18 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Create a new revocation registry for the given credential definition
 	 *
-	 * @param wallet      The wallet.
-	 * @param issuerDid   The DID of the issuer.
-	 * @param type        (optional) Registry type. Currently only 'CL_ACCUM' is supported.
+	 * @param wallet            The wallet.
+	 * @param issuerDid         The DID of the issuer.
+	 * @param type              (optional) Registry type. Currently only 'CL_ACCUM' is supported.
 	 * @param tag
-	 * @param credDefId   Id of stored in ledger credential definition
-	 * @param configJson   {
-	     "issuance_type": (optional) type of issuance. Currently supported:
-	         1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
-	                                 Revocation Registry is updated only during revocation.
-	         2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
-	     "max_cred_num": maximum number of credentials the new registry can process.
-	 }
+	 * @param credDefId         Id of stored in ledger credential definition
+	 * @param configJson        {
+	 *                          "issuance_type": (optional) type of issuance. Currently supported:
+	 *                          1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
+	 *                          Revocation Registry is updated only during revocation.
+	 *                          2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
+	 *                          "max_cred_num": maximum number of credentials the new registry can process.
+	 *                          }
 	 * @param tailsWriterType
 	 * @param tailsWriterConfig
 	 * @return A future resolving to a JSON string containing the revocation registry.
@@ -501,14 +501,14 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Create credential offer in Wallet.
 	 *
-	 * @param wallet     The wallet.
-	 * @param credDefId  Id of stored in ledger credential definition.
-	 * @param issuerDid  The DID of the issuer.
-	 * @param proverDid  The DID of the target user.
+	 * @param wallet    The wallet.
+	 * @param credDefId Id of stored in ledger credential definition.
+	 * @param issuerDid The DID of the issuer.
+	 * @param proverDid The DID of the target user.
 	 * @return A future resolving to a JSON string containing the credential offer.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> issuerCreateClaimOffer(
+	public static CompletableFuture<String> issuerCreateCredentialOffer(
 			Wallet wallet,
 			String credDefId,
 			String issuerDid,
@@ -530,7 +530,7 @@ public class Anoncreds extends IndyJava.API {
 				credDefId,
 				issuerDid,
 				proverDid,
-				issuerCreateClaimOfferCb);
+				issuerCreateCredentialOfferCb);
 
 		checkResult(result);
 
@@ -540,16 +540,16 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Signs a given credential for the given user by a given key (credential def).
 	 *
-	 * @param wallet         The wallet.
-	 * @param credentialReqJson   a credential request with a blinded secret
-	 * @param credentialJson      a credential containing attribute values for each of requested attribute names.
-	 * @param revRegId       (Optional) id of stored in ledger revocation registry definition
+	 * @param wallet            The wallet.
+	 * @param credentialReqJson a credential request with a blinded secret
+	 * @param credentialJson    a credential containing attribute values for each of requested attribute names.
+	 * @param revRegId          (Optional) id of stored in ledger revocation registry definition
 	 * @param tailsReaderHandle
-	 * @param userRevocIndex index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
+	 * @param userRevocIndex    index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
 	 * @return A future resolving to a revocation registry update json with a newly issued credential
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<IssuerCreateClaimResult> issuerCreateClaim(
+	public static CompletableFuture<IssuerCreateCredentialResult> issuerCreateCredentail(
 			Wallet wallet,
 			String credentialReqJson,
 			String credentialJson,
@@ -561,7 +561,7 @@ public class Anoncreds extends IndyJava.API {
 		ParamGuard.notNullOrWhiteSpace(credentialReqJson, "credentialReqJson");
 		ParamGuard.notNullOrWhiteSpace(credentialJson, "credentialJson");
 
-		CompletableFuture<IssuerCreateClaimResult> future = new CompletableFuture<IssuerCreateClaimResult>();
+		CompletableFuture<IssuerCreateCredentialResult> future = new CompletableFuture<IssuerCreateCredentialResult>();
 		int commandHandle = addFuture(future);
 
 		int walletHandle = wallet.getWalletHandle();
@@ -574,7 +574,7 @@ public class Anoncreds extends IndyJava.API {
 				revRegId,
 				tailsReaderHandle,
 				userRevocIndex,
-				issuerCreateClaimCb);
+				issuerCreateCredentialCb);
 
 		checkResult(result);
 
@@ -584,14 +584,14 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Revokes a user identified by a revoc_id in a given revoc-registry.
 	 *
-	 * @param wallet         A wallet.
+	 * @param wallet            A wallet.
 	 * @param tailsReaderHandle
-	 * @param revRegId       Id of revocation registry stored in wallet.
-	 * @param userRevocIndex index of the user in the revocation registry
+	 * @param revRegId          Id of revocation registry stored in wallet.
+	 * @param userRevocIndex    index of the user in the revocation registry
 	 * @return A future resolving to a revocation registry update json with a revoked credential
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> issuerRevokeClaim(
+	public static CompletableFuture<String> issuerRevokeCredential(
 			Wallet wallet,
 			int tailsReaderHandle,
 			String revRegId,
@@ -611,7 +611,7 @@ public class Anoncreds extends IndyJava.API {
 				tailsReaderHandle,
 				revRegId,
 				userRevocIndex,
-				issuerRevokeClaimCb);
+				issuerRevokeCredentialCb);
 
 		checkResult(result);
 
@@ -621,14 +621,14 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Recover a user identified by a revoc_id in a given revoc-registry.
 	 *
-	 * @param wallet         A wallet.
+	 * @param wallet            A wallet.
 	 * @param tailsReaderHandle
-	 * @param revRegId       Id of revocation registry stored in wallet.
-	 * @param userRevocIndex index of the user in the revocation registry
+	 * @param revRegId          Id of revocation registry stored in wallet.
+	 * @param userRevocIndex    index of the user in the revocation registry
 	 * @return A future resolving to a revocation registry update json with a revoked credential
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> issuerRecoverClaim(
+	public static CompletableFuture<String> issuerRecoverCredential(
 			Wallet wallet,
 			int tailsReaderHandle,
 			String revRegId,
@@ -648,7 +648,7 @@ public class Anoncreds extends IndyJava.API {
 				tailsReaderHandle,
 				revRegId,
 				userRevocIndex,
-				issuerRecoverClaimCb);
+				issuerRecoverCredentialCb);
 
 		checkResult(result);
 
@@ -658,12 +658,12 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Stores a credential offer from the given issuer in a secure storage.
 	 *
-	 * @param wallet         A wallet.
+	 * @param wallet              A wallet.
 	 * @param credentialOfferJson credential offer as a json containing information about the issuer and a credential
 	 * @return A future that does not resolve any value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<Void> proverStoreClaimOffer(
+	public static CompletableFuture<Void> proverStoreCredentialOffer(
 			Wallet wallet,
 			String credentialOfferJson) throws IndyException {
 
@@ -679,7 +679,7 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				credentialOfferJson,
-				proverStoreClaimOfferCb);
+				proverStoreCredentialOfferCb);
 
 		checkResult(result);
 
@@ -687,14 +687,14 @@ public class Anoncreds extends IndyJava.API {
 	}
 
 	/**
-	 * Gets all stored credential offers (see prover_store_credential_offer).
+	 * Gets all stored credential offers.
 	 *
 	 * @param wallet     A wallet.
-	 * @param filterJson optional filter to get credential offers for specific Issuer, credential_def or schema only only
+	 * @param filterJson optional filter to get credential offers for specific Issuer, credential_def or schema.
 	 * @return A future that resolves to a json with a list of credential offers for the filter.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> proverGetClaimOffers(
+	public static CompletableFuture<String> proverGetCredentialOffers(
 			Wallet wallet,
 			String filterJson) throws IndyException {
 
@@ -710,7 +710,7 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				filterJson,
-				proverGetClaimOffersCb);
+				proverGetCredentialOffersCb);
 
 		checkResult(result);
 
@@ -751,15 +751,15 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Creates a clam request json for the given credential offer and stores it in a secure wallet.
 	 *
-	 * @param wallet           A wallet.
-	 * @param proverDid        The DID of the prover.
-	 * @param credentialOfferJson   credential offer as a json containing information about the issuer and a credential
-	 * @param credentialDefJson     credential definition json associated with issuer_did and schema_seq_no in the credential_offer
-	 * @param masterSecretName the name of the master secret stored in the wallet
+	 * @param wallet              A wallet.
+	 * @param proverDid           The DID of the prover.
+	 * @param credentialOfferJson credential offer as a json containing information about the issuer and a credential
+	 * @param credentialDefJson   credential definition json associated with issuer_did and schema_seq_no in the credential_offer
+	 * @param masterSecretName    the name of the master secret stored in the wallet
 	 * @return A future that resolves to a credential request json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> proverCreateAndStoreClaimReq(
+	public static CompletableFuture<String> proverCreateAndStoreCredentialReq(
 			Wallet wallet,
 			String proverDid,
 			String credentialOfferJson,
@@ -784,7 +784,7 @@ public class Anoncreds extends IndyJava.API {
 				credentialOfferJson,
 				credentialDefJson,
 				masterSecretName,
-				proverCreateAndStoreClaimReqCb);
+				proverCreateAndStoreCredentialReqCb);
 
 		checkResult(result);
 
@@ -794,14 +794,14 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Updates the credential by a master secret and stores in a secure wallet.
 	 *
-	 * @param wallet     A Wallet.
-	 * @param id         Identifier by which credential will be stored in wallet
-	 * @param credential      The credential to store.
+	 * @param wallet        A Wallet.
+	 * @param id            Identifier by which credential will be stored in wallet
+	 * @param credential    The credential to store.
 	 * @param revRegDefJson revocation registry definition associated with issuer_did and schema_key in the credential_offer
 	 * @return A future that does not resolve a value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<Void> proverStoreClaim(
+	public static CompletableFuture<Void> proverStoreCredential(
 			Wallet wallet,
 			String id,
 			String credential,
@@ -822,7 +822,7 @@ public class Anoncreds extends IndyJava.API {
 				id,
 				credential,
 				revRegDefJson,
-				proverStoreClaimCb);
+				proverStoreCredentialCb);
 
 		checkResult(result);
 
@@ -837,7 +837,7 @@ public class Anoncreds extends IndyJava.API {
 	 * @return A future that resolves to a credentials json
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> proverGetClaims(
+	public static CompletableFuture<String> proverGetCredentials(
 			Wallet wallet,
 			String filter) throws IndyException {
 
@@ -853,7 +853,7 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				filter,
-				proverGetClaimsCb);
+				proverGetCredentialsCb);
 
 		checkResult(result);
 
@@ -868,7 +868,7 @@ public class Anoncreds extends IndyJava.API {
 	 * @return A future that resolves to a json with credentials for the given pool request.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<String> proverGetClaimsForProofReq(
+	public static CompletableFuture<String> proverGetCredentialsForProofReq(
 			Wallet wallet,
 			String proofRequest) throws IndyException {
 
@@ -884,7 +884,7 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				proofRequest,
-				proverGetClaimsForProofReqCb);
+				proverGetCredentialsForProofReqCb);
 
 		checkResult(result);
 
@@ -896,18 +896,18 @@ public class Anoncreds extends IndyJava.API {
 	 *
 	 * @param wallet          A wallet.
 	 * @param proofRequest    proof request json as come from the verifier
-	 * @param requestedClaims either a credential or self-attested attribute for each requested attribute
+	 * @param requestedCredentials either a credential or self-attested attribute for each requested attribute
 	 * @param schemas         all schema jsons participating in the proof request
 	 * @param masterSecret    the name of the master secret stored in the wallet
-	 * @param credentialDefs       all credential definition jsons participating in the proof request
-	 * @param revInfos       all revocation registry jsons participating in the proof request
+	 * @param credentialDefs  all credential definition jsons participating in the proof request
+	 * @param revInfos        all revocation registry jsons participating in the proof request
 	 * @return A future resolving to a Proof json
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> proverCreateProof(
 			Wallet wallet,
 			String proofRequest,
-			String requestedClaims,
+			String requestedCredentials,
 			String schemas,
 			String masterSecret,
 			String credentialDefs,
@@ -915,7 +915,7 @@ public class Anoncreds extends IndyJava.API {
 
 		ParamGuard.notNull(wallet, "wallet");
 		ParamGuard.notNullOrWhiteSpace(proofRequest, "proofRequest");
-		ParamGuard.notNullOrWhiteSpace(requestedClaims, "requestedClaims");
+		ParamGuard.notNullOrWhiteSpace(requestedCredentials, "requestedCredentials");
 		ParamGuard.notNullOrWhiteSpace(schemas, "schemas");
 		ParamGuard.notNullOrWhiteSpace(masterSecret, "masterSecret");
 		ParamGuard.notNullOrWhiteSpace(credentialDefs, "credentialDefs");
@@ -930,7 +930,7 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				proofRequest,
-				requestedClaims,
+				requestedCredentials,
 				schemas,
 				masterSecret,
 				credentialDefs,
@@ -945,12 +945,12 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Verifies a proof (of multiple credential).
 	 *
-	 * @param proofRequest initial proof request as sent by the verifier
-	 * @param proof        proof json
-	 * @param schemas      all schema jsons participating in the proof
-	 * @param credentialDefs    all credential definition jsons participating in the proof
-	 * @param revocRegDefs    all revocation registry definition jsons participating in the proof
-	 * @param revocRegs    all revocation registry jsons participating in the proof
+	 * @param proofRequest   initial proof request as sent by the verifier
+	 * @param proof          proof json
+	 * @param schemas        all schema jsons participating in the proof
+	 * @param credentialDefs all credential definition jsons participating in the proof
+	 * @param revocRegDefs   all revocation registry definition jsons participating in the proof
+	 * @param revocRegs      all revocation registry jsons participating in the proof
 	 * @return A future resolving to true if signature is valid, otherwise false.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */

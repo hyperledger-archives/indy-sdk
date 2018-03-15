@@ -11,34 +11,34 @@ import static org.junit.Assert.assertNotNull;
 
 public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
-	private String schemasJson = String.format("{\"%s\":%s}", claimId1, gvtSchemaJson);
-	private String claimDefsJson = String.format("{\"%s\":%s}", claimId1, issuer1gvtClaimDef);
+	private String schemasJson = String.format("{\"%s\":%s}", credentialId1, gvtSchemaJson);
+	private String credentialDefsJson = String.format("{\"%s\":%s}", credentialId1, issuer1gvtCredDef);
 	private String revocInfosJson = "{}";
-	private String requestedClaimsJson = String.format(requestedClaimsJsonTemplate, claimId1, claimId1);
+	private String requestedCredentialsJson = String.format(requestedCredentialsJsonTemplate, credentialId1, credentialId1);
 
 	@Test
 	public void testProverCreateProofWorks() throws Exception {
-		String proofJson = Anoncreds.proverCreateProof(wallet, proofRequest, requestedClaimsJson, schemasJson,
-				masterSecretName, claimDefsJson, revocInfosJson).get();
+		String proofJson = Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, schemasJson,
+				masterSecretName, credentialDefsJson, revocInfosJson).get();
 		assertNotNull(proofJson);
 	}
 
 	@Test
-	public void testProverCreateProofWorksForUsingNotSatisfyClaim() throws Exception {
+	public void testProverCreateProofWorksForUsingNotSatisfyCredential() throws Exception {
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String requestedClaimsJson = String.format("{\"self_attested_attributes\":{},\n" +
+		String requestedCredentialsJson = String.format("{\"self_attested_attributes\":{},\n" +
 				"                                    \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true}},\n" +
 				"                                    \"requested_predicates\":{}\n" +
-				"                                   }", claimId2);
+				"                                   }", credentialId2);
 
-		String schemasJson = String.format("{\"%s\":%s}", claimId2, xyzSchemaJson);
-		String claimDefsJson = String.format("{\"%s\":%s}", claimId2, issuer1xyzClaimDef);
+		String schemasJson = String.format("{\"%s\":%s}", credentialId2, xyzSchemaJson);
+		String credentialDefsJson = String.format("{\"%s\":%s}", credentialId2, issuer1xyzCredDef);
 		String revocInfosJson = "{}";
 
-		Anoncreds.proverCreateProof(wallet, proofRequest, requestedClaimsJson, schemasJson, masterSecretName, claimDefsJson, revocInfosJson).get();
+		Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, schemasJson, masterSecretName, credentialDefsJson, revocInfosJson).get();
 	}
 
 	@Test
@@ -47,7 +47,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Anoncreds.proverCreateProof(wallet, proofRequest, requestedClaimsJson, schemasJson, "wrong_master_secret", claimDefsJson, revocInfosJson).get();
+		Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, schemasJson, "wrong_master_secret", credentialDefsJson, revocInfosJson).get();
 	}
 
 	@Test
@@ -58,19 +58,19 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 
 		String schemasJson = "{}";
 
-		Anoncreds.proverCreateProof(wallet, proofRequest, requestedClaimsJson, schemasJson, masterSecretName, claimDefsJson, revocInfosJson).get();
+		Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, schemasJson, masterSecretName, credentialDefsJson, revocInfosJson).get();
 	}
 
 	@Test
-	public void testProverCreateProofWorksForInvalidRequestedClaimsJson() throws Exception {
+	public void testProverCreateProofWorksForInvalidRequestedCredentialsJson() throws Exception {
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String requestedClaimsJson = "{\"self_attested_attributes\":{},\n" +
+		String requestedCredentialsJson = "{\"self_attested_attributes\":{},\n" +
 				"                      \"requested_predicates\":{}\n" +
 				"                    }";
 
-		Anoncreds.proverCreateProof(wallet, proofRequest, requestedClaimsJson, schemasJson, masterSecretName, claimDefsJson, revocInfosJson).get();
+		Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, schemasJson, masterSecretName, credentialDefsJson, revocInfosJson).get();
 	}
 }

@@ -706,7 +706,7 @@ pub extern fn indy_prover_store_credential(command_handle: i32,
 
 /// Gets human readable credentials according to the filter.
 /// If filter is NULL, then all credentials are returned.
-/// Claims can be filtered by Issuer, credential_def and/or Schema.
+/// Credentials can be filtered by Issuer, credential_def and/or Schema.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).

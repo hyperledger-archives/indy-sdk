@@ -7,9 +7,9 @@ from indy.error import ErrorCode, IndyError
 
 
 @pytest.mark.asyncio
-async def test_issuer_create_and_store_claim_def_works(wallet_handle, issuer_did, gvt_schema, tag,
-                                                       default_cred_def_config):
-    gvt_schema["id"] = "test_issuer_create_and_store_claim_def_works"
+async def test_issuer_create_and_store_credential_def_works(wallet_handle, issuer_did, gvt_schema, tag,
+                                                            default_cred_def_config):
+    gvt_schema["id"] = "test_issuer_create_and_store_credential_def_works"
 
     (_, cred_def_json) = await issuer_create_and_store_credential_def(wallet_handle, issuer_did,
                                                                       json.dumps(gvt_schema), tag, "CL",
@@ -25,8 +25,9 @@ async def test_issuer_create_and_store_claim_def_works(wallet_handle, issuer_did
 
 
 @pytest.mark.asyncio
-async def test_issuer_create_and_store_claim_def_works_for_invalid_wallet(wallet_handle, issuer_did, gvt_schema_json,
-                                                                          tag, default_cred_def_config):
+async def test_issuer_create_and_store_credential_def_works_for_invalid_wallet(wallet_handle, issuer_did,
+                                                                               gvt_schema_json, tag,
+                                                                               default_cred_def_config):
     invalid_wallet_handle = wallet_handle + 100
 
     with pytest.raises(IndyError) as e:
@@ -37,9 +38,9 @@ async def test_issuer_create_and_store_claim_def_works_for_invalid_wallet(wallet
 
 
 @pytest.mark.asyncio
-async def test_issuer_create_and_store_claim_def_works_for_duplicate(wallet_handle, issuer_did, gvt_schema, tag,
-                                                                     default_cred_def_config):
-    gvt_schema["id"] = "test_issuer_create_and_store_claim_def_works_for_duplicate"
+async def test_issuer_create_and_store_credential_def_works_for_duplicate(wallet_handle, issuer_did, gvt_schema, tag,
+                                                                          default_cred_def_config):
+    gvt_schema["id"] = "test_issuer_create_and_store_credential_def_works_for_duplicate"
 
     await issuer_create_and_store_credential_def(wallet_handle, issuer_did, json.dumps(gvt_schema), tag, "CL",
                                                  default_cred_def_config)

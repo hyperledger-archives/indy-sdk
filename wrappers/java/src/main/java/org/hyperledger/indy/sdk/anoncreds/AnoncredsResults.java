@@ -47,33 +47,33 @@ public final class AnoncredsResults {
 	}
 
 	/**
-	 * Result from calling issuerCreateAndStoreClaimDef.
+	 * Result from calling IssuerCreateAndStoreCredentialDefResult.
 	 */
-	public static class IssuerCreateAndStoreClaimDefResult extends IndyJava.Result {
+	public static class IssuerCreateAndStoreCredentialDefResult extends IndyJava.Result {
 
-		private String claimDefId, claimDefJson;
+		private String credDefId, credDefJson;
 
-		IssuerCreateAndStoreClaimDefResult(String claimDefId, String claimDefJson) {
-			this.claimDefId = claimDefId;
-			this.claimDefJson = claimDefJson;
+		IssuerCreateAndStoreCredentialDefResult(String credDefId, String credDefJson) {
+			this.credDefId = credDefId;
+			this.credDefJson = credDefJson;
 		}
 
 		/**
-		 * Gets the claim def Id.
+		 * Gets the credential def Id.
 		 *
-		 * @return claim def Id.
+		 * @return credential def Id.
 		 */
-		public String getClaimDefId() {
-			return this.claimDefId;
+		public String getCredDefId() {
+			return this.credDefId;
 		}
 
 		/**
-		 * Gets the claim definition JSON.
+		 * Gets the credential definition JSON.
 		 *
-		 * @return The claim definition JSON.
+		 * @return The credential definition JSON.
 		 */
-		public String getClaimDefJson() {
-			return this.claimDefJson;
+		public String getCredDefJson() {
+			return this.credDefJson;
 		}
 	}
 
@@ -119,33 +119,33 @@ public final class AnoncredsResults {
 	}
 
 	/**
-	 * Result from calling issuerCreateClaim.
+	 * Result from calling issuerCreateCredential.
 	 */
-	public static class IssuerCreateClaimResult extends IndyJava.Result {
+	public static class IssuerCreateCredentialResult extends IndyJava.Result {
 
-		private String revocRegUpdateJson, claimJson;
+		private String revocRegDeltaJson, credentialJson;
 
-		IssuerCreateClaimResult(String revocRegUpdateJson, String claimJson) {
-			this.revocRegUpdateJson = revocRegUpdateJson;
-			this.claimJson = claimJson;
+		IssuerCreateCredentialResult(String revocRegUpdateJson, String credentialJson) {
+			this.revocRegDeltaJson = revocRegUpdateJson;
+			this.credentialJson = credentialJson;
 		}
 
 		/**
-		 * Gets the revocation registration update JSON.
+		 * Gets the revocation registration delta JSON.
 		 *
-		 * @return The revocation registration update JSON.
+		 * @return The revocation registration delta JSON.
 		 */
 		public String getRevocRegDeltaJson() {
-			return this.revocRegUpdateJson;
+			return this.revocRegDeltaJson;
 		}
 
 		/**
-		 * Gets the claim JSON.
+		 * Gets the credential JSON.
 		 *
-		 * @return The claim JSON.
+		 * @return The credential JSON.
 		 */
-		public String getClaimJson() {
-			return this.claimJson;
+		public String getCredentialJson() {
+			return this.credentialJson;
 		}
 	}
 }

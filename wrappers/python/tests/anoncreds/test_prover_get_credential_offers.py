@@ -59,7 +59,7 @@ async def test_prover_get_credential_offers_works_for_filter_by_schema_id(wallet
 # noinspection PyUnusedLocal
 @pytest.mark.asyncio
 async def test_prover_get_credential_offers_works_for_filter_by_cred_def_id(wallet_handle, prepopulated_wallet,
-                                                                            issuer_did,  issuer_1_xyz_cred_def_id):
+                                                                            issuer_did, issuer_1_xyz_cred_def_id):
     credential_offers = json.loads(
         await prover_get_credential_offers(wallet_handle, json.dumps({"cred_def_id": issuer_1_xyz_cred_def_id})))
 
