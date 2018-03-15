@@ -106,6 +106,24 @@ impl SignusService {
         Ok((crypto_type_name, vk, sk))
     }
 
+    // Takes a string seed and checks if it a 32 byte value or not, tries utf-8 and then base58
+    // TODO: Its a temporary workaround, find a better way (maybe accept only hex)
+    pub fn get_seed(seed_str: Option<String>) -> Result<Option<Vec<u8>>, SignusError> {
+        let seed: Option<Vec<u8>> = seed_str.clone().map(String::into_bytes);
+        let r = match seed {
+            Some(s) => {
+                if s.len() != 32 {
+                    let bytes = Base58::decode(&seed_str.unwrap())?;
+                    Some(bytes)
+                } else {
+                    Some(s)
+                }
+            }
+            _ => None
+        };
+        Ok(r)
+    }
+
     pub fn create_key(&self, key_info: &KeyInfo) -> Result<Key, SignusError> {
         let crypto_type_name = key_info.crypto_type
             .as_ref()
@@ -120,8 +138,9 @@ impl SignusService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let seed = key_info.seed.as_ref().map(String::as_bytes);
-        let (vk, sk) = crypto_type.create_key(seed)?;
+        let seed = SignusService::get_seed(key_info.seed.clone())?;
+
+        let (vk, sk) = crypto_type.create_key(seed.as_ref().map(| s | s.as_slice()))?;
         let vk = Base58::encode(&vk);
         let sk = Base58::encode(&sk);
 
@@ -147,8 +166,9 @@ impl SignusService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let seed = my_did_info.seed.as_ref().map(String::as_bytes);
-        let (vk, sk) = crypto_type.create_key(seed)?;
+        let seed = SignusService::get_seed(my_did_info.seed.clone())?;
+
+        let (vk, sk) = crypto_type.create_key(seed.as_ref().map(| s | s.as_slice()))?;
 
         let did = match my_did_info.did {
             Some(ref did) => Base58::decode(did)?,
@@ -428,15 +448,31 @@ mod tests {
         let service = SignusService::new();
 
         let did = Some("NcYxiDXkpYi6ov5FcYDi1e".to_string());
-        let seed = Some("00000000000000000000000000000My1".to_string());
+        let seed_utf8 = Some("00000000000000000000000000000My1".to_string());
 
-        let did_info_with_seed = MyDidInfo::new(did.clone(), seed, None, None);
+        let did_info_with_seed_utf8 = MyDidInfo::new(did.clone(), seed_utf8, None, None);
         let did_info_without_seed = MyDidInfo::new(did.clone(), None, None, None);
 
-        let (did_with_seed, _) = service.create_my_did(&did_info_with_seed).unwrap();
+        let (did_with_seed_utf8, _) = service.create_my_did(&did_info_with_seed_utf8).unwrap();
         let (did_without_seed, _) = service.create_my_did(&did_info_without_seed).unwrap();
 
-        assert_ne!(did_with_seed.verkey, did_without_seed.verkey)
+        assert_ne!(did_with_seed_utf8.verkey, did_without_seed.verkey);
+    }
+
+    #[test]
+    fn create_my_did_equivalent_for_base58_and_utf8_seed() {
+        let service = SignusService::new();
+
+        let did = Some("NcYxiDXkpYi6ov5FcYDi1e".to_string());
+        let seed_utf8 = Some("00000000000000000000000000000My1".to_string());
+        let seed_bas58 = Some("4F7BsTMVPKFshM1MwLf6y23cid6fL3xMpazVoF9m2q1A".to_string());
+
+        let did_info_with_seed_utf8 = MyDidInfo::new(did.clone(), seed_utf8, None, None);
+        let did_info_with_seed_base58 = MyDidInfo::new(did.clone(), seed_bas58, None, None);
+
+        let (did_with_seed_utf8, _) = service.create_my_did(&did_info_with_seed_utf8).unwrap();
+        let (did_with_seed_base58, _) = service.create_my_did(&did_info_with_seed_base58).unwrap();
+        assert_eq!(did_with_seed_base58.verkey, did_with_seed_utf8.verkey);
     }
 
     #[test]
