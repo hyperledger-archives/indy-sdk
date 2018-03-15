@@ -62,6 +62,10 @@ extern void IndyWrapperCommon6PDataCallback(indy_handle_t xcommand_handle,
                                             const uint8_t *const arg3,
                                             uint32_t arg4);
 
+extern void IndyWrapperCommon3TRHCallback(indy_handle_t xcommand_handle,
+                                          indy_error_t err,
+                                          indy_i32_t handle);
+
 @interface IndyCallbacks : NSObject
 
 // MARK: - Store callback and create command handle

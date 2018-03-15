@@ -47,15 +47,6 @@
 
 - (NSString *)getGvtClaimDef;
 
-- (NSError *)issuerCreateClaimWithWalletHandle:(IndyHandle)walletHandle
-                                  claimReqJson:(NSString *)claimReqJson
-                               claimValuesJson:(NSString *)claimValuesJson
-                                      revRegId:(NSString *)revRegId
-                             tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                                userRevocIndex:(NSNumber *)userRevocIndex
-                                  outClaimJson:(NSString **)xClaimJson
-                          outRevocRegDeltaJSON:(NSString **)revocRegDeltaJson;
-
 - (NSError *)issuerCreateSchemaForIssuerDID:(NSString *)issuerDid
                                        name:(NSString *)name
                                     version:(NSString *)version
@@ -72,11 +63,44 @@
                                               claimDefId:(NSString **)claimDefId
                                             claimDefJson:(NSString **)claimDefJson;
 
+- (NSError *)issuerCreateAndStoreRevocRegForWithWalletHandle:(IndyHandle)walletHandle
+                                                   issuerDid:(NSString *)issuerDID
+                                                        type:(NSString *)type
+                                                         tag:(NSString *)tag
+                                                   credDefId:(NSString *)credDefId
+                                                  configJSON:(NSString *)configJSON
+                                             tailsWriterType:(NSString *)tailsWriterType
+                                           tailsWriterConfig:(NSString *)tailsWriterConfig
+                                                  revocRegId:(NSString **)revocRegId
+                                             revocRegDefJson:(NSString **)revocRegDefJson
+                                           revocRegEntryJson:(NSString **)revocRegEntryJson;
+
+- (NSError *)issuerRevokeClaimForWalletHandle:(IndyHandle)walletHandle
+                                     RevRegId:(NSString *)revRegId
+                            tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                               userRevocIndex:(NSNumber *)userRevocIndex
+                            revocRegDeltaJson:(NSString **)revocRegDeltaJson;
+
+- (NSError *)issuerRecoverClaimForWalletHandle:(IndyHandle)walletHandle
+                                      RevRegId:(NSString *)revRegId
+                             tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                                userRevocIndex:(NSNumber *)userRevocIndex
+                             revocRegDeltaJson:(NSString **)revocRegDeltaJson;
+
 - (NSError *)issuerCreateClaimOfferWithWalletHandle:(IndyHandle)walletHandle
                                          claimDefId:(NSString *)claimDefId
                                           issuerDid:(NSString *)issuerDid
                                           proverDid:(NSString *)proverDid
                                      claimOfferJson:(NSString **)claimOfferJson;
+
+- (NSError *)issuerCreateClaimWithWalletHandle:(IndyHandle)walletHandle
+                                  claimReqJson:(NSString *)claimReqJson
+                               claimValuesJson:(NSString *)claimValuesJson
+                                      revRegId:(NSString *)revRegId
+                             tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                                userRevocIndex:(NSNumber *)userRevocIndex
+                                  outClaimJson:(NSString **)xClaimJson
+                          outRevocRegDeltaJSON:(NSString **)revocRegDeltaJson;
 
 - (NSError *)proverCreateMasterSecretNamed:(NSString *)masterSecretName
                               walletHandle:(IndyHandle)walletHandle;
@@ -116,6 +140,30 @@
                                  claimDefsJson:(NSString *)claimDefsJson
                                 revocInfosJSON:(NSString *)revocInfosJSON
                                   outProofJson:(NSString **)outProofJson;
+
+- (NSError *)createRevocationInfoForTimestamp:(NSNumber *)timestamp
+                                revRegDefJSON:(NSString *)revRegDefJSON
+                              revRegDeltaJSON:(NSString *)revRegDeltaJSON
+                            tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                                       revIdx:(NSNumber *)revIdx
+                                  revInfoJson:(NSString **)revInfoJson;
+
+- (NSError *)updateRevocationInfoForTimestamp:(NSNumber *)timestamp
+                                  revInfoJSON:(NSString *)revInfoJSON
+                                revRegDefJSON:(NSString *)revRegDefJSON
+                              revRegDeltaJSON:(NSString *)revRegDeltaJSON
+                            tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                                       revIdx:(NSNumber *)revIdx
+                           updatedRevInfoJson:(NSString **)updatedRevInfoJson;
+
+- (NSError *)storeRevocationInfoForWalletHandle:(IndyHandle)walletHandle
+                                             id:(NSString *)id
+                                    revInfoJSON:(NSString *)revInfoJSON;
+
+- (NSError *)getRevocationInfoForWalletHandle:(IndyHandle)walletHandle
+                                           id:(NSString *)id
+                                    timestamp:(NSNumber *)timestamp
+                                  revInfoJson:(NSString **)revInfoJson;
 
 - (NSError *)verifierVerifyProof:(NSString *)proofRequestJson
                        proofJson:(NSString *)proofJson

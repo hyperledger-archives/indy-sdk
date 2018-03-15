@@ -71,10 +71,17 @@ impl BlobStorageCommandExecutor {
     }
 
     fn open_reader(&self, type_: &str, config: &str, location: &str, hash: &str) -> Result<i32, IndyError> {
+     trace!("open_reader >>> type_: {:?}, config: {:?}, location: {:?}, hash: {:?}", type_, config, location, hash);
+
         let hash: Vec<u8> = base64::decode(&hash)
             .map_err(|err| CommonError::InvalidStructure(format!("Can't decode hash from base64 {}", err)))?;
 
-        self.blob_storage_service.open_reader(type_, config, location, &hash).map_err(IndyError::from)
+        let res = self.blob_storage_service.open_reader(type_, config, location, &hash).map_err(IndyError::from);
+
+        trace!("open_reader << res: {:?}", res);
+
+        res
+
     }
 
     fn read(&self, handle: i32, size: u64, offset: u64) -> Result<Vec<u8>, IndyError> {

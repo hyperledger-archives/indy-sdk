@@ -174,6 +174,31 @@
     }
 }
 
++ (void)issuerRecoverClaimForRevRegId:(NSString *)revRegId
+                    tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                       userRevocIndex:(NSNumber *)userRevocIndex
+                         walletHandle:(IndyHandle)walletHandle
+                           completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion; {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_issuer_recover_credential(handle,
+            walletHandle,
+            [tailsReaderHandle intValue],
+            [revRegId UTF8String],
+            [userRevocIndex intValue],
+            IndyWrapperCommon3PSCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 + (void)proverStoreClaimOffer:(NSString *)claimOfferJSON
              WithWalletHandle:(IndyHandle)walletHandle
                    completion:(void (^)(NSError *error))completion {
@@ -395,7 +420,7 @@
     }
 }
 
-+ (void)issuerCreateRevocationInfoForTimestamp:(NSNumber *)timestamp
++ (void)createRevocationInfoForTimestamp:(NSNumber *)timestamp
                                  revRegDefJSON:(NSString *)revRegDefJSON
                                revRegDeltaJSON:(NSString *)revRegDeltaJSON
                              tailsReaderHandle:(NSNumber *)tailsReaderHandle
@@ -422,7 +447,7 @@
     }
 }
 
-+ (void)issuerUpdateRevocationInfoForTimestamp:(NSNumber *)timestamp
++ (void)updateRevocationInfoForTimestamp:(NSNumber *)timestamp
                                    revInfoJSON:(NSString *)revInfoJSON
                                  revRegDefJSON:(NSString *)revRegDefJSON
                                revRegDeltaJSON:(NSString *)revRegDeltaJSON
@@ -451,7 +476,7 @@
     }
 }
 
-+ (void)issuerStoreRevocationInfoForId:(NSString *)id
++ (void)storeRevocationInfoForId:(NSString *)id
                            revInfoJSON:(NSString *)revInfoJSON
                           walletHandle:(IndyHandle)walletHandle
                             completion:(void (^)(NSError *error))completion; {
@@ -463,7 +488,7 @@
             walletHandle,
             [id UTF8String],
             [revInfoJSON UTF8String],
-            IndyWrapperCommon3PSCallback
+            IndyWrapperCommon2PCallback
     );
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -474,7 +499,7 @@
     }
 }
 
-+ (void)issuerGetRevocationInfoForId:(NSString *)id
++ (void)getRevocationInfoForId:(NSString *)id
                            timestamp:(NSNumber *)timestamp
                         walletHandle:(IndyHandle)walletHandle
                           completion:(void (^)(NSError *error, NSString *revInfo))completion; {

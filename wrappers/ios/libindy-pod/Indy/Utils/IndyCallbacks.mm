@@ -220,6 +220,26 @@ void IndyWrapperCommon3PHCallback(indy_handle_t xcommand_handle,
     }
 }
 
+void IndyWrapperCommon3TRHCallback(indy_handle_t xcommand_handle,
+        indy_error_t err,
+        indy_i32_t handle)
+{
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+
+    void (^completion)(NSError*, NSNumber *) = (void (^)(NSError*, NSNumber *arg1))block;
+    NSNumber* sarg1 = [NSNumber numberWithInt:handle];
+
+    if (completion)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^
+        {
+            NSError *error = [ NSError errorFromIndyError: err ];
+            completion(error, (NSNumber *) sarg1);
+        });
+    }
+}
+
 void IndyWrapperCommon3PSCallback(indy_handle_t xcommand_handle,
                                   indy_error_t err,
                                   const char *const arg1)
