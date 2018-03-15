@@ -1545,6 +1545,27 @@ impl CallbackUtils {
         (command_handle, Some(get_shards))
     }
 
+    pub fn closure_to_get_shard_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32, Option<extern fn(command_handle: i32,
+                                                                                                             err: ErrorCode,
+                                                                                                             shard: *const c_char)>) {
+        lazy_static! {
+            static ref GET_SHARD_CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, String) + Send > >> = Default::default();
+        }
+
+        extern "C" fn get_shard(command_handle: i32, err: ErrorCode, shard: *const c_char) {
+            let mut callbacks = GET_SHARD_CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let shard = unsafe { CStr::from_ptr(shard).to_str().unwrap().to_string() };
+            cb(err, shard)
+        }
+
+        let mut callbacks = GET_SHARD_CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(get_shard))
+    }
+
     pub fn closure_to_recover_secret_cb(closure: Box<FnMut(ErrorCode, String) + Send>) -> (i32, Option<extern fn(command_handle: i32,
                                                                                                              err: ErrorCode,
                                                                                                              secret: *const c_char)>) {

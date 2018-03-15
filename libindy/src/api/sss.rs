@@ -66,6 +66,32 @@ pub  extern fn indy_get_shards_of_verkey(command_handle: i32,
     result_to_err_code!(result)
 }
 
+#[no_mangle]
+pub  extern fn indy_get_shard_of_verkey(command_handle: i32,
+                                         wallet_handle: i32,
+                                         verkey: *const c_char,
+                                         shard_number: u8,
+                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                              shard: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(verkey, ErrorCode::CommonInvalidParam2);
+    check_usize_c_int!(shard_number, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::SSS(SSSCommand::GetShardOfVerkey(
+            wallet_handle,
+            verkey,
+            shard_number,
+            Box::new(move |result| {
+                let (err, shard) = result_to_err_code_1!(result, String::new());
+                let shard = CStringUtils::string_to_cstring(shard);
+                cb(command_handle, err, shard.as_ptr())
+            })
+        )));
+
+    result_to_err_code!(result)
+}
+
 
 #[no_mangle]
 pub  extern fn indy_recover_secret_from_shards(command_handle: i32,

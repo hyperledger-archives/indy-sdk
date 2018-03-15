@@ -55,7 +55,7 @@ mod high_cases {
 
             let shards_json = SSSUtils::get_shards_of_verkey(wallet_handle,
                                                                   &vk).unwrap();
-            println!("{:?}", &shards_json);
+            println!("Shards json={:?}", &shards_json);
             let shards: Value = serde_json::from_str(&shards_json).unwrap();
             let shard_list: &Vec<Value> = shards.as_array().unwrap();
             assert_eq!(shard_list.len(), 5);
@@ -75,6 +75,13 @@ mod high_cases {
             shards.extend_from_slice(&shard_list[..2]);
             let shards_json = serde_json::to_string(&shards).unwrap();
             assert!(SSSUtils::get_recover_secret_from_shards(&shards_json).is_err());
+
+            // Get a specific shard for a verkey
+            let shard2 = SSSUtils::get_shard_of_verkey(wallet_handle, &vk,
+                                                       2).unwrap();
+            println!("2nd shard={:?}", shard2);
+            let s2 = shard_list[1]["value"].as_str().unwrap();
+            assert_eq!(shard2, s2.to_string());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 

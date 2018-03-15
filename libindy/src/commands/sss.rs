@@ -1,7 +1,7 @@
 extern crate indy_crypto;
 extern crate serde_json;
 
-use self::indy_crypto::sss::{shard_secret, recover_secret, Share};
+use self::indy_crypto::sss::{shard_secret, get_shard_by_no, recover_secret, Share};
 use errors::indy::IndyError;
 use services::wallet::WalletService;
 use services::signus::SignusService;
@@ -34,7 +34,12 @@ pub enum SSSCommand {
         Box<Fn(Result<String, IndyError>) + Send>), // Return the id as String by which all shards can be retrieved
     GetShardsOfVerkey(
         i32, // wallet handle,
-        String, // verkey for which secret key has to be sharded
+        String, // verkey for which secret key was sharded
+        Box<Fn(Result<String, IndyError>) + Send>), // Return the list of shards as JSON
+    GetShardOfVerkey(
+        i32, // wallet handle,
+        String, // verkey for which secret key was sharded
+        usize,  // Shard no, starts from 1
         Box<Fn(Result<String, IndyError>) + Send>), // Return the list of shards as JSON
     RecoverSecretFromShards(
         String, // shards as JSON array with each shard as an element
@@ -65,6 +70,10 @@ impl SSSCommandExecutor {
                 info!("GetShardsOfVerkey command received");
                 cb(self.get_shards_of_verkey(wallet_handle, &verkey));
             }
+            SSSCommand::GetShardOfVerkey(wallet_handle, verkey, shard_no, cb) => {
+                info!("GetShardOfVerkey command received");
+                cb(self.get_shard_of_verkey(wallet_handle, &verkey, shard_no));
+            }
             SSSCommand::RecoverSecretFromShards(shards_json, cb) => {
                 info!("RecoverSecretFromShards command received");
                 cb(self.recover_secret_from_shards(&shards_json));
@@ -92,9 +101,19 @@ impl SSSCommandExecutor {
         Ok(verkey.to_string())
     }
 
+    // Get all shards of a verkey as a JSON array
     fn get_shards_of_verkey(&self, wallet_handle: i32, verkey: &str) -> Result<String, IndyError> {
         let wallet_key = SSSCommandExecutor::_verkey_to_wallet_key(&verkey);
         Ok(self.wallet_service.get(wallet_handle, &wallet_key)?)
+    }
+
+    // Get a specific shard of a verkey as a string
+    fn get_shard_of_verkey(&self, wallet_handle: i32, verkey: &str, shard_no: usize) -> Result<String, IndyError> {
+        let wallet_key = SSSCommandExecutor::_verkey_to_wallet_key(&verkey);
+        let shards_json = self.wallet_service.get(wallet_handle, &wallet_key)?;
+        let shards: Vec<Share> = serde_json::from_str(&shards_json)?;
+        let shard = get_shard_by_no(&shards, shard_no)?;
+        Ok(shard.to_string())
     }
 
     fn recover_secret_from_shards(&self, shards_json: &str) -> Result<String, IndyError> {
