@@ -4,12 +4,13 @@ extern crate indy_crypto;
 
 use errors::common::CommonError;
 
-use services::anoncreds::constants::LARGE_MVECT;
+use services::anoncreds::constants::{LARGE_MVECT, LINK_SECRET_NAME, POLICY_ADDRESS_NAME};
 use utils::crypto::bn::BigNumber;
 use std::hash::Hash;
 use std::cmp::max;
 use std::collections::HashMap;
 use self::indy_crypto::pair::{GroupOrderElement, PointG1, Pair};
+use self::indy_crypto::cl::NonCredentialSchemaElements;
 
 #[cfg(not(test))]
 pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CommonError> {
@@ -172,6 +173,16 @@ pub fn bignum_to_group_element(num: &BigNumber) -> Result<GroupOrderElement, Com
 pub fn get_composite_id(issuer_did: &str, schema_seq_no: i32) -> String {
     issuer_did.to_string() + ":" + &schema_seq_no.to_string()
 }
+
+pub fn get_non_schema_elements() -> NonCredentialSchemaElements {
+    let mut set = ::std::collections::BTreeSet::new();
+    set.insert(String::from(LINK_SECRET_NAME));
+    set.insert(String::from(POLICY_ADDRESS_NAME));
+    NonCredentialSchemaElements {
+        attrs: set
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

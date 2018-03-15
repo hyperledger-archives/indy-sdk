@@ -208,7 +208,7 @@ impl AuthzCommandExecutor {
         Ok(policy)
     }
 
-    fn _policy_addr_to_wallet_key(policy_address: String) -> String {
+    pub fn _policy_addr_to_wallet_key(policy_address: String) -> String {
         format!("{}::{:}", AUTHZ_ADDRESS_WALLET_KEY_PREFIX, policy_address)
     }
 }

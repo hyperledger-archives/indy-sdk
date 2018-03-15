@@ -31,6 +31,8 @@ use services::anoncreds::types::{
 };
 use services::anoncreds::constants::MASTER_SECRET_WALLET_KEY_PREFIX;
 
+use commands::authz::AuthzCommandExecutor;
+
 use std::collections::HashMap;
 use std::cell::RefCell;
 use utils::crypto::base58::Base58;
@@ -55,6 +57,7 @@ pub enum ProverCommand {
         String, // claim offer json
         String, // claim def json
         String, // master secret name
+        Option<String>, // policy address name
         Box<Fn(Result<String, IndyError>) + Send>),
     StoreClaim(
         i32, // wallet handle
@@ -108,10 +111,13 @@ impl ProverCommandExecutor {
                 self.create_master_secret(wallet_handle, &master_secret_name, cb);
             }
             ProverCommand::CreateAndStoreClaimRequest(wallet_handle, prover_did, claim_offer_json,
-                                                      claim_def_json, master_secret_name, cb) => {
+                                                      claim_def_json, master_secret_name,
+                                                      policy_address_name, cb) => {
                 info!(target: "prover_command_executor", "CreateAndStoreClaimRequest command received");
                 self.create_and_store_claim_request(wallet_handle, &prover_did, &claim_offer_json,
-                                                    &claim_def_json, &master_secret_name, cb);
+                                                    &claim_def_json, &master_secret_name,
+                                                    policy_address_name.as_ref().map(String::as_str),
+                                                    cb);
             }
             ProverCommand::StoreClaim(wallet_handle, claims_json, cb) => {
                 info!(target: "prover_command_executor", "StoreClaim command received");
@@ -228,9 +234,10 @@ impl ProverCommandExecutor {
                                       claim_offer_json: &str,
                                       claim_def_json: &str,
                                       master_secret_name: &str,
+                                      policy_address_name: Option<&str>,
                                       cb: Box<Fn(Result<String, IndyError>) + Send>) {
         cb(self._create_and_store_claim_request(wallet_handle, prover_did, claim_offer_json,
-                                                claim_def_json, master_secret_name))
+                                                claim_def_json, master_secret_name, policy_address_name))
     }
 
     fn _create_and_store_claim_request(&self,
@@ -238,13 +245,25 @@ impl ProverCommandExecutor {
                                        prover_did: &str,
                                        claim_offer_json: &str,
                                        claim_def_json: &str,
-                                       master_secret_name: &str) -> Result<String, IndyError> {
+                                       master_secret_name: &str,
+                                       policy_address_name: Option<&str>) -> Result<String, IndyError> {
         let master_secret_str = self.wallet_service.get(wallet_handle,
                                                         &ProverCommandExecutor::_master_secret_name_to_wallet_key(master_secret_name))?;
 
         let master_secret = BigNumber::from_dec(&master_secret_str)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid master_secret_str: {}", err.to_string())))?;
+
+        let policy_address = match policy_address_name {
+            Some(name) => {
+                let policy_address_str = self.wallet_service.get(wallet_handle,
+                                                                &AuthzCommandExecutor::_policy_addr_to_wallet_key(name.to_string()))?;
+                Some(BigNumber::from_dec(&policy_address_str)
+                    .map_err(map_err_trace!())
+                    .map_err(|err| CommonError::InvalidState(format!("Invalid policy_address_str: {}", err.to_string())))?)
+            },
+            None => None
+        };
 
         let claim_def: ClaimDefinition = ClaimDefinition::from_json(&claim_def_json)
             .map_err(map_err_trace!())
@@ -272,7 +291,7 @@ impl ProverCommandExecutor {
         let (claim_request, primary_claim_init_data, revocation_claim_init_data) =
             self.anoncreds_service.prover.create_claim_request(claim_def.data.public_key,
                                                                claim_def.data.public_key_revocation,
-                                                               master_secret, prover_did)?;
+                                                               master_secret, policy_address, prover_did)?;
 
         let claim_def_id = get_composite_id(&claim_offer.issuer_did.clone(), claim_offer.schema_seq_no);
         self.wallet_service.set(wallet_handle,

@@ -401,6 +401,7 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
                                                      claim_offer_json: *const c_char,
                                                      claim_def_json: *const c_char,
                                                      master_secret_name: *const c_char,
+                                                     policy_address_name: *const c_char,
                                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                           claim_req_json: *const c_char
                                                      )>) -> ErrorCode {
@@ -408,7 +409,8 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
     check_useful_c_str!(claim_offer_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(claim_def_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(master_secret_name, ErrorCode::CommonInvalidParam6);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+    check_useful_opt_c_str!(policy_address_name, ErrorCode::CommonInvalidParam7);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::CreateAndStoreClaimRequest(
@@ -417,6 +419,7 @@ pub extern fn indy_prover_create_and_store_claim_req(command_handle: i32,
             claim_offer_json,
             claim_def_json,
             master_secret_name,
+            policy_address_name,
             Box::new(move |result| {
                 let (err, claim_req_json) = result_to_err_code_1!(result, String::new());
                 let claim_req_json = CStringUtils::string_to_cstring(claim_req_json);

@@ -229,7 +229,7 @@ mod high_cases {
             let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, SEQ_NO);
 
             let claim_req_json = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle, DID, &claim_offer_json,
-                                                                                   &claim_def, COMMON_MASTER_SECRET).unwrap();
+                                                                                   &claim_def, COMMON_MASTER_SECRET, None).unwrap();
             let claim_req: ClaimRequestJson = serde_json::from_str(&claim_req_json).unwrap();
 
             assert_eq!(claim_req.schema_seq_no, SEQ_NO);
@@ -245,7 +245,7 @@ mod high_cases {
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_create_and_store_claim_req(invalid_wallet_handle, DID, &claim_offer_json,
-                                                                        &claim_def, COMMON_MASTER_SECRET);
+                                                                        &claim_def, COMMON_MASTER_SECRET, None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
 
@@ -256,7 +256,7 @@ mod high_cases {
             let claim_offer_json = AnoncredsUtils::get_claim_offer(DID, 2);
 
             let res = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle, DID, &claim_offer_json,
-                                                                        &claim_def, COMMON_MASTER_SECRET);
+                                                                        &claim_def, COMMON_MASTER_SECRET, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -267,7 +267,7 @@ mod high_cases {
             let claim_offer_json = AnoncredsUtils::get_claim_offer(ISSUER_DID, 2);
 
             let res = AnoncredsUtils::prover_create_and_store_claim_req(wallet_handle, DID, &claim_offer_json,
-                                                                        &claim_def, COMMON_MASTER_SECRET);
+                                                                        &claim_def, COMMON_MASTER_SECRET, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
     }
@@ -330,7 +330,7 @@ mod high_cases {
             AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
             let claim_req = AnoncredsUtils::prover_create_and_store_claim_req(prover_wallet_handle, DID, &claim_offer_json,
-                                                                              &claim_def_json, COMMON_MASTER_SECRET).unwrap();
+                                                                              &claim_def_json, COMMON_MASTER_SECRET, None).unwrap();
 
             let claim_json = AnoncredsUtils::get_gvt_claim_json();
             let (_, xclaim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle, &claim_req, &claim_json, None).unwrap();
@@ -348,7 +348,7 @@ mod high_cases {
                                                                               DID,
                                                                               &claim_offer_json,
                                                                               &claim_def_json,
-                                                                              COMMON_MASTER_SECRET).unwrap();
+                                                                              COMMON_MASTER_SECRET, None).unwrap();
 
             let claim_json = AnoncredsUtils::get_gvt_claim_json();
             let (_, claim_json) = AnoncredsUtils::issuer_create_claim(wallet_handle, &claim_req, &claim_json, None).unwrap();
@@ -901,7 +901,7 @@ mod medium_cases {
                                                                         DID,
                                                                         claim_offer_json,
                                                                         &claim_def,
-                                                                        COMMON_MASTER_SECRET);
+                                                                        COMMON_MASTER_SECRET, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -923,7 +923,7 @@ mod medium_cases {
                                                                         DID,
                                                                         &claim_offer_json,
                                                                         claim_def,
-                                                                        COMMON_MASTER_SECRET);
+                                                                        COMMON_MASTER_SECRET, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -937,7 +937,7 @@ mod medium_cases {
                                                                         DID,
                                                                         &claim_offer_json,
                                                                         &claim_def,
-                                                                        "invalid_master_secret_name");
+                                                                        "invalid_master_secret_name", None);
             assert_eq!(res.unwrap_err(), ErrorCode::KeyNotFoundInWalletError);
         }
     }
@@ -1001,7 +1001,7 @@ mod medium_cases {
                                                               "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW",
                                                               &claim_offer_json,
                                                               &claim_def_json,
-                                                              COMMON_MASTER_SECRET).unwrap();
+                                                              COMMON_MASTER_SECRET, None).unwrap();
 
             let claim_json = r#"{"claim":{"sex":["male","1"],"age":["28","28"],"name":["Alex","1"],"height":["175","175"]},
                                 "issuer_did":1,"
@@ -1492,7 +1492,7 @@ mod demos {
                                                                           prover_did,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
-                                                                          master_secret_name).unwrap();
+                                                                          master_secret_name, None).unwrap();
 
         let _ = stream.write(format!(r#"{{"type":"issue_claim", "data": {}}}"#, claim_req).as_bytes());
         let mut buf = vec![0; 10240];
@@ -1620,7 +1620,7 @@ mod demos {
                                                                           prover_did,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
-                                                                          master_secret_name).unwrap();
+                                                                          master_secret_name, None).unwrap();
 
         //8. Issuer create Claim
         let claim_json = AnoncredsUtils::get_gvt_claim_json();
@@ -1771,7 +1771,7 @@ mod demos {
                                                                           prover_did,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
-                                                                          master_secret_name).unwrap();
+                                                                          master_secret_name, None).unwrap();
 
         //5. Issuer create Claim
         let claim_json = AnoncredsUtils::get_gvt_claim_json();
@@ -1876,7 +1876,7 @@ mod demos {
                                                                           prover_did,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
-                                                                          master_secret_name).unwrap();
+                                                                          master_secret_name, None).unwrap();
 
         //8. Issuer create Claim
         let claim_json = AnoncredsUtils::get_gvt_claim_json();
@@ -2025,7 +2025,7 @@ mod demos {
                                                                               prover_did,
                                                                               &claim_offer,
                                                                               &gvt_claim_def_json,
-                                                                              master_secret_name_1).unwrap();
+                                                                              master_secret_name_1, None).unwrap();
 
         //12. Issuer create GVT Claim
         let gvt_claim_json = AnoncredsUtils::get_gvt_claim_json();
@@ -2042,7 +2042,7 @@ mod demos {
                                                                               prover_did,
                                                                               &claim_offer,
                                                                               &xyz_claim_def_json,
-                                                                              master_secret_name_1).unwrap();
+                                                                              master_secret_name_1, None).unwrap();
 
         //15. Issuer create XYZ Claim
         let xyz_claim_json = AnoncredsUtils::get_xyz_claim_json();
@@ -2210,7 +2210,7 @@ mod demos {
                                                                               prover_did,
                                                                               &claim_offer,
                                                                               &gvt_claim_def_json,
-                                                                              master_secret_name).unwrap();
+                                                                              master_secret_name, None).unwrap();
 
 
         //10. Issuer create GVT Claim
@@ -2228,7 +2228,7 @@ mod demos {
                                                                               prover_did,
                                                                               &claim_offer,
                                                                               &xyz_claim_def_json,
-                                                                              master_secret_name).unwrap();
+                                                                              master_secret_name, None).unwrap();
 
         //13. Issuer create XYZ Claim
         let xyz_claim_json = AnoncredsUtils::get_xyz_claim_json();
@@ -2354,7 +2354,7 @@ mod demos {
                                                                           prover_did,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
-                                                                          master_secret_name).unwrap();
+                                                                          master_secret_name, None).unwrap();
 
         //7. Issuer create Claim
         let claim_json = AnoncredsUtils::get_gvt_claim_json();
@@ -2445,7 +2445,7 @@ mod demos {
                                                                           prover_did,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
-                                                                          master_secret_name).unwrap();
+                                                                          master_secret_name, None).unwrap();
 
         //7. Issuer create Claim
         let claim_json = AnoncredsUtils::get_gvt_claim_json();
@@ -2531,7 +2531,7 @@ mod demos {
                                                                           prover_did,
                                                                           &claim_offer_json,
                                                                           &claim_def_json,
-                                                                          master_secret_name).unwrap();
+                                                                          master_secret_name, None).unwrap();
 
         //7. Issuer create Claim
         let claim_json = AnoncredsUtils::get_gvt_claim_json();

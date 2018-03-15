@@ -334,6 +334,7 @@ fn anoncreds_demo_works() {
                                                CString::new(claim_offer_json).unwrap().as_ptr(),
                                                CString::new(claim_def_json.clone()).unwrap().as_ptr(),
                                                CString::new(master_secret_name).unwrap().as_ptr(),
+                                               null(),
                                                prover_create_claim_req_callback);
 
     assert_eq!(ErrorCode::Success, err);

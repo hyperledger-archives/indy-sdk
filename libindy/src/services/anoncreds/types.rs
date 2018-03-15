@@ -615,18 +615,20 @@ pub struct PublicKey {
     pub n: BigNumber,
     pub s: BigNumber,
     pub rms: BigNumber,
+    pub rpa: BigNumber,  // policy address
     pub r: HashMap<String, BigNumber>,
     pub rctxt: BigNumber,
     pub z: BigNumber
 }
 
 impl PublicKey {
-    pub fn new(n: BigNumber, s: BigNumber, rms: BigNumber, r: HashMap<String, BigNumber>,
+    pub fn new(n: BigNumber, s: BigNumber, rms: BigNumber, rpa: BigNumber, r: HashMap<String, BigNumber>,
                rctxt: BigNumber, z: BigNumber) -> PublicKey {
         PublicKey {
             n: n,
             s: s,
             rms: rms,
+            rpa: rpa,
             r: r,
             rctxt: rctxt,
             z: z
@@ -638,6 +640,7 @@ impl PublicKey {
             s: self.s.clone()?,
             n: self.n.clone()?,
             rms: self.rms.clone()?,
+            rpa: self.rpa.clone()?,
             r: clone_bignum_map(&self.r)?,
             rctxt: self.rctxt.clone()?,
             z: self.z.clone()?

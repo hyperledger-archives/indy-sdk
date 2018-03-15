@@ -17,3 +17,5 @@ pub const LARGE_ALPHATILDE: usize = 2787;
 pub const MASTER_SECRET_WALLET_KEY_PREFIX: &'static str = "master_secret";
 
 
+pub const LINK_SECRET_NAME: &'static str = "link_secret";
+pub const POLICY_ADDRESS_NAME: &'static str = "policy_address";

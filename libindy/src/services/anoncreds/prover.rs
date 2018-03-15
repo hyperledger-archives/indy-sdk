@@ -14,6 +14,9 @@ use services::anoncreds::types::{AttributeInfo, ClaimInfo, RequestedClaimsJson, 
 use std::iter::FromIterator;
 
 use self::indy_crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
+use self::indy_crypto::cl::prover::Prover as CryptoProver;
+
+use services::anoncreds::converters::*;
 
 pub struct Prover {}
 
@@ -27,9 +30,14 @@ impl Prover {
     }
 
     pub fn create_claim_request(&self, pk: PublicKey, pkr: Option<RevocationPublicKey>, ms: BigNumber,
-                                prover_did: &str) -> Result<(ClaimRequest, ClaimInitData, Option<RevocationClaimInitData>), CommonError> {
+                                policy_address: Option<BigNumber>, prover_did: &str) -> Result<(ClaimRequest, ClaimInitData, Option<RevocationClaimInitData>), CommonError> {
         info!(target: "anoncreds_service", "Prover create claim request -> start");
-        let primary_claim_init_data = Prover::_gen_primary_claim_init_data(&pk, &ms)?;
+        let pub_key = PublicKey_to_CredentialPublicKey(&pk)?;
+
+        let primary_blinded_credential_secrets =
+            CryptoProver::_generate_primary_blinded_credential_secrets(&pub_key.p_key, &gen_hidden_CredentialValues(&ms, policy_address)?)?;
+
+        let primary_claim_init_data = PrimaryBlindedCredentialSecretsFactors_to_ClaimInitData(primary_blinded_credential_secrets)?;
 
         let revocation_claim_init_data = match pkr {
             Some(pk_r) => Some(Prover::_generate_revocation_claim_init_data(&pk_r)?),
@@ -72,6 +80,7 @@ impl Prover {
                          pkr: Option<RevocationPublicKey>, revoc_reg: &Option<RevocationRegistry>)
                          -> Result<(), CommonError> {
         info!(target: "anoncreds_service", "Prover process received claim -> start");
+
         Prover::_init_primary_claim(claim_json, &primary_claim_init_data.v_prime)?;
 
         if let Some(ref non_revocation_claim) = claim_json.borrow().signature.non_revocation_claim {
@@ -284,6 +293,8 @@ impl Prover {
                         tails: &HashMap<i32, PointG2>)
                         -> Result<ProofJson, AnoncredsError> {
         info!(target: "anoncreds_service", "Prover create proof -> start");
+
+//        let proof_builder = CryptoProver::new_proof_builder()?;
 
         let proof_claims = Prover::_prepare_proof_claims(proof_req,
                                                          schemas,
@@ -1023,7 +1034,7 @@ mod tests {
         let (claim_request, claim_init_data, revocation_claim_init_data) = prover.create_claim_request(
             claim_definition.clone().unwrap().data.public_key,
             claim_definition.clone().unwrap().data.public_key_revocation,
-            master_secret, mocks::PROVER_DID).unwrap();
+            master_secret, None, mocks::PROVER_DID).unwrap();
 
         let revocation_registry_ref_cell = Some(RefCell::new(revocation_registry));
 

@@ -149,7 +149,7 @@ impl AnoncredsUtils {
     }
 
     pub fn prover_create_and_store_claim_req(wallet_handle: i32, prover_did: &str, claim_offer_json: &str,
-                                             claim_def_json: &str, master_secret_name: &str) -> Result<String, ErrorCode> {
+                                             claim_def_json: &str, master_secret_name: &str, policy_address: Option<&str>) -> Result<String, ErrorCode> {
         let (sender, receiver) = channel();
 
         let cb = Box::new(move |err, claim_req_json| {
@@ -162,6 +162,7 @@ impl AnoncredsUtils {
         let claim_offer_json = CString::new(claim_offer_json).unwrap();
         let claim_def_json = CString::new(claim_def_json).unwrap();
         let master_secret_name = CString::new(master_secret_name).unwrap();
+        let policy_address_str = policy_address.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = indy_prover_create_and_store_claim_req(command_handle,
                                                          wallet_handle,
@@ -169,6 +170,7 @@ impl AnoncredsUtils {
                                                          claim_offer_json.as_ptr(),
                                                          claim_def_json.as_ptr(),
                                                          master_secret_name.as_ptr(),
+                                                         if policy_address.is_some() { policy_address_str.as_ptr() } else { null() },
                                                          cb);
 
         if err != ErrorCode::Success {
@@ -579,7 +581,7 @@ impl AnoncredsUtils {
                                                                                   "HEJ9gvWX64wW7UD",
                                                                                   &claim_offer_json_1,
                                                                                   CLAIM_DEF_JSON,
-                                                                                  COMMON_MASTER_SECRET).unwrap();
+                                                                                  COMMON_MASTER_SECRET, None).unwrap();
                 let claim_json = AnoncredsUtils::get_gvt_claim_json();
 
                 //6. Create Claim

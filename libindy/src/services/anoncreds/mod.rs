@@ -5,6 +5,8 @@ pub mod prover;
 pub mod types;
 pub mod verifier;
 
+mod converters;
+
 use services::anoncreds::issuer::Issuer;
 use services::anoncreds::prover::Prover;
 use services::anoncreds::verifier::Verifier;
