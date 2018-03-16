@@ -54,7 +54,7 @@ def error_message(error_code: int) -> str:
     c_err_msg = getattr(_cdll(), name)(c_error_code)
 
     err_msg = cast(c_err_msg , c_char_p).value.decode()
-    logger.debug("error_message: Function %s returned error_message: %i", name, err_msg)
+    logger.debug("error_message: Function %s returned error_message: %s", name, err_msg)
 
     return err_msg
 
