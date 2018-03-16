@@ -374,7 +374,11 @@ def getSuffix(isRelease, target) {
     if (env.BRANCH_NAME == 'master' && !isRelease) {
         suffix = "-dev-$env.BUILD_NUMBER"
     } else if (env.BRANCH_NAME == 'authz-rc' && !isRelease) {
-        suffix = "-$env.BUILD_NUMBER"
+        if (target == "Cargo") {
+            suffix = "-authz-rc-$env.BUILD_NUMBER"
+        } else {
+            suffix = "-$env.BUILD_NUMBER"
+        }
     } else if (env.BRANCH_NAME == 'rc') {
         if (isRelease) {
             suffix = ""
