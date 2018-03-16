@@ -31,7 +31,7 @@ pub extern fn indy_blob_storage_open_reader(command_handle: i32,
             Box::new(move |result| {
                 let (err, handle) = result_to_err_code_1!(result, 0);
                 cb(command_handle, err, handle)
-            })
+            }),
         )));
 
     result_to_err_code!(result)
@@ -57,7 +57,26 @@ pub extern fn indy_blob_storage_read(command_handle: i32,
                 let (err, data) = result_to_err_code_1!(result, Vec::new());
                 let (data_raw, data_len) = vec_to_pointer(&data);
                 cb(command_handle, err, data_raw, data_len)
-            })
+            }),
+        )));
+
+    result_to_err_code!(result)
+}
+
+#[no_mangle]
+pub extern fn indy_blob_storage_close_reader(command_handle: i32,
+                                             reader_handle: i32,
+                                             cb: Option<extern fn(command_handle_: i32,
+                                                                  err: ErrorCode)>) -> ErrorCode {
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    let result = CommandExecutor::instance()
+        .send(Command::BlobStorage(BlobStorageCommand::CloseReader(
+            reader_handle,
+            Box::new(move |result| {
+                let result = result_to_err_code!(result);
+                cb(command_handle, result);
+            }),
         )));
 
     result_to_err_code!(result)

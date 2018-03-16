@@ -27,4 +27,12 @@ impl BlobStorageUtils {
 
         super::results::result_to_int(err, receiver)
     }
+
+    pub fn close_reader(reader_handle: i32) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+
+        let err = indy_blob_storage_close_reader(command_handle, reader_handle, cb);
+
+        super::results::result_to_empty(err, receiver)
+    }
 }

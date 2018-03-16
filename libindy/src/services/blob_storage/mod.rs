@@ -82,8 +82,8 @@ impl BlobStorageService {
 
     pub fn finalize(&self, handle: i32) -> Result<(String, Vec<u8>), CommonError> {
         let mut writers = self.writers.try_borrow_mut()?;
-        let &mut (ref mut writer, ref mut hasher) = writers
-            .get_mut(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?;
+        let (mut writer, mut hasher) = writers
+            .remove(&handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage handle".to_owned()))?;
 
         let hash = hasher.fixed_result().to_vec();
 

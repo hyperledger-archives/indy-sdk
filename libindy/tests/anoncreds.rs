@@ -3112,6 +3112,8 @@ mod demos {
                                                           &rev_regs_json).unwrap();
         assert!(valid);
 
+        BlobStorageUtils::close_reader(tails_reader_handle).unwrap();
+
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
@@ -3273,6 +3275,8 @@ mod demos {
                                                           &rev_reg_defs_json,
                                                           &rev_regs_json).unwrap();
         assert!(valid);
+
+        BlobStorageUtils::close_reader(tails_reader_handle).unwrap();
 
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();
@@ -3527,6 +3531,8 @@ mod demos {
                                                           &rev_reg_defs_json,
                                                           &rev_regs_json).unwrap();
         assert!(!valid);
+
+        BlobStorageUtils::close_reader(tails_reader_handle).unwrap();
 
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();
