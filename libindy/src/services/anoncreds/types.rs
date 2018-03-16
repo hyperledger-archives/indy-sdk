@@ -372,7 +372,7 @@ impl JsonEncodable for RevocationInfo {}
 
 impl<'a> JsonDecodable<'a> for RevocationInfo {}
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AttributeValues {
     pub raw: String,
     pub encoded: String
