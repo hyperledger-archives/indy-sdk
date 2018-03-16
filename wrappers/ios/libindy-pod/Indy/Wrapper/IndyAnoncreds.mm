@@ -35,13 +35,13 @@
     }
 }
 
-+ (void)issuerCreateAndStoreClaimDefForIssuerDID:(NSString *)issuerDID
-                                      schemaJSON:(NSString *)schemaJSON
-                                             tag:(NSString *)tag
-                                            type:(NSString *)type
-                                      configJSON:(NSString *)configJSON
-                                    walletHandle:(IndyHandle)walletHandle
-                                      completion:(void (^)(NSError *error, NSString *claimDefId, NSString *claimDefJSON))completion; {
++ (void)issuerCreateAndStoreCredentialDefForIssuerDID:(NSString *)issuerDID
+                                           schemaJSON:(NSString *)schemaJSON
+                                                  tag:(NSString *)tag
+                                                 type:(NSString *)type
+                                           configJSON:(NSString *)configJSON
+                                         walletHandle:(IndyHandle)walletHandle
+                                           completion:(void (^)(NSError *error, NSString *credentialDefId, NSString *credentialDefJSON))completion; {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -95,11 +95,11 @@
     }
 }
 
-+ (void)issuerCreateClaimOfferForProverDID:(NSString *)proverDID
-                                 issuerDID:(NSString *)issuerDID
-                                 credDefId:(NSString *)credDefId
-                              walletHandle:(IndyHandle)walletHandle
-                                completion:(void (^)(NSError *error, NSString *claimOfferJSON))completion; {
++ (void)issuerCreateCredentialOfferForProverDID:(NSString *)proverDID
+                                      issuerDID:(NSString *)issuerDID
+                                      credDefId:(NSString *)credDefId
+                                   walletHandle:(IndyHandle)walletHandle
+                                     completion:(void (^)(NSError *error, NSString *credentialOfferJSON))completion; {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -120,21 +120,21 @@
 }
 
 
-+ (void)issuerCreateClaimWithRequest:(NSString *)claimRequestJSON
-                     claimValuesJSON:(NSString *)claimValuesJSON
-                            revRegId:(NSString *)revRegId
-                   tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                      userRevocIndex:(NSNumber *)userRevocIndex
-                        walletHandle:(IndyHandle)walletHandle
-                          completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON, NSString *xclaimJSON))completion; {
++ (void)issuerCreateCredentialWithRequest:(NSString *)credentialRequestJSON
+                     credentialValuesJSON:(NSString *)credentialValuesJSON
+                                 revRegId:(NSString *)revRegId
+                        tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                           userRevocIndex:(NSNumber *)userRevocIndex
+                             walletHandle:(IndyHandle)walletHandle
+                               completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON, NSString *xcredentialJSON))completion; {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
     ret = indy_issuer_create_credential(handle,
             walletHandle,
-            [claimRequestJSON UTF8String],
-            [claimValuesJSON UTF8String],
+            [credentialRequestJSON UTF8String],
+            [credentialValuesJSON UTF8String],
             [revRegId UTF8String],
             tailsReaderHandle ? [tailsReaderHandle intValue] : -1,
             userRevocIndex ? [userRevocIndex intValue] : -1,
@@ -149,11 +149,11 @@
     }
 }
 
-+ (void)issuerRevokeClaimForRevRegId:(NSString *)revRegId
-                   tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                      userRevocIndex:(NSNumber *)userRevocIndex
-                        walletHandle:(IndyHandle)walletHandle
-                          completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion; {
++ (void)issuerRevokeCredentialForRevRegId:(NSString *)revRegId
+                        tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                           userRevocIndex:(NSNumber *)userRevocIndex
+                             walletHandle:(IndyHandle)walletHandle
+                               completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion; {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -174,11 +174,11 @@
     }
 }
 
-+ (void)issuerRecoverClaimForRevRegId:(NSString *)revRegId
-                    tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                       userRevocIndex:(NSNumber *)userRevocIndex
-                         walletHandle:(IndyHandle)walletHandle
-                           completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion; {
++ (void)issuerRecoverCredentialForRevRegId:(NSString *)revRegId
+                         tailsReaderHandle:(NSNumber *)tailsReaderHandle
+                            userRevocIndex:(NSNumber *)userRevocIndex
+                              walletHandle:(IndyHandle)walletHandle
+                                completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion; {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -199,16 +199,16 @@
     }
 }
 
-+ (void)proverStoreClaimOffer:(NSString *)claimOfferJSON
-             WithWalletHandle:(IndyHandle)walletHandle
-                   completion:(void (^)(NSError *error))completion {
++ (void)proverStoreCredentialOffer:(NSString *)credentialOfferJSON
+                  WithWalletHandle:(IndyHandle)walletHandle
+                        completion:(void (^)(NSError *error))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
     ret = indy_prover_store_credential_offer(handle,
             walletHandle,
-            [claimOfferJSON UTF8String],
+            [credentialOfferJSON UTF8String],
             IndyWrapperCommon2PCallback
     );
 
@@ -221,9 +221,9 @@
     }
 }
 
-+ (void)proverGetClaimOffersWithFilter:(NSString *)filterJSON
-                          walletHandle:(IndyHandle)walletHandle
-                            completion:(void (^)(NSError *error, NSString *claimOffersJSON))completion {
++ (void)proverGetCredentialOffersWithFilter:(NSString *)filterJSON
+                               walletHandle:(IndyHandle)walletHandle
+                                 completion:(void (^)(NSError *error, NSString *credentialOffersJSON))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -265,12 +265,12 @@
     }
 }
 
-+ (void)proverCreateAndStoreClaimReqWithClaimDef:(NSString *)claimDefJSON
-                                       proverDID:(NSString *)proverDID
-                                  claimOfferJSON:(NSString *)claimOfferJSON
-                                masterSecretName:(NSString *)masterSecretName
-                                    walletHandle:(IndyHandle)walletHandle
-                                      completion:(void (^)(NSError *error, NSString *claimReqJSON))completion {
++ (void)proverCreateAndStoreCredentialReqWithCredentialDef:(NSString *)credentialDefJSON
+                                                 proverDID:(NSString *)proverDID
+                                       credentialOfferJSON:(NSString *)credentialOfferJSON
+                                          masterSecretName:(NSString *)masterSecretName
+                                              walletHandle:(IndyHandle)walletHandle
+                                                completion:(void (^)(NSError *error, NSString *credentialReqJSON))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -278,8 +278,8 @@
     ret = indy_prover_create_and_store_credential_req(handle,
             walletHandle,
             [proverDID UTF8String],
-            [claimOfferJSON UTF8String],
-            [claimDefJSON UTF8String],
+            [credentialOfferJSON UTF8String],
+            [credentialDefJSON UTF8String],
             [masterSecretName UTF8String],
             IndyWrapperCommon3PSCallback
     );
@@ -293,19 +293,19 @@
     }
 }
 
-+ (void)proverStoreClaim:(NSString *)claimsJson
-                 claimId:(NSString *)claimId
-           revRegDefJSON:(NSString *)revRegDefJSON
-            walletHandle:(IndyHandle)walletHandle
-              completion:(void (^)(NSError *error))completion {
++ (void)proverStoreCredential:(NSString *)credentialsJson
+                 credentialId:(NSString *)credentialId
+                revRegDefJSON:(NSString *)revRegDefJSON
+                 walletHandle:(IndyHandle)walletHandle
+                   completion:(void (^)(NSError *error))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
     ret = indy_prover_store_credential(handle,
             walletHandle,
-            [claimId UTF8String],
-            [claimsJson UTF8String],
+            [credentialId UTF8String],
+            [credentialsJson UTF8String],
             [revRegDefJSON UTF8String],
             IndyWrapperCommon2PCallback
     );
@@ -318,9 +318,9 @@
     }
 }
 
-+ (void)proverGetClaimsWithFilter:(NSString *)filterJSON
-                     walletHandle:(IndyHandle)walletHandle
-                       completion:(void (^)(NSError *error, NSString *claimsJSON))completion {
++ (void)proverGetCredentialsWithFilter:(NSString *)filterJSON
+                          walletHandle:(IndyHandle)walletHandle
+                            completion:(void (^)(NSError *error, NSString *credentialsJSON))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -339,9 +339,9 @@
     }
 }
 
-+ (void)proverGetClaimsForProofReq:(NSString *)proofReqJSON
-                      walletHandle:(IndyHandle)walletHandle
-                        completion:(void (^)(NSError *error, NSString *claimsJSON))completion {
++ (void)proverGetCredentialsForProofReq:(NSString *)proofReqJSON
+                           walletHandle:(IndyHandle)walletHandle
+                             completion:(void (^)(NSError *error, NSString *credentialsJSON))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -361,10 +361,10 @@
 }
 
 + (void)proverCreateProofForRequest:(NSString *)proofRequestJSON
-                requestedClaimsJSON:(NSString *)requestedClaimsJSON
+           requestedCredentialsJSON:(NSString *)requestedCredentialsJSON
                         schemasJSON:(NSString *)schemasJSON
                    masterSecretName:(NSString *)masterSecretName
-                      claimDefsJSON:(NSString *)claimDefsJSON
+                 credentialDefsJSON:(NSString *)credentialDefsJSON
                      revocInfosJSON:(NSString *)revocInfosJSON
                        walletHandle:(IndyHandle)walletHandle
                          completion:(void (^)(NSError *error, NSString *proofJSON))completion; {
@@ -375,10 +375,10 @@
     ret = indy_prover_create_proof(handle,
             walletHandle,
             [proofRequestJSON UTF8String],
-            [requestedClaimsJSON UTF8String],
+            [requestedCredentialsJSON UTF8String],
             [schemasJSON UTF8String],
             [masterSecretName UTF8String],
-            [claimDefsJSON UTF8String],
+            [credentialDefsJSON UTF8String],
             [revocInfosJSON UTF8String],
             IndyWrapperCommon3PSCallback
     );
@@ -394,7 +394,7 @@
 + (void)verifierVerifyProofRequest:(NSString *)proofRequestJson
                          proofJSON:(NSString *)proofJSON
                        schemasJSON:(NSString *)schemasJSON
-                     claimDefsJSON:(NSString *)claimDefsJSON
+                credentialDefsJSON:(NSString *)credentialDefsJSON
                   revocRegDefsJSON:(NSString *)revocRegDefsJSON
                      revocRegsJSON:(NSString *)revocRegsJSON
                         completion:(void (^)(NSError *error, BOOL valid))completion {
@@ -406,7 +406,7 @@
             [proofRequestJson UTF8String],
             [proofJSON UTF8String],
             [schemasJSON UTF8String],
-            [claimDefsJSON UTF8String],
+            [credentialDefsJSON UTF8String],
             [revocRegDefsJSON UTF8String],
             [revocRegsJSON UTF8String],
             IndyWrapperCommon3PBCallback
