@@ -9,6 +9,7 @@ use indy::api as api;
 
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate lazy_static;
@@ -788,7 +789,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] //FIXME
         #[cfg(feature = "local_nodes_pool")]
         fn indy_claim_def_request_works_without_signature() {
             TestUtils::cleanup_storage();
@@ -821,7 +821,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] //FIXME
         #[cfg(feature = "local_nodes_pool")]
         fn indy_claim_def_requests_works() {
             TestUtils::cleanup_storage();

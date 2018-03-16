@@ -1,4 +1,4 @@
-extern crate zmq_pw as zmq;
+extern crate zmq;
 extern crate indy_crypto;
 
 use std::cell::{BorrowError, BorrowMutError};

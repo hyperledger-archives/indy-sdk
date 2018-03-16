@@ -5,6 +5,7 @@ use indy::api::ErrorCode;
 use indy::api::anoncreds::*;
 
 use utils::callback::CallbackUtils;
+use utils::environment::EnvironmentUtils;
 use utils::wallet::WalletUtils;
 use utils::test::TestUtils;
 use utils::types::CredentialOfferInfo;
@@ -16,7 +17,6 @@ use std::mem;
 use utils::constants::*;
 
 use std::collections::{HashSet, HashMap};
-use std::env;
 
 use super::anoncreds_types::{CredentialInfo, CredentialsForProofRequest, Schema, AttributeValues, CredentialDefinitionConfig, RevocationRegistryConfig};
 
@@ -680,10 +680,14 @@ impl AnoncredsUtils {
     }
 
     pub fn tails_writer_config() -> String {
-        let mut base_dir = env::home_dir().unwrap();
+        let mut base_dir = EnvironmentUtils::tmp_path();
         base_dir.push("tails");
 
-        format!(r#"{{"base_dir":"{}", "uri_pattern":""}}"#, base_dir.to_str().unwrap())
+        let json = json!({
+                "base_dir": base_dir.to_str().unwrap(),
+                "uri_pattern":"",
+            });
+        json.to_string()
     }
 
     pub fn full_delta(rev_reg: &str, max_cred_num: u32) -> String {
