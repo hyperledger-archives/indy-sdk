@@ -6,10 +6,10 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                'macos-test'  : { macosTesting() },
+//                'macos-test'  : { macosTesting() },
 //                'ios-test'    : { iosTesting() },
-                'redhat-test' : { rhelTesting() },
-                'windows-test': { windowsTesting() }
+//                'redhat-test' : { rhelTesting() },
+//                'windows-test': { windowsTesting() }
         ])
     }
 }
