@@ -5,12 +5,12 @@
 try {
     testing()
     publishing()
-    if (acceptanceTesting()) {
-        releasing()
-    }
-    notifyingSuccess()
+    //if (acceptanceTesting()) {
+    //    releasing()
+    //}
+    //notifyingSuccess()
 } catch (err) {
-    notifyingFailure()
+    //notifyingFailure()
     throw err
 }
 
@@ -18,8 +18,8 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                'redhat-test' : { rhelTesting() },
-                'windows-test': { windowsTesting() }
+//                'redhat-test' : { rhelTesting() },
+//                'windows-test': { windowsTesting() }
         ])
     }
 }
@@ -31,12 +31,12 @@ def publishing() {
         publishedVersions = parallel([
                 //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
                 'ubuntu-files' : { ubuntuPublishing() },
-                'windows-files': { windowsPublishing() },
+//                'windows-files': { windowsPublishing() },
         ])
 
-        if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
-            error "platforms artifacts have different versions"
-        }
+        //if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
+        //    error "platforms artifacts have different versions"
+        //}
     }
 }
 
@@ -373,6 +373,12 @@ def getSuffix(isRelease, target) {
     def suffix
     if (env.BRANCH_NAME == 'master' && !isRelease) {
         suffix = "-dev-$env.BUILD_NUMBER"
+    } else if (env.BRANCH_NAME == 'authz-rc' && !isRelease) {
+        if (target == "Cargo") {
+            suffix = "-authz-rc-$env.BUILD_NUMBER"
+        } else {
+            suffix = "-$env.BUILD_NUMBER"
+        }
     } else if (env.BRANCH_NAME == 'rc') {
         if (isRelease) {
             suffix = ""
