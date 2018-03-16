@@ -40,7 +40,7 @@ mod high_cases {
             println!("{:?}", &secret_json);
 
             let v: Value = serde_json::from_str(&secret_json).unwrap();
-            let s = v[format!("__key__::{}", verkey)].as_str().unwrap();
+            let s = v["seed"].as_str().unwrap();
             assert_eq!(seed, str::from_utf8(&s.from_base58().unwrap()).unwrap());
         }
 
