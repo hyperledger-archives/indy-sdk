@@ -27,8 +27,8 @@ extern "C" {
 
                                                                     void           (*cb)(indy_handle_t xcommand_handle,
                                                                                          indy_error_t  err,
-                                                                                         const char*   id,
-                                                                                         const char*   credential_def_json)
+                                                                                         const char*   cred_def_id,
+                                                                                         const char*   cred_def_json)
                                                                     );
     
     extern indy_error_t indy_issuer_create_and_store_revoc_reg(indy_handle_t command_handle,
@@ -43,7 +43,7 @@ extern "C" {
 
                                                                void           (*cb)(indy_handle_t xcommand_handle,
                                                                                     indy_error_t  err,
-                                                                                    const char*   id,
+                                                                                    const char*   revoc_reg_id,
                                                                                     const char*   revoc_reg_def_json,
                                                                                     const char*   revoc_reg_entry_json)
                                                                );
@@ -51,33 +51,32 @@ extern "C" {
     extern indy_error_t indy_issuer_create_credential_offer(indy_handle_t command_handle,
                                                             indy_handle_t wallet_handle,
                                                             const char *  cred_def_id,
-                                                            const char *  issuer_did,
-                                                            const char *  prover_did,
 
                                                             void           (*cb)(indy_handle_t xcommand_handle,
                                                                                  indy_error_t  err,
-                                                                                 const char*   credential_offer_json)
+                                                                                 const char*   cred_offer_json)
                                                             );
     
     extern indy_error_t indy_issuer_create_credential(indy_handle_t command_handle,
                                                       indy_handle_t wallet_handle,
-                                                      const char *  credential_req_json,
-                                                      const char *  credential_values_json,
+                                                      const char *  cred_offer_json,
+                                                      const char *  cred_req_json,
+                                                      const char *  cred_values_json,
                                                       const char *  rev_reg_id,
-                                                      indy_i32_t tails_reader_handle,
-                                                      indy_i32_t    user_revoc_index,
+                                                      indy_i32_t    blob_storage_reader_handle,
 
                                                       void           (*cb)(indy_handle_t xcommand_handle,
                                                                            indy_error_t  err,
-                                                                           const char*   revoc_reg_delta_json,
-                                                                           const char*   credential_json)
+                                                                           const char*   cred_json,
+                                                                           const char*   revoc_id,
+                                                                           const char*   revoc_reg_delta_json)
                                                       );
     
     extern indy_error_t indy_issuer_revoke_credential(indy_handle_t command_handle,
                                                       indy_handle_t wallet_handle,
-                                                      indy_i32_t tails_reader_handle,
+                                                      indy_i32_t    blob_storage_reader_handle,
                                                       const char *  rev_reg_id,
-                                                      indy_u32_t    user_revoc_index,
+                                                      const char *  cred_revoc_id,
 
                                                       void           (*cb)(indy_handle_t xcommand_handle,
                                                                            indy_error_t  err,
@@ -86,62 +85,50 @@ extern "C" {
 
     extern indy_error_t indy_issuer_recover_credential(indy_handle_t command_handle,
                                                        indy_handle_t wallet_handle,
-                                                       indy_i32_t tails_reader_handle,
+                                                       indy_i32_t    blob_storage_reader_handle,
                                                        const char *  rev_reg_id,
-                                                       indy_u32_t    user_revoc_index,
+                                                       const char *  cred_revoc_id,
 
                                                        void           (*cb)(indy_handle_t xcommand_handle,
                                                                             indy_error_t  err,
                                                                             const char*   revoc_reg_delta_json)
                                                        );
-    
-    extern indy_error_t indy_prover_store_credential_offer(indy_handle_t command_handle,
-                                                           indy_handle_t wallet_handle,
-                                                           const char *  credential_offer_json,
 
-                                                           void           (*cb)(indy_handle_t xcommand_handle,
-                                                                                indy_error_t  err)
-                                                           );
-    
-    
-    extern indy_error_t indy_prover_get_credential_offers(indy_handle_t command_handle,
-                                                          indy_handle_t wallet_handle,
-                                                          const char *  filter_json,
-                                                          void           (*cb)(indy_handle_t xcommand_handle,
-                                                                               indy_error_t  err,
-                                                                               const char*   credential_offers_json)
-                                                          );
-    
-    
     extern indy_error_t indy_prover_create_master_secret(indy_handle_t command_handle,
                                                          indy_handle_t wallet_handle,
-                                                         const char *  master_secret_name,
+                                                         const char *  master_secret_id,
 
                                                          void           (*cb)(indy_handle_t xcommand_handle,
                                                                               indy_error_t  err)
                                                          );
     
     
-    extern indy_error_t indy_prover_create_and_store_credential_req(indy_handle_t command_handle,
-                                                                    indy_handle_t wallet_handle,
-                                                                    const char *  prover_did,
-                                                                    const char *  credential_offer_json,
-                                                                    const char *  credential_def_json,
-                                                                    const char *  master_secret_name,
+    extern indy_error_t indy_prover_create_credential_req(indy_handle_t command_handle,
+                                                          indy_handle_t wallet_handle,
+                                                          const char *  prover_did,
+                                                          const char *  cred_offer_json,
+                                                          const char *  cred_def_json,
+                                                          const char *  master_secret_id,
 
-                                                                    void           (*cb)(indy_handle_t xcommand_handle,
-                                                                                         indy_error_t  err,
-                                                                                         const char*   credential_req_json)
-                                                                    );
+                                                          void           (*cb)(indy_handle_t xcommand_handle,
+                                                                               indy_error_t  err,
+                                                                               const char*   cred_req_json,
+                                                                               const char*   cred_req_metadata_json)
+                                                          );
 
     extern indy_error_t indy_prover_store_credential(indy_handle_t command_handle,
                                                      indy_handle_t wallet_handle,
-                                                     const char *  credential_id,
-                                                     const char *  credential_json,
+                                                     const char *  cred_id,
+                                                     const char *  cred_req_json,
+                                                     const char *  cred_req_metadata_json,
+                                                     const char *  cred_json,
+                                                     const char *  cred_def_json,
                                                      const char *  rev_reg_def_json,
+                                                     const char *  rev_state_json,
 
                                                      void           (*cb)(indy_handle_t xcommand_handle,
-                                                                          indy_error_t  err)
+                                                                          indy_error_t  err,
+                                                                          const char*   out_cred_id)
                                                      );
     
     extern indy_error_t indy_prover_get_credentials(indy_handle_t command_handle,
@@ -168,10 +155,10 @@ extern "C" {
                                                  indy_handle_t wallet_handle,
                                                  const char *  proof_req_json,
                                                  const char *  requested_credentials_json,
-                                                 const char *  schemas_json,
                                                  const char *  master_secret_name,
+                                                 const char *  schemas_json,
                                                  const char *  credential_defs_json,
-                                                 const char *  rev_infos_json,
+                                                 const char *  rev_states_json,
 
                                                  void           (*cb)(indy_handle_t xcommand_handle,
                                                                       indy_error_t  err,
@@ -193,53 +180,32 @@ extern "C" {
                                                    );
 
 
-    extern indy_error_t indy_create_revocation_info(indy_handle_t command_handle,
-                                                    indy_i32_t tails_reader_handle,
-                                                    const char *  rev_reg_def_json,
-                                                    const char *  rev_reg_delta_json,
-                                                    indy_u64_t  timestamp,
-                                                    indy_u32_t  rev_idx,
+    extern indy_error_t indy_create_revocation_state(indy_handle_t command_handle,
+                                                     indy_i32_t    blob_storage_reader_handle,
+                                                     const char *  rev_reg_def_json,
+                                                     const char *  rev_reg_delta_json,
+                                                     indy_u64_t    timestamp,
+                                                     const char *  cred_rev_id,
 
-                                                    void           (*cb)(indy_handle_t xcommand_handle,
-                                                                         indy_error_t  err,
-                                                                         const char*   rev_info_json)
-                                                    );
-
-
-    extern indy_error_t indy_update_revocation_info(indy_handle_t command_handle,
-                                                    indy_i32_t tails_reader_handle,
-                                                    const char *  rev_info_json,
-                                                    const char *  rev_reg_def_json,
-                                                    const char *  rev_reg_delta_json,
-                                                    indy_u64_t  timestamp,
-                                                    indy_u32_t  rev_idx,
-
-                                                    void           (*cb)(indy_handle_t xcommand_handle,
-                                                                         indy_error_t  err,
-                                                                         const char*   updated_rev_info_json)
-                                                    );
+                                                     void           (*cb)(indy_handle_t xcommand_handle,
+                                                                          indy_error_t  err,
+                                                                          const char*   rev_state_json)
+                                                     );
 
 
-    extern indy_error_t indy_store_revocation_info(indy_handle_t command_handle,
-                                                    indy_handle_t wallet_handle,
-                                                    const char *  id,
-                                                    const char *  rev_info_json,
+    extern indy_error_t indy_update_revocation_state(indy_handle_t command_handle,
+                                                     indy_i32_t    blob_storage_reader_handle,
+                                                     const char *  rev_state_json,
+                                                     const char *  rev_reg_def_json,
+                                                     const char *  rev_reg_delta_json,
+                                                     indy_u64_t    timestamp,
+                                                     const char *  cred_rev_id,
 
-                                                    void           (*cb)(indy_handle_t xcommand_handle,
-                                                                         indy_error_t  err)
-                                                    );
+                                                     void           (*cb)(indy_handle_t xcommand_handle,
+                                                                          indy_error_t  err,
+                                                                          const char*   updated_rev_state_json)
+                                                     );
 
-
-    extern indy_error_t indy_get_revocation_info(indy_handle_t command_handle,
-                                                 indy_handle_t wallet_handle,
-                                                 const char *  id,
-                                                 indy_i64_t timestamp,
-
-                                                 void           (*cb)(indy_handle_t xcommand_handle,
-                                                                      indy_error_t  err,
-                                                                      const char*   rev_info_json)
-                                                 );
-    
 #ifdef __cplusplus
 }
 #endif
