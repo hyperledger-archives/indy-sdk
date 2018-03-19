@@ -497,8 +497,8 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 /// command_handle: command handle to map callback to user context
 /// wallet_handle: wallet handler (created by open_wallet)
 /// prover_did: a DID of the prover
-/// cred_offer_json: a cred offer created by indy_issuer_create_cred_offer
-/// cred_def_json: credential definition json created by indy_issuer_create_and_store_cred_def
+/// cred_offer_json: a cred offer created by indy_issuer_create_credential_offer
+/// cred_def_json: credential definition json created by indy_issuer_create_and_store_credential_def
 /// master_secret_id: the id of the master secret stored in the wallet
 /// cb: Callback that takes command result as parameter.
 ///
@@ -513,7 +513,7 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 ///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
 ///      "nonce": string
 ///    }
-/// cred_req_metadata_json: Credential request metadata json for processing of received form Issuer credential.
+/// cred_req_metadata_json: Credential request metadata json for processing of received from Issuer credential.
 
 /// #Errors
 /// Annoncreds*
@@ -557,7 +557,6 @@ pub extern fn indy_prover_create_credential_req(command_handle: i32,
 /// Check credential provided by Issuer for the given credential request,
 /// updates the credential by a master secret and stores in a secure wallet.
 ///
-///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handler (created by open_wallet).
@@ -565,10 +564,9 @@ pub extern fn indy_prover_create_credential_req(command_handle: i32,
 /// cred_req_json: a credential request created by indy_prover_create_cred_request
 /// cred_req_metadata_json: a credential request metadata created by indy_prover_create_cred_request
 /// cred_json: credential json created by indy_issuer_create_cred
-/// cred_def_json: credential definition json created by indy_issuer_create_and_store_cred_def
+/// cred_def_json: credential definition json created by indy_issuer_create_and_store_credential_def
 /// rev_reg_def_json: revocation registry definition json created by indy_issuer_create_and_store_revoc_reg
-/// rev_reg_json: revocation registry value json
-/// rev_reg_json: witness json
+/// rev_state_json: revocation state json
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -658,7 +656,7 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
                                               xcommand_handle: i32, err: ErrorCode,
                                               credentials_json: *const c_char
                                           )>) -> ErrorCode {
-    check_useful_c_str!(filter_json, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(filter_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     let result = CommandExecutor::instance()

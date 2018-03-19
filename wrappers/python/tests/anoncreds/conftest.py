@@ -70,16 +70,6 @@ def default_cred_def_config():
 
 
 @pytest.fixture(scope="module")
-def revocation_cred_def_config():
-    return json.dumps({"support_revocation": True})
-
-
-@pytest.fixture(scope="module")
-def default_rev_reg_config():
-    return json.dumps({"max_cred_num": 5})
-
-
-@pytest.fixture(scope="module")
 def tag():
     return "tag1"
 
@@ -122,7 +112,7 @@ def build_id(identifier: str, marker: str, related_entity_id: Optional[str], wor
 
 @pytest.fixture(scope="module")
 def gvt_schema_id(issuer_did):
-    return build_id(issuer_did, "1", None, "gvt", "1.0")
+    return build_id(issuer_did, "2", None, "gvt", "1.0")
 
 
 @pytest.fixture(scope="module")
@@ -142,7 +132,7 @@ def gvt_schema_json(gvt_schema):
 
 @pytest.fixture(scope="module")
 def xyz_schema_id(issuer_did):
-    return build_id(issuer_did, "1", None, "xyz", "1.0")
+    return build_id(issuer_did, "2", None, "xyz", "1.0")
 
 
 @pytest.fixture(scope="module")
@@ -161,38 +151,27 @@ def xyz_schema_json(issuer_did, xyz_schema_id, xyz_schema):
 
 
 @pytest.fixture(scope="module")
-def master_secret_name():
+def master_secret_id():
     return "common_master_secret_name"
 
 
 @pytest.fixture(scope="module")
-def master_secret_name_1():
-    return "common_master_secret_name_1"
-
-
-@pytest.fixture(scope="module")
-def master_secret_name_2():
-    return "common_master_secret_name_2"
-
-
-@pytest.fixture(scope="module")
 def issuer_1_gvt_cred_def_id(issuer_did, gvt_schema_id):
-    return build_id(issuer_did, "2", gvt_schema_id, "CL", "tag1")
+    return build_id(issuer_did, "3", gvt_schema_id, "CL", "tag1")
 
 
 @pytest.fixture(scope="module")
 def issuer_1_xyz_cred_def_id(issuer_did, xyz_schema_id):
-    return build_id(issuer_did, "2", xyz_schema_id, "CL", "tag1")
+    return build_id(issuer_did, "3", xyz_schema_id, "CL", "tag1")
 
 
 @pytest.fixture(scope="module")
 def issuer_2_gvt_cred_def_id(issuer_did_2, gvt_schema_id):
-    return build_id(issuer_did_2, "2", gvt_schema_id, "CL", "tag1")
+    return build_id(issuer_did_2, "3", gvt_schema_id, "CL", "tag1")
 
 
-def credential_offer(issuer_did, credential_def_id):
+def credential_offer(credential_def_id):
     return {
-        "issuer_did": issuer_did,
         "credential_def_id": credential_def_id,
         "nonce": "12345678",
         "key_correctness_proof": {
@@ -209,37 +188,37 @@ def credential_offer(issuer_did, credential_def_id):
 
 
 @pytest.fixture(scope="module")
-def credential_offer_issuer_1_gvt_credential_def(issuer_did, issuer_1_gvt_cred_def_id):
-    return credential_offer(issuer_did, issuer_1_gvt_cred_def_id)
+def issuer_1_gvt_cred_offer(issuer_1_gvt_cred_def_id):
+    return credential_offer(issuer_1_gvt_cred_def_id)
 
 
 @pytest.fixture(scope="module")
-def credential_offer_issuer_1_gvt_credential_def_json(credential_offer_issuer_1_schema_1):
+def issuer_1_gvt_cred_offer_json(credential_offer_issuer_1_schema_1):
     return json.dumps(credential_offer_issuer_1_schema_1)
 
 
 @pytest.fixture(scope="module")
-def credential_offer_issuer_1_xyz_credential_def(issuer_did, issuer_1_xyz_cred_def_id):
-    return credential_offer(issuer_did, issuer_1_xyz_cred_def_id)
+def issuer_1_xyz_cred_offer_json(issuer_1_xyz_cred_def_id):
+    return credential_offer(issuer_1_xyz_cred_def_id)
 
 
 @pytest.fixture(scope="module")
-def credential_offer_issuer_1_xyz_credential_def_json(credential_offer_issuer_1_schema_2):
+def issuer_1_xyz_cred_offer_json(credential_offer_issuer_1_schema_2):
     return json.dumps(credential_offer_issuer_1_schema_2)
 
 
 @pytest.fixture(scope="module")
-def credential_offer_issuer_2_gvt_credential_def(issuer_did_2, issuer_2_gvt_cred_def_id):
-    return credential_offer(issuer_did_2, issuer_2_gvt_cred_def_id)
+def issuer_2_gvt_cred_offer(issuer_2_gvt_cred_def_id):
+    return credential_offer(issuer_2_gvt_cred_def_id)
 
 
 @pytest.fixture(scope="module")
-def credential_offer_issuer_2_gvt_credential_def_json(credential_offer_issuer_2_schema_1):
+def issuer_2_gvt_cred_offer_json(credential_offer_issuer_2_schema_1):
     return json.dumps(credential_offer_issuer_2_schema_1)
 
 
 @pytest.fixture(scope="module")
-def gvt_credential():
+def gvt_cred_values():
     return {
         "sex": {
             "raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050011144233115103"},
@@ -250,12 +229,12 @@ def gvt_credential():
 
 
 @pytest.fixture(scope="module")
-def gvt_credential_json(gvt_credential):
-    return json.dumps(gvt_credential)
+def gvt_cred_values_json(gvt_cred_values):
+    return json.dumps(gvt_cred_values)
 
 
 @pytest.fixture(scope="module")
-def gvt_credential_2():
+def gvt_cred_values_2():
     return {
         "sex": {
             "raw": "male", "encoded": "2142657394558967239210949258394838228692050081607692519917028371144233115103"},
@@ -266,12 +245,12 @@ def gvt_credential_2():
 
 
 @pytest.fixture(scope="module")
-def gvt_2_credential_json(gvt_credential):
-    return json.dumps(gvt_credential)
+def gvt_2_cred_values_json(gvt_cred_values_2):
+    return json.dumps(gvt_cred_values_2)
 
 
 @pytest.fixture(scope="module")
-def xyz_credential():
+def xyz_cred_values():
     return {
         "status": {"raw": "partial", "encoded": "51792877103171595686471452153480627530895"},
         "period": {"raw": "8", "encoded": "8"}
@@ -279,8 +258,8 @@ def xyz_credential():
 
 
 @pytest.fixture(scope="module")
-def xyz_credential_json(xyz_credential):
-    return json.dumps(xyz_credential)
+def xyz_cred_values_json(xyz_cred_values):
+    return json.dumps(xyz_cred_values)
 
 
 @pytest.fixture(scope="module")
@@ -344,8 +323,8 @@ def credential_def_json(credential_def):
 
 
 @pytest.fixture(scope="module")
-async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, gvt_credential_json,
-                              gvt_2_credential_json, xyz_credential_json, issuer_did, issuer_did_2, master_secret_name,
+async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, gvt_cred_values_json,
+                              gvt_2_cred_values_json, xyz_cred_values_json, issuer_did, issuer_did_2, master_secret_id,
                               prover_did, tag, default_cred_def_config, id_credential_1, id_credential_2,
                               id_credential_3):
     # Create GVT credential by Issuer1
@@ -364,48 +343,49 @@ async def prepopulated_wallet(wallet_handle, gvt_schema_json, xyz_schema_json, g
                                                                None, default_cred_def_config)
 
     issuer_1_gvt_credential_offer_json = \
-        await anoncreds.issuer_create_credential_offer(wallet_handle, issuer1_gvt_cred_deg_id, issuer_did, prover_did)
+        await anoncreds.issuer_create_credential_offer(wallet_handle, issuer1_gvt_cred_deg_id)
     issuer_1_xyz_credential_offer_json = \
-        await anoncreds.issuer_create_credential_offer(wallet_handle, issuer1_xyz_cred_deg_id, issuer_did, prover_did)
+        await anoncreds.issuer_create_credential_offer(wallet_handle, issuer1_xyz_cred_deg_id)
     issuer_2_gvt_credential_offer_json = \
-        await anoncreds.issuer_create_credential_offer(wallet_handle, issuer2_gvt_cred_def_id, issuer_did_2, prover_did)
+        await anoncreds.issuer_create_credential_offer(wallet_handle, issuer2_gvt_cred_def_id)
 
-    await anoncreds.prover_store_credential_offer(wallet_handle, issuer_1_gvt_credential_offer_json)
-    await anoncreds.prover_store_credential_offer(wallet_handle, issuer_1_xyz_credential_offer_json)
-    await anoncreds.prover_store_credential_offer(wallet_handle, issuer_2_gvt_credential_offer_json)
+    await anoncreds.prover_create_master_secret(wallet_handle, master_secret_id)
 
-    await anoncreds.prover_create_master_secret(wallet_handle, master_secret_name)
+    (issuer_1_gvt_cred_req, issuer_1_gvt_cred_req_metadata) = \
+        await anoncreds.prover_create_credential_req(wallet_handle, prover_did, issuer_1_gvt_credential_offer_json,
+                                                     issuer1_gvt_credential_def_json, master_secret_id)
 
-    credential_req = \
-        await anoncreds.prover_create_and_store_credential_req(wallet_handle, prover_did,
-                                                               issuer_1_gvt_credential_offer_json,
-                                                               issuer1_gvt_credential_def_json, master_secret_name)
+    (issuer_1_gvt_cred, _, _) = \
+        await anoncreds.issuer_create_credential(wallet_handle, issuer_1_gvt_credential_offer_json,
+                                                 issuer_1_gvt_cred_req, gvt_cred_values_json, None, None)
 
-    (_, credential_json) = await anoncreds.issuer_create_credential(wallet_handle, credential_req, gvt_credential_json,
-                                                                    None, None, -1)
+    await anoncreds.prover_store_credential(wallet_handle, id_credential_1, issuer_1_gvt_cred_req,
+                                            issuer_1_gvt_cred_req_metadata,
+                                            issuer_1_gvt_cred, issuer1_gvt_credential_def_json, None, None)
 
-    await anoncreds.prover_store_credential(wallet_handle, id_credential_1, credential_json, None)
+    (issuer_1_xyz_cred_req, issuer_1_xyz_cred_req_metadata) = \
+        await anoncreds.prover_create_credential_req(wallet_handle, prover_did, issuer_1_xyz_credential_offer_json,
+                                                     issuer1_xyz_credential_def_json, master_secret_id)
 
-    credential_req_2 = \
-        await anoncreds.prover_create_and_store_credential_req(wallet_handle, prover_did,
-                                                               issuer_1_xyz_credential_offer_json,
-                                                               issuer1_xyz_credential_def_json,
-                                                               master_secret_name)
+    (issuer_1_xyz_cred, _, _) = \
+        await anoncreds.issuer_create_credential(wallet_handle, issuer_1_xyz_credential_offer_json,
+                                                 issuer_1_xyz_cred_req, xyz_cred_values_json, None, None)
 
-    (_, credential_2_json) = await anoncreds.issuer_create_credential(wallet_handle, credential_req_2,
-                                                                      xyz_credential_json, None, None, -1)
+    await anoncreds.prover_store_credential(wallet_handle, id_credential_2, issuer_1_xyz_cred_req,
+                                            issuer_1_xyz_cred_req_metadata, issuer_1_xyz_cred,
+                                            issuer1_xyz_credential_def_json, None, None)
 
-    await anoncreds.prover_store_credential(wallet_handle, id_credential_2, credential_2_json, None)
+    (issuer_2_gvt_cred_req, issuer_2_gvt_cred_req_metadata) = \
+        await anoncreds.prover_create_credential_req(wallet_handle, prover_did, issuer_2_gvt_credential_offer_json,
+                                                     issuer2_gvt_credential_def_json, master_secret_id)
 
-    credential_req_3 = \
-        await anoncreds.prover_create_and_store_credential_req(wallet_handle, prover_did,
-                                                               issuer_2_gvt_credential_offer_json,
-                                                               issuer2_gvt_credential_def_json,
-                                                               master_secret_name)
+    (issuer_2_gvt_cred, _, _) = \
+        await anoncreds.issuer_create_credential(wallet_handle, issuer_2_gvt_credential_offer_json,
+                                                 issuer_2_gvt_cred_req, gvt_2_cred_values_json, None, None)
 
-    (_, credential_3_json) = await anoncreds.issuer_create_credential(wallet_handle, credential_req_3,
-                                                                      gvt_2_credential_json, None, None, -1)
+    await anoncreds.prover_store_credential(wallet_handle, id_credential_3, issuer_2_gvt_cred_req,
+                                            issuer_2_gvt_cred_req_metadata,
+                                            issuer_2_gvt_cred, issuer2_gvt_credential_def_json, None, None)
 
-    await anoncreds.prover_store_credential(wallet_handle, id_credential_3, credential_3_json, None)
-
-    return issuer1_gvt_credential_def_json, issuer_1_gvt_credential_offer_json, credential_req, credential_json,
+    return issuer1_gvt_credential_def_json, issuer_1_gvt_credential_offer_json, issuer_1_gvt_cred_req, \
+           issuer_1_gvt_cred_req_metadata, issuer_1_gvt_cred,

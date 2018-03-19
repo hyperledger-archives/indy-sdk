@@ -40,7 +40,7 @@ pub enum ProverCommand {
         Box<Fn(Result<String, IndyError>) + Send>),
     GetCredentials(
         i32, // wallet handle
-        String, // filter json
+        Option<String>, // filter json
         Box<Fn(Result<String, IndyError>) + Send>),
     GetCredentialsForProofReq(
         i32, // wallet handle
@@ -113,7 +113,7 @@ impl ProverCommandExecutor {
             }
             ProverCommand::GetCredentials(wallet_handle, filter_json, cb) => {
                 trace!(target: "prover_command_executor", "GetCredentials command received");
-                cb(self.get_credentials(wallet_handle, &filter_json));
+                cb(self.get_credentials(wallet_handle, filter_json.as_ref().map(String::as_str)));
             }
             ProverCommand::GetCredentialsForProofReq(wallet_handle, proof_req_json, cb) => {
                 trace!(target: "prover_command_executor", "GetCredentialsForProofReq command received");
@@ -270,12 +270,12 @@ impl ProverCommandExecutor {
 
     fn get_credentials(&self,
                        wallet_handle: i32,
-                       filter_json: &str) -> Result<String, IndyError> {
+                       filter_json: Option<&str>) -> Result<String, IndyError> {
         trace!("get_credentials >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
 
         let mut credentials_info: Vec<CredentialInfo> = self.get_credentials_info(wallet_handle)?;
 
-        let filter: Filter = Filter::from_json(filter_json)
+        let filter: Filter = Filter::from_json(filter_json.unwrap_or("{}"))
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Filter: {:?}", err)))?;
 
         credentials_info.retain(move |credential_info|

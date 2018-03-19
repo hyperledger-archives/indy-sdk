@@ -13,11 +13,13 @@ async def issuer_create_schema(issuer_did: str,
     """
     Create credential schema.
 
-    :param issuer_did: a DID of the issuer signing credential_def transaction to the Ledger
-    :param name: human-readable name of schema.
-    :param version: version of schema.
-    :param attr_names: list of attributes schema contains.
-    :return: schema id and schema json
+    :param issuer_did: DID of schema issuer
+    :param name: a name the schema
+    :param version: a version of the schema
+    :param attr_names: a list of schema attributes descriptions
+    :return:
+        schema_id: identifier of created schema
+        schema_json: schema as json
     """
 
     logger = logging.getLogger(__name__)
@@ -55,16 +57,21 @@ async def issuer_create_and_store_credential_def(wallet_handle: int,
                                                  type_: Optional[str],
                                                  config_json: str) -> (str, str):
     """
-    Create keys (both primary and revocation) for the given schema
-    and signature type (currently only CL signature type is supported).
-    Store the keys together with signature type and schema in a secure wallet as a credential definition.
-    The credential definition in the wallet is identifying by a returned unique key.
+    Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for
+    signing credentials and secrets used for credentials revocation.
+
+    Credential definition entity contains private and public parts. Private part will be stored in the wallet.
+    Public part will be returned as json intended to be shared with all anoncreds workflow actors usually by
+    publishing CRED_DEF transaction to Indy distributed ledger.
 
     :param wallet_handle: wallet handler (created by open_wallet).
-    :param issuer_did: a DID of the issuer signing credential_def transaction to the Ledger
-    :param schema_json: schema as a json
-    :param tag: schema as a json
-    :param type_: (optional) signature type. Currently only 'CL' is supported.
+    :param issuer_did: a DID of the issuer signing cred_def transaction to the Ledger
+    :param schema_json: credential schema as a json
+    :param tag: allows to distinct between credential definitions for the same issuer and schema
+    :param type_: credential definition type (optional, 'CL' by default) that defines claims signature and revocation
+    math.
+    Supported types are:
+        - 'CL': Camenisch-Lysyanskaya credential signature type
     :param config_json: { "support_revocation": boolean }.
     :return: credential definition json containing information about signature type, schema and issuer's public key.
             Unique number identifying the public key in the wallet
@@ -115,10 +122,10 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                                             tails_writer_config: str) -> (str, str, str):
     """
     Create a new revocation registry for the given credential definition.
-    Stores it in a secure wallet identifying by the returned key.
+    Stores it in a secure wallet.
 
     :param wallet_handle: wallet handler (created by open_wallet).
-    :param issuer_did: a DID of the issuer signing revoc_reg transaction to the Ledger
+    :param issuer_did: a DID of the issuer signing transaction to the Ledger
     :param type_: (optional) registry type. Currently only 'CL_ACCUM' is supported.
     :param tag:
     :param cred_def_id: id of stored in ledger credential definition
@@ -148,7 +155,8 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
 
     if not hasattr(issuer_create_and_store_revoc_reg, "cb"):
         logger.debug("issuer_create_and_store_revoc_reg: Creating callback")
-        issuer_create_and_store_revoc_reg.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p, c_char_p))
+        issuer_create_and_store_revoc_reg.cb = create_cb(
+            CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
     c_issuer_did = c_char_p(issuer_did.encode('utf-8'))
@@ -175,32 +183,28 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
 
 
 async def issuer_create_credential_offer(wallet_handle: int,
-                                         cred_def_id: str,
-                                         issuer_did: str,
-                                         prover_did: str) -> str:
+                                         cred_def_id: str) -> str:
     """
-    Create credential offer in Wallet.
+    Create credential offer that will be used by Prover for
+    claim request creation. Offer includes nonce and key correctness proof
+    for authentication between protocol steps and integrity checking.
 
     :param wallet_handle: wallet handler (created by open_wallet).
-    :param cred_def_id: id of stored in ledger credential definition
-    :param issuer_did: a DID of the issuer of credential
-    :param prover_did: a DID of the target use
+    :param cred_def_id: id of credential definition stored in the wallet
     :return:
-    credential offer json: {
-        "cred_def_id": string,
-        "issuer_did" : string,
-        "nonce": string,
-        "key_correctness_proof" : <key_correctness_proof>
-    }
+    credential offer json:
+         {
+             "cred_def_id": string,
+             # Fields below can depend on Cred Def type
+             "nonce": string,
+             "key_correctness_proof" : <key_correctness_proof>
+         }
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("issuer_create_credential_offer: >>> wallet_handle: %r, cred_def_id: %r, issuer_did: %r,"
-                 " prover_did: %r",
+    logger.debug("issuer_create_credential_offer: >>> wallet_handle: %r, cred_def_id: %r",
                  wallet_handle,
-                 cred_def_id,
-                 issuer_did,
-                 prover_did)
+                 cred_def_id)
 
     if not hasattr(issuer_create_credential_offer, "cb"):
         logger.debug("issuer_create_credential_offer: Creating callback")
@@ -208,14 +212,10 @@ async def issuer_create_credential_offer(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
-    c_issuer_did = c_char_p(issuer_did.encode('utf-8'))
-    c_prover_did = c_char_p(prover_did.encode('utf-8'))
 
     credential_offer_json = await do_call('indy_issuer_create_credential_offer',
                                           c_wallet_handle,
                                           c_cred_def_id,
-                                          c_issuer_did,
-                                          c_prover_did,
                                           issuer_create_credential_offer.cb)
 
     res = credential_offer_json.decode()
@@ -224,259 +224,185 @@ async def issuer_create_credential_offer(wallet_handle: int,
 
 
 async def issuer_create_credential(wallet_handle: int,
-                                   credential_req_json: str,
-                                   credential_values_json: str,
+                                   cred_offer_json: str,
+                                   cred_req_json: str,
+                                   cred_values_json: str,
                                    rev_reg_id: Optional[str],
-                                   tails_reader_handle: Optional[int],
-                                   user_revoc_index: Optional[int]) -> (str, str):
+                                   blob_storage_reader_handle: Optional[int]) -> (str, Optional[str], Optional[str]):
     """
-    Signs a given credential for the given user by a given key (credential ef).
-    The corresponding credential definition and revocation registry must be already created
-    an stored into the wallet.
+    Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.
+
+    Cred Request must match Cred Offer. The credential definition and revocation registry definition
+    referenced in Cred Offer and Cred Request must be already created and stored into the wallet.
+
+    Information for this credential revocation will be store in the wallet as part of revocation registry under
+    generated cred_revoc_id local for this wallet.
+
+    This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
+    Note that it is possible to accumulate deltas to reduce ledger load.
 
     :param wallet_handle: wallet handle (created by open_wallet).
-    :param credential_req_json: a credential request with a blinded secret
-        from the user (returned by prover_create_and_store_credential_req).
-        Example:
-        {
-            "blinded_ms" : <blinded_master_secret>,
-            "cred_def_id" : string,
-            "issuer_did" : string
-            "prover_did" : string,
-            "blinded_ms_correctness_proof": <blinded_ms_correctness_proof>,
-            "nonce": string
-        }
-    :param credential_values_json: a credential containing attribute values for each of requested attribute names.
-        Example:
-        {
-          "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
-          "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
-        }
-    :param rev_reg_id: (Optional) id of stored in ledger revocation registry definition
-    :param tails_reader_handle: (Optional)
-    :param user_revoc_index: (Optional)  index of a new user in the revocation registry
-     (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
-    :return: Revocation registry update json with a newly issued credential credential json
-        {
-            "values": <see credential_values_json above>,
-            "signature": <signature>,
-            "issuer_did": string,
-            "cred_def_id": string,
-            "rev_reg_id", Optional<string>,
-            "signature_correctness_proof": <signature_correctness_proof>
-        }
+    :param cred_offer_json: a cred offer created by indy_issuer_create_cred_offer
+    :param cred_req_json: a credential request created by indy_prover_create_credential_request
+    :param cred_values_json: a credential containing attribute values for each of requested attribute names.
+     Example:
+     {
+      "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
+      "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
+     }
+    :param rev_reg_id: (Optional) id of revocation registry definition stored in the wallet
+    :param blob_storage_reader_handle: pre-configured blob storage reader instance handle that
+    will allow to read revocation tails
+    :return: 
+     cred_json: Credential json containing signed credential values
+         {
+             "cred_def_id": string,
+             "rev_reg_def_id", Optional<string>,
+             "values": <see credential_values_json above>,
+             #Fields below can depend on Cred Def type
+             "signature": <signature>,
+             "signature_correctness_proof": <signature_correctness_proof>,
+             "revoc_idx":                                                                TODO: FIXME: Think how to share it in a secure way
+         }
+     revoc_id: local id for revocation info (Can be used for revocation of this cred)
+     revoc_reg_delta_json: Revocation registry delta json with a newly issued credential
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("issuer_create_credential: >>> wallet_handle: %r, credential_req_json: %r, credential_values_json: %r,"
-                 " rev_reg_id: %r, tails_reader_handle: %r, user_revoc_index: %r",
+    logger.debug("issuer_create_credential: >>> wallet_handle: %r, cred_offer_json: %r, cred_req_json: %r,"
+                 " cred_values_json: %r, rev_reg_id: %r, blob_storage_reader_handle: %r",
                  wallet_handle,
-                 credential_req_json,
-                 credential_values_json,
+                 cred_offer_json,
+                 cred_req_json,
+                 cred_values_json,
                  rev_reg_id,
-                 tails_reader_handle,
-                 user_revoc_index)
+                 blob_storage_reader_handle)
 
     if not hasattr(issuer_create_credential, "cb"):
         logger.debug("issuer_create_credential: Creating callback")
-        issuer_create_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+        issuer_create_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_credential_req_json = c_char_p(credential_req_json.encode('utf-8'))
-    c_credential_json = c_char_p(credential_values_json.encode('utf-8'))
+    c_cred_offer_json = c_char_p(cred_offer_json.encode('utf-8'))
+    c_cred_req_json = c_char_p(cred_req_json.encode('utf-8'))
+    c_cred_values_json = c_char_p(cred_values_json.encode('utf-8'))
     c_rev_reg_id = c_char_p(rev_reg_id.encode('utf-8')) if rev_reg_id is not None else None
-    c_tails_reader_handle = c_int32(tails_reader_handle) if tails_reader_handle else -1
-    c_user_revoc_index = c_int32(user_revoc_index) if user_revoc_index else -1
+    c_blob_storage_reader_handle = c_int32(blob_storage_reader_handle) if blob_storage_reader_handle else -1
 
-    (revoc_reg_delta_json, credential_json) = await do_call('indy_issuer_create_credential',
-                                                            c_wallet_handle,
-                                                            c_credential_req_json,
-                                                            c_credential_json,
-                                                            c_rev_reg_id,
-                                                            c_tails_reader_handle,
-                                                            c_user_revoc_index,
-                                                            issuer_create_credential.cb)
-    credential_json = credential_json.decode()
+    (cred_json, revoc_id, revoc_reg_delta_json) = await do_call('indy_issuer_create_credential',
+                                                                c_wallet_handle,
+                                                                c_cred_offer_json,
+                                                                c_cred_req_json,
+                                                                c_cred_values_json,
+                                                                c_rev_reg_id,
+                                                                c_blob_storage_reader_handle,
+                                                                issuer_create_credential.cb)
+    cred_json = cred_json.decode()
+    revoc_id = revoc_id.decode() if revoc_id else None
     revoc_reg_delta_json = revoc_reg_delta_json.decode() if revoc_reg_delta_json else None
-    res = (revoc_reg_delta_json, credential_json)
+    res = (cred_json, revoc_id, revoc_reg_delta_json)
 
     logger.debug("issuer_create_credential: <<< res: %r", res)
     return res
 
 
 async def issuer_revoke_credential(wallet_handle: int,
-                                   tails_reader_handle: int,
+                                   blob_storage_reader_handle: int,
                                    rev_reg_id: str,
-                                   user_revoc_index: int) -> str:
+                                   cred_revoc_id: str) -> str:
     """
-    Revokes a user identified by a revoc_id in a given revoc-registry.
+    Revoke a credential identified by a cred_revoc_id (returned by indy_issuer_create_cred).
+
     The corresponding credential definition and revocation registry must be already
     created an stored into the wallet.
 
+    This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
+    Note that it is possible to accumulate deltas to reduce ledger load.
+
     :param wallet_handle: wallet handler (created by open_wallet).
-    :param tails_reader_handle:
+    :param blob_storage_reader_handle: pre-configured blob storage reader instance handle that will allow
+    to read revocation tails
     :param rev_reg_id: id of revocation registry stored in wallet
-    :param user_revoc_index: index of the user in the revocation registry
+    :param cred_revoc_id: local id for revocation info
     :return: Revocation registry update json with a revoked credential
     """
 
     logger = logging.getLogger(__name__)
     logger.debug(
-        "issuer_revoke_credential: >>> wallet_handle: %r, tails_reader_handle: %r, rev_reg_id: %r",
+        "issuer_revoke_credential: >>> wallet_handle: %r, blob_storage_reader_handle: %r, rev_reg_id: %r, "
+        "cred_revoc_id: %r",
         wallet_handle,
-        tails_reader_handle,
+        blob_storage_reader_handle,
         rev_reg_id,
-        user_revoc_index)
+        cred_revoc_id)
 
     if not hasattr(issuer_revoke_credential, "cb"):
         logger.debug("issuer_revoke_credential: Creating callback")
         issuer_revoke_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_tails_reader_handle = c_int32(tails_reader_handle)
+    c_blob_storage_reader_handle = c_int32(blob_storage_reader_handle)
     c_rev_reg_id = c_char_p(rev_reg_id.encode('utf-8'))
-    c_user_revoc_index = c_int32(user_revoc_index)
+    c_cred_revoc_id = c_char_p(cred_revoc_id.encode('utf-8'))
 
     revoc_reg_delta_json = await do_call('indy_issuer_revoke_credential',
                                          c_wallet_handle,
-                                         c_tails_reader_handle,
+                                         c_blob_storage_reader_handle,
                                          c_rev_reg_id,
-                                         c_user_revoc_index,
+                                         c_cred_revoc_id,
                                          issuer_revoke_credential.cb)
     res = revoc_reg_delta_json.decode()
     logger.debug("issuer_revoke_credential: <<< res: %r", res)
     return res
 
 
-async def issuer_recovery_credential(wallet_handle: int,
-                                     tails_reader_handle: int,
-                                     rev_reg_id: str,
-                                     user_revoc_index: int) -> str:
+async def issuer_recover_credential(wallet_handle: int,
+                                    blob_storage_reader_handle: int,
+                                    rev_reg_id: str,
+                                    cred_revoc_id: str) -> str:
     """
-    Recover a user identified by a user_revoc_index in a given revoc-registry.
+    Recover a credential identified by a cred_revoc_id (returned by indy_issuer_create_cred).
+
     The corresponding credential definition and revocation registry must be already
     created an stored into the wallet.
 
+    This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
+    Note that it is possible to accumulate deltas to reduce ledger load.
+
     :param wallet_handle: wallet handler (created by open_wallet).
-    :param tails_reader_handle:
+    :param blob_storage_reader_handle: pre-configured blob storage reader instance handle that will allow
+    to read revocation tails
     :param rev_reg_id: id of revocation registry stored in wallet
-    :param user_revoc_index: index of the user in the revocation registry
+    :param cred_revoc_id: local id for revocation info
     :return: Revocation registry update json with a revoked credential
     """
 
     logger = logging.getLogger(__name__)
     logger.debug(
-        "issuer_recovery_credential: >>> wallet_handle: %r, tails_reader_handle: %r, rev_reg_id: %r",
+        "issuer_recover_credential: >>> wallet_handle: %r, blob_storage_reader_handle: %r, rev_reg_id: %r, "
+        "cred_revoc_id: %r",
         wallet_handle,
-        tails_reader_handle,
+        blob_storage_reader_handle,
         rev_reg_id,
-        user_revoc_index)
+        cred_revoc_id)
 
-    if not hasattr(issuer_recovery_credential, "cb"):
-        logger.debug("issuer_recovery_credential: Creating callback")
-        issuer_recovery_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    if not hasattr(issuer_recover_credential, "cb"):
+        logger.debug("issuer_recover_credential: Creating callback")
+        issuer_recover_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_tails_reader_handle = c_int32(tails_reader_handle)
+    c_blob_storage_reader_handle = c_int32(blob_storage_reader_handle)
     c_rev_reg_id = c_char_p(rev_reg_id.encode('utf-8'))
-    c_user_revoc_index = c_int32(user_revoc_index)
+    c_cred_revoc_id = c_char_p(cred_revoc_id.encode('utf-8'))
 
     revoc_reg_delta_json = await do_call('indy_issuer_recover_credential',
                                          c_wallet_handle,
-                                         c_tails_reader_handle,
+                                         c_blob_storage_reader_handle,
                                          c_rev_reg_id,
-                                         c_user_revoc_index,
-                                         issuer_recovery_credential.cb)
+                                         c_cred_revoc_id,
+                                         issuer_recover_credential.cb)
     res = revoc_reg_delta_json.decode()
-    logger.debug("issuer_recovery_credential: <<< res: %r", res)
-    return res
-
-
-async def prover_store_credential_offer(wallet_handle: int,
-                                        credential_offer_json: str) -> None:
-    """
-    Stores a credential offer from the given issuer in a secure storage.
-
-    :param wallet_handle: wallet handler (created by open_wallet).
-    :param credential_offer_json: credential offer as a json containing information about the issuer and a credential:
-       {
-           "cred_def_id": string,
-           "rev_reg_id" : Optional<string>,
-           "nonce": string,
-           "key_correctness_proof" : <key_correctness_proof>
-       }
-    :return: None.
-    """
-
-    logger = logging.getLogger(__name__)
-    logger.debug("prover_store_credential_offer: >>> wallet_handle: %r, credential_offer_json: %r",
-                 wallet_handle,
-                 credential_offer_json)
-
-    if not hasattr(prover_store_credential_offer, "cb"):
-        logger.debug("prover_store_credential_offer: Creating callback")
-        prover_store_credential_offer.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
-
-    c_wallet_handle = c_int32(wallet_handle)
-    c_credential_offer_json = c_char_p(credential_offer_json.encode('utf-8'))
-
-    res = await do_call('indy_prover_store_credential_offer',
-                        c_wallet_handle,
-                        c_credential_offer_json,
-                        prover_store_credential_offer.cb)
-
-    logger.debug("prover_store_credential_offer: <<< res: %r", res)
-    return res
-
-
-async def prover_get_credential_offers(wallet_handle: int,
-                                       filter_json: str) -> str:
-    """
-    Gets all stored credential offers (see prover_store_credential_offer).
-    A filter can be specified to get credential offers for specific Issuer, credential_def or schema only.
-
-    :param wallet_handle: wallet handler (created by open_wallet).
-    :param filter_json: optional filter to get credential offers for specific Issuer, credential_def or schema only only
-        Each of the filters is optional and can be combines
-        {
-            "schema_id": string, (Optional)
-            "schema_did": string, (Optional)
-            "schema_name": string, (Optional)
-            "schema_version": string, (Optional)
-            "issuer_did": string, (Optional)
-            "issuer_did": string, (Optional)
-            "cred_def_id": string, (Optional)
-        }
-    :return: A json with a list of credential offers for the filter.
-        {
-            [{
-                "cred_def_id": string,
-                "issuer_did": string,
-                "nonce": string,
-                "key_correctness_proof" : <key_correctness_proof>
-            }]
-        }
-    """
-
-    logger = logging.getLogger(__name__)
-    logger.debug("prover_store_credential_offer: >>> wallet_handle: %r, filter_json: %r",
-                 wallet_handle,
-                 filter_json)
-
-    if not hasattr(prover_get_credential_offers, "cb"):
-        logger.debug("prover_get_credential_offers: Creating callback")
-        prover_get_credential_offers.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
-
-    c_wallet_handle = c_int32(wallet_handle)
-    c_filter_json = c_char_p(filter_json.encode('utf-8'))
-
-    credential_offers_json = await do_call('indy_prover_get_credential_offers',
-                                           c_wallet_handle,
-                                           c_filter_json,
-                                           prover_get_credential_offers.cb)
-
-    res = credential_offers_json.decode()
-    logger.debug("prover_get_credential_offers: <<< res: %r", res)
+    logger.debug("issuer_recover_credential: <<< res: %r", res)
     return res
 
 
@@ -512,125 +438,134 @@ async def prover_create_master_secret(wallet_handle: int,
     return res
 
 
-async def prover_create_and_store_credential_req(wallet_handle: int,
-                                                 prover_did: str,
-                                                 credential_offer_json: str,
-                                                 credential_def_json: str,
-                                                 master_secret_name: str) -> str:
+async def prover_create_credential_req(wallet_handle: int,
+                                       prover_did: str,
+                                       cred_offer_json: str,
+                                       cred_def_json: str,
+                                       master_secret_id: str) -> (str, str):
     """
-    Creates a clam request json for the given credential offer and stores it in a secure wallet.
-    The credential offer contains the information about Issuer DID and the schema (schema_key),
-    The method gets public key and schema from the ledger, stores them in a wallet,
-    and creates a blinded master secret for a master secret identified by a provided name.
-    The master secret identified by the name must be already stored in the secure wallet
-    (see prover_create_master_secret)
+    Creates a clam request for the given credential offer.
+
+    The method creates a blinded master secret for a master secret identified by a provided name.
+    The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
     The blinded master secret is a part of the credential request.
+
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param prover_did: a DID of the prover
-    :param credential_offer_json: credential offer as a json containing information about the issuer and a credential:
-        {
-            "cred_def_id": string,
-            "rev_reg_id" : Optional<string>,
-            "nonce": string,
-            "key_correctness_proof" : <key_correctness_proof>
+    :param cred_offer_json: a cred offer created by issuer_create_credential_offer
+    :param cred_def_json: credential definition json created by indy_issuer_create_and_store_credential_def
+    :param master_secret_id: the id of the master secret stored in the wallet
+    :return: 
+    cred_req_json: Credential request json for creation of credential by Issuer
+         {
+          "cred_def_id" : string,
+          "rev_reg_id" : Optional<string>,
+          "prover_did" : string,
+           # Fields below can depend on Cred Def type
+          "blinded_ms" : <blinded_master_secret>,
+          "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+          "nonce": string
         }
-    :param credential_def_json: credential definition json associated with issuer_did and schema_seq_no in
-           the credential_offer
-    :param master_secret_name: the name of the master secret stored in the wallet
-    :return: credential request json.
-        {
-           "blinded_ms" : <blinded_master_secret>,
-            "cred_def_id" : string,
-            "issuer_did" : string,
-            "prover_did" : string,
-            "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
-            "nonce": string
-        }
+    cred_req_metadata_json: Credential request metadata json for processing of received from Issuer credential.
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug(
-        "prover_create_and_store_credential_req: >>> wallet_handle: %r, prover_did: %r, credential_offer_json: %r,"
-        " credential_def_json: %r, master_secret_name: %r",
-        wallet_handle,
-        prover_did,
-        credential_offer_json,
-        credential_def_json,
-        master_secret_name)
+    logger.debug("prover_create_credential_req: >>> wallet_handle: %r, prover_did: %r, cred_offer_json: %r,"
+                 " cred_def_json: %r, master_secret_id: %r",
+                 wallet_handle,
+                 prover_did,
+                 cred_offer_json,
+                 cred_def_json,
+                 master_secret_id)
 
-    if not hasattr(prover_create_and_store_credential_req, "cb"):
-        logger.debug("prover_create_and_store_credential_req: Creating callback")
-        prover_create_and_store_credential_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    if not hasattr(prover_create_credential_req, "cb"):
+        logger.debug("prover_create_credential_req: Creating callback")
+        prover_create_credential_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
     c_prover_did = c_char_p(prover_did.encode('utf-8'))
-    c_credential_offer_json = c_char_p(credential_offer_json.encode('utf-8'))
-    c_credential_def_json = c_char_p(credential_def_json.encode('utf-8'))
-    c_master_secret_name = c_char_p(master_secret_name.encode('utf-8'))
+    c_cred_offer_json = c_char_p(cred_offer_json.encode('utf-8'))
+    c_cred_def_json = c_char_p(cred_def_json.encode('utf-8'))
+    c_master_secret_id = c_char_p(master_secret_id.encode('utf-8'))
 
-    credential_req_json = await do_call('indy_prover_create_and_store_credential_req',
-                                        c_wallet_handle,
-                                        c_prover_did,
-                                        c_credential_offer_json,
-                                        c_credential_def_json,
-                                        c_master_secret_name,
-                                        prover_create_and_store_credential_req.cb)
+    (credential_req_json, credential_req_metadata_json) = await do_call('indy_prover_create_credential_req',
+                                                                        c_wallet_handle,
+                                                                        c_prover_did,
+                                                                        c_cred_offer_json,
+                                                                        c_cred_def_json,
+                                                                        c_master_secret_id,
+                                                                        prover_create_credential_req.cb)
 
-    res = credential_req_json.decode()
-    logger.debug("prover_create_and_store_credential_req: <<< res: %r", res)
+    credential_req_json = credential_req_json.decode()
+    credential_req_metadata_json = credential_req_metadata_json.decode()
+    res = (credential_req_json, credential_req_metadata_json)
+
+    logger.debug("prover_create_credential_req: <<< res: %r", res)
     return res
 
 
 async def prover_store_credential(wallet_handle: int,
-                                  id_: str,
-                                  credentials_json: str,
-                                  rev_reg_def_json: Optional[str]) -> None:
+                                  cred_id: str,
+                                  cred_req_json: str,
+                                  cred_req_metadata_json: str,
+                                  cred_json: str,
+                                  cred_def_json: str,
+                                  rev_reg_def_json: Optional[str],
+                                  rev_state_json: Optional[str]) -> str:
     """
-    Updates the credential by a master secret and stores in a secure wallet.
-    The credential contains the information about
-    schema_key, issuer_did, revoc_reg_seq_no (see issuer_create_credential).
-    Seq_no is a sequence number of the corresponding transaction in the ledger.
-    The method loads a blinded secret for this key from the wallet,
-    updates the credential and stores it in a wallet.
+    Check credential provided by Issuer for the given credential request,
+    updates the credential by a master secret and stores in a secure wallet.
 
     :param wallet_handle: wallet handler (created by open_wallet).
-    :param id_: identifier by which credential will be stored in wallet
-    :param credentials_json: credential json:
-     {
-         "values": <see credential_values_json above>,
-         "signature": <signature>,
-         "cred_def_id": string,
-         "rev_reg_id", Optional<string>,
-         "signature_correctness_proof": <signature_correctness_proof>
-     }
-    :param rev_reg_def_json: revocation registry definition json
-    :return: None.
+    :param cred_id: (optional, default is a random one) identifier by which credential will be stored in the wallet
+    :param cred_req_json: a credential request created by indy_prover_create_cred_request
+    :param cred_req_metadata_json: a credential request metadata created by indy_prover_create_cred_request
+    :param cred_json: credential json created by indy_issuer_create_cred
+    :param cred_def_json: credential definition json created by issuer_create_and_store_credential_def
+    :param rev_reg_def_json: revocation registry definition json created by issuer_create_and_store_revoc_reg
+    :param rev_state_json: revocation state json
+    :return: cred_id: identifier by which credential is stored in the wallet
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("prover_store_credential: >>> wallet_handle: %r, id: %r, credentials_json: %r, rev_reg_def_json: %r",
+    logger.debug("prover_store_credential: >>> wallet_handle: %r, cred_id: %r, cred_req_json: %r, "
+                 "cred_req_metadata_json: %r, cred_json: %r, cred_def_json: %r, rev_reg_def_json: %r, "
+                 "rev_state_json: %r",
                  wallet_handle,
-                 id_,
-                 credentials_json,
-                 rev_reg_def_json)
+                 cred_id,
+                 cred_req_json,
+                 cred_req_metadata_json,
+                 cred_json,
+                 cred_def_json,
+                 rev_reg_def_json,
+                 rev_state_json)
 
     if not hasattr(prover_store_credential, "cb"):
         logger.debug("prover_store_credential: Creating callback")
-        prover_store_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+        prover_store_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_id = c_char_p(id_.encode('utf-8'))
-    c_credentials_json = c_char_p(credentials_json.encode('utf-8'))
+    c_cred_id = c_char_p(cred_id.encode('utf-8'))
+    c_cred_req_json = c_char_p(cred_req_json.encode('utf-8'))
+    c_cred_req_metadata_json = c_char_p(cred_req_metadata_json.encode('utf-8'))
+    c_cred_json = c_char_p(cred_json.encode('utf-8'))
+    c_cred_def_json = c_char_p(cred_def_json.encode('utf-8'))
     c_rev_reg_def_json = c_char_p(rev_reg_def_json.encode('utf-8')) if rev_reg_def_json else None
+    c_rev_state_json = c_char_p(rev_state_json.encode('utf-8')) if rev_state_json else None
 
-    res = await do_call('indy_prover_store_credential',
-                        c_wallet_handle,
-                        c_id,
-                        c_credentials_json,
-                        c_rev_reg_def_json,
-                        prover_store_credential.cb)
+    cred_id = await do_call('indy_prover_store_credential',
+                            c_wallet_handle,
+                            c_cred_id,
+                            c_cred_req_json,
+                            c_cred_req_metadata_json,
+                            c_cred_json,
+                            c_cred_def_json,
+                            c_rev_reg_def_json,
+                            c_rev_state_json,
+                            prover_store_credential.cb)
 
+    res = cred_id.decode()
     logger.debug("prover_store_credential: <<< res: %r", res)
     return res
 
@@ -772,10 +707,10 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
 async def prover_create_proof(wallet_handle: int,
                               proof_req_json: str,
                               requested_credentials_json: str,
-                              schemas_json: str,
                               master_secret_name: str,
+                              schemas_json: str,
                               credential_defs_json: str,
-                              rev_infos_json: str) -> str:
+                              rev_states_json: str) -> str:
     """
     Creates a proof according to the given proof request
     Either a corresponding credential with optionally revealed attributes or self-attested attribute must be provided
@@ -844,7 +779,7 @@ async def prover_create_proof(wallet_handle: int,
             "credential2_referent_in_wallet": <credential_def2>,
             "credential3_referent_in_wallet": <credential_def3>,
         }
-    :param rev_infos_json: all revocation registry jsons participating in the proof request
+    :param rev_states_json: all revocation registry jsons participating in the proof request
         {
             "credential1_referent_in_wallet": {
                 "freshness1": <revoc_info1>,
@@ -900,7 +835,7 @@ async def prover_create_proof(wallet_handle: int,
                  schemas_json,
                  master_secret_name,
                  credential_defs_json,
-                 rev_infos_json)
+                 rev_states_json)
 
     if not hasattr(prover_create_proof, "cb"):
         logger.debug("prover_create_proof: Creating callback")
@@ -912,14 +847,14 @@ async def prover_create_proof(wallet_handle: int,
     c_schemas_json = c_char_p(schemas_json.encode('utf-8'))
     c_master_secret_name = c_char_p(master_secret_name.encode('utf-8'))
     c_credential_defs_json = c_char_p(credential_defs_json.encode('utf-8'))
-    c_rev_infos_json = c_char_p(rev_infos_json.encode('utf-8'))
+    c_rev_infos_json = c_char_p(rev_states_json.encode('utf-8'))
 
     proof_json = await do_call('indy_prover_create_proof',
                                c_wallet_handle,
                                c_proof_req_json,
                                c_requested_credentials_json,
-                               c_schemas_json,
                                c_master_secret_name,
+                               c_schemas_json,
                                c_credential_defs_json,
                                c_rev_infos_json,
                                prover_create_proof.cb)
@@ -1055,134 +990,79 @@ async def verifier_verify_proof(proof_request_json: str,
     return res
 
 
-async def create_revocation_info(tails_reader_handle: int,
-                                 rev_reg_def_json: str,
-                                 rev_reg_delta_json: str,
-                                 timestamp: int,
-                                 rev_idx: int) -> str:
+async def create_revocation_state(blob_storage_reader_handle: int,
+                                  rev_reg_def_json: str,
+                                  rev_reg_delta_json: str,
+                                  timestamp: int,
+                                  cred_rev_id: str) -> str:
     logger = logging.getLogger(__name__)
-    logger.debug("create_revocation_info: >>>tails_reader_handle: %r, rev_reg_def_json: %r,"
-                 " rev_reg_delta_json: %r, timestamp: %r, rev_idx: %r",
-                 tails_reader_handle,
+    logger.debug("create_revocation_info: >>> blob_storage_reader_handle: %r, rev_reg_def_json: %r,"
+                 " rev_reg_delta_json: %r, timestamp: %r, cred_rev_id: %r",
+                 blob_storage_reader_handle,
                  rev_reg_def_json,
                  rev_reg_delta_json,
                  timestamp,
-                 rev_idx)
+                 cred_rev_id)
 
-    if not hasattr(create_revocation_info, "cb"):
-        logger.debug("create_revocation_info: Creating callback")
-        create_revocation_info.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    if not hasattr(create_revocation_state, "cb"):
+        logger.debug("create_revocation_state: Creating callback")
+        create_revocation_state.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
-    c_tails_reader_handle = c_int32(tails_reader_handle)
+    c_blob_storage_reader_handle = c_int32(blob_storage_reader_handle)
     c_rev_reg_def_json = c_char_p(rev_reg_def_json.encode('utf-8'))
     c_rev_reg_delta_json = c_char_p(rev_reg_delta_json.encode('utf-8'))
     c_timestamp = c_uint64(timestamp)
-    c_rev_idx = c_uint32(rev_idx)
+    c_cred_rev_id = c_char_p(cred_rev_id.encode('utf-8'))
 
-    rev_info_json = await do_call('indy_create_revocation_info',
-                                  c_tails_reader_handle,
-                                  c_rev_reg_def_json,
-                                  c_rev_reg_delta_json,
-                                  c_timestamp,
-                                  c_rev_idx,
-                                  create_revocation_info.cb)
+    rev_state_json = await do_call('indy_create_revocation_state',
+                                   c_blob_storage_reader_handle,
+                                   c_rev_reg_def_json,
+                                   c_rev_reg_delta_json,
+                                   c_timestamp,
+                                   c_cred_rev_id,
+                                   create_revocation_state.cb)
 
-    res = rev_info_json.decode()
-    logger.debug("create_revocation_info: <<< res: %r", res)
+    res = rev_state_json.decode()
+    logger.debug("create_revocation_state: <<< res: %r", res)
     return res
 
 
-async def update_revocation_info(tails_reader_handle: int,
-                                 rev_info_json: str,
-                                 rev_reg_def_json: str,
-                                 rev_reg_delta_json: str,
-                                 timestamp: int,
-                                 rev_idx: int) -> str:
+async def update_revocation_state(blob_storage_reader_handle: int,
+                                  rev_state_json: str,
+                                  rev_reg_def_json: str,
+                                  rev_reg_delta_json: str,
+                                  timestamp: int,
+                                  cred_rev_id: str) -> str:
     logger = logging.getLogger(__name__)
-    logger.debug("update_revocation_info: >>> tails_reader_handle: %r, rev_info_json: %r, "
-                 "rev_reg_def_json: %r, rev_reg_delta_json: %r, timestamp: %r, rev_idx: %r",
-                 tails_reader_handle,
-                 rev_info_json,
+    logger.debug("update_revocation_state: >>> blob_storage_reader_handle: %r, rev_state_json: %r, "
+                 "rev_reg_def_json: %r, rev_reg_delta_json: %r, timestamp: %r, cred_rev_id: %r",
+                 blob_storage_reader_handle,
+                 rev_state_json,
                  rev_reg_def_json,
                  rev_reg_delta_json,
                  timestamp,
-                 rev_idx)
+                 cred_rev_id)
 
-    if not hasattr(update_revocation_info, "cb"):
-        logger.debug("update_revocation_info: Creating callback")
-        update_revocation_info.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    if not hasattr(update_revocation_state, "cb"):
+        logger.debug("update_revocation_state: Creating callback")
+        update_revocation_state.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
-    c_tails_reader_handle = c_int32(tails_reader_handle)
-    c_rev_info_json = c_char_p(rev_info_json.encode('utf-8'))
+    c_blob_storage_reader_handle = c_int32(blob_storage_reader_handle)
+    c_rev_state_json = c_char_p(rev_state_json.encode('utf-8'))
     c_rev_reg_def_json = c_char_p(rev_reg_def_json.encode('utf-8'))
     c_rev_reg_delta_json = c_char_p(rev_reg_delta_json.encode('utf-8'))
     c_timestamp = c_uint64(timestamp)
-    c_rev_idx = c_uint32(rev_idx)
+    c_cred_rev_id = c_char_p(cred_rev_id.encode('utf-8'))
 
-    updated_rev_info_json = await do_call('indy_update_revocation_info',
-                                          c_tails_reader_handle,
-                                          c_rev_info_json,
-                                          c_rev_reg_def_json,
-                                          c_rev_reg_delta_json,
-                                          c_timestamp,
-                                          c_rev_idx,
-                                          update_revocation_info.cb)
+    updated_rev_state_json = await do_call('indy_update_revocation_state',
+                                           c_blob_storage_reader_handle,
+                                           c_rev_state_json,
+                                           c_rev_reg_def_json,
+                                           c_rev_reg_delta_json,
+                                           c_timestamp,
+                                           c_cred_rev_id,
+                                           update_revocation_state.cb)
 
-    res = updated_rev_info_json.decode()
-    logger.debug("update_revocation_info: <<< res: %r", res)
-    return res
-
-
-async def store_revocation_info(wallet_handle: int,
-                                id_: str,
-                                rev_info_json: str) -> str:
-    logger = logging.getLogger(__name__)
-    logger.debug("store_revocation_info: >>> wallet_handle: %r, id: %r, rev_info_json: %r",
-                 wallet_handle,
-                 id_,
-                 rev_info_json)
-
-    if not hasattr(store_revocation_info, "cb"):
-        logger.debug("store_revocation_info: Creating callback")
-        store_revocation_info.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
-
-    c_wallet_handle = c_int32(wallet_handle)
-    c_id = c_char_p(id_.encode('utf-8'))
-    c_rev_info_json = c_char_p(rev_info_json.encode('utf-8'))
-
-    res = await do_call('indy_store_revocation_info',
-                        c_wallet_handle,
-                        c_id,
-                        c_rev_info_json,
-                        store_revocation_info.cb)
-
-    logger.debug("store_revocation_info: <<< res: %r", res)
-    return res
-
-
-async def get_revocation_info(wallet_handle: int,
-                              id_: str,
-                              timestamp: Optional[int]) -> str:
-    logger = logging.getLogger(__name__)
-    logger.debug("get_revocation_info: >>> wallet_handle: %r, id: %r, timestamp: %r ",
-                 wallet_handle,
-                 id_,
-                 timestamp)
-
-    if not hasattr(get_revocation_info, "cb"):
-        logger.debug("get_revocation_info: Creating callback")
-        get_revocation_info.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
-
-    c_wallet_handle = c_int32(wallet_handle)
-    c_id = c_char_p(id_.encode('utf-8'))
-    c_timestamp = c_int64(timestamp)
-
-    rev_info_json = await do_call('indy_get_revocation_info',
-                                  c_wallet_handle,
-                                  c_id,
-                                  c_timestamp,
-                                  get_revocation_info.cb)
-
-    res = rev_info_json.decode()
-    logger.debug("get_revocation_info: <<< res: %r", res)
+    res = updated_rev_state_json.decode()
+    logger.debug("update_revocation_state: <<< res: %r", res)
     return res
