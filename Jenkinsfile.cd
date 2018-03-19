@@ -172,14 +172,14 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
             }
         }
 
-        sh "cp libindy/target/release/libindy.so wrappers/java/lib"
-        dir('wrappers/java') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Test: Test java wrapper"
+        //sh "cp libindy/target/release/libindy.so wrappers/java/lib"
+        //dir('wrappers/java') {
+        //    testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+        //        echo "${env_name} Test: Test java wrapper"
 
-                sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
-            }
-        }
+        //        sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+        //    }
+        //}
 
         sh "cp libindy/target/release/libindy.so wrappers/python"
         dir('wrappers/python') {
@@ -316,7 +316,7 @@ def ubuntuPublishing() {
 
                 libindyDebPublishing(testEnv)
                 pythonWrapperPublishing(testEnv, false)
-                javaWrapperPublishing(testEnv, false)
+                //javaWrapperPublishing(testEnv, false)
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -374,11 +374,7 @@ def getSuffix(isRelease, target) {
     if (env.BRANCH_NAME == 'master' && !isRelease) {
         suffix = "-dev-$env.BUILD_NUMBER"
     } else if (env.BRANCH_NAME == 'authz-rc' && !isRelease) {
-        if (target == "Cargo") {
-            suffix = "-authz-rc-$env.BUILD_NUMBER"
-        } else {
-            suffix = "-$env.BUILD_NUMBER"
-        }
+        suffix = "-$env.BUILD_NUMBER"
     } else if (env.BRANCH_NAME == 'rc') {
         if (isRelease) {
             suffix = ""
