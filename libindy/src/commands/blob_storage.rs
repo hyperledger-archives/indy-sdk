@@ -10,9 +10,12 @@ use std::rc::Rc;
 
 #[allow(dead_code)] //FIXME
 pub enum BlobStorageCommand {
+    CreateReaderConfig(
+        String, // type
+        String, // config
+        Box<Fn(Result<i32 /* handle */, IndyError>) + Send>),
     OpenReader(
-        String, // reader type
-        String, // reader config JSON
+        i32, // config handle
         String, // blob location
         String, // blob hash
         Box<Fn(Result<i32 /* handle */, IndyError>) + Send>),
@@ -50,8 +53,11 @@ impl BlobStorageCommandExecutor {
 
     pub fn execute(&self, command: BlobStorageCommand) {
         match command {
-            BlobStorageCommand::OpenReader(type_, config, location, hash, cb) => {
-                cb(self.open_reader(&type_, &config, &location, &hash));
+            BlobStorageCommand::CreateReaderConfig(type_, config, cb) => {
+                cb(self.create_reader_config(&type_, &config));
+            }
+            BlobStorageCommand::OpenReader(config_handle, location, hash, cb) => {
+                cb(self.open_reader(config_handle, &location, &hash));
             }
             BlobStorageCommand::Read(reader_handle, size, offset, cb) => {
                 cb(self.read(reader_handle, size, offset));
@@ -71,18 +77,27 @@ impl BlobStorageCommandExecutor {
         }
     }
 
-    fn open_reader(&self, type_: &str, config: &str, location: &str, hash: &str) -> Result<i32, IndyError> {
-     trace!("open_reader >>> type_: {:?}, config: {:?}, location: {:?}, hash: {:?}", type_, config, location, hash);
+    fn create_reader_config(&self, type_: &str, config: &str) -> Result<i32, IndyError> {
+        trace!("create_reader_config >>> type_: {:?}, config: {:?}", type_, config);
+
+        let res = self.blob_storage_service.create_config(type_, config).map_err(IndyError::from);
+
+        trace!("create_reader_config << res: {:?}", res);
+
+        res
+    }
+
+    fn open_reader(&self, config_handle: i32, location: &str, hash: &str) -> Result<i32, IndyError> {
+        trace!("open_reader >>> config_handle: {:?}, location: {:?}, hash: {:?}", config_handle, location, hash);
 
         let hash: Vec<u8> = base64::decode(&hash)
             .map_err(|err| CommonError::InvalidStructure(format!("Can't decode hash from base64 {}", err)))?;
 
-        let res = self.blob_storage_service.open_reader(type_, config, location, &hash).map_err(IndyError::from);
+        let res = self.blob_storage_service.open_reader(config_handle, location, &hash).map_err(IndyError::from);
 
         trace!("open_reader << res: {:?}", res);
 
         res
-
     }
 
     fn read(&self, handle: i32, size: u64, offset: u64) -> Result<Vec<u8>, IndyError> {

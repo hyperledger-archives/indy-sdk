@@ -24,7 +24,11 @@ trait Writer {
 }
 
 trait ReaderType {
-    fn open(&self, config: &str, hash: &[u8], location: &str) -> Result<Box<Reader>, CommonError>;
+    fn create_config(&self, config: &str) -> Result<Box<ReaderConfig>, CommonError>;
+}
+
+trait ReaderConfig {
+    fn open(&self, hash: &[u8], location: &str) -> Result<Box<Reader>, CommonError>;
 }
 
 trait Reader {
@@ -38,6 +42,7 @@ pub struct BlobStorageService {
     writers: RefCell<HashMap<i32, (Box<Writer>, Sha256)>>,
 
     reader_types: RefCell<HashMap<String, Box<ReaderType>>>,
+    reader_configs: RefCell<HashMap<i32, Box<ReaderConfig>>>,
     readers: RefCell<HashMap<i32, Box<Reader>>>,
 }
 
@@ -52,6 +57,7 @@ impl BlobStorageService {
             writer_types: RefCell::new(writer_types),
             writers: RefCell::new(HashMap::new()),
 
+            reader_configs: RefCell::new(HashMap::new()),
             reader_types: RefCell::new(reader_types),
             readers: RefCell::new(HashMap::new()),
         }
@@ -94,10 +100,21 @@ impl BlobStorageService {
 
 /* Reader */
 impl BlobStorageService {
-    pub fn open_reader(&self, type_: &str, config: &str, location: &str, hash: &[u8]) -> Result<i32, CommonError> {
-        let reader = self.reader_types.try_borrow()?
+    pub fn create_config(&self, type_: &str, config: &str) -> Result<i32, CommonError> {
+        let reader_config = self.reader_types.try_borrow()?
             .get(type_).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Reader type".to_string()))?
-            .open(config, hash, location)?;
+            .create_config(config)?;
+
+        let config_handle = SequenceUtils::get_next_id();
+        self.reader_configs.try_borrow_mut()?.insert(config_handle, reader_config);
+
+        Ok(config_handle)
+    }
+
+    pub fn open_reader(&self, config_handle: i32, location: &str, hash: &[u8]) -> Result<i32, CommonError> {
+        let reader = self.reader_configs.try_borrow()?
+            .get(&config_handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Reader config".to_string()))?
+            .open(hash, location)?;
 
         let reader_handle = SequenceUtils::get_next_id();
         self.readers.try_borrow_mut()?.insert(reader_handle, reader);

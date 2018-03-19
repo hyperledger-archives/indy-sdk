@@ -3015,10 +3015,8 @@ mod demos {
 
         //10. Creates Tails reader
         let revoc_reg_def: serde_json::Value = serde_json::from_str(&revoc_reg_def_json).unwrap();
-        let tails_reader_handle = BlobStorageUtils::open_reader(TYPE,
-                                                                &tails_writer_config,
-                                                                &revoc_reg_def["value"]["tails_location"].as_str().unwrap(),
-                                                                &revoc_reg_def["value"]["tails_hash"].as_str().unwrap()).unwrap();
+        let tails_reader_handle = BlobStorageUtils::create_reader_config(TYPE,
+                                                                         &tails_writer_config).unwrap();
 
 
         //11. Issuer creates Credential
@@ -3112,8 +3110,6 @@ mod demos {
                                                           &rev_regs_json).unwrap();
         assert!(valid);
 
-        BlobStorageUtils::close_reader(tails_reader_handle).unwrap();
-
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
@@ -3178,10 +3174,8 @@ mod demos {
 
         //10. Creates Tails reader
         let revoc_reg_def: serde_json::Value = serde_json::from_str(&revoc_reg_def_json).unwrap();
-        let tails_reader_handle = BlobStorageUtils::open_reader(TYPE,
-                                                                &tails_writer_config,
-                                                                &revoc_reg_def["value"]["tails_location"].as_str().unwrap(),
-                                                                &revoc_reg_def["value"]["tails_hash"].as_str().unwrap()).unwrap();
+        let tails_reader_config_handle = BlobStorageUtils::create_reader_config(TYPE,
+                                                                                &tails_writer_config).unwrap();
 
 
         //11. Issuer creates Credential
@@ -3189,14 +3183,14 @@ mod demos {
                                                                             &credential_req_json,
                                                                             &AnoncredsUtils::gvt_credential_values_json(),
                                                                             Some(&rev_reg_id),
-                                                                            Some(tails_reader_handle),
+                                                                            Some(tails_reader_config_handle),
                                                                             Some(SEQ_NO)).unwrap();
 
         //12. Prover creates Witness
         let timestamp = 100;
 
         let rev_reg_delta = AnoncredsUtils::full_delta(&revoc_reg_entry_json, 5);
-        let rev_info_json = AnoncredsUtils::create_revocation_info(tails_reader_handle,
+        let rev_info_json = AnoncredsUtils::create_revocation_info(tails_reader_config_handle,
                                                                    &revoc_reg_def_json,
                                                                    &rev_reg_delta,
                                                                    timestamp,
@@ -3275,8 +3269,6 @@ mod demos {
                                                           &rev_reg_defs_json,
                                                           &rev_regs_json).unwrap();
         assert!(valid);
-
-        BlobStorageUtils::close_reader(tails_reader_handle).unwrap();
 
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();
@@ -3435,10 +3427,8 @@ mod demos {
 
         //10. Creates Tails reader
         let revoc_reg_def: serde_json::Value = serde_json::from_str(&revoc_reg_def_json).unwrap();
-        let tails_reader_handle = BlobStorageUtils::open_reader(TYPE,
-                                                                &tails_writer_config,
-                                                                &revoc_reg_def["value"]["tails_location"].as_str().unwrap(),
-                                                                &revoc_reg_def["value"]["tails_hash"].as_str().unwrap()).unwrap();
+        let tails_reader_handle = BlobStorageUtils::create_reader_config(TYPE,
+                                                                         &tails_writer_config).unwrap();
 
 
         //11. Issuer creates Credential
@@ -3531,8 +3521,6 @@ mod demos {
                                                           &rev_reg_defs_json,
                                                           &rev_regs_json).unwrap();
         assert!(!valid);
-
-        BlobStorageUtils::close_reader(tails_reader_handle).unwrap();
 
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();

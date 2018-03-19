@@ -1,3 +1,4 @@
+extern crate base64;
 extern crate serde_json;
 extern crate indy_crypto;
 
@@ -55,18 +56,18 @@ pub enum IssuerCommand {
         String, // credential req json
         String, // credential json
         Option<String>, // revocation registry id
-        Option<i32>, // tails reader handle
+        Option<i32>, // tails reader config handle
         Option<u32>, // user revoc index
         Box<Fn(Result<(Option<String>, String), IndyError>) + Send>),
     RevokeCredential(
         i32, // wallet handle
-        i32, // tails reader handle
+        i32, // tails reader config handle
         String, // revocation registry id
         u32, // user revoc index
         Box<Fn(Result<String, IndyError>) + Send>),
     RecoverCredential(
         i32, // wallet handle
-        i32, // tails reader handle
+        i32, // tails reader config handle
         String, // revocation registry id
         u32, // user revoc index
         Box<Fn(Result<String, IndyError>) + Send>)
@@ -122,18 +123,20 @@ impl IssuerCommandExecutor {
                 trace!(target: "issuer_command_executor", "CreateCredentialOffer command received");
                 cb(self.create_credential_offer(wallet_handle, &cred_def_id, &issuer_did, &prover_did));
             }
-            IssuerCommand::CreateCredential(wallet_handle, credential_req_json, credential_json, rev_reg_id, tails_reader_handle, rev_idx, cb) => {
+            IssuerCommand::CreateCredential(wallet_handle, credential_req_json, credential_json, rev_reg_id, tails_reader_config_handle, rev_idx, cb) => {
                 info!(target: "issuer_command_executor", "CreateCredential command received");
                 cb(self.new_credential(wallet_handle, &credential_req_json, &credential_json,
-                                       rev_reg_id.as_ref().map(String::as_str), tails_reader_handle, rev_idx));
+                                       rev_reg_id.as_ref().map(String::as_str),
+                                       tails_reader_config_handle,
+                                       rev_idx));
             }
-            IssuerCommand::RevokeCredential(wallet_handle, tails_reader_handle, rev_reg_id, user_revoc_index, cb) => {
+            IssuerCommand::RevokeCredential(wallet_handle, tails_reader_config, rev_reg_id, user_revoc_index, cb) => {
                 trace!(target: "issuer_command_executor", "RevokeCredential command received");
-                cb(self.revoke_credential(wallet_handle, tails_reader_handle, &rev_reg_id, user_revoc_index));
+                cb(self.revoke_credential(wallet_handle, tails_reader_config, &rev_reg_id, user_revoc_index));
             }
-            IssuerCommand::RecoverCredential(wallet_handle, tails_reader_handle, rev_reg_id, user_revoc_index, cb) => {
+            IssuerCommand::RecoverCredential(wallet_handle, tails_reader_config, rev_reg_id, user_revoc_index, cb) => {
                 trace!(target: "issuer_command_executor", "RecoverCredential command received");
-                cb(self.recovery_credential(wallet_handle, tails_reader_handle, &rev_reg_id, user_revoc_index));
+                cb(self.recovery_credential(wallet_handle, tails_reader_config, &rev_reg_id, user_revoc_index));
             }
         };
     }
@@ -347,11 +350,11 @@ impl IssuerCommandExecutor {
                       credential_req_json: &str,
                       credential_json: &str,
                       rev_reg_id: Option<&str>,
-                      tails_reader_handle: Option<i32>,
+                      tails_reader_config_handle: Option<i32>,
                       rev_idx: Option<u32>) -> Result<(Option<String>, String), IndyError> {
         trace!("new_credential >>> wallet_handle: {:?}, credential_req_json: {:?}, credential_json: {:?}, r_reg_id: {:?},\
-                tails_reader_handle: {:?}, rev_idx: {:?}",
-               wallet_handle, credential_req_json, credential_json, rev_reg_id, tails_reader_handle, rev_idx);
+                tails_reader_config_handle: {:?}, rev_idx: {:?}",
+               wallet_handle, credential_req_json, credential_json, rev_reg_id, tails_reader_config_handle, rev_idx);
 
         let credential_request: CredentialRequest = CredentialRequest::from_json(credential_req_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialRequest: {:?}", err)))?;
@@ -368,8 +371,7 @@ impl IssuerCommandExecutor {
         let credential_values: HashMap<String, AttributeValues> = serde_json::from_str(credential_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialValues: {:?}", err)))?;
 
-        let (rev_reg_def, mut rev_reg,
-            rev_key_priv, sdk_tails_accessor) = match rev_reg_id {
+        let (rev_reg_def, mut rev_reg, rev_key_priv, sdk_tails_accessor) = match rev_reg_id {
             Some(ref r_reg_id) => {
                 if rev_idx.is_none() {
                     return Err(IndyError::CommonError(CommonError::InvalidStructure(format!("RevocationIndex not found"))));
@@ -384,11 +386,12 @@ impl IssuerCommandExecutor {
                 let rev_key_priv: RevocationKeyPrivate =
                     self.wallet_service.get_object(wallet_handle, &format!("revocation_key_private::{}", r_reg_id), "RevocationKeyPrivate", &mut String::new())?;
 
-                if tails_reader_handle.is_none() {
-                    return Err(IndyError::CommonError(CommonError::InvalidStructure(format!("TailsReaderHandle not found"))));
-                }
+                let tails_reader_config_handle = tails_reader_config_handle
+                    .ok_or(IndyError::CommonError(CommonError::InvalidStructure(format!("TailsReader config is missed"))))?;
 
-                let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(), tails_reader_handle.unwrap());
+                let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
+                                                               tails_reader_config_handle,
+                                                               &rev_reg_def)?;
                 (Some(rev_reg_def), Some(rev_reg), Some(rev_key_priv), Some(sdk_tails_accessor))
             }
             None => (None, None, None, None)
@@ -437,7 +440,7 @@ impl IssuerCommandExecutor {
 
     fn revoke_credential(&self,
                          wallet_handle: i32,
-                         tails_reader_handle: i32,
+                         tails_reader_config_handle: i32,
                          rev_reg_id: &str,
                          rev_idx: u32) -> Result<String, IndyError> {
         trace!("revoke_credential >>> wallet_handle: {:?}, rev_reg_id:  {:?}, rev_idx: {:?}", wallet_handle, rev_reg_id, rev_idx);
@@ -448,7 +451,9 @@ impl IssuerCommandExecutor {
         let mut revocation_registry: RevocationRegistry =
             self.wallet_service.get_object(wallet_handle, &format!("revocation_registry::{}", rev_reg_id), "RevocationRegistry", &mut String::new())?;
 
-        let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(), tails_reader_handle);
+        let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
+                                                       tails_reader_config_handle,
+                                                       &revocation_registry_definition)?;
 
         let revocation_registry_delta =
             self.anoncreds_service.issuer.revoke(&mut revocation_registry, revocation_registry_definition.value.max_cred_num, rev_idx, &sdk_tails_accessor)?;
@@ -465,7 +470,7 @@ impl IssuerCommandExecutor {
 
     fn recovery_credential(&self,
                            wallet_handle: i32,
-                           tails_reader_handle: i32,
+                           tails_reader_config_handle: i32,
                            rev_reg_id: &str,
                            rev_idx: u32) -> Result<String, IndyError> {
         trace!("recovery_credential >>> wallet_handle: {:?}, rev_reg_id: {:?}, rev_idx: {:?}", wallet_handle, rev_reg_id, rev_idx);
@@ -476,7 +481,9 @@ impl IssuerCommandExecutor {
         let mut revocation_registry: RevocationRegistry =
             self.wallet_service.get_object(wallet_handle, &format!("revocation_registry::{}", rev_reg_id), "RevocationRegistry", &mut String::new())?;
 
-        let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(), tails_reader_handle);
+        let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
+                                                       tails_reader_config_handle,
+                                                       &revocation_registry_definition)?;
 
         let revocation_registry_delta =
             self.anoncreds_service.issuer.recovery(&mut revocation_registry, revocation_registry_definition.value.max_cred_num, rev_idx, &sdk_tails_accessor)?;

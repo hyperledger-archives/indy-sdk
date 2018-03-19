@@ -10,22 +10,40 @@ use utils::cstring::CStringUtils;
 use self::libc::c_char;
 
 #[no_mangle]
+pub extern fn indy_blob_storage_create_reader_config(command_handle: i32,
+                                                     type_: *const c_char,
+                                                     config_json: *const c_char,
+                                                     cb: Option<extern fn(command_handle_: i32, err: ErrorCode, handle: i32)>) -> ErrorCode {
+    check_useful_c_str!(type_, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(config_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::BlobStorage(BlobStorageCommand::CreateReaderConfig(
+            type_,
+            config_json,
+            Box::new(move |result| {
+                let (err, handle) = result_to_err_code_1!(result, 0);
+                cb(command_handle, err, handle)
+            }),
+        )));
+
+    result_to_err_code!(result)
+}
+
+#[no_mangle]
 pub extern fn indy_blob_storage_open_reader(command_handle: i32,
-                                            type_: *const c_char,
-                                            config_json: *const c_char,
+                                            config_handle: i32,
                                             location: *const c_char,
                                             hash: *const c_char,
                                             cb: Option<extern fn(command_handle_: i32, err: ErrorCode, handle: i32)>) -> ErrorCode {
-    check_useful_c_str!(type_, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(config_json, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(location, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(hash, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+    check_useful_c_str!(location, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(hash, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     let result = CommandExecutor::instance()
         .send(Command::BlobStorage(BlobStorageCommand::OpenReader(
-            type_,
-            config_json,
+            config_handle,
             location,
             hash,
             Box::new(move |result| {

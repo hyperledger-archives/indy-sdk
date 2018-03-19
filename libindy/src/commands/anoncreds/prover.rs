@@ -381,13 +381,13 @@ impl ProverCommandExecutor {
     }
 
     fn create_revocation_info(&self,
-                              tails_reader_handle: i32,
+                              tails_reader_config_handle: i32,
                               rev_reg_def: &str,
                               rev_reg_delta_json: &str,
                               timestamp: u64,
                               rev_idx: u32) -> Result<String, IndyError> {
-        trace!("create_witness >>> , tails_reader_handle: {:?}, rev_reg_def: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, rev_idx: {:?}",
-               tails_reader_handle, rev_reg_def, rev_reg_delta_json, timestamp, rev_idx);
+        trace!("create_witness >>> , tails_reader_config_handle: {:?}, rev_reg_def: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, rev_idx: {:?}",
+               tails_reader_config_handle, rev_reg_def, rev_reg_delta_json, timestamp, rev_idx);
 
         let revocation_registry_definition: RevocationRegistryDefinition = RevocationRegistryDefinition::from_json(rev_reg_def)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDefinition: {:?}", err)))?;
@@ -395,7 +395,9 @@ impl ProverCommandExecutor {
         let rev_reg_delta: RevocationRegistryDelta = RevocationRegistryDelta::from_json(rev_reg_delta_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDelta: {:?}", err)))?;
 
-        let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(), tails_reader_handle);
+        let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
+                                                       tails_reader_config_handle,
+                                                       &revocation_registry_definition)?;
 
         let witness = Witness::new(rev_idx, revocation_registry_definition.value.max_cred_num, &rev_reg_delta, &sdk_tails_accessor)
             .map_err(|err| IndyError::CommonError(CommonError::from(err)))?;
@@ -415,14 +417,14 @@ impl ProverCommandExecutor {
     }
 
     fn update_revocation_info(&self,
-                              tails_reader_handle: i32,
+                              tails_reader_config_handle: i32,
                               rev_info_json: &str,
                               rev_reg_def_json: &str,
                               rev_reg_delta_json: &str,
                               timestamp: u64,
                               rev_idx: u32) -> Result<String, IndyError> {
-        trace!("update_revocation_info >>> tails_reader_handle: {:?}, rev_reg_def_json: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, rev_idx: {:?}",
-               tails_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, rev_idx);
+        trace!("update_revocation_info >>> tails_reader_config_handle: {:?}, rev_reg_def_json: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, rev_idx: {:?}",
+               tails_reader_config_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, rev_idx);
 
         let mut rev_info: RevocationInfo = RevocationInfo::from_json(rev_info_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationInfo: {:?}", err)))?;
@@ -433,7 +435,9 @@ impl ProverCommandExecutor {
         let rev_reg_delta: RevocationRegistryDelta = RevocationRegistryDelta::from_json(rev_reg_delta_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDelta: {:?}", err)))?;
 
-        let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(), tails_reader_handle);
+        let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
+                                                       tails_reader_config_handle,
+                                                       &revocation_registry_definition)?;
 
         rev_info.witness.update(rev_idx, revocation_registry_definition.value.max_cred_num, &rev_reg_delta, &sdk_tails_accessor)
             .map_err(|err| IndyError::CommonError(CommonError::from(err)))?;

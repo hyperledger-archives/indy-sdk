@@ -280,7 +280,7 @@ pub extern fn indy_issuer_create_credential_offer(command_handle: i32,
 ///      "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
 ///     }
 /// rev_reg_id: (Optional) id of stored in ledger revocation registry definition
-/// tails_reader_handle:
+/// tails_reader_config_handle:
 /// user_revoc_index: index of a new user in the revocation registry (optional, pass -1 if user_revoc_index is absentee; default one is used if not provided)
 /// cb: Callback that takes command result as parameter.
 ///
@@ -307,7 +307,7 @@ pub extern fn indy_issuer_create_credential(command_handle: i32,
                                             credential_req_json: *const c_char,
                                             credential_values_json: *const c_char,
                                             rev_reg_id: *const c_char,
-                                            tails_reader_handle: i32,
+                                            tails_reader_config_handle: i32,
                                             user_revoc_index: i32,
                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                  revoc_reg_delta_json: *const c_char,
@@ -318,7 +318,7 @@ pub extern fn indy_issuer_create_credential(command_handle: i32,
     check_useful_opt_c_str!(rev_reg_id, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    let tails_reader_handle = if tails_reader_handle != -1 { Some(tails_reader_handle) } else { None };
+    let tails_reader_config_handle = if tails_reader_config_handle != -1 { Some(tails_reader_config_handle) } else { None };
     let user_revoc_index = if user_revoc_index != -1 { Some(user_revoc_index as u32) } else { None };
 
     let result = CommandExecutor::instance()
@@ -327,7 +327,7 @@ pub extern fn indy_issuer_create_credential(command_handle: i32,
             credential_req_json,
             credential_values_json,
             rev_reg_id,
-            tails_reader_handle,
+            tails_reader_config_handle,
             user_revoc_index,
             Box::new(move |result| {
                 let (err, revoc_reg_delta_json, credential_json) = result_to_err_code_2!(result, None, String::new());
@@ -348,7 +348,7 @@ pub extern fn indy_issuer_create_credential(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// rev_reg_id: id of revocation registry stored in wallet
-/// tails_reader_handle:
+/// tails_reader_config_handle:
 /// user_revoc_index: index of the user in the revocation registry
 /// cb: Callback that takes command result as parameter.
 ///
@@ -362,7 +362,7 @@ pub extern fn indy_issuer_create_credential(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_issuer_revoke_credential(command_handle: i32,
                                             wallet_handle: i32,
-                                            tails_reader_handle: i32,
+                                            tails_reader_config_handle: i32,
                                             rev_reg_id: *const c_char,
                                             user_revoc_index: u32,
                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
@@ -376,7 +376,7 @@ pub extern fn indy_issuer_revoke_credential(command_handle: i32,
             AnoncredsCommand::Issuer(
                 IssuerCommand::RevokeCredential(
                     wallet_handle,
-                    tails_reader_handle,
+                    tails_reader_config_handle,
                     rev_reg_id,
                     user_revoc_index,
                     Box::new(move |result| {
@@ -398,7 +398,7 @@ pub extern fn indy_issuer_revoke_credential(command_handle: i32,
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
 /// rev_reg_id: id of revocation registry stored in wallet
-/// tails_reader_handle:
+/// tails_reader_config_handle:
 /// user_revoc_index: index of the user in the revocation registry
 /// cb: Callback that takes command result as parameter.
 ///
@@ -412,7 +412,7 @@ pub extern fn indy_issuer_revoke_credential(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_issuer_recover_credential(command_handle: i32,
                                              wallet_handle: i32,
-                                             tails_reader_handle: i32,
+                                             tails_reader_config_handle: i32,
                                              rev_reg_id: *const c_char,
                                              user_revoc_index: u32,
                                              cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
@@ -426,7 +426,7 @@ pub extern fn indy_issuer_recover_credential(command_handle: i32,
             AnoncredsCommand::Issuer(
                 IssuerCommand::RecoverCredential(
                     wallet_handle,
-                    tails_reader_handle,
+                    tails_reader_config_handle,
                     rev_reg_id,
                     user_revoc_index,
                     Box::new(move |result| {
