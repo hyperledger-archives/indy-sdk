@@ -36,7 +36,7 @@ impl Prover {
                                                                                  MasterSecretBlindingData,
                                                                                  BlindedMasterSecretCorrectnessProof), CommonError> {
         trace!("new_credential_request >>> credential_def: {:?}, master_secret: {:?}, credential_offer: {:?}",
-              credential_def, master_secret, credential_offer);
+               credential_def, master_secret, credential_offer);
 
         let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.value.primary, credential_def.value.revocation.as_ref())?;
 
@@ -47,7 +47,7 @@ impl Prover {
                                               &credential_offer.nonce)?;
 
         trace!("new_credential_request <<< blinded_ms: {:?}, master_secret_blinding_data: {:?}, blinded_ms_correctness_proof: {:?}",
-              blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof);
+               blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof);
 
         Ok((blinded_ms, master_secret_blinding_data, blinded_ms_correctness_proof))
     }
@@ -139,7 +139,7 @@ impl Prover {
                         rev_infos: &HashMap<String, HashMap<u64, RevocationInfo>>) -> Result<FullProof, AnoncredsError> {
         trace!("create_proof >>> credentials: {:?}, proof_req: {:?}, schemas: {:?}, credential_defs: {:?}, rev_infos: {:?}, \
                requested_credentials: {:?}, master_secret: {:?}",
-              credentials, proof_req, schemas, credential_defs, rev_infos, requested_credentials, master_secret);
+               credentials, proof_req, schemas, credential_defs, rev_infos, requested_credentials, master_secret);
 
         let mut proof_builder = CryptoProver::new_proof_builder()?;
 
@@ -277,14 +277,25 @@ impl Prover {
                                        requested_attr: &str) -> Option<String> {
         trace!("_credential_value_for_attribute >>> credential_attrs: {:?}, requested_attr: {:?}", credential_attrs, requested_attr);
 
-        let _attr_common_view = |attr: &str|
-            attr.replace(" ", "").to_lowercase();
-
         let res = credential_attrs.iter()
-            .find(|&(ref key, _)| _attr_common_view(key) == _attr_common_view(&requested_attr))
+            .find(|&(ref key, _)| attr_common_view(key) == attr_common_view(&requested_attr))
             .map(|(_, value)| value.to_string());
 
         trace!("_credential_value_for_attribute <<< res: {:?}", res);
+
+        res
+    }
+
+
+    fn _get_credential_values_for_attribute(credential_attrs: &HashMap<String, AttributeValues>,
+                                            requested_attr: &str) -> Option<AttributeValues> {
+        trace!("_get_credential_values_for_attribute >>> credential_attrs: {:?}, requested_attr: {:?}", credential_attrs, requested_attr);
+
+        let res = credential_attrs.iter()
+            .find(|&(ref key, _)| attr_common_view(key) == attr_common_view(&requested_attr))
+            .map(|(_, values)| values.clone());
+
+        trace!("_get_credential_values_for_attribute <<< res: {:?}", res);
 
         res
     }
@@ -356,12 +367,14 @@ impl Prover {
                                requested_proof: &mut RequestedProof) -> Result<(), CommonError> {
         trace!("_update_requested_proof >>> req_attrs_for_credential: {:?}, req_predicates_for_credential: {:?}, proof_req: {:?}, credential: {:?}, \
                sub_proof_id: {:?}, requested_proof: {:?}",
-              req_attrs_for_credential, req_predicates_for_credential, proof_req, credential, sub_proof_id, requested_proof);
+               req_attrs_for_credential, req_predicates_for_credential, proof_req, credential, sub_proof_id, requested_proof);
 
         for attr_info in req_attrs_for_credential {
             if attr_info.revealed.clone() {
                 let attribute = &proof_req.requested_attrs[&attr_info.attr_referent];
-                let attribute_values = &credential.values[&attribute.name];
+                let attribute_values =
+                    Prover::_get_credential_values_for_attribute(&credential.values, &attribute.name)
+                        .ok_or(CommonError::InvalidStructure(format!("Credential value not found for attribute {:?}", attribute.name)))?;
 
                 requested_proof.revealed_attrs.insert(attr_info.attr_referent.clone(),
                                                       RevealedAttributeInfo {
@@ -386,23 +399,23 @@ impl Prover {
     fn _build_sub_proof_request(req_attrs_for_credential: &Vec<RequestedAttributeInfo>,
                                 req_predicates_for_credential: &Vec<RequestedPredicateInfo>) -> Result<SubProofRequest, CommonError> {
         trace!("_build_sub_proof_request <<< req_attrs_for_credential: {:?}, req_predicates_for_credential: {:?}",
-              req_attrs_for_credential, req_predicates_for_credential);
+               req_attrs_for_credential, req_predicates_for_credential);
 
         let mut sub_proof_request_builder = verifier::Verifier::new_sub_proof_request_builder()?;
 
         for attr in req_attrs_for_credential {
             if attr.revealed {
-                sub_proof_request_builder.add_revealed_attr(&attr.attr_info.name)?
+                sub_proof_request_builder.add_revealed_attr(&attr_common_view(&attr.attr_info.name))?
             }
         }
 
         for predicate in req_predicates_for_credential {
-            sub_proof_request_builder.add_predicate(&predicate.predicate_info.attr_name, "GE", predicate.predicate_info.value)?;
+            sub_proof_request_builder.add_predicate(&attr_common_view(&predicate.predicate_info.attr_name), "GE", predicate.predicate_info.value)?;
         }
 
         let sub_proof_request = sub_proof_request_builder.finalize()?;
 
-        trace!("_update_requested_proof <<< sub_proof_request: {:?}", sub_proof_request);
+        trace!("_build_sub_proof_request <<< sub_proof_request: {:?}", sub_proof_request);
 
 
         Ok(sub_proof_request)

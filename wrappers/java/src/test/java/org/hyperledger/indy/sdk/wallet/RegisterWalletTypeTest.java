@@ -52,42 +52,42 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(DID, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
 		String gvtSchemaJson = createSchemaResult.getSchemaJson();
 
-		// 3. Issuer creates Claim Definition
-		AnoncredsResults.IssuerCreateAndStoreClaimDefResult createClaimDefResult = Anoncreds.issuerCreateAndStoreClaimDef(wallet, DID, gvtSchemaJson, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
-		String claimDefId = createClaimDefResult.getClaimDefId();
-		String claimDef = createClaimDefResult.getClaimDefJson();
+		// 3. Issuer creates Credential Definition
+		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredentialDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(wallet, DID, gvtSchemaJson, TAG, null, DEFAULT_CRED_DEF_CONFIG).get();
+		String сredentialDefId = createCredentialDefResult.getCredDefId();
+		String сredentialDef = createCredentialDefResult.getCredDefJson();
 
-		// 4. Issuer creates Claim Offer
-		String claimOffer = Anoncreds.issuerCreateClaimOffer(wallet, claimDefId, DID, DID_MY1).get();
+		// 4. Issuer creates Credential Offer
+		String сredentialOffer = Anoncreds.issuerCreateCredentialOffer(wallet, сredentialDefId, DID, DID_MY1).get();
 
-		// 5. Issuer stores Claim Offer
-		Anoncreds.proverStoreClaimOffer(wallet, claimOffer).get();
+		// 5. Issuer stores Credential Offer
+		Anoncreds.proverStoreCredentialOffer(wallet, сredentialOffer).get();
 
 		// 6. Issuer creates Master Secret
 		String masterSecretName = "master_secret_name";
 		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
 
-		// 7. Prover creates Claim Request
-		String claimRequest = Anoncreds.proverCreateAndStoreClaimReq(wallet, DID_MY1, claimOffer, claimDef, masterSecretName).get();
+		// 7. Prover creates Credential Request
+		String credentialRequest = Anoncreds.proverCreateAndStoreCredentialReq(wallet, DID_MY1, сredentialOffer, сredentialDef, masterSecretName).get();
 
-		// 8. Issuer creates Claim
-		String gvtClaimValues = "{\n" +
+		// 8. Issuer creates Credential
+		String gvtCredentialValues = "{\n" +
 				"               \"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
 				"               \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
 				"               \"height\":[\"175\",\"175\"],\n" +
 				"               \"age\":[\"28\",\"28\"]\n" +
 				"        }";
-		AnoncredsResults.IssuerCreateClaimResult createClaimResult = Anoncreds.issuerCreateClaim(wallet, claimRequest, gvtClaimValues, null, - 1, - 1).get();
-		String claimJson = createClaimResult.getClaimJson();
+		AnoncredsResults.IssuerCreateCredentialResult createCredentialResult = Anoncreds.issuerCreateCredentail(wallet, credentialRequest, gvtCredentialValues, null, - 1, - 1).get();
+		String сredentialJson = createCredentialResult.getCredentialJson();
 
-		// 9. Prover stores Claim
-		Anoncreds.proverStoreClaim(wallet, "id1", claimJson, null).get();
+		// 9. Prover stores Credential
+		Anoncreds.proverStoreCredential(wallet, "id1", сredentialJson, null).get();
 
-		// 10. Prover gets Claim
-		String claims = Anoncreds.proverGetClaims(wallet, String.format("{\"issuer_did\":\"%s\"}", DID)).get();
+		// 10. Prover gets Credential
+		String сredentials = Anoncreds.proverGetCredentials(wallet, String.format("{\"issuer_did\":\"%s\"}", DID)).get();
 
-		JSONArray claimsArray = new JSONArray(claims);
+		JSONArray сredentialsArray = new JSONArray(сredentials);
 
-		assertEquals(1, claimsArray.length());
+		assertEquals(1, сredentialsArray.length());
 	}
 }

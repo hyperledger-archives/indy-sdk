@@ -8,9 +8,9 @@ import pytest
 @pytest.mark.asyncio
 async def test_prover_create_proof_works(wallet_handle, prepopulated_wallet, gvt_schema, master_secret_name,
                                          proof_req, id_credential_1):
-    claim_def_json, _, _, _ = prepopulated_wallet
+    credential_def_json, _, _, _ = prepopulated_wallet
 
-    requested_claims = {
+    requested_credentials = {
         "self_attested_attributes": {},
         "requested_attrs": {
             "attr1_referent": {"cred_id": id_credential_1, "revealed": True}
@@ -24,19 +24,20 @@ async def test_prover_create_proof_works(wallet_handle, prepopulated_wallet, gvt
         id_credential_1: gvt_schema
     }
 
-    claim_defs = {
-        id_credential_1: json.loads(claim_def_json)
+    credential_defs = {
+        id_credential_1: json.loads(credential_def_json)
     }
 
-    await prover_create_proof(wallet_handle, json.dumps(proof_req), json.dumps(requested_claims),
+    await prover_create_proof(wallet_handle, json.dumps(proof_req), json.dumps(requested_credentials),
                               json.dumps(schemas), master_secret_name,
-                              json.dumps(claim_defs), "{}")
+                              json.dumps(credential_defs), "{}")
 
 
 @pytest.mark.asyncio
-async def test_prover_create_proof_works_for_using_not_satisfy_claim(wallet_handle, prepopulated_wallet, gvt_schema,
-                                                                     master_secret_name, id_credential_1):
-    claim_def_json, _, _, _ = prepopulated_wallet
+async def test_prover_create_proof_works_for_using_not_satisfy_credential(wallet_handle, prepopulated_wallet,
+                                                                          gvt_schema,
+                                                                          master_secret_name, id_credential_1):
+    credential_def_json, _, _, _ = prepopulated_wallet
 
     proof_req = {
         "nonce": "123432421212",
@@ -50,7 +51,7 @@ async def test_prover_create_proof_works_for_using_not_satisfy_claim(wallet_hand
         "requested_predicates": {}
     }
 
-    requested_claims = {
+    requested_credentials = {
         "self_attested_attributes": {},
         "requested_attrs": {
             "attr1_referent": {"cred_id": id_credential_1, "revealed": True}
@@ -63,14 +64,14 @@ async def test_prover_create_proof_works_for_using_not_satisfy_claim(wallet_hand
         id_credential_1: gvt_schema
     }
 
-    claim_defs = {
-        id_credential_1: json.loads(claim_def_json)
+    credential_defs = {
+        id_credential_1: json.loads(credential_def_json)
     }
 
     with pytest.raises(IndyError) as e:
-        await prover_create_proof(wallet_handle, json.dumps(proof_req), json.dumps(requested_claims),
+        await prover_create_proof(wallet_handle, json.dumps(proof_req), json.dumps(requested_credentials),
                                   json.dumps(schemas), master_secret_name,
-                                  json.dumps(claim_defs), "{}")
+                                  json.dumps(credential_defs), "{}")
 
     assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
@@ -78,9 +79,9 @@ async def test_prover_create_proof_works_for_using_not_satisfy_claim(wallet_hand
 @pytest.mark.asyncio
 async def test_prover_create_proof_works_for_invalid_wallet_handle(wallet_handle, prepopulated_wallet, gvt_schema,
                                                                    master_secret_name, proof_req, id_credential_1):
-    claim_def_json, _, _, _ = prepopulated_wallet
+    credential_def_json, _, _, _ = prepopulated_wallet
 
-    requested_claims = {
+    requested_credentials = {
         "self_attested_attributes": {},
         "requested_attrs": {
             "attr1_referent": {"cred_id": id_credential_1, "revealed": True}
@@ -94,15 +95,15 @@ async def test_prover_create_proof_works_for_invalid_wallet_handle(wallet_handle
         id_credential_1: gvt_schema
     }
 
-    claim_defs = {
-        id_credential_1: json.loads(claim_def_json)
+    credential_defs = {
+        id_credential_1: json.loads(credential_def_json)
     }
 
     invalid_wallet_handle = wallet_handle + 100
 
     with pytest.raises(IndyError) as e:
-        await prover_create_proof(invalid_wallet_handle, json.dumps(proof_req), json.dumps(requested_claims),
+        await prover_create_proof(invalid_wallet_handle, json.dumps(proof_req), json.dumps(requested_credentials),
                                   json.dumps(schemas), master_secret_name,
-                                  json.dumps(claim_defs), "{}")
+                                  json.dumps(credential_defs), "{}")
 
     assert ErrorCode.WalletInvalidHandle == e.value.error_code

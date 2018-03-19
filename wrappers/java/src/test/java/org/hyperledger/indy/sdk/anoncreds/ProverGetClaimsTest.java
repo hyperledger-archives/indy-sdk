@@ -14,7 +14,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverGetClaimsWorksForEmptyFilter() throws Exception {
 
-		String claims = Anoncreds.proverGetClaims(wallet, "{}").get();
+		String claims = Anoncreds.proverGetCredentials(wallet, "{}").get();
 
 		JSONArray claimsArray = new JSONArray(claims);
 
@@ -26,7 +26,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 		String filter = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
 
-		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
+		String claims = Anoncreds.proverGetCredentials(wallet, filter).get();
 
 		JSONArray claimsArray = new JSONArray(claims);
 
@@ -38,7 +38,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 		String filter = String.format("{\"schema_id\":\"%s\"}", gvtSchemaId);
 
-		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
+		String claims = Anoncreds.proverGetCredentials(wallet, filter).get();
 
 		JSONArray claimsArray = new JSONArray(claims);
 
@@ -50,7 +50,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 		String filter = "{\"schema_name\": \"gvt\"}";
 
-		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
+		String claims = Anoncreds.proverGetCredentials(wallet, filter).get();
 
 		JSONArray claimsArray = new JSONArray(claims);
 
@@ -60,9 +60,9 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverGetClaimsWorksForFilterByCredDefId() throws Exception {
 
-		String filter = String.format("{\"cred_def_id\":\"%s\"}", issuer1gvtClaimDefId);
+		String filter = String.format("{\"cred_def_id\":\"%s\"}", issuer1gvtCredDefId);
 
-		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
+		String claims = Anoncreds.proverGetCredentials(wallet, filter).get();
 
 		JSONArray claimsArray = new JSONArray(claims);
 
@@ -74,7 +74,7 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 		String filter = String.format("{\"issuer_did\":\"%s\"}", issuerDid + "a");
 
-		String claims = Anoncreds.proverGetClaims(wallet, filter).get();
+		String claims = Anoncreds.proverGetCredentials(wallet, filter).get();
 
 		JSONArray claimsArray = new JSONArray(claims);
 
@@ -89,6 +89,6 @@ public class ProverGetClaimsTest extends AnoncredsIntegrationTest {
 
 		String filter = "{\"schema_name\":gvt}";
 
-		Anoncreds.proverGetClaims(wallet, filter).get();
+		Anoncreds.proverGetCredentials(wallet, filter).get();
 	}
 }

@@ -158,4 +158,37 @@
 {
     return @"NcYxiDXkpYi6ov5FcYDi1e";
 }
+
++ (NSString *)defaultType
+{
+    return @"default";
+}
+
++ (NSString *)gvtSchemaName {
+    return @"gvt";
+}
+
++ (NSString *)schemaVersion {
+    return @"1.0";
+}
+
++ (NSString *)gvtSchemaAttrs {
+    return @"[\"age\",\"sex\",\"height\",\"name\"]";
+}
+
+
++ (NSString *)xyzSchemaName {
+    return @"xyz";
+}
+
++ (NSString *)xyzSchemaAttrs {
+    return @"[\"status\",\"period\"]";
+}
+
++ (NSString *)tag {
+    return @"TAG1";
+}
+
+
+
 @end

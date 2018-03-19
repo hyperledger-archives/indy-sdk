@@ -25,7 +25,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }";
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -46,7 +46,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }";
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -67,7 +67,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }";
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -88,7 +88,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"         }";
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -111,7 +111,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }";
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -134,7 +134,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }";
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -157,7 +157,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }";
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -180,7 +180,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"               }" +
 				"         }";
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -205,7 +205,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"               }" +
 				"            }";
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -233,7 +233,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"         }";
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -257,7 +257,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }", issuerDid);
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -281,7 +281,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }", gvtSchemaId);
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -305,7 +305,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"               \"requested_predicates\":{}" +
 				"             }";
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -329,7 +329,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }", gvtSchemaId, xyzSchemaId);
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -351,9 +351,9 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"                   }" +
 				"               }," +
 				"              \"requested_predicates\":{}" +
-				"          }", issuer1gvtClaimDefId);
+				"          }", issuer1gvtCredDefId);
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -377,7 +377,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }", gvtSchemaId, issuerDid);
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -401,7 +401,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }", issuerDid);
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -425,7 +425,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }", gvtSchemaId);
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -449,7 +449,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }", gvtSchemaId, xyzSchemaId);
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -471,9 +471,9 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"                       \"restrictions\":[{\"cred_def_id\":\"%s\"}]" +
 				"                   }" +
 				"              }" +
-				"          }", issuer1gvtClaimDefId);
+				"          }", issuer1gvtCredDefId);
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -497,7 +497,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }", gvtSchemaId, issuerDid);
 
-		String claimsJson = Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
 		JSONObject claims = new JSONObject(claimsJson);
 
@@ -518,7 +518,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }";
 
-		Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 	}
 
 	@Test
@@ -537,6 +537,6 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }";
 
-		Anoncreds.proverGetClaimsForProofReq(wallet, proofRequest).get();
+		Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 	}
 }

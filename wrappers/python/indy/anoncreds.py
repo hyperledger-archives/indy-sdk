@@ -13,7 +13,6 @@ async def issuer_create_schema(issuer_did: str,
     """
     Create credential schema.
 
-    :param wallet_handle: wallet handler (created by open_wallet).
     :param issuer_did: a DID of the issuer signing credential_def transaction to the Ledger
     :param name: human-readable name of schema.
     :param version: version of schema.
