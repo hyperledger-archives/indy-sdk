@@ -17,11 +17,11 @@ import java.util.concurrent.CompletableFuture;
  */
 public class BlobStorage extends IndyJava.API {
 
-	private final int tailsReaderHandle;
+	private final int blobStorageReaderHandle;
 
-	private BlobStorage(int tailsReaderHandle) {
+	private BlobStorage(int blobStorageReaderHandle) {
 
-		this.tailsReaderHandle = tailsReaderHandle;
+		this.blobStorageReaderHandle = blobStorageReaderHandle;
 	}
 
 	/**
@@ -29,9 +29,9 @@ public class BlobStorage extends IndyJava.API {
 	 *
 	 * @return The handle for the blob storage.
 	 */
-	public int getTailsReaderHandle() {
+	public int getBlobStorageReaderHandle() {
 
-		return this.tailsReaderHandle;
+		return this.blobStorageReaderHandle;
 	}
 
 	/*

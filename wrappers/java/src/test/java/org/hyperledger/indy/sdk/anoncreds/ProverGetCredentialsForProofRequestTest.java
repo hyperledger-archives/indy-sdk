@@ -10,10 +10,10 @@ import java.util.concurrent.ExecutionException;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 
-public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest {
+public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegrationTest {
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForRevealedAttribute() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForRevealedAttribute() throws Exception {
 
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -25,16 +25,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }";
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
-		assertEquals(2, claimsForAttribute1.length());
+		JSONArray credentialsForAttribute1 = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, credentialsForAttribute1.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeInUpperCase() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForRevealedAttributeInUpperCase() throws Exception {
 
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -46,16 +46,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }";
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
-		assertEquals(2, claimsForAttribute1.length());
+		JSONArray credentialsForAttribute1 = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, credentialsForAttribute1.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeContainsSpaces() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForRevealedAttributeContainsSpaces() throws Exception {
 
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -67,16 +67,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }";
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
-		assertEquals(2, claimsForAttribute1.length());
+		JSONArray credentialsForAttribute1 = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, credentialsForAttribute1.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForNotFoundAttribute() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForNotFoundAttribute() throws Exception {
 
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -88,16 +88,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"         }";
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
-		assertEquals(0, claimsForAttribute1.length());
+		JSONArray credentialsForAttribute1 = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(0, credentialsForAttribute1.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForPredicate() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForPredicate() throws Exception {
 
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -111,16 +111,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }";
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
-		assertEquals(2, claimsForPredicate.length());
+		JSONArray credentialsForPredicate = credentials.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(2, credentialsForPredicate.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForPredicateAttrInUpperCase() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForPredicateAttrInUpperCase() throws Exception {
 
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -134,16 +134,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }";
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
-		assertEquals(2, claimsForPredicate.length());
+		JSONArray credentialsForPredicate = credentials.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(2, credentialsForPredicate.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForPredicateAttrContainsSpaces() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForPredicateAttrContainsSpaces() throws Exception {
 
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -157,16 +157,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }";
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
-		assertEquals(2, claimsForPredicate.length());
+		JSONArray credentialsForPredicate = credentials.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(2, credentialsForPredicate.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForNotSatisfiedPredicate() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForNotSatisfiedPredicate() throws Exception {
 
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -180,16 +180,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"               }" +
 				"         }";
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
-		assertEquals(0, claimsForPredicate.length());
+		JSONArray credentialsForPredicate = credentials.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(0, credentialsForPredicate.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForMultiplyAttributesAndPredicates() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForMultiplyAttributesAndPredicates() throws Exception {
 
 		String proofRequest = "{" +
 				"               \"nonce\":\"123432421212\"," +
@@ -205,25 +205,25 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"               }" +
 				"            }";
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
-		assertEquals(2, claimsForAttribute1.length());
+		JSONArray credentialsForAttribute1 = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, credentialsForAttribute1.length());
 
-		JSONArray claimsForAttribute2 = claims.getJSONObject("attrs").getJSONArray("attr2_referent");
-		assertEquals(2, claimsForAttribute2.length());
+		JSONArray credentialsForAttribute2 = credentials.getJSONObject("attrs").getJSONArray("attr2_referent");
+		assertEquals(2, credentialsForAttribute2.length());
 
-		JSONArray claimsForPredicate1 = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
-		assertEquals(2, claimsForPredicate1.length());
+		JSONArray credentialsForPredicate1 = credentials.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(2, credentialsForPredicate1.length());
 
-		JSONArray claimsForPredicate2 = claims.getJSONObject("predicates").getJSONArray("predicate2_referent");
-		assertEquals(2, claimsForPredicate2.length());
+		JSONArray credentialsForPredicate2 = credentials.getJSONObject("predicates").getJSONArray("predicate2_referent");
+		assertEquals(2, credentialsForPredicate2.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForEmptyRequest() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForEmptyRequest() throws Exception {
 
 		String proofRequest = "{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -233,16 +233,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"         }";
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		assertEquals(0, claims.getJSONObject("attrs").length());
-		assertEquals(0, claims.getJSONObject("predicates").length());
+		assertEquals(0, credentials.getJSONObject("attrs").length());
+		assertEquals(0, credentials.getJSONObject("predicates").length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeBySpecificIssuer() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForRevealedAttributeBySpecificIssuer() throws Exception {
 
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -257,16 +257,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }", issuerDid);
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
-		assertEquals(1, claimsForAttribute1.length());
+		JSONArray credentialsForAttribute1 = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(1, credentialsForAttribute1.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeBySchemaId() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForRevealedAttributeBySchemaId() throws Exception {
 
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -281,16 +281,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }", gvtSchemaId);
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
-		assertEquals(2, claimsForAttribute1.length());
+		JSONArray credentialsForAttribute1 = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, credentialsForAttribute1.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeBySchemaName() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForRevealedAttributeBySchemaName() throws Exception {
 
 		String proofRequest = "{" +
 				"               \"nonce\":\"123432421212\"," +
@@ -305,16 +305,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"               \"requested_predicates\":{}" +
 				"             }";
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
-		assertEquals(2, claimsForAttribute1.length());
+		JSONArray credentialsForAttribute1 = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, credentialsForAttribute1.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeByMultipleSchemas() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForRevealedAttributeByMultipleSchemas() throws Exception {
 
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -329,16 +329,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }", gvtSchemaId, xyzSchemaId);
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
-		assertEquals(2, claimsForAttribute1.length());
+		JSONArray credentialsForAttribute1 = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, credentialsForAttribute1.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeByCredDefId() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForRevealedAttributeByCredDefId() throws Exception {
 
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -353,16 +353,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }", issuer1gvtCredDefId);
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
-		assertEquals(1, claimsForAttribute1.length());
+		JSONArray credentialsForAttribute1 = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(1, credentialsForAttribute1.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForRevealedAttributeBySpecificSchemaOrSpecificIssuer() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForRevealedAttributeBySpecificSchemaOrSpecificIssuer() throws Exception {
 
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -377,16 +377,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              \"requested_predicates\":{}" +
 				"          }", gvtSchemaId, issuerDid);
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForAttribute1 = claims.getJSONObject("attrs").getJSONArray("attr1_referent");
-		assertEquals(2, claimsForAttribute1.length());
+		JSONArray credentialsForAttribute1 = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
+		assertEquals(2, credentialsForAttribute1.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForPredicateBySpecificIssuer() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForPredicateBySpecificIssuer() throws Exception {
 
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -401,16 +401,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }", issuerDid);
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
-		assertEquals(1, claimsForPredicate.length());
+		JSONArray credentialsForPredicate = credentials.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(1, credentialsForPredicate.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForPredicateBySchemaId() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForPredicateBySchemaId() throws Exception {
 
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -425,16 +425,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }", gvtSchemaId);
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
-		assertEquals(2, claimsForPredicate.length());
+		JSONArray credentialsForPredicate = credentials.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(2, credentialsForPredicate.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForPredicateByMultipleSchemas() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForPredicateByMultipleSchemas() throws Exception {
 
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -449,16 +449,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }", gvtSchemaId, xyzSchemaId);
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
-		assertEquals(2, claimsForPredicate.length());
+		JSONArray credentialsForPredicate = credentials.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(2, credentialsForPredicate.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForPredicateBySpecificCredDefId() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForPredicateBySpecificCredDefId() throws Exception {
 
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -473,16 +473,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }", issuer1gvtCredDefId);
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
-		assertEquals(1, claimsForPredicate.length());
+		JSONArray credentialsForPredicate = credentials.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(1, credentialsForPredicate.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForPredicateBySpecificIssuerOrSpecificSchema() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForPredicateBySpecificIssuerOrSpecificSchema() throws Exception {
 
 		String proofRequest = String.format("{" +
 				"              \"nonce\":\"123432421212\"," +
@@ -497,16 +497,16 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 				"              }" +
 				"          }", gvtSchemaId, issuerDid);
 
-		String claimsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 
-		JSONObject claims = new JSONObject(claimsJson);
+		JSONObject credentials = new JSONObject(credentialsJson);
 
-		JSONArray claimsForPredicate = claims.getJSONObject("predicates").getJSONArray("predicate1_referent");
-		assertEquals(2, claimsForPredicate.length());
+		JSONArray credentialsForPredicate = credentials.getJSONObject("predicates").getJSONArray("predicate1_referent");
+		assertEquals(2, credentialsForPredicate.length());
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForInvalidProofRequest() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForInvalidProofRequest() throws Exception {
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
@@ -522,7 +522,7 @@ public class ProverGetClaimsForProofRequestTest extends AnoncredsIntegrationTest
 	}
 
 	@Test
-	public void testProverGetClaimsForProofRequestWorksForInvalidPredicateType() throws Exception {
+	public void testProverGetCredentialsForProofRequestWorksForInvalidPredicateType() throws Exception {
 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));

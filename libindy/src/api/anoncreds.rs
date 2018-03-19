@@ -513,7 +513,7 @@ pub extern fn indy_prover_create_master_secret(command_handle: i32,
 ///      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
 ///      "nonce": string
 ///    }
-/// cred_req_metadata_json: Credential request metadata json for processing of received from Issuer credential.
+/// cred_req_metadata_json: Credential request metadata json for processing of received form Issuer credential.
 
 /// #Errors
 /// Annoncreds*

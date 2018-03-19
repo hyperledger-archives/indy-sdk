@@ -8,11 +8,11 @@ import static org.hamcrest.CoreMatchers.isA;
 
 import java.util.concurrent.ExecutionException;
 
-public class ProverCreateAndStoreCredentialReqTest extends AnoncredsIntegrationTest {
+public class ProverCreateCredentialRequestTest extends AnoncredsIntegrationTest {
 
 	@Test
 	public void testProverCreateAndStoreCredentialReqWorks() throws Exception {
-		Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretId).get();
 	}
 
 	@Test
@@ -21,7 +21,7 @@ public class ProverCreateAndStoreCredentialReqTest extends AnoncredsIntegrationT
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, issuer2GvtCredOffer, issuer1gvtCredDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, issuer2GvtCredOffer, issuer1gvtCredDef, masterSecretId).get();
 	}
 
 	@Test
@@ -32,7 +32,7 @@ public class ProverCreateAndStoreCredentialReqTest extends AnoncredsIntegrationT
 
 		String credentialOffer = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
 
-		Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, credentialOffer, issuer1gvtCredDef, masterSecretName).get();
+		Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, credentialOffer, issuer1gvtCredDef, masterSecretId).get();
 	}
 
 	@Test
@@ -41,6 +41,6 @@ public class ProverCreateAndStoreCredentialReqTest extends AnoncredsIntegrationT
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretName + "a").get();
+		Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretId + "a").get();
 	}
 }
