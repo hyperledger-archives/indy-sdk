@@ -156,14 +156,13 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
                     }
 
                     echo "${env_name} Test: Build"
-                    //sh "RUST_BACKTRACE=1 cargo test --release $featuresArgs --no-run"
+                    sh "RUST_BACKTRACE=1 cargo test --release $featuresArgs --no-run"
 
                     echo "${env_name} Test: Run tests"
-                    //sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release $featuresArgs"
+                    sh "RUST_BACKTRACE=1 RUST_LOG=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release $featuresArgs"
                     /* TODO FIXME restore after xunit will be fixed
                     sh 'RUST_TEST_THREADS=1 cargo test-xunit'
                     */
-                    sh "RUST_BACKTRACE=1 cargo build --release"
                 }
                 finally {
                     /* TODO FIXME restore after xunit will be fixed
