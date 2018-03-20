@@ -152,7 +152,7 @@ pub extern fn indy_issuer_create_and_store_cred_def(command_handle: i32,
 /// #Returns
 /// revoc_reg_def_id: identifer of created revocation registry definition
 /// revoc_reg_def_json: public part of revocation registry definition
-/// revoc_reg_entry_json:revocation registry entry that defines initial state of revocation registry
+/// revoc_reg_entry_json: revocation registry entry that defines initial state of revocation registry
 ///
 /// #Errors
 /// Common*
@@ -433,6 +433,137 @@ pub extern fn indy_prover_store_cred(command_handle: i32,
                                      rev_reg_def_json: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                           cred_id: *const c_char)>) -> ErrorCode
+```
+
+```Rust
+/// Gets human readable credentials according to the filter.
+/// If filter is NULL, then all credentials are returned.
+/// Claims can be filtered by Issuer, credential_def and/or Schema.
+///
+/// #Params
+/// wallet_handle: wallet handler (created by open_wallet).
+/// filter_json: filter for credentials
+///        {
+///            "schema_id": string, (Optional)
+///            "schema_issuer_did": string, (Optional)
+///            "schema_name": string, (Optional)
+///            "schema_version": string, (Optional)
+///            "issuer_did": string, (Optional)
+///            "cred_def_id": string, (Optional)
+///        }
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// matched_credentials_json: [<credential_info>]
+///     [{
+///         "cred_referent": string, // cred_id in the wallet
+///         "values": <see credential_values_json above>,
+///         "schema_id: string,
+///         "issuer_did": string,
+///         "cred_def_id": string,
+///         "rev_reg_id", Optional<string>
+///     }]
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_prover_get_credentials(command_handle: i32,
+                                          wallet_handle: i32,
+                                          filter_json: *const c_char,
+                                          cb: Option<extern fn(
+                                              xcommand_handle: i32, err: ErrorCode,
+                                              matched_credentials_json: *const c_char)>) -> ErrorCode
+```
+
+```Rust
+/// Get human readable credentials matching the given proof request.
+///
+/// #Params
+/// wallet_handle: wallet handler (created by open_wallet).
+/// proof_request_json: proof request json
+///     {
+///         "name": string,
+///         "version": string,
+///         "nonce": string,
+///         "requested_attrs": { // set of requested attributes
+///              "<attr_referent>": <attr_info>, // see below
+///              ...,
+///         },
+///         "requested_predicates": { // set of requested predicates
+///              "<predicate_referent>": <predicate_info>, // see below
+///              ...,
+///          },
+///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+///                        // If specified prover must proof non-revocation
+///                        // for date in this interval for each attribute
+///                        // (can be overridden on attribute level)
+///     }
+/// cb: Callback that takes command result as parameter.
+///
+/// where:
+/// attr_referent: Proof-request local identifier of requested attribute
+/// attr_info: Describes requested attribute
+///     {
+///         "name": string, // attribute name, (case insensitive and ignore spaces)
+///         "restrictions": Optional<[<attr_filter>]> // see below,
+//                          // if specified, credential must satisfy to one of the given restriction.
+///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+///                        // If specified prover must proof non-revocation
+///                        // for date in this interval this attribute
+///                        // (overrides proof level interval)
+///     }
+/// predicate_referent: Proof-request local identifier of requested attribute predicate
+/// predicate_info: Describes requested attribute predicate
+///     {
+///         "name": attribute name, (case insensitive and ignore spaces)
+///         "p_type": predicate type (Currently >= only)
+///         "p_value": predicate value
+///         "restrictions": Optional<[<attr_filter>]> // see below,
+///                         // if specified, credential must satisfy to one of the given restriction.
+///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+///                        // If specified prover must proof non-revocation
+///                        // for date in this interval this attribute
+///                        // (overrides proof level interval)
+///     }
+/// non_revoc_interval: Defines non-revocation interval
+///     {
+///         "from": Optional<int>, // timestamp of interval beginning
+///         "to": Optional<int>, // timestamp of interval ending
+///     }
+///
+/// #Returns
+/// credentials_json: json with credentials for the given pool request.
+///     {
+///         "requested_attrs": {
+///             "<attr_referent>": [<credential_info>],
+///             ...,
+///         },
+///         "requested_predicates": {
+///             "requested_predicates": [(credential1, Optional<freshness>), (credential3, Optional<freshness>)],
+///             "requested_predicate_2_referent": [(credential2, Optional<freshness>)]
+///         }
+///     }, where credential is
+///     {
+///         "referent": <string>,
+///         "attrs": [{"attr_name" : "attr_raw_value"}],
+///         "issuer_did": string,
+///         "cred_def_id": string,
+///         "rev_reg_id": Optional<int>
+///     }
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
+                                                        wallet_handle: i32,
+                                                        proof_request_json: *const c_char,
+                                                        cb: Option<extern fn(
+                                                            xcommand_handle: i32, err: ErrorCode,
+                                                            credentials_json: *const c_char
+)>) -> ErrorCode
 ```
 
 ### Blob Storage
