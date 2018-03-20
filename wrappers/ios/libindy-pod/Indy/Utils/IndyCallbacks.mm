@@ -329,6 +329,39 @@ void IndyWrapperCommon4PSCallback(indy_handle_t xcommand_handle,
     }
 }
 
+void IndyWrapperCommon5PStrOpStrOpStrCallback(indy_handle_t xcommand_handle,
+        indy_error_t err,
+        const char *const arg1,
+        const char *const arg2,
+        const char *const arg3)
+{
+    id block = [[IndyCallbacks sharedInstance] commandCompletionFor: xcommand_handle];
+    [[IndyCallbacks sharedInstance] deleteCommandHandleFor: xcommand_handle];
+
+    void (^completion)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3) = (void (^)(NSError*, NSString* arg1, NSString *arg2, NSString *arg3))block;
+
+    NSString* sarg1 = [ NSString stringWithUTF8String: arg1];
+    NSString *sarg2 = nil;
+    if (arg2)
+    {
+        sarg2 = [NSString stringWithUTF8String:arg2];
+    }
+    NSString *sarg3 = nil;
+    if (arg3)
+    {
+        sarg3 = [NSString stringWithUTF8String:arg3];
+    }
+
+    if (completion)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^
+        {
+            NSError *error = [ NSError errorFromIndyError: err ];
+            completion(error, sarg1, sarg2, sarg3);
+        });
+    }
+}
+
 void IndyWrapperCommon5PCallback(indy_handle_t xcommand_handle,
                                  indy_error_t err,
                                  const char *const arg1,

@@ -43,11 +43,11 @@
 }
 
 - (NSString *)getGvtSchemaId {
-    return @"NcYxiDXkpYi6ov5FcYDi1e:1:gvt:1.0";
+    return @"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0";
 }
 
 - (NSString *)getXyzSchemaId {
-    return @"NcYxiDXkpYi6ov5FcYDi1e:1:xyz:1.0";
+    return @"NcYxiDXkpYi6ov5FcYDi1e:2:xyz:1.0";
 }
 
 - (NSString *)getGvtSchemaJson {
@@ -58,34 +58,8 @@
                                               "\"attrNames\":[\"age\",\"sex\",\"height\",\"name\"]}", [self getGvtSchemaId]];
 }
 
-- (NSString *)getXyzSchemaJson {
-    return [NSString stringWithFormat:@"{"
-                                              "\"id\":\"%@\","
-                                              "\"name\":\"xyz\","
-                                              "\"version\":\"1.0\","
-                                              "\"attrNames\":[\"status\",\"period\"]}", [self getXyzSchemaId]];
-}
-
 - (NSString *)getIssuer1GvtCredDefId {
-    return @"NcYxiDXkpYi6ov5FcYDi1e:2:NcYxiDXkpYi6ov5FcYDi1e:1:gvt:1.0:CL:TAG1";
-}
-
-- (NSString *)getIssuer1XyzCredDefId {
-    return @"NcYxiDXkpYi6ov5FcYDi1e:2:NcYxiDXkpYi6ov5FcYDi1e:1:xyz:1.0:CL:TAG1";
-}
-
-- (NSString *)getIssuer2GvtCredDefId {
-    return @"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW:2:NcYxiDXkpYi6ov5FcYDi1e:1:gvt:1.0:CL:TAG1";
-}
-
-- (NSString *)getCredentialOfferJson:(NSString *)issuerDid
-                           credDefId:(NSString *)credDefId {
-    return [NSString stringWithFormat:@"{"\
-            "\"issuer_did\":\"%@\"," \
-            "\"cred_def_id\":\"%@\"," \
-            "\"nonce\":\"12345678\"," \
-            "\"key_correctness_proof\": {\"c\":\"1\",\"xz_cap\":\"1\",\"xr_cap\":{\"name\":\"1\"}}" \
-            "}", issuerDid, credDefId];
+    return @"NcYxiDXkpYi6ov5FcYDi1e:3:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0:CL:TAG1";
 }
 
 - (NSString *)getGvtCredentialValuesJson {
@@ -146,29 +120,29 @@
 // MARK: issuer credential
 
 
-- (NSError *)issuerCreateSchemaForIssuerDID:(NSString *)issuerDid
-                                       name:(NSString *)name
-                                    version:(NSString *)version
-                                      attrs:(NSString *)attrs
-                                   schemaId:(NSString **)schemaId
-                                 schemaJson:(NSString **)schemaJson {
+- (NSError *)issuerCreateSchemaWithName:(NSString *)name
+                                version:(NSString *)version
+                                  attrs:(NSString *)attrs
+                              issuerDID:(NSString *)issuerDID
+                               schemaId:(NSString **)schemaId
+                             schemaJson:(NSString **)schemaJson {
     __block NSError *err = nil;
     __block NSString *outSchemaId = nil;
     __block NSString *outSchemaJson = nil;
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
 
-    [IndyAnoncreds issuerCreateSchemaForIssuerDID:issuerDid
-                                             name:name
-                                          version:version
-                                            attrs:attrs
-                                       completion:^(NSError *error, NSString *schemaID, NSString *schemaJSON) {
-                                           err = error;
-                                           outSchemaId = schemaID;
-                                           outSchemaJson = schemaJSON;
+    [IndyAnoncreds issuerCreateSchemaWithName:name
+                                      version:version
+                                        attrs:attrs
+                                    issuerDID:issuerDID
+                                   completion:^(NSError *error, NSString *schemaID, NSString *schemaJSON) {
+                                       err = error;
+                                       outSchemaId = schemaID;
+                                       outSchemaJson = schemaJSON;
 
-                                           [completionExpectation fulfill];
-                                       }];
+                                       [completionExpectation fulfill];
+                                   }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
@@ -178,33 +152,33 @@
     return err;
 }
 
-- (NSError *)issuerCreateCredentialDefinitionWithWalletHandle:(IndyHandle)walletHandle
-                                                    issuerDid:(NSString *)issuerDid
-                                                   schemaJson:(NSString *)schemaJson
-                                                          tag:(NSString *)tag
-                                                         type:(NSString *)type
-                                                   configJson:(NSString *)configJson
-                                              credentialDefId:(NSString **)credentialDefId
-                                            credentialDefJson:(NSString **)credentialDefJson {
+- (NSError *)issuerCreateAndStoreCredentialDefForSchema:(NSString *)schemaJSON
+                                              issuerDID:(NSString *)issuerDID
+                                                    tag:(NSString *)tag
+                                                   type:(NSString *)type
+                                             configJSON:(NSString *)configJSON
+                                           walletHandle:(IndyHandle)walletHandle
+                                              credDefId:(NSString **)credentialDefId
+                                            credDefJson:(NSString **)credentialDefJson {
     __block NSError *err = nil;
     __block NSString *outCredentialDefId = nil;
     __block NSString *outCredentialDefJson = nil;
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
 
-    [IndyAnoncreds issuerCreateAndStoreCredentialDefForIssuerDID:issuerDid
-                                                      schemaJSON:schemaJson
-                                                             tag:tag
-                                                            type:type
-                                                      configJSON:configJson
-                                                    walletHandle:walletHandle
-                                                      completion:^(NSError *error, NSString *credentialDefID, NSString *credentialDefJSON) {
-                                                          err = error;
-                                                          outCredentialDefId = credentialDefID;
-                                                          outCredentialDefJson = credentialDefJSON;
+    [IndyAnoncreds issuerCreateAndStoreCredentialDefForSchema:schemaJSON
+                                                    issuerDID:issuerDID
+                                                          tag:tag
+                                                         type:type
+                                                   configJSON:configJSON
+                                                 walletHandle:walletHandle
+                                                   completion:^(NSError *error, NSString *credDefID, NSString *credDefJSON) {
+                                                       err = error;
+                                                       outCredentialDefId = credDefID;
+                                                       outCredentialDefJson = credDefJSON;
 
-                                                          [completionExpectation fulfill];
-                                                      }];
+                                                       [completionExpectation fulfill];
+                                                   }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
@@ -214,17 +188,17 @@
     return err;
 }
 
-- (NSError *)issuerCreateAndStoreRevocRegForWithWalletHandle:(IndyHandle)walletHandle
-                                                   issuerDid:(NSString *)issuerDID
-                                                        type:(NSString *)type
-                                                         tag:(NSString *)tag
-                                                   credDefId:(NSString *)credDefId
-                                                  configJSON:(NSString *)configJSON
-                                             tailsWriterType:(NSString *)tailsWriterType
-                                           tailsWriterConfig:(NSString *)tailsWriterConfig
-                                                  revocRegId:(NSString **)revocRegId
-                                             revocRegDefJson:(NSString **)revocRegDefJson
-                                           revocRegEntryJson:(NSString **)revocRegEntryJson {
+- (NSError *)issuerCreateAndStoreRevocRegForCredentialDefId:(NSString *)credDefID
+                                                  issuerDID:(NSString *)issuerDID
+                                                       type:(NSString *)type
+                                                        tag:(NSString *)tag
+                                                 configJSON:(NSString *)configJSON
+                                            tailsWriterType:(NSString *)tailsWriterType
+                                          tailsWriterConfig:(NSString *)tailsWriterConfig
+                                               walletHandle:(IndyHandle)walletHandle
+                                                 revocRegId:(NSString **)revocRegId
+                                            revocRegDefJson:(NSString **)revocRegDefJson
+                                          revocRegEntryJson:(NSString **)revocRegEntryJson {
     __block NSError *err = nil;
     __block NSString *outRevRegId = nil;
     __block NSString *outRevocRegDefJson = nil;
@@ -232,22 +206,22 @@
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
 
-    [IndyAnoncreds issuerCreateAndStoreRevocRegForIssuerDid:issuerDID
-                                                       type:type
-                                                        tag:tag
-                                                  credDefId:credDefId
-                                                 configJSON:configJSON
-                                            tailsWriterType:tailsWriterType
-                                          tailsWriterConfig:tailsWriterConfig
-                                               walletHandle:walletHandle
-                                                 completion:^(NSError *error, NSString *revocRegID, NSString *revocRegDefJSON, NSString *revocRegEntryJSON) {
-                                                     err = error;
-                                                     outRevRegId = revocRegID;
-                                                     outRevocRegDefJson = revocRegDefJSON;
-                                                     outRevocRegEntryJson = revocRegEntryJSON;
+    [IndyAnoncreds issuerCreateAndStoreRevocRegForCredentialDefId:credDefID
+                                                        issuerDID:issuerDID
+                                                             type:type
+                                                              tag:tag
+                                                       configJSON:configJSON
+                                                  tailsWriterType:tailsWriterType
+                                                tailsWriterConfig:tailsWriterConfig
+                                                     walletHandle:walletHandle
+                                                       completion:^(NSError *error, NSString *revocRegID, NSString *revocRegDefJSON, NSString *revocRegEntryJSON) {
+                                                           err = error;
+                                                           outRevRegId = revocRegID;
+                                                           outRevocRegDefJson = revocRegDefJSON;
+                                                           outRevocRegEntryJson = revocRegEntryJSON;
 
-                                                     [completionExpectation fulfill];
-                                                 }];
+                                                           [completionExpectation fulfill];
+                                                       }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
@@ -258,25 +232,25 @@
     return err;
 }
 
-- (NSError *)issuerRevokeCredentialForWalletHandle:(IndyHandle)walletHandle
-                                          RevRegId:(NSString *)revRegId
-                                 tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                                    userRevocIndex:(NSNumber *)userRevocIndex
-                                 revocRegDeltaJson:(NSString **)revocRegDeltaJson {
+- (NSError *)issuerRevokeCredentialByCredRevocId:(NSString *)credRevocId
+                                        revRegId:(NSString *)revRegId
+                         blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
+                                    walletHandle:(IndyHandle)walletHandle
+                               revocRegDeltaJson:(NSString **)revocRegDeltaJson {
     __block NSError *err = nil;
     __block NSString *outRevocRegDeltaJson = nil;
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
-    [IndyAnoncreds issuerRevokeCredentialForRevRegId:revRegId
-                                   tailsReaderHandle:tailsReaderHandle
-                                      userRevocIndex:userRevocIndex
-                                        walletHandle:walletHandle
-                                          completion:^(NSError *error, NSString *revocRegDeltaJSON) {
-                                              err = error;
-                                              outRevocRegDeltaJson = revocRegDeltaJSON;
+    [IndyAnoncreds issuerRevokeCredentialByCredRevocId:credRevocId
+                                              revRegId:revRegId
+                               blobStorageReaderHandle:blobStorageReaderHandle
+                                          walletHandle:walletHandle
+                                            completion:^(NSError *error, NSString *revocRegDeltaJSON) {
+                                                err = error;
+                                                outRevocRegDeltaJson = revocRegDeltaJSON;
 
-                                              [completionExpectation fulfill];
-                                          }];
+                                                [completionExpectation fulfill];
+                                            }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
@@ -285,25 +259,25 @@
     return err;
 }
 
-- (NSError *)issuerRecoverCredentialForWalletHandle:(IndyHandle)walletHandle
-                                           RevRegId:(NSString *)revRegId
-                                  tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                                     userRevocIndex:(NSNumber *)userRevocIndex
-                                  revocRegDeltaJson:(NSString **)revocRegDeltaJson {
+- (NSError *)issuerRecoverCredentialByCredRevocId:(NSString *)credRevocId
+                                         revRegId:(NSString *)revRegId
+                          blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
+                                     walletHandle:(IndyHandle)walletHandle
+                                revocRegDeltaJson:(NSString **)revocRegDeltaJson {
     __block NSError *err = nil;
     __block NSString *outRevocRegDeltaJson = nil;
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
-    [IndyAnoncreds issuerRecoverCredentialForRevRegId:revRegId
-                                    tailsReaderHandle:tailsReaderHandle
-                                       userRevocIndex:userRevocIndex
-                                         walletHandle:walletHandle
-                                           completion:^(NSError *error, NSString *revocRegDeltaJSON) {
-                                               err = error;
-                                               outRevocRegDeltaJson = revocRegDeltaJSON;
+    [IndyAnoncreds issuerRecoverCredentialByCredRevocId:credRevocId
+                                               revRegId:revRegId
+                                blobStorageReaderHandle:blobStorageReaderHandle
+                                           walletHandle:walletHandle
+                                             completion:^(NSError *error, NSString *revocRegDeltaJSON) {
+                                                 err = error;
+                                                 outRevocRegDeltaJson = revocRegDeltaJSON;
 
-                                               [completionExpectation fulfill];
-                                           }];
+                                                 [completionExpectation fulfill];
+                                             }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
@@ -313,19 +287,15 @@
 }
 
 
-- (NSError *)issuerCreateCredentialOfferWithWalletHandle:(IndyHandle)walletHandle
-                                         credentialDefId:(NSString *)credentialDefId
-                                               issuerDid:(NSString *)issuerDid
-                                               proverDid:(NSString *)proverDid
-                                     credentialOfferJson:(NSString **)credentialOfferJson {
+- (NSError *)issuerCreateCredentialOfferForCredDefId:(NSString *)credDefID
+                                        walletHandle:(IndyHandle)walletHandle
+                                       credOfferJson:(NSString **)credOfferJson {
     __block NSError *err = nil;
     __block NSString *outCredentialOfferJson = nil;
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
 
-    [IndyAnoncreds issuerCreateCredentialOfferForProverDID:proverDid
-                                                 issuerDID:issuerDid
-                                                 credDefId:credentialDefId
+    [IndyAnoncreds issuerCreateCredentialOfferForCredDefId:credDefID
                                               walletHandle:walletHandle
                                                 completion:^(NSError *error, NSString *credentialOfferJSON) {
                                                     err = error;
@@ -336,169 +306,146 @@
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
-    if (credentialOfferJson) {*credentialOfferJson = outCredentialOfferJson;}
+    if (credOfferJson) {*credOfferJson = outCredentialOfferJson;}
 
     return err;
 }
 
-- (NSError *)issuerCreateCredentialWithWalletHandle:(IndyHandle)walletHandle
-                                  credentialReqJson:(NSString *)credentialReqJson
-                               credentialValuesJson:(NSString *)credentialValuesJson
-                                           revRegId:(NSString *)revRegId
-                                  tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                                     userRevocIndex:(NSNumber *)userRevocIndex
-                                  outCredentialJson:(NSString **)xCredentialJson
-                               outRevocRegDeltaJSON:(NSString **)revocRegDeltaJson {
+- (NSError *)issuerCreateCredentialForCredentialRequest:(NSString *)credReqJSON
+                                          credOfferJSON:(NSString *)credOfferJSON
+                                         credValuesJSON:(NSString *)credValuesJSON
+                                               revRegId:(NSString *)revRegId
+                                blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
+                                           walletHandle:(IndyHandle)walletHandle
+                                               credJson:(NSString **)credJson
+                                            credRevocId:(NSString **)credRevocId
+                                      revocRegDeltaJSON:(NSString **)revocRegDeltaJson {
     __block NSError *err = nil;
     __block NSString *outCredentialJson;
+    __block NSString *outCredRevocId;
     __block NSString *outRevocRegDeltaJson;
     XCTestExpectation *completionExpectation = nil;
 
     completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
-    [IndyAnoncreds issuerCreateCredentialWithRequest:credentialReqJson
-                                credentialValuesJSON:credentialValuesJson
-                                            revRegId:revRegId
-                                   tailsReaderHandle:tailsReaderHandle
-                                      userRevocIndex:userRevocIndex
-                                        walletHandle:walletHandle
-                                          completion:^(NSError *error, NSString *revocRegDeltaJSON, NSString *credentialJSON) {
-                                              err = error;
-                                              outRevocRegDeltaJson = revocRegDeltaJSON;
-                                              outCredentialJson = credentialJSON;
-                                              [completionExpectation fulfill];
-                                          }];
+    [IndyAnoncreds issuerCreateCredentialForCredentialRequest:credReqJSON
+                                                credOfferJSON:credOfferJSON
+                                               credValuesJSON:credValuesJSON
+                                                     revRegId:revRegId
+                                      blobStorageReaderHandle:blobStorageReaderHandle
+                                                 walletHandle:walletHandle
+                                                   completion:^(NSError *error, NSString *credentialJSON, NSString *credentialRevocID, NSString *revocRegDeltaJSON) {
+                                                       err = error;
+                                                       outCredentialJson = credentialJSON;
+                                                       outCredRevocId = credentialRevocID;
+                                                       outRevocRegDeltaJson = revocRegDeltaJSON;
+                                                       [completionExpectation fulfill];
+                                                   }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
-    if (xCredentialJson) {*xCredentialJson = outCredentialJson;}
+    if (credJson) {*credJson = outCredentialJson;}
+    if (credRevocId) {*credRevocId = outCredRevocId;}
     if (revocRegDeltaJson) {*revocRegDeltaJson = outRevocRegDeltaJson;}
     return err;
 }
 
-- (NSError *)proverCreateMasterSecretNamed:(NSString *)masterSecretName
-                              walletHandle:(IndyHandle)walletHandle {
+- (NSError *)proverCreateMasterSecret:(NSString *)masterSecretId
+                         walletHandle:(IndyHandle)walletHandle {
     __block NSError *err = nil;
     XCTestExpectation *completionExpectation = nil;
 
     completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
-    [IndyAnoncreds proverCreateMasterSecretNamed:masterSecretName
-                                    walletHandle:walletHandle
-                                      completion:^(NSError *error) {
-                                          err = error;
-                                          [completionExpectation fulfill];
-                                      }];
+    [IndyAnoncreds proverCreateMasterSecret:masterSecretId
+                               walletHandle:walletHandle
+                                 completion:^(NSError *error) {
+                                     err = error;
+                                     [completionExpectation fulfill];
+                                 }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
     return err;
 }
 
-- (NSError *)proverStoreCredentialOffer:(IndyHandle)walletHandle
-                    credentialOfferJson:(NSString *)str {
+- (NSError *)proverCreateCredentialReqForCredentialOffer:(NSString *)credOfferJSON
+                                       credentialDefJSON:(NSString *)credentialDefJSON
+                                               proverDID:(NSString *)proverDID
+                                          masterSecretID:(NSString *)masterSecretID
+                                            walletHandle:(IndyHandle)walletHandle
+                                             credReqJson:(NSString **)credReqJson
+                                     credReqMetadataJson:(NSString **)credReqMetadataJson {
     __block NSError *err = nil;
+    __block NSString *outCredentialReqJSON;
+    __block NSString *outCredentialReqMetadataJSON;
     XCTestExpectation *completionExpectation = nil;
 
     completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
-    [IndyAnoncreds proverStoreCredentialOffer:str
-                             WithWalletHandle:walletHandle
-                                   completion:^(NSError *error) {
-                                       err = error;
-                                       [completionExpectation fulfill];
-                                   }];
+    [IndyAnoncreds proverCreateCredentialReqForCredentialOffer:credOfferJSON
+                                             credentialDefJSON:credentialDefJSON
+                                                     proverDID:proverDID
+                                                masterSecretID:masterSecretID
+                                                  walletHandle:walletHandle
+                                                    completion:^(NSError *error, NSString *credentialReqJSON, NSString *credentialReqMetadataJSON) {
+                                                        err = error;
+                                                        outCredentialReqJSON = credentialReqJSON;
+                                                        outCredentialReqMetadataJSON = credentialReqMetadataJSON;
+                                                        [completionExpectation fulfill];
+                                                    }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
-    return err;
-
-}
-
-- (NSError *)proverGetCredentialOffers:(IndyHandle)walletHandle
-                            filterJson:(NSString *)filterJson
-               outCredentialOffersJSON:(NSString **)outJson {
-    __block NSString *json;
-    __block NSError *err = nil;
-    XCTestExpectation *completionExpectation = nil;
-
-    completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
-
-    [IndyAnoncreds proverGetCredentialOffersWithFilter:filterJson
-                                          walletHandle:walletHandle
-                                            completion:^(NSError *error, NSString *credentialOffersJSON) {
-                                                err = error;
-                                                json = credentialOffersJSON;
-                                                [completionExpectation fulfill];
-                                            }];
-
-    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
-
-    if (outJson) {*outJson = json;}
-    return err;
-}
-
-- (NSError *)proverCreateAndStoreCredentialReqWithDef:(NSString *)credentialDefJSON
-                                            proverDid:(NSString *)proverDid
-                                  credentialOfferJson:(NSString *)credentialOfferJSON
-                                     masterSecretName:(NSString *)name
-                                         walletHandle:(IndyHandle)walletHandle
-                                 outCredentialReqJson:(NSString **)outJson {
-    __block NSError *err = nil;
-    __block NSString *json;
-    XCTestExpectation *completionExpectation = nil;
-
-    completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
-
-    [IndyAnoncreds proverCreateAndStoreCredentialReqWithCredentialDef:credentialDefJSON
-                                                            proverDID:proverDid
-                                                  credentialOfferJSON:credentialOfferJSON
-                                                     masterSecretName:name
-                                                         walletHandle:walletHandle
-                                                           completion:^(NSError *error, NSString *credentialReqJSON) {
-                                                               err = error;
-                                                               json = credentialReqJSON;
-                                                               [completionExpectation fulfill];
-                                                           }];
-
-    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
-
-    if (outJson) {*outJson = json;}
+    if (credReqJson) {*credReqJson = outCredentialReqJSON;}
+    if (credReqMetadataJson) {*credReqMetadataJson = outCredentialReqMetadataJSON;}
     return err;
 }
 
 
-- (NSError *)proverStoreCredentialWithWalletHandle:(IndyHandle)walletHandle
-                                      credentialId:(NSString *)credentialId
-                                   credentialsJson:(NSString *)credentialsJson
-                                     revRegDefJSON:(NSString *)revRegDefJSON {
+- (NSError *)proverStoreCredential:(NSString *)credJson
+                            credID:(NSString *)credID
+                       credReqJSON:(NSString *)credReqJSON
+               credReqMetadataJSON:(NSString *)credReqMetadataJSON
+                       credDefJSON:(NSString *)credDefJSON
+                     revRegDefJSON:(NSString *)revRegDefJSON
+                      revStateJSON:(NSString *)revStateJSON
+                      walletHandle:(IndyHandle)walletHandle
+                         outCredId:(NSString **)outCredId {
     __block NSError *err = nil;
+    __block NSString *outCredentialID;
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
-    [IndyAnoncreds proverStoreCredential:credentialsJson
-                            credentialId:credentialId
+    [IndyAnoncreds proverStoreCredential:credJson
+                                  credID:credID
+                             credReqJSON:credReqJSON
+                     credReqMetadataJSON:credReqMetadataJSON
+                             credDefJSON:credDefJSON
                            revRegDefJSON:revRegDefJSON
+                            revStateJSON:revStateJSON
                             walletHandle:walletHandle
-                              completion:^(NSError *error) {
-                                  XCTAssertEqual(err.code, Success, @"proverStoreCredential failed!");
+                              completion:^(NSError *error, NSString *credentialID) {
                                   err = error;
+                                  outCredentialID = credentialID;
+
                                   [completionExpectation fulfill];
                               }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
+    if (outCredId) {*outCredId = outCredentialID;}
     return err;
 }
 
-- (NSError *)proverGetCredentialsForProofReqWithWalletHandle:(IndyHandle)walletHandle
-                                            proofRequestJson:(NSString *)proofRequestJson
-                                          outCredentialsJson:(NSString **)outCredentialsJson {
+- (NSError *)proverGetCredentialsForProofReq:(NSString *)proofReqJSON
+                                walletHandle:(IndyHandle)walletHandle
+                             credentialsJson:(NSString **)outCredentialsJson {
     __block NSError *err = nil;
     __block NSString *outJson;
     XCTestExpectation *completionExpectation = nil;
 
     completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
-    [IndyAnoncreds proverGetCredentialsForProofReq:proofRequestJson
+    [IndyAnoncreds proverGetCredentialsForProofReq:proofReqJSON
                                       walletHandle:walletHandle
                                         completion:^(NSError *error, NSString *credentialsJSON) {
                                             err = error;
@@ -513,22 +460,22 @@
     return err;
 }
 
-- (NSError *)proverGetCredentialsForWalletHandle:(IndyHandle)walletHandle
-                                      filterJson:(NSString *)filterJson
-                               outCredentilsJson:(NSString **)credentialsJson {
+- (NSError *)proverGetCredentialsForFilter:(NSString *)filterJSON
+                              walletHandle:(IndyHandle)walletHandle
+                            credentilsJson:(NSString **)credentialsJson {
     __block NSError *err = nil;
     __block NSString *outJson;
     XCTestExpectation *completionExpectation = nil;
 
     completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
-    [IndyAnoncreds proverGetCredentialsWithFilter:filterJson
-                                     walletHandle:walletHandle
-                                       completion:^(NSError *error, NSString *credentialsJSON) {
-                                           err = error;
-                                           outJson = credentialsJSON;
-                                           [completionExpectation fulfill];
-                                       }];
+    [IndyAnoncreds proverGetCredentialsForFilter:filterJSON
+                                    walletHandle:walletHandle
+                                      completion:^(NSError *error, NSString *credentialsJSON) {
+                                          err = error;
+                                          outJson = credentialsJSON;
+                                          [completionExpectation fulfill];
+                                      }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
 
@@ -537,167 +484,120 @@
     return err;
 }
 
-- (NSError *)proverCreateProofWithWalletHandle:(IndyHandle)walletHandle
-                                  proofReqJson:(NSString *)proofReqJson
-                      requestedCredentialsJson:(NSString *)requestedCredentialsJson
-                                   schemasJson:(NSString *)schemasJson
-                              masterSecretName:(NSString *)masterSecreteName
-                            credentialDefsJson:(NSString *)credentialDefsJson
-                                revocInfosJSON:(NSString *)revocInfosJSON
-                                  outProofJson:(NSString **)outProofJson {
+- (NSError *)proverCreateProofForRequest:(NSString *)proofRequestJSON
+                requestedCredentialsJSON:(NSString *)requestedCredentialsJSON
+                          masterSecretID:(NSString *)masterSecretID
+                             schemasJSON:(NSString *)schemasJSON
+                      credentialDefsJSON:(NSString *)credentialDefsJSON
+                         revocStatesJSON:(NSString *)revocStatesJSON
+                            walletHandle:(IndyHandle)walletHandle
+                               proofJson:(NSString **)proofJson {
     __block NSError *err = nil;
-    __block NSString *outJson;
+    __block NSString *outProofJson;
     XCTestExpectation *completionExpectation = nil;
 
     completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
-    [IndyAnoncreds proverCreateProofForRequest:proofReqJson
-                      requestedCredentialsJSON:requestedCredentialsJson
-                                   schemasJSON:schemasJson
-                              masterSecretName:masterSecreteName
-                            credentialDefsJSON:credentialDefsJson
-                                revocInfosJSON:revocInfosJSON
+    [IndyAnoncreds proverCreateProofForRequest:proofRequestJSON
+                      requestedCredentialsJSON:requestedCredentialsJSON
+                                masterSecretID:masterSecretID
+                                   schemasJSON:schemasJSON
+                            credentialDefsJSON:credentialDefsJSON
+                               revocStatesJSON:revocStatesJSON
                                   walletHandle:walletHandle
                                     completion:^(NSError *error, NSString *proofJSON) {
                                         err = error;
-                                        outJson = proofJSON;
+                                        outProofJson = proofJSON;
 
                                         [completionExpectation fulfill];
                                     }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
-    if (outProofJson) {*outProofJson = outJson;}
+    if (proofJson) {*proofJson = outProofJson;}
     return err;
 }
 
-- (NSError *)createRevocationInfoForTimestamp:(NSNumber *)timestamp
-                                revRegDefJSON:(NSString *)revRegDefJSON
-                              revRegDeltaJSON:(NSString *)revRegDeltaJSON
-                            tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                                       revIdx:(NSNumber *)revIdx
-                                  revInfoJson:(NSString **)revInfoJson {
+- (NSError *)createRevocationStateForCredRevID:(NSString *)credRevID
+                                     timestamp:(NSNumber *)timestamp
+                                 revRegDefJSON:(NSString *)revRegDefJSON
+                               revRegDeltaJSON:(NSString *)revRegDeltaJSON
+                       blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
+                                  revStateJson:(NSString **)revStateJson {
     __block NSError *err = nil;
-    __block NSString *outRevInfoJson;
+    __block NSString *outRevStateJson;
     XCTestExpectation *completionExpectation = nil;
 
     completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
-    [IndyAnoncreds createRevocationInfoForTimestamp:timestamp
-                                      revRegDefJSON:revRegDefJSON
-                                    revRegDeltaJSON:revRegDeltaJSON
-                                  tailsReaderHandle:tailsReaderHandle
-                                             revIdx:revIdx
-                                         completion:^(NSError *error, NSString *revInfoJSON) {
-                                             err = error;
-                                             outRevInfoJson = revInfoJSON;
+    [IndyAnoncreds createRevocationStateForCredRevID:credRevID
+                                           timestamp:timestamp
+                                       revRegDefJSON:revRegDefJSON
+                                     revRegDeltaJSON:revRegDeltaJSON
+                             blobStorageReaderHandle:blobStorageReaderHandle
+                                          completion:^(NSError *error, NSString *revInfoJSON) {
+                                              err = error;
+                                              outRevStateJson = revInfoJSON;
 
-                                             [completionExpectation fulfill];
-                                         }];
+                                              [completionExpectation fulfill];
+                                          }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
-    if (revInfoJson) {*revInfoJson = outRevInfoJson;}
+    if (revStateJson) {*revStateJson = outRevStateJson;}
     return err;
 }
 
-- (NSError *)updateRevocationInfoForTimestamp:(NSNumber *)timestamp
-                                  revInfoJSON:(NSString *)revInfoJSON
-                                revRegDefJSON:(NSString *)revRegDefJSON
-                              revRegDeltaJSON:(NSString *)revRegDeltaJSON
-                            tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                                       revIdx:(NSNumber *)revIdx
-                           updatedRevInfoJson:(NSString **)updatedRevInfoJson {
+- (NSError *)updateRevocationState:(NSString *)revStateJSON
+                         credRevID:(NSString *)credRevID
+                         timestamp:(NSNumber *)timestamp
+                     revRegDefJSON:(NSString *)revRegDefJSON
+                   revRegDeltaJSON:(NSString *)revRegDeltaJSON
+           blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
+               updatedRevStateJson:(NSString **)updatedRevStateJson {
     __block NSError *err = nil;
-    __block NSString *outUpdatedRevInfoJson;
+    __block NSString *outUpdatedRevSateJson;
     XCTestExpectation *completionExpectation = nil;
 
     completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
-    [IndyAnoncreds updateRevocationInfoForTimestamp:timestamp
-                                        revInfoJSON:revInfoJSON
-                                      revRegDefJSON:revRegDefJSON
-                                    revRegDeltaJSON:revRegDeltaJSON
-                                  tailsReaderHandle:tailsReaderHandle
-                                             revIdx:revIdx
-                                         completion:^(NSError *error, NSString *updatedRevInfoJSON) {
-                                             err = error;
-                                             outUpdatedRevInfoJson = updatedRevInfoJSON;
+    [IndyAnoncreds updateRevocationState:revStateJSON
+                               credRevID:credRevID
+                               timestamp:timestamp
+                           revRegDefJSON:revRegDefJSON
+                         revRegDeltaJSON:revRegDeltaJSON
+                 blobStorageReaderHandle:blobStorageReaderHandle
+                              completion:^(NSError *error, NSString *updatedRevInfoJSON) {
+                                  err = error;
+                                  outUpdatedRevSateJson = updatedRevInfoJSON;
 
-                                             [completionExpectation fulfill];
-                                         }];
-
-    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
-
-    if (updatedRevInfoJson) {*updatedRevInfoJson = outUpdatedRevInfoJson;}
-    return err;
-}
-
-- (NSError *)storeRevocationInfoForWalletHandle:(IndyHandle)walletHandle
-                                             id:(NSString *)id
-                                    revInfoJSON:(NSString *)revInfoJSON {
-    __block NSError *err = nil;
-    XCTestExpectation *completionExpectation = nil;
-
-    completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
-
-    [IndyAnoncreds storeRevocationInfoForId:id
-                                revInfoJSON:revInfoJSON
-                               walletHandle:walletHandle
-                                 completion:^(NSError *error) {
-                                     err = error;
-                                     [completionExpectation fulfill];
-                                 }];
+                                  [completionExpectation fulfill];
+                              }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
+    if (updatedRevStateJson) {*updatedRevStateJson = outUpdatedRevSateJson;}
     return err;
 }
 
-- (NSError *)getRevocationInfoForWalletHandle:(IndyHandle)walletHandle
-                                           id:(NSString *)id
-                                    timestamp:(NSNumber *)timestamp
-                                  revInfoJson:(NSString **)revInfoJson {
-    __block NSError *err = nil;
-    __block NSString *outRevInfoJson;
-    XCTestExpectation *completionExpectation = nil;
-
-    completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
-
-    [IndyAnoncreds getRevocationInfoForId:id
-                                timestamp:timestamp
-                             walletHandle:walletHandle
-                               completion:^(NSError *error, NSString *revInfoJSON) {
-                                   err = error;
-                                   outRevInfoJson = revInfoJSON;
-
-                                   [completionExpectation fulfill];
-                               }];
-
-    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
-
-    if (revInfoJson) {*revInfoJson = outRevInfoJson;}
-    return err;
-}
-
-- (NSError *)verifierVerifyProof:(NSString *)proofRequestJson
-                       proofJson:(NSString *)proofJson
-                     schemasJson:(NSString *)schemasJson
-              credentialDefsJson:(NSString *)credentialDefsJson
-                revocRegDefsJSON:(NSString *)revocRegDefsJSON
-                   revocRegsJson:(NSString *)revocRegsJson
-                        outValid:(BOOL *)isValid {
+- (NSError *)verifierVerifyProofRequest:(NSString *)proofRequestJson
+                              proofJSON:(NSString *)proofJSON
+                            schemasJSON:(NSString *)schemasJSON
+                     credentialDefsJSON:(NSString *)credentialDefsJSON
+                       revocRegDefsJSON:(NSString *)revocRegDefsJSON
+                          revocRegsJSON:(NSString *)revocRegsJSON
+                                isValid:(BOOL *)isValid {
     __block NSError *err = nil;
     XCTestExpectation *completionExpectation = nil;
 
     completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
     [IndyAnoncreds verifierVerifyProofRequest:proofRequestJson
-                                    proofJSON:proofJson
-                                  schemasJSON:schemasJson
-                           credentialDefsJSON:credentialDefsJson
+                                    proofJSON:proofJSON
+                                  schemasJSON:schemasJSON
+                           credentialDefsJSON:credentialDefsJSON
                              revocRegDefsJSON:revocRegDefsJSON
-                                revocRegsJSON:revocRegsJson
+                                revocRegsJSON:revocRegsJSON
                                    completion:^(NSError *error, BOOL valid) {
                                        err = error;
                                        if (isValid) {
@@ -753,12 +653,12 @@
     //2. Create GVT Schema
     NSString *gvtSchemaId;
     NSString *gvtSchemaJson;
-    ret = [self issuerCreateSchemaForIssuerDID:[TestUtils issuerDid]
-                                          name:[TestUtils gvtSchemaName]
-                                       version:[TestUtils schemaVersion]
-                                         attrs:[TestUtils gvtSchemaAttrs]
-                                      schemaId:&gvtSchemaId
-                                    schemaJson:&gvtSchemaJson];
+    ret = [self issuerCreateSchemaWithName:[TestUtils gvtSchemaName]
+                                   version:[TestUtils schemaVersion]
+                                     attrs:[TestUtils gvtSchemaAttrs]
+                                 issuerDID:[TestUtils issuerDid]
+                                  schemaId:&gvtSchemaId
+                                schemaJson:&gvtSchemaJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateSchemaForIssuerDID failed");
 
     XCTAssertTrue([gvtSchemaId isValid], @"invalid gvtSchemaId: %@", gvtSchemaId);
@@ -767,12 +667,12 @@
     //3. Create XYZ Schema
     NSString *xyzSchemaId;
     NSString *xyzSchemaJson;
-    ret = [self issuerCreateSchemaForIssuerDID:[TestUtils issuerDid]
-                                          name:[TestUtils xyzSchemaName]
-                                       version:[TestUtils schemaVersion]
-                                         attrs:[TestUtils xyzSchemaAttrs]
-                                      schemaId:&xyzSchemaId
-                                    schemaJson:&xyzSchemaJson];
+    ret = [self issuerCreateSchemaWithName:[TestUtils xyzSchemaName]
+                                   version:[TestUtils schemaVersion]
+                                     attrs:[TestUtils xyzSchemaAttrs]
+                                 issuerDID:[TestUtils issuerDid]
+                                  schemaId:&xyzSchemaId
+                                schemaJson:&xyzSchemaJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateSchemaForIssuerDID failed");
 
     XCTAssertTrue([xyzSchemaId isValid], @"invalid xyzSchemaId: %@", xyzSchemaId);
@@ -781,14 +681,14 @@
     //4. Issuer1 create GVT CredentialDef
     NSString *issuer1GvtCredentialDefId;
     NSString *issuer1GvtCredentialDefJson;
-    ret = [self issuerCreateCredentialDefinitionWithWalletHandle:tempWalletHandle
-                                                       issuerDid:[TestUtils issuerDid]
-                                                      schemaJson:gvtSchemaJson
-                                                             tag:[TestUtils tag]
-                                                            type:nil
-                                                      configJson:[self defaultCredentialDefConfig]
-                                                 credentialDefId:&issuer1GvtCredentialDefId
-                                               credentialDefJson:&issuer1GvtCredentialDefJson];
+    ret = [self issuerCreateAndStoreCredentialDefForSchema:gvtSchemaJson
+                                                 issuerDID:[TestUtils issuerDid]
+                                                       tag:[TestUtils tag]
+                                                      type:nil
+                                                configJSON:[self defaultCredentialDefConfig]
+                                              walletHandle:tempWalletHandle
+                                                 credDefId:&issuer1GvtCredentialDefId
+                                               credDefJson:&issuer1GvtCredentialDefJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialDefinifionWithWalletHandle failed");
 
     XCTAssertTrue([issuer1GvtCredentialDefId isValid], @"invalid issuer1GvtCredentialDefId: %@", issuer1GvtCredentialDefId);
@@ -797,14 +697,14 @@
     //5. Issuer1 create XYZ CredentialDef
     NSString *issuer1XyzCredentialDefId;
     NSString *issuer1XyzCredentialDefJson;
-    ret = [self issuerCreateCredentialDefinitionWithWalletHandle:tempWalletHandle
-                                                       issuerDid:[TestUtils issuerDid]
-                                                      schemaJson:xyzSchemaJson
-                                                             tag:[TestUtils tag]
-                                                            type:nil
-                                                      configJson:[self defaultCredentialDefConfig]
-                                                 credentialDefId:&issuer1XyzCredentialDefId
-                                               credentialDefJson:&issuer1XyzCredentialDefJson];
+    ret = [self issuerCreateAndStoreCredentialDefForSchema:xyzSchemaJson
+                                                 issuerDID:[TestUtils issuerDid]
+                                                       tag:[TestUtils tag]
+                                                      type:nil
+                                                configJSON:[self defaultCredentialDefConfig]
+                                              walletHandle:tempWalletHandle
+                                                 credDefId:&issuer1XyzCredentialDefId
+                                               credDefJson:&issuer1XyzCredentialDefJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialDefinifionWithWalletHandle failed");
 
     XCTAssertTrue([issuer1XyzCredentialDefId isValid], @"invalid issuer1XyzCredentialDefId: %@", issuer1XyzCredentialDefId);
@@ -813,14 +713,14 @@
     //6. Issuer2 create XYZ CredentialDef
     NSString *issuer2GvtCredentialDefId;
     NSString *issuer2GvtCredentialDefJson;
-    ret = [self issuerCreateCredentialDefinitionWithWalletHandle:tempWalletHandle
-                                                       issuerDid:[TestUtils issuer2Did]
-                                                      schemaJson:gvtSchemaJson
-                                                             tag:[TestUtils tag]
-                                                            type:nil
-                                                      configJson:[self defaultCredentialDefConfig]
-                                                 credentialDefId:&issuer2GvtCredentialDefId
-                                               credentialDefJson:&issuer2GvtCredentialDefJson];
+    ret = [self issuerCreateAndStoreCredentialDefForSchema:gvtSchemaJson
+                                                 issuerDID:[TestUtils issuer2Did]
+                                                       tag:[TestUtils tag]
+                                                      type:nil
+                                                configJSON:[self defaultCredentialDefConfig]
+                                              walletHandle:tempWalletHandle
+                                                 credDefId:&issuer2GvtCredentialDefId
+                                               credDefJson:&issuer2GvtCredentialDefJson];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialDefinifionWithWalletHandle failed");
 
     XCTAssertTrue([issuer2GvtCredentialDefId isValid], @"invalid issuer2GvtCredentialDefId: %@", issuer2GvtCredentialDefId);
@@ -829,153 +729,155 @@
 
     // 7. Issuer1 create GVT Credential Offer
     NSString *issuer1GvtCredentialOfferJSON = nil;
-
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferWithWalletHandle:tempWalletHandle
-                                                                       credentialDefId:issuer1GvtCredentialDefId
-                                                                             issuerDid:[TestUtils issuerDid]
-                                                                             proverDid:[TestUtils proverDid]
-                                                                   credentialOfferJson:&issuer1GvtCredentialOfferJSON];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferForCredDefId:issuer1GvtCredentialDefId
+                                                                      walletHandle:tempWalletHandle
+                                                                     credOfferJson:&issuer1GvtCredentialOfferJSON];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreCredentialDef() failed!");
 
-    //8. Prover store Issuer1 GVT Credential Offer
-    ret = [self proverStoreCredentialOffer:tempWalletHandle credentialOfferJson:issuer1GvtCredentialOfferJSON];
-    XCTAssertEqual(ret.code, Success, @"proverStoreCredentialOffer failed for issuer1GvtCredentialOfferJSON");
-
-    //9. Issuer1 create XYZ Credential Offer
+      //8. Issuer1 create XYZ Credential Offer
     NSString *issuer1XyzCredentialOfferJSON = nil;
-
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferWithWalletHandle:tempWalletHandle
-                                                                       credentialDefId:issuer1XyzCredentialDefId
-                                                                             issuerDid:[TestUtils issuerDid]
-                                                                             proverDid:[TestUtils proverDid]
-                                                                   credentialOfferJson:&issuer1XyzCredentialOfferJSON];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferForCredDefId:issuer1XyzCredentialDefId
+                                                                      walletHandle:tempWalletHandle
+                                                                     credOfferJson:&issuer1XyzCredentialOfferJSON];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreCredentialDef() failed!");
 
-    //10. Prover store Issuer1 XYZ Credential Offer
-    ret = [self proverStoreCredentialOffer:tempWalletHandle credentialOfferJson:issuer1XyzCredentialOfferJSON];
-    XCTAssertEqual(ret.code, Success, @"proverStoreCredentialOffer failed for issuer1XyzCredentialOfferJSON");
-
-    // 11. Issuer2 create GVT Credential Offer
+    // 9. Issuer2 create GVT Credential Offer
     NSString *issuer2GvtCredentialOfferJSON = nil;
-
-    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferWithWalletHandle:tempWalletHandle
-                                                                       credentialDefId:issuer2GvtCredentialDefId
-                                                                             issuerDid:[TestUtils issuer2Did]
-                                                                             proverDid:[TestUtils proverDid]
-                                                                   credentialOfferJson:&issuer2GvtCredentialOfferJSON];
+    ret = [[AnoncredsUtils sharedInstance] issuerCreateCredentialOfferForCredDefId:issuer2GvtCredentialDefId
+                                                                      walletHandle:tempWalletHandle
+                                                                     credOfferJson:&issuer2GvtCredentialOfferJSON];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::issuerCreateAndStoreCredentialDef() failed!");
 
-    //12. Prover store Issuer2 GVT Credential Offer
-    ret = [self proverStoreCredentialOffer:tempWalletHandle credentialOfferJson:issuer2GvtCredentialOfferJSON];
-    XCTAssertEqual(ret.code, Success, @"proverStoreCredentialOffer failed for issuer2GvtCredentialOfferJSON");
-
-
-    //13. Create MasterSecret
-    ret = [self proverCreateMasterSecretNamed:[TestUtils commonMasterSecretName]
-                                 walletHandle:tempWalletHandle];
+    //10. Create MasterSecret
+    ret = [self proverCreateMasterSecret:[TestUtils commonMasterSecretName]
+                            walletHandle:tempWalletHandle];
     XCTAssertEqual(ret.code, Success, @"proverCreateMasterSecret failed");
 
-    //14. Prover create and Store Credential Request for Issuer1 GVT Credential
+    //11. Prover create Credential Request for Issuer1 GVT Credential
     NSString *issuer1GvtCredentialRequest;
-    ret = [self proverCreateAndStoreCredentialReqWithDef:issuer1GvtCredentialDefJson
-                                               proverDid:[TestUtils proverDid]
-                                     credentialOfferJson:issuer1GvtCredentialOfferJSON
-                                        masterSecretName:[TestUtils commonMasterSecretName]
-                                            walletHandle:tempWalletHandle
-                                    outCredentialReqJson:&issuer1GvtCredentialRequest];
-
+    NSString *issuer1GvtCredentialRequestMetadata;
+    ret = [self proverCreateCredentialReqForCredentialOffer:issuer1GvtCredentialOfferJSON
+                                          credentialDefJSON:issuer1GvtCredentialDefJson
+                                                  proverDID:[TestUtils proverDid]
+                                             masterSecretID:[TestUtils commonMasterSecretName]
+                                               walletHandle:tempWalletHandle
+                                                credReqJson:&issuer1GvtCredentialRequest
+                                        credReqMetadataJson:&issuer1GvtCredentialRequestMetadata];
     XCTAssertEqual(ret.code, Success, @"proverCreateAndStoreCredentialReq failed for issuer1GvtCredentialRequest");
     XCTAssertTrue([issuer1GvtCredentialRequest isValid], @"invalid credential request: %@", issuer1GvtCredentialRequest);
+    XCTAssertTrue([issuer1GvtCredentialRequestMetadata isValid], @"invalid credential request metadata: %@", issuer1GvtCredentialRequestMetadata);
 
     if (ret.code != Success) {return ret;}
 
-    //15. Issuer1 create  GVT Credential
+    //12. Issuer1 create  GVT Credential
     NSString *issuer1GvtCredential;
-    ret = [self issuerCreateCredentialWithWalletHandle:tempWalletHandle
-                                     credentialReqJson:issuer1GvtCredentialRequest
-                                  credentialValuesJson:[self getGvtCredentialValuesJson]
-                                              revRegId:nil
-                                     tailsReaderHandle:nil
-                                        userRevocIndex:nil
-                                     outCredentialJson:&issuer1GvtCredential
-                                  outRevocRegDeltaJSON:nil];
+    ret = [self issuerCreateCredentialForCredentialRequest:issuer1GvtCredentialRequest
+                                             credOfferJSON:issuer1GvtCredentialOfferJSON
+                                            credValuesJSON:[self getGvtCredentialValuesJson]
+                                                  revRegId:nil
+                                   blobStorageReaderHandle:nil
+                                              walletHandle:tempWalletHandle
+                                                  credJson:&issuer1GvtCredential
+                                               credRevocId:nil
+                                         revocRegDeltaJSON:nil];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialWithWalletHandle failed");
     XCTAssertTrue([issuer1GvtCredential isValid], @"invalid issuer1GvtCredential: %@", issuer1GvtCredential);
 
-    //16. Prover store GVT credential from issuer1
-    ret = [self proverStoreCredentialWithWalletHandle:tempWalletHandle
-                                         credentialId:[self credentialId1]
-                                      credentialsJson:issuer1GvtCredential
-                                        revRegDefJSON:nil];
+    //13. Prover store GVT credential from issuer1
+    ret = [self proverStoreCredential:issuer1GvtCredential
+                               credID:[self credentialId1]
+                          credReqJSON:issuer1GvtCredentialRequest
+                  credReqMetadataJSON:issuer1GvtCredentialRequestMetadata
+                          credDefJSON:issuer1GvtCredentialDefJson
+                        revRegDefJSON:nil
+                         revStateJSON:nil
+                         walletHandle:tempWalletHandle
+                            outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"proverStoreCredentialWithWalletHandle failed");
 
-    //17. Prover create and Store Credential Request for Issuer1 XYZ Credential
+    //14. Prover create Credential Request for Issuer1 XYZ Credential
     NSString *issuer1XyzCredentialRequest;
-    ret = [self proverCreateAndStoreCredentialReqWithDef:issuer1XyzCredentialDefJson
-                                               proverDid:[TestUtils proverDid]
-                                     credentialOfferJson:issuer1XyzCredentialOfferJSON
-                                        masterSecretName:[TestUtils commonMasterSecretName]
-                                            walletHandle:tempWalletHandle
-                                    outCredentialReqJson:&issuer1XyzCredentialRequest];
-
-    XCTAssertEqual(ret.code, Success, @"proverCreateAndStoreCredentialReq failed for issuer1XyzCredentialRequest");
+    NSString *issuer1XyzCredentialRequestMetadata;
+    ret = [self proverCreateCredentialReqForCredentialOffer:issuer1XyzCredentialOfferJSON
+                                          credentialDefJSON:issuer1XyzCredentialDefJson
+                                                  proverDID:[TestUtils proverDid]
+                                             masterSecretID:[TestUtils commonMasterSecretName]
+                                               walletHandle:tempWalletHandle
+                                                credReqJson:&issuer1XyzCredentialRequest
+                                        credReqMetadataJson:&issuer1XyzCredentialRequestMetadata];
+    XCTAssertEqual(ret.code, Success, @"proverCreateAndStoreCredentialReq failed for issuer1GvtCredentialRequest");
     XCTAssertTrue([issuer1XyzCredentialRequest isValid], @"invalid credential request: %@", issuer1XyzCredentialRequest);
+    XCTAssertTrue([issuer1XyzCredentialRequestMetadata isValid], @"invalid credential request metadata: %@", issuer1XyzCredentialRequestMetadata);
 
     if (ret.code != Success) {return ret;}
 
-    //18. Issuer1 create XYZ Credential
+    //15. Issuer1 create  XYZ Credential
     NSString *issuer1XyzCredential;
-    ret = [self issuerCreateCredentialWithWalletHandle:tempWalletHandle
-                                     credentialReqJson:issuer1XyzCredentialRequest
-                                  credentialValuesJson:[self getXyzCredentialValuesJson]
-                                              revRegId:nil
-                                     tailsReaderHandle:nil
-                                        userRevocIndex:nil
-                                     outCredentialJson:&issuer1XyzCredential
-                                  outRevocRegDeltaJSON:nil];
+    ret = [self issuerCreateCredentialForCredentialRequest:issuer1XyzCredentialRequest
+                                             credOfferJSON:issuer1XyzCredentialOfferJSON
+                                            credValuesJSON:[self getXyzCredentialValuesJson]
+                                                  revRegId:nil
+                                   blobStorageReaderHandle:nil
+                                              walletHandle:tempWalletHandle
+                                                  credJson:&issuer1XyzCredential
+                                               credRevocId:nil
+                                         revocRegDeltaJSON:nil];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialWithWalletHandle failed");
-    XCTAssertTrue([issuer1XyzCredential isValid], @"invalid issuer1XyzCredential: %@", issuer1XyzCredential);
+    XCTAssertTrue([issuer1XyzCredential isValid], @"invalid issuer1GvtCredential: %@", issuer1XyzCredential);
 
-    //19. Prover store XYZ credential from issuer1
-    ret = [self proverStoreCredentialWithWalletHandle:tempWalletHandle
-                                         credentialId:[self credentialId2]
-                                      credentialsJson:issuer1XyzCredential
-                                        revRegDefJSON:nil];
+    //16. Prover store XYZ credential from Issuer1
+    ret = [self proverStoreCredential:issuer1XyzCredential
+                               credID:[self credentialId2]
+                          credReqJSON:issuer1XyzCredentialRequest
+                  credReqMetadataJSON:issuer1XyzCredentialRequestMetadata
+                          credDefJSON:issuer1XyzCredentialDefJson
+                        revRegDefJSON:nil
+                         revStateJSON:nil
+                         walletHandle:tempWalletHandle
+                            outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"proverStoreCredentialWithWalletHandle failed");
 
 
-    //20. Prover create and Store Credential Request for Issuer2 GVT Credential
+    //17. Prover create Credential Request for Issuer2 GVT Credential
     NSString *issuer2GvtCredentialRequest;
-    ret = [self proverCreateAndStoreCredentialReqWithDef:issuer2GvtCredentialDefJson
-                                               proverDid:[TestUtils proverDid]
-                                     credentialOfferJson:issuer2GvtCredentialOfferJSON
-                                        masterSecretName:[TestUtils commonMasterSecretName]
-                                            walletHandle:tempWalletHandle
-                                    outCredentialReqJson:&issuer2GvtCredentialRequest];
-
+    NSString *issuer2GvtCredentialRequestMetadata;
+    ret = [self proverCreateCredentialReqForCredentialOffer:issuer2GvtCredentialOfferJSON
+                                          credentialDefJSON:issuer2GvtCredentialDefJson
+                                                  proverDID:[TestUtils proverDid]
+                                             masterSecretID:[TestUtils commonMasterSecretName]
+                                               walletHandle:tempWalletHandle
+                                                credReqJson:&issuer2GvtCredentialRequest
+                                        credReqMetadataJson:&issuer2GvtCredentialRequestMetadata];
     XCTAssertEqual(ret.code, Success, @"proverCreateAndStoreCredentialReq failed for issuer2GvtCredentialRequest");
     XCTAssertTrue([issuer2GvtCredentialRequest isValid], @"invalid credential request: %@", issuer2GvtCredentialRequest);
+    XCTAssertTrue([issuer2GvtCredentialRequestMetadata isValid], @"invalid credential request metadata: %@", issuer2GvtCredentialRequestMetadata);
 
     if (ret.code != Success) {return ret;}
 
-    //21. Issuer2 create GVT Credential
+    //18. Issuer2 create  GVT Credential
     NSString *issuer2GvtCredential;
-    ret = [self issuerCreateCredentialWithWalletHandle:tempWalletHandle
-                                     credentialReqJson:issuer2GvtCredentialRequest
-                                  credentialValuesJson:[self getGvt2CredentialValuesJson]
-                                              revRegId:nil
-                                     tailsReaderHandle:nil
-                                        userRevocIndex:nil
-                                     outCredentialJson:&issuer2GvtCredential
-                                  outRevocRegDeltaJSON:nil];
+    ret = [self issuerCreateCredentialForCredentialRequest:issuer2GvtCredentialRequest
+                                             credOfferJSON:issuer2GvtCredentialOfferJSON
+                                            credValuesJSON:[self getGvt2CredentialValuesJson]
+                                                  revRegId:nil
+                                   blobStorageReaderHandle:nil
+                                              walletHandle:tempWalletHandle
+                                                  credJson:&issuer2GvtCredential
+                                               credRevocId:nil
+                                         revocRegDeltaJSON:nil];
     XCTAssertEqual(ret.code, Success, @"issuerCreateCredentialWithWalletHandle failed");
     XCTAssertTrue([issuer2GvtCredential isValid], @"invalid issuer2GvtCredential: %@", issuer2GvtCredential);
 
-    //22. Prover store GVT credential from Issuer2
-    ret = [self proverStoreCredentialWithWalletHandle:tempWalletHandle
-                                         credentialId:@"CredentialId3"
-                                      credentialsJson:issuer2GvtCredential
-                                        revRegDefJSON:nil];
+    //18. Prover store GVT credential from Issuer2
+    ret = [self proverStoreCredential:issuer2GvtCredential
+                               credID:@"credentialID3"
+                          credReqJSON:issuer2GvtCredentialRequest
+                  credReqMetadataJSON:issuer2GvtCredentialRequestMetadata
+                          credDefJSON:issuer2GvtCredentialDefJson
+                        revRegDefJSON:nil
+                         revStateJSON:nil
+                         walletHandle:tempWalletHandle
+                            outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"proverStoreCredentialWithWalletHandle failed");
 
     if (walletHandle) {*walletHandle = tempWalletHandle;}
