@@ -1008,18 +1008,21 @@ mod tests {
     #[test]
     fn test_two_connections() {
         settings::set_to_defaults();
+        //BE INSTITUTION AND GENERATE INVITE FOR CONSUMER
         ::utils::devsetup::setup_dev_env("test_two_connections");
         let faber = build_connection("faber").unwrap();
         connect(faber, Some("{}".to_string())).unwrap();
         let details = get_invite_details(faber,true).unwrap();
         println!("details: {}", details);
+        //BE CONSUMER AND ACCEPT INVITE FROM INSTITUTION
         ::utils::devsetup::be_consumer();
         let alice = build_connection_with_invite("alice", &details).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(alice));
         assert_eq!(VcxStateType::VcxStateOfferSent as u32, get_state(faber));
         connect(alice, Some("{}".to_string())).unwrap();
+        //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
         ::utils::devsetup::be_institution();
-        thread::sleep(Duration::from_millis(5000));
+        thread::sleep(Duration::from_millis(2000));
         update_state(faber).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(faber));
         ::utils::devsetup::cleanup_dev_env("test_two_connections");

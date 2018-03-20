@@ -554,13 +554,13 @@ mod tests {
         settings::set_defaults();
         pool::open_sandbox_pool();
         let data = r#""data":{"name":"New Claim - Claim5","version":"1.0","attr_names":["New Claim","claim5","a5","b5","c5","d5"]}"#.to_string();
-        init_wallet("a_test_wallet").unwrap();
+        init_wallet("test_get_schema_attrs_from_ledger").unwrap();
         let wallet_handle = get_wallet_handle();
         let schema_attrs = get_schema_attrs("id".to_string(), 74).unwrap();
         println!("Schema_attrs: \n\n{:?}", schema_attrs);
 //        assert!(schema_attrs.contains(&data));
 //        assert!(schema_attrs.contains("\"seqNo\":116"));
-        delete_wallet("a_test_wallet").unwrap();
+        delete_wallet("test_get_schema_attrs_from_ledger").unwrap();
     }
 
     #[ignore]
@@ -569,12 +569,12 @@ mod tests {
         settings::set_defaults();
         pool::open_sandbox_pool();
         let data = r#"{"name":"name","version":"1.0","attr_names":["name","male"]}"#.to_string();
-        init_wallet("a_test_wallet").unwrap();
+        init_wallet("test_create_schema").unwrap();
         let wallet_handle = get_wallet_handle();
         let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_ISSUER_PW_SEED)).unwrap();
         SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_AGENT_PW_SEED)).unwrap();
         let handle = create_new_schema("id".to_string(), "name".to_string(), my_did, data).unwrap();
-        delete_wallet("a_test_wallet").unwrap();
+        delete_wallet("test_create_schema").unwrap();
         assert!(handle > 0);
         assert!(get_sequence_num(handle).unwrap() > 0);
 }

@@ -375,6 +375,7 @@ mod tests {
                                      CString::new(data).unwrap().into_raw(),
                                      Some(create_schema_and_claimdef_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_secs(1));
+        delete_wallet("a_test_wallet").unwrap();
     }
 
     #[ignore]
@@ -394,6 +395,7 @@ mod tests {
                                      CString::new(data).unwrap().into_raw(),
                                      Some(create_schema_and_claimdef_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_secs(60));
+        delete_wallet("a_test_wallet").unwrap();
     }
 
     #[ignore]

@@ -481,6 +481,7 @@ pub mod tests {
         // Needs to be invalid schema_seq_no
         assert_eq!(Err(error::INVALID_SCHEMA_SEQ_NO.code_num),
                    get_schema_data(1));
+        delete_wallet("a_test_wallet").unwrap();
     }
     #[test]
     fn test_create_claimdef_success() {

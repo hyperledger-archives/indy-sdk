@@ -12,12 +12,12 @@ use connection::{build_connection, build_connection_with_invite, connect, to_str
  * connection object
  */
 
-/// -> Create a Connection object that provides a pairwise connection for an enterprise's user
+/// -> Create a Connection object that provides a pairwise connection for an institution's user
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// source_id: Enterprise's personal identification for the user
+/// source_id: institution's personal identification for the user
 ///
 /// cb: Callback that provides connection handle and error status of request
 ///
@@ -49,6 +49,19 @@ pub extern fn vcx_connection_create(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// -> Create a Connection object from the given invite_details that provides a pairwise connection.
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// source_id: institution's personal identification for the user
+///
+/// invite_details: Provided via the other end of the connection calling "vcx_connection_connect" or "vcx_connection_invite_details"
+///
+/// cb: Callback that provides connection handle and error status of request
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn vcx_connection_create_with_invite(command_handle: u32,
                                                 source_id: *const c_char,
@@ -69,7 +82,7 @@ pub extern fn vcx_connection_create_with_invite(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// Establishes connection between Enterprise and its user
+/// Establishes connection between institution and its user
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.

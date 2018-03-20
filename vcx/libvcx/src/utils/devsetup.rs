@@ -179,6 +179,8 @@ pub fn cleanup_dev_env(wallet_name: &str) {
     settings::set_defaults();
     wallet::close_wallet().unwrap();
     wallet::delete_wallet(wallet_name).unwrap();
+    pool::close().unwrap();
+    pool::delete(::utils::constants::POOL).unwrap();
 }
 
 fn set_institution_dev_config(wallet_name: &str) {

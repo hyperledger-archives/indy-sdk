@@ -57,6 +57,13 @@ pub static ALREADY_INITIALIZED: Error = Error{code_num: 1044, message: "Library 
 pub static INVALID_INVITE_DETAILS: Error = Error{code_num: 1045, message: "Invalid invite details structure"};
 pub static INVALID_SELF_ATTESTED_VAL: Error = Error{code_num: 1046, message: "Self Attested Value invalid"};
 pub static INVALID_PREDICATE: Error = Error{code_num: 1047, message: "Predicate in proof is invalid"};
+pub static INVALID_OBJ_HANDLE: Error = Error{code_num: 1048, message: "Obj was not found with handle"};
+pub static INVALID_DISCLOSED_PROOF_HANDLE: Error = Error{code_num: 1049, message: "Obj was not found with handle"};
+pub static SERIALIZATION_ERROR: Error = Error{code_num: 1050, message: "Unable to serialize"};
+pub static WALLET_ALREADY_EXISTS: Error = Error{code_num: 1051, message: "Indy wallet already exists"};
+pub static WALLET_ALREADY_OPEN: Error = Error{code_num: 1052, message: "Indy wallet already open"};
+pub static INVALID_CLAIM_HANDLE: Error = Error{code_num: 1053, message: "Invalid claim handle"};
+pub static INVALID_CLAIM_JSON: Error = Error{code_num: 1054, message: "Invalid claim json"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -107,6 +114,13 @@ lazy_static! {
         insert_c_message(&mut m, &ALREADY_INITIALIZED);
         insert_c_message(&mut m, &INVALID_INVITE_DETAILS);
         insert_c_message(&mut m, &INVALID_MASTER_SECRET);
+        insert_c_message(&mut m, &INVALID_OBJ_HANDLE);
+        insert_c_message(&mut m, &INVALID_DISCLOSED_PROOF_HANDLE);
+        insert_c_message(&mut m, &SERIALIZATION_ERROR);
+        insert_c_message(&mut m, &WALLET_ALREADY_EXISTS);
+        insert_c_message(&mut m, &WALLET_ALREADY_OPEN);
+        insert_c_message(&mut m, &INVALID_CLAIM_HANDLE);
+        insert_c_message(&mut m, &INVALID_CLAIM_JSON);
        m
     };
 }

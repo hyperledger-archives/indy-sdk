@@ -184,6 +184,7 @@ fn parse_get_messages_response(response: Vec<u8>) -> Result<Vec<Message>, u32> {
         Ok(x) => x,
         Err(x) => {
             error!("Could not parse messagepack: {}", x);
+
             return Err(error::INVALID_MSGPACK.code_num)
         },
     };
@@ -215,9 +216,23 @@ fn get_matching_message(msg_uid:&str, pw_did: &str, pw_vk: &str, agent_did: &str
     }
 }
 
+pub fn get_all_message(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<Vec<Message>, u32> {
+    match get_messages()
+        .to(&pw_did)
+        .to_vk(&pw_vk)
+        .agent_did(&agent_did)
+        .agent_vk(&agent_vk)
+        .send_secure() {
+        Err(x) => {
+            error!("could not post get_messages: {}", x);
+            Err(error::POST_MSG_FAILURE.code_num)
+        },
+        Ok(response) => Ok(response)
+    }
+}
+
 pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<Vec<u8>, u32> {
     let message = get_matching_message(msg_id, pw_did, pw_vk, agent_did, agent_vk)?;
-
     debug!("checking for ref_msg: {:?}", message);
     let msg_id;
     if message.status_code == MessageAccepted.as_string() && !message.ref_msg_id.is_none() {

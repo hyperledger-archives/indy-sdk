@@ -6,7 +6,9 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::slice;
 use std::ops::Deref;
-use utils::libindy::next_command_handle;
+use std::hash::Hash;
+
+use utils::libindy::next_i32_command_handle;
 
 pub const POISON_MSG: &str = "FAILED TO LOCK CALLBACK MAP!";
 
@@ -87,7 +89,7 @@ pub extern "C" fn call_cb_i32_bin_bin(command_handle: i32, arg1: i32, buf1: *con
     }
 }
 
-fn build_string(ptr: *const c_char) -> Option<String> {
+pub fn build_string(ptr: *const c_char) -> Option<String> {
     if ptr.is_null(){
         return None;
     }
@@ -105,7 +107,7 @@ fn build_string(ptr: *const c_char) -> Option<String> {
     }
 }
 
-fn build_buf(ptr: *const u8, len: u32) -> Vec<u8>{
+pub fn build_buf(ptr: *const u8, len: u32) -> Vec<u8>{
     let data = unsafe {
         slice::from_raw_parts(ptr, len as usize)
     };
@@ -113,7 +115,7 @@ fn build_buf(ptr: *const u8, len: u32) -> Vec<u8>{
     data.to_vec()
 }
 
-fn get_cb<T>(command_handle: i32, map: &Mutex<HashMap<i32, T>>) -> Option<T> {
+pub fn get_cb<H: Eq + Hash,T>(command_handle: H, map: &Mutex<HashMap<H, T>>) -> Option<T> {
     //TODO Error case, what should we do if the static map can't be locked? Some what
     //TODO general question for all of our Mutexes.
     let mut locked_map = map.lock().expect(POISON_MSG);
@@ -168,7 +170,7 @@ mod tests {
 //**************************************
 
 fn init_callback<T>(closure: T, map: &Mutex<HashMap<i32, T>>) -> (i32) {
-    let command_handle = next_command_handle();
+    let command_handle = next_i32_command_handle();
     {
         let mut callbacks = map.lock().unwrap();
         callbacks.insert(command_handle, closure);

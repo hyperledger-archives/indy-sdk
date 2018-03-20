@@ -473,7 +473,7 @@ pub fn get_proof(handle: u32) -> Result<String,u32> {
 pub fn generate_nonce() -> Result<String, u32> {
     let mut bn = BigNum::new().map_err(|err| error::BIG_NUMBER_ERROR.code_num)?;
 
-    BigNumRef::rand(&mut bn, LARGE_NONCE as i32, openssl::bn::MSB_MAYBE_ZERO, false)
+    BigNumRef::rand(&mut bn, LARGE_NONCE as i32, openssl::bn::MsbOption::MAYBE_ZERO, false)
         .map_err(|_| error::BIG_NUMBER_ERROR.code_num)?;
     Ok(bn.to_dec_str().map_err(|err| error::BIG_NUMBER_ERROR.code_num)?.to_string())
 }
