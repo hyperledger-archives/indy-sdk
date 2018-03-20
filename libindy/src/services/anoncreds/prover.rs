@@ -136,10 +136,9 @@ impl Prover {
                         master_secret: &MasterSecret,
                         schemas: &HashMap<String, Schema>,
                         credential_defs: &HashMap<String, CredentialDefinition>,
-                        rev_infos: &HashMap<String, HashMap<u64, RevocationInfo>>) -> Result<FullProof, AnoncredsError> {
-        trace!("create_proof >>> credentials: {:?}, proof_req: {:?}, schemas: {:?}, credential_defs: {:?}, rev_infos: {:?}, \
-               requested_credentials: {:?}, master_secret: {:?}",
-               credentials, proof_req, schemas, credential_defs, rev_infos, requested_credentials, master_secret);
+                        rev_states: &HashMap<String, HashMap<u64, RevocationState>>) -> Result<FullProof, AnoncredsError> {
+        trace!("create_proof >>> credentials: {:?}, proof_req: {:?}, requested_credentials: {:?}, master_secret: {:?}, schemas: {:?}, credential_defs: {:?}, rev_states: {:?}",
+               credentials, proof_req, requested_credentials, master_secret, schemas, credential_defs, rev_states);
 
         let mut proof_builder = CryptoProver::new_proof_builder()?;
 
@@ -162,12 +161,11 @@ impl Prover {
             let credential: &Credential = credentials.get(cred_key.cred_id.as_str())
                 .ok_or(CommonError::InvalidStructure(format!("Credential not found")))?;
 
-            let rev_info = if credential_definition.value.revocation.is_some() {
+            let rev_state = if credential_definition.value.revocation.is_some() {
                 let timestamp = cred_key.timestamp.ok_or(CommonError::InvalidStructure(format!("Timestamp not found")))?;
-                let rev_infos_for_timestamp =
-                    rev_infos.get(cred_key.cred_id.as_str())
-                        .ok_or(CommonError::InvalidStructure(format!("RevocationInfo not found")))?;
-                Some(rev_infos_for_timestamp.get(&timestamp)
+                let rev_states_for_timestamp = rev_states.get(cred_key.cred_id.as_str())
+                    .ok_or(CommonError::InvalidStructure(format!("RevocationInfo not found")))?;
+                Some(rev_states_for_timestamp.get(&timestamp)
                     .ok_or(CommonError::InvalidStructure(format!("RevocationInfo not found")))?)
             } else { None };
 
@@ -185,8 +183,8 @@ impl Prover {
                                                 &credential.signature,
                                                 &credential_values,
                                                 &credential_pub_key,
-                                                rev_info.as_ref().map(|r_info| &r_info.rev_reg),
-                                                rev_info.as_ref().map(|r_info| &r_info.witness))?;
+                                                rev_state.as_ref().map(|r_info| &r_info.rev_reg),
+                                                rev_state.as_ref().map(|r_info| &r_info.witness))?;
 
             identifiers.insert(sub_proof_id.clone(), Identifier {
                 schema_id: credential_definition.schema_id.clone(),

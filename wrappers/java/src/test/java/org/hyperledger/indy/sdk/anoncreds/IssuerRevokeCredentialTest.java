@@ -26,58 +26,56 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(issuerDid, gvtSchemaName, schemaVersion, gvtSchemaAttributes).get();
 		String schemaJson = createSchemaResult.getSchemaJson();
 
-		//3. Issuer create credential definition
+		//3. Issuer create issuer1GvtCredential definition
 		String revocationCredentialDefConfig = "{\"support_revocation\":true}";
 		AnoncredsResults.IssuerCreateAndStoreCredentialDefResult createCredentialDefResult = Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, schemaJson, tag, null, revocationCredentialDefConfig).get();
-		String credentialDefId = createCredentialDefResult.getCredDefId();
-		String credentialDefJson = createCredentialDefResult.getCredDefJson();
+		String credDefId = createCredentialDefResult.getCredDefId();
+		String credDefJson = createCredentialDefResult.getCredDefJson();
 
 		//4. Issuer create revocation registry
 		String revRegConfig = "{\"issuance_type\":null,\"max_cred_num\":5}";
-		AnoncredsResults.IssuerCreateAndStoreRevocRegResult createRevRegResult = Anoncreds.issuerCreateAndStoreRevocReg(wallet, issuerDid, null, tag, credentialDefId, revRegConfig, "default", tailsWriterConfig).get();
+		AnoncredsResults.IssuerCreateAndStoreRevocRegResult createRevRegResult = Anoncreds.issuerCreateAndStoreRevocReg(wallet, issuerDid, null, tag, credDefId, revRegConfig, "default", tailsWriterConfig).get();
 		String revRegId = createRevRegResult.getRevRegId();
 		String revRegDef = createRevRegResult.getRevRegDefJson();
 
 		//5. Prover create Master Secret
-		Anoncreds.proverCreateMasterSecret(wallet, masterSecretName).get();
+		Anoncreds.proverCreateMasterSecret(wallet, masterSecretId).get();
 
 		//6. Issuer create Credential Offer
-		String credentialOfferJson = Anoncreds.issuerCreateCredentialOffer(wallet, credentialDefId, issuerDid, proverDid).get();
+		String credOfferJson = Anoncreds.issuerCreateCredentialOffer(wallet, credDefId).get();
 
-		//7. Prover store Credential Offer received from Issuer
-		Anoncreds.proverStoreCredentialOffer(wallet, credentialOfferJson).get();
+		//7. Prover create Credential Request
+		AnoncredsResults.ProverCreateCredentialRequestResult createCredReqResult =
+				Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, credOfferJson, credDefJson, masterSecretId).get();
+		String credentialReqJson = createCredReqResult.getCredentialRequestJson();
+		String credentialReqMetadataJson = createCredReqResult.getCredentialRequestMetadataJson();
 
-		//8. Prover create Credential Request
-		String credentialReq = Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, credentialOfferJson, credentialDefJson, masterSecretName).get();
+		//8. Issuer open TailsReader
+		BlobStorage blobReaderCfg = BlobStorage.createReaderConfig("default", tailsWriterConfig).get();
+		int blobStorageReaderHandleCfg = blobReaderCfg.getBlobStorageReaderHandle();
 
-		//9. Issuer open TailsReader
-		JSONObject revRegDeg = new JSONObject(revRegDef);
-		BlobStorage tailsReader = BlobStorage.createReaderConfig("default", tailsWriterConfig).get();
-
-		//10. Issuer create Credential
-		int userRevocIndex = 1;
-		AnoncredsResults.IssuerCreateCredentialResult createCredentialResult = Anoncreds.issuerCreateCredentail(wallet, credentialReq, gvtCredentialValuesJson, revRegId, tailsReader.getTailsReaderHandle(), userRevocIndex).get();
-		String credential = createCredentialResult.getCredentialJson();
+		//9. Issuer create Credential
+		AnoncredsResults.IssuerCreateCredentialResult createCredentialResult =
+				Anoncreds.issuerCreateCredential(wallet, credOfferJson, credentialReqJson, gvtCredentialValuesJson, revRegId, blobStorageReaderHandleCfg).get();
+		String credJson = createCredentialResult.getCredentialJson();
+		String credRevocId = createCredentialResult.getRevocId();
 		String revRegDelta = createCredentialResult.getRevocRegDeltaJson();
 
-		//11. Prover create RevocationInfo
+		//10. Prover create RevocationState
 		int timestamp = 100;
-		String revInfo = Anoncreds.createRevocationInfo(tailsReader.getTailsReaderHandle(), revRegDef, revRegDelta, timestamp, userRevocIndex).get();
+		String revStateJson = Anoncreds.createRevocationState(blobStorageReaderHandleCfg, revRegDef, revRegDelta, timestamp, credRevocId).get();
 
-		//12. Prover store RevocationInfo
-		Anoncreds.storeRevocationInfo(wallet, credentialId1, revInfo).get();
+		//11. Prover store received Credential
+		Anoncreds.proverStoreCredential(wallet, credentialId1, credentialReqJson, credentialReqMetadataJson, credJson, credDefJson, revRegDef, revStateJson).get();
 
-		//13. Prover store received Credential
-		Anoncreds.proverStoreCredential(wallet, credentialId1, credential, revRegDef).get();
-
-		//14. Prover gets Credentials for Proof Request
+		//12. Prover gets Credentials for Proof Request
 		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 		JSONObject credentials = new JSONObject(credentialsJson);
 		JSONArray credentialsForAttr1 = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
 
 		String credentialUuid = credentialsForAttr1.getJSONObject(0).getJSONObject("cred_info").getString("referent");
 
-		//15. Prover create Proof
+		//13. Prover create Proof
 		String requestedCredentialsJson = String.format("{" +
 				"\"self_attested_attributes\":{}," +
 				"\"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true, \"timestamp\":%d }}," +
@@ -85,24 +83,24 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 				"}", credentialUuid, timestamp, credentialUuid, timestamp);
 
 		String schemasJson = String.format("{\"%s\":%s}", credentialUuid, schemaJson);
-		String credentialDefsJson = String.format("{\"%s\":%s}", credentialUuid, credentialDefJson);
-		String revInfos = String.format("{\"%s\": { \"%s\":%s }}", credentialUuid, timestamp, revInfo);
+		String credentialDefsJson = String.format("{\"%s\":%s}", credentialUuid, credDefJson);
+		String revStatesJson = String.format("{\"%s\": { \"%s\":%s }}", credentialUuid, timestamp, revStateJson);
 
-		String proofJson = Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, schemasJson, masterSecretName,
-				credentialDefsJson, revInfos).get();
+		String proofJson = Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, masterSecretId, schemasJson,
+				credentialDefsJson, revStatesJson).get();
 		JSONObject proof = new JSONObject(proofJson);
 
-		//16. Issuer revoke Credential
-		revRegDelta = Anoncreds.issuerRevokeCredential(wallet, tailsReader.getTailsReaderHandle(), revRegId, userRevocIndex).get();
+		//14. Issuer revoke Credential
+		revRegDelta = Anoncreds.issuerRevokeCredential(wallet, blobStorageReaderHandleCfg, revRegId, credRevocId).get();
 
-		//17. Verifier verify proof
+		//15. Verifier verify proof
 		JSONObject revealedAttr1 = proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONObject("attr1_referent");
 		assertEquals("Alex", revealedAttr1.getString("raw"));
 
 		String id = revealedAttr1.getString("referent");
 
 		schemasJson = String.format("{\"%s\":%s}", id, schemaJson);
-		credentialDefsJson = String.format("{\"%s\":%s}", id, credentialDefJson);
+		credentialDefsJson = String.format("{\"%s\":%s}", id, credDefJson);
 		String revRegDefsJson = String.format("{\"%s\":%s}", id, revRegDef);
 		String revRegs = String.format("{\"%s\": { \"%s\":%s }}", id, timestamp, revRegDelta);
 

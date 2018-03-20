@@ -6,9 +6,9 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_prover_create_proof_works(wallet_handle, prepopulated_wallet, gvt_schema, master_secret_name,
+async def test_prover_create_proof_works(wallet_handle, prepopulated_wallet, gvt_schema, master_secret_id,
                                          proof_req, id_credential_1):
-    credential_def_json, _, _, _ = prepopulated_wallet
+    credential_def_json, _, _, _, _ = prepopulated_wallet
 
     requested_credentials = {
         "self_attested_attributes": {},
@@ -29,15 +29,14 @@ async def test_prover_create_proof_works(wallet_handle, prepopulated_wallet, gvt
     }
 
     await prover_create_proof(wallet_handle, json.dumps(proof_req), json.dumps(requested_credentials),
-                              json.dumps(schemas), master_secret_name,
-                              json.dumps(credential_defs), "{}")
+                              master_secret_id, json.dumps(schemas), json.dumps(credential_defs), "{}")
 
 
 @pytest.mark.asyncio
 async def test_prover_create_proof_works_for_using_not_satisfy_credential(wallet_handle, prepopulated_wallet,
                                                                           gvt_schema,
-                                                                          master_secret_name, id_credential_1):
-    credential_def_json, _, _, _ = prepopulated_wallet
+                                                                          master_secret_id, id_credential_1):
+    credential_def_json, _, _, _, _ = prepopulated_wallet
 
     proof_req = {
         "nonce": "123432421212",
@@ -70,16 +69,15 @@ async def test_prover_create_proof_works_for_using_not_satisfy_credential(wallet
 
     with pytest.raises(IndyError) as e:
         await prover_create_proof(wallet_handle, json.dumps(proof_req), json.dumps(requested_credentials),
-                                  json.dumps(schemas), master_secret_name,
-                                  json.dumps(credential_defs), "{}")
+                                  master_secret_id, json.dumps(schemas), json.dumps(credential_defs), "{}")
 
     assert ErrorCode.CommonInvalidStructure == e.value.error_code
 
 
 @pytest.mark.asyncio
 async def test_prover_create_proof_works_for_invalid_wallet_handle(wallet_handle, prepopulated_wallet, gvt_schema,
-                                                                   master_secret_name, proof_req, id_credential_1):
-    credential_def_json, _, _, _ = prepopulated_wallet
+                                                                   master_secret_id, proof_req, id_credential_1):
+    credential_def_json, _, _, _, _ = prepopulated_wallet
 
     requested_credentials = {
         "self_attested_attributes": {},
@@ -103,7 +101,6 @@ async def test_prover_create_proof_works_for_invalid_wallet_handle(wallet_handle
 
     with pytest.raises(IndyError) as e:
         await prover_create_proof(invalid_wallet_handle, json.dumps(proof_req), json.dumps(requested_credentials),
-                                  json.dumps(schemas), master_secret_name,
-                                  json.dumps(credential_defs), "{}")
+                                  master_secret_id, json.dumps(schemas), json.dumps(credential_defs), "{}")
 
     assert ErrorCode.WalletInvalidHandle == e.value.error_code
