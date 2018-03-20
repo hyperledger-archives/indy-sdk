@@ -14,7 +14,16 @@ All bugs, stories, and backlog for this project are managed through [Hyperledger
 in project IS (note that regular Indy tickets are in the INDY project instead...). Also, join
 us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to discuss.
 
+
 ## How to install
+### Release channels
+May be one of these values: 
+    
+* `master` - development builds for each push to master branch.
+* `rc` - release candidates.
+* `stable` - stable releases.
+
+Please refer to [release workflow](doc/release-workflow.md) for more details.
 ### Install for Ubuntu based distro (Ubuntu 16.04)
 It is recommended to install packages with APT:
     
@@ -22,14 +31,8 @@ It is recommended to install packages with APT:
     sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial {release channel}"
     sudo apt-get update
     sudo apt-get install -y libindy
-#### Release channels
-{release channels} pointed in previous section may be one of these values: 
-    
-* `master` - development builds for each push to master branch.
-* `rc` - release candidates.
-* `stable` - stable releases.
 
-Please refer to [release workflow](doc/release-workflow.md) for more details.  
+See section "Release channels" for more details about {release channel}.  
    
 ### Install for Windows
 
@@ -39,15 +42,15 @@ Please refer to [release workflow](doc/release-workflow.md) for more details.
 4. After unzip you will get next structure of files:
 
     
-    -Your working directory
-        -include
-            ...
-        -lib
-            -indy.dll
-            -libeay32md.dll
-            -libsodium.dll
-            -libzmq.dll
-            -ssleay32md.dll
+* `Your working directory`
+    * `include`
+        * `...`
+    * `lib`
+        * `indy.dll`
+        * `libeay32md.dll`
+        * `libsodium.dll`
+        * `libzmq.dll`
+        * `ssleay32md.dll`
             
 `include` contains c-header files which contains all necessary declarations
 that may be need for your applications. 
@@ -56,14 +59,10 @@ that may be need for your applications.
  `You must add to PATH environment variable path to lib`. It's necessary for dynamic linkage
  your application with libindy.       
 
-#### Release channels
-{release channels} pointed in previous section may be one of these values: 
-    
-* `master` - development builds for each push to master branch.
-* `rc` - release candidates.
-* `stable` - stable releases.
+See section "Release channels" for more details about {release channel}.
+### Install for iOS
 
-Please refer to [release workflow](doc/release-workflow.md) for more details.
+See [wrapper iOS install documentation](wrappers/ios/README.md "How to install").
 
 ### Install for MacOS        
 Now we haven't prebuild library in some shared place. You can build
@@ -109,7 +108,7 @@ Start local nodes pool on `127.0.0.1:9701-9708` with Docker:
      docker build --build-arg pool_ip=10.0.0.2 -f ci/indy-pool.dockerfile -t indy_pool .
      docker run -d --ip="10.0.0.2" --net=indy_pool_network indy_pool
      ``` 
- Note that for Windows and MacOS this approach have some issues. Docker for these OS run in
+ Note that for Windows and MacOS this approach has some issues. Docker for these OS run in
  their virtual environment. First command creates network for container and host can't
  get access to that network because container placed on virtual machine. You must appropriate set up 
  networking on your virtual environment.
@@ -125,11 +124,3 @@ Start local nodes pool on `127.0.0.1:9701-9708` with Docker:
 
 ## Getting started
 * [Libindy Getting-Started Guide](doc/getting-started/getting-started.md)
-
-## Binaries
-Pre-Built binaries can be downloaded from https://repo.sovrin.org/:
-* sdk/lib/apt/xenial/{master,stable,rc} - Ubuntu deb packages
-* windows/libindy/{master,stable,rc} - Windows zip-archive with all required DLLs (include libindy itself) and headers
-* windows/libindy/deps/ - Windows zip archive with dependencies (DLLs and headers) to build libindy from sources
-* ios/libindy/stable/ - Pods for iOS
-* rhel/libindy/{master,stable,rc} - RHEL rpms
