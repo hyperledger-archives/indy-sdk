@@ -5,24 +5,46 @@ from ctypes import *
 import logging
 
 
-async def create_reader_config(type_: str, config: str) -> int:
+async def open_reader(type_: str, config: str) -> int:
 
     logger = logging.getLogger(__name__)
-    logger.debug("create_reader_config: >>> type_: %r, config: %r",
+    logger.debug("open_reader: >>> type_: %r, config: %r",
                  type_,
                  config)
 
-    if not hasattr(create_reader_config, "cb"):
-        logger.debug("create_reader_config: Creating callback")
-        create_reader_config.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
+    if not hasattr(open_reader, "cb"):
+        logger.debug("open_reader: Creating callback")
+        open_reader.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
 
     c_type = c_char_p(type_.encode('utf-8'))
     c_config = c_char_p(config.encode('utf-8'))
 
-    res = await do_call('indy_blob_storage_create_reader_config',
+    res = await do_call('indy_blob_storage_open_reader',
                         c_type,
                         c_config,
-                        create_reader_config.cb)
+                        open_reader.cb)
 
-    logger.debug("create_reader_config: <<< res: %r", res)
+    logger.debug("open_reader: <<< res: %r", res)
+    return res
+
+async def open_writer(type_: str, config: str) -> int:
+
+    logger = logging.getLogger(__name__)
+    logger.debug("open_writer: >>> type_: %r, config: %r",
+                 type_,
+                 config)
+
+    if not hasattr(open_writer, "cb"):
+        logger.debug("open_writer: Creating callback")
+        open_writer.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
+
+    c_type = c_char_p(type_.encode('utf-8'))
+    c_config = c_char_p(config.encode('utf-8'))
+
+    res = await do_call('indy_blob_storage_open_writer',
+                        c_type,
+                        c_config,
+                        open_writer.cb)
+
+    logger.debug("open_writer: <<< res: %r", res)
     return res

@@ -123,9 +123,10 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name,
 
     # 4. Issuer create Revocation Registry
     tails_writer_config = json.dumps({'base_dir': str(path_home.joinpath("tails")), 'uri_pattern': ''})
+    tails_writer = await blob_storage.open_writer('default', tails_writer_config)
     (rev_reg_id, rev_reg_def_json, _) = \
         await anoncreds.issuer_create_and_store_revoc_reg(wallet_handle, issuer_did, None, 'tag1', cred_def_id,
-                                                          '{"max_cred_num": 5}', 'default', tails_writer_config)
+                                                          '{"max_cred_num": 5}', tails_writer)
 
     # 5. Prover create Master Secret
     master_secret_id = "master_secret"
@@ -141,7 +142,7 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, wallet_name,
 
     # 8. Issuer open Tails reader
     rev_reg_reg = json.loads(rev_reg_def_json)
-    blob_storage_reader_cfg_handle = await blob_storage.create_reader_config('default', tails_writer_config)
+    blob_storage_reader_cfg_handle = await blob_storage.open_reader('default', tails_writer_config)
 
     #  9. Issuer create credential for credential Request
     cred_values_json = json.dumps({

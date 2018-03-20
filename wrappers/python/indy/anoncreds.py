@@ -118,8 +118,7 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                                             tag: str,
                                             cred_def_id: str,
                                             config_json: str,
-                                            tails_writer_type: Optional[str],
-                                            tails_writer_config: str) -> (str, str, str):
+                                            tails_writer_handle: int) -> (str, str, str):
     """
     Create a new revocation registry for the given credential definition.
     Stores it in a secure wallet.
@@ -136,22 +135,20 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
              2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
         "max_cred_num": maximum number of credentials the new registry can process.
     }
-    :param tails_writer_type:
-    :param tails_writer_config:
+    :param tails_writer_handle:
     :return: Revocation registry id, definition json and entry json
     """
 
     logger = logging.getLogger(__name__)
     logger.debug("issuer_create_and_store_revoc_reg: >>> wallet_handle: %r, issuer_did: %r, type_: %r,"
-                 " tag: %r, cred_def_id: %r, config_json: %r, tails_writer_type: %r, tails_writer_config: %r",
+                 " tag: %r, cred_def_id: %r, config_json: %r, tails_writer_handle: %r",
                  wallet_handle,
                  issuer_did,
                  type_,
                  tag,
                  cred_def_id,
                  config_json,
-                 tails_writer_type,
-                 tails_writer_config)
+                 tails_writer_handle)
 
     if not hasattr(issuer_create_and_store_revoc_reg, "cb"):
         logger.debug("issuer_create_and_store_revoc_reg: Creating callback")
@@ -164,8 +161,7 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
     c_tag = c_char_p(tag.encode('utf-8'))
     c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
     c_config_json = c_char_p(config_json.encode('utf-8'))
-    c_tails_writer_type = c_char_p(tails_writer_type.encode('utf-8')) if tails_writer_type is not None else None
-    c_tails_writer_config = c_char_p(tails_writer_config.encode('utf-8'))
+    c_tails_writer_handle = c_int32(tails_writer_handle)
 
     (rev_reg_id, rev_reg_def_json, rev_reg_entry_json) = await do_call('indy_issuer_create_and_store_revoc_reg',
                                                                        c_wallet_handle,
@@ -174,8 +170,7 @@ async def issuer_create_and_store_revoc_reg(wallet_handle: int,
                                                                        c_tag,
                                                                        c_cred_def_id,
                                                                        c_config_json,
-                                                                       c_tails_writer_type,
-                                                                       c_tails_writer_config,
+                                                                       c_tails_writer_handle,
                                                                        issuer_create_and_store_revoc_reg.cb)
     res = (rev_reg_id.decode(), rev_reg_def_json.decode(), rev_reg_entry_json.decode())
     logger.debug("issuer_create_and_store_revoc_reg: <<< res: %r", res)
