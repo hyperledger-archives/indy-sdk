@@ -1,4 +1,4 @@
-# How-to-install
+# How to install
 A wrapper is a private pod, so private podspec must be set. Put at the top of the Podfile: 
     
     source 'https://github.com/hyperledger/indy-sdk.git'
@@ -9,7 +9,7 @@ Add pod to target:
     
     pod 'libindy-objc'                
 
-# How-to-build
+# How to build
 
 1. Install Rust and rustup (https://www.rust-lang.org/install.html).
 1. Install toolchains using command:

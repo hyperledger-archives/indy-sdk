@@ -14,8 +14,8 @@ All bugs, stories, and backlog for this project are managed through [Hyperledger
 in project IS (note that regular Indy tickets are in the INDY project instead...). Also, join
 us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to discuss.
 
-## How-to-install
-### Instal for Ubuntu based distro (Ubuntu 16.04)
+## How to install
+### Install for Ubuntu based distro (Ubuntu 16.04)
 It is recommended to install packages with APT:
     
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
@@ -31,7 +31,7 @@ It is recommended to install packages with APT:
 
 Please refer to [release workflow](doc/release-workflow.md) for more details.  
    
-### Instal for Windows
+### Install for Windows
 
 1. follow to https://repo.sovrin.org/windows/libindy/{release-channel}.
 2. download last version of libindy.
@@ -65,7 +65,7 @@ that may be need for your applications.
 
 Please refer to [release workflow](doc/release-workflow.md) for more details.
 
-### Instal for MacOS        
+### Install for MacOS        
 Now we haven't prebuild library in some shared place. You can build
 library yourself. Please refer to How-to-build section. 
 
@@ -76,14 +76,14 @@ browse library in LD_LIBRARY_PATH, if library in your application doesn't includ
 If library in your application include any directory name, then dynamic linker will search library
 in DYLD_LIBRARY_PATH(not LD_LIBRARY_PATH). So for reliability we recommend you set both this variables.
             
-### Instal for RHEL based distro (Amazon Linux 2017.03)           
+### Install for RHEL based distro (Amazon Linux 2017.03)           
 Now we haven't prebuild library in some shared place. You can build
 library yourself. Please refer to How-to-build section.
 
 After build add to LD_LIBRARY_PATH environment variable path to builded library. 
 It's necessary for dynamic linkage your application with libindy.
 
-## How-to-build
+## How to build
 
 * [Ubuntu based distro (Ubuntu 16.04)](doc/ubuntu-build.md)
 * [RHEL based distro (Amazon Linux 2017.03)](doc/rhel-build.md)
