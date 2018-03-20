@@ -11,6 +11,7 @@ import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreC
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreRevocRegResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateCredentialResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.ProverCreateCredentialRequestResult;
+import org.hyperledger.indy.sdk.blob_storage.BlobStorageWriter;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import com.sun.jna.Callback;
@@ -419,15 +420,13 @@ public class Anoncreds extends IndyJava.API {
 			String tag,
 			String credDefId,
 			String configJson,
-			String tailsWriterType,
-			String tailsWriterConfig) throws IndyException {
+			BlobStorageWriter tailsWriter) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
 		ParamGuard.notNullOrWhiteSpace(issuerDid, "issuerDid");
 		ParamGuard.notNullOrWhiteSpace(tag, "tag");
 		ParamGuard.notNullOrWhiteSpace(credDefId, "credDefId");
 		ParamGuard.notNullOrWhiteSpace(configJson, "configJson");
-		ParamGuard.notNullOrWhiteSpace(tailsWriterConfig, "tailsWriterConfig");
 
 		CompletableFuture<IssuerCreateAndStoreRevocRegResult> future = new CompletableFuture<IssuerCreateAndStoreRevocRegResult>();
 		int commandHandle = addFuture(future);
@@ -442,8 +441,7 @@ public class Anoncreds extends IndyJava.API {
 				tag,
 				credDefId,
 				configJson,
-				tailsWriterType,
-				tailsWriterConfig,
+				tailsWriter.getBlobStorageWriterHandle(),
 				issuerCreateAndStoreRevocRegCb);
 
 		checkResult(result);

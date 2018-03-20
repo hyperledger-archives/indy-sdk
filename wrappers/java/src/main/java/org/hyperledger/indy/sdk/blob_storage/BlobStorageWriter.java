@@ -15,13 +15,13 @@ import java.util.concurrent.CompletableFuture;
 /**
  * High level wrapper for wallet SDK functions.
  */
-public class BlobStorage extends IndyJava.API {
+public class BlobStorageWriter extends IndyJava.API {
 
-	private final int blobStorageReaderHandle;
+	private final int blobStorageWriterHandle;
 
-	private BlobStorage(int blobStorageReaderHandle) {
+	private BlobStorageWriter(int blobStorageWriterHandle) {
 
-		this.blobStorageReaderHandle = blobStorageReaderHandle;
+		this.blobStorageWriterHandle = blobStorageWriterHandle;
 	}
 
 	/**
@@ -29,9 +29,9 @@ public class BlobStorage extends IndyJava.API {
 	 *
 	 * @return The handle for the blob storage.
 	 */
-	public int getBlobStorageReaderHandle() {
+	public int getBlobStorageWriterHandle() {
 
-		return this.blobStorageReaderHandle;
+		return this.blobStorageWriterHandle;
 	}
 
 	/*
@@ -41,18 +41,17 @@ public class BlobStorage extends IndyJava.API {
 	/**
 	 * Callback used when openReader completes.
 	 */
-	private static Callback openReaderCb = new Callback() {
+	private static Callback openWriterCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommand_handle, int err, int handle) {
 
-			CompletableFuture<BlobStorage> future = (CompletableFuture<BlobStorage>) removeFuture(xcommand_handle);
+			CompletableFuture<BlobStorageWriter> future = (CompletableFuture<BlobStorageWriter>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			BlobStorage tailsReader = new BlobStorage(handle);
+			BlobStorageWriter blobStorageWriter = new BlobStorageWriter(handle);
 
-			BlobStorage result = tailsReader;
-			future.complete(result);
+			future.complete(blobStorageWriter);
 		}
 	};
 
@@ -60,21 +59,21 @@ public class BlobStorage extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	public static CompletableFuture<BlobStorage> createReaderConfig(
+	public static CompletableFuture<BlobStorageWriter> openWriter(
 			String type,
 			String config) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(type, "type");
 		ParamGuard.notNullOrWhiteSpace(config, "config");
 
-		CompletableFuture<BlobStorage> future = new CompletableFuture<BlobStorage>();
+		CompletableFuture<BlobStorageWriter> future = new CompletableFuture<BlobStorageWriter>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_blob_storage_create_reader_config(
+		int result = LibIndy.api.indy_blob_storage_open_writer(
 				commandHandle,
 				type,
 				config,
-				openReaderCb);
+				openWriterCb);
 
 		checkResult(result);
 

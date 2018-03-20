@@ -4,7 +4,8 @@ import static org.hyperledger.indy.sdk.utils.EnvironmentUtils.getIndyHomePath;
 import static org.junit.Assert.*;
 
 
-import org.hyperledger.indy.sdk.blob_storage.BlobStorage;
+import org.hyperledger.indy.sdk.blob_storage.BlobStorageReader;
+import org.hyperledger.indy.sdk.blob_storage.BlobStorageWriter;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -33,8 +34,9 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 		String credDefJson = createCredentialDefResult.getCredDefJson();
 
 		//4. Issuer create revocation registry
+		BlobStorageWriter tailsWriter = BlobStorageWriter.openWriter("default", tailsWriterConfig).get();
 		String revRegConfig = "{\"issuance_type\":null,\"max_cred_num\":5}";
-		AnoncredsResults.IssuerCreateAndStoreRevocRegResult createRevRegResult = Anoncreds.issuerCreateAndStoreRevocReg(wallet, issuerDid, null, tag, credDefId, revRegConfig, "default", tailsWriterConfig).get();
+		AnoncredsResults.IssuerCreateAndStoreRevocRegResult createRevRegResult = Anoncreds.issuerCreateAndStoreRevocReg(wallet, issuerDid, null, tag, credDefId, revRegConfig, tailsWriter).get();
 		String revRegId = createRevRegResult.getRevRegId();
 		String revRegDef = createRevRegResult.getRevRegDefJson();
 
@@ -51,7 +53,7 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 		String credentialReqMetadataJson = createCredReqResult.getCredentialRequestMetadataJson();
 
 		//8. Issuer open TailsReader
-		BlobStorage blobReaderCfg = BlobStorage.createReaderConfig("default", tailsWriterConfig).get();
+		BlobStorageReader blobReaderCfg = BlobStorageReader.openReader("default", tailsWriterConfig).get();
 		int blobStorageReaderHandleCfg = blobReaderCfg.getBlobStorageReaderHandle();
 
 		//9. Issuer create Credential

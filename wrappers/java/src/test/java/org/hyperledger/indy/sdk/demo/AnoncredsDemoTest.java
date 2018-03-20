@@ -1,6 +1,5 @@
 package org.hyperledger.indy.sdk.demo;
 
-import org.hyperledger.indy.sdk.blob_storage.BlobStorage;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.anoncreds.Anoncreds;
@@ -9,6 +8,8 @@ import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateSchemaRes
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateAndStoreCredentialDefResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.IssuerCreateCredentialResult;
 import org.hyperledger.indy.sdk.anoncreds.AnoncredsResults.ProverCreateCredentialRequestResult;
+import org.hyperledger.indy.sdk.blob_storage.BlobStorageReader;
+import org.hyperledger.indy.sdk.blob_storage.BlobStorageWriter;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.pool.PoolJSONParameters;
 import org.hyperledger.indy.sdk.utils.PoolUtils;
@@ -459,8 +460,9 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		//3. Issuer create revocation registry
 		String revRegConfig = "{\"issuance_type\":null,\"max_cred_num\":5}";
 		String tailsWriterConfig = String.format("{\"base_dir\":\"%s\", \"uri_pattern\":\"\"}", getIndyHomePath("tails"));
+		BlobStorageWriter tailsWriter = BlobStorageWriter.openWriter("default", tailsWriterConfig).get();
 
-		AnoncredsResults.IssuerCreateAndStoreRevocRegResult createRevRegResult = Anoncreds.issuerCreateAndStoreRevocReg(issuerWallet, issuerDid, null, TAG, credDefId, revRegConfig, "default", tailsWriterConfig).get();
+		AnoncredsResults.IssuerCreateAndStoreRevocRegResult createRevRegResult = Anoncreds.issuerCreateAndStoreRevocReg(issuerWallet, issuerDid, null, TAG, credDefId, revRegConfig, tailsWriter).get();
 		String revRegId = createRevRegResult.getRevRegId();
 		String revRegDef = createRevRegResult.getRevRegDefJson();
 
@@ -477,7 +479,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		String credReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
 		//7. Issuer open TailsReader
-		BlobStorage blobStorageReaderCfg = BlobStorage.createReaderConfig("default", tailsWriterConfig).get();
+		BlobStorageReader blobStorageReaderCfg = BlobStorageReader.openReader("default", tailsWriterConfig).get();
 		int blobStorageReaderHandleCfg = blobStorageReaderCfg.getBlobStorageReaderHandle();
 
 		//8. Issuer create Credential
