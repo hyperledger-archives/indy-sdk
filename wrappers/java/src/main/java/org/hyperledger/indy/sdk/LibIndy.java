@@ -113,7 +113,7 @@ public abstract class LibIndy {
 		public int indy_set_pairwise_metadata(int command_handle, int wallet_handle, String their_did, String metadata, Callback cb);
 
 		// blob_storage.rs
-		public int indy_blob_storage_open_reader(int command_handle, String type, String config_json, String location, String hash, Callback cb);
+		public int indy_blob_storage_create_reader_config(int command_handle, String type, String config_json, Callback cb);
 
 	}
 

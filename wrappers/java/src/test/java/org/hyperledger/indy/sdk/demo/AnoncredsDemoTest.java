@@ -1,6 +1,6 @@
 package org.hyperledger.indy.sdk.demo;
 
-import blob_storage.BlobStorage;
+import org.hyperledger.indy.sdk.blob_storage.BlobStorage;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.hyperledger.indy.sdk.anoncreds.Anoncreds;
@@ -487,10 +487,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 
 		//8. Issuer open TailsReader
 		JSONObject revRegDeg = new JSONObject(revRegDef);
-		BlobStorage tailsReader = BlobStorage.openReader("default",
-				tailsWriterConfig,
-				revRegDeg.getJSONObject("value").getString("tails_location"),
-				revRegDeg.getJSONObject("value").getString("tails_hash")).get();
+		BlobStorage tailsReader = BlobStorage.createReaderConfig("default", tailsWriterConfig).get();
 
 		//9. Issuer create Credential
 		int userRevocIndex = 1;

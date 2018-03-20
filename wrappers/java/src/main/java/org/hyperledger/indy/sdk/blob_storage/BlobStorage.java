@@ -1,4 +1,4 @@
-package blob_storage;
+package org.hyperledger.indy.sdk.blob_storage;
 
 import com.sun.jna.Callback;
 import org.hyperledger.indy.sdk.IndyException;
@@ -60,26 +60,20 @@ public class BlobStorage extends IndyJava.API {
 	 * STATIC METHODS
 	 */
 
-	public static CompletableFuture<BlobStorage> openReader(
+	public static CompletableFuture<BlobStorage> createReaderConfig(
 			String type,
-			String config,
-			String location,
-			String hash) throws IndyException {
+			String config) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(type, "type");
 		ParamGuard.notNullOrWhiteSpace(config, "config");
-		ParamGuard.notNullOrWhiteSpace(location, "location");
-		ParamGuard.notNullOrWhiteSpace(hash, "hash");
 
 		CompletableFuture<BlobStorage> future = new CompletableFuture<BlobStorage>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_blob_storage_open_reader(
+		int result = LibIndy.api.indy_blob_storage_create_reader_config(
 				commandHandle,
 				type,
 				config,
-				location,
-				hash,
 				openReaderCb);
 
 		checkResult(result);

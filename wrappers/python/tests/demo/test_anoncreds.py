@@ -140,9 +140,7 @@ async def test_anoncreds_demo_works_for_revocation(pool_name, wallet_name, path_
 
     # 8. Issuer open Tails reader
     rev_reg_reg = json.loads(rev_reg_def_json)
-    tails_reader_handle = await blob_storage.open_reader('default', tails_writer_config,
-                                                         rev_reg_reg['value']['tails_location'],
-                                                         rev_reg_reg['value']['tails_hash'])
+    tails_reader_cfg_handle = await blob_storage.create_reader_config('default', tails_writer_config)
 
     #  9. Issuer create credential for credential Request
     credential_json = json.dumps({
@@ -156,11 +154,12 @@ async def test_anoncreds_demo_works_for_revocation(pool_name, wallet_name, path_
     usr_idx = 1
     (rev_reg_delta_json, credential_json) = await anoncreds.issuer_create_credential(wallet_handle, credential_req_json,
                                                                                      credential_json, rev_reg_id,
-                                                                                     tails_reader_handle, usr_idx)
+                                                                                     tails_reader_cfg_handle, usr_idx)
 
     # 10. Prover creates revocation info
     timestamp = 100
-    rev_info_json = await anoncreds.create_revocation_info(tails_reader_handle, rev_reg_def_json, rev_reg_delta_json,
+    rev_info_json = await anoncreds.create_revocation_info(tails_reader_cfg_handle,
+                                                           rev_reg_def_json, rev_reg_delta_json,
                                                            timestamp, usr_idx)
 
     # 11. Prover stores revocation info

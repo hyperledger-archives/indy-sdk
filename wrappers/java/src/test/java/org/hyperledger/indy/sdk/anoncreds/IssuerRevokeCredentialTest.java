@@ -4,7 +4,7 @@ import static org.hyperledger.indy.sdk.utils.EnvironmentUtils.getIndyHomePath;
 import static org.junit.Assert.*;
 
 
-import blob_storage.BlobStorage;
+import org.hyperledger.indy.sdk.blob_storage.BlobStorage;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -52,10 +52,7 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 
 		//9. Issuer open TailsReader
 		JSONObject revRegDeg = new JSONObject(revRegDef);
-		BlobStorage tailsReader = BlobStorage.openReader("default",
-				tailsWriterConfig,
-				revRegDeg.getJSONObject("value").getString("tails_location"),
-				revRegDeg.getJSONObject("value").getString("tails_hash")).get();
+		BlobStorage tailsReader = BlobStorage.createReaderConfig("default", tailsWriterConfig).get();
 
 		//10. Issuer create Credential
 		int userRevocIndex = 1;
