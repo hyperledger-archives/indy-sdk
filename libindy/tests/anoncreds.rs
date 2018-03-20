@@ -2920,6 +2920,7 @@ mod demos {
 
         //5. Issuer creates revocation registry
         let tails_writer_config = AnoncredsUtils::tails_writer_config();
+        let tails_writer_handle = BlobStorageUtils::open_writer("default", &tails_writer_config).unwrap();
 
         let (rev_reg_id, revoc_reg_def_json, _) =
             AnoncredsUtils::indy_issuer_create_and_store_revoc_reg(issuer_wallet_handle,
@@ -2928,7 +2929,7 @@ mod demos {
                                                                    TAG_1,
                                                                    &cred_def_id,
                                                                    r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_ON_DEMAND"}"#,
-                                                                   &tails_writer_config).unwrap();
+                                                                   tails_writer_handle).unwrap();
 
         //6. Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
@@ -2944,9 +2945,8 @@ mod demos {
                                                                                                                COMMON_MASTER_SECRET).unwrap();
 
         //9. Creates Tails reader
-        let revoc_reg_def: serde_json::Value = serde_json::from_str(&revoc_reg_def_json).unwrap();
-        let blob_storage_reader_handle = BlobStorageUtils::create_reader_config(TYPE,
-                                                                                &tails_writer_config).unwrap();
+        let blob_storage_reader_handle = BlobStorageUtils::open_reader(TYPE,
+                                                                       &tails_writer_config).unwrap();
 
 
         //10. Issuer creates Credential
@@ -3075,6 +3075,7 @@ mod demos {
 
         //5. Issuer creates revocation registry
         let tails_writer_config = AnoncredsUtils::tails_writer_config();
+        let tails_writer_handle = BlobStorageUtils::open_writer("default", &tails_writer_config).unwrap();
 
         let (rev_reg_id, revoc_reg_def_json, revoc_reg_entry_json) =
             AnoncredsUtils::indy_issuer_create_and_store_revoc_reg(issuer_wallet_handle,
@@ -3083,7 +3084,7 @@ mod demos {
                                                                    TAG_1,
                                                                    &cred_def_id,
                                                                    r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_BY_DEFAULT"}"#,
-                                                                   &tails_writer_config).unwrap();
+                                                                   tails_writer_handle).unwrap();
 
         //6. Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
@@ -3099,9 +3100,8 @@ mod demos {
                                                                                                                COMMON_MASTER_SECRET).unwrap();
 
         //9. Creates Tails reader
-        let revoc_reg_def: serde_json::Value = serde_json::from_str(&revoc_reg_def_json).unwrap();
-        let blob_storage_reader_handle = BlobStorageUtils::create_reader_config(TYPE,
-                                                                                &tails_writer_config).unwrap();
+        let blob_storage_reader_handle = BlobStorageUtils::open_reader(TYPE,
+                                                                       &tails_writer_config).unwrap();
 
 
         //10. Issuer creates Credential
@@ -3330,6 +3330,7 @@ mod demos {
 
         //5. Issuer creates revocation registry
         let tails_writer_config = AnoncredsUtils::tails_writer_config();
+        let tails_writer_handle = BlobStorageUtils::open_writer("default", &tails_writer_config).unwrap();
 
         let (rev_reg_id, revoc_reg_def_json, _) =
             AnoncredsUtils::indy_issuer_create_and_store_revoc_reg(issuer_wallet_handle,
@@ -3338,7 +3339,7 @@ mod demos {
                                                                    TAG_1,
                                                                    &cred_def_id,
                                                                    &AnoncredsUtils::default_rev_reg_config(),
-                                                                   &tails_writer_config).unwrap();
+                                                                   tails_writer_handle).unwrap();
 
         //6. Prover creates Master Secret
         AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
@@ -3354,9 +3355,8 @@ mod demos {
                                                                                                                COMMON_MASTER_SECRET).unwrap();
 
         //9. Creates Tails reader
-        let revoc_reg_def: serde_json::Value = serde_json::from_str(&revoc_reg_def_json).unwrap();
-        let blob_storage_reader_handle = BlobStorageUtils::create_reader_config(TYPE,
-                                                                                &tails_writer_config).unwrap();
+        let blob_storage_reader_handle = BlobStorageUtils::open_reader(TYPE,
+                                                                       &tails_writer_config).unwrap();
 
 
         //10. Issuer creates Credential

@@ -91,13 +91,11 @@ impl AnoncredsUtils {
     }
 
     pub fn indy_issuer_create_and_store_revoc_reg(wallet_handle: i32, issuer_did: &str, type_: Option<&str>, tag: &str,
-                                                  cred_def_id: &str, config_json: &str, tails_writer_config: &str)
+                                                  cred_def_id: &str, config_json: &str, tails_writer_handle: i32)
                                                   -> Result<(String, String, String), ErrorCode> {
         let (receiver, command_handle, cb) =
             CallbackUtils::_closure_to_cb_ec_string_string_string();
 
-        let tails_writer_type = CString::new("default").unwrap();
-        let tails_writer_config = CString::new(tails_writer_config).unwrap();
         let issuer_did = CString::new(issuer_did).unwrap();
         let type_str = type_.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let tag = CString::new(tag).unwrap();
@@ -111,8 +109,7 @@ impl AnoncredsUtils {
                                                          tag.as_ptr(),
                                                          cred_def_id.as_ptr(),
                                                          config_json.as_ptr(),
-                                                         tails_writer_type.as_ptr(),
-                                                         tails_writer_config.as_ptr(),
+                                                         tails_writer_handle,
                                                          cb);
 
         super::results::result_to_string_string_string(err, receiver)

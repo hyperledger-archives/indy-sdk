@@ -24,14 +24,14 @@ pub struct SDKTailsAccessor {
 
 impl SDKTailsAccessor {
     pub fn new(tails_service: Rc<BlobStorageService>,
-               tails_reader_cfg_handle: i32,
+               tails_reader_handle: i32,
                rev_reg_def: &RevocationRegistryDefinition) -> Result<SDKTailsAccessor, CommonError> {
         let tails_hash = base64::decode(&rev_reg_def.value.tails_hash)
             .map_err(|err| CommonError::InvalidState(format!("Invalid base64 for Tails hash")))?;
 
-        let tails_reader_handle = tails_service.open_reader(tails_reader_cfg_handle,
-                                                            &rev_reg_def.value.tails_location,
-                                                            tails_hash.as_slice())?;
+        let tails_reader_handle = tails_service.open_blob(tails_reader_handle,
+                                                          &rev_reg_def.value.tails_location,
+                                                          tails_hash.as_slice())?;
         Ok(SDKTailsAccessor {
             tails_service,
             tails_reader_handle
@@ -41,8 +41,11 @@ impl SDKTailsAccessor {
 
 impl Drop for SDKTailsAccessor {
     fn drop(&mut self) {
-        self.tails_service.close(self.tails_reader_handle)
-            .map_err(map_err_err!());
+        #[allow(unused_must_use)] //TODO
+            {
+                self.tails_service.close(self.tails_reader_handle)
+                    .map_err(map_err_err!());
+            }
     }
 }
 
@@ -61,10 +64,9 @@ impl RevocationTailsAccessor for SDKTailsAccessor {
 }
 
 pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
-                                  type_: &str,
-                                  config: &str,
+                                  writer_handle: i32,
                                   rtg: &mut RevocationTailsGenerator) -> Result<(String, String), CommonError> {
-    let storage_handle = service.create_writer(type_, config)?;
+    let blob_handle = service.create_blob(writer_handle)?;
 
     let mut hasher = sha2::Sha256::default();
 
@@ -73,8 +75,8 @@ pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
     while let Some(tail) = rtg.next()? {
         let tail_bytes = tail.to_bytes()?;
         hasher.process(tail_bytes.as_slice());
-        service.append(storage_handle, tail_bytes.as_slice())?;
+        service.append(blob_handle, tail_bytes.as_slice())?;
     }
 
-    service.finalize(storage_handle).map(|(location, hash)| (location, base64::encode(&hash)))
+    service.finalize(blob_handle).map(|(location, hash)| (location, base64::encode(&hash)))
 }

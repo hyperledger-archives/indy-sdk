@@ -7,7 +7,7 @@ use std::io::Write;
 
 use base64;
 
-use super::{Writer, WriterType};
+use super::{WritableBlob, Writer, WriterType};
 use errors::common::CommonError;
 use utils::environment::EnvironmentUtils;
 
@@ -17,6 +17,7 @@ pub struct DefaultWriter {
     base_dir: PathBuf,
     uri_pattern: String,
     file: File,
+    id: i32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -28,27 +29,34 @@ struct DefaultWriterConfig {
 impl<'a> JsonDecodable<'a> for DefaultWriterConfig {}
 
 impl WriterType for DefaultWriterType {
-    fn create(&self, config: &str) -> Result<Box<Writer>, CommonError> {
+    fn open(&self, config: &str) -> Result<Box<Writer>, CommonError> {
         let config: DefaultWriterConfig = DefaultWriterConfig::from_json(config)
             .map_err(map_err_trace!())?;
-        let path = PathBuf::from(config.base_dir);
+        Ok(Box::new(config))
+    }
+}
+
+impl Writer for DefaultWriterConfig {
+    fn create(&self, id: i32) -> Result<Box<WritableBlob>, CommonError> {
+        let path = PathBuf::from(&self.base_dir);
 
         fs::DirBuilder::new()
             .recursive(true)
-            .create(tmp_storage_file().parent().unwrap())?;
+            .create(tmp_storage_file(id).parent().unwrap())?;
 
-        let file = File::create(tmp_storage_file()) //FIXME
+        let file = File::create(tmp_storage_file(id))
             .map_err(map_err_trace!())?;
 
         Ok(Box::new(DefaultWriter {
             base_dir: path,
-            uri_pattern: config.uri_pattern,
+            uri_pattern: self.uri_pattern.clone(),
             file,
+            id,
         }))
     }
 }
 
-impl Writer for DefaultWriter {
+impl WritableBlob for DefaultWriter {
     fn append(&mut self, bytes: &[u8]) -> Result<usize, CommonError> {
         Ok(self.file.write(bytes)?)
     }
@@ -62,15 +70,15 @@ impl Writer for DefaultWriter {
             .recursive(true)
             .create(path.parent().unwrap())?;
 
-        fs::copy(&tmp_storage_file(), &path)?; //FIXME
-        fs::remove_file(&tmp_storage_file())?;
+        fs::copy(&tmp_storage_file(self.id), &path)?; //FIXME
+        fs::remove_file(&tmp_storage_file(self.id))?;
 
         Ok(path.to_str().unwrap().to_owned())
     }
 }
 
-fn tmp_storage_file() -> PathBuf {
-    EnvironmentUtils::tmp_file_path("def_storage_tmp")
+fn tmp_storage_file(id: i32) -> PathBuf {
+    EnvironmentUtils::tmp_file_path(&format!("def_storage_tmp_{}", id))
 }
 
 pub struct DefaultWriterType {}

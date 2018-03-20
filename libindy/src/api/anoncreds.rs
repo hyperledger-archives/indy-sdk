@@ -150,8 +150,7 @@ pub extern fn indy_issuer_create_and_store_credential_def(command_handle: i32,
 ///         2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
 ///     "max_cred_num": maximum number of credentials the new registry can process.
 /// }
-/// tails_writer_type:
-/// tails_writer_config:
+/// tails_writer_handle: handle of blob storage to store tails
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -169,8 +168,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                                                      tag: *const c_char,
                                                      cred_def_id: *const c_char,
                                                      config_json: *const c_char,
-                                                     tails_writer_type: *const c_char,
-                                                     tails_writer_config: *const c_char,
+                                                     tails_writer_handle: i32,
                                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                           revoc_reg_id: *const c_char,
                                                                           revoc_reg_def_json: *const c_char,
@@ -180,9 +178,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
     check_useful_c_str!(tag, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(cred_def_id, ErrorCode::CommonInvalidParam6);
     check_useful_c_str!(config_json, ErrorCode::CommonInvalidParam7);
-    check_useful_opt_c_str!(tails_writer_type, ErrorCode::CommonInvalidParam8);
-    check_useful_c_str!(tails_writer_config, ErrorCode::CommonInvalidParam9);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam10);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
@@ -194,8 +190,7 @@ pub extern fn indy_issuer_create_and_store_revoc_reg(command_handle: i32,
                     tag,
                     cred_def_id,
                     config_json,
-                    tails_writer_type,
-                    tails_writer_config,
+                    tails_writer_handle,
                     Box::new(move |result| {
                         let (err, revoc_reg_id, revoc_reg_def_json, revoc_reg_json) = result_to_err_code_3!(result, String::new(), String::new(), String::new());
                         let revoc_reg_id = CStringUtils::string_to_cstring(revoc_reg_id);

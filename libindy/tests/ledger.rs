@@ -35,7 +35,6 @@ use utils::types::*;
 use utils::constants::*;
 
 use self::openssl::hash::{MessageDigest, Hasher};
-use self::hex::ToHex;
 use self::sodiumoxide::crypto::secretbox;
 
 mod high_cases {
@@ -411,6 +410,7 @@ mod high_cases {
 
     mod attrib_requests {
         use super::*;
+        use self::hex::ToHex;
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]

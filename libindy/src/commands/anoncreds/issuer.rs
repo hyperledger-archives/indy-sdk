@@ -42,8 +42,7 @@ pub enum IssuerCommand {
         String, // tag
         String, // credential definition id
         String, // config
-        Option<String>, // tails writer type
-        String, // tails writer config
+        i32, // tails writer handle
         Box<Fn(Result<(String, String, String), IndyError>) + Send>),
     CreateCredentialOffer(
         i32, // wallet handle
@@ -106,7 +105,7 @@ impl IssuerCommandExecutor {
                                                                type_.as_ref().map(String::as_str), &config_json));
             }
             IssuerCommand::CreateAndStoreRevocationRegistry(wallet_handle, issuer_did, type_, tag, cred_def_id, config_json,
-                                                            tails_writer_type, tails_writer_config, cb) => {
+                                                            tails_writer_handle, cb) => {
                 trace!(target: "issuer_command_executor", "CreateAndStoreRevocationRegistryRegistry command received");
                 cb(self.create_and_store_revocation_registry(wallet_handle,
                                                              &issuer_did,
@@ -114,8 +113,7 @@ impl IssuerCommandExecutor {
                                                              &tag,
                                                              &cred_def_id,
                                                              &config_json,
-                                                             tails_writer_type.as_ref().map(String::as_str),
-                                                             &tails_writer_config));
+                                                             tails_writer_handle));
             }
             IssuerCommand::CreateCredentialOffer(wallet_handle, cred_def_id, cb) => {
                 trace!(target: "issuer_command_executor", "CreateCredentialOffer command received");
@@ -236,11 +234,10 @@ impl IssuerCommandExecutor {
                                             tag: &str,
                                             cred_def_id: &str,
                                             config_json: &str,
-                                            tails_writer_type: Option<&str>,
-                                            tails_writer_config: &str) -> Result<(String, String, String), IndyError> {
+                                            tails_writer_handle: i32) -> Result<(String, String, String), IndyError> {
         trace!("create_and_store_revocation_registry >>> wallet_handle: {:?}, type_: {:?}, tag: {:?}, cred_def_id: {:?}, config_json: {:?}, \
-               tails_writer_type: {:?}, tails_writer_config: {:?}",
-               wallet_handle, type_, tag, cred_def_id, config_json, tails_writer_type, tails_writer_config);
+               tails_handle: {:?}",
+               wallet_handle, type_, tag, cred_def_id, config_json, tails_writer_handle);
 
         let rev_reg_config: RevocationRegistryConfig = RevocationRegistryConfig::from_json(config_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryConfig: {:?}", err)))?;
@@ -260,8 +257,6 @@ impl IssuerCommandExecutor {
             None => IssuanceTypes::ISSUANCE_ON_DEMAND,
         };
 
-        let tails_writer_type = tails_writer_type.unwrap_or("default");
-
         let rev_reg_id = build_id(issuer_did, REV_REG_MARKER, Some(cred_def_id), rev_reg_type.to_str(), tag);
 
         let credential_def: CredentialDefinition =
@@ -274,7 +269,7 @@ impl IssuerCommandExecutor {
                                                                   issuer_did)?;
 
         let (tails_location, tails_hash) =
-            store_tails_from_generator(self.blob_storage_service.clone(), tails_writer_type, tails_writer_config, &mut revocation_tails_generator)?;
+            store_tails_from_generator(self.blob_storage_service.clone(), tails_writer_handle, &mut revocation_tails_generator)?;
 
         let revocation_registry_definition_value = RevocationRegistryDefinitionValue {
             max_cred_num: rev_reg_config.max_cred_num,
