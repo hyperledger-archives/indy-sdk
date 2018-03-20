@@ -11,11 +11,11 @@
 
 @implementation IndyAnoncreds
 
-+ (void)issuerCreateSchemaForIssuerDID:(NSString *)issuerDID
-                                  name:(NSString *)name
-                               version:(NSString *)version
-                                 attrs:(NSString *)attrs
-                            completion:(void (^)(NSError *error, NSString *schemaId, NSString *schemaJSON))completion; {
++ (void)issuerCreateSchemaWithName:(NSString *)name
+                           version:(NSString *)version
+                             attrs:(NSString *)attrs
+                         issuerDID:(NSString *)issuerDID
+                        completion:(void (^)(NSError *error, NSString *schemaId, NSString *schemaJSON))completion; {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -35,13 +35,13 @@
     }
 }
 
-+ (void)issuerCreateAndStoreCredentialDefForIssuerDID:(NSString *)issuerDID
-                                           schemaJSON:(NSString *)schemaJSON
-                                                  tag:(NSString *)tag
-                                                 type:(NSString *)type
-                                           configJSON:(NSString *)configJSON
-                                         walletHandle:(IndyHandle)walletHandle
-                                           completion:(void (^)(NSError *error, NSString *credentialDefId, NSString *credentialDefJSON))completion; {
++ (void)issuerCreateAndStoreCredentialDefForSchema:(NSString *)schemaJSON
+                                         issuerDID:(NSString *)issuerDID
+                                               tag:(NSString *)tag
+                                              type:(NSString *)type
+                                        configJSON:(NSString *)configJSON
+                                      walletHandle:(IndyHandle)walletHandle
+                                        completion:(void (^)(NSError *error, NSString *credDefId, NSString *credDefJSON))completion; {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -63,15 +63,15 @@
     }
 }
 
-+ (void)issuerCreateAndStoreRevocRegForIssuerDid:(NSString *)issuerDID
-                                            type:(NSString *)type
-                                             tag:(NSString *)tag
-                                       credDefId:(NSString *)credDefId
-                                      configJSON:(NSString *)configJSON
-                                 tailsWriterType:(NSString *)tailsWriterType
-                               tailsWriterConfig:(NSString *)tailsWriterConfig
-                                    walletHandle:(IndyHandle)walletHandle
-                                      completion:(void (^)(NSError *error, NSString *revocRegID, NSString *revocRegDefJSON, NSString *revocRegEntryJSON))completion; {
++ (void)issuerCreateAndStoreRevocRegForCredentialDefId:(NSString *)credDefId
+                                             issuerDID:(NSString *)issuerDID
+                                                  type:(NSString *)type
+                                                   tag:(NSString *)tag
+                                            configJSON:(NSString *)configJSON
+                                       tailsWriterType:(NSString *)tailsWriterType
+                                     tailsWriterConfig:(NSString *)tailsWriterConfig
+                                          walletHandle:(IndyHandle)walletHandle
+                                            completion:(void (^)(NSError *error, NSString *revocRegID, NSString *revocRegDefJSON, NSString *revocRegEntryJSON))completion; {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -95,11 +95,9 @@
     }
 }
 
-+ (void)issuerCreateCredentialOfferForProverDID:(NSString *)proverDID
-                                      issuerDID:(NSString *)issuerDID
-                                      credDefId:(NSString *)credDefId
++ (void)issuerCreateCredentialOfferForCredDefId:(NSString *)credDefId
                                    walletHandle:(IndyHandle)walletHandle
-                                     completion:(void (^)(NSError *error, NSString *credentialOfferJSON))completion; {
+                                     completion:(void (^)(NSError *error, NSString *credOfferJSON))completion; {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -107,8 +105,6 @@
     ret = indy_issuer_create_credential_offer(handle,
             walletHandle,
             [credDefId UTF8String],
-            [issuerDID UTF8String],
-            [proverDID UTF8String],
             IndyWrapperCommon3PSCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -120,25 +116,125 @@
 }
 
 
-+ (void)issuerCreateCredentialWithRequest:(NSString *)credentialRequestJSON
-                     credentialValuesJSON:(NSString *)credentialValuesJSON
-                                 revRegId:(NSString *)revRegId
-                        tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                           userRevocIndex:(NSNumber *)userRevocIndex
-                             walletHandle:(IndyHandle)walletHandle
-                               completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON, NSString *xcredentialJSON))completion; {
++ (void)issuerCreateCredentialForCredentialRequest:(NSString *)credReqJSON
+                                     credOfferJSON:(NSString *)credOfferJSON
+                                    credValuesJSON:(NSString *)credValuesJSON
+                                          revRegId:(NSString *)revRegId
+                           blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
+                                      walletHandle:(IndyHandle)walletHandle
+                                        completion:(void (^)(NSError *error, NSString *credJSON, NSString *credRevocID, NSString *revocRegDeltaJSON))completion; {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
     ret = indy_issuer_create_credential(handle,
             walletHandle,
-            [credentialRequestJSON UTF8String],
-            [credentialValuesJSON UTF8String],
+            [credOfferJSON UTF8String],
+            [credReqJSON UTF8String],
+            [credValuesJSON UTF8String],
             [revRegId UTF8String],
-            tailsReaderHandle ? [tailsReaderHandle intValue] : -1,
-            userRevocIndex ? [userRevocIndex intValue] : -1,
-            IndyWrapperCommon4PSCallback);
+            blobStorageReaderHandle ? [blobStorageReaderHandle intValue] : -1,
+            IndyWrapperCommon5PStrOpStrOpStrCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil, nil, nil);
+        });
+    }
+}
+
++ (void)issuerRevokeCredentialByCredRevocId:(NSString *)credRevocId
+                                   revRegId:(NSString *)revRegId
+                    blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
+                               walletHandle:(IndyHandle)walletHandle
+                                 completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_issuer_revoke_credential(handle,
+            walletHandle,
+            [blobStorageReaderHandle intValue],
+            [revRegId UTF8String],
+            [credRevocId UTF8String],
+            IndyWrapperCommon3PSCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)issuerRecoverCredentialByCredRevocId:(NSString *)credRevocId
+                                    revRegId:(NSString *)revRegId
+                     blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
+                                walletHandle:(IndyHandle)walletHandle
+                                  completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_issuer_recover_credential(handle,
+            walletHandle,
+            [blobStorageReaderHandle intValue],
+            [revRegId UTF8String],
+            [credRevocId UTF8String],
+            IndyWrapperCommon3PSCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
++ (void)proverCreateMasterSecret:(NSString *)masterSecretID
+                    walletHandle:(IndyHandle)walletHandle
+                      completion:(void (^)(NSError *error))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_prover_create_master_secret(handle,
+            walletHandle,
+            [masterSecretID UTF8String],
+            IndyWrapperCommon2PCallback
+    );
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret]);
+        });
+    }
+}
+
++ (void)proverCreateCredentialReqForCredentialOffer:(NSString *)credOfferJSON
+                                  credentialDefJSON:(NSString *)credentialDefJSON
+                                          proverDID:(NSString *)proverDID
+                                     masterSecretID:(NSString *)masterSecretID
+                                       walletHandle:(IndyHandle)walletHandle
+                                         completion:(void (^)(NSError *error, NSString *credReqJSON, NSString *credReqMetadataJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_prover_create_credential_req(handle,
+            walletHandle,
+            [proverDID UTF8String],
+            [credOfferJSON UTF8String],
+            [credentialDefJSON UTF8String],
+            [masterSecretID UTF8String],
+            IndyWrapperCommon4PCallback
+    );
 
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -149,178 +245,42 @@
     }
 }
 
-+ (void)issuerRevokeCredentialForRevRegId:(NSString *)revRegId
-                        tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                           userRevocIndex:(NSNumber *)userRevocIndex
-                             walletHandle:(IndyHandle)walletHandle
-                               completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion; {
-    indy_error_t ret;
-
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
-
-    ret = indy_issuer_revoke_credential(handle,
-            walletHandle,
-            [tailsReaderHandle intValue],
-            [revRegId UTF8String],
-            [userRevocIndex intValue],
-            IndyWrapperCommon3PSCallback);
-
-    if (ret != Success) {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
-
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError:ret], nil);
-        });
-    }
-}
-
-+ (void)issuerRecoverCredentialForRevRegId:(NSString *)revRegId
-                         tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                            userRevocIndex:(NSNumber *)userRevocIndex
-                              walletHandle:(IndyHandle)walletHandle
-                                completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion; {
-    indy_error_t ret;
-
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
-
-    ret = indy_issuer_recover_credential(handle,
-            walletHandle,
-            [tailsReaderHandle intValue],
-            [revRegId UTF8String],
-            [userRevocIndex intValue],
-            IndyWrapperCommon3PSCallback);
-
-    if (ret != Success) {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
-
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError:ret], nil);
-        });
-    }
-}
-
-+ (void)proverStoreCredentialOffer:(NSString *)credentialOfferJSON
-                  WithWalletHandle:(IndyHandle)walletHandle
-                        completion:(void (^)(NSError *error))completion {
-    indy_error_t ret;
-
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
-
-    ret = indy_prover_store_credential_offer(handle,
-            walletHandle,
-            [credentialOfferJSON UTF8String],
-            IndyWrapperCommon2PCallback
-    );
-
-    if (ret != Success) {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
-
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError:ret]);
-        });
-    }
-}
-
-+ (void)proverGetCredentialOffersWithFilter:(NSString *)filterJSON
-                               walletHandle:(IndyHandle)walletHandle
-                                 completion:(void (^)(NSError *error, NSString *credentialOffersJSON))completion {
-    indy_error_t ret;
-
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
-
-    ret = indy_prover_get_credential_offers(handle,
-            walletHandle,
-            [filterJSON UTF8String],
-            IndyWrapperCommon3PSCallback
-    );
-
-    if (ret != Success) {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
-
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError:ret], nil);
-        });
-    }
-}
-
-+ (void)proverCreateMasterSecretNamed:(NSString *)masterSecretName
-                         walletHandle:(IndyHandle)walletHandle
-                           completion:(void (^)(NSError *error))completion {
-    indy_error_t ret;
-
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
-
-    ret = indy_prover_create_master_secret(handle,
-            walletHandle,
-            [masterSecretName UTF8String],
-            IndyWrapperCommon2PCallback
-    );
-
-    if (ret != Success) {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
-
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError:ret]);
-        });
-    }
-}
-
-+ (void)proverCreateAndStoreCredentialReqWithCredentialDef:(NSString *)credentialDefJSON
-                                                 proverDID:(NSString *)proverDID
-                                       credentialOfferJSON:(NSString *)credentialOfferJSON
-                                          masterSecretName:(NSString *)masterSecretName
-                                              walletHandle:(IndyHandle)walletHandle
-                                                completion:(void (^)(NSError *error, NSString *credentialReqJSON))completion {
-    indy_error_t ret;
-
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
-
-    ret = indy_prover_create_and_store_credential_req(handle,
-            walletHandle,
-            [proverDID UTF8String],
-            [credentialOfferJSON UTF8String],
-            [credentialDefJSON UTF8String],
-            [masterSecretName UTF8String],
-            IndyWrapperCommon3PSCallback
-    );
-
-    if (ret != Success) {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
-
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError:ret], nil);
-        });
-    }
-}
-
-+ (void)proverStoreCredential:(NSString *)credentialsJson
-                 credentialId:(NSString *)credentialId
++ (void)proverStoreCredential:(NSString *)credJson
+                       credID:(NSString *)credID
+                  credReqJSON:(NSString *)credReqJSON
+          credReqMetadataJSON:(NSString *)credReqMetadataJSON
+                  credDefJSON:(NSString *)credDefJSON
                 revRegDefJSON:(NSString *)revRegDefJSON
+                 revStateJSON:(NSString *)revStateJSON
                  walletHandle:(IndyHandle)walletHandle
-                   completion:(void (^)(NSError *error))completion {
+                   completion:(void (^)(NSError *error, NSString *outCredID))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
     ret = indy_prover_store_credential(handle,
             walletHandle,
-            [credentialId UTF8String],
-            [credentialsJson UTF8String],
+            [credID UTF8String],
+            [credReqJSON UTF8String],
+            [credReqMetadataJSON UTF8String],
+            [credJson UTF8String],
+            [credDefJSON UTF8String],
             [revRegDefJSON UTF8String],
-            IndyWrapperCommon2PCallback
+            [revStateJSON UTF8String],
+            IndyWrapperCommon3PSCallback
     );
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError:ret]);
+            completion([NSError errorFromIndyError:ret], nil);
         });
     }
 }
 
-+ (void)proverGetCredentialsWithFilter:(NSString *)filterJSON
-                          walletHandle:(IndyHandle)walletHandle
-                            completion:(void (^)(NSError *error, NSString *credentialsJSON))completion {
++ (void)proverGetCredentialsForFilter:(NSString *)filterJSON
+                         walletHandle:(IndyHandle)walletHandle
+                           completion:(void (^)(NSError *error, NSString *credentialsJSON))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -362,10 +322,10 @@
 
 + (void)proverCreateProofForRequest:(NSString *)proofRequestJSON
            requestedCredentialsJSON:(NSString *)requestedCredentialsJSON
+                     masterSecretID:(NSString *)masterSecretID
                         schemasJSON:(NSString *)schemasJSON
-                   masterSecretName:(NSString *)masterSecretName
                  credentialDefsJSON:(NSString *)credentialDefsJSON
-                     revocInfosJSON:(NSString *)revocInfosJSON
+                    revocStatesJSON:(NSString *)revocStatesJSON
                        walletHandle:(IndyHandle)walletHandle
                          completion:(void (^)(NSError *error, NSString *proofJSON))completion; {
     indy_error_t ret;
@@ -376,10 +336,10 @@
             walletHandle,
             [proofRequestJSON UTF8String],
             [requestedCredentialsJSON UTF8String],
+            [masterSecretID UTF8String],
             [schemasJSON UTF8String],
-            [masterSecretName UTF8String],
             [credentialDefsJSON UTF8String],
-            [revocInfosJSON UTF8String],
+            [revocStatesJSON UTF8String],
             IndyWrapperCommon3PSCallback
     );
     if (ret != Success) {
@@ -420,22 +380,22 @@
     }
 }
 
-+ (void)createRevocationInfoForTimestamp:(NSNumber *)timestamp
-                                 revRegDefJSON:(NSString *)revRegDefJSON
-                               revRegDeltaJSON:(NSString *)revRegDeltaJSON
-                             tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                                        revIdx:(NSNumber *)revIdx
-                                    completion:(void (^)(NSError *error, NSString *revInfo))completion; {
++ (void)createRevocationStateForCredRevID:(NSString *)credRevID
+                                timestamp:(NSNumber *)timestamp
+                            revRegDefJSON:(NSString *)revRegDefJSON
+                          revRegDeltaJSON:(NSString *)revRegDeltaJSON
+                  blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
+                               completion:(void (^)(NSError *error, NSString *revStateJSON))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_create_revocation_info(handle,
-            [tailsReaderHandle intValue],
+    ret = indy_create_revocation_state(handle,
+            [blobStorageReaderHandle intValue],
             [revRegDefJSON UTF8String],
             [revRegDeltaJSON UTF8String],
-            [timestamp intValue],
-            [revIdx intValue],
+            [timestamp unsignedIntValue],
+            [credRevID UTF8String],
             IndyWrapperCommon3PSCallback
     );
     if (ret != Success) {
@@ -447,70 +407,24 @@
     }
 }
 
-+ (void)updateRevocationInfoForTimestamp:(NSNumber *)timestamp
-                                   revInfoJSON:(NSString *)revInfoJSON
-                                 revRegDefJSON:(NSString *)revRegDefJSON
-                               revRegDeltaJSON:(NSString *)revRegDeltaJSON
-                             tailsReaderHandle:(NSNumber *)tailsReaderHandle
-                                        revIdx:(NSNumber *)revIdx
-                                    completion:(void (^)(NSError *error, NSString *updatedRevInfo))completion; {
++ (void)updateRevocationState:(NSString *)revStateJSON
+                    credRevID:(NSString *)credRevID
+                    timestamp:(NSNumber *)timestamp
+                revRegDefJSON:(NSString *)revRegDefJSON
+              revRegDeltaJSON:(NSString *)revRegDeltaJSON
+      blobStorageReaderHandle:(NSNumber *)blobStorageReaderHandle
+                   completion:(void (^)(NSError *error, NSString *updatedRevStateJSON))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_update_revocation_info(handle,
-            [tailsReaderHandle intValue],
-            [revInfoJSON UTF8String],
+    ret = indy_update_revocation_state(handle,
+            [blobStorageReaderHandle intValue],
+            [revStateJSON UTF8String],
             [revRegDefJSON UTF8String],
             [revRegDeltaJSON UTF8String],
-            [timestamp intValue],
-            [revIdx intValue],
-            IndyWrapperCommon3PSCallback
-    );
-    if (ret != Success) {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
-
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError:ret], nil);
-        });
-    }
-}
-
-+ (void)storeRevocationInfoForId:(NSString *)id
-                           revInfoJSON:(NSString *)revInfoJSON
-                          walletHandle:(IndyHandle)walletHandle
-                            completion:(void (^)(NSError *error))completion; {
-    indy_error_t ret;
-
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
-
-    ret = indy_store_revocation_info(handle,
-            walletHandle,
-            [id UTF8String],
-            [revInfoJSON UTF8String],
-            IndyWrapperCommon2PCallback
-    );
-    if (ret != Success) {
-        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
-
-        dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError:ret]);
-        });
-    }
-}
-
-+ (void)getRevocationInfoForId:(NSString *)id
-                           timestamp:(NSNumber *)timestamp
-                        walletHandle:(IndyHandle)walletHandle
-                          completion:(void (^)(NSError *error, NSString *revInfo))completion; {
-    indy_error_t ret;
-
-    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
-
-    ret = indy_get_revocation_info(handle,
-            walletHandle,
-            [id UTF8String],
-            timestamp ? [timestamp intValue] : -1,
+            [timestamp unsignedIntValue],
+            [credRevID UTF8String],
             IndyWrapperCommon3PSCallback
     );
     if (ret != Success) {
