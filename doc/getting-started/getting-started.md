@@ -70,7 +70,7 @@ Publishing with a DID verification key allows a person, organization or thing, t
 
 Our ledger is public permissioned and anyone who wants to publish DIDs need to get the role of **Trust Anchor** on the ledger. A **Trust Anchor** is a person or organization that the ledger already knows about, that is able to help bootstrap others. (It is *not* the same as what cybersecurity experts call a "trusted third party"; think of it more like a facilitator). See [Roles](https://docs.google.com/spreadsheets/d/1TWXF7NtBjSOaUIBeIH77SyZnawfo91cJ_ns4TR-wsq4/edit#gid=0) to get more information about roles.
 
-**The first step towards being able to place transactions on the ledger involves getting the role of Trust Anchor on the ledger. Faber College, Acme Corp and Thrift Bank will need to get the role of Trust Anchor on the ledger s they can create Verinyms and Pairwise-Unique Identifiers to provide the service to Alice.**
+**The first step towards being able to place transactions on the ledger involves getting the role of Trust Anchor on the ledger. Faber College, Acme Corp and Thrift Bank will need to get the role of Trust Anchor on the ledger so they can create Verinyms and Pairwise-Unique Identifiers to provide the service to Alice.**
 
 Becoming a **Trust Anchor** requires contacting a person or organization who already has the **Trust Anchor** role on the ledger. For the sake of the demo, in our empty test ledger we have only NYMs with the **Steward** role, but all **Stewards** are automatically **Trust Anchors**.
 
@@ -103,7 +103,7 @@ The below code block below contains each of these items. Note how the comments d
 
 The test ledger we use was pre-configured to store some known **Steward** NYMs. Also we know **seed** values for the random number generator that were used to generate keys for this NYMs. These **seed** values allow us to restore signing keys for these DIDs on **Steward's** agent side and as result get the DID ownership.
 
-Libindy has a concept of the **Wallet**. The wallet is secure storage for crypto materials like DIDs, keys and etc... To store the **Steward's** DID and corresponding signkey, the agent should create a named wallet first by calling ``pool.create_wallet``. After this the named wallet can be opened by calling ``pool.open_wallet``. This call returns the wallet handle that can be used to reference this opened wallet in future libindy calls.
+Libindy has a concept of the **Wallet**. The wallet is secure storage for crypto materials like DIDs, keys and etc... To store the **Steward's** DID and corresponding signkey, the agent should create a named wallet first by calling ``wallet.create_wallet``. After this the named wallet can be opened by calling ``wallet.open_wallet``. This call returns the wallet handle that can be used to reference this opened wallet in future libindy calls.
 
 After the wallet is opened we can create a DID record in this wallet by calling ``did.create_and_store_my_did`` that returns the generated DID and verkey part of generated key. The signkey part for this DID will be stored in the wallet too, but it is impossible to read it directly.
 

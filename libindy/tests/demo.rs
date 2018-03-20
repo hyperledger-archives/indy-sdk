@@ -42,67 +42,18 @@ use std::thread;
 #[test]
 fn anoncreds_demo_works() {
     TestUtils::cleanup_storage();
-
-    let (create_wallet_sender, create_wallet_receiver) = channel();
-    let (open_wallet_sender, open_wallet_receiver) = channel();
-    let (issuer_create_claim_definition_sender, issuer_create_claim_definition_receiver) = channel();
-    let (issuer_create_claim_offer_sender, issuer_create_claim_offer_receiver) = channel();
-    let (prover_create_master_secret_sender, prover_create_master_secret_receiver) = channel();
-    let (prover_create_claim_req_sender, prover_create_claim_req_receiver) = channel();
-    let (issuer_create_claim_sender, issuer_create_claim_receiver) = channel();
-    let (prover_store_claim_sender, prover_store_claim_receiver) = channel();
-    let (prover_get_claims_for_proof_req_sender, prover_get_claims_for_proof_req_receiver) = channel();
-    let (prover_create_proof_sender, prover_create_proof_receiver) = channel();
-    let (verifier_verify_proof_sender, verifier_verify_proof_receiver) = channel();
-    let (close_wallet_sender, close_wallet_receiver) = channel();
-
-    let issuer_create_claim_definition_cb = Box::new(move |err, claim_def_json| {
-        issuer_create_claim_definition_sender.send((err, claim_def_json)).unwrap();
-    });
-    let issuer_create_claim_offer_cb = Box::new(move |err, claim_offer_json| {
-        issuer_create_claim_offer_sender.send((err, claim_offer_json)).unwrap();
-    });
-    let create_wallet_cb = Box::new(move |err| {
-        create_wallet_sender.send(err).unwrap();
-    });
-    let open_wallet_cb = Box::new(move |err, handle| {
-        open_wallet_sender.send((err, handle)).unwrap();
-    });
-    let prover_create_master_secret_cb = Box::new(move |err| {
-        prover_create_master_secret_sender.send(err).unwrap();
-    });
-    let prover_create_claim_req_cb = Box::new(move |err, claim_req_json| {
-        prover_create_claim_req_sender.send((err, claim_req_json)).unwrap();
-    });
-    let issuer_create_claim_cb = Box::new(move |err, revoc_reg_update_json, xclaim_json| {
-        issuer_create_claim_sender.send((err, revoc_reg_update_json, xclaim_json)).unwrap();
-    });
-    let prover_store_claim_cb = Box::new(move |err| {
-        prover_store_claim_sender.send(err).unwrap();
-    });
-    let prover_get_claims_for_proof_req_cb = Box::new(move |err, claims_json| {
-        prover_get_claims_for_proof_req_sender.send((err, claims_json)).unwrap();
-    });
-    let prover_create_proof_cb = Box::new(move |err, proof_json| {
-        prover_create_proof_sender.send((err, proof_json)).unwrap();
-    });
-    let verifier_verify_proof_cb = Box::new(move |err, valid| {
-        verifier_verify_proof_sender.send((err, valid)).unwrap();
-    });
-    let close_wallet_cb = Box::new(move |err_code| close_wallet_sender.send(err_code).unwrap());
-
-    let (issuer_create_claim_definition_command_handle, create_claim_definition_callback) = CallbackUtils::closure_to_issuer_create_claim_definition_cb(issuer_create_claim_definition_cb);
-    let (issuer_create_claim_offer_command_handle, issuer_create_claim_offer_callback) = CallbackUtils::closure_to_issuer_create_claim_offer_cb(issuer_create_claim_offer_cb);
-    let (create_wallet_command_handle, create_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_wallet_cb);
-    let (open_wallet_command_handle, open_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_wallet_cb);
-    let (prover_create_master_secret_command_handle, prover_create_master_secret_callback) = CallbackUtils::closure_to_prover_create_master_secret_cb(prover_create_master_secret_cb);
-    let (prover_create_claim_req_command_handle, prover_create_claim_req_callback) = CallbackUtils::closure_to_prover_create_claim_req_cb(prover_create_claim_req_cb);
-    let (issuer_create_claim_command_handle, issuer_create_claim_callback) = CallbackUtils::closure_to_issuer_create_claim_cb(issuer_create_claim_cb);
-    let (prover_store_claim_command_handle, prover_store_claim_callback) = CallbackUtils::closure_to_prover_store_claim_cb(prover_store_claim_cb);
-    let (prover_get_claims_for_proof_req_handle, prover_get_claims_for_proof_req_callback) = CallbackUtils::closure_to_prover_get_claims_for_proof_req_cb(prover_get_claims_for_proof_req_cb);
-    let (prover_create_proof_handle, prover_create_proof_callback) = CallbackUtils::closure_to_prover_create_proof_cb(prover_create_proof_cb);
-    let (verifier_verify_proof_handle, verifier_verify_proof_callback) = CallbackUtils::closure_to_verifier_verify_proof_cb(verifier_verify_proof_cb);
-    let (close_wallet_command_handle, close_wallet_callback) = CallbackUtils::closure_to_delete_wallet_cb(close_wallet_cb);
+    let (issuer_create_claim_definition_receiver, issuer_create_claim_definition_command_handle, issuer_create_claim_definition_callback) = CallbackUtils::_closure_to_cb_ec_string();
+    let (issuer_create_claim_offer_receiver, issuer_create_claim_offer_command_handle, issuer_create_claim_offer_callback) = CallbackUtils::_closure_to_cb_ec_string();
+    let (create_wallet_receiver, create_wallet_command_handle, create_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
+    let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = CallbackUtils::_closure_to_cb_ec_i32();
+    let (prover_create_master_secret_receiver, prover_create_master_secret_command_handle, prover_create_master_secret_callback) = CallbackUtils::_closure_to_cb_ec();
+    let (prover_create_claim_req_receiver, prover_create_claim_req_command_handle, prover_create_claim_req_callback) = CallbackUtils::_closure_to_cb_ec_string();
+    let (issuer_create_claim_receiver, issuer_create_claim_command_handle, issuer_create_claim_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
+    let (prover_store_claim_receiver, prover_store_claim_command_handle, prover_store_claim_callback) = CallbackUtils::_closure_to_cb_ec();
+    let (prover_get_claims_for_proof_req_receiver, prover_get_claims_for_proof_req_command_handle, prover_get_claims_for_proof_req_callback) = CallbackUtils::_closure_to_cb_ec_string();
+    let (prover_create_proof_receiver, prover_create_proof_command_handle, prover_create_proof_callback) = CallbackUtils::_closure_to_cb_ec_string();
+    let (verifier_verify_proof_receiver, verifier_verify_proof_command_handle, verifier_verify_proof_callback) = CallbackUtils::_closure_to_cb_ec_bool();
+    let (close_wallet_receiver, close_wallet_command_handle, close_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
 
     let pool_name = "pool_1";
     let wallet_name = "issuer_wallet1";
@@ -157,7 +108,7 @@ fn anoncreds_demo_works() {
                                                CString::new(schema.clone()).unwrap().as_ptr(),
                                                null(),
                                                false,
-                                               create_claim_definition_callback);
+                                               issuer_create_claim_definition_callback);
 
     assert_eq!(ErrorCode::Success, err);
     let (err, claim_def_json) = issuer_create_claim_definition_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
@@ -262,7 +213,7 @@ fn anoncreds_demo_works() {
 
     // 8. Prover gets Claims for Proof Request
     let err =
-        indy_prover_get_claims_for_proof_req(prover_get_claims_for_proof_req_handle,
+        indy_prover_get_claims_for_proof_req(prover_get_claims_for_proof_req_command_handle,
                                              wallet_handle,
                                              CString::new(proof_req_json.clone()).unwrap().as_ptr(),
                                              prover_get_claims_for_proof_req_callback);
@@ -288,7 +239,7 @@ fn anoncreds_demo_works() {
 
     // 9. Prover create Proof for Proof Request
     let err =
-        indy_prover_create_proof(prover_create_proof_handle,
+        indy_prover_create_proof(prover_create_proof_command_handle,
                                  wallet_handle,
                                  CString::new(proof_req_json.clone()).unwrap().as_ptr(),
                                  CString::new(requested_claims_json).unwrap().as_ptr(),
@@ -304,7 +255,7 @@ fn anoncreds_demo_works() {
 
     // 10. Verifier verify proof
     let err =
-        indy_verifier_verify_proof(verifier_verify_proof_handle,
+        indy_verifier_verify_proof(verifier_verify_proof_command_handle,
                                    CString::new(proof_req_json).unwrap().as_ptr(),
                                    CString::new(proof_json).unwrap().as_ptr(),
                                    CString::new(schemas_json).unwrap().as_ptr(),
@@ -336,50 +287,20 @@ fn ledger_demo_works() {
     let pool_name = "pool_1";
     let c_pool_name = CString::new(pool_name).unwrap();
 
-    let (submit_sender, submit_receiver) = channel();
-    let (get_nym_sender, get_nym_receiver) = channel();
-    let (create_sender, create_receiver) = channel();
-    let (open_sender, open_receiver) = channel();
-    let (create_my_wallet_sender, create_my_wallet_receiver) = channel();
-    let (create_their_wallet_sender, create_their_wallet_receiver) = channel();
-    let (open_my_wallet_sender, open_my_wallet_receiver) = channel();
-    let (open_their_wallet_sender, open_their_wallet_receiver) = channel();
-    let (create_and_store_my_did_sender, create_and_store_my_did_receiver) = channel();
-    let (create_and_store_their_did_sender, create_and_store_their_did_receiver) = channel();
-    let (store_their_did_sender, store_their_did_receiver) = channel();
-    let (close_pool_sender, close_pool_receiver) = channel();
-    let (close_my_wallet_sender, close_my_wallet_receiver) = channel();
-    let (close_their_wallet_sender, close_their_wallet_receiver) = channel();
-
-    let create_cb = Box::new(move |err| { create_sender.send(err).unwrap(); });
-    let open_cb = Box::new(move |err, pool_handle| { open_sender.send((err, pool_handle)).unwrap(); });
-    let send_cb = Box::new(move |err, resp| { submit_sender.send((err, resp)).unwrap(); });
-    let get_nym_cb = Box::new(move |err, resp| { get_nym_sender.send((err, resp)).unwrap(); });
-    let create_my_wallet_cb = Box::new(move |err| { create_my_wallet_sender.send(err).unwrap(); });
-    let create_their_wallet_cb = Box::new(move |err| { create_their_wallet_sender.send(err).unwrap(); });
-    let open_my_wallet_cb = Box::new(move |err, handle| { open_my_wallet_sender.send((err, handle)).unwrap(); });
-    let open_their_wallet_cb = Box::new(move |err, handle| { open_their_wallet_sender.send((err, handle)).unwrap(); });
-    let create_and_store_my_did_cb = Box::new(move |err, did, verkey| { create_and_store_my_did_sender.send((err, did, verkey)).unwrap(); });
-    let create_and_store_their_did_cb = Box::new(move |err, did, verkey| { create_and_store_their_did_sender.send((err, did, verkey)).unwrap(); });
-    let store_their_did_cb = Box::new(move |err| { store_their_did_sender.send((err)).unwrap(); });
-    let close_pool_cb = Box::new(move |err_code| close_pool_sender.send(err_code).unwrap());
-    let close_my_wallet_cb = Box::new(move |err_code| close_my_wallet_sender.send(err_code).unwrap());
-    let close_their_wallet_cb = Box::new(move |err_code| close_their_wallet_sender.send(err_code).unwrap());
-
-    let (open_command_handle, open_callback) = CallbackUtils::closure_to_open_pool_ledger_cb(open_cb);
-    let (create_command_handle, create_callback) = CallbackUtils::closure_to_create_pool_ledger_cb(create_cb);
-    let (send_command_handle, send_callback) = CallbackUtils::closure_to_send_tx_cb(send_cb);
-    let (get_nym_command_handle, get_nym_callback) = CallbackUtils::closure_to_send_tx_cb(get_nym_cb);
-    let (create_my_wallet_command_handle, create_my_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_my_wallet_cb);
-    let (create_their_wallet_command_handle, create_their_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_their_wallet_cb);
-    let (open_my_wallet_command_handle, open_my_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_my_wallet_cb);
-    let (open_their_wallet_command_handle, open_their_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_their_wallet_cb);
-    let (create_and_store_my_did_command_handle, create_and_store_my_did_callback) = CallbackUtils::closure_to_create_and_store_my_did_cb(create_and_store_my_did_cb);
-    let (create_and_store_their_did_command_handle, create_and_store_their_did_callback) = CallbackUtils::closure_to_create_and_store_my_did_cb(create_and_store_their_did_cb);
-    let (store_their_did_command_handle, store_their_did_callback) = CallbackUtils::closure_to_store_their_did_cb(store_their_did_cb);
-    let (close_pool_command_handle, close_pool_callback) = CallbackUtils::closure_to_close_pool_ledger_cb(close_pool_cb);
-    let (close_my_wallet_command_handle, close_my_wallet_callback) = CallbackUtils::closure_to_delete_wallet_cb(close_my_wallet_cb);
-    let (close_their_wallet_command_handle, close_their_wallet_callback) = CallbackUtils::closure_to_delete_wallet_cb(close_their_wallet_cb);
+    let (open_receiver, open_command_handle, open_callback) = CallbackUtils::_closure_to_cb_ec_i32();
+    let (create_receiver, create_command_handle, create_callback) = CallbackUtils::_closure_to_cb_ec();
+    let (send_receiver, send_command_handle, send_callback) = CallbackUtils::_closure_to_cb_ec_string();
+    let (get_nym_receiver, get_nym_command_handle, get_nym_callback) = CallbackUtils::_closure_to_cb_ec_string();
+    let (create_my_wallet_receiver, create_my_wallet_command_handle, create_my_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
+    let (create_their_wallet_receiver, create_their_wallet_command_handle, create_their_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
+    let (open_my_wallet_receiver, open_my_wallet_command_handle, open_my_wallet_callback) = CallbackUtils::_closure_to_cb_ec_i32();
+    let (open_their_wallet_receiver, open_their_wallet_command_handle, open_their_wallet_callback) = CallbackUtils::_closure_to_cb_ec_i32();
+    let (create_and_store_my_did_receiver, create_and_store_my_did_command_handle, create_and_store_my_did_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
+    let (create_and_store_their_did_receiver, create_and_store_their_did_command_handle, create_and_store_their_did_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
+    let (store_their_did_receiver, store_their_did_command_handle, store_their_did_callback) = CallbackUtils::_closure_to_cb_ec();
+    let (close_pool_receiver, close_pool_command_handle, close_pool_callback) = CallbackUtils::_closure_to_cb_ec();
+    let (close_my_wallet_receiver, close_my_wallet_command_handle, close_my_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
+    let (close_their_wallet_receiver, close_their_wallet_command_handle, close_their_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
 
     // 1. Create ledger config from genesis txn file
     let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
@@ -524,7 +445,7 @@ fn ledger_demo_works() {
                                            req.as_ptr(),
                                            send_callback);
     assert_eq!(err, ErrorCode::Success);
-    let (err, resp) = submit_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    let (err, resp) = send_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
     let nym_resp: Reply = serde_json::from_str(&resp).unwrap();
     info!("nym_resp_raw : {:?}", resp);
@@ -623,26 +544,12 @@ fn ledger_demo_works() {
 fn crypto_demo_works() {
     TestUtils::cleanup_storage();
 
-    let (create_wallet_sender, create_wallet_receiver) = channel();
-    let (open_wallet_sender, open_wallet_receiver) = channel();
-    let (create_and_store_did_sender, create_and_store_did_receiver) = channel();
-    let (sign_sender, sign_receiver) = channel();
-    let (verify_sender, verify_receiver) = channel();
-    let (close_wallet_sender, close_wallet_receiver) = channel();
-
-    let create_wallet_cb = Box::new(move |err| { create_wallet_sender.send(err).unwrap(); });
-    let open_wallet_cb = Box::new(move |err, handle| { open_wallet_sender.send((err, handle)).unwrap(); });
-    let create_and_store_did_cb = Box::new(move |err, did, verkey| { create_and_store_did_sender.send((err, did, verkey)).unwrap(); });
-    let sign_cb = Box::new(move |err, signature| { sign_sender.send((err, signature)).unwrap(); });
-    let verify_cb = Box::new(move |err, valid| { verify_sender.send((err, valid)).unwrap(); });
-    let close_wallet_cb = Box::new(move |err_code| close_wallet_sender.send(err_code).unwrap());
-
-    let (create_wallet_command_handle, create_wallet_callback) = CallbackUtils::closure_to_create_wallet_cb(create_wallet_cb);
-    let (open_wallet_command_handle, open_wallet_callback) = CallbackUtils::closure_to_open_wallet_cb(open_wallet_cb);
-    let (create_and_store_did_command_handle, create_and_store_did_callback) = CallbackUtils::closure_to_create_and_store_my_did_cb(create_and_store_did_cb);
-    let (sign_command_handle, sign_callback) = CallbackUtils::closure_to_sign_cb(sign_cb);
-    let (verify_command_handle, verify_callback) = CallbackUtils::closure_to_verify_signature_cb(verify_cb);
-    let (close_wallet_command_handle, close_wallet_callback) = CallbackUtils::closure_to_delete_wallet_cb(close_wallet_cb);
+    let (create_wallet_receiver, create_wallet_command_handle, create_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
+    let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = CallbackUtils::_closure_to_cb_ec_i32();
+    let (create_and_store_did_receiver, create_and_store_did_command_handle, create_and_store_did_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
+    let (sign_receiver, sign_command_handle, sign_callback) = CallbackUtils::_closure_to_cb_ec_vec_u8();
+    let (verify_receiver, verify_command_handle, verify_callback) = CallbackUtils::_closure_to_cb_ec_bool();
+    let (close_wallet_receiver, close_wallet_command_handle, close_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
 
     let pool_name = "pool_1";
     let wallet_name = "wallet_1";
