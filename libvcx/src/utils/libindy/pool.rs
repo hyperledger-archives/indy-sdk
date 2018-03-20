@@ -282,6 +282,7 @@ pub mod tests {
         assert_eq!(create_pool_ledger_config(&pools[0], Some(&path)),Ok(error::SUCCESS.code_num));
         assert_eq!(create_pool_ledger_config(&pools[1], Some(&incorrect_path)),Err(error::CREATE_POOL_CONFIG.code_num));
         assert_eq!(create_pool_ledger_config(&pools[2], None), Err(error::INVALID_GENESIS_TXN_PATH.code_num));
+        clean_pools(&pools);
     }
 
 //    #[test]

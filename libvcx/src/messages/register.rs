@@ -156,7 +156,7 @@ pub fn connect_register_provision(endpoint: &str,
     \"sdk_to_remote_did\":\"{}\",\
     \"sdk_to_remote_verkey\":\"{}\",\
     \"institution_did\":\"{}\",\
-    \"enterprise_verkey\":\"{}\",\
+    \"institution_verkey\":\"{}\",\
     \"remote_to_sdk_did\":\"{}\",\
     \"remote_to_sdk_verkey\":\"{}\",\
     \"institution_name\":\"<CHANGE_ME>\",\

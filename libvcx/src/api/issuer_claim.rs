@@ -375,7 +375,6 @@ mod tests {
     use connection;
     use api::VcxStateType;
     use utils::constants::{DEFAULT_SERIALIZED_ISSUER_CLAIM, CLAIM_REQ_STRING};
-    use api::vcx::vcx_init;
 
     static DEFAULT_CLAIM_NAME: &str = "Claim Name Default";
     static DEFAULT_DID: &str = "8XFh8yBzrpJQmNyZzgoTqB";
@@ -466,11 +465,6 @@ mod tests {
         thread::sleep(Duration::from_millis(1000));
     }
 
-    extern "C" fn init_cb(command_handle: u32, err: u32) {
-        if err != 0 {panic!("create_cb failed: {}", err)}
-        println!("successfully called init_cb")
-    }
-
     #[test]
     fn test_vcx_issuer_send_a_claim() {
         settings::set_defaults();
@@ -479,9 +473,6 @@ mod tests {
         use claim_request::ClaimRequest;
 
         let test_name = "test_vcx_issuer_send_a_claim";
-
-        //let result = vcx_init(0,ptr::null(),Some(init_cb));
-        thread::sleep(Duration::from_secs(1));
 
         let handle = issuer_claim::from_string(ISSUER_CLAIM_STATE_ACCEPTED).unwrap();
 
@@ -526,65 +517,8 @@ mod tests {
         thread::sleep(Duration::from_millis(200));
     }
 
-    // TODO: Need to get this test working
-    /*
-    #[test]
-    fn test_vcx_issue_claim_fails_without_claim_def_in_wallet(){
-
-        let test_name = "test_vcx_issue_claim_fails_without_claim_def_in_wallet";
-        let schema_seq_num = 32 as u32;
-
-        let result = vcx_init(0,ptr::null(),Some(init_cb));
-        thread::sleep(Duration::from_secs(1));
-
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        settings::set_config_value(settings::CONFIG_AGENCY_ENDPOINT, mockito::SERVER_URL);
-        settings::set_config_value(settings::CONFIG_INSTITUTION_DID,"8XFh8yBzrpJQmNyZzgoTqB");
-
-        let original_issuer_claim_str = "{\"source_id\":\"test_vcx_issue_claim_fails_without_claim_def_in_wallet\",\"handle\":123,\"claim_attributes\":\"{\\\"attr\\\":\\\"value\\\"}\",\"msg_uid\":\"\",\"schema_seq_no\":32,\"issuer_did\":\"8XFh8yBzrpJQmNyZzgoTqB\",\"issued_did\":\"\",\"state\":3}";
-        let handle = issuer_claim::from_string(original_issuer_claim_str).unwrap();
-        let connection_handle = connection::create_connection(test_name.to_owned());
-        /* align claim request and claim def ***********************************/
-        let mut claim_request = create_claim_request_from_str(CLAIM_REQ_STRING);
-        // set claim request to have the same did as enterprise did (and sam as claim def)
-        claim_request.issuer_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).clone().unwrap();
-        // set claim request to have the same sequence number as the schema sequence number
-        claim_request.schema_seq_no = schema_seq_num as i32;
-        assert_eq!(claim_request.schema_seq_no, schema_seq_num as i32);
-        issuer_claim::set_claim_request(handle, &claim_request).unwrap();
-        assert_eq!(issuer_claim::get_state(handle),VcxStateType::VcxStateRequestReceived as u32);
-        let schema = create_default_schema(schema_seq_num);
-        let wallet_name = create_dummy_wallet(test_name);
-//        put_claim_def_in_issuer_wallet(&settings::get_config_value(
-//            settings::CONFIG_INSTITUTION_DID).unwrap(), &schema, get_wallet_handle());
-        /**********************************************************************/
-        connection::set_pw_did(connection_handle, "8XFh8yBzrpJQmNyZzgoTqB");
-
-        let command_handle = 0;
-        // create closure for send claim
-
-
-        // wait for response, response should be error
-
-        assert_eq!(vcx_issuer_send_claim(command_handle, handle, connection_handle, Some(send_offer_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(1000));
-    }
-    */
-
-    // TODO: Need to get this test working
-    /*
-    #[test]
-    fn test_calling_send_claim_without_claim_request_errors(){
-        assert_eq!(0,1);
-    }
-    */
-
     #[test]
     fn test_create_claim_arguments_correct(){
-        let result = vcx_init(0,ptr::null(),Some(init_cb));
-        thread::sleep(Duration::from_secs(1));
-
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);

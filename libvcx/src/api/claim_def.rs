@@ -187,7 +187,7 @@ mod tests {
     use std::time::Duration;
     use settings;
     use utils::libindy::pool;
-    use utils::libindy::wallet::{ init_wallet, get_wallet_handle };
+    use utils::libindy::wallet::{ init_wallet, get_wallet_handle, delete_wallet };
     use utils::libindy::signus::SignusUtils;
     use utils::constants::{ DEMO_AGENT_PW_SEED, DEMO_ISSUER_PW_SEED };
 
@@ -258,7 +258,7 @@ mod tests {
     fn test_vcx_create_claimdef_with_pool() {
         settings::set_defaults();
         pool::open_sandbox_pool();
-        init_wallet("a_test_wallet").unwrap();
+        init_wallet("test_vcx_create_claimdef_with_pool").unwrap();
         let wallet_handle = get_wallet_handle();
         let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_ISSUER_PW_SEED)).unwrap();
         SignusUtils::create_and_store_my_did(wallet_handle, Some(DEMO_AGENT_PW_SEED)).unwrap();
@@ -271,6 +271,7 @@ mod tests {
                                        false,
                                        Some(claim_def_on_ledger_err_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_secs(1));
+        delete_wallet("test_vcx_create_claimdef_with_pool").unwrap();
     }
 
     #[test]

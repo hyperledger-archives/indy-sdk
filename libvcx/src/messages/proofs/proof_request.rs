@@ -73,6 +73,7 @@ pub struct ProofRequestMessage{
     pub proof_request_data: ProofRequestData,
     #[serde(skip_serializing, default)]
     validate_rc: u32,
+    pub msg_ref_id: Option<String>,
 }
 
 impl ProofAttrs {
@@ -110,6 +111,7 @@ impl ProofRequestMessage {
                 requested_predicates: HashMap::new(),
             },
             validate_rc: 0,
+            msg_ref_id: None,
         }
     }
 
@@ -172,6 +174,7 @@ impl ProofRequestMessage {
         proof_predicates.predicates = match serde_json::from_str(predicates) {
             Ok(x) => x,
             Err(x) => {
+                warn!("Invalid predicate JSON");
                 self.validate_rc = error::INVALID_JSON.code_num;
                 return self;
             }

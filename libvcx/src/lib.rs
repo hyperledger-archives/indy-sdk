@@ -36,6 +36,8 @@ pub mod proof;
 pub mod schema;
 pub mod claim_def;
 pub mod proof_compliance;
+pub mod claim;
+pub mod object_cache;
 
 pub fn create_path(s:&str) -> &Path {
     Path::new(s)
