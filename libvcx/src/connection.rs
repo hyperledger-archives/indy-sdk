@@ -39,7 +39,8 @@ struct ConnectionOptions {
 #[derive(Serialize, Deserialize)]
 struct Connection {
     source_id: String,
-    handle: u32,
+    #[serde(skip_serializing, default)]
+    pub handle: u32,
     pw_did: String,
     pw_verkey: String,
     state: VcxStateType,
@@ -173,6 +174,8 @@ impl Connection {
 
     fn get_invite_detail(&self) -> Option<InviteDetail> { self.invite_detail.clone() }
     fn set_invite_detail(&mut self, invite_detail: InviteDetail) { self.invite_detail = Some(invite_detail); }
+
+    fn get_source_id(&self) -> String { self.source_id.clone() }
 
     fn ready_to_connect(&self) -> bool {
         if self.state == VcxStateType::VcxStateNone || self.state == VcxStateType::VcxStateAccepted {
@@ -316,6 +319,13 @@ pub fn set_state(handle: u32, state: VcxStateType) {
     };
 }
 
+pub fn get_source_id(handle: u32) -> Result<String, u32> {
+    match CONNECTION_MAP.lock().unwrap().get(&handle) {
+        Some(cxn) => Ok(cxn.get_source_id()),
+        None => Err(error::INVALID_CONNECTION_HANDLE.code_num),
+    }
+}
+
 pub fn create_agent_pairwise(handle: u32) -> Result<u32, u32> {
     debug!("creating pairwise keys on agent for connection handle {}", handle);
     let pw_did = get_pw_did(handle)?;
@@ -388,7 +398,7 @@ fn init_connection(handle: u32) -> Result<u32,u32> {
         },
     };
 
-    info!("handle: {} did: {} verkey: {}", handle, my_did, my_verkey);
+    info!("handle: {} did: {} verkey: {}, source id: {}", handle, my_did, my_verkey, get_source_id(handle)?);
     set_pw_did(handle, &my_did);
     set_pw_verkey(handle, &my_verkey);
 
@@ -542,13 +552,11 @@ pub fn from_string(connection_data: &str) -> Result<u32,u32> {
         Err(_) => return Err(error::INVALID_JSON.code_num),
     };
 
-    let new_handle = derived_connection.handle;
-
-    if is_valid_handle(new_handle) {return Ok(new_handle);}
-
+    let new_handle = rand::thread_rng().gen::<u32>();
+    let source_id = derived_connection.source_id.clone();
     let connection = Box::from(derived_connection);
 
-    debug!("inserting handle {} into connection table", new_handle);
+    debug!("inserting handle {} source_id {:?} into connection table", new_handle, source_id);
 
     CONNECTION_MAP.lock().unwrap().insert(new_handle, connection);
 

@@ -26,7 +26,6 @@ async def test_create_issuer_claim():
 async def test_serialize():
     issuer_claim = await IssuerClaim.create(source_id, attrs, schema_no, name)
     data = await issuer_claim.serialize()
-    assert data.get('handle') == issuer_claim.handle
     assert data.get('source_id') == source_id
     assert data.get('claim_name') == name
 
@@ -50,7 +49,7 @@ async def test_deserialize():
     data['handle'] = 99999
     data['state'] = State.Expired
     issuer_claim2 = await IssuerClaim.deserialize(data)
-    assert issuer_claim2.handle == data.get('handle')
+    assert issuer_claim2.source_id == data.get('source_id')
     assert await issuer_claim2.get_state() == State.Expired
 
 
@@ -129,7 +128,6 @@ async def test_send_offer_with_invalid_state():
         await connection.connect(phone_number)
         issuer_claim = await IssuerClaim.create(source_id, attrs, schema_no, name)
         data = await issuer_claim.serialize()
-        data['handle'] = data['handle'] + 1
         data['state'] = State.Expired
         issuer_claim2 = await IssuerClaim.deserialize(data)
         await issuer_claim2.send_offer(connection)
@@ -157,7 +155,6 @@ async def test_send_claim():
     assert await issuer_claim.update_state() == State.OfferSent
     # simulate consumer sending claim_req
     data = await issuer_claim.serialize()
-    data['handle'] = data['handle'] + 1
     data['state'] = State.RequestReceived
     issuer_claim2 = await issuer_claim.deserialize(data)
     await issuer_claim2.send_claim(connection)

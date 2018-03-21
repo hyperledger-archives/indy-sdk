@@ -29,6 +29,7 @@ static CLAIM_OFFER_ID_KEY: &str = "claim_offer_id";
 #[derive(Serialize, Deserialize, Debug)]
 pub struct IssuerClaim {
     source_id: String,
+    #[serde(skip_serializing, default)]
     handle: u32,
     claim_attributes: String,
     msg_uid: String,
@@ -253,6 +254,8 @@ impl IssuerClaim {
         self.claim_request = Some(claim_request);
     }
 
+    fn get_source_id(&self) -> String { self.source_id.clone() }
+
     fn generate_claim_offer(&self, to_did: &str) -> Result<ClaimOffer, u32> {
         let attr_map = convert_to_map(&self.claim_attributes)?;
 
@@ -404,14 +407,14 @@ pub fn from_string(claim_data: &str) -> Result<u32,u32> {
         Err(_) => return Err(error::INVALID_JSON.code_num),
     };
 
-    let new_handle = derived_claim.handle;
-
-    if is_valid_handle(new_handle) {return Ok(new_handle);}
+    let new_handle = rand::thread_rng().gen::<u32>();
+    let source_id = derived_claim.source_id.clone();
     let claim = Box::from(derived_claim);
 
     {
         let mut m = ISSUER_CLAIM_MAP.lock().unwrap();
-        debug!("inserting handle {} into claim_issuer table", new_handle);
+        debug!("inserting handle {} with source_id {:?} into claim_issuer table",
+               new_handle, source_id);
         m.insert(new_handle, claim);
     }
 
@@ -462,6 +465,12 @@ pub fn convert_to_map(s:&str) -> Result<serde_json::Map<String, serde_json::Valu
     Ok(v)
 }
 
+pub fn get_source_id(handle: u32) -> Result<String, u32> {
+    match ISSUER_CLAIM_MAP.lock().unwrap().get(&handle) {
+        Some(c) => Ok(c.get_source_id()),
+        None => Err(error::INVALID_ISSUER_CLAIM_HANDLE.code_num),
+    }
+}
 
 #[cfg(test)]
 pub mod tests {
@@ -701,7 +710,6 @@ pub mod tests {
         release(handle);
         let new_handle = from_string(&string).unwrap();
         let new_string = to_string(new_handle).unwrap();
-        assert_eq!(new_handle, handle);
         assert_eq!(new_string, string);
     }
 

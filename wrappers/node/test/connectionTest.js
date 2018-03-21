@@ -53,7 +53,7 @@ describe('A Connection object with ', function () {
     assert.notEqual(connection._handle, undefined)
     const data = await connection.serialize()
     assert.notEqual(data, null)
-    assert.equal(data.handle, connection._handle)
+    assert.equal(data.source_id, connection.sourceId)
   })
 
   it('a call to serialize where connection doesnt exist should throw error', async () => {
@@ -77,7 +77,7 @@ describe('A Connection object with ', function () {
     assert.equal(await connection.getState(), StateType.OfferSent)
     let data = await connection.serialize()
     assert.notEqual(data, null)
-    assert.equal(data.handle, connection._handle)
+    assert.equal(data.source_id, connection.sourceId)
     assert.equal(await connection.release(), Error.SUCCESS)
     try {
       await connection.serialize()
@@ -89,12 +89,12 @@ describe('A Connection object with ', function () {
   })
 
   // deserialize
-  it('a call to deserialize with correct data should return the connection handle', async () => {
+  it('a call to deserialize with correct data should return object with same sourceId', async () => {
     const connection1 = await Connection.create({ id: '234' })
     assert.notEqual(connection1._handle, undefined)
     const data = await connection1.serialize()
     const connection2 = await Connection.deserialize(data)
-    assert.equal(connection2._handle, connection1._handle)
+    assert.equal(connection2.sourceId, connection1.sourceId)
     const data2 = await connection2.serialize()
     assert.equal(JSON.stringify(data), JSON.stringify(data2))
   })
@@ -119,7 +119,7 @@ describe('A Connection object with ', function () {
     assert.equal(await connection.getState(), StateType.OfferSent)
     let data = await connection.serialize()
     const connection2 = await Connection.deserialize(data)
-    assert.equal(connection2._handle, connection._handle)
+    assert.equal(connection2.sourceId, connection.sourceId)
     let data2 = await connection2.serialize()
     assert.equal(JSON.stringify(data2), JSON.stringify(data))
   })

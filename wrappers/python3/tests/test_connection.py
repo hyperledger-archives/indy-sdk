@@ -62,7 +62,6 @@ async def test_serialize():
     connection = await Connection.create(source_id)
     await connection.connect(phone_number)
     data = await connection.serialize()
-    assert connection.handle == data.get('handle')
     assert data.get('source_id') == source_id
 
 
@@ -83,7 +82,7 @@ async def test_deserialize():
     await connection.connect(phone_number)
     data = await connection.serialize()
     connection2 = await Connection.deserialize(data)
-    assert connection2.handle == data.get('handle')
+    assert connection2.source_id == data.get('source_id')
 
     state = await connection2.get_state()
     assert state == State.OfferSent

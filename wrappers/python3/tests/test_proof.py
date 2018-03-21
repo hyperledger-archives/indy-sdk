@@ -35,7 +35,6 @@ async def test_create_proof():
 async def test_serialize():
     proof = await Proof.create(source_id, name, requested_attrs)
     data = await proof.serialize()
-    assert data.get('handle') == proof.handle
     assert data.get('source_id') == source_id
     assert data.get('name') == name
 
@@ -55,10 +54,9 @@ async def test_serialize_with_bad_handle():
 async def test_deserialize():
     proof = await Proof.create(source_id, name, requested_attrs)
     data = await proof.serialize()
-    data['handle'] = random.randint(0, 99999)
     data['state'] = State.OfferSent
     proof2 = await Proof.deserialize(data)
-    assert proof2.handle == data.get('handle')
+    assert proof2.source_id == data.get('source_id')
     assert await proof2.get_state() == State.OfferSent
 
 

@@ -63,13 +63,13 @@ pub extern fn vcx_claimdef_create(command_handle: u32,
                                                                  issuer_did,
                                                                  create_non_revoc) {
             Ok(x) => {
-                info!("vcx_claim_def_create_cb(command_handle: {}, rc: {}, claimdef_handle: {})",
-                      command_handle, error_string(0), x);
+                info!("vcx_claim_def_create_cb(command_handle: {}, rc: {}, claimdef_handle: {}), source_id: {:?}",
+                      command_handle, error_string(0), x, claim_def::get_source_id(x).unwrap_or_default());
                 (error::SUCCESS.code_num, x)
             },
             Err(x) => {
-                warn!("vcx_claim_def_create_cb(command_handle: {}, rc: {}, claimdef_handle: {})",
-                      command_handle, error_string(x), 0);
+                warn!("vcx_claim_def_create_cb(command_handle: {}, rc: {}, claimdef_handle: {}), source_id: {:?}",
+                      command_handle, error_string(x), 0, "");
                 (x, 0)
             },
         };
@@ -96,7 +96,9 @@ pub extern fn vcx_claimdef_serialize(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_claimdef_serialize(command_handle: {}, claimdef_handle: {})", command_handle, claimdef_handle);
+    let source_id = claim_def::get_source_id(claimdef_handle).unwrap_or_default();
+    info!("vcx_claimdef_serialize(command_handle: {}, claimdef_handle: {}), source_id: {:?}",
+          command_handle, claimdef_handle, source_id);
 
     if !claim_def::is_valid_handle(claimdef_handle) {
         return error::INVALID_CLAIM_DEF_HANDLE.code_num;
@@ -105,14 +107,14 @@ pub extern fn vcx_claimdef_serialize(command_handle: u32,
     thread::spawn( move|| {
         match claim_def::to_string(claimdef_handle) {
             Ok(x) => {
-                info!("vcx_claimdef_serialize_cb(command_handle: {}, claimdef_handle: {}, rc: {}, state: {})",
-                      command_handle, claimdef_handle, error_string(0), x);
+                info!("vcx_claimdef_serialize_cb(command_handle: {}, claimdef_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                      command_handle, claimdef_handle, error_string(0), x, source_id);
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                warn!("vcx_claimdef_serialize_cb(command_handle: {}, claimdef_handle: {}, rc: {}, state: {})",
-                      command_handle, claimdef_handle, error_string(x), "null");
+                warn!("vcx_claimdef_serialize_cb(command_handle: {}, claimdef_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                      command_handle, claimdef_handle, error_string(x), "null", source_id);
                 cb(command_handle, x, ptr::null_mut());
             },
         };
@@ -148,13 +150,13 @@ pub extern fn vcx_claimdef_deserialize(command_handle: u32,
     thread::spawn( move|| {
         let (rc, handle) = match claim_def::from_string(&claimdef_data) {
             Ok(x) => {
-                info!("vcx_claimdef_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(0), x);
+                info!("vcx_claimdef_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                      command_handle, error_string(0), x, claim_def::get_source_id(x).unwrap_or_default());
                 (error::SUCCESS.code_num, x)
             },
             Err(x) => {
-                warn!("vcx_claimdef_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(x), 0);
+                warn!("vcx_claimdef_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                      command_handle, error_string(x), 0, "");
                 (x, 0)
             },
         };
@@ -166,7 +168,8 @@ pub extern fn vcx_claimdef_deserialize(command_handle: u32,
 
 #[no_mangle]
 pub extern fn vcx_claimdef_release(claimdef_handle: u32) -> u32 {
-    info!("vcx_claimdef_release(claimdef_handle: {})", claimdef_handle);
+    info!("vcx_claimdef_release(claimdef_handle: {}), source_id: {:?}",
+          claimdef_handle, claim_def::get_source_id(claimdef_handle).unwrap_or_default());
     claim_def::release(claimdef_handle)
 }
 
@@ -228,10 +231,11 @@ mod tests {
         assert_eq!(err, 0);
         assert!(claimdef_handle > 0);
         println!("successfully called deserialize_cb");
-        let expected = "{\"claim_def\":{\"ref\":15,\"origin\":\"4fUDR9R7fjwELRvH9JT6HH\",\"signature_type\":\"CL\",\"data\":{\"primary\":{\"n\":\"9\",\"s\":\"5\",\"rms\":\"4\",\"r\":{\"zip\":\"1\",\"address1\":\"7\",\"address2\":\"8\",\"city\":\"6\",\"state\":\"6\"},\"rctxt\":\"7\",\"z\":\"7\"},\"revocation\":null}},\"handle\":1378455216,\"name\":\"NAME\",\"source_id\":\"test id\"}";
+        let expected = "{\"claim_def\":{\"ref\":15,\"origin\":\"4fUDR9R7fjwELRvH9JT6HH\",\"signature_type\":\"CL\",\"data\":{\"primary\":{\"n\":\"9\",\"s\":\"5\",\"rms\":\"4\",\"r\":{\"zip\":\"1\",\"address1\":\"7\",\"address2\":\"8\",\"city\":\"6\",\"state\":\"6\"},\"rctxt\":\"7\",\"z\":\"7\"},\"revocation\":null}},\"name\":\"NAME\",\"source_id\":\"test id\"}";
         let new = claim_def::to_string(claimdef_handle).unwrap();
-        let def1: claim_def::CreateClaimDef = serde_json::from_str(expected).unwrap();
+        let mut def1: claim_def::CreateClaimDef = serde_json::from_str(expected).unwrap();
         let def2: claim_def::CreateClaimDef = serde_json::from_str(&new).unwrap();
+        def1.handle = def2.handle;
         assert_eq!(def1,def2);
     }
 
@@ -304,7 +308,7 @@ mod tests {
     #[test]
     fn test_vcx_claimdef_deserialize_succeeds() {
         set_default_and_enable_test_mode();
-        let original = "{\"source_id\":\"test id\",\"claim_def\":{\"ref\":15,\"origin\":\"4fUDR9R7fjwELRvH9JT6HH\",\"signature_type\":\"CL\",\"data\":{\"primary\":{\"n\":\"9\",\"s\":\"5\",\"rms\":\"4\",\"r\":{\"city\":\"6\",\"address2\":\"8\",\"address1\":\"7\",\"state\":\"6\",\"zip\":\"1\"},\"rctxt\":\"7\",\"z\":\"7\"},\"revocation\":null}},\"handle\":1378455216,\"name\":\"NAME\"}";
+        let original = "{\"source_id\":\"test id\",\"claim_def\":{\"ref\":15,\"origin\":\"4fUDR9R7fjwELRvH9JT6HH\",\"signature_type\":\"CL\",\"data\":{\"primary\":{\"n\":\"9\",\"s\":\"5\",\"rms\":\"4\",\"r\":{\"city\":\"6\",\"address2\":\"8\",\"address1\":\"7\",\"state\":\"6\",\"zip\":\"1\"},\"rctxt\":\"7\",\"z\":\"7\"},\"revocation\":null}},\"name\":\"NAME\"}";
         vcx_claimdef_deserialize(0,CString::new(original).unwrap().into_raw(), Some(deserialize_cb));
         thread::sleep(Duration::from_millis(200));
     }

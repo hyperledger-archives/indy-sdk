@@ -6,7 +6,7 @@ use utils::error;
 use utils::error::error_string;
 use std::ptr;
 use std::thread;
-use connection::{build_connection, build_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details};
+use connection::{get_source_id, build_connection, build_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details};
 
 /**
  * connection object
@@ -118,28 +118,30 @@ pub extern fn vcx_connection_connect(command_handle:u32,
         None
     };
 
-    info!("vcx_connection_connect(command_handle: {}, connection_handle: {}, connection_options: {:?})", command_handle, connection_handle, options);
+    let source_id = get_source_id(connection_handle).unwrap_or_default();
+    info!("vcx_connection_connect(command_handle: {}, connection_handle: {}, connection_options: {:?}), source_id: {:?}",
+          command_handle, connection_handle, options, source_id);
 
     thread::spawn(move|| {
         match connect(connection_handle, options) {
             Ok(_) => {
                 match get_invite_details(connection_handle,true) {
                     Ok(x) => {
-                        info!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {})",
-                              command_handle, connection_handle, error_string(0), x);
+                        info!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
+                              command_handle, connection_handle, error_string(0), x, source_id);
                         let msg = CStringUtils::string_to_cstring(x);
                         cb(command_handle, error::SUCCESS.code_num, msg.as_ptr())
                     },
                     Err(_) => {
-                        warn!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {})",
-                              command_handle, connection_handle, error_string(0), "null");
+                        warn!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
+                              command_handle, connection_handle, error_string(0), "null", source_id);
                         cb(command_handle, error::SUCCESS.code_num, ptr::null_mut())
                     },
                 }
             },
             Err(x) => {
-                warn!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {})",
-                      command_handle, connection_handle, error_string(x), "null");
+                warn!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
+                      command_handle, connection_handle, error_string(x), "null", source_id);
                 cb(command_handle,x, ptr::null_mut())
             },
         };
@@ -166,7 +168,10 @@ pub extern fn vcx_connection_serialize(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_connection_serialize(command_handle: {}, connection_handle: {})", command_handle, connection_handle);
+    let source_id = get_source_id(connection_handle).unwrap_or_default();
+    info!("vcx_connection_serialize(command_handle: {}, connection_handle: {}), source_id: {:?}",
+          command_handle, connection_handle, source_id);
+
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_get_state - invalid handle");
         return error::INVALID_CONNECTION_HANDLE.code_num;
@@ -175,14 +180,14 @@ pub extern fn vcx_connection_serialize(command_handle: u32,
     thread::spawn(move|| {
         match to_string(connection_handle) {
             Ok(json) => {
-                info!("vcx_connection_serialize_cb(command_handle: {}, connection_handle: {}, rc: {}, state: {})",
-                      command_handle, connection_handle, error_string(0), json);
+                info!("vcx_connection_serialize_cb(command_handle: {}, connection_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                      command_handle, connection_handle, error_string(0), json, source_id);
                 let msg = CStringUtils::string_to_cstring(json);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                warn!("vcx_connection_serialize_cb(command_handle: {}, connection_handle: {}, rc: {}, state: {})",
-                      command_handle, connection_handle, error_string(x), "null");
+                warn!("vcx_connection_serialize_cb(command_handle: {}, connection_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                      command_handle, connection_handle, error_string(x), "null", source_id);
                 cb(command_handle, x, ptr::null_mut());
             },
         };
@@ -216,13 +221,15 @@ pub extern fn vcx_connection_deserialize(command_handle: u32,
     thread::spawn(move|| {
         let (rc, handle) = match from_string(&connection_data) {
             Ok(x) => {
-                info!("vcx_connection_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(0), x);
+                let source_id = get_source_id(x).unwrap_or_default();
+                info!("vcx_connection_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                      command_handle, error_string(0), x, source_id);
                 (error::SUCCESS.code_num, x)
             },
             Err(x) => {
-                warn!("vcx_connection_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(x), 0);
+                let source_id = get_source_id(x).unwrap_or_default();
+                warn!("vcx_connection_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                      command_handle, error_string(x), 0, source_id);
                 (x, 0)
             },
         };
@@ -252,7 +259,10 @@ pub extern fn vcx_connection_update_state(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_connection_update_state(command_handle: {}, connection_handle: {})", command_handle, connection_handle);
+    let source_id = get_source_id(connection_handle).unwrap_or_default();
+    info!("vcx_connection_update_state(command_handle: {}, connection_handle: {}), source_id: {:?}",
+          command_handle, connection_handle, source_id);
+
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_get_state - invalid handle");
         return error::INVALID_CONNECTION_HANDLE.code_num;
@@ -261,13 +271,13 @@ pub extern fn vcx_connection_update_state(command_handle: u32,
     thread::spawn(move|| {
         let rc = match update_state(connection_handle) {
             Ok(x) => {
-                info!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {})",
-                      command_handle, error_string(0), connection_handle, get_state(connection_handle));
+                info!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
+                      command_handle, error_string(0), connection_handle, get_state(connection_handle), source_id);
                 x
             },
             Err(x) => {
-                warn!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {})",
-                      command_handle, error_string(x), connection_handle, get_state(connection_handle));
+                warn!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
+                      command_handle, error_string(x), connection_handle, get_state(connection_handle), source_id);
                 x
             },
         };
@@ -285,15 +295,18 @@ pub extern fn vcx_connection_get_state(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_connection_get_state(command_handle: {}, connection_handle: {})", command_handle, connection_handle);
+    let source_id = get_source_id(connection_handle).unwrap_or_default();
+    info!("vcx_connection_get_state(command_handle: {}, connection_handle: {}), source_id: {:?}",
+          command_handle, connection_handle, source_id);
+
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_get_state - invalid handle");
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
     thread::spawn(move|| {
-        info!("vcx_connection_get_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {})",
-              command_handle, error_string(0), connection_handle, get_state(connection_handle));
+        info!("vcx_connection_get_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
+              command_handle, error_string(0), connection_handle, get_state(connection_handle), source_id);
         cb(command_handle, error::SUCCESS.code_num, get_state(connection_handle));
     });
 
@@ -321,24 +334,26 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
+    let source_id = get_source_id(connection_handle).unwrap_or_default();
+    info!("vcx_connection_invite_details(command_handle: {}, connection_handle: {}, abbreviated: {}), source_id: {:?}",
+          command_handle, connection_handle, abbreviated, source_id);
+
     if !is_valid_handle(connection_handle) {
         error!("vcx_connection_get_state - invalid handle");
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    info!("vcx_connection_invite_details(command_handle: {}, connection_handle: {}, abbreviated: {})",
-          command_handle, connection_handle, abbreviated);
     thread::spawn(move|| {
         match get_invite_details(connection_handle, abbreviated){
             Ok(str) => {
-                info!("vcx_connection_invite_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {})",
-                      command_handle, connection_handle, error_string(0), str);
+                info!("vcx_connection_invite_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
+                      command_handle, connection_handle, error_string(0), str, source_id);
                 let msg = CStringUtils::string_to_cstring(str);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                warn!("vcx_connection_invite_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {})",
-                      command_handle, connection_handle, error_string(x), "null");
+                warn!("vcx_connection_invite_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
+                      command_handle, connection_handle, error_string(x), "null", source_id);
                 cb(command_handle, x, ptr::null_mut());
             }
         }
@@ -356,7 +371,8 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
 /// Error code as a u32
 #[no_mangle]
 pub extern fn vcx_connection_release(connection_handle: u32) -> u32 {
-    info!("vcx_connection_release(connection_handle: {})", connection_handle);
+    let source_id = get_source_id(connection_handle).unwrap_or_default();
+    info!("vcx_connection_release(connection_handle: {}), source_id: {:?}", connection_handle, source_id);
     release(connection_handle)
 }
 
@@ -487,8 +503,7 @@ mod tests {
         assert_eq!(err, 0);
         assert!(connection_handle > 0);
         println!("successfully called deserialize_cb");
-        let string = r#"{"source_id":"test_vcx_connection_deserialialize_succeeds","handle":2829557145,"pw_did":"8XFh8yBzrpJQmNyZzgoTqB","pw_verkey":"EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A","state":1,"uuid":"","endpoint":"","invite_detail":{"statusCode":"","connReqId":"","senderDetail":{"name":"","agentKeyDlgProof":{"agentDID":"","agentDelegatedKey":"","signature":""},"DID":"","logoUrl":"","verKey":""},"senderAgencyDetail":{"DID":"","verKey":"","endpoint":""},"targetName":"","statusMsg":""},"agent_did":"U5LXs4U7P9msh647kToezy","agent_vk":"FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq","their_pw_did":"","their_pw_verkey":""}"#;
-        //let string = r#"{"source_id":"test_vcx_connection_deserialialize_succeeds","handle":2829557145,"pw_did":"8XFh8yBzrpJQmNyZzgoTqB","pw_verkey":"EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A","did_endpoint":"","state":1,"uuid":"","endpoint":"","invite_detail":{"statusCode":"","connReqId":"","senderDetail":{"name":"","agentKeyDlgProof":{"agentDID":"","agentDelegatedKey":"","signature":""},"DID":"","logoUrl":"","verKey":""},"senderAgencyDetail":{"DID":"","verKey":"","endpoint":""},"targetName":"","statusMsg":""},"agent_did":"U5LXs4U7P9msh647kToezy","agent_vk":"FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq","their_pw_did":"","their_pw_verkey":""}"#;
+        let string = r#"{"source_id":"test_vcx_connection_deserialialize_succeeds","pw_did":"8XFh8yBzrpJQmNyZzgoTqB","pw_verkey":"EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A","state":1,"uuid":"","endpoint":"","invite_detail":{"statusCode":"","connReqId":"","senderDetail":{"name":"","agentKeyDlgProof":{"agentDID":"","agentDelegatedKey":"","signature":""},"DID":"","logoUrl":"","verKey":""},"senderAgencyDetail":{"DID":"","verKey":"","endpoint":""},"targetName":"","statusMsg":""},"agent_did":"U5LXs4U7P9msh647kToezy","agent_vk":"FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq","their_pw_did":"","their_pw_verkey":""}"#;
 
         let new = to_string(connection_handle).unwrap();
         println!("original: {}",string);
@@ -500,7 +515,7 @@ mod tests {
     fn test_vcx_connection_deserialize_succeeds() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let string = r#"{"source_id":"test_vcx_connection_deserialialize_succeeds","handle":2829557145,"pw_did":"8XFh8yBzrpJQmNyZzgoTqB","pw_verkey":"EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A","did_endpoint":"","state":1,"uuid":"","endpoint":"","invite_detail":{"statusCode":"","connReqId":"","senderDetail":{"name":"","agentKeyDlgProof":{"agentDID":"","agentDelegatedKey":"","signature":""},"DID":"","logoUrl":"","verKey":""},"senderAgencyDetail":{"DID":"","verKey":"","endpoint":""},"targetName":"","statusMsg":""},"agent_did":"U5LXs4U7P9msh647kToezy","agent_vk":"FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq","their_pw_did":"","their_pw_verkey":""}"#;
+        let string = r#"{"source_id":"test_vcx_connection_deserialialize_succeeds","pw_did":"8XFh8yBzrpJQmNyZzgoTqB","pw_verkey":"EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A","did_endpoint":"","state":1,"uuid":"","endpoint":"","invite_detail":{"statusCode":"","connReqId":"","senderDetail":{"name":"","agentKeyDlgProof":{"agentDID":"","agentDelegatedKey":"","signature":""},"DID":"","logoUrl":"","verKey":""},"senderAgencyDetail":{"DID":"","verKey":"","endpoint":""},"targetName":"","statusMsg":""},"agent_did":"U5LXs4U7P9msh647kToezy","agent_vk":"FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq","their_pw_did":"","their_pw_verkey":""}"#;
 
         vcx_connection_deserialize(0,CString::new(string).unwrap().into_raw(), Some(deserialize_cb));
         thread::sleep(Duration::from_millis(200));

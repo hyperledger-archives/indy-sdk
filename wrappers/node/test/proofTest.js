@@ -37,13 +37,13 @@ describe('A Proof', function () {
     assert.equal(await proof.getState(), StateType.Initialized)
   })
 
-  it('can be created, then serialized, then deserialized and have the same sourceId, state, and claimHandle', async () => {
+  it('can be created, then serialized, then deserialized and have the same sourceId and state', async () => {
     const sourceId = 'SerializeDeserialize'
     const proof = await Proof.create({ sourceId, attrs: ATTR, name: 'TestProof' })
     const jsonProof = await proof.serialize()
     assert.equal(jsonProof.state, StateType.Initialized)
     const proof2 = await Proof.deserialize(jsonProof)
-    assert.equal(proof.handle, proof2.handle)
+    assert.equal(proof.sourceId, proof2.sourceId)
     assert.equal(await proof.getState(), await proof2.getState())
   })
 

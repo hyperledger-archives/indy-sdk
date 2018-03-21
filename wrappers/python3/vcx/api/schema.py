@@ -68,22 +68,22 @@ class Schema(VcxBase):
 
             if not hasattr(Schema.lookup, "cb"):
                 schema.logger.debug("vcx_schema_get_attributes: Creating callback")
-                Schema.lookup.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+                Schema.lookup.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_uint32, c_char_p))
 
             c_source_id = c_char_p(source_id.encode('utf-8'))
             c_schema_no = c_uint32(schema_no)
 
-            result = await do_call('vcx_schema_get_attributes',
-                                   c_source_id,
-                                   c_schema_no,
-                                   Schema.lookup.cb)
+            handle, data = await do_call('vcx_schema_get_attributes',
+                                         c_source_id,
+                                         c_schema_no,
+                                         Schema.lookup.cb)
             schema.logger.debug("created schema object")
 
-            schema_result = json.loads(result.decode())
+            schema_result = json.loads(data.decode())
             schema_data = schema_result['data']['data']
             schema.attrs = schema_data['attr_names']
             schema.name = schema_data['name']
-            schema.handle = schema_result['handle']
+            schema.handle = handle
             return schema
         except KeyError:
             raise VcxError(ErrorCode.InvalidSchema)
