@@ -17,7 +17,7 @@ us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to
 
 ## How to install
 ### Release channels
-There are three stable channels: 
+Indy SDK release process defines the following release channels:
     
 * `master` - development builds for each push to master branch.
 * `rc` - release candidates.
@@ -32,7 +32,8 @@ It is recommended to install packages with APT:
     sudo apt-get update
     sudo apt-get install -y libindy
 
-See section "Release channels" for more details about {release channel}.  
+{release channel} must be replaced with master, rc or stable to define corresponded release channel.
+See section "Release channels" for more details.  
    
 ### Install for Windows
 
@@ -59,7 +60,8 @@ that may be need for your applications.
  `You must add to PATH environment variable path to lib`. It's necessary for dynamic linkage
  your application with libindy.       
 
-See section "Release channels" for more details about {release channel}.
+{release channel} must be replaced with master, rc or stable to define corresponded release channel.
+See section "Release channels" for more details.
 ### Install for iOS
 
 See [wrapper iOS install documentation](wrappers/ios/README.md "How to install").
