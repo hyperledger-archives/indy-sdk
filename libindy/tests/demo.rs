@@ -104,7 +104,7 @@ fn anoncreds_demo_works() {
                                   issuer_create_schema_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, _, schema_json) = issuer_create_schema_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, schema_id, schema_json) = issuer_create_schema_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 4. Issuer create Credential Definition for Schema
@@ -246,8 +246,8 @@ fn anoncreds_demo_works() {
                                                   }}
                                                 }}"#, credential.referent, credential.referent);
 
-    let schemas_json = format!(r#"{{"{}":{}}}"#, credential.referent, schema_json);
-    let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential.referent, credential_def_json);
+    let schemas_json = format!(r#"{{"{}":{}}}"#, schema_id, schema_json);
+    let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential_def_id, credential_def_json);
     let revoc_infos_jsons = "{}";
 
     // 11. Prover create Proof for Proof Request
@@ -272,10 +272,6 @@ fn anoncreds_demo_works() {
     let revealed_attr_1 = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap();
     assert_eq!("Alex", revealed_attr_1.raw);
 
-    let id = revealed_attr_1.referent.clone();
-
-    let schemas_json = format!(r#"{{"{}":{}}}"#, id, schema_json);
-    let credential_defs_json = format!(r#"{{"{}":{}}}"#, id, credential_def_json);
     let rev_reg_defs_json = "{}";
     let rev_regs_json = "{}";
 

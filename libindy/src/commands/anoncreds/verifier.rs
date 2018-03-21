@@ -71,11 +71,6 @@ impl VerifierCommandExecutor {
         let proof: FullProof = FullProof::from_json(&proof_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Proof: {:?}", err)))?;
 
-        if credential_schemas.keys().collect::<HashSet<&String>>() != credential_defs.keys().collect::<HashSet<&String>>() {
-            return Err(IndyError::CommonError(CommonError::InvalidStructure(
-                format!("CredentialDefinitions {:?} do not correspond to Schema {:?}", credential_schemas.keys(), credential_defs.keys()))));
-        }
-
         let requested_attrs: HashSet<String> =
             proof_req.requested_attrs
                 .keys()

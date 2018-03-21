@@ -142,7 +142,7 @@ impl Prover {
 
         let mut proof_builder = CryptoProver::new_proof_builder()?;
 
-        let mut identifiers: HashMap<String, Identifier> = HashMap::new();
+        let mut identifiers: Vec<Identifier> = Vec::new();
 
         let mut requested_proof = RequestedProof {
             self_attested_attrs: requested_credentials.self_attested_attributes.clone(),
@@ -152,21 +152,23 @@ impl Prover {
         };
 
         let credentials_for_proving = Prover::_prepare_credentials_for_proving(requested_credentials, proof_req);
+        let mut sub_proof_index = 0;
 
         for (cred_key, &(ref req_attrs_for_cred, ref req_predicates_for_cred)) in credentials_for_proving.iter() {
-            let schema = schemas.get(cred_key.cred_id.as_str())
-                .ok_or(CommonError::InvalidStructure(format!("Schema not found")))?;
-            let credential_definition: &CredentialDefinition = credential_defs.get(cred_key.cred_id.as_str())
-                .ok_or(CommonError::InvalidStructure(format!("CredentialDefinition not found")))?;
             let credential: &Credential = credentials.get(cred_key.cred_id.as_str())
-                .ok_or(CommonError::InvalidStructure(format!("Credential not found")))?;
+                .ok_or(CommonError::InvalidStructure(format!("Credential not found by id: {:?}", cred_key.cred_id)))?;
+            let schema = schemas.get(&credential.schema_id())
+                .ok_or(CommonError::InvalidStructure(format!("Schema not found by id: {:?}", credential.schema_id())))?;
+            let credential_definition: &CredentialDefinition = credential_defs.get(&credential.cred_def_id)
+                .ok_or(CommonError::InvalidStructure(format!("CredentialDefinition not found by id: {:?}", credential.cred_def_id)))?;
 
             let rev_state = if credential_definition.value.revocation.is_some() {
-                let timestamp = cred_key.timestamp.ok_or(CommonError::InvalidStructure(format!("Timestamp not found")))?;
-                let rev_states_for_timestamp = rev_states.get(cred_key.cred_id.as_str())
-                    .ok_or(CommonError::InvalidStructure(format!("RevocationInfo not found")))?;
+                let timestamp = cred_key.timestamp.clone().ok_or(CommonError::InvalidStructure(format!("Timestamp not found")))?;
+                let rev_reg_id = credential.rev_reg_id.clone().ok_or(CommonError::InvalidStructure(format!("Revocation Registry Id not found")))?;
+                let rev_states_for_timestamp = rev_states.get(&rev_reg_id)
+                    .ok_or(CommonError::InvalidStructure(format!("RevocationInfo not found by id: {:?}", rev_reg_id)))?;
                 Some(rev_states_for_timestamp.get(&timestamp)
-                    .ok_or(CommonError::InvalidStructure(format!("RevocationInfo not found")))?)
+                    .ok_or(CommonError::InvalidStructure(format!("RevocationInfo not found by timestamp: {:?}", timestamp)))?)
             } else { None };
 
             let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_definition.value.primary, credential_definition.value.revocation.as_ref())?;
@@ -175,10 +177,7 @@ impl Prover {
             let credential_values = build_credential_values(&credential.values)?;
             let sub_proof_request = Prover::_build_sub_proof_request(req_attrs_for_cred, req_predicates_for_cred)?;
 
-            let sub_proof_id = uuid::Uuid::new_v4().to_string();
-
-            proof_builder.add_sub_proof_request(sub_proof_id.as_str(),
-                                                &sub_proof_request,
+            proof_builder.add_sub_proof_request(&sub_proof_request,
                                                 &credential_schema,
                                                 &credential.signature,
                                                 &credential_values,
@@ -186,7 +185,7 @@ impl Prover {
                                                 rev_state.as_ref().map(|r_info| &r_info.rev_reg),
                                                 rev_state.as_ref().map(|r_info| &r_info.witness))?;
 
-            identifiers.insert(sub_proof_id.clone(), Identifier {
+            identifiers.push(Identifier {
                 schema_id: credential_definition.schema_id.clone(),
                 cred_def_id: credential.cred_def_id.clone(),
                 rev_reg_id: credential.rev_reg_id.clone(),
@@ -196,8 +195,10 @@ impl Prover {
             Prover::_update_requested_proof(req_attrs_for_cred,
                                             req_predicates_for_cred,
                                             proof_req, credential,
-                                            &sub_proof_id,
+                                            sub_proof_index,
                                             &mut requested_proof)?;
+
+            sub_proof_index += 1;
         }
 
         let proof = proof_builder.finalize(&proof_req.nonce, &master_secret)?;
@@ -361,11 +362,11 @@ impl Prover {
                                req_predicates_for_credential: &Vec<RequestedPredicateInfo>,
                                proof_req: &ProofRequest,
                                credential: &Credential,
-                               sub_proof_id: &str,
+                               sub_proof_index: i32,
                                requested_proof: &mut RequestedProof) -> Result<(), CommonError> {
         trace!("_update_requested_proof >>> req_attrs_for_credential: {:?}, req_predicates_for_credential: {:?}, proof_req: {:?}, credential: {:?}, \
-               sub_proof_id: {:?}, requested_proof: {:?}",
-               req_attrs_for_credential, req_predicates_for_credential, proof_req, credential, sub_proof_id, requested_proof);
+               sub_proof_index: {:?}, requested_proof: {:?}",
+               req_attrs_for_credential, req_predicates_for_credential, proof_req, credential, sub_proof_index, requested_proof);
 
         for attr_info in req_attrs_for_credential {
             if attr_info.revealed.clone() {
@@ -376,17 +377,17 @@ impl Prover {
 
                 requested_proof.revealed_attrs.insert(attr_info.attr_referent.clone(),
                                                       RevealedAttributeInfo {
-                                                          referent: sub_proof_id.to_string(),
+                                                          sub_proof_index,
                                                           raw: attribute_values.raw.clone(),
                                                           encoded: attribute_values.encoded.clone()
                                                       });
             } else {
-                requested_proof.unrevealed_attrs.insert(attr_info.attr_referent.clone(), sub_proof_id.to_string());
+                requested_proof.unrevealed_attrs.insert(attr_info.attr_referent.clone(), SubProofReferent { sub_proof_index });
             }
         }
 
         for predicate_info in req_predicates_for_credential {
-            requested_proof.predicates.insert(predicate_info.predicate_referent.clone(), sub_proof_id.to_string());
+            requested_proof.predicates.insert(predicate_info.predicate_referent.clone(), SubProofReferent { sub_proof_index });
         }
 
         trace!("_update_requested_proof <<<");

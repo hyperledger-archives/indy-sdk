@@ -67,6 +67,10 @@ pub enum IssuerCommand {
         i32, // blob storage reader handle
         String, //revocation revoc id
         String, //credential revoc id
+        Box<Fn(Result<String, IndyError>) + Send>),
+    MergeRevocationRegistryDeltas(
+        String, //revocation registry delta json
+        String, //other revocation registry delta json
         Box<Fn(Result<String, IndyError>) + Send>)
 }
 
@@ -131,6 +135,10 @@ impl IssuerCommandExecutor {
             IssuerCommand::RecoverCredential(wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id, cb) => {
                 trace!(target: "issuer_command_executor", "RecoverCredential command received");
                 cb(self.recovery_credential(wallet_handle, blob_storage_reader_handle, &rev_reg_id, &cred_revoc_id));
+            }
+            IssuerCommand::MergeRevocationRegistryDeltas(rev_reg_delta_json, other_rev_reg_delta_json, cb) => {
+                trace!(target: "issuer_command_executor", "MergeRevocationRegistryDeltas command received");
+                cb(self.merge_revocation_registry_deltas(&rev_reg_delta_json, &other_rev_reg_delta_json));
             }
         };
     }
@@ -488,5 +496,27 @@ impl IssuerCommandExecutor {
         trace!("recovery_credential <<< revocation_registry_delta_json: {:?}", revocation_registry_delta_json);
 
         Ok(revocation_registry_delta_json)
+    }
+
+    fn merge_revocation_registry_deltas(&self,
+                                        rev_reg_delta_json: &str,
+                                        other_rev_reg_delta_json: &str) -> Result<String, IndyError> {
+        trace!("merge_revocation_registry_deltas >>> rev_reg_delta_json: {:?}, other_rev_reg_delta_json: {:?}", rev_reg_delta_json, other_rev_reg_delta_json);
+
+        let mut rev_reg_delta: RevocationRegistryDelta = RevocationRegistryDelta::from_json(rev_reg_delta_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDelta: {:?}", err)))?;
+
+        let other_rev_reg_delta: RevocationRegistryDelta = RevocationRegistryDelta::from_json(other_rev_reg_delta_json)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize other RevocationRegistryDelta: {:?}", err)))?;
+
+        rev_reg_delta.merge(&other_rev_reg_delta)
+            .map_err(|err| IndyError::CommonError(CommonError::from(err)))?;
+
+        let merged_rev_reg_delta_json = rev_reg_delta.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta: {:?}", err)))?;
+
+        trace!("merge_revocation_registry_deltas <<< merged_rev_reg_delta: {:?}", merged_rev_reg_delta_json);
+
+        Ok(merged_rev_reg_delta_json)
     }
 }

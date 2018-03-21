@@ -189,6 +189,36 @@ impl CallbackUtils {
         (receiver, command_handle, Some(_callback))
     }
 
+    pub fn _closure_to_cb_ec_opt_string() -> (Receiver<(ErrorCode, Option<String>)>, i32,
+                                              Option<extern fn(command_handle: i32,
+                                                               err: ErrorCode,
+                                                               str1: *const c_char)>) {
+        let (sender, receiver) = channel();
+
+        lazy_static! {
+            static ref CALLBACKS: Mutex < HashMap < i32, Box < FnMut(ErrorCode, Option<String>) + Send > >> = Default::default();
+    }
+
+        let closure = Box::new(move |err, val1| {
+            sender.send((err, val1)).unwrap();
+        });
+
+        extern "C" fn _callback(command_handle: i32, err: ErrorCode, str1: *const c_char) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let str1 = if !str1.is_null() {
+                unsafe { Some(CStr::from_ptr(str1).to_str().unwrap().to_string()) }
+            } else { None };
+            cb(err, str1)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (receiver, command_handle, Some(_callback))
+    }
+
     pub fn _closure_to_cb_ec_string_opt_string() -> (Receiver<(ErrorCode, String, Option<String>)>, i32,
                                                      Option<extern fn(command_handle: i32,
                                                                       err: ErrorCode,

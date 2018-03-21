@@ -22,38 +22,39 @@ impl Verifier {
                   rev_reg_defs: &HashMap<String, RevocationRegistryDefinition>,
                   rev_regs: &HashMap<String, HashMap<u64, RevocationRegistry>>) -> Result<bool, CommonError> {
         trace!("verify >>> full_proof: {:?}, proof_req: {:?}, credential_schemas: {:?}, credential_defs: {:?}, rev_reg_defs: {:?} rev_regs: {:?}",
-              full_proof, proof_req, credential_schemas, credential_defs, rev_reg_defs, rev_regs);
+               full_proof, proof_req, credential_schemas, credential_defs, rev_reg_defs, rev_regs);
 
         let mut proof_verifier = CryptoVerifier::new_proof_verifier()?;
 
-        for (referent, identifier) in full_proof.identifiers.iter() {
-            let credential_schema = credential_schemas.get(referent)
-                .ok_or(CommonError::InvalidStructure(format!("Schema not found")))?;
-            let credential_def = credential_defs.get(referent)
-                .ok_or(CommonError::InvalidStructure(format!("CredentialDefinition not found")))?;
+        for sub_proof_index in 0..full_proof.identifiers.len() {
+            let identifier = full_proof.identifiers[sub_proof_index].clone();
+            let credential_schema = credential_schemas.get(&identifier.schema_id)
+                .ok_or(CommonError::InvalidStructure(format!("Schema not found for id: {:?}", identifier.schema_id)))?;
+            let credential_def = credential_defs.get(&identifier.cred_def_id)
+                .ok_or(CommonError::InvalidStructure(format!("CredentialDefinition not found for id: {:?}", identifier.cred_def_id)))?;
 
             let (rev_reg_def, rev_reg) = if credential_def.value.revocation.is_some() {
-                let timestamp = identifier.timestamp.ok_or(CommonError::InvalidStructure(format!("Timestamp not found")))?;
-                let rev_reg_def = Some(rev_reg_defs.get(referent)
-                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistryDefinition not found")))?);
-                let rev_regs_for_cred = rev_regs.get(referent.as_str())
-                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistry not found")))?;
+                let timestamp = identifier.timestamp.clone().ok_or(CommonError::InvalidStructure(format!("Timestamp not found")))?;
+                let rev_reg_id = identifier.rev_reg_id.clone().ok_or(CommonError::InvalidStructure(format!("Revocation Registry Id not found")))?;
+                let rev_reg_def = Some(rev_reg_defs.get(&rev_reg_id)
+                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistryDefinition not found for id: {:?}", identifier.rev_reg_id)))?);
+                let rev_regs_for_cred = rev_regs.get(&rev_reg_id)
+                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistry not found for id: {:?}", rev_reg_id)))?;
                 let rev_reg = Some(rev_regs_for_cred.get(&timestamp)
-                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistry not found")))?);
+                    .ok_or(CommonError::InvalidStructure(format!("RevocationRegistry not found for timestamp: {:?}", timestamp)))?);
 
                 (rev_reg_def, rev_reg)
             } else { (None, None) };
 
-            let attrs_for_credential = Verifier::_get_revealed_attributes_for_credential(referent, &full_proof.requested_proof, proof_req)?;
-            let predicates_for_credential = Verifier::_get_predicates_for_credential(referent, &full_proof.requested_proof, proof_req)?;
+            let attrs_for_credential = Verifier::_get_revealed_attributes_for_credential(sub_proof_index, &full_proof.requested_proof, proof_req)?;
+            let predicates_for_credential = Verifier::_get_predicates_for_credential(sub_proof_index, &full_proof.requested_proof, proof_req)?;
 
             let credential_schema = build_credential_schema(&credential_schema.attr_names)?;
             let sub_proof_request = build_sub_proof_request(&attrs_for_credential, &predicates_for_credential)?;
 
             let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.value.primary, credential_def.value.revocation.as_ref())?;
 
-            proof_verifier.add_sub_proof_request(referent,
-                                                 &sub_proof_request,
+            proof_verifier.add_sub_proof_request(&sub_proof_request,
                                                  &credential_schema,
                                                  &credential_pub_key,
                                                  rev_reg_def.as_ref().map(|r_reg_def| &r_reg_def.value.public_keys.accum_key),
@@ -67,16 +68,16 @@ impl Verifier {
         Ok(valid)
     }
 
-    fn _get_revealed_attributes_for_credential(referent: &str,
+    fn _get_revealed_attributes_for_credential(sub_proof_index: usize,
                                                requested_proof: &RequestedProof,
                                                proof_req: &ProofRequest) -> Result<Vec<AttributeInfo>, CommonError> {
-        trace!("_get_revealed_attributes_for_credential >>> referent: {:?}, requested_credentials: {:?}, proof_req: {:?}",
-              referent, requested_proof, proof_req);
+        trace!("_get_revealed_attributes_for_credential >>> sub_proof_index: {:?}, requested_credentials: {:?}, proof_req: {:?}",
+               sub_proof_index, requested_proof, proof_req);
 
         let revealed_attrs_for_credential = requested_proof.revealed_attrs
             .iter()
             .filter(|&(attr_referent, ref revealed_attr_info)|
-                referent.eq(&revealed_attr_info.referent) && proof_req.requested_attrs.contains_key(attr_referent))
+                sub_proof_index == revealed_attr_info.sub_proof_index as usize && proof_req.requested_attrs.contains_key(attr_referent))
             .map(|(attr_referent, _)|
                 proof_req.requested_attrs[attr_referent].clone())
             .collect::<Vec<AttributeInfo>>();
@@ -86,16 +87,16 @@ impl Verifier {
         Ok(revealed_attrs_for_credential)
     }
 
-    fn _get_predicates_for_credential(referent: &str,
+    fn _get_predicates_for_credential(sub_proof_index: usize,
                                       requested_proof: &RequestedProof,
                                       proof_req: &ProofRequest) -> Result<Vec<PredicateInfo>, CommonError> {
-        trace!("_get_predicates_for_credential >>> referent: {:?}, requested_credentials: {:?}, proof_req: {:?}",
-              referent, requested_proof, proof_req);
+        trace!("_get_predicates_for_credential >>> sub_proof_index: {:?}, requested_credentials: {:?}, proof_req: {:?}",
+               sub_proof_index, requested_proof, proof_req);
 
         let predicates_for_credential = requested_proof.predicates
             .iter()
             .filter(|&(predicate_referent, requested_referent)|
-                referent.eq(requested_referent) && proof_req.requested_predicates.contains_key(predicate_referent))
+                sub_proof_index == requested_referent.sub_proof_index as usize && proof_req.requested_predicates.contains_key(predicate_referent))
             .map(|(predicate_referent, _)|
                 proof_req.requested_predicates[predicate_referent].clone())
             .collect::<Vec<PredicateInfo>>();

@@ -86,7 +86,7 @@ pub fn result_to_string_string_string(err: ErrorCode, receiver: Receiver<(ErrorC
     Ok((val, val2, val3))
 }
 
-pub fn result_to_string_opt_string_opt_string(err: ErrorCode, receiver: Receiver<(ErrorCode, String, Option<String>, Option<String>)>) -> Result<(String, Option<String>,Option<String>), ErrorCode> {
+pub fn result_to_string_opt_string_opt_string(err: ErrorCode, receiver: Receiver<(ErrorCode, String, Option<String>, Option<String>)>) -> Result<(String, Option<String>, Option<String>), ErrorCode> {
     if err != ErrorCode::Success {
         return Err(err);
     }
@@ -98,6 +98,20 @@ pub fn result_to_string_opt_string_opt_string(err: ErrorCode, receiver: Receiver
     }
 
     Ok((val, val2, val3))
+}
+
+pub fn result_to_opt_string(err: ErrorCode, receiver: Receiver<(ErrorCode, Option<String>)>) -> Result<Option<String>, ErrorCode> {
+    if err != ErrorCode::Success {
+        return Err(err);
+    }
+
+    let (err, val) = receiver.recv().unwrap();
+
+    if err != ErrorCode::Success {
+        return Err(err);
+    }
+
+    Ok(val)
 }
 
 pub fn result_to_string_opt_string(err: ErrorCode, receiver: Receiver<(ErrorCode, String, Option<String>)>) -> Result<(String, Option<String>), ErrorCode> {

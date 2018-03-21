@@ -450,6 +450,32 @@ pub extern fn indy_issuer_recover_credential(command_handle: i32,
     result_to_err_code!(result)
 }
 
+#[no_mangle]
+pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: i32,
+                                                           rev_reg_delta_json: *const c_char,
+                                                           other_rev_reg_delta_json: *const c_char,
+                                                           cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                                merged_rev_reg_delta: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(rev_reg_delta_json, ErrorCode::CommonInvalidParam2);
+    check_useful_c_str!(other_rev_reg_delta_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Issuer(
+                IssuerCommand::MergeRevocationRegistryDeltas(
+                    rev_reg_delta_json,
+                    other_rev_reg_delta_json,
+                    Box::new(move |result| {
+                        let (err, merged_rev_reg_delta) = result_to_err_code_1!(result, String::new());
+                        let merged_rev_reg_delta = CStringUtils::string_to_cstring(merged_rev_reg_delta);
+                        cb(command_handle, err, merged_rev_reg_delta.as_ptr())
+                    })
+                ))));
+
+    result_to_err_code!(result)
+}
+
 /// Creates a master secret with a given name and stores it in the wallet.
 /// The name must be unique.
 ///
@@ -537,7 +563,7 @@ pub extern fn indy_prover_create_credential_req(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::CreateAndStoreCredentialRequest(
+        .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::CreateCredentialRequest(
             wallet_handle,
             prover_did,
             cred_offer_json,
@@ -836,29 +862,25 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
 ///     {
 ///         "requested": {
 ///             "revealed_attrs": {
-///                 "requested_attr1_id": {referent: string, raw: string, encoded: string},
-///                 "requested_attr4_id": {referent: string, raw: string, encoded: string},
+///                 "requested_attr1_id": {sub_proof_index: int, raw: string, encoded: string},
+///                 "requested_attr4_id": {sub_proof_index: int: string, encoded: string},
 ///             },
 ///             "unrevealed_attrs": {
-///                 "requested_attr3_id": referent
+///                 "requested_attr3_id": {sub_proof_index: int}
 ///             },
 ///             "self_attested_attrs": {
 ///                 "requested_attr2_id": self_attested_value,
 ///             },
 ///             "requested_predicates": {
-///                 "requested_predicate_1_referent": [credential_proof2_referent],
-///                 "requested_predicate_2_referent": [credential_proof3_referent],
+///                 "requested_predicate_1_referent": {sub_proof_index: int},
+///                 "requested_predicate_2_referent": {sub_proof_index: int},
 ///             }
 ///         }
 ///         "proof": {
-///             "proofs": {
-///                 "credential_proof1_referent": <credential_proof>,
-///                 "credential_proof2_referent": <credential_proof>,
-///                 "credential_proof3_referent": <credential_proof>
-///             },
+///             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
 ///             "aggregated_proof": <aggregated_proof>
 ///         }
-///         "identifiers": {"credential_proof1_referent":{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}}
+///         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
 ///     }
 ///
 /// #Errors
@@ -932,51 +954,55 @@ pub extern fn indy_prover_create_proof(command_handle: i32,
 /// There ais also aggregated proof part common for all credential proofs.
 ///     {
 ///         "requested": {
-///             "requested_attr1_id": [credential_proof1_referent, revealed_attr1, revealed_attr1_as_int],
-///             "requested_attr2_id": [self_attested_attribute],
-///             "requested_attr3_id": [credential_proof2_referent]
-///             "requested_attr4_id": [credential_proof2_referent, revealed_attr4, revealed_attr4_as_int],
-///             "requested_predicate_1_referent": [credential_proof2_referent],
-///             "requested_predicate_2_referent": [credential_proof3_referent],
+///             "revealed_attrs": {
+///                 "requested_attr1_id": {sub_proof_index: int, raw: string, encoded: string},
+///                 "requested_attr4_id": {sub_proof_index: int: string, encoded: string},
+///             },
+///             "unrevealed_attrs": {
+///                 "requested_attr3_id": {sub_proof_index: int}
+///             },
+///             "self_attested_attrs": {
+///                 "requested_attr2_id": self_attested_value,
+///             },
+///             "requested_predicates": {
+///                 "requested_predicate_1_referent": {sub_proof_index: int},
+///                 "requested_predicate_2_referent": {sub_proof_index: int},
+///             }
 ///         }
 ///         "proof": {
-///             "proofs": {
-///                 "credential_proof1_referent": <credential_proof>,
-///                 "credential_proof2_referent": <credential_proof>,
-///                 "credential_proof3_referent": <credential_proof>
-///             },
+///             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
 ///             "aggregated_proof": <aggregated_proof>
 ///         }
-///         "identifiers": {"credential_proof1_referent":{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}}
+///         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
 ///     }
 /// schemas_jsons: all schemas json participating in the proof
 ///         {
-///             "credential_proof1_referent": <schema>,
-///             "credential_proof2_referent": <schema>,
-///             "credential_proof3_referent": <schema>
+///             <schema_id>: <schema>,
+///             <schema_id>: <schema>,
+///             <schema_id>: <schema>
 ///         }
 /// credential_defs_jsons: all credential definitions json participating in the proof
 ///         {
-///             "credential_proof1_referent": <credential_def>,
-///             "credential_proof2_referent": <credential_def>,
-///             "credential_proof3_referent": <credential_def>
+///             <cred_def_id> <credential_def>,
+///             <cred_def_id>: <credential_def>,
+///             <cred_def_id>: <credential_def>
 ///         }
 /// rev_reg_defs_json: all revocation registry definitions json participating in the proof
 ///         {
-///             "credential_proof1_referent": <rev_reg_def>,
-///             "credential_proof2_referent": <rev_reg_def>,
-///             "credential_proof3_referent": <rev_reg_def>
+///             <rev_reg_id>: <rev_reg_def>,
+///             <rev_reg_id>: <rev_reg_def>,
+///             <rev_reg_id>: <rev_reg_def>
 ///         }
 /// rev_regs_json: all revocation registry definitions json participating in the proof
 ///     {
-///         "credential1_referent_in_wallet": {
+///         <rev_reg_id>: {
 ///             "freshness1": <revoc_reg1>,
 ///             "freshness2": <revoc_reg2>,
 ///         },
-///         "credential2_referent_in_wallet": {
+///         <rev_reg_id>: {
 ///             "freshness3": <revoc_reg3>
 ///         },
-///         "credential3_referent_in_wallet": {
+///         <rev_reg_id>: {
 ///             "freshness4": <revoc_reg4>
 ///         },
 ///     }
@@ -1089,6 +1115,31 @@ pub extern fn indy_update_revocation_state(command_handle: i32,
                 cb(command_handle, err, updated_rev_info_json.as_ptr())
             })
         ))));
+
+    result_to_err_code!(result)
+}
+
+#[no_mangle]
+pub extern fn indy_prover_get_credential_revocation_id(command_handle: i32,
+                                                       wallet_handle: i32,
+                                                       cred_id: *const c_char,
+                                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                            cred_rev_id: *const c_char)>) -> ErrorCode {
+    check_useful_c_str!(cred_id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Prover(
+                ProverCommand::GetCredentialRevocationId(
+                    wallet_handle,
+                    cred_id,
+                    Box::new(move |result| {
+                        let (err, cred_rev_id) = result_to_err_code_1!(result, None);
+                        let cred_rev_id = cred_rev_id.map(CStringUtils::string_to_cstring);
+                        cb(command_handle, err, cred_rev_id.as_ref().map(|id| id.as_ptr()).unwrap_or(ptr::null()))
+                    })
+                ))));
 
     result_to_err_code!(result)
 }

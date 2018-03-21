@@ -33,6 +33,9 @@ use indy::api::ErrorCode;
 use utils::inmem_wallet::InmemWallet;
 use utils::constants::*;
 
+#[test]
+fn a() {}
+
 mod high_cases {
     use super::*;
 
@@ -129,7 +132,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        fn prover_create_and_store_credential_req_works() {
+        fn prover_create_credential_req_works() {
             let (wallet_handle, credential_def, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
             AnoncredsUtils::prover_create_credential_req(wallet_handle,
@@ -140,7 +143,7 @@ mod high_cases {
         }
 
         #[test]
-        fn prover_create_and_store_credential_req_works_for_invalid_wallet() {
+        fn prover_create_credential_req_works_for_invalid_wallet() {
             let (wallet_handle, credential_def, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
             let invalid_wallet_handle = wallet_handle + 100;
@@ -153,14 +156,14 @@ mod high_cases {
         }
 
         #[test]
-        fn prover_create_and_store_credential_req_works_for_credential_def_not_correspond_to_credential_offer() {
-            let (wallet_handle, issuer1_gvt_credential_def, _, _, _) = AnoncredsUtils::init_common_wallet();
+        fn prover_create_credential_req_works_for_credential_def_not_correspond_to_credential_offer() {
+            let (wallet_handle, issuer1_gvt_credential_def, issuer1_gvt_credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
-            let issuer1_xyz_cred_offer_json = AnoncredsUtils::get_credential_offer(&AnoncredsUtils::issuer_1_xyz_cred_def_id());
+            let other_credential_offer = issuer1_gvt_credential_offer.replace(&AnoncredsUtils::issuer_1_gvt_cred_def_id(), &AnoncredsUtils::issuer_1_xyz_cred_def_id());
 
             let res = AnoncredsUtils::prover_create_credential_req(wallet_handle,
                                                                    DID_MY1,
-                                                                   &issuer1_xyz_cred_offer_json,
+                                                                   &other_credential_offer,
                                                                    &issuer1_gvt_credential_def,
                                                                    COMMON_MASTER_SECRET);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -1267,11 +1270,7 @@ mod high_cases {
 
         #[test]
         fn prover_create_proof_works() {
-            let (wallet_handle, credential_def_json, _, _, _) = AnoncredsUtils::init_common_wallet();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
-            let credential_for_attr = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
-            let credential_for_predicate = AnoncredsUtils::get_credential_for_predicate_referent(&credentials_json, "predicate1_referent");
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let requested_credentials_json = format!(r#"{{
                                                   "self_attested_attributes":{{}},
@@ -1281,27 +1280,20 @@ mod high_cases {
                                                   "requested_predicates":{{
                                                         "predicate1_referent":{{ "cred_id":"{}" }}
                                                   }}
-                                                }}"#, credential_for_attr.referent, credential_for_predicate.referent);
-
-            let schemas_json = format!(r#"{{"{}":{}}}"#, credential_for_attr.referent, AnoncredsUtils::gvt_schema_json());
-            let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential_for_attr.referent, credential_def_json);
-            let revoc_infos_json = "{}";
+                                                }}"#, CREDENTIAL1_ID, CREDENTIAL1_ID);
 
             AnoncredsUtils::prover_create_proof(wallet_handle,
                                                 AnoncredsUtils::proof_request_attr_and_predicate(),
                                                 &requested_credentials_json,
                                                 COMMON_MASTER_SECRET,
-                                                &schemas_json,
-                                                &credential_defs_json,
-                                                &revoc_infos_json).unwrap();
+                                                &AnoncredsUtils::schemas_for_proof(),
+                                                &AnoncredsUtils::cred_defs_for_proof(),
+                                                "{}").unwrap();
         }
 
         #[test]
         fn prover_create_proof_works_for_using_not_satisfy_credential() {
-            let (wallet_handle, credential_def_json, _, _, _) = AnoncredsUtils::init_common_wallet();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
-            let credential_for_attr = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let proof_req = r#"{
                                         "nonce":"123432421212",
@@ -1319,28 +1311,21 @@ mod high_cases {
                                                         "attr1_referent":{{ "cred_id":"{}", "revealed":true }}
                                                   }},
                                                   "requested_predicates":{{}}
-                                                }}"#, credential_for_attr.referent);
-
-            let schemas_json = format!(r#"{{"{}":{}}}"#, credential_for_attr.referent, AnoncredsUtils::gvt_schema_json());
-            let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential_for_attr.referent, credential_def_json);
-            let revoc_infos_json = "{}";
+                                                }}"#, CREDENTIAL1_ID);
 
             let res = AnoncredsUtils::prover_create_proof(wallet_handle,
                                                           &proof_req,
                                                           &requested_credentials_json,
                                                           COMMON_MASTER_SECRET,
-                                                          &schemas_json,
-                                                          &credential_defs_json,
-                                                          &revoc_infos_json);
+                                                          &AnoncredsUtils::schemas_for_proof(),
+                                                          &AnoncredsUtils::cred_defs_for_proof(),
+                                                          "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
         fn prover_create_proof_works_for_invalid_wallet_handle() {
-            let (wallet_handle, credential_def_json, _, _, _) = AnoncredsUtils::init_common_wallet();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr()).unwrap();
-            let credential_for_attr = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let requested_credentials_json = format!(r#"{{
                                                   "self_attested_attributes":{{}},
@@ -1348,20 +1333,16 @@ mod high_cases {
                                                         "attr1_referent":{{ "cred_id":"{}", "revealed":true }}
                                                   }},
                                                   "requested_predicates":{{}}
-                                                }}"#, credential_for_attr.referent);
-
-            let schemas_json = format!(r#"{{"{}":{}}}"#, credential_for_attr.referent, AnoncredsUtils::gvt_schema_json());
-            let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential_for_attr.referent, credential_def_json);
-            let revoc_reg_entries_jsons = "{}";
+                                                }}"#, CREDENTIAL1_ID);
 
             let invalid_wallet_handle = wallet_handle + 100;
             let res = AnoncredsUtils::prover_create_proof(invalid_wallet_handle,
                                                           AnoncredsUtils::proof_request_attr(),
                                                           &requested_credentials_json,
                                                           COMMON_MASTER_SECRET,
-                                                          &schemas_json,
-                                                          &credential_defs_json,
-                                                          &revoc_reg_entries_jsons);
+                                                          &AnoncredsUtils::schemas_for_proof(),
+                                                          &AnoncredsUtils::cred_defs_for_proof(),
+                                                          "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
     }
@@ -1405,7 +1386,7 @@ mod high_cases {
 
         #[test]
         fn verifier_verify_proof_works_for_wrong_proof() {
-            let proof_json = AnoncredsUtils::proof_json().replace("811357720442959746492823680842", "111111111111111111111111111111");
+            let proof_json = AnoncredsUtils::proof_json().replace("32089897157624832283198840330786910110050115462404", "111111111111111111111111111111");
 
             let valid = AnoncredsUtils::verifier_verify_proof(AnoncredsUtils::proof_request_attr_and_predicate(),
                                                               &proof_json,
@@ -1582,11 +1563,11 @@ mod medium_cases {
         }
     }
 
-    mod prover_create_and_store_credential_req {
+    mod prover_create_credential_req {
         use super::*;
 
         #[test]
-        fn prover_create_and_store_credential_req_works_for_invalid_credential_offer() {
+        fn prover_create_credential_req_works_for_invalid_credential_offer() {
             let (wallet_handle, credential_def, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let res = AnoncredsUtils::prover_create_credential_req(wallet_handle,
@@ -1598,7 +1579,7 @@ mod medium_cases {
         }
 
         #[test]
-        fn prover_create_and_store_credential_req_works_for_invalid_credential_def() {
+        fn prover_create_credential_req_works_for_invalid_credential_def() {
             let (wallet_handle, _, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
             let credential_def = r#"{
@@ -1618,7 +1599,7 @@ mod medium_cases {
         }
 
         #[test]
-        fn prover_create_and_store_credential_req_works_for_invalid_master_secret() {
+        fn prover_create_credential_req_works_for_invalid_master_secret() {
             let (wallet_handle, credential_def, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
             let res = AnoncredsUtils::prover_create_credential_req(wallet_handle,
@@ -1635,7 +1616,7 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_credential_works_for_for_invalid_credential_req_json() {
-            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
             let credential_req = r#"{
                                         "blinded_ms":{"ur":null},
@@ -1643,7 +1624,7 @@ mod medium_cases {
                                     }"#;
 
             let res = AnoncredsUtils::issuer_create_credential(wallet_handle,
-                                                               &AnoncredsUtils::issuer_1_gvt_credential_offer(),
+                                                               &credential_offer,
                                                                &credential_req,
                                                                &AnoncredsUtils::gvt_credential_values_json(),
                                                                None,
@@ -1653,7 +1634,7 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_credential_works_for_for_invalid_credential_values_json() {
-            let (wallet_handle, _, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
+            let (wallet_handle, _, credential_offer, credential_request, _) = AnoncredsUtils::init_common_wallet();
 
             let credential_values_json = r#"{
                                            "sex":"male",
@@ -1663,8 +1644,8 @@ mod medium_cases {
                                          }"#;
 
             let res = AnoncredsUtils::issuer_create_credential(wallet_handle,
-                                                               &AnoncredsUtils::issuer_1_gvt_credential_offer(),
                                                                &credential_offer,
+                                                               &credential_request,
                                                                &credential_values_json,
                                                                None,
                                                                None);
@@ -1771,10 +1752,7 @@ mod medium_cases {
 
         #[test]
         fn prover_create_proof_works_for_invalid_master_secret() {
-            let (wallet_handle, credential_def_json, _, _, _) = AnoncredsUtils::init_common_wallet();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
-            let credential_for_attr = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let requested_credentials_json = format!(r#"{{
                                                   "self_attested_attributes":{{}},
@@ -1782,28 +1760,21 @@ mod medium_cases {
                                                         "attr1_referent":{{ "cred_id":"{}", "revealed":true }}
                                                   }},
                                                   "requested_predicates":{{}}
-                                                }}"#, credential_for_attr.referent);
-
-            let schemas_json = format!(r#"{{"{}":{}}}"#, credential_for_attr.referent, AnoncredsUtils::gvt_schema_json());
-            let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential_for_attr.referent, credential_def_json);
-            let revoc_reg_entries_json = "{}";
+                                                }}"#, CREDENTIAL1_ID);
 
             let res = AnoncredsUtils::prover_create_proof(wallet_handle,
                                                           AnoncredsUtils::proof_request_attr_and_predicate(),
                                                           &requested_credentials_json,
                                                           "invalid_master_secret_name",
-                                                          &schemas_json,
-                                                          &credential_defs_json,
-                                                          &revoc_reg_entries_json);
+                                                          &AnoncredsUtils::schemas_for_proof(),
+                                                          &AnoncredsUtils::cred_defs_for_proof(),
+                                                          "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
         }
 
         #[test]
         fn prover_create_proof_works_for_invalid_schemas_json() {
-            let (wallet_handle, credential_def_json, _, _, _) = AnoncredsUtils::init_common_wallet();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
-            let credential_for_attr = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let requested_credentials_json = format!(r#"{{
                                                   "self_attested_attributes":{{}},
@@ -1811,19 +1782,15 @@ mod medium_cases {
                                                         "attr1_referent":{{ "cred_id":"{}", "revealed":true }}
                                                   }},
                                                   "requested_predicates":{{}}
-                                                }}"#, credential_for_attr.referent);
-
-            let schemas_json = r#"{}"#;
-            let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential_for_attr.referent, credential_def_json);
-            let revoc_reg_entries_json = "{}";
+                                                }}"#, CREDENTIAL1_ID);
 
             let res = AnoncredsUtils::prover_create_proof(wallet_handle,
                                                           AnoncredsUtils::proof_request_attr_and_predicate(),
                                                           &requested_credentials_json,
                                                           COMMON_MASTER_SECRET,
-                                                          &schemas_json,
-                                                          &credential_defs_json,
-                                                          &revoc_reg_entries_json);
+                                                          &"{}",
+                                                          &AnoncredsUtils::cred_defs_for_proof(),
+                                                          "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -1831,54 +1798,40 @@ mod medium_cases {
         fn prover_create_proof_works_for_invalid_credential_defs_json() {
             let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
-            let credential_for_attr = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
-
             let requested_credentials_json = format!(r#"{{
                                                   "self_attested_attributes":{{}},
                                                   "requested_attrs":{{
                                                         "attr1_referent":{{ "cred_id":"{}", "revealed":true }}
                                                   }},
                                                   "requested_predicates":{{}}
-                                                }}"#, credential_for_attr.referent);
-
-            let schemas_json = format!(r#"{{"{}":{}}}"#, credential_for_attr.referent, AnoncredsUtils::gvt_schema_json());
-            let credential_defs_json = r#"{}"#;
-            let revoc_reg_entries_json = "{}";
+                                                }}"#, CREDENTIAL1_ID);
 
             let res = AnoncredsUtils::prover_create_proof(wallet_handle,
                                                           AnoncredsUtils::proof_request_attr_and_predicate(),
                                                           &requested_credentials_json,
                                                           COMMON_MASTER_SECRET,
-                                                          &schemas_json,
-                                                          &credential_defs_json,
-                                                          &revoc_reg_entries_json);
+                                                          &AnoncredsUtils::schemas_for_proof(),
+                                                          "{}",
+                                                          "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
         fn prover_create_proof_works_for_invalid_requested_credentials_json() {
-            let (wallet_handle, credential_def_json, _, _, _) = AnoncredsUtils::init_common_wallet();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, AnoncredsUtils::proof_request_attr_and_predicate()).unwrap();
-            let credential_for_attr = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
+            let (wallet_handle, _, _, _, _) = AnoncredsUtils::init_common_wallet();
 
             let requested_credentials_json = format!(r#"{{
                                                           "self_attested_attributes":{{}},
                                                           "requested_predicates":{{}}
                                                         }}"#);
 
-            let schemas_json = format!(r#"{{"{}":{}}}"#, credential_for_attr.referent, AnoncredsUtils::gvt_schema_json());
-            let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential_for_attr.referent, credential_def_json);
-            let revoc_reg_entries_json = "{}";
-
             let res = AnoncredsUtils::prover_create_proof(wallet_handle,
                                                           AnoncredsUtils::proof_request_attr_and_predicate(),
                                                           &requested_credentials_json,
                                                           COMMON_MASTER_SECRET,
-                                                          &schemas_json,
-                                                          &credential_defs_json,
-                                                          &revoc_reg_entries_json);
+                                                          &AnoncredsUtils::schemas_for_proof(),
+                                                          &AnoncredsUtils::cred_defs_for_proof(),
+                                                          "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
     }
@@ -1948,6 +1901,7 @@ mod demos {
         //1. Create Prover wallet, get wallet handle
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, Some(TYPE)).unwrap();
 
+        let schema_id = AnoncredsUtils::gvt_schema_id();
         let schema = AnoncredsUtils::gvt_schema_json();
 
         //2. Prover create Master Secret
@@ -1984,6 +1938,7 @@ mod demos {
         };
 
         let credential_def_json = serde_json::to_string(&credential_def).unwrap();
+        let credential_def_id = AnoncredsUtils::issuer_1_gvt_cred_def_id();
 
         //5. Prover create Credential Request
         let (credential_req, credential_req_metadata) = AnoncredsUtils::prover_create_credential_req(prover_wallet_handle,
@@ -2043,8 +1998,8 @@ mod demos {
                                                   }}
                                                 }}"#, self_attested_value, credential.referent, credential.referent, credential.referent);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, credential.referent, schema);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential.referent, credential_def_json);
+        let schemas_json = format!(r#"{{"{}":{}}}"#, schema_id, schema);
+        let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential_def_id, credential_def_json);
         let rev_infos_json = "{}";
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
@@ -2063,10 +2018,6 @@ mod demos {
         proof.requested_proof.unrevealed_attrs.get("attr2_referent").unwrap();
         assert_eq!(self_attested_value, proof.requested_proof.self_attested_attrs.get("attr3_referent").unwrap());
 
-        let id = revealed_attr_1.referent.clone();
-
-        let schemas_json = format!(r#"{{"{}":{}}}"#, id, schema);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential.referent, credential_def_json);
         let rev_reg_defs_json = "{}";
         let rev_regs_json = "{}";
 
@@ -2096,6 +2047,7 @@ mod demos {
 
         //3. Issuer create credential definition
         let schema = AnoncredsUtils::gvt_schema_json();
+        let schema_id = AnoncredsUtils::gvt_schema_id();
 
         let (cred_def_id, credential_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
                                                                                                      &ISSUER_DID,
@@ -2169,8 +2121,8 @@ mod demos {
                                                   }}
                                                 }}"#, self_attested_value, credential.referent, credential.referent);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, credential.referent, schema);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential.referent, credential_def_json);
+        let schemas_json = format!(r#"{{"{}":{}}}"#, schema_id, schema);
+        let credential_defs_json = format!(r#"{{"{}":{}}}"#, cred_def_id, credential_def_json);
         let rev_infos_jsons = "{}";
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
@@ -2281,10 +2233,10 @@ mod demos {
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
         //3. Issuer creates schema
-        let (_, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                    GVT_SCHEMA_NAME,
-                                                                    SCHEMA_VERSION,
-                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
+        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
+                                                                            GVT_SCHEMA_NAME,
+                                                                            SCHEMA_VERSION,
+                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
 
         //4. Issuer creates credential definition
         let (cred_def_id, credential_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -2360,8 +2312,8 @@ mod demos {
                                                   }}
                                                 }}"#, self_attested_value, credential.referent, credential.referent, credential.referent);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, credential.referent, schema_json);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential.referent, credential_def_json);
+        let schemas_json = format!(r#"{{"{}":{}}}"#, schema_id, schema_json);
+        let credential_defs_json = format!(r#"{{"{}":{}}}"#, cred_def_id, credential_def_json);
         let rev_infos_json = "{}";
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
@@ -2382,10 +2334,6 @@ mod demos {
 
         assert_eq!(self_attested_value, proof.requested_proof.self_attested_attrs.get("attr3_referent").unwrap());
 
-        let id = revealed_attr_1.referent.clone();
-
-        let schemas_json = format!(r#"{{"{}":{}}}"#, id, schema_json);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, id, credential_def_json);
         let rev_reg_defs_json = "{}";
         let rev_regs_json = "{}";
 
@@ -2422,10 +2370,10 @@ mod demos {
 
 
         //4. Issuer creates Schema
-        let (_, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                    GVT_SCHEMA_NAME,
-                                                                    SCHEMA_VERSION,
-                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
+        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
+                                                                            GVT_SCHEMA_NAME,
+                                                                            SCHEMA_VERSION,
+                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
 
         //5. Issuer creates Credential Definition
         let (cred_def_id, cred_def_json) =
@@ -2494,8 +2442,8 @@ mod demos {
                                                   }}
                                                 }}"#, credential.referent);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, credential.referent, schema_json);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential.referent, cred_def_json);
+        let schemas_json = format!(r#"{{"{}":{}}}"#, schema_id, schema_json);
+        let credential_defs_json = format!(r#"{{"{}":{}}}"#, cred_def_id, cred_def_json);
         let rev_infos_json = "{}";
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
@@ -2512,10 +2460,6 @@ mod demos {
         let revealed_attr_1 = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap();
         assert_eq!("Alex", revealed_attr_1.raw);
 
-        let id = revealed_attr_1.referent.clone();
-
-        let schemas_json = format!(r#"{{"{}":{}}}"#, id, schema_json);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, id, cred_def_json);
         let rev_reg_defs_json = "{}";
         let rev_regs_json = "{}";
 
@@ -2547,10 +2491,10 @@ mod demos {
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
         //4. Issuer1 creates GVT Schema
-        let (_, gvt_schema) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                   GVT_SCHEMA_NAME,
-                                                                   SCHEMA_VERSION,
-                                                                   GVT_SCHEMA_ATTRIBUTES).unwrap();
+        let (gvt_schema_id, gvt_schema) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
+                                                                               GVT_SCHEMA_NAME,
+                                                                               SCHEMA_VERSION,
+                                                                               GVT_SCHEMA_ATTRIBUTES).unwrap();
 
         //5. Issuer1 creates GVT CredentialDefinition
         let (gvt_cred_def_id, gvt_credential_def_json) =
@@ -2562,10 +2506,10 @@ mod demos {
                                                                 &AnoncredsUtils::default_cred_def_config()).unwrap();
 
         //6. Issuer2 creates XYZ Schema
-        let (_, xyz_schema) = AnoncredsUtils::issuer_create_schema(DID_MY2,
-                                                                   XYZ_SCHEMA_NAME,
-                                                                   SCHEMA_VERSION,
-                                                                   XYZ_SCHEMA_ATTRIBUTES).unwrap();
+        let (xyz_schema_id, xyz_schema) = AnoncredsUtils::issuer_create_schema(DID_MY2,
+                                                                               XYZ_SCHEMA_NAME,
+                                                                               SCHEMA_VERSION,
+                                                                               XYZ_SCHEMA_ATTRIBUTES).unwrap();
 
         //7. Issuer2 creates XYZ CredentialDefinition
         let (xyz_cred_def_id, xyz_credential_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_xyz_wallet_handle,
@@ -2675,8 +2619,8 @@ mod demos {
                                                  credential_for_attr_1.referent, credential_for_attr_2.referent,
                                                  credential_for_predicate_1.referent, credential_for_predicate_2.referent);
 
-        let schemas_json = format!(r#"{{"{}":{},"{}":{}}}"#, CREDENTIAL1_ID, gvt_schema, CREDENTIAL2_ID, xyz_schema);
-        let credential_defs_json = format!(r#"{{"{}":{},"{}":{}}}"#, CREDENTIAL1_ID, gvt_credential_def_json, CREDENTIAL2_ID, xyz_credential_def_json);
+        let schemas_json = format!(r#"{{"{}":{},"{}":{}}}"#, gvt_schema_id, gvt_schema, xyz_schema_id, xyz_schema);
+        let credential_defs_json = format!(r#"{{"{}":{},"{}":{}}}"#, gvt_cred_def_id, gvt_credential_def_json, xyz_cred_def_id, xyz_credential_def_json);
         let rev_infos_json = "{}";
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
@@ -2695,8 +2639,6 @@ mod demos {
         let revealed_attr_2 = proof.requested_proof.revealed_attrs.get("attr2_referent").unwrap();
         assert_eq!("partial", revealed_attr_2.raw);
 
-        let schemas_json = format!(r#"{{"{}":{},"{}":{}}}"#, revealed_attr_1.referent, gvt_schema, revealed_attr_2.referent, xyz_schema);
-        let credential_defs_json = format!(r#"{{"{}":{},"{}":{}}}"#, revealed_attr_1.referent, gvt_credential_def_json, revealed_attr_2.referent, xyz_credential_def_json);
         let rev_reg_defs_json = "{}";
         let rev_regs_json = "{}";
 
@@ -2724,10 +2666,10 @@ mod demos {
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
         //3. Issuer creates GVT Schema
-        let (_, gvt_schema) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                   GVT_SCHEMA_NAME,
-                                                                   SCHEMA_VERSION,
-                                                                   GVT_SCHEMA_ATTRIBUTES).unwrap();
+        let (gvt_schema_id, gvt_schema) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
+                                                                               GVT_SCHEMA_NAME,
+                                                                               SCHEMA_VERSION,
+                                                                               GVT_SCHEMA_ATTRIBUTES).unwrap();
 
         //4. Issuer creates GVT CredentialDefinition
         let (gvt_cred_def_id, gvt_credential_def_json) =
@@ -2739,10 +2681,10 @@ mod demos {
                                                                 &AnoncredsUtils::default_cred_def_config()).unwrap();
 
         //5. Issuer creates XYZ Schema
-        let (_, xyz_schema) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                   XYZ_SCHEMA_NAME,
-                                                                   SCHEMA_VERSION,
-                                                                   XYZ_SCHEMA_ATTRIBUTES).unwrap();
+        let (xyz_schema_id, xyz_schema) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
+                                                                               XYZ_SCHEMA_NAME,
+                                                                               SCHEMA_VERSION,
+                                                                               XYZ_SCHEMA_ATTRIBUTES).unwrap();
 
         //6. Issuer creates XYZ CredentialDefinition
         let (xyz_cred_def_id, xyz_credential_def_json) =
@@ -2854,8 +2796,8 @@ mod demos {
                                                  credential_for_predicate_1.referent, credential_for_predicate_2.referent);
 
 
-        let schemas_json = format!(r#"{{"{}":{},"{}":{}}}"#, CREDENTIAL1_ID, gvt_schema, CREDENTIAL2_ID, xyz_schema);
-        let credential_defs_json = format!(r#"{{"{}":{},"{}":{}}}"#, CREDENTIAL1_ID, gvt_credential_def_json, CREDENTIAL2_ID, xyz_credential_def_json);
+        let schemas_json = format!(r#"{{"{}":{},"{}":{}}}"#, gvt_schema_id, gvt_schema, xyz_schema_id, xyz_schema);
+        let credential_defs_json = format!(r#"{{"{}":{},"{}":{}}}"#, gvt_cred_def_id, gvt_credential_def_json, xyz_cred_def_id, xyz_credential_def_json);
         let rev_infos_json = "{}";
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
@@ -2874,8 +2816,6 @@ mod demos {
         let revealed_attr_2 = proof.requested_proof.revealed_attrs.get("attr2_referent").unwrap();
         assert_eq!("partial", revealed_attr_2.raw);
 
-        let schemas_json = format!(r#"{{"{}":{},"{}":{}}}"#, revealed_attr_1.referent, gvt_schema, revealed_attr_2.referent, xyz_schema);
-        let credential_defs_json = format!(r#"{{"{}":{},"{}":{}}}"#, revealed_attr_1.referent, gvt_credential_def_json, revealed_attr_2.referent, xyz_credential_def_json);
         let rev_reg_defs_json = "{}";
         let rev_regs_json = "{}";
 
@@ -2905,10 +2845,10 @@ mod demos {
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
         //3. Issuer creates schema
-        let (_, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                    GVT_SCHEMA_NAME,
-                                                                    SCHEMA_VERSION,
-                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
+        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
+                                                                            GVT_SCHEMA_NAME,
+                                                                            SCHEMA_VERSION,
+                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
 
         //4. Issuer creates credential definition
         let (cred_def_id, credential_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -2952,14 +2892,14 @@ mod demos {
 
 
         //10. Issuer creates Credential
-        let (credential_json, revoc_id, revoc_reg_delta_json) = AnoncredsUtils::issuer_create_credential(issuer_wallet_handle,
-                                                                                                         &credential_offer_json,
-                                                                                                         &credential_req_json,
-                                                                                                         &AnoncredsUtils::gvt_credential_values_json(),
-                                                                                                         Some(&rev_reg_id),
-                                                                                                         Some(blob_storage_reader_handle)).unwrap();
+        let (credential_json, cred_rev_id, revoc_reg_delta_json) = AnoncredsUtils::issuer_create_credential(issuer_wallet_handle,
+                                                                                                            &credential_offer_json,
+                                                                                                            &credential_req_json,
+                                                                                                            &AnoncredsUtils::gvt_credential_values_json(),
+                                                                                                            Some(&rev_reg_id),
+                                                                                                            Some(blob_storage_reader_handle)).unwrap();
         let revoc_reg_delta_json = revoc_reg_delta_json.unwrap();
-        let revoc_id = revoc_id.unwrap();
+        let cred_rev_id = cred_rev_id.unwrap();
 
         //11. Prover creates RevocationState
         let timestamp = 100;
@@ -2967,7 +2907,7 @@ mod demos {
                                                                      &revoc_reg_def_json,
                                                                      &revoc_reg_delta_json,
                                                                      timestamp,
-                                                                     &revoc_id).unwrap();
+                                                                     &cred_rev_id).unwrap();
 
         //12. Prover store received Credential
         AnoncredsUtils::prover_store_credential(prover_wallet_handle,
@@ -3012,9 +2952,9 @@ mod demos {
                                                   }}
                                                 }}"#, credential.referent, timestamp, credential.referent, timestamp);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, credential.referent, schema_json);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential.referent, credential_def_json);
-        let rev_infos_json = format!("{{\"{}\": {{ \"{}\":{} }} }}", credential.referent, timestamp, rev_state_json);
+        let schemas_json = format!(r#"{{"{}":{}}}"#, schema_id, schema_json);
+        let credential_defs_json = format!(r#"{{"{}":{}}}"#, cred_def_id, credential_def_json);
+        let rev_infos_json = format!("{{\"{}\": {{ \"{}\":{} }} }}", rev_reg_id, timestamp, rev_state_json);
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
                                                              &proof_request,
@@ -3029,12 +2969,8 @@ mod demos {
         let revealed_attr_1 = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap();
         assert_eq!("Alex", revealed_attr_1.raw);
 
-        let id = revealed_attr_1.referent.clone();
-
-        let schemas_json = format!(r#"{{"{}":{}}}"#, id, schema_json);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, id, credential_def_json);
-        let rev_reg_defs_json = format!("{{\"{}\":{}}}", id, revoc_reg_def_json);
-        let rev_regs_json = format!("{{\"{}\": {{ \"{}\":{} }} }}", id, timestamp, revoc_reg_delta_json);
+        let rev_reg_defs_json = format!("{{\"{}\":{}}}", rev_reg_id, revoc_reg_def_json);
+        let rev_regs_json = format!("{{\"{}\": {{ \"{}\":{} }} }}", rev_reg_id, timestamp, revoc_reg_delta_json);
 
         let valid = AnoncredsUtils::verifier_verify_proof(&proof_request,
                                                           &proof_json,
@@ -3064,10 +3000,10 @@ mod demos {
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
         //3. Issuer creates schema
-        let (_, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                    GVT_SCHEMA_NAME,
-                                                                    SCHEMA_VERSION,
-                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
+        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
+                                                                            GVT_SCHEMA_NAME,
+                                                                            SCHEMA_VERSION,
+                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
 
         //4. Issuer creates credential definition
         let (cred_def_id, credential_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -3111,13 +3047,13 @@ mod demos {
 
 
         //10. Issuer creates Credential
-        let (credential_json, revoc_id, _) = AnoncredsUtils::issuer_create_credential(issuer_wallet_handle,
-                                                                                      &credential_offer_json,
-                                                                                      &credential_req_json,
-                                                                                      &AnoncredsUtils::gvt_credential_values_json(),
-                                                                                      Some(&rev_reg_id),
-                                                                                      Some(blob_storage_reader_handle)).unwrap();
-        let revoc_id = revoc_id.unwrap();
+        let (credential_json, cred_rev_id, _) = AnoncredsUtils::issuer_create_credential(issuer_wallet_handle,
+                                                                                         &credential_offer_json,
+                                                                                         &credential_req_json,
+                                                                                         &AnoncredsUtils::gvt_credential_values_json(),
+                                                                                         Some(&rev_reg_id),
+                                                                                         Some(blob_storage_reader_handle)).unwrap();
+        let cred_rev_id = cred_rev_id.unwrap();
 
         //11. Prover creates Witness
         let timestamp = 100;
@@ -3127,7 +3063,7 @@ mod demos {
                                                                      &revoc_reg_def_json,
                                                                      &rev_reg_delta,
                                                                      timestamp,
-                                                                     &revoc_id).unwrap();
+                                                                     &cred_rev_id).unwrap();
 
         //12. Prover store received Credential
         AnoncredsUtils::prover_store_credential(prover_wallet_handle,
@@ -3172,9 +3108,9 @@ mod demos {
                                                   }}
                                                 }}"#, credential.referent, timestamp, credential.referent, timestamp);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, credential.referent, schema_json);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential.referent, credential_def_json);
-        let rev_infos_json = format!("{{\"{}\": {{ \"{}\":{} }} }}", credential.referent, timestamp, rev_state_json);
+        let schemas_json = format!(r#"{{"{}":{}}}"#, schema_id, schema_json);
+        let credential_defs_json = format!(r#"{{"{}":{}}}"#, cred_def_id, credential_def_json);
+        let rev_infos_json = format!("{{\"{}\": {{ \"{}\":{} }} }}", rev_reg_id, timestamp, rev_state_json);
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
                                                              &proof_request,
@@ -3189,12 +3125,8 @@ mod demos {
         let revealed_attr_1 = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap();
         assert_eq!("Alex", revealed_attr_1.raw);
 
-        let id = revealed_attr_1.referent.clone();
-
-        let schemas_json = format!(r#"{{"{}":{}}}"#, id, schema_json);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, id, credential_def_json);
-        let rev_reg_defs_json = format!("{{\"{}\":{}}}", id, revoc_reg_def_json);
-        let rev_regs_json = format!("{{\"{}\": {{ \"{}\":{} }} }}", id, timestamp, revoc_reg_entry_json);
+        let rev_reg_defs_json = format!("{{\"{}\":{}}}", rev_reg_id, revoc_reg_def_json);
+        let rev_regs_json = format!("{{\"{}\": {{ \"{}\":{} }} }}", rev_reg_id, timestamp, revoc_reg_entry_json);
 
         let valid = AnoncredsUtils::verifier_verify_proof(&proof_request,
                                                           &proof_json,
@@ -3220,10 +3152,10 @@ mod demos {
         let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
         // 2. Issuer creates schema
-        let (_, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                    GVT_SCHEMA_NAME,
-                                                                    SCHEMA_VERSION,
-                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
+        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
+                                                                            GVT_SCHEMA_NAME,
+                                                                            SCHEMA_VERSION,
+                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
 
         // 3. Issuer creates credential definition
         let (cred_def_id, credential_def_json) = AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
@@ -3277,8 +3209,8 @@ mod demos {
                                                   "requested_predicates":{{}}
                                                 }}"#, credential.referent);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, credential.referent, schema_json);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential.referent, credential_def_json);
+        let schemas_json = format!(r#"{{"{}":{}}}"#, schema_id, schema_json);
+        let credential_defs_json = format!(r#"{{"{}":{}}}"#, cred_def_id, credential_def_json);
         let rev_infos_json = "{}";
 
         let proof_json = AnoncredsUtils::prover_create_proof(wallet_handle,
@@ -3288,13 +3220,8 @@ mod demos {
                                                              &schemas_json,
                                                              &credential_defs_json,
                                                              &rev_infos_json).unwrap();
-        let proof: FullProof = serde_json::from_str(&proof_json).unwrap();
 
         // 10. Verifier verifies proof
-        let id = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap().referent.clone();
-
-        let schemas_json = format!(r#"{{"{}":{}}}"#, id, schema_json);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, id, credential_def_json);
         let rev_reg_defs_json = "{}";
         let rev_regs_json = "{}";
 
@@ -3323,10 +3250,10 @@ mod demos {
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
         //3. Issuer creates schema
-        let (_, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                    GVT_SCHEMA_NAME,
-                                                                    SCHEMA_VERSION,
-                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
+        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
+                                                                            GVT_SCHEMA_NAME,
+                                                                            SCHEMA_VERSION,
+                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
 
         //4. Issuer creates credential definition
         let (cred_def_id, credential_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -3396,6 +3323,7 @@ mod demos {
                                                 &credential_def_json,
                                                 Some(&revoc_reg_def_json),
                                                 Some(&rev_state_json)).unwrap();
+
         //13. Prover gets Claims for Proof Request
         let proof_request = format!(r#"{{
               "nonce":"123432421212",
@@ -3429,9 +3357,9 @@ mod demos {
                                                   }}
                                                 }}"#, credential.referent, timestamp, credential.referent, timestamp);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, credential.referent, schema_json);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential.referent, credential_def_json);
-        let rev_infos_json = format!("{{\"{}\": {{ \"{}\":{} }} }}", credential.referent, timestamp, rev_state_json);
+        let schemas_json = format!(r#"{{"{}":{}}}"#, schema_id, schema_json);
+        let credential_defs_json = format!(r#"{{"{}":{}}}"#, cred_def_id, credential_def_json);
+        let rev_infos_json = format!("{{\"{}\": {{ \"{}\":{} }} }}", rev_reg_id, timestamp, rev_state_json);
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
                                                              &proof_request,
@@ -3440,7 +3368,6 @@ mod demos {
                                                              &schemas_json,
                                                              &credential_defs_json,
                                                              &rev_infos_json).unwrap();
-        let proof: FullProof = serde_json::from_str(&proof_json).unwrap();
 
         //15. Issuer revokes credential
         let revoc_reg_delta_json = AnoncredsUtils::issuer_revoke_credential(issuer_wallet_handle,
@@ -3449,12 +3376,8 @@ mod demos {
                                                                             &revoc_id).unwrap();
 
         //16. Verifier verifies proof
-        let id = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap().referent.clone();
-
-        let schemas_json = format!(r#"{{"{}":{}}}"#, id, schema_json);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, id, credential_def_json);
-        let rev_reg_defs_json = format!("{{\"{}\":{}}}", id, revoc_reg_def_json);
-        let rev_regs_json = format!("{{\"{}\": {{ \"{}\":{} }} }}", id, timestamp, revoc_reg_delta_json);
+        let rev_reg_defs_json = format!("{{\"{}\":{}}}", rev_reg_id, revoc_reg_def_json);
+        let rev_regs_json = format!("{{\"{}\": {{ \"{}\":{} }} }}", rev_reg_id, timestamp, revoc_reg_delta_json);
 
         let valid = AnoncredsUtils::verifier_verify_proof(&proof_request,
                                                           &proof_json,
@@ -3483,10 +3406,10 @@ mod demos {
         let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
 
         //3. Issuer creates schema
-        let (_, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
-                                                                    GVT_SCHEMA_NAME,
-                                                                    SCHEMA_VERSION,
-                                                                    GVT_SCHEMA_ATTRIBUTES).unwrap();
+        let (schema_id, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
+                                                                            GVT_SCHEMA_NAME,
+                                                                            SCHEMA_VERSION,
+                                                                            GVT_SCHEMA_ATTRIBUTES).unwrap();
 
         //4. Issuer creates credential definition
         let (cred_def_id, credential_def_json) = AnoncredsUtils::issuer_create_credential_definition(issuer_wallet_handle,
@@ -3556,8 +3479,8 @@ mod demos {
                                                   }}
                                                 }}"#, credential.referent, credential.referent);
 
-        let schemas_json = format!(r#"{{"{}":{}}}"#, credential.referent, schema_json);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential.referent, credential_def_json);
+        let schemas_json = format!(r#"{{"{}":{}}}"#, schema_id, schema_json);
+        let credential_defs_json = format!(r#"{{"{}":{}}}"#, cred_def_id, credential_def_json);
         let rev_infos_json = "{}";
 
         let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
@@ -3574,10 +3497,6 @@ mod demos {
         let revealed_attr_1 = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap();
         assert_eq!("Alex", revealed_attr_1.raw);
 
-        let id = revealed_attr_1.referent.clone();
-
-        let schemas_json = format!(r#"{{"{}":{}}}"#, id, schema_json);
-        let credential_defs_json = format!(r#"{{"{}":{}}}"#, id, credential_def_json);
         let rev_reg_defs_json = "{}";
         let rev_regs_json = "{}";
 
