@@ -676,9 +676,9 @@ pub mod mocks {
         attributes
     }
 
-    pub fn get_gvt_encoded_revealed_attributes() -> HashMap<String, String> {
-        let mut encoded_attributes: HashMap<String, String> = HashMap::new();
-        encoded_attributes.insert("name".to_string(), "1139481716457488690172217916278103335".to_string());
+    pub fn get_gvt_encoded_revealed_attributes() -> HashMap<String, BigNumber> {
+        let mut encoded_attributes: HashMap<String, BigNumber> = HashMap::new();
+        encoded_attributes.insert("name".to_string(), BigNumber::from_dec("1139481716457488690172217916278103335").unwrap());
         encoded_attributes
     }
 

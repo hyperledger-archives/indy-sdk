@@ -11,6 +11,8 @@ use std::cmp::max;
 use std::collections::HashMap;
 use self::indy_crypto::pair::{GroupOrderElement, PointG1, Pair};
 use self::indy_crypto::cl::NonCredentialSchemaElements;
+use self::rand::Rng;
+
 
 #[cfg(not(test))]
 pub fn random_qr(n: &BigNumber) -> Result<BigNumber, CommonError> {
@@ -181,6 +183,13 @@ pub fn get_non_schema_elements() -> NonCredentialSchemaElements {
     NonCredentialSchemaElements {
         attrs: set
     }
+}
+
+pub fn get_random_string() -> String {
+    let mut rng = rand::thread_rng();
+    let letter: char = rng.gen_range(b'A', b'Z') as char;
+    let number: u32 = rng.gen_range(0, 9999999999);
+    format!("{}{:10}", letter, number)
 }
 
 

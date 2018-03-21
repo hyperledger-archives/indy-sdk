@@ -14,6 +14,8 @@ use services::anoncreds::types::{
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use utils::json::JsonDecodable;
+use utils::crypto::bn::BigNumber;
+
 
 pub enum VerifierCommand {
     VerifyProof(
@@ -136,7 +138,7 @@ impl VerifierCommandExecutor {
                 format!("Requested predicates {:?} do not correspond to received {:?}", requested_predicates, received_predicates))));
         }
 
-        let received_revealed_attrs_values: HashSet<(String, String)> =
+        /*let received_revealed_attrs_values: HashSet<(String, String)> =
             proof_claims.requested_proof.revealed_attrs
                 .values()
                 .map(|&(ref uuid, _, ref encoded_value)| (uuid.clone(), encoded_value.clone()))
@@ -149,7 +151,7 @@ impl VerifierCommandExecutor {
             .into_iter()
             .collect::<HashSet<(String, String)>>();
 
-        if received_revealed_attrs_values != received_revealed_attrs_values_from_equal_proof { return Ok(false); }
+        if received_revealed_attrs_values != received_revealed_attrs_values_from_equal_proof { return Ok(false); }*/
 
         let result = self.anoncreds_service.verifier.verify(&proof_claims,
                                                             &proof_req.nonce,

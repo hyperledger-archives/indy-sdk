@@ -11,12 +11,15 @@ use utils::crypto::bn::BigNumber;
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use services::anoncreds::types::{AttributeInfo, ClaimInfo, RequestedClaimsJson, ProofRequestJson};
+use services::anoncreds::converters::*;
 use std::iter::FromIterator;
 
 use self::indy_crypto::pair::{GroupOrderElement, PointG1, PointG2, Pair};
-use self::indy_crypto::cl::prover::Prover as CryptoProver;
+use self::indy_crypto::cl::prover::{Prover as CryptoProver, ProofBuilder};
+use self::indy_crypto::cl::{SubProofRequestBuilder, CredentialSignature, CredentialSchema,
+                            NonCredentialSchemaElements, CredentialValues, SubProofRequest,
+                            PrimaryInitProof as NewPrimaryInitProof};
 
-use services::anoncreds::converters::*;
 
 pub struct Prover {}
 
@@ -29,85 +32,129 @@ impl Prover {
         BigNumber::rand(LARGE_MASTER_SECRET)
     }
 
-    pub fn create_claim_request(&self, pk: PublicKey, pkr: Option<RevocationPublicKey>, ms: BigNumber,
-                                policy_address: Option<BigNumber>, prover_did: &str) -> Result<(ClaimRequest, ClaimInitData, Option<RevocationClaimInitData>), CommonError> {
+    pub fn create_claim_request(
+        &self,
+        pk: PublicKey,
+        pkr: Option<RevocationPublicKey>,
+        ms: BigNumber,
+        policy_address: Option<BigNumber>,
+        prover_did: &str,
+    ) -> Result<(ClaimRequest, ClaimInitData, Option<RevocationClaimInitData>), CommonError> {
         info!(target: "anoncreds_service", "Prover create claim request -> start");
         let pub_key = PublicKey_to_CredentialPublicKey(&pk)?;
 
         let primary_blinded_credential_secrets =
-            CryptoProver::_generate_primary_blinded_credential_secrets(&pub_key.p_key, &gen_hidden_CredentialValues(&ms, policy_address)?)?;
+            CryptoProver::_generate_primary_blinded_credential_secrets(
+                &pub_key.p_key,
+                &gen_hidden_CredentialValues(&ms, policy_address)?,
+            )?;
 
-        let primary_claim_init_data = PrimaryBlindedCredentialSecretsFactors_to_ClaimInitData(primary_blinded_credential_secrets)?;
+        let primary_claim_init_data = PrimaryBlindedCredentialSecretsFactors_to_ClaimInitData(
+            primary_blinded_credential_secrets,
+        )?;
 
         let revocation_claim_init_data = match pkr {
             Some(pk_r) => Some(Prover::_generate_revocation_claim_init_data(&pk_r)?),
-            _ => None
+            _ => None,
         };
 
         info!(target: "anoncreds_service", "Prover create claim request -> done");
         Ok((
-            ClaimRequest::new(prover_did.to_string(),
-                              primary_claim_init_data.u.clone()?,
-                              revocation_claim_init_data.clone().map(|ref d| d.u)),
+            ClaimRequest::new(
+                prover_did.to_string(),
+                primary_claim_init_data.u.clone()?,
+                revocation_claim_init_data.clone().map(|ref d| d.u),
+            ),
             primary_claim_init_data,
-            revocation_claim_init_data
+            revocation_claim_init_data,
         ))
     }
 
-    fn _gen_primary_claim_init_data(public_key: &PublicKey, ms: &BigNumber) -> Result<ClaimInitData, CommonError> {
+    fn _gen_primary_claim_init_data(
+        public_key: &PublicKey,
+        ms: &BigNumber,
+    ) -> Result<ClaimInitData, CommonError> {
         let mut ctx = BigNumber::new_context()?;
         let v_prime = BigNumber::rand(LARGE_VPRIME)?;
 
-        let u = public_key.s
+        let u = public_key
+            .s
             .mod_exp(&v_prime, &public_key.n, Some(&mut ctx))?
             .mul(
                 &public_key.rms.mod_exp(&ms, &public_key.n, Some(&mut ctx))?,
-                None
+                None,
             )?
             .modulus(&public_key.n, Some(&mut ctx))?;
 
         Ok(ClaimInitData::new(u, v_prime))
     }
 
-    fn _generate_revocation_claim_init_data(pkr: &RevocationPublicKey) -> Result<RevocationClaimInitData, CommonError> {
+    fn _generate_revocation_claim_init_data(
+        pkr: &RevocationPublicKey,
+    ) -> Result<RevocationClaimInitData, CommonError> {
         let vr_prime = GroupOrderElement::new()?;
         let ur = pkr.h2.mul(&vr_prime)?;
         Ok(RevocationClaimInitData::new(ur, vr_prime))
     }
 
-    pub fn process_claim(&self, claim_json: &RefCell<ClaimJson>, primary_claim_init_data: ClaimInitData,
-                         revocation_claim_init_data: Option<RevocationClaimInitData>,
-                         pkr: Option<RevocationPublicKey>, revoc_reg: &Option<RevocationRegistry>)
-                         -> Result<(), CommonError> {
+    pub fn process_claim(
+        &self,
+        claim_json: &RefCell<ClaimJson>,
+        primary_claim_init_data: ClaimInitData,
+        revocation_claim_init_data: Option<RevocationClaimInitData>,
+        pkr: Option<RevocationPublicKey>,
+        revoc_reg: &Option<RevocationRegistry>,
+    ) -> Result<(), CommonError> {
         info!(target: "anoncreds_service", "Prover process received claim -> start");
 
         Prover::_init_primary_claim(claim_json, &primary_claim_init_data.v_prime)?;
 
         if let Some(ref non_revocation_claim) = claim_json.borrow().signature.non_revocation_claim {
-            Prover::_init_non_revocation_claim(non_revocation_claim,
-                                               &revocation_claim_init_data.
-                                                   ok_or(CommonError::InvalidStructure("Field v_prime not found".to_string()))?.v_prime,
-                                               &pkr
-                                                   .ok_or(CommonError::InvalidStructure("Field pkr not found".to_string()))?,
-                                               &revoc_reg.clone()
-                                                   .ok_or(CommonError::InvalidStructure("Field revoc_reg not found".to_string()))?.accumulator,
-                                               &revoc_reg.clone()
-                                                   .ok_or(CommonError::InvalidStructure("Field revoc_reg not found".to_string()))?.acc_pk)?;
+            Prover::_init_non_revocation_claim(
+                non_revocation_claim,
+                &revocation_claim_init_data
+                    .ok_or(CommonError::InvalidStructure(
+                        "Field v_prime not found".to_string(),
+                    ))?
+                    .v_prime,
+                &pkr.ok_or(CommonError::InvalidStructure(
+                    "Field pkr not found".to_string(),
+                ))?,
+                &revoc_reg
+                    .clone()
+                    .ok_or(CommonError::InvalidStructure(
+                        "Field revoc_reg not found".to_string(),
+                    ))?
+                    .accumulator,
+                &revoc_reg
+                    .clone()
+                    .ok_or(CommonError::InvalidStructure(
+                        "Field revoc_reg not found".to_string(),
+                    ))?
+                    .acc_pk,
+            )?;
         }
         info!(target: "anoncreds_service", "Prover process received claim -> done");
 
         Ok(())
     }
 
-    pub fn _init_primary_claim(claim: &RefCell<ClaimJson>, v_prime: &BigNumber) -> Result<(), CommonError> {
+    pub fn _init_primary_claim(
+        claim: &RefCell<ClaimJson>,
+        v_prime: &BigNumber,
+    ) -> Result<(), CommonError> {
         let ref mut primary_claim = claim.borrow_mut().signature.primary_claim;
         primary_claim.v = v_prime.add(&primary_claim.v)?;
         Ok(())
     }
 
-    pub fn _init_non_revocation_claim(claim: &RefCell<NonRevocationClaim>, v_prime: &GroupOrderElement,
-                                      pkr: &RevocationPublicKey, acc: &Accumulator, acc_pk: &AccumulatorPublicKey)
-                                      -> Result<(), CommonError> {
+    pub fn _init_non_revocation_claim(
+        claim: &RefCell<NonRevocationClaim>,
+        v_prime: &GroupOrderElement,
+        pkr: &RevocationPublicKey,
+        acc: &Accumulator,
+        acc_pk: &AccumulatorPublicKey,
+    ) -> Result<(), CommonError> {
         let mut claim_mut = claim.borrow_mut();
         let m2 = BigNumber::from_bytes(&claim_mut.m2.to_bytes()?)?;
         claim_mut.vr_prime_prime = v_prime.add_mod(&claim_mut.vr_prime_prime)?;
@@ -115,17 +162,31 @@ impl Prover {
         Ok(())
     }
 
-    pub fn _test_witness_credential(claim: &NonRevocationClaim, pkr: &RevocationPublicKey, acc: &Accumulator,
-                                    acc_pk: &AccumulatorPublicKey, context_attribute: &BigNumber) -> Result<(), CommonError> {
-        let z_calc = Pair::pair(&claim.witness.g_i, &acc.acc)?
-            .mul(&Pair::pair(&pkr.g, &claim.witness.omega)?.inverse()?)?;
+    pub fn _test_witness_credential(
+        claim: &NonRevocationClaim,
+        pkr: &RevocationPublicKey,
+        acc: &Accumulator,
+        acc_pk: &AccumulatorPublicKey,
+        context_attribute: &BigNumber,
+    ) -> Result<(), CommonError> {
+        let z_calc = Pair::pair(&claim.witness.g_i, &acc.acc)?.mul(&Pair::pair(
+            &pkr.g,
+            &claim
+                .witness
+                .omega,
+        )?
+            .inverse()?)?;
         if z_calc != acc_pk.z {
-            return Err(CommonError::InvalidStructure("issuer is sending incorrect data".to_string()));
+            return Err(CommonError::InvalidStructure(
+                "issuer is sending incorrect data".to_string(),
+            ));
         }
         let pair_gg_calc = Pair::pair(&pkr.pk.add(&claim.g_i)?, &claim.witness.sigma_i)?;
         let pair_gg = Pair::pair(&pkr.g, &pkr.g_dash)?;
         if pair_gg_calc != pair_gg {
-            return Err(CommonError::InvalidStructure("issuer is sending incorrect data".to_string()));
+            return Err(CommonError::InvalidStructure(
+                "issuer is sending incorrect data".to_string(),
+            ));
         }
 
         let m2 = GroupOrderElement::from_bytes(&context_attribute.to_bytes()?)?;
@@ -136,31 +197,46 @@ impl Prover {
                 .add(&pkr.h1.mul(&m2)?)?
                 .add(&pkr.h2.mul(&claim.vr_prime_prime)?)?
                 .add(&claim.g_i)?,
-            &pkr.h_cap
+            &pkr.h_cap,
         )?;
         if pair_h1 != pair_h2 {
-            return Err(CommonError::InvalidStructure("issuer is sending incorrect data".to_string()));
+            return Err(CommonError::InvalidStructure(
+                "issuer is sending incorrect data".to_string(),
+            ));
         }
 
         Ok(())
     }
 
-    pub fn find_claims(&self, requested_attrs: HashMap<String, AttributeInfo>, requested_predicates: HashMap<String, Predicate>,
-                       claims: Vec<ClaimInfo>)
-                       -> Result<(HashMap<String, Vec<ClaimInfo>>, HashMap<String, Vec<ClaimInfo>>), CommonError> {
+    pub fn find_claims(
+        &self,
+        requested_attrs: HashMap<String, AttributeInfo>,
+        requested_predicates: HashMap<String, Predicate>,
+        claims: Vec<ClaimInfo>,
+    ) -> Result<(HashMap<String, Vec<ClaimInfo>>, HashMap<String, Vec<ClaimInfo>>), CommonError> {
         info!(target: "anoncreds_service", "Prover find claims for proof request -> start");
 
         let mut found_attributes: HashMap<String, Vec<ClaimInfo>> = HashMap::new();
         let mut found_predicates: HashMap<String, Vec<ClaimInfo>> = HashMap::new();
 
         for (uuid, attribute_info) in requested_attrs {
-            let claims_for_attribute: Vec<ClaimInfo> =
-                claims.iter().cloned()
-                    .filter(|claim|
-                        claim.attrs.contains_key(&attribute_info.name) &&
-                            if attribute_info.schema_seq_no.is_some() { claim.schema_seq_no == attribute_info.schema_seq_no.unwrap() } else { true } &&
-                            if attribute_info.issuer_did.is_some() { claim.issuer_did == attribute_info.issuer_did.clone().unwrap() } else { true })
-                    .collect();
+            let claims_for_attribute: Vec<ClaimInfo> = claims
+                .iter()
+                .cloned()
+                .filter(|claim| {
+                    claim.attrs.contains_key(&attribute_info.name) &&
+                        if attribute_info.schema_seq_no.is_some() {
+                            claim.schema_seq_no == attribute_info.schema_seq_no.unwrap()
+                        } else {
+                            true
+                        } &&
+                        if attribute_info.issuer_did.is_some() {
+                            claim.issuer_did == attribute_info.issuer_did.clone().unwrap()
+                        } else {
+                            true
+                        }
+                })
+                .collect();
 
             found_attributes.insert(uuid, claims_for_attribute);
         }
@@ -171,8 +247,17 @@ impl Prover {
             for claim in claims.iter() {
                 if let Some(attribute_value) = claim.attrs.get(&predicate.attr_name) {
                     if Prover::_attribute_satisfy_predicate(&predicate, attribute_value)? &&
-                        if predicate.schema_seq_no.is_some() { claim.schema_seq_no == predicate.schema_seq_no.unwrap() } else { true } &&
-                        if predicate.issuer_did.is_some() { claim.issuer_did == predicate.issuer_did.clone().unwrap() } else { true } {
+                        if predicate.schema_seq_no.is_some() {
+                            claim.schema_seq_no == predicate.schema_seq_no.unwrap()
+                        } else {
+                            true
+                        } &&
+                        if predicate.issuer_did.is_some() {
+                            claim.issuer_did == predicate.issuer_did.clone().unwrap()
+                        } else {
+                            true
+                        }
+                    {
                         claims_for_predicate.push(claim.clone());
                     }
                 }
@@ -184,39 +269,57 @@ impl Prover {
         Ok((found_attributes, found_predicates))
     }
 
-    fn _attribute_satisfy_predicate(predicate: &Predicate, attribute_value: &String) -> Result<bool, CommonError> {
+    fn _attribute_satisfy_predicate(
+        predicate: &Predicate,
+        attribute_value: &String,
+    ) -> Result<bool, CommonError> {
         match predicate.p_type {
             PredicateType::GE => Ok({
-                let attribute_value = attribute_value.parse::<i32>()
-                    .map_err(|err|
-                        CommonError::InvalidStructure(
-                            format!("Ivalid format of predicate attribute: {}", attribute_value)))?;
+                let attribute_value = attribute_value.parse::<i32>().map_err(|err| {
+                    CommonError::InvalidStructure(format!(
+                        "Ivalid format of predicate attribute: {}",
+                        attribute_value
+                    ))
+                })?;
                 attribute_value >= predicate.value
-            })
+            }),
         }
     }
 
-    fn _prepare_proof_claims(proof_req: &ProofRequestJson,
-                             schemas: &HashMap<String, Schema>,
-                             claim_defs: &HashMap<String, ClaimDefinition>,
-                             revoc_regs: &HashMap<String, RevocationRegistry>,
-                             requested_claims: &RequestedClaimsJson,
-                             claims: HashMap<String, ClaimJson>) -> Result<HashMap<String, ProofClaims>, CommonError> {
+    fn _prepare_proof_claims(
+        proof_req: &ProofRequestJson,
+        schemas: &HashMap<String, Schema>,
+        claim_defs: &HashMap<String, ClaimDefinition>,
+        revoc_regs: &HashMap<String, RevocationRegistry>,
+        requested_claims: &RequestedClaimsJson,
+        claims: HashMap<String, ClaimJson>,
+    ) -> Result<HashMap<String, ProofClaims>, CommonError> {
         let mut proof_claims: HashMap<String, ProofClaims> = HashMap::new();
 
         for (claim_uuid, claim) in claims {
-            let schema = schemas.get(&claim_uuid)
-                .ok_or(CommonError::InvalidStructure(format!("Schema not found")))?;
-            let claim_definition = claim_defs.get(&claim_uuid)
-                .ok_or(CommonError::InvalidStructure(format!("Claim definition not found")))?;
+            let schema = schemas.get(&claim_uuid).ok_or(
+                CommonError::InvalidStructure(
+                    format!("Schema not found"),
+                ),
+            )?;
+            let claim_definition = claim_defs.get(&claim_uuid).ok_or(
+                CommonError::InvalidStructure(
+                    format!(
+                        "Claim definition not found"
+                    ),
+                ),
+            )?;
             let revocation_registry = revoc_regs.get(&claim_uuid);
 
             let mut predicates_for_claim: Vec<Predicate> = Vec::new();
 
-            for (predicate_uuid, claim_uuid_for_predicate) in &requested_claims.requested_predicates {
+            for (predicate_uuid, claim_uuid_for_predicate) in
+                &requested_claims.requested_predicates
+            {
                 if claim_uuid_for_predicate.clone() == claim_uuid {
-                    let predicate = proof_req.requested_predicates.get(predicate_uuid)
-                        .ok_or(CommonError::InvalidStructure(format!("Predicate not found")))?;
+                    let predicate = proof_req.requested_predicates.get(predicate_uuid).ok_or(
+                        CommonError::InvalidStructure(format!("Predicate not found")),
+                    )?;
 
                     predicates_for_claim.push(predicate.clone());
                 }
@@ -225,10 +328,13 @@ impl Prover {
             let mut revealed_attrs_for_claim: Vec<String> = Vec::new();
             let mut unrevealed_attrs_for_claim: Vec<String> = Vec::new();
 
-            for (attr_uuid, &(ref claim_uuid_for_attr, ref revealed)) in &requested_claims.requested_attrs {
+            for (attr_uuid, &(ref claim_uuid_for_attr, ref revealed)) in
+                &requested_claims.requested_attrs
+            {
                 if claim_uuid_for_attr.clone() == claim_uuid.clone() {
-                    let attr = proof_req.requested_attrs.get(attr_uuid)
-                        .ok_or(CommonError::InvalidStructure(format!("Attribute not found")))?;
+                    let attr = proof_req.requested_attrs.get(attr_uuid).ok_or(
+                        CommonError::InvalidStructure(format!("Attribute not found")),
+                    )?;
 
                     if revealed.clone() {
                         revealed_attrs_for_claim.push(attr.name.clone());
@@ -238,42 +344,56 @@ impl Prover {
                 }
             }
 
-            let proof_claim = ProofClaims::new(claim,
-                                               schema.clone(),
-                                               claim_definition.clone()?,
-                                               revocation_registry.map(|r| r.clone()),
-                                               predicates_for_claim,
-                                               revealed_attrs_for_claim,
-                                               unrevealed_attrs_for_claim);
+            let proof_claim = ProofClaims::new(
+                claim,
+                schema.clone(),
+                claim_definition.clone()?,
+                revocation_registry.map(|r| r.clone()),
+                predicates_for_claim,
+                revealed_attrs_for_claim,
+                unrevealed_attrs_for_claim,
+            );
 
             proof_claims.insert(claim_uuid.clone(), proof_claim);
         }
         Ok(proof_claims)
     }
 
-    pub fn _split_attributes(proof_req: &ProofRequestJson,
-                             requested_claims: &RequestedClaimsJson,
-                             attributes: &HashMap<String, HashMap<String, Vec<String>>>)
-                             -> Result<(HashMap<String, (String, String, String)>, HashMap<String, String>), CommonError> {
+    pub fn _split_attributes(
+        proof_req: &ProofRequestJson,
+        requested_claims: &RequestedClaimsJson,
+        attributes: &HashMap<String, HashMap<String, Vec<String>>>,
+    ) -> Result<(HashMap<String, (String, String, String)>, HashMap<String, String>), CommonError> {
         let mut revealed_attrs: HashMap<String, (String, String, String)> = HashMap::new();
         let mut unrevealed_attrs: HashMap<String, String> = HashMap::new();
 
         for (attr_uuid, &(ref claim_uuid, ref revealed)) in &requested_claims.requested_attrs {
-            let attribute = proof_req.requested_attrs.get(attr_uuid)
-                .ok_or(CommonError::InvalidStructure(format!("Attribute not found")))?;
+            let attribute = proof_req.requested_attrs.get(attr_uuid).ok_or(
+                CommonError::InvalidStructure(format!("Attribute not found")),
+            )?;
 
             if revealed.clone() {
-                let attribute = attributes.get(claim_uuid)
-                    .ok_or(CommonError::InvalidStructure(format!("Attributes for claim {} not found", claim_uuid)))?
-                    .get(&attribute.name).unwrap();
+                let attribute = attributes
+                    .get(claim_uuid)
+                    .ok_or(CommonError::InvalidStructure(
+                        format!("Attributes for claim {} not found", claim_uuid),
+                    ))?
+                    .get(&attribute.name)
+                    .unwrap();
 
-                let value = attribute.get(0)
-                    .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?;
+                let value = attribute.get(0).ok_or(CommonError::InvalidStructure(
+                    format!("Encoded value not found"),
+                ))?;
 
-                let encoded_value = attribute.get(1)
-                    .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?;
+                let encoded_value = attribute.get(1).ok_or(CommonError::InvalidStructure(
+                    format!("Encoded value not found"),
+                ))?;
 
-                revealed_attrs.insert(attr_uuid.clone(), (claim_uuid.clone(), value.clone(), encoded_value.clone()));
+                revealed_attrs.insert(attr_uuid.clone(), (
+                    claim_uuid.clone(),
+                    value.clone(),
+                    encoded_value.clone(),
+                ));
             } else {
                 unrevealed_attrs.insert(attr_uuid.clone(), claim_uuid.clone());
             }
@@ -282,45 +402,111 @@ impl Prover {
         Ok((revealed_attrs, unrevealed_attrs))
     }
 
-    pub fn create_proof(&self,
-                        claims: HashMap<String, ClaimJson>,
-                        proof_req: &ProofRequestJson,
-                        schemas: &HashMap<String, Schema>,
-                        claim_defs: &HashMap<String, ClaimDefinition>,
-                        revoc_regs: &HashMap<String, RevocationRegistry>,
-                        requested_claims: &RequestedClaimsJson,
-                        ms: &BigNumber,
-                        tails: &HashMap<i32, PointG2>)
-                        -> Result<ProofJson, AnoncredsError> {
+    pub fn create_proof(
+        &self,
+        claims: HashMap<String, ClaimJson>,
+        proof_req: &ProofRequestJson,
+        schemas: &HashMap<String, Schema>,
+        claim_defs: &HashMap<String, ClaimDefinition>,
+        revoc_regs: &HashMap<String, RevocationRegistry>,
+        requested_claims: &RequestedClaimsJson,
+        ms: &BigNumber,
+        policy_address: &BigNumber,
+        tails: &HashMap<i32, PointG2>,
+    ) -> Result<ProofJson, AnoncredsError> {
         info!(target: "anoncreds_service", "Prover create proof -> start");
 
-//        let proof_builder = CryptoProver::new_proof_builder()?;
+        let proof_claims = Prover::_prepare_proof_claims(
+            proof_req,
+            schemas,
+            claim_defs,
+            revoc_regs,
+            requested_claims,
+            claims,
+        )?;
 
-        let proof_claims = Prover::_prepare_proof_claims(proof_req,
-                                                         schemas,
-                                                         claim_defs,
-                                                         revoc_regs,
-                                                         requested_claims,
-                                                         claims)?;
+        let mut proof_builder = CryptoProver::new_proof_builder()?;
 
         let m1_tilde = BigNumber::rand(LARGE_M2_TILDE)?;
 
-        let mut init_proofs: HashMap<String, InitProof> = HashMap::new();
+        let mut init_proofs: HashMap<
+            String,
+            (NewPrimaryInitProof,
+             Option<NonRevocInitProof>,
+             CredentialSchema,
+             NonCredentialSchemaElements,
+             CredentialValues,
+             SubProofRequest),
+        > = HashMap::new();
         let mut c_list: Vec<Vec<u8>> = Vec::new();
         let mut tau_list: Vec<Vec<u8>> = Vec::new();
 
         for (proof_claim_uuid, proof_claim) in &proof_claims {
             let mut non_revoc_init_proof = None;
             let mut m2_tilde: Option<BigNumber> = None;
+            let mut sub_proof_request_builder = SubProofRequestBuilder::new()?;
+            for attr in &proof_claim.revealed_attrs {
+                sub_proof_request_builder.add_revealed_attr(attr)?;
+            }
+            for predicate in &proof_claim.predicates {
+                let t = format!("{}", predicate.p_type);
+                sub_proof_request_builder.add_predicate(
+                    &predicate.attr_name,
+                    &t,
+                    predicate.value,
+                )?;
+            }
+            let sub_proof_request = sub_proof_request_builder.finalize()?;
 
-            if let Some(ref non_revocation_claim) = proof_claim.claim_json.signature.non_revocation_claim.clone() {
-                let proof = Prover::_init_non_revocation_proof(non_revocation_claim,
-                                                               &proof_claim.revocation_registry.clone()
-                                                                   .ok_or(CommonError::InvalidStructure("Revocation registry not found".to_string()))?
-                                                                   .accumulator,
-                                                               &proof_claim.claim_definition.data.public_key_revocation.clone()
-                                                                   .ok_or(CommonError::InvalidStructure("Field public_key_revocation not found".to_string()))?,
-                                                               tails)?;
+            let hidden_cred_values =
+                gen_hidden_CredentialValues(ms, Some(policy_address.clone()?))?;
+            let known_cred_values = gen_known_CredentialValues(&proof_claim.claim_json.claim)?;
+            let credential_values =
+                combine_CredentialValues(hidden_cred_values, known_cred_values)?;
+            let cred_schema = Schema_to_CredentialSchema(&proof_claim.schema);
+            let non_cred_schema_elems = gen_NonCredentialSchemaElements();
+            let cred_sig_primary = PrimaryClaim_to_PrimaryCredentialSignature(
+                &proof_claim.claim_json.signature.primary_claim,
+            )?;
+            /*let cred_sig = CredentialSignature {
+                p_credential: cred_sig_primary,
+                r_credential: None,
+            };*/
+            let cred_pub_key =
+                PublicKey_to_CredentialPublicKey(&proof_claim.claim_definition.data.public_key)?;
+            ProofBuilder::_check_add_sub_proof_request_params_consistency(
+                &credential_values,
+                &sub_proof_request,
+                &cred_schema,
+                &non_cred_schema_elems,
+            )?;
+
+            if let Some(ref non_revocation_claim) =
+                proof_claim
+                    .claim_json
+                    .signature
+                    .non_revocation_claim
+                    .clone()
+            {
+                let proof = Prover::_init_non_revocation_proof(
+                    non_revocation_claim,
+                    &proof_claim
+                        .revocation_registry
+                        .clone()
+                        .ok_or(CommonError::InvalidStructure(
+                            "Revocation registry not found".to_string(),
+                        ))?
+                        .accumulator,
+                    &proof_claim
+                        .claim_definition
+                        .data
+                        .public_key_revocation
+                        .clone()
+                        .ok_or(CommonError::InvalidStructure(
+                            "Field public_key_revocation not found".to_string(),
+                        ))?,
+                    tails,
+                )?;
 
                 c_list.extend_from_slice(&proof.as_c_list()?);
                 tau_list.extend_from_slice(&proof.as_tau_list()?);
@@ -328,21 +514,34 @@ impl Prover {
                 non_revoc_init_proof = Some(proof);
             }
 
-            let primary_init_proof = Prover::_init_proof(&proof_claim.claim_definition.data.public_key,
-                                                         &proof_claim.schema,
-                                                         &proof_claim.claim_json.signature.primary_claim,
-                                                         &proof_claim.claim_json.claim,
-                                                         &proof_claim.revealed_attrs,
-                                                         &proof_claim.predicates,
-                                                         &m1_tilde,
-                                                         m2_tilde)?;
+            let new_bn_m2_tilde = match m2_tilde {
+                Some(ref n) => Some(old_bn_to_new_bn(&n)?),
+                None => None,
+            };
+
+            let primary_init_proof = proof_builder.add_sub_proof_request_primary(
+                &cred_pub_key.p_key,
+                &cred_sig_primary,
+                &credential_values,
+                &cred_schema,
+                &non_cred_schema_elems,
+                &sub_proof_request,
+                new_bn_m2_tilde,
+            )?;
 
             c_list.extend_from_slice(&primary_init_proof.as_c_list()?);
             tau_list.extend_from_slice(&primary_init_proof.as_tau_list()?);
 
-            let init_proof = InitProof::new(primary_init_proof, non_revoc_init_proof);
+            // let init_proof = InitProof::new(primary_init_proof, non_revoc_init_proof);
 
-            init_proofs.insert(proof_claim_uuid.clone(), init_proof);
+            init_proofs.insert(proof_claim_uuid.clone(), (
+                primary_init_proof,
+                non_revoc_init_proof,
+                cred_schema,
+                non_cred_schema_elems,
+                credential_values,
+                sub_proof_request,
+            ));
         }
 
         let mut values: Vec<Vec<u8>> = Vec::new();
@@ -356,51 +555,83 @@ impl Prover {
         let mut attributes: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
 
         for (proof_claim_uuid, init_proof) in init_proofs.iter() {
-            let proof_claim = proof_claims.get(proof_claim_uuid)
-                .ok_or(CommonError::InvalidStructure(format!("Claim not found")))?;
+            let proof_claim = proof_claims.get(proof_claim_uuid).ok_or(
+                CommonError::InvalidStructure(format!("Claim not found")),
+            )?;
 
             let mut non_revoc_proof: Option<NonRevocProof> = None;
-            if let Some(ref non_revoc_init_proof) = init_proof.non_revoc_init_proof {
-                non_revoc_proof = Some(Prover::_finalize_non_revocation_proof(&non_revoc_init_proof,
-                                                                              &c_h)?);
+            if let Some(ref non_revoc_init_proof) = init_proof.1 {
+                non_revoc_proof = Some(Prover::_finalize_non_revocation_proof(
+                    &non_revoc_init_proof,
+                    &c_h,
+                )?);
             }
 
-            let primary_proof = Prover::_finalize_proof(&ms,
-                                                        &init_proof.primary_init_proof,
-                                                        &c_h,
-                                                        &proof_claim.claim_json.claim,
-                                                        &proof_claim.revealed_attrs)?;
+            /*let primary_proof = Prover::_finalize_proof(
+                &ms,
+                &init_proof.0,
+                &c_h,
+                &proof_claim.claim_json.claim,
+                &proof_claim.revealed_attrs,
+            )?;*/
+
+            let primary_proof = ProofBuilder::_finalize_primary_proof(
+                &init_proofs.get(proof_claim_uuid).unwrap().0,
+                &old_bn_to_new_bn(&c_h)?,
+                &init_proof.2,
+                &init_proof.3,
+                &init_proof.4,
+                &init_proof.5,
+            )?;
 
             let proof = Proof {
-                primary_proof: primary_proof,
-                non_revoc_proof: non_revoc_proof
+                primary_proof: new_PrimaryProof_to_old_PrimaryProof(
+                    &primary_proof,
+                    &Some(proof_claim.claim_json.schema_seq_no),
+                    &Some(proof_claim.claim_json.issuer_did.clone()),
+                )?,
+                non_revoc_proof: non_revoc_proof,
             };
 
-            let claim_proof = ClaimProof::new(proof,
-                                              proof_claim.claim_json.schema_seq_no,
-                                              proof_claim.claim_json.issuer_did.clone());
+            let claim_proof = ClaimProof::new(
+                proof,
+                proof_claim.claim_json.schema_seq_no,
+                proof_claim.claim_json.issuer_did.clone(),
+            );
 
             proofs.insert(proof_claim_uuid.clone(), claim_proof);
-            attributes.insert(proof_claim_uuid.clone(), proof_claim.claim_json.claim.clone());
+            attributes.insert(
+                proof_claim_uuid.clone(),
+                proof_claim.claim_json.claim.clone(),
+            );
         }
 
         let aggregated_proof = AggregatedProof::new(c_h, c_list);
 
-        let (revealed_attrs, unrevealed_attrs) = Prover::_split_attributes(&proof_req, requested_claims, &attributes)?;
+        let (revealed_attrs, unrevealed_attrs) =
+            Prover::_split_attributes(&proof_req, requested_claims, &attributes)?;
 
-        let requested_proof = RequestedProofJson::new(revealed_attrs,
-                                                      unrevealed_attrs,
-                                                      requested_claims.self_attested_attributes.clone(),
-                                                      requested_claims.requested_predicates.clone()
+        let requested_proof = RequestedProofJson::new(
+            revealed_attrs,
+            unrevealed_attrs,
+            requested_claims.self_attested_attributes.clone(),
+            requested_claims.requested_predicates.clone(),
         );
 
         info!(target: "anoncreds_service", "Prover create proof -> done");
         Ok(ProofJson::new(proofs, aggregated_proof, requested_proof))
     }
 
-    fn _init_proof(pk: &PublicKey, schema: &Schema, c1: &PrimaryClaim, attributes: &HashMap<String, Vec<String>>,
-                   revealed_attrs: &Vec<String>, predicates: &Vec<Predicate>, m1_t: &BigNumber,
-                   m2_t: Option<BigNumber>) -> Result<PrimaryInitProof, CommonError> {
+    fn _init_proof(
+        pk: &PublicKey,
+        schema: &Schema,
+        c1: &PrimaryClaim,
+        attributes: &HashMap<String, Vec<String>>,
+        revealed_attrs: &Vec<String>,
+        predicates: &Vec<Predicate>,
+        m1_t: &BigNumber,
+        m2_t: Option<BigNumber>,
+    ) -> Result<PrimaryInitProof, CommonError> {
         info!(target: "anoncreds_service", "Prover init primary proof -> start");
         let eq_proof = Prover::_init_eq_proof(&pk, schema, c1, revealed_attrs, m1_t, m2_t)?;
 
@@ -416,9 +647,12 @@ impl Prover {
         Ok(PrimaryInitProof::new(eq_proof, ge_proofs))
     }
 
-    fn _init_non_revocation_proof(claim: &RefCell<NonRevocationClaim>, accum: &Accumulator,
-                                  pkr: &RevocationPublicKey, tails: &HashMap<i32, PointG2>)
-                                  -> Result<NonRevocInitProof, AnoncredsError> {
+    fn _init_non_revocation_proof(
+        claim: &RefCell<NonRevocationClaim>,
+        accum: &Accumulator,
+        pkr: &RevocationPublicKey,
+        tails: &HashMap<i32, PointG2>,
+    ) -> Result<NonRevocInitProof, AnoncredsError> {
         info!(target: "anoncreds_service", "Prover init non-revocation proof -> start");
         Prover::_update_non_revocation_claim(claim, accum, tails)?;
 
@@ -426,17 +660,27 @@ impl Prover {
         let proof_c_list = Prover::_create_c_list_values(&claim, &c_list_params, &pkr)?;
 
         let tau_list_params = Prover::_gen_tau_list_params()?;
-        let proof_tau_list = Issuer::_create_tau_list_values(&pkr, &accum, &tau_list_params, &proof_c_list)?;
+        let proof_tau_list =
+            Issuer::_create_tau_list_values(&pkr, &accum, &tau_list_params, &proof_c_list)?;
 
         info!(target: "anoncreds_service", "Prover init non-revocation proof -> done");
-        Ok(NonRevocInitProof::new(c_list_params, tau_list_params, proof_c_list, proof_tau_list))
+        Ok(NonRevocInitProof::new(
+            c_list_params,
+            tau_list_params,
+            proof_c_list,
+            proof_tau_list,
+        ))
     }
 
-    fn _update_non_revocation_claim(claim: &RefCell<NonRevocationClaim>,
-                                    accum: &Accumulator, tails: &HashMap<i32, PointG2>)
-                                    -> Result<(), AnoncredsError> {
+    fn _update_non_revocation_claim(
+        claim: &RefCell<NonRevocationClaim>,
+        accum: &Accumulator,
+        tails: &HashMap<i32, PointG2>,
+    ) -> Result<(), AnoncredsError> {
         if !accum.v.contains(&claim.borrow().i) {
-            return Err(AnoncredsError::ClaimRevoked("Can not update Witness. Claim revoked.".to_string()));
+            return Err(AnoncredsError::ClaimRevoked(
+                "Can not update Witness. Claim revoked.".to_string(),
+            ));
         }
 
         if claim.borrow().witness.v != accum.v {
@@ -448,19 +692,23 @@ impl Prover {
                 accum.v.difference(&mut_claim.witness.v).cloned().collect();
             let mut omega_denom = PointG2::new_inf()?;
             for j in v_old_minus_new.iter() {
-                omega_denom = omega_denom.add(
-                    tails.get(&(accum.max_claim_num + 1 - j + mut_claim.i))
-                        .ok_or(CommonError::InvalidStructure(format!("Key not found {} in tails", accum.max_claim_num + 1 - j + mut_claim.i)))?)?;
+                omega_denom = omega_denom.add(tails
+                    .get(&(accum.max_claim_num + 1 - j + mut_claim.i))
+                    .ok_or(CommonError::InvalidStructure(format!(
+                        "Key not found {} in tails",
+                        accum.max_claim_num + 1 - j + mut_claim.i
+                    )))?)?;
             }
             let mut omega_num = PointG2::new_inf()?;
             let mut new_omega: PointG2 = mut_claim.witness.omega.clone();
             for j in v_old_minus_new.iter() {
-                omega_num = omega_num.add(
-                    tails.get(&(accum.max_claim_num + 1 - j + mut_claim.i))
-                        .ok_or(CommonError::InvalidStructure(format!("Key not found {} in tails", accum.max_claim_num + 1 - j + mut_claim.i)))?)?;
-                new_omega = new_omega.add(
-                    &omega_num.sub(&omega_denom)?
-                )?;
+                omega_num = omega_num.add(tails
+                    .get(&(accum.max_claim_num + 1 - j + mut_claim.i))
+                    .ok_or(CommonError::InvalidStructure(format!(
+                        "Key not found {} in tails",
+                        accum.max_claim_num + 1 - j + mut_claim.i
+                    )))?)?;
+                new_omega = new_omega.add(&omega_num.sub(&omega_denom)?)?;
             }
 
             mut_claim.witness.v = accum.v.clone();
@@ -470,8 +718,14 @@ impl Prover {
         Ok(())
     }
 
-    fn _init_eq_proof(pk: &PublicKey, schema: &Schema, c1: &PrimaryClaim, revealed_attrs: &Vec<String>,
-                      m1_tilde: &BigNumber, m2_t: Option<BigNumber>) -> Result<PrimaryEqualInitProof, CommonError> {
+    fn _init_eq_proof(
+        pk: &PublicKey,
+        schema: &Schema,
+        c1: &PrimaryClaim,
+        revealed_attrs: &Vec<String>,
+        m1_tilde: &BigNumber,
+        m2_t: Option<BigNumber>,
+    ) -> Result<PrimaryEqualInitProof, CommonError> {
         let mut ctx = BigNumber::new_context()?;
 
         let m2_tilde = m2_t.unwrap_or(BigNumber::rand(LARGE_MVECT)?);
@@ -480,11 +734,12 @@ impl Prover {
         let etilde = BigNumber::rand(LARGE_ETILDE)?;
         let vtilde = BigNumber::rand(LARGE_VTILDE)?;
 
-        let unrevealed_attrs: Vec<String> =
-            schema.data.attr_names
-                .difference(&HashSet::from_iter(revealed_attrs.iter().cloned()))
-                .map(|attr| attr.clone())
-                .collect::<Vec<String>>();
+        let unrevealed_attrs: Vec<String> = schema
+            .data
+            .attr_names
+            .difference(&HashSet::from_iter(revealed_attrs.iter().cloned()))
+            .map(|attr| attr.clone())
+            .collect::<Vec<String>>();
 
         let mtilde = get_mtilde(&unrevealed_attrs)?;
 
@@ -495,44 +750,68 @@ impl Prover {
 
         let large_e_start = BigNumber::from_dec(&LARGE_E_START.to_string())?;
 
-        let vprime = c1.v.sub(
-            &c1.e.mul(&r, Some(&mut ctx))?
-        )?;
+        let vprime = c1.v.sub(&c1.e.mul(&r, Some(&mut ctx))?)?;
 
-        let eprime = c1.e.sub(
-            &BigNumber::from_dec("2")?.exp(&large_e_start, Some(&mut ctx))?
-        )?;
+        let eprime = c1.e.sub(&BigNumber::from_dec("2")?.exp(
+            &large_e_start,
+            Some(&mut ctx),
+        )?)?;
 
         let t = Verifier::calc_teq(
-            &pk, &aprime, &etilde, &vtilde, &mtilde, &m1_tilde, &m2_tilde, &unrevealed_attrs)?;
+            &pk,
+            &aprime,
+            &etilde,
+            &vtilde,
+            &mtilde,
+            // &m1_tilde,
+            &m2_tilde,
+            &unrevealed_attrs,
+        )?;
 
-        Ok(
-            PrimaryEqualInitProof::new(
-                aprime, t, etilde, eprime, vtilde, vprime, mtilde,
-                m1_tilde.clone()?, m2_tilde, c1.m2.clone()?
-            )
-        )
+        Ok(PrimaryEqualInitProof::new(
+            aprime,
+            t,
+            etilde,
+            eprime,
+            vtilde,
+            vprime,
+            mtilde,
+            m1_tilde.clone()?,
+            m2_tilde,
+            c1.m2.clone()?,
+        ))
     }
 
-    fn _init_ge_proof(pk: &PublicKey, mtilde: &HashMap<String, BigNumber>,
-                      encoded_attributes: &HashMap<String, Vec<String>>, predicate: &Predicate)
-                      -> Result<PrimaryPredicateGEInitProof, CommonError> {
+    fn _init_ge_proof(
+        pk: &PublicKey,
+        mtilde: &HashMap<String, BigNumber>,
+        encoded_attributes: &HashMap<String, Vec<String>>,
+        predicate: &Predicate,
+    ) -> Result<PrimaryPredicateGEInitProof, CommonError> {
         let mut ctx = BigNumber::new_context()?;
         let (k, value) = (&predicate.attr_name, predicate.value);
 
-        let attr_value = encoded_attributes.get(&k[..])
-            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in c1.encoded_attributes", k)))?
+        let attr_value = encoded_attributes
+            .get(&k[..])
+            .ok_or(CommonError::InvalidStructure(format!(
+                "Value by key '{}' not found in c1.encoded_attributes",
+                k
+            )))?
             .get(0)
-            .ok_or(CommonError::InvalidStructure(format!("Value not found in c1.encoded_attributes")))?
+            .ok_or(CommonError::InvalidStructure(
+                format!("Value not found in c1.encoded_attributes"),
+            ))?
             .parse::<i32>()
-            .map_err(|err|
-                CommonError::InvalidStructure(
-                    format!("Value by key '{}' has invalid format", k)))?;
+            .map_err(|err| {
+                CommonError::InvalidStructure(format!("Value by key '{}' has invalid format", k))
+            })?;
 
         let delta: i32 = attr_value - value;
 
         if delta < 0 {
-            return Err(CommonError::InvalidStructure("Predicate is not satisfied".to_string()));
+            return Err(CommonError::InvalidStructure(
+                "Predicate is not satisfied".to_string(),
+            ));
         }
 
         let u = four_squares(delta)?;
@@ -542,8 +821,12 @@ impl Prover {
         let mut c_list: Vec<BigNumber> = Vec::new();
 
         for i in 0..ITERATION {
-            let cur_u = u.get(&i.to_string())
-                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in u1", i)))?;
+            let cur_u = u.get(&i.to_string()).ok_or(
+                CommonError::InvalidStructure(format!(
+                    "Value by key '{}' not found in u1",
+                    i
+                )),
+            )?;
 
             let cur_r = BigNumber::rand(LARGE_VPRIME)?;
 
@@ -551,7 +834,7 @@ impl Prover {
                 .mod_exp(&cur_u, &pk.n, Some(&mut ctx))?
                 .mul(
                     &pk.s.mod_exp(&cur_r, &pk.n, Some(&mut ctx))?,
-                    Some(&mut ctx)
+                    Some(&mut ctx),
                 )?
                 .modulus(&pk.n, Some(&mut ctx))?;
 
@@ -563,10 +846,14 @@ impl Prover {
         let r_delta = BigNumber::rand(LARGE_VPRIME)?;
 
         let t_delta = pk.z
-            .mod_exp(&BigNumber::from_dec(&delta.to_string())?, &pk.n, Some(&mut ctx))?
+            .mod_exp(
+                &BigNumber::from_dec(&delta.to_string())?,
+                &pk.n,
+                Some(&mut ctx),
+            )?
             .mul(
                 &pk.s.mod_exp(&r_delta, &pk.n, Some(&mut ctx))?,
-                Some(&mut ctx)
+                Some(&mut ctx),
             )?
             .modulus(&pk.n, Some(&mut ctx))?;
 
@@ -585,63 +872,87 @@ impl Prover {
         rtilde.insert("DELTA".to_string(), BigNumber::rand(LARGE_RTILDE)?);
         let alphatilde = BigNumber::rand(LARGE_ALPHATILDE)?;
 
-        let mj = mtilde.get(&k[..])
-            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in eq_proof.mtilde", k)))?;
+        let mj = mtilde.get(&k[..]).ok_or(
+            CommonError::InvalidStructure(format!(
+                "Value by key '{}' not found in eq_proof.mtilde",
+                k
+            )),
+        )?;
 
         let tau_list = Verifier::calc_tge(&pk, &utilde, &rtilde, &mj, &alphatilde, &t)?;
 
         Ok(PrimaryPredicateGEInitProof::new(
-            c_list, tau_list, u, utilde, r, rtilde, alphatilde, predicate.clone(), t
+            c_list,
+            tau_list,
+            u,
+            utilde,
+            r,
+            rtilde,
+            alphatilde,
+            predicate.clone(),
+            t,
         ))
     }
 
-    fn _finalize_eq_proof(ms: &BigNumber, init_proof: &PrimaryEqualInitProof, c_h: &BigNumber,
-                          encoded_attributes: &HashMap<String, Vec<String>>, revealed_attrs: &Vec<String>)
-                          -> Result<PrimaryEqualProof, CommonError> {
+    /*fn _finalize_eq_proof(
+        ms: &BigNumber,
+        init_proof: &PrimaryEqualInitProof,
+        c_h: &BigNumber,
+        encoded_attributes: &HashMap<String, Vec<String>>,
+        revealed_attrs: &Vec<String>,
+    ) -> Result<PrimaryEqualProof, CommonError> {
         info!(target: "anoncreds_service", "Prover finalize primary proof -> start");
         let mut ctx = BigNumber::new_context()?;
 
         let keys_hash_set: HashSet<String> = HashSet::from_iter(encoded_attributes.keys().cloned());
-        let unrevealed_attrs: Vec<String> =
-            keys_hash_set
-                .difference(&HashSet::from_iter(revealed_attrs.iter().cloned()))
-                .map(|attr| attr.clone())
-                .collect::<Vec<String>>();
+        let unrevealed_attrs: Vec<String> = keys_hash_set
+            .difference(&HashSet::from_iter(revealed_attrs.iter().cloned()))
+            .map(|attr| attr.clone())
+            .collect::<Vec<String>>();
 
 
-        let e = c_h
-            .mul(&init_proof.eprime, Some(&mut ctx))?
-            .add(&init_proof.etilde)?;
+        let e = c_h.mul(&init_proof.eprime, Some(&mut ctx))?.add(
+            &init_proof
+                .etilde,
+        )?;
 
-        let v = c_h
-            .mul(&init_proof.vprime, Some(&mut ctx))?
-            .add(&init_proof.vtilde)?;
+        let v = c_h.mul(&init_proof.vprime, Some(&mut ctx))?.add(
+            &init_proof
+                .vtilde,
+        )?;
 
         let mut m: HashMap<String, BigNumber> = HashMap::new();
 
         for k in unrevealed_attrs.iter() {
-            let cur_mtilde = init_proof.mtilde.get(k)
-                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.mtilde", k)))?;
-            let cur_val = encoded_attributes.get(k)
-                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_prook.c1", k)))?
+            let cur_mtilde = init_proof.mtilde.get(k).ok_or(
+                CommonError::InvalidStructure(
+                    format!(
+                        "Value by key '{}' not found in init_proof.mtilde",
+                        k
+                    ),
+                ),
+            )?;
+            let cur_val = encoded_attributes
+                .get(k)
+                .ok_or(CommonError::InvalidStructure(
+                    format!("Value by key '{}' not found in init_prook.c1", k),
+                ))?
                 .get(1)
-                .ok_or(CommonError::InvalidStructure(format!("Encoded Value not found in init_prook.c1")))?;
+                .ok_or(CommonError::InvalidStructure(
+                    format!("Encoded Value not found in init_prook.c1"),
+                ))?;
 
-            let val = c_h
-                .mul(&BigNumber::from_dec(cur_val)?,
-                     Some(&mut ctx))?
+            let val = c_h.mul(&BigNumber::from_dec(cur_val)?, Some(&mut ctx))?
                 .add(&cur_mtilde)?;
 
             m.insert(k.clone(), val);
         }
 
-        let m1 = c_h
-            .mul(&ms, Some(&mut ctx))?
-            .add(&init_proof.m1_tilde)?;
+        let m1 = c_h.mul(&ms, Some(&mut ctx))?.add(&init_proof.m1_tilde)?;
 
-        let m2 = c_h
-            .mul(&init_proof.m2, Some(&mut ctx))?
-            .add(&init_proof.m2_tilde)?;
+        let m2 = c_h.mul(&init_proof.m2, Some(&mut ctx))?.add(
+            &init_proof.m2_tilde,
+        )?;
 
 
         let mut revealed_attrs_with_values: HashMap<String, String> = HashMap::new();
@@ -651,9 +962,13 @@ impl Prover {
                 attr.clone(),
                 encoded_attributes
                     .get(attr)
-                    .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?
+                    .ok_or(CommonError::InvalidStructure(
+                        format!("Encoded value not found"),
+                    ))?
                     .get(1)
-                    .ok_or(CommonError::InvalidStructure(format!("Encoded value not found")))?
+                    .ok_or(CommonError::InvalidStructure(
+                        format!("Encoded value not found"),
+                    ))?
                     .clone(),
             );
         }
@@ -661,75 +976,126 @@ impl Prover {
         info!(target: "anoncreds_service", "Prover finalize primary proof -> done");
 
         Ok(PrimaryEqualProof::new(
-            revealed_attrs_with_values, init_proof.a_prime.clone()?, e, v, m, m1, m2
+            revealed_attrs_with_values,
+            init_proof.a_prime.clone()?,
+            e,
+            v,
+            m,
+            // m1,
+            m2,
         ))
-    }
+    }*/
 
-    fn _finalize_ge_proof(c_h: &BigNumber, init_proof: &PrimaryPredicateGEInitProof,
-                          eq_proof: &PrimaryEqualProof) -> Result<PrimaryPredicateGEProof, CommonError> {
+    fn _finalize_ge_proof(
+        c_h: &BigNumber,
+        init_proof: &PrimaryPredicateGEInitProof,
+        eq_proof: &PrimaryEqualProof,
+    ) -> Result<PrimaryPredicateGEProof, CommonError> {
         let mut ctx = BigNumber::new_context()?;
         let mut u: HashMap<String, BigNumber> = HashMap::new();
         let mut r: HashMap<String, BigNumber> = HashMap::new();
         let mut urproduct = BigNumber::new()?;
 
         for i in 0..ITERATION {
-            let cur_utilde = init_proof.u_tilde.get(&i.to_string())
-                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.u_tilde", i)))?;
-            let cur_u = init_proof.u.get(&i.to_string())
-                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.u", i)))?;
-            let cur_rtilde = init_proof.r_tilde.get(&i.to_string())
-                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.r_tilde", i)))?;
-            let cur_r = init_proof.r.get(&i.to_string())
-                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.r", i)))?;
+            let cur_utilde = init_proof.u_tilde.get(&i.to_string()).ok_or(
+                CommonError::InvalidStructure(format!(
+                    "Value by key '{}' not found in init_proof.u_tilde",
+                    i
+                )),
+            )?;
+            let cur_u = init_proof.u.get(&i.to_string()).ok_or(
+                CommonError::InvalidStructure(
+                    format!("Value by key '{}' not found in init_proof.u", i),
+                ),
+            )?;
+            let cur_rtilde = init_proof.r_tilde.get(&i.to_string()).ok_or(
+                CommonError::InvalidStructure(format!(
+                    "Value by key '{}' not found in init_proof.r_tilde",
+                    i
+                )),
+            )?;
+            let cur_r = init_proof.r.get(&i.to_string()).ok_or(
+                CommonError::InvalidStructure(
+                    format!("Value by key '{}' not found in init_proof.r", i),
+                ),
+            )?;
 
-            let new_u: BigNumber = c_h
-                .mul(&cur_u, Some(&mut ctx))?
-                .add(&cur_utilde)?;
-            let new_r: BigNumber = c_h
-                .mul(&cur_r, Some(&mut ctx))?
-                .add(&cur_rtilde)?;
+            let new_u: BigNumber = c_h.mul(&cur_u, Some(&mut ctx))?.add(&cur_utilde)?;
+            let new_r: BigNumber = c_h.mul(&cur_r, Some(&mut ctx))?.add(&cur_rtilde)?;
 
             u.insert(i.to_string(), new_u);
             r.insert(i.to_string(), new_r);
 
-            urproduct = cur_u
-                .mul(&cur_r, Some(&mut ctx))?
-                .add(&urproduct)?;
+            urproduct = cur_u.mul(&cur_r, Some(&mut ctx))?.add(&urproduct)?;
 
-            let cur_rtilde_delta = init_proof.r_tilde.get("DELTA")
-                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.r_tilde", "DELTA")))?;
-            let cur_r_delta = init_proof.r.get("DELTA")
-                .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.r", "DELTA")))?;
+            let cur_rtilde_delta = init_proof.r_tilde.get("DELTA").ok_or(
+                CommonError::InvalidStructure(format!(
+                    "Value by key '{}' not found in init_proof.r_tilde",
+                    "DELTA"
+                )),
+            )?;
+            let cur_r_delta = init_proof.r.get("DELTA").ok_or(
+                CommonError::InvalidStructure(
+                    format!(
+                        "Value by key '{}' not found in init_proof.r",
+                        "DELTA"
+                    ),
+                ),
+            )?;
 
-            let new_delta = c_h
-                .mul(&cur_r_delta, Some(&mut ctx))?
-                .add(&cur_rtilde_delta)?;
+            let new_delta = c_h.mul(&cur_r_delta, Some(&mut ctx))?.add(
+                &cur_rtilde_delta,
+            )?;
 
             r.insert("DELTA".to_string(), new_delta);
         }
 
-        let r_delta = init_proof.r.get("DELTA")
-            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in init_proof.r", "DELTA")))?;
+        let r_delta = init_proof.r.get("DELTA").ok_or(
+            CommonError::InvalidStructure(
+                format!(
+                    "Value by key '{}' not found in init_proof.r",
+                    "DELTA"
+                ),
+            ),
+        )?;
 
-        let alpha = r_delta
-            .sub(&urproduct)?
-            .mul(&c_h, Some(&mut ctx))?
-            .add(&init_proof.alpha_tilde)?;
+        let alpha = r_delta.sub(&urproduct)?.mul(&c_h, Some(&mut ctx))?.add(
+            &init_proof.alpha_tilde,
+        )?;
 
-        let mj = eq_proof.m.get(&init_proof.predicate.attr_name)
-            .ok_or(CommonError::InvalidStructure(format!("Value by key '{}' not found in eq_proof.m", init_proof.predicate.attr_name)))?;
+        let mj = eq_proof.m.get(&init_proof.predicate.attr_name).ok_or(
+            CommonError::InvalidStructure(format!(
+                "Value by key '{}' not found in eq_proof.m",
+                init_proof.predicate.attr_name
+            )),
+        )?;
 
         Ok(PrimaryPredicateGEProof::new(
-            u, r, mj.clone()?, alpha, clone_bignum_map(&init_proof.t)?, init_proof.predicate.clone()
+            u,
+            r,
+            mj.clone()?,
+            alpha,
+            clone_bignum_map(&init_proof.t)?,
+            init_proof.predicate.clone(),
         ))
     }
 
-    fn _finalize_proof(ms: &BigNumber, init_proof: &PrimaryInitProof, c_h: &BigNumber,
-                       encoded_attributes: &HashMap<String, Vec<String>>, revealed_attrs: &Vec<String>)
-                       -> Result<PrimaryProof, CommonError> {
+    /*fn _finalize_proof(
+        ms: &BigNumber,
+        init_proof: &PrimaryInitProof,
+        c_h: &BigNumber,
+        encoded_attributes: &HashMap<String, Vec<String>>,
+        revealed_attrs: &Vec<String>,
+    ) -> Result<PrimaryProof, CommonError> {
         info!(target: "anoncreds_service", "Prover finalize proof -> start");
 
-        let eq_proof = Prover::_finalize_eq_proof(ms, &init_proof.eq_proof, c_h, encoded_attributes, revealed_attrs)?;
+        let eq_proof = Prover::_finalize_eq_proof(
+            ms,
+            &init_proof.eq_proof,
+            c_h,
+            encoded_attributes,
+            revealed_attrs,
+        )?;
         let mut ge_proofs: Vec<PrimaryPredicateGEProof> = Vec::new();
 
         for init_ge_proof in init_proof.ge_proofs.iter() {
@@ -740,9 +1106,11 @@ impl Prover {
         info!(target: "anoncreds_service", "Prover finalize proof -> done");
 
         Ok(PrimaryProof::new(eq_proof, ge_proofs))
-    }
+    }*/
 
-    fn _gen_c_list_params(claim: &RefCell<NonRevocationClaim>) -> Result<NonRevocProofXList, CommonError> {
+    fn _gen_c_list_params(
+        claim: &RefCell<NonRevocationClaim>,
+    ) -> Result<NonRevocProofXList, CommonError> {
         let claim = claim.borrow();
         let rho = GroupOrderElement::new()?;
         let r = GroupOrderElement::new()?;
@@ -757,78 +1125,95 @@ impl Prover {
         let t_prime = o_prime.mul_mod(&r_prime_prime)?;
         let m2 = GroupOrderElement::from_bytes(&claim.m2.to_bytes()?)?;
 
-        Ok(NonRevocProofXList::new(rho, r, r_prime, r_prime_prime, r_prime_prime_prime, o, o_prime,
-                                   m, m_prime, t, t_prime, m2, claim.vr_prime_prime, claim.c))
+        Ok(NonRevocProofXList::new(
+            rho,
+            r,
+            r_prime,
+            r_prime_prime,
+            r_prime_prime_prime,
+            o,
+            o_prime,
+            m,
+            m_prime,
+            t,
+            t_prime,
+            m2,
+            claim.vr_prime_prime,
+            claim.c,
+        ))
     }
 
-    fn _create_c_list_values(claim: &RefCell<NonRevocationClaim>, params: &NonRevocProofXList,
-                             pkr: &RevocationPublicKey) -> Result<NonRevocProofCList, CommonError> {
+    fn _create_c_list_values(
+        claim: &RefCell<NonRevocationClaim>,
+        params: &NonRevocProofXList,
+        pkr: &RevocationPublicKey,
+    ) -> Result<NonRevocProofCList, CommonError> {
         let claim = claim.borrow();
-        let e = pkr.h
-            .mul(&params.rho)?
-            .add(
-                &pkr.htilde.mul(&params.o)?
-            )?;
+        let e = pkr.h.mul(&params.rho)?.add(&pkr.htilde.mul(&params.o)?)?;
 
-        let d = pkr.g
-            .mul(&params.r)?
-            .add(
-                &pkr.htilde.mul(&params.o_prime)?
-            )?;
+        let d = pkr.g.mul(&params.r)?.add(&pkr.htilde.mul(&params.o_prime)?)?;
 
-        let a = claim.sigma
-            .add(
-                &pkr.htilde.mul(&params.rho)?
-            )?;
+        let a = claim.sigma.add(&pkr.htilde.mul(&params.rho)?)?;
 
-        let g = claim.g_i
-            .add(
-                &pkr.htilde.mul(&params.r)?
-            )?;
+        let g = claim.g_i.add(&pkr.htilde.mul(&params.r)?)?;
 
-        let w = claim.witness.omega
-            .add(
-                &pkr.h_cap.mul(&params.r_prime)?
-            )?;
+        let w = claim.witness.omega.add(&pkr.h_cap.mul(&params.r_prime)?)?;
 
-        let s = claim.witness.sigma_i
-            .add(
-                &pkr.h_cap.mul(&params.r_prime_prime)?
-            )?;
+        let s = claim.witness.sigma_i.add(
+            &pkr.h_cap.mul(&params.r_prime_prime)?,
+        )?;
 
-        let u = claim.witness.u_i
-            .add(
-                &pkr.h_cap.mul(&params.r_prime_prime_prime)?
-            )?;
+        let u = claim.witness.u_i.add(
+            &pkr.h_cap.mul(&params.r_prime_prime_prime)?,
+        )?;
 
         Ok(NonRevocProofCList::new(e, d, a, g, w, s, u))
     }
 
     fn _gen_tau_list_params() -> Result<NonRevocProofXList, CommonError> {
-        Ok(NonRevocProofXList::new(GroupOrderElement::new()?, GroupOrderElement::new()?,
-                                   GroupOrderElement::new()?, GroupOrderElement::new()?,
-                                   GroupOrderElement::new()?, GroupOrderElement::new()?,
-                                   GroupOrderElement::new()?, GroupOrderElement::new()?,
-                                   GroupOrderElement::new()?, GroupOrderElement::new()?,
-                                   GroupOrderElement::new()?, GroupOrderElement::new()?,
-                                   GroupOrderElement::new()?, GroupOrderElement::new()?))
+        Ok(NonRevocProofXList::new(
+            GroupOrderElement::new()?,
+            GroupOrderElement::new()?,
+            GroupOrderElement::new()?,
+            GroupOrderElement::new()?,
+            GroupOrderElement::new()?,
+            GroupOrderElement::new()?,
+            GroupOrderElement::new()?,
+            GroupOrderElement::new()?,
+            GroupOrderElement::new()?,
+            GroupOrderElement::new()?,
+            GroupOrderElement::new()?,
+            GroupOrderElement::new()?,
+            GroupOrderElement::new()?,
+            GroupOrderElement::new()?,
+        ))
     }
 
-    fn _finalize_non_revocation_proof(init_proof: &NonRevocInitProof, c_h: &BigNumber) -> Result<NonRevocProof, CommonError> {
+    fn _finalize_non_revocation_proof(
+        init_proof: &NonRevocInitProof,
+        c_h: &BigNumber,
+    ) -> Result<NonRevocProof, CommonError> {
         info!(target: "anoncreds_service", "Prover finalize non-revocation proof -> start");
 
         let ch_num_z = bignum_to_group_element(&c_h)?;
         let mut x_list: Vec<GroupOrderElement> = Vec::new();
 
-        for (x, y) in init_proof.tau_list_params.as_list()?.iter().zip(init_proof.c_list_params.as_list()?.iter()) {
-            x_list.push(x.add_mod(
-                &ch_num_z.mul_mod(&y)?.mod_neg()?
-            )?);
+        for (x, y) in init_proof.tau_list_params.as_list()?.iter().zip(
+            init_proof
+                .c_list_params
+                .as_list()?
+                .iter(),
+        )
+        {
+            x_list.push(x.add_mod(&ch_num_z.mul_mod(&y)?.mod_neg()?)?);
         }
 
         info!(target: "anoncreds_service", "Prover finalize non-revocation proof -> done");
 
-        Ok(NonRevocProof::new(NonRevocProofXList::from_list(x_list), init_proof.c_list.clone()))
+        Ok(NonRevocProof::new(
+            NonRevocProofXList::from_list(x_list),
+            init_proof.c_list.clone(),
+        ))
     }
 }
 
@@ -841,15 +1226,23 @@ mod tests {
     #[test]
     fn gen_primary_claim_init_data_works() {
         let pk = issuer::mocks::get_pk();
-        let ms = BigNumber::from_dec("48366230316716542900569044107436065507876331091941474824005719405764413438920").unwrap();
+        let ms = BigNumber::from_dec(
+            "48366230316716542900569044107436065507876331091941474824005719405764413438920",
+        ).unwrap();
 
         let res = Prover::_gen_primary_claim_init_data(&pk, &ms);
         assert!(res.is_ok());
 
         let claim_init_data = res.unwrap();
 
-        assert_eq!(claim_init_data.v_prime.to_dec().unwrap(), "1921424195886158938744777125021406748763985122590553448255822306242766229793715475428833504725487921105078008192433858897449555181018215580757557939320974389877538474522876366787859030586130885280724299566241892352485632499791646228580480458657305087762181033556428779333220803819945703716249441372790689501824842594015722727389764537806761583087605402039968357991056253519683582539703803574767702877615632257021995763302779502949501243649740921598491994352181379637769188829653918416991301420900374928589100515793950374255826572066003334385555085983157359122061582085202490537551988700484875690854200826784921400257387622318582276996322436");
-        assert_eq!(claim_init_data.u.to_dec().unwrap(), "76242448573590064405016258439737389305308751658939430245286640100438960019281437749200830095828154995656490316795623959413004501644803662299479412591058642431687903660665344655065168625525452586969727169375623723517902861969847048691526377607004762208719937819914640316377295513994692345889814194525691804485221810462520684486465466644645762808386096321825027491677390741996765477089812850102636281290306349225021109750689221122813209585062598487297616077690207210647793480450738894724087937015208576263139374972514675875069264408157796307069688316536519870595147545540606129541475897775356097530317320274539032783922");
+        assert_eq!(
+            claim_init_data.v_prime.to_dec().unwrap(),
+            "1921424195886158938744777125021406748763985122590553448255822306242766229793715475428833504725487921105078008192433858897449555181018215580757557939320974389877538474522876366787859030586130885280724299566241892352485632499791646228580480458657305087762181033556428779333220803819945703716249441372790689501824842594015722727389764537806761583087605402039968357991056253519683582539703803574767702877615632257021995763302779502949501243649740921598491994352181379637769188829653918416991301420900374928589100515793950374255826572066003334385555085983157359122061582085202490537551988700484875690854200826784921400257387622318582276996322436"
+        );
+        assert_eq!(
+            claim_init_data.u.to_dec().unwrap(),
+            "76242448573590064405016258439737389305308751658939430245286640100438960019281437749200830095828154995656490316795623959413004501644803662299479412591058642431687903660665344655065168625525452586969727169375623723517902861969847048691526377607004762208719937819914640316377295513994692345889814194525691804485221810462520684486465466644645762808386096321825027491677390741996765477089812850102636281290306349225021109750689221122813209585062598487297616077690207210647793480450738894724087937015208576263139374972514675875069264408157796307069688316536519870595147545540606129541475897775356097530317320274539032783922"
+        );
     }
 
     #[test]
@@ -857,7 +1250,13 @@ mod tests {
         let claim_json = RefCell::new(mocks::get_gvt_claims_json());
         let v_prime = BigNumber::from_dec("21337277489659209697972694275961549241988800625063594810959897509238282352238626810206496164796042921922944861660722790127270481494898810301213699637204250648485409496039792926329367175253071514098050800946366413356551955763141949136004248502185266508852158851178744042138131595587172830689293368213380666221485155781604582222397593802865783047420570234359112294991344669207835283314629238445531337778860979843672592610159700225195191155581629856994556889434019851156913688584355226534153997989337803825600096764199505457938355614863559831818213663754528231270325956208966779676675180767488950507044412716354924086945804065215387295334083509").unwrap();
 
-        let old_value = claim_json.borrow().signature.primary_claim.v.clone().unwrap();
+        let old_value = claim_json
+            .borrow()
+            .signature
+            .primary_claim
+            .v
+            .clone()
+            .unwrap();
 
         let res = Prover::_init_primary_claim(&claim_json, &v_prime);
         assert!(res.is_ok());
@@ -887,7 +1286,14 @@ mod tests {
         claims.insert("1".to_string(), mocks::get_gvt_claims_json());
         claims.insert("2".to_string(), mocks::get_xyz_claims_json());
 
-        let res = Prover::_prepare_proof_claims(&proof_req, &schemas, &claim_defs, &revoc_regs, &requested_claims, claims);
+        let res = Prover::_prepare_proof_claims(
+            &proof_req,
+            &schemas,
+            &claim_defs,
+            &revoc_regs,
+            &requested_claims,
+            claims,
+        );
         assert!(res.is_ok());
 
         let proof_claims = res.unwrap();
@@ -920,24 +1326,37 @@ mod tests {
         let predicates = vec![mocks::get_gvt_predicate()];
         let encoded_attributes = issuer::mocks::get_gvt_attributes();
         let schema = issuer::mocks::get_gvt_schema();
-        let res = Prover::_init_proof(&pk, &schema, &claim, &encoded_attributes, &revealed_attrs, &predicates, &m1_t, Some(m2_t));
+        let res = Prover::_init_proof(
+            &pk,
+            &schema,
+            &claim,
+            &encoded_attributes,
+            &revealed_attrs,
+            &predicates,
+            &m1_t,
+            Some(m2_t),
+        );
 
         assert!(res.is_ok());
     }
 
     #[test]
-    fn finalize_proof_works() {
+    /*fn finalize_proof_works() {
         let proof = mocks::get_primary_init_proof();
-        let ms = BigNumber::from_dec("12017662702207397635206788416861773342711375658894915181302218291088885004642").unwrap();
-        let c_h = BigNumber::from_dec("107686359310664445046126368677755391247164319345083587464043204013905993527834").unwrap();
+        let ms = BigNumber::from_dec(
+            "12017662702207397635206788416861773342711375658894915181302218291088885004642",
+        ).unwrap();
+        let c_h = BigNumber::from_dec(
+            "107686359310664445046126368677755391247164319345083587464043204013905993527834",
+        ).unwrap();
         let encoded_attributes = issuer::mocks::get_gvt_attributes();
         let revealed_attributes = mocks::get_revealed_attrs();
 
-        let res = Prover::_finalize_proof(&ms, &proof, &c_h, &encoded_attributes, &revealed_attributes);
+        let res =
+            Prover::_finalize_proof(&ms, &proof, &c_h, &encoded_attributes, &revealed_attributes);
 
         assert!(res.is_ok());
-    }
-
+    }*/
     #[test]
     fn init_eq_proof_works() {
         let pk = issuer::mocks::get_pk();
@@ -947,20 +1366,40 @@ mod tests {
         let m2_tilde = BigNumber::from_dec("31230114293795576487127595372834830220228562310818079039836555160797619323909214967951444512173906589379330228717887451770324874651295781099491258571562527679146158488391908045190667642630077485518774594787164364584431134524117765512651773418307564918922308711232172267389727003411383955005915276810988726136").unwrap();
         let schema = issuer::mocks::get_gvt_schema();
 
-        let res = Prover::_init_eq_proof(&pk, &schema, &claim, &revealed_attrs, &m1_tilde, Some(m2_tilde));
+        let res = Prover::_init_eq_proof(
+            &pk,
+            &schema,
+            &claim,
+            &revealed_attrs,
+            &m1_tilde,
+            Some(m2_tilde),
+        );
         assert!(res.is_ok());
 
         let eq_proof = res.unwrap();
 
-        assert_eq!(eq_proof.a_prime.to_dec().unwrap(), "87057631969731126162889320560906357360267008247046682344994037071540708847648211770817155467322576564416024131016702461829141826154593193141015555408707962107434889154274101480021851047519249826871065068045489054940673687307364802393856912954529821530366129214823349578250933984191619715737300481000921545131737892947565265902387824838694421659738826630417546849137080518569690367670216680263229483688777919442405436226899082217495953507207561863892643215763362913098682050328209689762892828408774897957041802696642645714627207453405565027136962897066680484021579390417804092995897134437003639398170927787299154075285");
-        assert_eq!(eq_proof.vprime.to_dec().unwrap(), "5979547362044420689643605161847007473090081436212966743842241286592937826625276385813360906453355392545643230503360670090004097274446022944279570878276259729306779668575697214067216866429507821180867566895648038856148919510059621853730813107074415548724255552174426281218098200918679203779943916397256259606901368304143824867249078714432422027782927278071444841086260224951432527743093933778851959693368146789991602066025734455616272412130589236198988320593653003193963066617573884531391745988882862687993383824150400809323307293852247592582410221809104069581125010219396759971113914000795860997210346078905489329838723780453966406654041083307266391458113165288688592430952227431062675696350809783088665646193119746626057641646852972527804891696692352131972390096122206815139645180412672265386643453131031235225649159719");
-        assert_eq!(eq_proof.eprime.to_dec().unwrap(), "421208355533376344033560360084200567");
+        assert_eq!(
+            eq_proof.a_prime.to_dec().unwrap(),
+            "87057631969731126162889320560906357360267008247046682344994037071540708847648211770817155467322576564416024131016702461829141826154593193141015555408707962107434889154274101480021851047519249826871065068045489054940673687307364802393856912954529821530366129214823349578250933984191619715737300481000921545131737892947565265902387824838694421659738826630417546849137080518569690367670216680263229483688777919442405436226899082217495953507207561863892643215763362913098682050328209689762892828408774897957041802696642645714627207453405565027136962897066680484021579390417804092995897134437003639398170927787299154075285"
+        );
+        assert_eq!(
+            eq_proof.vprime.to_dec().unwrap(),
+            "5979547362044420689643605161847007473090081436212966743842241286592937826625276385813360906453355392545643230503360670090004097274446022944279570878276259729306779668575697214067216866429507821180867566895648038856148919510059621853730813107074415548724255552174426281218098200918679203779943916397256259606901368304143824867249078714432422027782927278071444841086260224951432527743093933778851959693368146789991602066025734455616272412130589236198988320593653003193963066617573884531391745988882862687993383824150400809323307293852247592582410221809104069581125010219396759971113914000795860997210346078905489329838723780453966406654041083307266391458113165288688592430952227431062675696350809783088665646193119746626057641646852972527804891696692352131972390096122206815139645180412672265386643453131031235225649159719"
+        );
+        assert_eq!(
+            eq_proof.eprime.to_dec().unwrap(),
+            "421208355533376344033560360084200567"
+        );
     }
 
-    #[test]
+    /*#[test]
     fn finalize_eq_proof_works() {
-        let ms = BigNumber::from_dec("12017662702207397635206788416861773342711375658894915181302218291088885004642").unwrap();
-        let c_h = BigNumber::from_dec("65052515950080385170056404271846666093263620691254624189854445495335700076548").unwrap();
+        let ms = BigNumber::from_dec(
+            "12017662702207397635206788416861773342711375658894915181302218291088885004642",
+        ).unwrap();
+        let c_h = BigNumber::from_dec(
+            "65052515950080385170056404271846666093263620691254624189854445495335700076548",
+        ).unwrap();
         let init_proof = mocks::get_primary_equal_init_proof();
         let revealed_attrs = mocks::get_revealed_attrs();
         let attrs = issuer::mocks::get_gvt_attributes();
@@ -970,12 +1409,27 @@ mod tests {
         assert!(res.is_ok());
         let proof = res.unwrap();
 
-        assert_eq!("46977509037563772921188771357228696971286986611479769037400887043024357260824466323972528739266623662424083138906804114233154076462225260", proof.e.to_dec().unwrap());
-        assert_eq!("555894869457553465718054497220703310113847971154321206264039643437256150021765032391630230094549373082683761872900289443108844758698210311744008775755841424663713495335913737925610645231143512448736634848872651673398623671421680147672048516992617074237823416006998805743252732623168072887558380980816786967972208697482105496476584623670241498051382948079749991653743122008317688039944886441991890739570646377897115078595023503848923611116244104325820581549132685254973230215813377280331818752749674933449141701081762918502111898869410069368198046357103361141404701610657859033620340201121860748524404546417655599945090144921881183922296151990310095095955070183524924902826674801457725425394553828477598974723668103655265677518938090134981829839176785641671819341783587890027487090232485080219343288188381028474008022615299819430842220715432262971141278304167669686965655751310509796666256987764202199558192225907485643584", proof.v.to_dec().unwrap());
-        assert_eq!("17884736668674953594474879343533841182802514514784532835710262264561805009458126297222977824304362311586622997817594769134550513911169868072027461607531075593532027490623438201429184516874637111394210856531406371117724109267267829196540990374669452129657796333114585130056514558678918989249474063851032294543", proof.m1.to_dec().unwrap());
-        assert_eq!("33970939655505026872690051065527896936826240486176548712174703648151652129591217103741946892383483806205993341432925544541557374346350172352729633028700080895510117255197249531019938518779850139061087723518395934746900289855498383299025412840993553136695018502936439397825288787933388062548604655707739594437", proof.m2.to_dec().unwrap());
-        assert_eq!("2976250595835739181594320238227653601426197318110939190760657852629456864395726135468275792741622452401456587655635268677703907105682407452071286027329441960908939293198715566259", proof.m.get("age").unwrap().to_dec().unwrap());
-    }
+        assert_eq!(
+            "46977509037563772921188771357228696971286986611479769037400887043024357260824466323972528739266623662424083138906804114233154076462225260",
+            proof.e.to_dec().unwrap()
+        );
+        assert_eq!(
+            "555894869457553465718054497220703310113847971154321206264039643437256150021765032391630230094549373082683761872900289443108844758698210311744008775755841424663713495335913737925610645231143512448736634848872651673398623671421680147672048516992617074237823416006998805743252732623168072887558380980816786967972208697482105496476584623670241498051382948079749991653743122008317688039944886441991890739570646377897115078595023503848923611116244104325820581549132685254973230215813377280331818752749674933449141701081762918502111898869410069368198046357103361141404701610657859033620340201121860748524404546417655599945090144921881183922296151990310095095955070183524924902826674801457725425394553828477598974723668103655265677518938090134981829839176785641671819341783587890027487090232485080219343288188381028474008022615299819430842220715432262971141278304167669686965655751310509796666256987764202199558192225907485643584",
+            proof.v.to_dec().unwrap()
+        );
+        assert_eq!(
+            "17884736668674953594474879343533841182802514514784532835710262264561805009458126297222977824304362311586622997817594769134550513911169868072027461607531075593532027490623438201429184516874637111394210856531406371117724109267267829196540990374669452129657796333114585130056514558678918989249474063851032294543",
+            proof.m1.to_dec().unwrap()
+        );
+        assert_eq!(
+            "33970939655505026872690051065527896936826240486176548712174703648151652129591217103741946892383483806205993341432925544541557374346350172352729633028700080895510117255197249531019938518779850139061087723518395934746900289855498383299025412840993553136695018502936439397825288787933388062548604655707739594437",
+            proof.m2.to_dec().unwrap()
+        );
+        assert_eq!(
+            "2976250595835739181594320238227653601426197318110939190760657852629456864395726135468275792741622452401456587655635268677703907105682407452071286027329441960908939293198715566259",
+            proof.m.get("age").unwrap().to_dec().unwrap()
+        );
+    }*/
 
     #[test]
     fn init_ge_proof_works() {
@@ -989,11 +1443,23 @@ mod tests {
 
         let proof = res.unwrap();
 
-        assert_eq!(proof.c_list.get(0).unwrap().to_dec().unwrap(), "66452646864713459129322124524496160239214129628844448912512675754382373114045232638792544050983258044571320479724542222159607548371946608278224646356448366445559828934782665270370014756906222313296871353700305312489013107502898521331193640487262241439496025903490697084701289251331970932030723857963667757918065298468726954493148633682914144253830507074421917845317843041768030700610129944001550144134234321487234247282527013708361275163765747931441214224397693734342806818103569845752619756970663088347173537279465064357347197203519585032404779938843725754592220777310937230037486845412937230858545348334751626327225");
-        assert_eq!(proof.c_list.get(4).unwrap().to_dec().unwrap(), "12744073002342538466174266178920319716851536025528365678772164359094855375069597510967107907963978165383581958746728451817220119885059854369802587463275692110468863903085692788520163123046996971844187140303651001700638819763809506725152408953126623513326965559836659294476633000658736763344051801272123315367972537058814718428582311569246639308898362985600736985313610287370218545585443328912998714066030788971356972398823446394808259083145491780287377954911517455205043191986659486803525453280026699756592970920620102979774178487359570489964938005831483280782091403551604164735055022297589542910009750584030261291932");
+        assert_eq!(
+            proof.c_list.get(0).unwrap().to_dec().unwrap(),
+            "66452646864713459129322124524496160239214129628844448912512675754382373114045232638792544050983258044571320479724542222159607548371946608278224646356448366445559828934782665270370014756906222313296871353700305312489013107502898521331193640487262241439496025903490697084701289251331970932030723857963667757918065298468726954493148633682914144253830507074421917845317843041768030700610129944001550144134234321487234247282527013708361275163765747931441214224397693734342806818103569845752619756970663088347173537279465064357347197203519585032404779938843725754592220777310937230037486845412937230858545348334751626327225"
+        );
+        assert_eq!(
+            proof.c_list.get(4).unwrap().to_dec().unwrap(),
+            "12744073002342538466174266178920319716851536025528365678772164359094855375069597510967107907963978165383581958746728451817220119885059854369802587463275692110468863903085692788520163123046996971844187140303651001700638819763809506725152408953126623513326965559836659294476633000658736763344051801272123315367972537058814718428582311569246639308898362985600736985313610287370218545585443328912998714066030788971356972398823446394808259083145491780287377954911517455205043191986659486803525453280026699756592970920620102979774178487359570489964938005831483280782091403551604164735055022297589542910009750584030261291932"
+        );
 
-        assert_eq!(proof.t.get("0").unwrap().to_dec().unwrap(), "66452646864713459129322124524496160239214129628844448912512675754382373114045232638792544050983258044571320479724542222159607548371946608278224646356448366445559828934782665270370014756906222313296871353700305312489013107502898521331193640487262241439496025903490697084701289251331970932030723857963667757918065298468726954493148633682914144253830507074421917845317843041768030700610129944001550144134234321487234247282527013708361275163765747931441214224397693734342806818103569845752619756970663088347173537279465064357347197203519585032404779938843725754592220777310937230037486845412937230858545348334751626327225");
-        assert_eq!(proof.t.get("DELTA").unwrap().to_dec().unwrap(), "12744073002342538466174266178920319716851536025528365678772164359094855375069597510967107907963978165383581958746728451817220119885059854369802587463275692110468863903085692788520163123046996971844187140303651001700638819763809506725152408953126623513326965559836659294476633000658736763344051801272123315367972537058814718428582311569246639308898362985600736985313610287370218545585443328912998714066030788971356972398823446394808259083145491780287377954911517455205043191986659486803525453280026699756592970920620102979774178487359570489964938005831483280782091403551604164735055022297589542910009750584030261291932");
+        assert_eq!(
+            proof.t.get("0").unwrap().to_dec().unwrap(),
+            "66452646864713459129322124524496160239214129628844448912512675754382373114045232638792544050983258044571320479724542222159607548371946608278224646356448366445559828934782665270370014756906222313296871353700305312489013107502898521331193640487262241439496025903490697084701289251331970932030723857963667757918065298468726954493148633682914144253830507074421917845317843041768030700610129944001550144134234321487234247282527013708361275163765747931441214224397693734342806818103569845752619756970663088347173537279465064357347197203519585032404779938843725754592220777310937230037486845412937230858545348334751626327225"
+        );
+        assert_eq!(
+            proof.t.get("DELTA").unwrap().to_dec().unwrap(),
+            "12744073002342538466174266178920319716851536025528365678772164359094855375069597510967107907963978165383581958746728451817220119885059854369802587463275692110468863903085692788520163123046996971844187140303651001700638819763809506725152408953126623513326965559836659294476633000658736763344051801272123315367972537058814718428582311569246639308898362985600736985313610287370218545585443328912998714066030788971356972398823446394808259083145491780287377954911517455205043191986659486803525453280026699756592970920620102979774178487359570489964938005831483280782091403551604164735055022297589542910009750584030261291932"
+        );
 
         assert_eq!(proof.u.get("0").unwrap().to_dec().unwrap(), "3");
         assert_eq!(proof.u.get("1").unwrap().to_dec().unwrap(), "1");
@@ -1001,7 +1467,9 @@ mod tests {
 
     #[test]
     fn finalize_ge_proof_works() {
-        let c_h = BigNumber::from_dec("107686359310664445046126368677755391247164319345083587464043204013905993527834").unwrap();
+        let c_h = BigNumber::from_dec(
+            "107686359310664445046126368677755391247164319345083587464043204013905993527834",
+        ).unwrap();
         let ge_proof = mocks::get_primary_ge_init_proof();
         let eq_proof = verifier::mocks::get_eq_proof();
 
@@ -1010,10 +1478,22 @@ mod tests {
         assert!(res.is_ok());
         let proof = res.unwrap();
 
-        assert_eq!("14530430712270780620115716831630456792731829285960002962064509786954277815652219734860240775632969505615425989813150680974232279981033881929825516835639704838509146807403579176456", proof.u.get("0").unwrap().to_dec().unwrap());
-        assert_eq!("1415830066404575063558956955699897939417161777078791039926340455929989312103567388586750415279750275627689289774355989928259903201283164671369980334635402090593700202419576962251006803664979387881077329091553387025639738608978470326865096461988349436323051092921673039448207467310143157161249548690648317604663697956127142299857431279531067869166789113125108487447241380451860460435536386169606660126687136336515643267258245597749963499390882335368772524506108537160732974827392286571681871686360634706404457817326674394813236360450345475325164815205390904412548072443050097422540706146216417531228071209074620592598469883684966671309568705760392191743050877301212854432940753955279643358353605952631236345030655922045", proof.r.get("0").unwrap().to_dec().unwrap());
-        assert_eq!("2909377521678119520977157959638852346549039931868195250658890196374980817755318676413066648981533034386605143040798380729872705956567376032225961933326117009011908374020093877002895162468521578763395678346621437225972600951965633549602979234732083149655058280123465723210167346545435946648092301500495871307611941306714133444462666462818882418100633983906555894992078138873969482714430788917034883079579778040749973092160959984323579215740942468398437958324399647532773947797685551797171537348210954088256282790659454179075257593928991997283548069103317735700818358235857780570873678690413979416837309542554490385517111819905278234351454124245103700468051202549165577210724696681231918320110736784038063606140146272860", proof.r.get("DELTA").unwrap().to_dec().unwrap());
-        assert_eq!("44263308381149662900948673540609137605123483577985225626015193605421446490850432944403510911593807877995566074607735765400382861784877744789798777017960357051684400364048124004882741408393303775593487691064638002920853960645913535484864749193831701910596138125770720981871270085109534802728387292108961395671973015447681340852592012638839948998301809908713998541365956149792695654874324699264455657573099688614830144400409479952124271239106111005380360397720399778640177093636911827538708829123941248898780310301607124559838851222069991204870155414077086348071171421803569856093007812236846764361931252088960485440158830117131468627609450498244887243402854104282374544935516477360120294987311548247220633388905908551822949252630925854555366381978721601629564425954576926076828495554017163967076851067453147787769115012365426065129174495136", proof.alpha.to_dec().unwrap());
+        assert_eq!(
+            "14530430712270780620115716831630456792731829285960002962064509786954277815652219734860240775632969505615425989813150680974232279981033881929825516835639704838509146807403579176456",
+            proof.u.get("0").unwrap().to_dec().unwrap()
+        );
+        assert_eq!(
+            "1415830066404575063558956955699897939417161777078791039926340455929989312103567388586750415279750275627689289774355989928259903201283164671369980334635402090593700202419576962251006803664979387881077329091553387025639738608978470326865096461988349436323051092921673039448207467310143157161249548690648317604663697956127142299857431279531067869166789113125108487447241380451860460435536386169606660126687136336515643267258245597749963499390882335368772524506108537160732974827392286571681871686360634706404457817326674394813236360450345475325164815205390904412548072443050097422540706146216417531228071209074620592598469883684966671309568705760392191743050877301212854432940753955279643358353605952631236345030655922045",
+            proof.r.get("0").unwrap().to_dec().unwrap()
+        );
+        assert_eq!(
+            "2909377521678119520977157959638852346549039931868195250658890196374980817755318676413066648981533034386605143040798380729872705956567376032225961933326117009011908374020093877002895162468521578763395678346621437225972600951965633549602979234732083149655058280123465723210167346545435946648092301500495871307611941306714133444462666462818882418100633983906555894992078138873969482714430788917034883079579778040749973092160959984323579215740942468398437958324399647532773947797685551797171537348210954088256282790659454179075257593928991997283548069103317735700818358235857780570873678690413979416837309542554490385517111819905278234351454124245103700468051202549165577210724696681231918320110736784038063606140146272860",
+            proof.r.get("DELTA").unwrap().to_dec().unwrap()
+        );
+        assert_eq!(
+            "44263308381149662900948673540609137605123483577985225626015193605421446490850432944403510911593807877995566074607735765400382861784877744789798777017960357051684400364048124004882741408393303775593487691064638002920853960645913535484864749193831701910596138125770720981871270085109534802728387292108961395671973015447681340852592012638839948998301809908713998541365956149792695654874324699264455657573099688614830144400409479952124271239106111005380360397720399778640177093636911827538708829123941248898780310301607124559838851222069991204870155414077086348071171421803569856093007812236846764361931252088960485440158830117131468627609450498244887243402854104282374544935516477360120294987311548247220633388905908551822949252630925854555366381978721601629564425954576926076828495554017163967076851067453147787769115012365426065129174495136",
+            proof.alpha.to_dec().unwrap()
+        );
     }
 
     #[cfg(feature = "revocation_tests")]
@@ -1022,53 +1502,132 @@ mod tests {
         let issuer = Issuer::new();
         let prover = Prover::new();
 
-        let (claim_definition, claim_definition_private) = issuer.generate_claim_definition(
-            issuer::mocks::ISSUER_DID, issuer::mocks::get_gvt_schema(), None, true).unwrap();
+        let (claim_definition, claim_definition_private) = issuer
+            .generate_claim_definition(
+                issuer::mocks::ISSUER_DID,
+                issuer::mocks::get_gvt_schema(),
+                None,
+                true,
+            )
+            .unwrap();
 
-        let (revocation_registry, revocation_registry_private) = issuer.issue_accumulator(
-            &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
-            5, issuer::mocks::ISSUER_DID, 1).unwrap();
+        let (revocation_registry, revocation_registry_private) = issuer
+            .issue_accumulator(
+                &claim_definition
+                    .clone()
+                    .unwrap()
+                    .data
+                    .public_key_revocation
+                    .clone()
+                    .unwrap(),
+                5,
+                issuer::mocks::ISSUER_DID,
+                1,
+            )
+            .unwrap();
 
         let master_secret = prover.generate_master_secret().unwrap();
 
-        let (claim_request, claim_init_data, revocation_claim_init_data) = prover.create_claim_request(
-            claim_definition.clone().unwrap().data.public_key,
-            claim_definition.clone().unwrap().data.public_key_revocation,
-            master_secret, None, mocks::PROVER_DID).unwrap();
+        let (claim_request, claim_init_data, revocation_claim_init_data) = prover
+            .create_claim_request(
+                claim_definition.clone().unwrap().data.public_key,
+                claim_definition.clone().unwrap().data.public_key_revocation,
+                master_secret,
+                None,
+                mocks::PROVER_DID,
+            )
+            .unwrap();
 
         let revocation_registry_ref_cell = Some(RefCell::new(revocation_registry));
 
-        let claim_signature = issuer.create_claim(
-            &claim_definition, &claim_definition_private.clone().unwrap(), &revocation_registry_ref_cell,
-            &Some(revocation_registry_private.clone()), &claim_request,
-            &issuer::mocks::get_gvt_attributes(), None).unwrap();
+        let claim_signature = issuer
+            .create_claim(
+                &claim_definition,
+                &claim_definition_private.clone().unwrap(),
+                &revocation_registry_ref_cell,
+                &Some(revocation_registry_private.clone()),
+                &claim_request,
+                &issuer::mocks::get_gvt_attributes(),
+                None,
+            )
+            .unwrap();
 
         let claim_json = ClaimJson::new(
-            issuer::mocks::get_gvt_attributes(), claim_signature, 1,
-            issuer::mocks::ISSUER_DID.to_string());
+            issuer::mocks::get_gvt_attributes(),
+            claim_signature,
+            1,
+            issuer::mocks::ISSUER_DID.to_string(),
+        );
 
         let claim_json_ref_cell = RefCell::new(claim_json.clone().unwrap());
 
         let revocation_reg = revocation_registry_ref_cell.unwrap().clone();
-        prover.process_claim(&claim_json_ref_cell, claim_init_data,
-                             revocation_claim_init_data.clone(),
-                             Some(claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap()),
-                             &Some(revocation_reg.borrow().clone())).unwrap();
+        prover
+            .process_claim(
+                &claim_json_ref_cell,
+                claim_init_data,
+                revocation_claim_init_data.clone(),
+                Some(
+                    claim_definition
+                        .clone()
+                        .unwrap()
+                        .data
+                        .public_key_revocation
+                        .clone()
+                        .unwrap(),
+                ),
+                &Some(revocation_reg.borrow().clone()),
+            )
+            .unwrap();
 
-        let non_revocation_claim = claim_json_ref_cell.borrow().clone().unwrap().signature.non_revocation_claim.unwrap();
+        let non_revocation_claim = claim_json_ref_cell
+            .borrow()
+            .clone()
+            .unwrap()
+            .signature
+            .non_revocation_claim
+            .unwrap();
 
         let c_list_params = Prover::_gen_c_list_params(&non_revocation_claim).unwrap();
         let proof_c_list = Prover::_create_c_list_values(
-            &non_revocation_claim, &c_list_params,
-            &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap()).unwrap();
+            &non_revocation_claim,
+            &c_list_params,
+            &claim_definition
+                .clone()
+                .unwrap()
+                .data
+                .public_key_revocation
+                .clone()
+                .unwrap(),
+        ).unwrap();
         let proof_tau_list = Issuer::_create_tau_list_values(
-            &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
-            &revocation_reg.borrow().accumulator, &c_list_params, &proof_c_list).unwrap();
+            &claim_definition
+                .clone()
+                .unwrap()
+                .data
+                .public_key_revocation
+                .clone()
+                .unwrap(),
+            &revocation_reg.borrow().accumulator,
+            &c_list_params,
+            &proof_c_list,
+        ).unwrap();
         let proof_tau_list_calc = Issuer::_create_tau_list_expected_values(
-            &claim_definition.clone().unwrap().data.public_key_revocation.clone().unwrap(),
-            &revocation_reg.borrow().accumulator, &revocation_reg.borrow().acc_pk,
-            &proof_c_list).unwrap();
-        assert_eq!(proof_tau_list.as_slice().unwrap(), proof_tau_list_calc.as_slice().unwrap());
+            &claim_definition
+                .clone()
+                .unwrap()
+                .data
+                .public_key_revocation
+                .clone()
+                .unwrap(),
+            &revocation_reg.borrow().accumulator,
+            &revocation_reg.borrow().acc_pk,
+            &proof_c_list,
+        ).unwrap();
+        assert_eq!(
+            proof_tau_list.as_slice().unwrap(),
+            proof_tau_list_calc.as_slice().unwrap()
+        );
     }
 }
 
@@ -1081,10 +1640,7 @@ mod find_claims_tests {
         let requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
-        let claims = vec![
-            mocks::get_gvt_claim_info(),
-            mocks::get_xyz_claim_info()
-        ];
+        let claims = vec![mocks::get_gvt_claim_info(), mocks::get_xyz_claim_info()];
 
         let prover = Prover::new();
         let res = prover.find_claims(requested_attrs, requested_predicates, claims);
@@ -1099,14 +1655,14 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_revealed_attrs_only_with_same_schema() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(), Some(1), None));
+        requested_attrs.insert(
+            "1".to_string(),
+            AttributeInfo::new("name".to_string(), Some(1), None),
+        );
 
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
-        let claims = vec![
-            mocks::get_gvt_claim_info(),
-            mocks::get_xyz_claim_info()
-        ];
+        let claims = vec![mocks::get_gvt_claim_info(), mocks::get_xyz_claim_info()];
 
         let prover = Prover::new();
         let res = prover.find_claims(requested_attrs, requested_predicates, claims);
@@ -1126,14 +1682,14 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_revealed_attrs_only_with_other_schema() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(), Some(3), None));
+        requested_attrs.insert(
+            "1".to_string(),
+            AttributeInfo::new("name".to_string(), Some(3), None),
+        );
 
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
-        let claims = vec![
-            mocks::get_gvt_claim_info(),
-            mocks::get_xyz_claim_info()
-        ];
+        let claims = vec![mocks::get_gvt_claim_info(), mocks::get_xyz_claim_info()];
 
         let prover = Prover::new();
         let res = prover.find_claims(requested_attrs, requested_predicates, claims);
@@ -1150,12 +1706,12 @@ mod find_claims_tests {
     fn find_claims_works_for_predicate_satisfy() {
         let requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
-        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18, None, None));
+        requested_predicates.insert(
+            "1".to_string(),
+            Predicate::new("age".to_string(), PredicateType::GE, 18, None, None),
+        );
 
-        let claims = vec![
-            mocks::get_gvt_claim_info(),
-            mocks::get_xyz_claim_info()
-        ];
+        let claims = vec![mocks::get_gvt_claim_info(), mocks::get_xyz_claim_info()];
 
         let prover = Prover::new();
         let res = prover.find_claims(requested_attrs, requested_predicates, claims);
@@ -1176,12 +1732,12 @@ mod find_claims_tests {
     fn find_claims_works_for_does_not_satisfy_predicate() {
         let requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
-        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 38, None, None));
+        requested_predicates.insert(
+            "1".to_string(),
+            Predicate::new("age".to_string(), PredicateType::GE, 38, None, None),
+        );
 
-        let claims = vec![
-            mocks::get_gvt_claim_info(),
-            mocks::get_xyz_claim_info()
-        ];
+        let claims = vec![mocks::get_gvt_claim_info(), mocks::get_xyz_claim_info()];
 
         let prover = Prover::new();
         let res = prover.find_claims(requested_attrs, requested_predicates, claims);
@@ -1197,15 +1753,18 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_multiply_revealed_attrs() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(), Some(1), None));
-        requested_attrs.insert("2".to_string(), AttributeInfo::new("status".to_string(), Some(2), None));
+        requested_attrs.insert(
+            "1".to_string(),
+            AttributeInfo::new("name".to_string(), Some(1), None),
+        );
+        requested_attrs.insert(
+            "2".to_string(),
+            AttributeInfo::new("status".to_string(), Some(2), None),
+        );
 
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
-        let claims = vec![
-            mocks::get_gvt_claim_info(),
-            mocks::get_xyz_claim_info()
-        ];
+        let claims = vec![mocks::get_gvt_claim_info(), mocks::get_xyz_claim_info()];
 
         let prover = Prover::new();
         let res = prover.find_claims(requested_attrs, requested_predicates, claims);
@@ -1233,13 +1792,16 @@ mod find_claims_tests {
     fn find_claims_works_for_multiply_satisfy_predicates() {
         let requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
-        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18, None, None));
-        requested_predicates.insert("2".to_string(), Predicate::new("period".to_string(), PredicateType::GE, 8, None, None));
+        requested_predicates.insert(
+            "1".to_string(),
+            Predicate::new("age".to_string(), PredicateType::GE, 18, None, None),
+        );
+        requested_predicates.insert(
+            "2".to_string(),
+            Predicate::new("period".to_string(), PredicateType::GE, 8, None, None),
+        );
 
-        let claims = vec![
-            mocks::get_gvt_claim_info(),
-            mocks::get_xyz_claim_info()
-        ];
+        let claims = vec![mocks::get_gvt_claim_info(), mocks::get_xyz_claim_info()];
 
         let prover = Prover::new();
         let res = prover.find_claims(requested_attrs, requested_predicates, claims);
@@ -1266,17 +1828,26 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_multiply_attrs_and_satisfy_predicates() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(), Some(1), None));
-        requested_attrs.insert("2".to_string(), AttributeInfo::new("status".to_string(), Some(2), None));
+        requested_attrs.insert(
+            "1".to_string(),
+            AttributeInfo::new("name".to_string(), Some(1), None),
+        );
+        requested_attrs.insert(
+            "2".to_string(),
+            AttributeInfo::new("status".to_string(), Some(2), None),
+        );
 
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
-        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18, None, None));
-        requested_predicates.insert("2".to_string(), Predicate::new("period".to_string(), PredicateType::GE, 8, None, None));
+        requested_predicates.insert(
+            "1".to_string(),
+            Predicate::new("age".to_string(), PredicateType::GE, 18, None, None),
+        );
+        requested_predicates.insert(
+            "2".to_string(),
+            Predicate::new("period".to_string(), PredicateType::GE, 8, None, None),
+        );
 
-        let claims = vec![
-            mocks::get_gvt_claim_info(),
-            mocks::get_xyz_claim_info()
-        ];
+        let claims = vec![mocks::get_gvt_claim_info(), mocks::get_xyz_claim_info()];
 
         let prover = Prover::new();
         let res = prover.find_claims(requested_attrs, requested_predicates, claims);
@@ -1302,14 +1873,17 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_several_matches_for_attribute() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(), Some(1), None));
+        requested_attrs.insert(
+            "1".to_string(),
+            AttributeInfo::new("name".to_string(), Some(1), None),
+        );
 
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
         let claims = vec![
             mocks::get_gvt_claim_info(),
             mocks::get_xyz_claim_info(),
-            mocks::get_abc_claim_info()
+            mocks::get_abc_claim_info(),
         ];
 
         let prover = Prover::new();
@@ -1329,14 +1903,14 @@ mod find_claims_tests {
     #[test]
     fn find_claims_works_for_no_matches_for_attribute() {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new("test".to_string(), Some(1), None));
+        requested_attrs.insert(
+            "1".to_string(),
+            AttributeInfo::new("test".to_string(), Some(1), None),
+        );
 
         let requested_predicates: HashMap<String, Predicate> = HashMap::new();
 
-        let claims = vec![
-            mocks::get_gvt_claim_info(),
-            mocks::get_xyz_claim_info()
-        ];
+        let claims = vec![mocks::get_gvt_claim_info(), mocks::get_xyz_claim_info()];
 
         let prover = Prover::new();
         let res = prover.find_claims(requested_attrs, requested_predicates, claims);
@@ -1361,28 +1935,34 @@ pub mod mocks {
     pub const PROVER_DID: &'static str = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 
     pub fn get_non_revocation_proof_c_list() -> NonRevocProofCList {
-        NonRevocProofCList::new(PointG1::new().unwrap(), PointG1::new().unwrap(),
-                                PointG1::new().unwrap(), PointG1::new().unwrap(),
-                                PointG2::new().unwrap(), PointG2::new().unwrap(),
-                                PointG2::new().unwrap()
+        NonRevocProofCList::new(
+            PointG1::new().unwrap(),
+            PointG1::new().unwrap(),
+            PointG1::new().unwrap(),
+            PointG1::new().unwrap(),
+            PointG2::new().unwrap(),
+            PointG2::new().unwrap(),
+            PointG2::new().unwrap(),
         )
     }
 
     pub fn get_non_revocation_proof_x_list() -> NonRevocProofXList {
-        NonRevocProofXList::new(GroupOrderElement::new().unwrap(),
-                                GroupOrderElement::new().unwrap(),
-                                GroupOrderElement::new().unwrap(),
-                                GroupOrderElement::new().unwrap(),
-                                GroupOrderElement::new().unwrap(),
-                                GroupOrderElement::new().unwrap(),
-                                GroupOrderElement::new().unwrap(),
-                                GroupOrderElement::new().unwrap(),
-                                GroupOrderElement::new().unwrap(),
-                                GroupOrderElement::new().unwrap(),
-                                GroupOrderElement::new().unwrap(),
-                                GroupOrderElement::new().unwrap(),
-                                GroupOrderElement::new().unwrap(),
-                                GroupOrderElement::new().unwrap())
+        NonRevocProofXList::new(
+            GroupOrderElement::new().unwrap(),
+            GroupOrderElement::new().unwrap(),
+            GroupOrderElement::new().unwrap(),
+            GroupOrderElement::new().unwrap(),
+            GroupOrderElement::new().unwrap(),
+            GroupOrderElement::new().unwrap(),
+            GroupOrderElement::new().unwrap(),
+            GroupOrderElement::new().unwrap(),
+            GroupOrderElement::new().unwrap(),
+            GroupOrderElement::new().unwrap(),
+            GroupOrderElement::new().unwrap(),
+            GroupOrderElement::new().unwrap(),
+            GroupOrderElement::new().unwrap(),
+            GroupOrderElement::new().unwrap(),
+        )
     }
 
     pub fn get_gvt_predicate() -> Predicate {
@@ -1442,11 +2022,21 @@ pub mod mocks {
 
         let m1_tilde = BigNumber::from_dec("17884736668674953594474879343533841182802514514784532835710262264561805009458126297222977824304362311586622997817594769134550513911169868072027461607531074811752832872590561469149850932518336232675337827949722723740491540895259903956542158590123078908328645673377676179125379936830018221094043943562296958727").unwrap();
         let m2_tilde = BigNumber::from_dec("33970939655505026872690051065527896936826240486176548712174703648151652129591217103741946892383483806205993341432925544541557374346350172352729633028700077053528659741067902223562294772771229606274461374185549251388524318740149589263256424345429891975622057372801133454251096604596597737126641279540347411289").unwrap();
-        let m2 = BigNumber::from_dec("59059690488564137142247698318091397258460906844819605876079330034815387295451").unwrap();
+        let m2 = BigNumber::from_dec(
+            "59059690488564137142247698318091397258460906844819605876079330034815387295451",
+        ).unwrap();
 
         PrimaryEqualInitProof::new(
-            a_prime, t, e_tilde, e_prime, v_tilde, v_prime, mtilde,
-            m1_tilde, m2_tilde, m2
+            a_prime,
+            t,
+            e_tilde,
+            e_prime,
+            v_tilde,
+            v_prime,
+            mtilde,
+            m1_tilde,
+            m2_tilde,
+            m2,
         )
     }
 
@@ -1512,12 +2102,23 @@ pub mod mocks {
         t.insert("DELTA".to_string(), BigNumber::from_dec("83200684536414956340494235687534491849084621311799273540992839950256544160417513543839780900524522144337818273323604172338904806642960330906344496013294511314421085013454657603118717753084155308020373268668810396333088299295804908264158817923391623116540755548965302906724851186886232431450985279429884730164260492598022651383336322153593491103199117187195782444754665111992163534318072330538584638714508386890137616826706777205862989966213285981526090164444190640439286605077153051456582398200856066916720632647408699812551248250054268483664698756596786352565981324521663234607300070180614929105425712839420242514321").unwrap());
 
         PrimaryPredicateGEInitProof::new(
-            c_list, tau_list, u, u_tilde, r, r_tilde, alpha_tilde, predicate, t
+            c_list,
+            tau_list,
+            u,
+            u_tilde,
+            r,
+            r_tilde,
+            alpha_tilde,
+            predicate,
+            t,
         )
     }
 
     pub fn get_primary_init_proof() -> PrimaryInitProof {
-        PrimaryInitProof::new(get_primary_equal_init_proof(), vec![get_primary_ge_init_proof()])
+        PrimaryInitProof::new(
+            get_primary_equal_init_proof(),
+            vec![get_primary_ge_init_proof()],
+        )
     }
 
     pub fn get_gvt_claims_object() -> ClaimSignature {
@@ -1529,12 +2130,19 @@ pub mod mocks {
     }
 
     pub fn get_public_key_revocation() -> RevocationPublicKey {
-        RevocationPublicKey::new(PointG1::new().unwrap(), PointG2::new().unwrap(),
-                                 PointG1::new().unwrap(), PointG1::new().unwrap(),
-                                 PointG1::new().unwrap(), PointG1::new().unwrap(),
-                                 PointG1::new().unwrap(), PointG2::new().unwrap(),
-                                 PointG2::new().unwrap(), PointG1::new().unwrap(),
-                                 PointG2::new().unwrap())
+        RevocationPublicKey::new(
+            PointG1::new().unwrap(),
+            PointG2::new().unwrap(),
+            PointG1::new().unwrap(),
+            PointG1::new().unwrap(),
+            PointG1::new().unwrap(),
+            PointG1::new().unwrap(),
+            PointG1::new().unwrap(),
+            PointG2::new().unwrap(),
+            PointG2::new().unwrap(),
+            PointG1::new().unwrap(),
+            PointG2::new().unwrap(),
+        )
     }
 
     pub fn get_accumulator() -> Accumulator {
@@ -1551,44 +2159,86 @@ pub mod mocks {
 
     pub fn get_witness() -> Witness {
         Witness::new(
-            PointG2::new().unwrap(), PointG2::new().unwrap(), PointG1::new().unwrap(),
-            PointG2::new().unwrap(), HashSet::from_iter(vec![1].iter().cloned()
-            )
+            PointG2::new().unwrap(),
+            PointG2::new().unwrap(),
+            PointG1::new().unwrap(),
+            PointG2::new().unwrap(),
+            HashSet::from_iter(vec![1].iter().cloned()),
         )
     }
 
     pub fn get_gvt_non_revocation_claim() -> NonRevocationClaim {
         NonRevocationClaim::new(
-            PointG1::new().unwrap(), GroupOrderElement::new().unwrap(),
-            GroupOrderElement::new().unwrap(), get_witness(),
-            PointG1::new().unwrap(), 1, GroupOrderElement::new().unwrap()
+            PointG1::new().unwrap(),
+            GroupOrderElement::new().unwrap(),
+            GroupOrderElement::new().unwrap(),
+            get_witness(),
+            PointG1::new().unwrap(),
+            1,
+            GroupOrderElement::new().unwrap(),
         )
     }
 
     pub fn get_gvt_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("1".to_string(), attrs, 1, issuer::mocks::ISSUER_DID.to_string())
+        ClaimInfo::new(
+            "1".to_string(),
+            attrs,
+            1,
+            issuer::mocks::ISSUER_DID.to_string(),
+        )
     }
 
     pub fn get_xyz_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_xyz_row_attributes();
-        ClaimInfo::new("2".to_string(), attrs, 2, issuer::mocks::ISSUER_DID.to_string())
+        ClaimInfo::new(
+            "2".to_string(),
+            attrs,
+            2,
+            issuer::mocks::ISSUER_DID.to_string(),
+        )
     }
 
     pub fn get_abc_claim_info() -> ClaimInfo {
         let attrs = issuer::mocks::get_gvt_row_attributes();
-        ClaimInfo::new("3".to_string(), attrs, 1, issuer::mocks::ISSUER_DID.to_string())
+        ClaimInfo::new(
+            "3".to_string(),
+            attrs,
+            1,
+            issuer::mocks::ISSUER_DID.to_string(),
+        )
     }
 
     pub fn get_proof_req_json() -> ProofRequestJson {
         let mut requested_attrs: HashMap<String, AttributeInfo> = HashMap::new();
-        requested_attrs.insert("1".to_string(), AttributeInfo::new("name".to_string(), Some(1), None));
-        requested_attrs.insert("2".to_string(), AttributeInfo::new("status".to_string(), Some(2), None));
-        requested_attrs.insert("3".to_string(), AttributeInfo::new("sex".to_string(), Some(1), None));
+        requested_attrs.insert(
+            "1".to_string(),
+            AttributeInfo::new("name".to_string(), Some(1), None),
+        );
+        requested_attrs.insert(
+            "2".to_string(),
+            AttributeInfo::new("status".to_string(), Some(2), None),
+        );
+        requested_attrs.insert(
+            "3".to_string(),
+            AttributeInfo::new("sex".to_string(), Some(1), None),
+        );
 
         let mut requested_predicates: HashMap<String, Predicate> = HashMap::new();
-        requested_predicates.insert("1".to_string(), Predicate::new("age".to_string(), PredicateType::GE, 18, None, None));
-        requested_predicates.insert("2".to_string(), Predicate::new("height".to_string(), PredicateType::GE, 180, None, None));
+        requested_predicates.insert(
+            "1".to_string(),
+            Predicate::new("age".to_string(), PredicateType::GE, 18, None, None),
+        );
+        requested_predicates.insert(
+            "2".to_string(),
+            Predicate::new(
+                "height".to_string(),
+                PredicateType::GE,
+                180,
+                None,
+                None,
+            ),
+        );
 
         let nonce = BigNumber::from_dec("123432421212").unwrap();
 
@@ -1597,7 +2247,7 @@ pub mod mocks {
             name: "name".to_string(),
             version: "version".to_string(),
             requested_attrs: requested_attrs,
-            requested_predicates: requested_predicates
+            requested_predicates: requested_predicates,
         }
     }
 
@@ -1607,7 +2257,7 @@ pub mod mocks {
             schema_seq_no: 1,
             issuer_did: issuer::mocks::ISSUER_DID.to_string(),
             signature_type: SignatureTypes::CL,
-            data: claim_def_data
+            data: claim_def_data,
         }
     }
 
@@ -1617,7 +2267,7 @@ pub mod mocks {
             schema_seq_no: 2,
             issuer_did: issuer::mocks::ISSUER_DID.to_string(),
             signature_type: SignatureTypes::CL,
-            data: claim_def_data
+            data: claim_def_data,
         }
     }
 
@@ -1626,7 +2276,7 @@ pub mod mocks {
             issuer_did: issuer::mocks::ISSUER_DID.to_string(),
             schema_seq_no: 1,
             accumulator: mocks::get_accumulator(),
-            acc_pk: verifier::mocks::get_accum_publick_key()
+            acc_pk: verifier::mocks::get_accum_publick_key(),
         }
     }
 
@@ -1645,7 +2295,7 @@ pub mod mocks {
         RequestedClaimsJson {
             self_attested_attributes: self_attested_attributes,
             requested_attrs: requested_attrs,
-            requested_predicates: requested_predicates
+            requested_predicates: requested_predicates,
         }
     }
 
@@ -1654,7 +2304,7 @@ pub mod mocks {
             claim: issuer::mocks::get_gvt_attributes(),
             schema_seq_no: 1,
             signature: mocks::get_gvt_claims_object(),
-            issuer_did: "did".to_string()
+            issuer_did: "did".to_string(),
         }
     }
 
@@ -1663,7 +2313,7 @@ pub mod mocks {
             claim: issuer::mocks::get_xyz_attributes(),
             schema_seq_no: 2,
             signature: mocks::get_xyz_claims_object(),
-            issuer_did: "did".to_string()
+            issuer_did: "did".to_string(),
         }
     }
 }
