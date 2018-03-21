@@ -78,13 +78,12 @@ describe('An issuerClaim', async function () {
     assert.equal(await claim.getState(), StateType.OfferSent)
   })
 
-  it('can be created, then serialized, then deserialized and have the same sourceId, state, and claimHandle', async function () {
+  it('can be created, then serialized, then deserialized and have the same sourceId and state', async function () {
     const sourceId = 'SerializeDeserialize'
     const claim = await IssuerClaim.create({ ...config, sourceId })
     const jsonClaim = await claim.serialize()
     assert.equal(jsonClaim.state, StateType.Initialized)
     const claim2 = await IssuerClaim.deserialize(jsonClaim)
-    assert.equal(claim.handle, claim2.handle)
     assert.equal(await claim.getState(), await claim2.getState())
   })
 
@@ -105,7 +104,7 @@ describe('An issuerClaim', async function () {
     await claim2.updateState()
     assert.equal(await claim.getState(), StateType.OfferSent)
     assert.equal(await claim.getState(), await claim2.getState())
-    assert.equal(claim.handle, claim2.handle)
+    assert.equal(claim.sourceId, claim2.sourceId)
   })
 
   it('serialize without correct handle throws error', async function () {
@@ -204,11 +203,10 @@ describe('An issuerClaim', async function () {
     await claim.sendOffer(connection)
     assert.equal(await claim.getState(), StateType.OfferSent)
     // we serialize and deserialize because this is the only
-    // way to fool the libvcx into thinking we've received a
+    // way to fool libvcx into thinking we've received a
     // valid claim requset.
     let jsonClaim = await claim.serialize()
     jsonClaim.state = StateType.RequestReceived
-    jsonClaim.handle += 1
     claim = await IssuerClaim.deserialize(jsonClaim)
     await claim.sendClaim(connection)
     assert.equal(await claim.getState(), StateType.Accepted)

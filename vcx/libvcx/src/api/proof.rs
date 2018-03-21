@@ -23,8 +23,7 @@ use std::ptr;
 /// requested_predicates: specific requirements regarding the prover's attributes.
 ///
 /// # Example requested_predicates -> "[{"attr_name":"age","p_type":"GE","value":18,"schema_seq_no":1,"issuer_did":"DID"}]"
-///
-/// name: Name of the proof request - ex. Drivers Licence.
+/// /// name: Name of the proof request - ex. Drivers Licence.
 ///
 /// cb: Callback that provides proof handle and error status of request.
 ///
@@ -56,13 +55,13 @@ pub extern fn vcx_proof_create(command_handle: u32,
         let ( rc, handle) = match proof::create_proof(
             source_id_opt, requested_attrs, requested_predicates, name) {
             Ok(x) => {
-                info!("vcx_proof_create_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(0), x);
+                info!("vcx_proof_create_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                      command_handle, error_string(0), x, proof::get_source_id(x).unwrap_or_default());
                 (error::SUCCESS.code_num, x)
             },
             Err(x) => {
-                warn!("vcx_proof_create_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(x), 0);
+                warn!("vcx_proof_create_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                      command_handle, error_string(x), 0, proof::get_source_id(x).unwrap_or_default());
                 (x, 0)
             },
         };
@@ -89,8 +88,9 @@ pub extern fn vcx_proof_update_state(command_handle: u32,
                                      cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_proof_update_state(command_handle: {}, proof_handle: {})",
-          command_handle, proof_handle);
+    let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
+    info!("vcx_proof_update_state(command_handle: {}, proof_handle: {}), source_id: {:?}",
+          command_handle, proof_handle, source_id);
 
     if !proof::is_valid_handle(proof_handle) {
         return error::INVALID_PROOF_HANDLE.code_num;
@@ -99,8 +99,8 @@ pub extern fn vcx_proof_update_state(command_handle: u32,
     thread::spawn(move|| {
         proof::update_state(proof_handle);
 
-        info!("vcx_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {})",
-              command_handle, error_string(0), proof_handle, proof::get_state(proof_handle));
+        info!("vcx_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}), source_id: {:?}",
+              command_handle, error_string(0), proof_handle, proof::get_state(proof_handle), source_id);
         cb(command_handle, error::SUCCESS.code_num, proof::get_state(proof_handle));
     });
 
@@ -113,15 +113,17 @@ pub extern fn vcx_proof_get_state(command_handle: u32,
                                      cb: Option<extern fn(xcommand_handle: u32, err: u32, state: u32)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_proof_get_state(command_handle: {}, proof_handle: {})",
-          command_handle, proof_handle);
+    let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
+    info!("vcx_proof_get_state(command_handle: {}, proof_handle: {}), source_id: {:?}",
+          command_handle, proof_handle, source_id);
+
     if !proof::is_valid_handle(proof_handle) {
         return error::INVALID_PROOF_HANDLE.code_num;
     }
 
     thread::spawn(move|| {
-        info!("vcx_proof_get_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {})",
-              command_handle, error_string(0), proof_handle, proof::get_state(proof_handle));
+        info!("vcx_proof_get_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}), source_id: {:?}",
+              command_handle, error_string(0), proof_handle, proof::get_state(proof_handle), source_id);
         cb(command_handle, error::SUCCESS.code_num, proof::get_state(proof_handle));
     });
 
@@ -146,7 +148,9 @@ pub extern fn vcx_proof_serialize(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_proof_serialize(command_handle: {}, proof_handle: {})", command_handle, proof_handle);
+    let source_id = proof::get_source_id(proof_handle).unwrap_or_default();
+    info!("vcx_proof_serialize(command_handle: {}, proof_handle: {}), source_id: {:?}", command_handle, proof_handle, source_id);
+
     if !proof::is_valid_handle(proof_handle) {
         return error::INVALID_PROOF_HANDLE.code_num;
     };
@@ -154,14 +158,14 @@ pub extern fn vcx_proof_serialize(command_handle: u32,
     thread::spawn( move|| {
         match proof::to_string(proof_handle) {
             Ok(x) => {
-                info!("vcx_proof_serialize_cb(command_handle: {}, proof_handle: {}, rc: {}, state: {})",
-                      command_handle, proof_handle, error_string(0), x);
+                info!("vcx_proof_serialize_cb(command_handle: {}, proof_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                      command_handle, proof_handle, error_string(0), x, source_id);
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                warn!("vcx_proof_serialize_cb(command_handle: {}, proof_handle: {}, rc: {}, state: {})",
-                      command_handle, proof_handle, error_string(x), "null");
+                warn!("vcx_proof_serialize_cb(command_handle: {}, proof_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                      command_handle, proof_handle, error_string(x), "null", source_id);
                 cb(command_handle, x, ptr::null_mut());
             },
         };
@@ -192,18 +196,19 @@ pub extern fn vcx_proof_deserialize(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(proof_data, error::INVALID_OPTION.code_num);
 
-    info!("vcx_proof_deserialize(command_handle: {}, proof_data: {})", command_handle, proof_data);
+    info!("vcx_proof_deserialize(command_handle: {}, proof_data: {})",
+          command_handle, proof_data);
 
     thread::spawn( move|| {
         let (rc, handle) = match proof::from_string(&proof_data) {
             Ok(x) => {
-                info!("vcx_proof_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(0), x);
+                info!("vcx_proof_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                      command_handle, error_string(0), x, proof::get_source_id(x).unwrap_or_default());
                 (error::SUCCESS.code_num, x)
             },
             Err(x) => {
-                warn!("vcx_proof_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(x), 0);
+                warn!("vcx_proof_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                      command_handle, error_string(x), 0, "");
                 (x, 0)
             },
         };
@@ -222,7 +227,8 @@ pub extern fn vcx_proof_deserialize(command_handle: u32,
 /// Error code as a u32
 #[no_mangle]
 pub extern fn vcx_proof_release(proof_handle: u32) -> u32 {
-    info!("vcx_proof_release(proof_handle: {})", proof_handle);
+    info!("vcx_proof_release(proof_handle: {}), source_id: {:?}",
+          proof_handle, proof::get_source_id(proof_handle).unwrap_or_default());
     proof::release(proof_handle)
 }
 
@@ -400,8 +406,7 @@ mod tests {
         assert_eq!(err, 0);
         assert!(proof_handle > 0);
         println!("successfully called deserialize_cb");
-        let expected = r#"{"source_id":"source id","handle":1,"requested_attrs":"{\"attrs\":[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"ISSUER_DID2\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]}","requested_predicates":"{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"DID1\"}","msg_uid":"","ref_msg_id":"","prover_did":"8XFh8yBzrpJQmNyZzgoTqB","prover_vk":"","state":2,"proof_state":0,"name":"Name Data","version":"1.0","nonce":"123456","proof":null,"proof_request":null,"remote_did":"","remote_vk":"","agent_did":"","agent_vk":""}"#;
-
+        let expected = r#"{"source_id":"source id","requested_attrs":"{\"attrs\":[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"ISSUER_DID2\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]}","requested_predicates":"{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"DID1\"}","msg_uid":"","ref_msg_id":"","prover_did":"8XFh8yBzrpJQmNyZzgoTqB","prover_vk":"","state":2,"proof_state":0,"name":"Name Data","version":"1.0","nonce":"123456","proof":null,"proof_request":null,"remote_did":"","remote_vk":"","agent_did":"","agent_vk":""}"#;
         let new = proof::to_string(proof_handle).unwrap();
         assert_eq!(expected,new);
     }

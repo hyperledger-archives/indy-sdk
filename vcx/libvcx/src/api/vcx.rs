@@ -300,7 +300,7 @@ mod tests {
         let claim = ::issuer_claim::issuer_claim_create(0,None,"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"claim_name".to_string(),"{\"attr\":\"value\"}".to_owned()).unwrap();
         let proof = ::proof::create_proof(None,req_attr.to_owned(),req_predicates.to_owned(),"Optional".to_owned()).unwrap();
         let claimdef = ::claim_def::create_new_claimdef("SID".to_string(),"NAME".to_string(),15,"4fUDR9R7fjwELRvH9JT6HH".to_string(),false).unwrap();
-        let schema = ::schema::create_new_schema("5".to_string(), "name".to_string(), "VsKV7grR1BUE29mG2Fm2kX".to_string(), data.to_string()).unwrap();
+        let schema = ::schema::create_new_schema("5", "name".to_string(), "VsKV7grR1BUE29mG2Fm2kX".to_string(), data.to_string()).unwrap();
         vcx_reset();
         assert_eq!(::connection::release(connection),error::INVALID_CONNECTION_HANDLE.code_num);
         assert_eq!(::issuer_claim::release(claim),error::INVALID_ISSUER_CLAIM_HANDLE.code_num);

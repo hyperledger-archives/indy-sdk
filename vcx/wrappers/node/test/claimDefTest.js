@@ -29,12 +29,11 @@ describe('A ClaimDef', function () {
     assert.equal(name, 'test')
   })
 
-  it('can be created, then serialized, then deserialized and have the same sourceId, name, and handle', async () => {
+  it('can be created, then serialized, then deserialized and have the same sourceId and name', async () => {
     const claimDef = await ClaimDef.create(CLAIM_DEF)
     const jsonDef = await claimDef.serialize()
     assert.equal(jsonDef.source_id, 'sourceId')
     const claimDef2 = await ClaimDef.deserialize(jsonDef)
-    assert.equal(claimDef.handle, claimDef2.handle)
     assert.equal(claimDef.name, claimDef2.name)
     assert.equal(claimDef.source_id, claimDef2.source_id)
   })

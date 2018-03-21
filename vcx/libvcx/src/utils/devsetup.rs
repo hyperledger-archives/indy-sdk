@@ -235,7 +235,7 @@ fn setup_new_wallet_with_new_claim(wallet_name: &str) {
     }
 
     let data = r#"{"name":"Home Address","version":"0.1","attr_names":["address1","address2","city","state","zip"]}"#.to_string();
-    let schema_handle = create_new_schema("1".to_string(), "name".to_string(), issuer_did.to_string(), data).unwrap();
+    let schema_handle = create_new_schema("1", "name".to_string(), issuer_did.to_string(), data).unwrap();
 
     let schema_seq_no = get_sequence_num(schema_handle).unwrap();
 

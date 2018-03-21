@@ -239,6 +239,8 @@ impl Claim {
 
     fn set_source_id(&mut self, id: &str) { self.source_id = id.to_string(); }
 
+    fn get_source_id(&self) -> String {self.source_id.clone()}
+
     fn set_claim_offer(&mut self, offer: ClaimOffer){
         self.claim_offer = Some(offer);
     }
@@ -349,6 +351,12 @@ pub fn to_string(handle: u32) -> Result<String, u32> {
             error::SERIALIZATION_ERROR.code_num
         })
     })
+}
+
+pub fn get_source_id(handle: u32) -> Result<String, u32> {
+    HANDLE_MAP.get(handle, |obj| {
+        Ok(obj.get_source_id())
+    }).map_err(handle_err)
 }
 
 pub fn from_string(claim_data: &str) -> Result<u32, u32> {

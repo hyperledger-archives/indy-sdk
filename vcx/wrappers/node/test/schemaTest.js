@@ -12,7 +12,7 @@ const SCHEMA = {
   }
 }
 
-describe('A Shema', function () {
+describe('A Schema', function () {
   this.timeout(30000)
 
   before(async () => {
@@ -42,7 +42,6 @@ describe('A Shema', function () {
     const jsonDef = await schema.serialize()
     assert.equal(jsonDef.source_id, 'sourceId')
     const schema2 = await Schema.deserialize(jsonDef)
-    assert.equal(schema.handle, schema2.handle)
     assert.equal(schema.name, schema2.name)
     assert.equal(schema.source_id, schema2.source_id)
     assert.equal(schema.getSchemaNo, schema2.getSchemaNo)
@@ -86,9 +85,9 @@ describe('A Shema', function () {
     assert.equal(JSON.stringify(schema.getSchemaAttrs()),
     JSON.stringify({name: 'get schema attrs', version: '1.0', attrNames: ['test', 'get', 'schema', 'attrs']}))
     const serializedLookup = await schema.serialize()
-    assert.equal(schema.handle, serializedLookup.handle)
+    assert.equal(schema.sourceId, serializedLookup.source_id)
     const deserializedSchema = await Schema.deserialize(serializedLookup)
     assert(schema)
-    assert.equal(schema.handle, deserializedSchema.handle)
+    assert.equal(schema.sourceId, deserializedSchema.sourceId)
   })
 })

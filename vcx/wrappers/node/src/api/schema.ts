@@ -139,17 +139,19 @@ export class Schema extends VCXBase {
               reject(rc)
             }
           },
-          (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'string'], (handle, err, _schemaData) => {
+          (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'uint32', 'string'],
+          (handle, err, _schemaHandle, _schemaData) => {
             if (err) {
               reject(err)
               return
             } else if (_schemaData == null) {
               reject('no schema attrs')
             }
-            resolve(_schemaData)
+            resolve([_schemaData, _schemaHandle])
           })
     )
-      const schemaObj: ISchemaObj = JSON.parse(schemaData)
+      const schemaObj: ISchemaObj = JSON.parse(schemaData[0])
+      schemaObj.handle = schemaData[1]
       const schemaAttrs = schemaObj.data.data
       const schemaParams = {
         name: schemaObj.name,

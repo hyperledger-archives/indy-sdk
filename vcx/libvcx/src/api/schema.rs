@@ -44,18 +44,18 @@ pub extern fn vcx_schema_create(command_handle: u32,
           command_handle, source_id, schema_name, schema_data);
 
     thread::spawn( move|| {
-        let ( rc, handle) = match schema::create_new_schema(source_id,
+        let ( rc, handle) = match schema::create_new_schema(&source_id,
                                                                  schema_name,
                                                                  issuer_did,
                                                                  schema_data) {
             Ok(x) => {
-                info!("vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(0), x);
+                info!("vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                      command_handle, error_string(0), x, &source_id);
                 (error::SUCCESS.code_num, x)
             },
             Err(x) => {
-                warn!("vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(x), 0);
+                warn!("vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                      command_handle, error_string(x), 0, &source_id);
                 (x, 0) },
         };
 
@@ -83,7 +83,9 @@ pub extern fn vcx_schema_serialize(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_schema_serialize(command_handle: {}, schema_handle: {})", command_handle, schema_handle);
+    let source_id = schema::get_source_id(schema_handle).unwrap_or_default();
+    info!("vcx_schema_serialize(command_handle: {}, schema_handle: {}), source_id: {:?}",
+          command_handle, schema_handle, source_id);
 
     if !schema::is_valid_handle(schema_handle) {
         return error::INVALID_SCHEMA_HANDLE.code_num;
@@ -92,14 +94,14 @@ pub extern fn vcx_schema_serialize(command_handle: u32,
     thread::spawn( move|| {
         match schema::to_string(schema_handle) {
             Ok(x) => {
-                info!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {})",
-                      command_handle, schema_handle, error_string(0), x);
+                info!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                      command_handle, schema_handle, error_string(0), x, source_id);
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                warn!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {})",
-                      command_handle, schema_handle, error_string(x), "null");
+                warn!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                      command_handle, schema_handle, error_string(x), "null", source_id);
                 cb(command_handle, x, ptr::null_mut());
             },
         };
@@ -134,13 +136,13 @@ pub extern fn vcx_schema_deserialize(command_handle: u32,
     thread::spawn( move|| {
         let (rc, handle) = match schema::from_string(&schema_data) {
             Ok(x) => {
-                info!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(0), x);
+                info!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                      command_handle, error_string(0), x, schema::get_source_id(x).unwrap_or_default());
                 (error::SUCCESS.code_num, x)
             },
             Err(x) => {
-                warn!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(x), 0);
+                warn!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                      command_handle, error_string(x), 0, "");
                 (x, 0)
             },
         };
@@ -159,7 +161,8 @@ pub extern fn vcx_schema_deserialize(command_handle: u32,
 /// Error code as a u32
 #[no_mangle]
 pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
-    info!("vcx_schema_release(schema_handle: {})", schema_handle);
+    info!("vcx_schema_release(schema_handle: {}), source_id: {:?}",
+          schema_handle, schema::get_source_id(schema_handle).unwrap_or_default());
     schema::release(schema_handle)
 }
 
@@ -217,7 +220,7 @@ pub extern fn vcx_schema_get_sequence_no(command_handle: u32,
 pub extern fn vcx_schema_get_attributes(command_handle: u32,
                                         source_id: *const c_char,
                                         sequence_no: u32,
-                                        cb: Option<extern fn(xcommand_handle: u32, err: u32, schema_attrs: *const c_char)>) -> u32 {
+                                        cb: Option<extern fn(xcommand_handle: u32, err: u32, s_handle: u32, schema_attrs: *const c_char)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
     info!("vcx_schema_get_attributes(command_handle: {}, source_id: {}, sequence_no: {})",
@@ -225,16 +228,16 @@ pub extern fn vcx_schema_get_attributes(command_handle: u32,
 
     thread::spawn( move|| {
         match schema::get_schema_attrs(source_id, sequence_no) {
-            Ok(x) => {
-                info!("vcx_schema_get_attributes_cb(command_handle: {}, rc: {}, attrs: {}, sequence_no: {})",
-                      command_handle, error_string(0), x, sequence_no);
-                let msg = CStringUtils::string_to_cstring(x);
-                cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
+            Ok((handle, data)) => {
+                info!("vcx_schema_get_attributes_cb(command_handle: {}, rc: {}, handle: {}, attrs: {})",
+                      command_handle, error_string(0), handle, data);
+                let msg = CStringUtils::string_to_cstring(data);
+                cb(command_handle, error::SUCCESS.code_num, handle, msg.as_ptr());
             },
             Err(x) => {
-                warn!("vcx_schema_get_attributes_cb(command_handle: {}, rc: {}, attrs: {}, sequence_no: {})",
-                      command_handle, error_string(x), 0, sequence_no);
-                cb(command_handle, x, ptr::null_mut());
+                warn!("vcx_schema_get_attributes_cb(command_handle: {}, rc: {}, handle: {}, attrs: {})",
+                      command_handle, error_string(x), 0, "");
+                cb(command_handle, x, 0, ptr::null_mut());
             },
         };
 
@@ -278,8 +281,9 @@ mod tests {
         thread::sleep(Duration::from_millis(200));
     }
 
-    extern "C" fn get_attrs_cb(command_handle: u32, err: u32, schema_data: *const c_char) {
+    extern "C" fn get_attrs_cb(command_handle: u32, err: u32, handle: u32, schema_data: *const c_char) {
         assert_eq!(err, 0);
+        assert!(handle > 0);
         if schema_data.is_null() {
             panic!("schema_data is null");
         }
@@ -337,7 +341,7 @@ mod tests {
         assert_eq!(err, 0);
         assert!(schema_handle > 0);
         println!("successfully called deserialize_cb");
-        let expected = r#"{"data":{"seqNo":15,"identifier":"4fUDR9R7fjwELRvH9JT6HH","txnTime":1510246647,"type":"101","data":{"name":"Home Address","version":"0.1","attr_names":["address1","address2","city","state","zip"]}},"handle":1,"name":"schema_name","source_id":"testId","sequence_num":306}"#;
+        let expected = r#"{"data":{"seqNo":15,"identifier":"4fUDR9R7fjwELRvH9JT6HH","txnTime":1510246647,"type":"101","data":{"name":"Home Address","version":"0.1","attr_names":["address1","address2","city","state","zip"]}},"name":"schema_name","source_id":"testId","sequence_num":306}"#;
         let new = schema::to_string(schema_handle).unwrap();
         assert_eq!(expected, new);
     }

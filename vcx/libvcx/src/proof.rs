@@ -27,9 +27,10 @@ lazy_static! {
     static ref PROOF_MAP: Mutex<HashMap<u32, Box<Proof>>> = Default::default();
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct Proof {
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct Proof {
     source_id: String,
+    #[serde(skip_serializing, default)]
     handle: u32,
     requested_attrs: String,
     requested_predicates: String,
@@ -305,6 +306,7 @@ impl Proof {
 
     fn get_proof_uuid(&self) -> String { self.msg_uid.clone() }
 
+    fn get_source_id(&self) -> String { self.source_id.clone() }
 }
 
 pub fn create_proof(source_id: Option<String>,
@@ -400,19 +402,26 @@ pub fn to_string(handle: u32) -> Result<String, u32> {
     }
 }
 
+pub fn get_source_id(handle: u32) -> Result<String, u32> {
+    match PROOF_MAP.lock().unwrap().get(&handle) {
+        Some(p) => Ok(p.get_source_id()),
+        None => Err(error::INVALID_PROOF_HANDLE.code_num)
+    }
+}
+
 pub fn from_string(proof_data: &str) -> Result<u32, u32> {
     let derived_proof: Proof = serde_json::from_str(proof_data).map_err(|err| {
         warn!("{} with serde error: {}",error::INVALID_JSON.message, err);
         error::INVALID_JSON.code_num
     })?;
-    let new_handle = derived_proof.handle;
 
-    if is_valid_handle(new_handle) {return Ok(new_handle);}
+    let new_handle = rand::thread_rng().gen::<u32>();
+    let source_id = derived_proof.source_id.clone();
     let proof = Box::from(derived_proof);
 
     {
         let mut m = PROOF_MAP.lock().unwrap();
-        debug!("inserting handle {} into proof table", new_handle);
+        debug!("inserting handle {} with source_id {:?} into proof table", new_handle, source_id);
         m.insert(new_handle, proof);
     }
     Ok(new_handle)
@@ -535,12 +544,12 @@ mod tests {
                                   REQUESTED_PREDICATES.to_owned(),
                                   "Optional".to_owned()).unwrap();
         let proof_data = to_string(handle).unwrap();
-        assert!(!proof_data.is_empty());
+        let mut proof1: Proof = serde_json::from_str(&proof_data).unwrap();
         release(handle);
         let new_handle = from_string(&proof_data).unwrap();
-        let new_proof_data = to_string(new_handle).unwrap();
-        assert_eq!(new_handle, handle);
-        assert_eq!(new_proof_data, proof_data);
+        let proof2 : Proof = serde_json::from_str(&to_string(new_handle).unwrap()).unwrap();
+        proof1.handle = proof2.handle;
+        assert_eq!(proof1, proof2);
     }
 
     #[test]

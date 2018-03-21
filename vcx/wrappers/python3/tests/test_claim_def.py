@@ -21,7 +21,6 @@ async def test_create_claim_def():
 async def test_serialize():
     claim_def = await ClaimDef.create(source_id, name, schema_no, False)
     data = await claim_def.serialize()
-    assert data['handle'] == claim_def.handle
     assert data['source_id'] == source_id
     assert data['name'] == name
 
@@ -42,7 +41,7 @@ async def test_deserialize():
     claim_def = await ClaimDef.create(source_id, name, schema_no, False)
     data = await claim_def.serialize()
     claim_def2 = await ClaimDef.deserialize(data)
-    assert claim_def2.handle == data.get('handle')
+    assert claim_def2.source_id == data.get('source_id')
 
 
 @pytest.mark.asyncio

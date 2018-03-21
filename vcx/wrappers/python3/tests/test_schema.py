@@ -28,7 +28,6 @@ async def test_create_sets_schema_attrs():
 async def test_serialize():
     schema = await Schema.create(source_id, name, attr_names)
     data = await schema.serialize()
-    assert data.get('handle') == schema.handle
     assert data.get('source_id') == source_id
     assert data.get('name') == name
     assert schema.attrs == attr_names
@@ -50,7 +49,7 @@ async def test_deserialize():
     schema = await Schema.create(source_id, name, attr_names)
     data = await schema.serialize()
     schema2 = await Schema.deserialize(data)
-    assert schema2.handle == data.get('handle')
+    assert schema2.source_id == data.get('source_id')
 
 
 @pytest.mark.asyncio
