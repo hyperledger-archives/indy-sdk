@@ -5,12 +5,12 @@
 try {
     testing()
     publishing()
-    if (acceptanceTesting()) {
-        releasing()
-    }
-    notifyingSuccess()
+    //if (acceptanceTesting()) {
+    //    releasing()
+    //}
+    //notifyingSuccess()
 } catch (err) {
-    notifyingFailure()
+    //notifyingFailure()
     throw err
 }
 
@@ -18,8 +18,8 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                'redhat-test' : { rhelTesting() },
-                'windows-test': { windowsTesting() }
+//                'redhat-test' : { rhelTesting() },
+//                'windows-test': { windowsTesting() }
         ])
     }
 }
@@ -31,12 +31,12 @@ def publishing() {
         publishedVersions = parallel([
                 //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
                 'ubuntu-files' : { ubuntuPublishing() },
-                'windows-files': { windowsPublishing() },
+//                'windows-files': { windowsPublishing() },
         ])
 
-        if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
-            error "platforms artifacts have different versions"
-        }
+        //if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
+        //    error "platforms artifacts have different versions"
+        //}
     }
 }
 
@@ -172,14 +172,14 @@ def linuxTesting(file, env_name, run_interoperability_tests, network_name) {
             }
         }
 
-        sh "cp libindy/target/release/libindy.so wrappers/java/lib"
-        dir('wrappers/java') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Test: Test java wrapper"
+        //sh "cp libindy/target/release/libindy.so wrappers/java/lib"
+        //dir('wrappers/java') {
+        //    testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+        //        echo "${env_name} Test: Test java wrapper"
 
-                sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
-            }
-        }
+        //        sh "RUST_LOG=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+        //    }
+        //}
 
         sh "cp libindy/target/release/libindy.so wrappers/python"
         dir('wrappers/python') {
@@ -314,9 +314,11 @@ def ubuntuPublishing() {
                 echo 'Publish Ubuntu files: Build docker image'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
-                libindyDebPublishing(testEnv)
+                withEnv(['BRANCH_NAME=authz']) {
+                    libindyDebPublishing(testEnv)
+                }
                 pythonWrapperPublishing(testEnv, false)
-                javaWrapperPublishing(testEnv, false)
+                //javaWrapperPublishing(testEnv, false)
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -373,6 +375,8 @@ def getSuffix(isRelease, target) {
     def suffix
     if (env.BRANCH_NAME == 'master' && !isRelease) {
         suffix = "-dev-$env.BUILD_NUMBER"
+    } else if (env.BRANCH_NAME == 'authz-rc' && !isRelease) {
+        suffix = "-$env.BUILD_NUMBER"
     } else if (env.BRANCH_NAME == 'rc') {
         if (isRelease) {
             suffix = ""

@@ -18,7 +18,7 @@ use self::libc::{c_char, c_int};
 /// command_handle: command handle to map callback to caller context.
 /// pool_handle: pool handle (created by open_pool_ledger).
 /// wallet_handle: wallet handle (created by open_wallet).
-/// submitter_did: Id of Identity stored in secured Wallet.
+/// submitter_did: DID of Identity or the verkey stored in secured Wallet.
 /// request_json: Request data json.
 /// cb: Callback that takes command result as parameter.
 ///

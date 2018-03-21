@@ -12,6 +12,7 @@ impl ED25519CryptoType {
     }
 }
 
+
 impl CryptoType for ED25519CryptoType {
     fn encrypt(&self, sk: &[u8], vk: &[u8], doc: &[u8], nonce: &[u8]) -> Result<Vec<u8>, CommonError> {
         CryptoBox::encrypt(CryptoBox::sk_to_curve25519(sk)?.as_ref(),

@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(
-    name='python3-indy',
+    name='python3-indy-authz-rc',
     version='1.3.0',
     packages=['indy'],
     url='https://github.com/hyperledger/indy-sdk',

@@ -19,7 +19,7 @@ use indy::api::ErrorCode;
 use utils::test::TestUtils;
 #[cfg(feature = "local_nodes_pool")]
 use utils::pool::PoolUtils;
-#[cfg(feature = "local_nodes_pool")]
+//#[cfg(feature = "local_nodes_pool")]
 use utils::wallet::WalletUtils;
 #[cfg(feature = "local_nodes_pool")]
 use utils::ledger::LedgerUtils;
@@ -27,6 +27,7 @@ use utils::ledger::LedgerUtils;
 use utils::signus::SignusUtils;
 #[cfg(feature = "local_nodes_pool")]
 use utils::anoncreds::AnoncredsUtils;
+use utils::crypto::CryptoUtils;
 use utils::types::*;
 use utils::constants::*;
 
@@ -193,14 +194,7 @@ mod high_cases {
     mod sign_request {
         use super::*;
 
-        #[test]
-        fn indy_sign_request_works() {
-            TestUtils::cleanup_storage();
-
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-
-            let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
-
+        fn sign_req_and_check_sig(wallet_handle: i32, did: &str) {
             let message = r#"{
                 "reqId":1496822211362017764,
                 "identifier":"GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL",
@@ -212,9 +206,19 @@ mod high_cases {
             }"#;
 
             let expected_signature = r#""signature":"65hzs4nsdQsTUqLCLy2qisbKLfwYKZSWoyh1C6CU59p5pfG3EHQXGAsjW4Qw4QdwkrvjSgQuyv8qyABcXRBznFKW""#;
-
-            let msg = LedgerUtils::sign_request(wallet_handle, &my_did, message).unwrap();
+            let msg = LedgerUtils::sign_request(wallet_handle, &did, message).unwrap();
             assert!(msg.contains(expected_signature));
+        }
+
+        #[test]
+        fn indy_sign_request_works() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+
+            let (my_did, _) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+
+            sign_req_and_check_sig(wallet_handle, &my_did);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -222,7 +226,7 @@ mod high_cases {
         }
 
         #[test]
-        fn indy_sign_works_for_unknow_signer() {
+        fn indy_sign_works_for_unknown_signer() {
             TestUtils::cleanup_storage();
 
             let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
@@ -262,6 +266,20 @@ mod high_cases {
             let invalid_wallet_handle = wallet_handle + 1;
             let res = LedgerUtils::sign_request(invalid_wallet_handle, &my_did, MESSAGE);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_sign_works_for_known_key_but_without_did() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let my_vk = CryptoUtils::create_key(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+
+            sign_req_and_check_sig(wallet_handle, &my_vk);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
