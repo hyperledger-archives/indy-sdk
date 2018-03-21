@@ -53,6 +53,7 @@ export interface IFFIEntryPoint {
   vcx_connection_update_state: (commandId: number, handle: string, cb: any) => number,
   vcx_connection_get_state: (commandId: number, handle: string, cb: any) => number,
   vcx_connection_invite_details: (commandId: number, handle: string, abbreviated: boolean, cb: any) => number,
+
   // issuer
   vcx_issuer_claim_release: (handle: string) => number,
   vcx_issuer_claim_deserialize: (commandId: number, data: string, cb: any) => number,
@@ -62,6 +63,7 @@ export interface IFFIEntryPoint {
   vcx_issuer_create_claim: any,
   vcx_issuer_send_claim: (commandId: number, claimHandle: string, connectionHandle: string, cb: any) => number,
   vcx_issuer_send_claim_offer: (commandId: number, claimHandle: string, connectionHandle: string, cb: any) => number,
+
   // proof
   vcx_proof_create: (commandId: number, sourceId: string, attrs: string, predicates: string,
                      name: string, cb: any) => number,
@@ -72,6 +74,17 @@ export interface IFFIEntryPoint {
   vcx_proof_serialize: (commandId: number, handle: string, cb: any) => number,
   vcx_proof_update_state: (commandId: number, handle: string, cb: any) => number,
   vcx_proof_get_state: (commandId: number, handle: string, cb: any) => number,
+
+  // claim
+  vcx_claim_create_with_offer: (commandId: number, sourceId: string, offer: string, cb: any) => number,
+  vcx_claim_release: (handle: string) => number,
+  vcx_claim_send_request: (commandId: number, handle: string, connectionHandle: string, cb: any) => number,
+  vcx_claim_serialize: (commandId: number, handle: string, cb: any) => number,
+  vcx_claim_deserialize: (commandId: number, data: string, cb: any) => number,
+  vcx_claim_update_state: (commandId: number, handle: string, cb: any) => number,
+  vcx_claim_get_state: (commandId: number, handle: string, cb: any) => number,
+  vcx_claim_get_offers: (commandId: number, connectionHandle: string, cb: any) => number,
+
   // mock
   vcx_set_next_agency_response: (messageIndex: number) => void,
 
@@ -90,7 +103,6 @@ export interface IFFIEntryPoint {
   vcx_schema_deserialize: (commandId: number, data: string, cb: any) => number,
   vcx_schema_serialize: (commandId: number, handle: string, cb: any) => number,
   vcx_schema_release: (handle: string) => number,
-
 }
 
 // tslint:disable object-literal-sort-keys
@@ -112,6 +124,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_connection_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
   vcx_connection_invite_details: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_BOOL,
     FFI_CALLBACK_PTR]],
+
   // issuer
   vcx_issuer_claim_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_issuer_claim_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CALLBACK_PTR]],
@@ -124,6 +137,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_issuer_send_claim_offer: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CONNECTION_HANDLE,
     FFI_CALLBACK_PTR]],
   vcx_issuer_claim_release: [FFI_ERROR_CODE, [FFI_CLAIM_HANDLE]],
+
   // proof
   vcx_proof_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_CALLBACK_PTR]],
@@ -136,14 +150,28 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_proof_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_proof_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
   vcx_proof_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PROOF_HANDLE, FFI_CALLBACK_PTR]],
+
+  // claim
+  vcx_claim_create_with_offer: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_claim_release: [FFI_ERROR_CODE, [FFI_CLAIM_HANDLE]],
+  vcx_claim_send_request: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CONNECTION_HANDLE,
+    FFI_CALLBACK_PTR]],
+  vcx_claim_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_claim_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_claim_update_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_claim_get_state: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIM_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_claim_get_offers: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CONNECTION_HANDLE, FFI_CALLBACK_PTR]],
+
   // claimDef
   vcx_claimdef_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_SCHEMA_NUMBER,
     FFI_STRING_DATA, FFI_BOOL, FFI_CALLBACK_PTR]],
   vcx_claimdef_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_claimdef_release: [FFI_ERROR_CODE, [FFI_CLAIMDEF_HANDLE]],
   vcx_claimdef_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CLAIMDEF_HANDLE, FFI_CALLBACK_PTR]],
+
   // mock
   vcx_set_next_agency_response: [FFI_VOID, [FFI_UNSIGNED_INT]],
+
   // schema
   vcx_schema_get_attributes: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_SCHEMA_NUMBER, FFI_CALLBACK_PTR]],
   vcx_schema_create: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SOURCE_ID, FFI_STRING_DATA, FFI_STRING_DATA,
@@ -152,6 +180,7 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_schema_deserialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_schema_release: [FFI_ERROR_CODE, [FFI_SCHEMA_HANDLE]],
   vcx_schema_serialize: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_SCHEMA_HANDLE, FFI_CALLBACK_PTR]]
+
 }
 
 let _rustAPI: IFFIEntryPoint = null

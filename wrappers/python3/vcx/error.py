@@ -22,6 +22,8 @@ class ErrorCode(IntEnum):
     InvalidSchemaHandle = 1042,
     InvalidSchemaSequenceNumber = 1040,
     AlreadyInitialized = 1044,
+    InvalidClaimHandle = 1053,
+    CreateClaimFailed = 1055,
 
 
 class VcxError(Exception):
