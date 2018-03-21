@@ -75,7 +75,7 @@
          2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
      "max_cred_num": maximum number of credentials the new registry can process.
  }
- @param tailsWriterType:
+ @param tailsWriterHandle:
  @param tailsWriterConfig:
  @param completion Callback that takes command result as parameter.
  Returns revocation registry definition json and revocation registry entry json.
@@ -85,8 +85,7 @@
                                                   type:(NSString *)type
                                                    tag:(NSString *)tag
                                             configJSON:(NSString *)configJSON
-                                       tailsWriterType:(NSString *)tailsWriterType
-                                     tailsWriterConfig:(NSString *)tailsWriterConfig
+                                     tailsWriterHandle:(IndyHandle)tailsWriterHandle
                                           walletHandle:(IndyHandle)walletHandle
                                             completion:(void (^)(NSError *error, NSString *revocRegID, NSString *revocRegDefJSON, NSString *revocRegEntryJSON))completion;
 

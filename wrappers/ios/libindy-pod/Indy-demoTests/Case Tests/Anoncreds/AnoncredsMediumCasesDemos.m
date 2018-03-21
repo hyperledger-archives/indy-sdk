@@ -1079,6 +1079,11 @@
     //4. Issuer create revocation registry
     NSString *configJson = @"{\"max_cred_num\":5, \"issuance_type\":\"ISSUANCE_ON_DEMAND\"}";
     NSString *tailsWriterConfig = [NSString stringWithFormat:@"{\"base_dir\":\"%@\", \"uri_pattern\":\"\"}", [TestUtils tmpFilePathAppending:@"tails"]];
+    NSNumber *tailsWriterHandle = nil;
+    ret = [[BlobStorageUtils sharedInstance] openWriterWithType:[TestUtils defaultType]
+                                                         config:tailsWriterConfig
+                                                         handle:&tailsWriterHandle];
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::openWriterWithType() failed");
 
     NSString *revocRefId;
     NSString *revocRegDefJson;
@@ -1087,8 +1092,7 @@
                                                                                      type:nil
                                                                                       tag:[TestUtils tag]
                                                                                configJSON:configJson
-                                                                          tailsWriterType:@"default"
-                                                                        tailsWriterConfig:tailsWriterConfig
+                                                                        tailsWriterHandle:[tailsWriterHandle intValue]
                                                                              walletHandle:issuerWalletHandle
                                                                                revocRegId:&revocRefId
                                                                           revocRegDefJson:&revocRegDefJson
@@ -1130,8 +1134,6 @@
     NSNumber *blobStorageReaderHandle = nil;
     ret = [[BlobStorageUtils sharedInstance] openReaderWithType:[TestUtils defaultType]
                                                          config:tailsWriterConfig
-                                                       location:location
-                                                           hash:hash
                                                          handle:&blobStorageReaderHandle];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::openReaderWithType() failed");
 

@@ -38,8 +38,7 @@ extern "C" {
                                                                const char *  tag,
                                                                const char *  cred_def_id,
                                                                const char *  config_json,
-                                                               const char *  tails_writer_type,
-                                                               const char *  tails_writer_config,
+                                                               indy_handle_t tails_writer_handle,
 
                                                                void           (*cb)(indy_handle_t xcommand_handle,
                                                                                     indy_error_t  err,

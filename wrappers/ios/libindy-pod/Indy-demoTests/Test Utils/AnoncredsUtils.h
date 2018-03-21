@@ -54,8 +54,7 @@
                                                        type:(NSString *)type
                                                         tag:(NSString *)tag
                                                  configJSON:(NSString *)configJSON
-                                            tailsWriterType:(NSString *)tailsWriterType
-                                          tailsWriterConfig:(NSString *)tailsWriterConfig
+                                          tailsWriterHandle:(IndyHandle)tailsWriterHandle
                                                walletHandle:(IndyHandle)walletHandle
                                                  revocRegId:(NSString **)revocRegId
                                             revocRegDefJson:(NSString **)revocRegDefJson

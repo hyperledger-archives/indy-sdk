@@ -28,8 +28,6 @@
 
 - (NSError *)openReaderWithType:(NSString *)type
                          config:(NSString *)config
-                       location:(NSString *)location
-                           hash:(NSString *)hash
                          handle:(NSNumber **)handle {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
@@ -39,8 +37,6 @@
 
     [IndyBlobStorage openReaderWithType:type
                                  config:config
-                               location:location
-                                   hash:hash
                              completion:^(NSError *error, NSNumber *blockHandle) {
                                  err = error;
                                  readerHandle = blockHandle;
@@ -50,6 +46,31 @@
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
     if (handle) {*handle = readerHandle;}
+    return err;
+}
+
+// MARK: - Blob Storage Writer
+
+- (NSError *)openWriterWithType:(NSString *)type
+                         config:(NSString *)config
+                         handle:(NSNumber **)handle {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSNumber *writerHandle = nil;
+
+    NSString *configStr = (config) ? config : @"";
+
+    [IndyBlobStorage openWriterWithType:type
+                                 config:config
+                             completion:^(NSError *error, NSNumber *blockHandle) {
+                                 err = error;
+                                 writerHandle = blockHandle;
+                                 [completionExpectation fulfill];
+                             }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (handle) {*handle = writerHandle;}
     return err;
 }
 

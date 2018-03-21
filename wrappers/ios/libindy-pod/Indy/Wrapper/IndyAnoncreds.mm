@@ -68,8 +68,7 @@
                                                   type:(NSString *)type
                                                    tag:(NSString *)tag
                                             configJSON:(NSString *)configJSON
-                                       tailsWriterType:(NSString *)tailsWriterType
-                                     tailsWriterConfig:(NSString *)tailsWriterConfig
+                                     tailsWriterHandle:(IndyHandle)tailsWriterHandle
                                           walletHandle:(IndyHandle)walletHandle
                                             completion:(void (^)(NSError *error, NSString *revocRegID, NSString *revocRegDefJSON, NSString *revocRegEntryJSON))completion; {
     indy_error_t ret;
@@ -83,8 +82,7 @@
             [tag UTF8String],
             [credDefId UTF8String],
             [configJSON UTF8String],
-            [tailsWriterType UTF8String],
-            [tailsWriterConfig UTF8String],
+            tailsWriterHandle,
             IndyWrapperCommon5PCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
