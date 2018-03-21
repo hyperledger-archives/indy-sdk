@@ -33,9 +33,6 @@ use indy::api::ErrorCode;
 use utils::inmem_wallet::InmemWallet;
 use utils::constants::*;
 
-#[test]
-fn a() {}
-
 mod high_cases {
     use super::*;
 
@@ -242,7 +239,6 @@ mod high_cases {
                                                     &credential_req_meta,
                                                     &credential_json,
                                                     &credential_def_json,
-                                                    None,
                                                     None).unwrap();
         }
 
@@ -273,7 +269,6 @@ mod high_cases {
                                                               &credential_req_meta,
                                                               &credential_json,
                                                               &credential_def_json,
-                                                              None,
                                                               None);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
         }
@@ -1678,7 +1673,6 @@ mod medium_cases {
                                                               &cred_req_metadata,
                                                               &credential_json,
                                                               &credential_def_json,
-                                                              None,
                                                               None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
@@ -1964,7 +1958,6 @@ mod demos {
                                                 &credential_req_metadata,
                                                 &credential_json,
                                                 &credential_def_json,
-                                                None,
                                                 None).unwrap();
 
         // 7. Prover gets Claims for Proof Request
@@ -2095,7 +2088,6 @@ mod demos {
                                                 &credential_req_metadata,
                                                 &credential_json,
                                                 &credential_def_json,
-                                                None,
                                                 None).unwrap();
 
 
@@ -2274,7 +2266,6 @@ mod demos {
                                                 &credential_req_metadata,
                                                 &credential_json,
                                                 &credential_def_json,
-                                                None,
                                                 None).unwrap();
 
         //10. Prover gets Claims for Proof Request
@@ -2412,7 +2403,6 @@ mod demos {
                                                 &cred_req_metadata,
                                                 &credential,
                                                 &cred_def_json,
-                                                None,
                                                 None).unwrap();
 
         //11. Prover gets Credentials for Proof Request
@@ -2550,7 +2540,6 @@ mod demos {
                                                 &gvt_credential_req_metadata,
                                                 &gvt_credential_json,
                                                 &gvt_credential_def_json,
-                                                None,
                                                 None).unwrap();
 
         //14. Prover creates Credential Request for XYZ credential offer
@@ -2575,7 +2564,6 @@ mod demos {
                                                 &xyz_credential_req_metadata,
                                                 &xyz_credential_json,
                                                 &xyz_credential_def_json,
-                                                None,
                                                 None).unwrap();
 
         //17. Prover gets Claims for Proof Request
@@ -2726,7 +2714,6 @@ mod demos {
                                                 &gvt_credential_req_metadata,
                                                 &gvt_credential_json,
                                                 &gvt_credential_def_json,
-                                                None,
                                                 None).unwrap();
 
         //13. Prover creates Credential Request for xyz credential offer
@@ -2751,7 +2738,6 @@ mod demos {
                                                 &xyz_credential_req_metadata,
                                                 &xyz_credential_json,
                                                 &xyz_credential_def_json,
-                                                None,
                                                 None).unwrap();
 
         //16. Prover gets Claims for Proof Request
@@ -2916,8 +2902,7 @@ mod demos {
                                                 &credential_req_metadata_json,
                                                 &credential_json,
                                                 &credential_def_json,
-                                                Some(&revoc_reg_def_json),
-                                                Some(&rev_state_json)).unwrap();
+                                                Some(&revoc_reg_def_json)).unwrap();
 
         //13. Prover gets Claims for Proof Request
         let proof_request = format!(r#"{{
@@ -3072,8 +3057,7 @@ mod demos {
                                                 &credential_req_metadata_json,
                                                 &credential_json,
                                                 &credential_def_json,
-                                                Some(&revoc_reg_def_json),
-                                                Some(&rev_state_json)).unwrap();
+                                                Some(&revoc_reg_def_json)).unwrap();
 
         //13. Prover gets Claims for Proof Request
         let proof_request = format!(r#"{{
@@ -3193,7 +3177,6 @@ mod demos {
                                                 &credential_req_metadata_json,
                                                 &credential_json,
                                                 &credential_def_json,
-                                                None,
                                                 None).unwrap();
 
         // 9. Prover gets Claims for Proof Request
@@ -3321,8 +3304,7 @@ mod demos {
                                                 &credential_req_metadata_json,
                                                 &credential_json,
                                                 &credential_def_json,
-                                                Some(&revoc_reg_def_json),
-                                                Some(&rev_state_json)).unwrap();
+                                                Some(&revoc_reg_def_json)).unwrap();
 
         //13. Prover gets Claims for Proof Request
         let proof_request = format!(r#"{{
@@ -3447,7 +3429,6 @@ mod demos {
                                                 &credential_req_metadata,
                                                 &credential_json,
                                                 &credential_def_json,
-                                                None,
                                                 None).unwrap();
 
         //9. Prover gets Claims for Proof Request

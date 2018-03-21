@@ -216,15 +216,6 @@ extern "C" {
                                                                           const char*   updated_rev_state_json)
                                                      );
 
-    extern indy_error_t indy_prover_get_credential_revocation_id(indy_handle_t command_handle,
-                                                                 indy_handle_t wallet_handle,
-                                                                 const char *  cred_id,
-
-                                                                 void           (*cb)(indy_handle_t xcommand_handle,
-                                                                                      indy_error_t  err,
-                                                                                      const char*   cred_rev_id)
-                                                                 );
-
 #ifdef __cplusplus
 }
 #endif

@@ -57,11 +57,9 @@ impl Prover {
                               credential_request_metadata: &CredentialRequestMetadata,
                               master_secret: &MasterSecret,
                               credential_def: &CredentialDefinition,
-                              rev_reg_def: Option<&RevocationRegistryDefinition>,
-                              rev_reg: Option<&RevocationRegistry>,
-                              witness: Option<&Witness>) -> Result<(), CommonError> {
-        trace!("process_credential >>> credential: {:?}, credential_request_metadata: {:?}, master_secret: {:?}, credential_def: {:?}, rev_reg_def: {:?}, \
-               rev_reg: {:?}, witness: {:?}", credential, credential_request_metadata, master_secret, credential_def, rev_reg_def, rev_reg, witness);
+                              rev_reg_def: Option<&RevocationRegistryDefinition>) -> Result<(), CommonError> {
+        trace!("process_credential >>> credential: {:?}, credential_request_metadata: {:?}, master_secret: {:?}, credential_def: {:?}, rev_reg_def: {:?}",
+               credential, credential_request_metadata, master_secret, credential_def, rev_reg_def);
 
         let credential_pub_key = CredentialPublicKey::build_from_parts(&credential_def.value.primary, credential_def.value.revocation.as_ref())?;
         let credential_values = build_credential_values(&credential.values)?;
@@ -74,8 +72,8 @@ impl Prover {
                                                    &credential_pub_key,
                                                    &credential_request_metadata.nonce,
                                                    rev_reg_def.as_ref().map(|r_reg_def| &r_reg_def.value.public_keys.accum_key),
-                                                   rev_reg,
-                                                   witness)?;
+                                                   credential.rev_reg.as_ref(),
+                                                   credential.witness.as_ref())?;
 
         trace!("process_credential <<< ");
 

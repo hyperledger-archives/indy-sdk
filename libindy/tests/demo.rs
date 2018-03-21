@@ -194,7 +194,6 @@ fn anoncreds_demo_works() {
                                      CString::new(credential_json).unwrap().as_ptr(),
                                      CString::new(credential_def_json.clone()).unwrap().as_ptr(),
                                      null(),
-                                     null(),
                                      prover_store_credential_callback);
 
     assert_eq!(ErrorCode::Success, err);

@@ -20,8 +20,8 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverCreateProofWorks() throws Exception {
 
-		String schemasJson = String.format("{\"%s\":%s}", credentialId1, gvtSchema);
-		String credentialDefsJson = String.format("{\"%s\":%s}", credentialId1, issuer1gvtCredDef);
+		String schemasJson = String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema);
+		String credentialDefsJson = String.format("{\"%s\":%s}", issuer1gvtCredDefId, issuer1gvtCredDef);
 		String revocStatesJson = "{}";
 
 		String proofJson = Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson,
@@ -40,8 +40,8 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 				"                                    \"requested_predicates\":{}\n" +
 				"                                   }", credentialId2);
 
-		String schemasJson = String.format("{\"%s\":%s}", credentialId2, xyzSchema);
-		String credentialDefsJson = String.format("{\"%s\":%s}", credentialId2, issuer1xyzCredDef);
+		String schemasJson = String.format("{\"%s\":%s}", xyzSchemaId, xyzSchema);
+		String credentialDefsJson = String.format("{\"%s\":%s}", issuer1xyzCredDef, issuer1xyzCredDef);
 		String revocStatesJson = "{}";
 
 		Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, masterSecretId, schemasJson, credentialDefsJson, revocStatesJson).get();
@@ -50,8 +50,8 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 	@Test
 	public void testProverCreateProofWorksForInvalidMasterSecret() throws Exception {
 
-		String schemasJson = String.format("{\"%s\":%s}", credentialId1, gvtSchema);
-		String credentialDefsJson = String.format("{\"%s\":%s}", credentialId1, issuer1gvtCredDef);
+		String schemasJson = String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema);
+		String credentialDefsJson = String.format("{\"%s\":%s}", issuer1gvtCredDefId, issuer1gvtCredDef);
 		String revocStatesJson = "{}";
 
 		thrown.expect(ExecutionException.class);
@@ -67,7 +67,7 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 		thrown.expectCause(isA(InvalidStructureException.class));
 
 		String schemasJson = "{}";
-		String credentialDefsJson = String.format("{\"%s\":%s}", credentialId1, issuer1gvtCredDef);
+		String credentialDefsJson = String.format("{\"%s\":%s}", issuer1gvtCredDefId, issuer1gvtCredDef);
 		String revocStatesJson = "{}";
 
 		Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, masterSecretId, schemasJson, credentialDefsJson, revocStatesJson).get();
@@ -79,8 +79,8 @@ public class ProverCreateProofTest extends AnoncredsIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		String schemasJson = String.format("{\"%s\":%s}", credentialId1, gvtSchema);
-		String credentialDefsJson = String.format("{\"%s\":%s}", credentialId1, issuer1gvtCredDef);
+		String schemasJson = String.format("{\"%s\":%s}", gvtSchemaId, gvtSchema);
+		String credentialDefsJson = String.format("{\"%s\":%s}", issuer1gvtCredDefId, issuer1gvtCredDef);
 		String revocStatesJson = "{}";
 
 		String requestedCredentialsJson = "{\"self_attested_attributes\":{},\n" +

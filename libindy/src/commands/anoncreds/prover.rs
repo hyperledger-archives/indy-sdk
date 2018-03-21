@@ -36,7 +36,6 @@ pub enum ProverCommand {
         String, // credentials json
         String, // credential definition json
         Option<String>, // revocation registry definition json
-        Option<String>, // revocation state json
         Box<Fn(Result<String, IndyError>) + Send>),
     GetCredentials(
         i32, // wallet handle
@@ -69,11 +68,7 @@ pub enum ProverCommand {
         String, // revocation registry delta json
         u64, //timestamp
         String, //credential revocation id
-        Box<Fn(Result<String, IndyError>) + Send>),
-    GetCredentialRevocationId(
-        i32, // wallet handle
-        String, // credential id
-        Box<Fn(Result<Option<String>, IndyError>) + Send>)
+        Box<Fn(Result<String, IndyError>) + Send>)
 }
 
 pub struct ProverCommandExecutor {
@@ -108,12 +103,11 @@ impl ProverCommandExecutor {
                 cb(self.create_credential_request(wallet_handle, &prover_did, &credential_offer_json,
                                                   &credential_def_json, &master_secret_name));
             }
-            ProverCommand::StoreCredential(wallet_handle, cred_id, cred_req_json, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, rev_state_json, cb) => {
+            ProverCommand::StoreCredential(wallet_handle, cred_id, cred_req_json, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb) => {
                 trace!(target: "prover_command_executor", "StoreCredential command received");
                 cb(self.store_credential(wallet_handle, cred_id.as_ref().map(String::as_str),
                                          &cred_req_json, &cred_req_metadata_json, &cred_json, &cred_def_json,
-                                         rev_reg_def_json.as_ref().map(String::as_str),
-                                         rev_state_json.as_ref().map(String::as_str)));
+                                         rev_reg_def_json.as_ref().map(String::as_str)));
             }
             ProverCommand::GetCredentials(wallet_handle, filter_json, cb) => {
                 trace!(target: "prover_command_executor", "GetCredentials command received");
@@ -136,10 +130,6 @@ impl ProverCommandExecutor {
             ProverCommand::UpdateRevocationState(blob_storage_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id, cb) => {
                 trace!(target: "prover_command_executor", "UpdateRevocationState command received");
                 cb(self.update_revocation_state(blob_storage_reader_handle, &rev_state_json, &rev_reg_def_json, &rev_reg_delta_json, timestamp, &cred_rev_id));
-            }
-            ProverCommand::GetCredentialRevocationId(wallet_handle, cred_id, cb) => {
-                trace!(target: "prover_command_executor", "GetCredentialRevocationId command received");
-                cb(self.get_credential_revocation_id(wallet_handle, &cred_id));
             }
         };
     }
@@ -228,11 +218,9 @@ impl ProverCommandExecutor {
                         cred_req_metadata_json: &str,
                         cred_json: &str,
                         cred_def_json: &str,
-                        rev_reg_def_json: Option<&str>,
-                        rev_state_json: Option<&str>) -> Result<String, IndyError> {
+                        rev_reg_def_json: Option<&str>) -> Result<String, IndyError> {
         trace!("store_credential >>> wallet_handle: {:?}, cred_id: {:?}, cred_req_json: {:?}, cred_req_metadata_json: {:?}, cred_json: {:?}, cred_def_json: {:?}, \
-        rev_reg_def_json: {:?}, rev_state_json: {:?}",
-               wallet_handle, cred_id, cred_req_json, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, rev_state_json);
+        rev_reg_def_json: {:?}", wallet_handle, cred_id, cred_req_json, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json);
 
         let credential_request: CredentialRequest = CredentialRequest::from_json(&cred_req_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialRequest: {:?}", err)))?;
@@ -253,13 +241,6 @@ impl ProverCommandExecutor {
             None => None
         };
 
-        let rev_state = match rev_state_json {
-            Some(r_state_json) =>
-                Some(RevocationState::from_json(&r_state_json)
-                    .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize RevocationState: {:?}", err)))?),
-            None => None
-        };
-
         let master_secret: MasterSecret =
             self.wallet_service.get_object(wallet_handle, &format!("master_secret::{}", &credential_request_metadata.master_secret_name), "MasterSecret", &mut String::new())?;
 
@@ -267,9 +248,10 @@ impl ProverCommandExecutor {
                                                          &credential_request_metadata,
                                                          &master_secret,
                                                          &credential_def,
-                                                         rev_reg_def.as_ref(),
-                                                         rev_state.as_ref().map(|r| &r.rev_reg),
-                                                         rev_state.as_ref().map(|r| &r.witness))?;
+                                                         rev_reg_def.as_ref())?;
+
+        credential.rev_reg = None;
+        credential.witness = None;
 
         let out_cred_id = cred_id.map(String::from).unwrap_or(uuid::Uuid::new_v4().to_string());
 
@@ -323,7 +305,8 @@ impl ProverCommandExecutor {
                     referent: referent.replace("credential::", ""),
                     attrs: credential_values,
                     cred_def_id: credential.cred_def_id.clone(),
-                    rev_reg_id: credential.rev_reg_id.as_ref().map(|s| s.to_string())
+                    rev_reg_id: credential.rev_reg_id.as_ref().map(|s| s.to_string()),
+                    cred_rev_id: credential.signature.extract_index().map(|idx| idx.to_string())
                 });
         }
 
@@ -491,19 +474,5 @@ impl ProverCommandExecutor {
         trace!("update_revocation_state <<< rev_state_json: {:?}", rev_state_json);
 
         Ok(rev_state_json)
-    }
-
-    fn get_credential_revocation_id(&self,
-                                    wallet_handle: i32,
-                                    cred_id: &str) -> Result<Option<String>, IndyError> {
-        trace!("get_credential_revocation_id >>> wallet_handle: {:?}, cred_id: {:?}", wallet_handle, cred_id);
-
-        let credential: Credential = self.wallet_service.get_object(wallet_handle, &format!("credential::{}", &cred_id), "Credential", &mut String::new())?;
-
-        let cred_rev_id = credential.signature.extract_index().map(|index| index.to_string());
-
-        trace!("get_credential_revocation_id <<< cred_rev_id: {:?}", cred_rev_id);
-
-        Ok(cred_rev_id)
     }
 }

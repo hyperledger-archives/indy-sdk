@@ -406,6 +406,30 @@ async def issuer_recover_credential(wallet_handle: int,
     return res
 
 
+async def issuer_merge_revocation_registry_deltas(rev_reg_delta_json: str,
+                                                  other_rev_reg_delta_json: str) -> str:
+    logger = logging.getLogger(__name__)
+    logger.debug(
+        "issuer_merge_revocation_registry_deltas: >>> rev_reg_delta_json: %r, other_rev_reg_delta_json: %r",
+        rev_reg_delta_json,
+        other_rev_reg_delta_json)
+
+    if not hasattr(issuer_merge_revocation_registry_deltas, "cb"):
+        logger.debug("issuer_merge_revocation_registry_deltas: Creating callback")
+        issuer_merge_revocation_registry_deltas.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_rev_reg_delta_json = c_char_p(rev_reg_delta_json.encode('utf-8'))
+    c_other_rev_reg_delta_json = c_char_p(other_rev_reg_delta_json.encode('utf-8'))
+
+    merged_revoc_reg_delta_json = await do_call('indy_issuer_merge_revocation_registry_deltas',
+                                                c_rev_reg_delta_json,
+                                                c_other_rev_reg_delta_json,
+                                                issuer_merge_revocation_registry_deltas.cb)
+    res = merged_revoc_reg_delta_json.decode()
+    logger.debug("issuer_merge_revocation_registry_deltas: <<< res: %r", res)
+    return res
+
+
 async def prover_create_master_secret(wallet_handle: int,
                                       master_secret_name: str) -> None:
     """
@@ -511,8 +535,7 @@ async def prover_store_credential(wallet_handle: int,
                                   cred_req_metadata_json: str,
                                   cred_json: str,
                                   cred_def_json: str,
-                                  rev_reg_def_json: Optional[str],
-                                  rev_state_json: Optional[str]) -> str:
+                                  rev_reg_def_json: Optional[str]) -> str:
     """
     Check credential provided by Issuer for the given credential request,
     updates the credential by a master secret and stores in a secure wallet.
@@ -524,22 +547,19 @@ async def prover_store_credential(wallet_handle: int,
     :param cred_json: credential json created by indy_issuer_create_cred
     :param cred_def_json: credential definition json created by issuer_create_and_store_credential_def
     :param rev_reg_def_json: revocation registry definition json created by issuer_create_and_store_revoc_reg
-    :param rev_state_json: revocation state json
     :return: cred_id: identifier by which credential is stored in the wallet
     """
 
     logger = logging.getLogger(__name__)
     logger.debug("prover_store_credential: >>> wallet_handle: %r, cred_id: %r, cred_req_json: %r, "
-                 "cred_req_metadata_json: %r, cred_json: %r, cred_def_json: %r, rev_reg_def_json: %r, "
-                 "rev_state_json: %r",
+                 "cred_req_metadata_json: %r, cred_json: %r, cred_def_json: %r, rev_reg_def_json: %r",
                  wallet_handle,
                  cred_id,
                  cred_req_json,
                  cred_req_metadata_json,
                  cred_json,
                  cred_def_json,
-                 rev_reg_def_json,
-                 rev_state_json)
+                 rev_reg_def_json)
 
     if not hasattr(prover_store_credential, "cb"):
         logger.debug("prover_store_credential: Creating callback")
@@ -552,7 +572,6 @@ async def prover_store_credential(wallet_handle: int,
     c_cred_json = c_char_p(cred_json.encode('utf-8'))
     c_cred_def_json = c_char_p(cred_def_json.encode('utf-8'))
     c_rev_reg_def_json = c_char_p(rev_reg_def_json.encode('utf-8')) if rev_reg_def_json else None
-    c_rev_state_json = c_char_p(rev_state_json.encode('utf-8')) if rev_state_json else None
 
     cred_id = await do_call('indy_prover_store_credential',
                             c_wallet_handle,
@@ -562,7 +581,6 @@ async def prover_store_credential(wallet_handle: int,
                             c_cred_json,
                             c_cred_def_json,
                             c_rev_reg_def_json,
-                            c_rev_state_json,
                             prover_store_credential.cb)
 
     res = cred_id.decode()

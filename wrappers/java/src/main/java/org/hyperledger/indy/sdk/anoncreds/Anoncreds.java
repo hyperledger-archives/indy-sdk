@@ -97,6 +97,22 @@ public class Anoncreds extends IndyJava.API {
 	};
 
 	/**
+	 * Callback used when issuerMergeRevocationRegistryDeltas completes.
+	 */
+	private static Callback issuerMergeRevocationRegistryDeltasCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String merged_rev_reg_delta) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkCallback(future, err)) return;
+
+			String result = merged_rev_reg_delta;
+			future.complete(result);
+		}
+	};
+
+	/**
 	 * Callback used when issuerCreateCredential completes.
 	 */
 	private static Callback issuerCreateCredentialCb = new Callback() {
@@ -296,7 +312,7 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Create credential schema entity that describes credential attributes list and allows credentials
 	 * interoperability.
-	 *
+	 * <p>
 	 * Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
 	 * to Indy distributed ledger.
 	 *
@@ -304,9 +320,9 @@ public class Anoncreds extends IndyJava.API {
 	 * @param name       Human-readable name of schema.
 	 * @param version    Version of schema.
 	 * @param attrNames: List of schema attributes descriptions
-	 * @return A future resolving to IssuerCreateSchemaResult containing 
-	 *      schemaId: identifier of created schema
-	 *      schemaJson: schema as json
+	 * @return A future resolving to IssuerCreateSchemaResult containing
+	 * schemaId: identifier of created schema
+	 * schemaJson: schema as json
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<IssuerCreateSchemaResult> issuerCreateSchema(
@@ -339,23 +355,24 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
 	 * and secrets used for credentials revocation.
-	 *
+	 * <p>
 	 * Credential definition entity contains private and public parts. Private part will be stored in the wallet. Public part
 	 * will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing CRED_DEF transaction
 	 * to Indy distributed ledger.	 *
+	 *
 	 * @param wallet     The wallet.
 	 * @param issuerDid  DID of the issuer signing cred_def transaction to the Ledger
 	 * @param schemaJson Сredential schema as a json
 	 * @param tag        Allows to distinct between credential definitions for the same issuer and schema
 	 * @param type       Credential definition type (optional, 'CL' by default) that defines claims signature and revocation math.
 	 *                   Supported types are:
-	 *                      - 'CL': Camenisch-Lysyanskaya credential signature type
+	 *                   - 'CL': Camenisch-Lysyanskaya credential signature type
 	 * @param configJson Type-specific configuration of credential definition as json:
-	 *                      - 'CL':
-	 *                          - revocationSupport: whether to request non-revocation credential (optional, default false)
+	 *                   - 'CL':
+	 *                   - revocationSupport: whether to request non-revocation credential (optional, default false)
 	 * @return A future resolving to IssuerCreateAndStoreCredentialDefResult containing:.
-	 *      credDefId: identifier of created credential definition.
-	 *      credDefJson: public part of created credential definition
+	 * credDefId: identifier of created credential definition.
+	 * credDefJson: public part of created credential definition
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<IssuerCreateAndStoreCredentialDefResult> issuerCreateAndStoreCredentialDef(
@@ -486,38 +503,38 @@ public class Anoncreds extends IndyJava.API {
 
 	/**
 	 * Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.
-	 *
+	 * <p>
 	 * Cred Request must match Cred Offer. The credential definition and revocation registry definition
 	 * referenced in Cred Offer and Cred Request must be already created and stored into the wallet.
-	 *
+	 * <p>
 	 * Information for this credential revocation will be store in the wallet as part of revocation registry under
 	 * generated cred_revoc_id local for this wallet.
-	 *
+	 * <p>
 	 * This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
 	 * Note that it is possible to accumulate deltas to reduce ledger load.
 	 *
-	 * @param wallet            The wallet.
-	 * @param credOfferJson     Cred offer created by indy_issuer_create_cred_offer
-	 * @param credReqJson       Credential request created by indy_prover_create_credential_request
-	 * @param credValuesJson    Credential containing attribute values for each of requested attribute names.
-	 * Example:
-	 *     {
-	 *      "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
-	 *      "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
-	 *     }
-	 * @param revRegId          (Optional) id of stored in ledger revocation registry definition
-	 * @param blobStorageReaderHandle   Pre-configured blob storage reader instance handle that will allow to read revocation tails
+	 * @param wallet                  The wallet.
+	 * @param credOfferJson           Cred offer created by indy_issuer_create_cred_offer
+	 * @param credReqJson             Credential request created by indy_prover_create_credential_request
+	 * @param credValuesJson          Credential containing attribute values for each of requested attribute names.
+	 *                                Example:
+	 *                                {
+	 *                                "attr1" : {"raw": "value1", "encoded": "value1_as_int" },
+	 *                                "attr2" : {"raw": "value1", "encoded": "value1_as_int" }
+	 *                                }
+	 * @param revRegId                (Optional) id of stored in ledger revocation registry definition
+	 * @param blobStorageReaderHandle Pre-configured blob storage reader instance handle that will allow to read revocation tails
 	 * @return A future resolving to a IssuerCreateCredentialResult containing:
 	 * credentialJson: Credential json containing signed credential values
- 	 *     {
- 	 *         "cred_def_id": string,
-	 *         "rev_reg_def_id", Optional<string>,
-	 *         "values": <see credential_values_json above>,
-	 *         // Fields below can depend on Cred Def type
-	 *         "signature": <signature>,
-	 *         "signature_correctness_proof": <signature_correctness_proof>,
-	 *         "revoc_idx":
-	 *     }
+	 * {
+	 * "cred_def_id": string,
+	 * "rev_reg_def_id", Optional<string>,
+	 * "values": <see credential_values_json above>,
+	 * // Fields below can depend on Cred Def type
+	 * "signature": <signature>,
+	 * "signature_correctness_proof": <signature_correctness_proof>,
+	 * "revoc_idx":
+	 * }
 	 * credRevocId: local id for revocation info (Can be used for revocation of this cred)
 	 * revocRegDeltaJson: Revocation registry delta json with a newly issued credential
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -557,17 +574,17 @@ public class Anoncreds extends IndyJava.API {
 
 	/**
 	 * Revoke a credential identified by a cred_revoc_id (returned by indy_issuer_create_cred).
-	 *
+	 * <p>
 	 * The corresponding credential definition and revocation registry must be already
 	 * created an stored into the wallet.
-	 *
+	 * <p>
 	 * This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
-	 * Note that it is possible to accumulate deltas to reduce ledger load.	 
-	 * 
-	 * @param wallet            A wallet.
-	 * @param blobStorageReaderHandle   Pre-configured blob storage reader instance handle that will allow to read revocation tails   
-	 * @param revRegId          Id of revocation registry stored in wallet.
-	 * @param credRevocId       Local id for revocation info
+	 * Note that it is possible to accumulate deltas to reduce ledger load.
+	 *
+	 * @param wallet                  A wallet.
+	 * @param blobStorageReaderHandle Pre-configured blob storage reader instance handle that will allow to read revocation tails
+	 * @param revRegId                Id of revocation registry stored in wallet.
+	 * @param credRevocId             Local id for revocation info
 	 * @return A future resolving to a revocation registry update json with a revoked credential
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -601,17 +618,18 @@ public class Anoncreds extends IndyJava.API {
 
 	/**
 	 * Recover a credential identified by a cred_revoc_id (returned by indy_issuer_create_cred).
-	 *
+	 * <p>
 	 * The corresponding credential definition and revocation registry must be already
 	 * created an stored into the wallet.
-	 *
+	 * <p>
 	 * This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
 	 * Note that it is possible to accumulate deltas to reduce ledger load.
-	 *	 *
-	 * @param wallet            A wallet.
-	 * @param blobStorageReaderHandle   Pre-configured blob storage reader instance handle that will allow to read revocation tails
-	 * @param revRegId          Id of revocation registry stored in wallet.
-	 * @param credRevocId       Local id for revocation info
+	 * *
+	 *
+	 * @param wallet                  A wallet.
+	 * @param blobStorageReaderHandle Pre-configured blob storage reader instance handle that will allow to read revocation tails
+	 * @param revRegId                Id of revocation registry stored in wallet.
+	 * @param credRevocId             Local id for revocation info
 	 * @return A future resolving to a revocation registry update json with a revoked credential
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -642,11 +660,32 @@ public class Anoncreds extends IndyJava.API {
 
 		return future;
 	}
-	
+
+	public static CompletableFuture<String> issuerMergeRevocationRegistryDeltas(
+			String revRegDelta,
+			String otherRevRegDelta) throws IndyException {
+
+		ParamGuard.notNullOrWhiteSpace(revRegDelta, "revRegDelta");
+		ParamGuard.notNullOrWhiteSpace(otherRevRegDelta, "otherRevRegDelta");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_issuer_merge_revocation_registry_deltas(
+				commandHandle,
+				revRegDelta,
+				otherRevRegDelta,
+				issuerMergeRevocationRegistryDeltasCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
 	/**
 	 * Creates a master secret with a given name and stores it in the wallet.
 	 *
-	 * @param wallet           A wallet.
+	 * @param wallet         A wallet.
 	 * @param masterSecretId a new master secret name.
 	 * @return A future that does not resolve any value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -676,7 +715,7 @@ public class Anoncreds extends IndyJava.API {
 
 	/**
 	 * Creates a clam request for the given credential offer.
-	 *
+	 * <p>
 	 * The method creates a blinded master secret for a master secret identified by a provided name.
 	 * The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
 	 * The blinded master secret is a part of the credential request.
@@ -685,11 +724,11 @@ public class Anoncreds extends IndyJava.API {
 	 * @param proverDid           The DID of the prover.
 	 * @param credentialOfferJson credential offer as a json containing information about the issuer and a credential
 	 * @param credentialDefJson   credential definition json associated with issuer_did and schema_seq_no in the credential_offer
-	 * @param masterSecretId    the name of the master secret stored in the wallet
+	 * @param masterSecretId      the name of the master secret stored in the wallet
 	 * @return A future that resolves to a credential request json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
-	public static CompletableFuture<ProverCreateCredentialRequestResult> proverCreateAndStoreCredentialReq(
+	public static CompletableFuture<ProverCreateCredentialRequestResult> proverCreateCredentialReq(
 			Wallet wallet,
 			String proverDid,
 			String credentialOfferJson,
@@ -725,14 +764,13 @@ public class Anoncreds extends IndyJava.API {
 	 * Check credential provided by Issuer for the given credential request,
 	 * updates the credential by a master secret and stores in a secure wallet.
 	 *
-	 * @param wallet        A Wallet.
-	 * @param credId        Identifier by which credential will be stored in wallet
-	 * @param credReqJson   Сredential request created by indy_prover_create_cred_request
-	 * @param credReqMetadataJson   Credential request metadata created by indy_prover_create_cred_request
-	 * @param credJson      Credential json created by indy_issuer_create_cred
-	 * @param credDefJson   Credential definition json created by indy_issuer_create_and_store_credential_def
-	 * @param revRegDefJson Revocation registry definition associated with issuer_did and schema_key in the credential_offer
-	 * @param revStateJson  Revocation state json
+	 * @param wallet              A Wallet.
+	 * @param credId              Identifier by which credential will be stored in wallet
+	 * @param credReqJson         Сredential request created by indy_prover_create_cred_request
+	 * @param credReqMetadataJson Credential request metadata created by indy_prover_create_cred_request
+	 * @param credJson            Credential json created by indy_issuer_create_cred
+	 * @param credDefJson         Credential definition json created by indy_issuer_create_and_store_credential_def
+	 * @param revRegDefJson       Revocation registry definition associated with issuer_did and schema_key in the credential_offer
 	 * @return A future that  resolve to a credential id.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -743,8 +781,7 @@ public class Anoncreds extends IndyJava.API {
 			String credReqMetadataJson,
 			String credJson,
 			String credDefJson,
-			String revRegDefJson,
-			String revStateJson) throws IndyException {
+			String revRegDefJson) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
 		ParamGuard.notNullOrWhiteSpace(credId, "credId");
@@ -767,7 +804,6 @@ public class Anoncreds extends IndyJava.API {
 				credJson,
 				credDefJson,
 				revRegDefJson,
-				revStateJson,
 				proverStoreCredentialCb);
 
 		checkResult(result);
@@ -840,13 +876,13 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Creates a proof according to the given proof request.
 	 *
-	 * @param wallet          A wallet.
-	 * @param proofRequest    proof request json as come from the verifier
+	 * @param wallet               A wallet.
+	 * @param proofRequest         proof request json as come from the verifier
 	 * @param requestedCredentials either a credential or self-attested attribute for each requested attribute
-	 * @param masterSecret    the name of the master secret stored in the wallet
-	 * @param schemas         all schema jsons participating in the proof request
-	 * @param credentialDefs  all credential definition jsons participating in the proof request
-	 * @param revStates        all revocation registry jsons participating in the proof request
+	 * @param masterSecret         the name of the master secret stored in the wallet
+	 * @param schemas              all schema jsons participating in the proof request
+	 * @param credentialDefs       all credential definition jsons participating in the proof request
+	 * @param revStates            all revocation registry jsons participating in the proof request
 	 * @return A future resolving to a Proof json
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */

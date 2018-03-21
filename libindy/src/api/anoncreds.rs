@@ -333,7 +333,7 @@ pub extern fn indy_issuer_create_credential(command_handle: i32,
                 let revoc_id = revoc_id.map(CStringUtils::string_to_cstring);
                 let revoc_reg_delta_json = revoc_reg_delta_json.map(CStringUtils::string_to_cstring);
                 cb(command_handle, err, cred_json.as_ptr(),
-                   revoc_id.as_ref().map(|delta| delta.as_ptr()).unwrap_or(ptr::null()),
+                   revoc_id.as_ref().map(|id| id.as_ptr()).unwrap_or(ptr::null()),
                    revoc_reg_delta_json.as_ref().map(|delta| delta.as_ptr()).unwrap_or(ptr::null()))
             })
         ))));
@@ -611,7 +611,6 @@ pub extern fn indy_prover_store_credential(command_handle: i32,
                                            cred_json: *const c_char,
                                            cred_def_json: *const c_char,
                                            rev_reg_def_json: *const c_char,
-                                           rev_state_json: *const c_char,
                                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                                 out_cred_id: *const c_char)>) -> ErrorCode {
     check_useful_opt_c_str!(cred_id, ErrorCode::CommonInvalidParam3);
@@ -620,8 +619,7 @@ pub extern fn indy_prover_store_credential(command_handle: i32,
     check_useful_c_str!(cred_json, ErrorCode::CommonInvalidParam6);
     check_useful_c_str!(cred_def_json, ErrorCode::CommonInvalidParam7);
     check_useful_opt_c_str!(rev_reg_def_json, ErrorCode::CommonInvalidParam8);
-    check_useful_opt_c_str!(rev_state_json, ErrorCode::CommonInvalidParam9);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam10);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam9);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(AnoncredsCommand::Prover(ProverCommand::StoreCredential(
@@ -632,7 +630,6 @@ pub extern fn indy_prover_store_credential(command_handle: i32,
             cred_json,
             cred_def_json,
             rev_reg_def_json,
-            rev_state_json,
             Box::new(move |result| {
                 let (err, out_cred_id) = result_to_err_code_1!(result, String::new());
                 let out_cred_id = CStringUtils::string_to_cstring(out_cred_id);
@@ -1115,31 +1112,6 @@ pub extern fn indy_update_revocation_state(command_handle: i32,
                 cb(command_handle, err, updated_rev_info_json.as_ptr())
             })
         ))));
-
-    result_to_err_code!(result)
-}
-
-#[no_mangle]
-pub extern fn indy_prover_get_credential_revocation_id(command_handle: i32,
-                                                       wallet_handle: i32,
-                                                       cred_id: *const c_char,
-                                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                                            cred_rev_id: *const c_char)>) -> ErrorCode {
-    check_useful_c_str!(cred_id, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
-
-    let result = CommandExecutor::instance()
-        .send(Command::Anoncreds(
-            AnoncredsCommand::Prover(
-                ProverCommand::GetCredentialRevocationId(
-                    wallet_handle,
-                    cred_id,
-                    Box::new(move |result| {
-                        let (err, cred_rev_id) = result_to_err_code_1!(result, None);
-                        let cred_rev_id = cred_rev_id.map(CStringUtils::string_to_cstring);
-                        cb(command_handle, err, cred_rev_id.as_ref().map(|id| id.as_ptr()).unwrap_or(ptr::null()))
-                    })
-                ))));
 
     result_to_err_code!(result)
 }

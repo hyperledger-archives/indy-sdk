@@ -171,7 +171,8 @@ pub struct Credential {
     pub values: HashMap<String, AttributeValues>,
     pub signature: CredentialSignature,
     pub signature_correctness_proof: SignatureCorrectnessProof,
-    pub revoc_idx: Option<u32>
+    pub rev_reg: Option<RevocationRegistry>,
+    pub witness: Option<Witness>
 }
 
 impl Credential {
@@ -195,7 +196,8 @@ pub struct CredentialInfo {
     pub referent: String,
     pub attrs: HashMap<String, String>,
     pub cred_def_id: String,
-    pub rev_reg_id: Option<String>
+    pub rev_reg_id: Option<String>,
+    pub cred_rev_id: Option<String>
 }
 
 impl CredentialInfo {

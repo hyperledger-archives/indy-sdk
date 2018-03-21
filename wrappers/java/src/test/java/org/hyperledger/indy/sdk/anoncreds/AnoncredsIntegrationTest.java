@@ -28,8 +28,9 @@ public class AnoncredsIntegrationTest {
 	static String xyzSchemaId;
 	static String xyzSchema;
 	static String issuer1gvtCredDefId;
-	static String issuer1xyzCredDef;
 	static String issuer1gvtCredDef;
+	static String issuer1xyzCredDefId;
+	static String issuer1xyzCredDef;
 	static String issuer1GvtCredOffer;
 	static String issuer2GvtCredOffer;
 	static String issuer1GvtCredReq;
@@ -106,7 +107,7 @@ public class AnoncredsIntegrationTest {
 		//Issue XYZ issuer1GvtCredential by Issuer1
 		IssuerCreateAndStoreCredentialDefResult issuer1CreateXyzCredDefResult =
 				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, xyzSchema, tag, null, defaultCredentialDefitionConfig).get();
-		String issuer1xyzCredDefId = issuer1CreateXyzCredDefResult.getCredDefId();
+		issuer1xyzCredDefId = issuer1CreateXyzCredDefResult.getCredDefId();
 		issuer1xyzCredDef = issuer1CreateXyzCredDefResult.getCredDefJson();
 
 		//Issue GVT issuer1GvtCredential by Issuer2
@@ -123,7 +124,7 @@ public class AnoncredsIntegrationTest {
 		Anoncreds.proverCreateMasterSecret(wallet, masterSecretId).get();
 
 		ProverCreateCredentialRequestResult createCredReqResult =
-				Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretId).get();
+				Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretId).get();
 		issuer1GvtCredReq = createCredReqResult.getCredentialRequestJson();
 		issuer1GvtCredReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
@@ -131,18 +132,18 @@ public class AnoncredsIntegrationTest {
 				Anoncreds.issuerCreateCredential(wallet, issuer1GvtCredOffer, issuer1GvtCredReq, gvtCredentialValuesJson, null, - 1).get();
 		issuer1GvtCredential = createCredResult.getCredentialJson();
 
-		Anoncreds.proverStoreCredential(wallet, credentialId1, issuer1GvtCredReq, issuer1GvtCredReqMetadata, issuer1GvtCredential, issuer1gvtCredDef, null, null).get();
+		Anoncreds.proverStoreCredential(wallet, credentialId1, issuer1GvtCredReq, issuer1GvtCredReqMetadata, issuer1GvtCredential, issuer1gvtCredDef, null).get();
 
-		createCredReqResult = Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, issuer1XyzCredOffer, issuer1xyzCredDef, masterSecretId).get();
+		createCredReqResult = Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer1XyzCredOffer, issuer1xyzCredDef, masterSecretId).get();
 		String issuer1XyzCredReq = createCredReqResult.getCredentialRequestJson();
 		String issuer1XyzCredReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
 		createCredResult = Anoncreds.issuerCreateCredential(wallet, issuer1XyzCredOffer, issuer1XyzCredReq, xyzCredentialValuesJson, null, - 1).get();
 		String issuer1XyzCredential = createCredResult.getCredentialJson();
 
-		Anoncreds.proverStoreCredential(wallet, credentialId2, issuer1XyzCredReq, issuer1XyzCredReqMetadata, issuer1XyzCredential, issuer1xyzCredDef, null, null).get();
+		Anoncreds.proverStoreCredential(wallet, credentialId2, issuer1XyzCredReq, issuer1XyzCredReqMetadata, issuer1XyzCredential, issuer1xyzCredDef, null).get();
 
-		createCredReqResult = Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, issuer2GvtCredOffer, issuer2gvtCredDef, masterSecretId).get();
+		createCredReqResult = Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer2GvtCredOffer, issuer2gvtCredDef, masterSecretId).get();
 		String issuer2GvtCredReq = createCredReqResult.getCredentialRequestJson();
 		String issuer2GvtCredReqMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
@@ -157,7 +158,7 @@ public class AnoncredsIntegrationTest {
 		String issuer2GvtCredential = createCredResult.getCredentialJson();
 
 		String credentialId3 = "id3";
-		Anoncreds.proverStoreCredential(wallet, credentialId3, issuer2GvtCredReq, issuer2GvtCredReqMetadata, issuer2GvtCredential, issuer2gvtCredDef, null, null).get();
+		Anoncreds.proverStoreCredential(wallet, credentialId3, issuer2GvtCredReq, issuer2GvtCredReqMetadata, issuer2GvtCredential, issuer2gvtCredDef, null).get();
 
 		walletOpened = true;
 	}

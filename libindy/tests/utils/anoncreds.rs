@@ -201,7 +201,7 @@ impl AnoncredsUtils {
     }
 
     pub fn prover_store_credential(wallet_handle: i32, cred_id: &str, cred_req_json: &str, cred_req_metadata_json: &str, cred_json: &str,
-                                   cred_def_json: &str, rev_reg_def_json: Option<&str>, rev_state_json: Option<&str>) -> Result<String, ErrorCode> {
+                                   cred_def_json: &str, rev_reg_def_json: Option<&str>) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let cred_id = CString::new(cred_id).unwrap();
@@ -210,7 +210,6 @@ impl AnoncredsUtils {
         let cred_json = CString::new(cred_json).unwrap();
         let cred_def_json = CString::new(cred_def_json).unwrap();
         let rev_reg_def_json_str = rev_reg_def_json.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-        let rev_state_json_str = rev_state_json.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = indy_prover_store_credential(command_handle,
                                                wallet_handle,
@@ -220,7 +219,6 @@ impl AnoncredsUtils {
                                                cred_json.as_ptr(),
                                                cred_def_json.as_ptr(),
                                                if rev_reg_def_json.is_some() { rev_reg_def_json_str.as_ptr() } else { null() },
-                                               if rev_state_json.is_some() { rev_state_json_str.as_ptr() } else { null() },
                                                cb);
 
         super::results::result_to_string(err, receiver)
@@ -338,19 +336,6 @@ impl AnoncredsUtils {
                                                cb);
 
         super::results::result_to_string(err, receiver)
-    }
-
-    pub fn get_credential_revocation_id(wallet_handle: i32, cred_id: &str) -> Result<Option<String>, ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_opt_string();
-
-        let cred_id = CString::new(cred_id).unwrap();
-
-        let err = indy_prover_get_credential_revocation_id(command_handle,
-                                                           wallet_handle,
-                                                           cred_id.as_ptr(),
-                                                           cb);
-
-        super::results::result_to_opt_string(err, receiver)
     }
 
     pub fn build_id(identifier: &str, marker: &str, related_entity_id: Option<&str>, word1: &str, word2: &str) -> String {
@@ -471,6 +456,7 @@ impl AnoncredsUtils {
             cred_def_id: AnoncredsUtils::issuer_1_gvt_cred_def_id(),
             referent: CREDENTIAL1_ID.to_string(),
             rev_reg_id: None,
+            cred_rev_id: None,
             attrs: map! {
                        "sex".to_string() => "male".to_string(),
                        "name".to_string() => "Alex".to_string(),
@@ -485,6 +471,7 @@ impl AnoncredsUtils {
             cred_def_id: AnoncredsUtils::issuer_1_xyz_cred_def_id(),
             referent: CREDENTIAL2_ID.to_string(),
             rev_reg_id: None,
+            cred_rev_id: None,
             attrs: map! {
                        "status".to_string() => "partial".to_string(),
                        "period".to_string() => "8".to_string()
@@ -497,6 +484,7 @@ impl AnoncredsUtils {
             cred_def_id: AnoncredsUtils::issuer_2_gvt_cred_def_id(),
             referent: CREDENTIAL3_ID.to_string(),
             rev_reg_id: None,
+            cred_rev_id: None,
             attrs: map! {
                        "sex".to_string() => "male".to_string(),
                        "name".to_string() => "Alexander".to_string(),
@@ -711,7 +699,6 @@ impl AnoncredsUtils {
                                                         &issuer1_gvt_credential_req_metadata,
                                                         &issuer1_gvt_cred,
                                                         &issuer1_gvt_credential_def_json,
-                                                        None,
                                                         None).unwrap();
 
                 // Issuer1 issue XYZ Credential
@@ -736,7 +723,6 @@ impl AnoncredsUtils {
                                                         &issuer1_xyz_credential_req_metadata,
                                                         &issuer1_xyz_cred,
                                                         &issuer1_xyz_credential_def_json,
-                                                        None,
                                                         None).unwrap();
 
                 // Issuer2 issues GVT Credential
@@ -762,7 +748,6 @@ impl AnoncredsUtils {
                                                         &issuer2_gvt_credential_req_metadata,
                                                         &issuer2_gvt_cred,
                                                         &issuer2_gvt_credential_def_json,
-                                                        None,
                                                         None).unwrap();
 
                 let res = mem::transmute(&issuer1_gvt_credential_def_json as &str);
