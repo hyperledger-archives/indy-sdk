@@ -17,7 +17,7 @@ us on [Hyperledger's Rocket.Chat](https://chat.hyperledger.org/) at #indy-sdk to
 
 ## How to install
 ### Release channels
-May be one of these values: 
+There are three stable channels: 
     
 * `master` - development builds for each push to master branch.
 * `rc` - release candidates.
@@ -92,22 +92,22 @@ It's necessary for dynamic linkage your application with libindy.
 ## How to start local nodes pool with docker
 
 Start local nodes pool on `127.0.0.1:9701-9708` with Docker:
-     
-     ```     
-     docker build -f ci/indy-pool.dockerfile -t indy_pool .
-     docker run -itd -p 9701-9708:9701-9708 indy_pool
-     ```     
+          
+```     
+docker build -f ci/indy-pool.dockerfile -t indy_pool .
+docker run -itd -p 9701-9708:9701-9708 indy_pool
+```     
      
  Dockerfile `ci/indy-pool.dockerfile` supports optional pool_ip param that allows 
  changing ip of pool nodes in generated pool configuration. The following commands 
  allow to start local nodes pool in custom docker network and access this pool 
  by custom ip in docker network:
      
-     ```
-     docker network create --subnet 10.0.0.0/8 indy_pool_network
-     docker build --build-arg pool_ip=10.0.0.2 -f ci/indy-pool.dockerfile -t indy_pool .
-     docker run -d --ip="10.0.0.2" --net=indy_pool_network indy_pool
-     ``` 
+ ```
+ docker network create --subnet 10.0.0.0/8 indy_pool_network
+ docker build --build-arg pool_ip=10.0.0.2 -f ci/indy-pool.dockerfile -t indy_pool .
+ docker run -d --ip="10.0.0.2" --net=indy_pool_network indy_pool
+ ``` 
  Note that for Windows and MacOS this approach has some issues. Docker for these OS run in
  their virtual environment. First command creates network for container and host can't
  get access to that network because container placed on virtual machine. You must appropriate set up 
