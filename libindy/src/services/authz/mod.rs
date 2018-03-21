@@ -1,7 +1,8 @@
 extern crate indy_crypto;
 
 use self::indy_crypto::bn::BigNumber;
-use self::indy_crypto::authz::helpers::{generate_policy_address, gen_double_commitment_to_secret};
+use self::indy_crypto::authz::helpers::{generate_policy_address};
+use self::indy_crypto::authz::{AuthzProofGenerators, AuthzProofFactors};
 use self::indy_crypto::authz::constants::*;
 use errors::authz::AuthzError;
 use self::types::*;
@@ -27,8 +28,8 @@ pub struct AuthzService {
 impl AuthzService {
     pub fn new(crypto_service: Rc<SignusService>) -> AuthzService { AuthzService { crypto_service } }
 
-    pub fn get_double_commitment_to_secret(secret: &BigNumber, policy_address: &BigNumber) -> Result<(BigNumber, BigNumber), AuthzError> {
-        let g_1 = BigNumber::from_dec(G_1).unwrap();
+    pub fn get_double_commitment_to_secret(secret: &BigNumber, policy_address: &BigNumber) -> Result<(BigNumber, BigNumber, BigNumber), AuthzError> {
+        /*let g_1 = BigNumber::from_dec(G_1).unwrap();
         let g_2 = BigNumber::from_dec(G_2).unwrap();
         let h_1 = BigNumber::from_dec(H_1).unwrap();
         let h_2 = BigNumber::from_dec(H_2).unwrap();
@@ -37,7 +38,10 @@ impl AuthzService {
         let mut ctx = BigNumber::new_context()?;
         Ok(gen_double_commitment_to_secret(&g_1, &h_1, &secret, &g_2, &h_2,
                                            &policy_address, &mod_1,
-                                           &mod_2, &mut ctx)?)
+                                           &mod_2, &mut ctx)?)*/
+        let gen = AuthzProofGenerators::new()?;
+        let factors = AuthzProofFactors::new(&gen, secret, policy_address)?;
+        Ok((factors.P.clone()?, factors.r.clone()?, factors.r_prime.clone()?))
     }
 
     pub fn generate_new_policy(&self) -> Result<Policy, AuthzError> {
@@ -48,35 +52,36 @@ impl AuthzService {
     }
 
     pub fn generate_new_agent(&self, policy_address: &BigNumber, agent_info: Option<&PolicyAgentInfo>) -> Result<(PolicyAgent, Key), AuthzError> {
-        let (vk, sk, secret, comm, blinding_factor) = match agent_info {
+        let (vk, sk, secret, comm, blinding_factor, blinding_factor_1) = match agent_info {
             Some(ref info) => {
                 let (vk, sk) = match self.crypto_service.get_crypto_name_and_keypair(&info.crypto_type, &info.seed) {
                     Ok((_, vk, sk)) => (vk, sk),
                     Err(err) => return Err(AuthzError::SignusError(err)),
                 };
 
-                let (comm, blinding_factor) = match info.secret {
+                let (comm, blinding_factor, blinding_factor_1) = match info.secret {
                     Some(ref s) => {
-                        let (c, b) = AuthzService::get_double_commitment_to_secret(&s, policy_address)?;
-                        (Some(c), Some(b))
+                        let (c, b, b_1) = AuthzService::get_double_commitment_to_secret(&s, policy_address)?;
+                        (Some(c), Some(b), Some(b_1))
                     },
-                    None => (None, None)
+                    None => (None, None, None)
                 };
-                (vk, sk, info.secret.as_ref().map(|bn| bn.clone().unwrap()), comm, blinding_factor)
+                (vk, sk, info.secret.as_ref().map(|bn| bn.clone().unwrap()), comm, blinding_factor, blinding_factor_1)
             },
             None => {
                 let (vk, sk) = match self.crypto_service.get_crypto_name_and_keypair(&None, &None) {
                     Ok((_, vk, sk)) => (vk, sk),
                     Err(err) => return Err(AuthzError::SignusError(err)),
                 };
-                (vk, sk, None, None, None)
+                (vk, sk, None, None, None, None)
             }
         };
 
         let vk = Base58::encode(&vk);
         let sk = Base58::encode(&sk);
 
-        Ok((PolicyAgent::new(vk.clone(), secret, comm, blinding_factor, None), Key::new(vk, sk)))
+        Ok((PolicyAgent::new(vk.clone(), secret, comm, blinding_factor,
+                             blinding_factor_1,None), Key::new(vk, sk)))
     }
 
     pub fn add_new_agent_to_policy(&self, policy: &mut Policy,
@@ -89,14 +94,14 @@ impl AuthzService {
 
     pub fn add_new_agent_to_policy_with_verkey(&self, policy: &mut Policy, verkey: String,
                                                secret: Option<BigNumber>) -> Result<String, AuthzError> {
-        let (comm, blinding_factor) = match secret {
+        let (comm, blinding_factor,blinding_factor_1) = match secret {
             Some(ref s) => {
-                let (c, b) = AuthzService::get_double_commitment_to_secret(&s, &policy.address)?;
-                (Some(c), Some(b))
+                let (c, b,b_1) = AuthzService::get_double_commitment_to_secret(&s, &policy.address)?;
+                (Some(c), Some(b), Some(b_1))
             },
-            None => (None, None)
+            None => (None, None, None)
         };
-        let agent = PolicyAgent::new(verkey.clone(), secret, comm, blinding_factor, None);
+        let agent = PolicyAgent::new(verkey.clone(), secret, comm, blinding_factor, blinding_factor_1,None);
         policy.agents.insert(agent.verkey.clone(), agent);
         Ok(verkey)
     }

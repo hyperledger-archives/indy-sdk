@@ -32,17 +32,20 @@ pub struct PolicyAgent {
     pub secret: Option<BigNumber>,
     pub double_commitment: Option<BigNumber>, // can be generated from secret, blinding factor and policy address
     pub blinding_factor: Option<BigNumber>,
+    pub blinding_factor_1: Option<BigNumber>,
     pub witness: Option<BigNumber>,
 }
 
 impl PolicyAgent {
     pub fn new(verkey: String, secret: Option<BigNumber>, double_commitment: Option<BigNumber>,
-               blinding_factor: Option<BigNumber>, witness: Option<BigNumber>) -> PolicyAgent {
+               blinding_factor: Option<BigNumber>, blinding_factor_1: Option<BigNumber>,
+               witness: Option<BigNumber>) -> PolicyAgent {
         PolicyAgent {
             verkey,
             secret,
             double_commitment,
             blinding_factor,
+            blinding_factor_1,
             witness
         }
     }
