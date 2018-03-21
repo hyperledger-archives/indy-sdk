@@ -24,8 +24,6 @@ from indy import pool, ledger, wallet, did, anoncreds
 from indy.error import IndyError
 
 
-# TODO - fix printing (make it same as in rotate key)
-
 pool_name = 'pool'
 wallet_name = 'wallet'
 genesis_file_path = '/home/vagrant/code/evernym/indy-sdk/cli/docker_pool_transactions_genesis'
@@ -36,7 +34,6 @@ def print_log(value_color="", value_noncolor=""):
     HEADER = '\033[92m'
     ENDC = '\033[0m'
     print(HEADER + value_color + ENDC + str(value_noncolor))
-
 
 
 async def issue_credential():
@@ -124,32 +121,32 @@ async def issue_credential():
         pprint.pprint(json.loads(claim_def_json))
 
         # 12.
-        print_log('\nCreating Prover wallet and opening it to get the handle\n')
+        print_log('\n12. Creating Prover wallet and opening it to get the handle\n')
         prover_did = 'VsKV7grR1BUE29mG2Fm2kX'
         prover_wallet_name = 'prover_wallet'
         await wallet.create_wallet(pool_name, prover_wallet_name, None, None, None)
         prover_wallet_handle = await wallet.open_wallet(prover_wallet_name, None, None)
 
         # 13.
-        print_log('\nProver is creating Master Secret\n')
+        print_log('\n13. Prover is creating Master Secret\n')
         master_secret_name = 'master_secret'
         await anoncreds.prover_create_master_secret(prover_wallet_handle, master_secret_name)
 
         # 14.
-        print_log('\nIssuer (Trust Anchor) is creating a Claim Offer for Prover\n')
+        print_log('\n14. Issuer (Trust Anchor) is creating a Claim Offer for Prover\n')
         schema_json = json.dumps(schema)
         claim_offer_json = await anoncreds.issuer_create_claim_offer(wallet_handle, schema_json, trust_anchor_did, prover_did)
         print_log('Claim Offer: ')
         pprint.pprint(json.loads(claim_offer_json))
         
         # 15.
-        print_log('\nProver creates Claim Request\n')
+        print_log('\n15. Prover creates Claim Request\n')
         claim_req_json = await anoncreds.prover_create_and_store_claim_req(prover_wallet_handle, prover_did, claim_offer_json, claim_def_json, master_secret_name)
         print_log('Claim Request: ')
         pprint.pprint(json.loads(claim_req_json))
         
         # 16.
-        print_log('\nIssuer (Trust Anchor) creates Claim for Claim Request\n')
+        print_log('\n16. Issuer (Trust Anchor) creates Claim for Claim Request\n')
         claim_json = json.dumps({
             'sex': ['male', '5944657099558967239210949258394887428692050081607692519917050011144233115103'],
             'name': ['Alex', '1139481716457488690172217916278103335'],
@@ -161,22 +158,22 @@ async def issue_credential():
         pprint.pprint(json.loads(claim_json))
 
         # 17.
-        print_log('\nProver processes and stores Claim\n')
+        print_log('\n17. Prover processes and stores Claim\n')
         await anoncreds.prover_store_claim(prover_wallet_handle, claim_json, None)
 
-        # 18..
-        print_log('\n13. Closing both wallet_handles and pool\n')
+        # 18.
+        print_log('\n18. Closing both wallet_handles and pool\n')
         await wallet.close_wallet(wallet_handle)
         await wallet.close_wallet(prover_wallet_handle)
         await pool.close_pool_ledger(pool_handle)
 
-        # 13.
-        print_log('\n14. Deleting created wallet_handles\n')
+        # 19.
+        print_log('\n19. Deleting created wallet_handles\n')
         await wallet.delete_wallet(wallet_name, None)
         await wallet.delete_wallet(prover_wallet_name, None)
 
-        # 14.
-        print_log('\n15. Deleting pool ledger config\n')
+        # 20.
+        print_log('\n20. Deleting pool ledger config\n')
         await pool.delete_pool_ledger_config(pool_name)
 
     except IndyError as e:

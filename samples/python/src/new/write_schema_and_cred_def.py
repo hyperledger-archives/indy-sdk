@@ -17,8 +17,6 @@ from indy import pool, ledger, wallet, signus, anoncreds
 from indy.error import IndyError
 
 
-# TODO - fix printing (make it same as in rotate key)
-
 pool_name = 'pool'
 wallet_name = 'wallet'
 genesis_file_path = '/home/vagrant/code/evernym/indy-sdk/cli/docker_pool_transactions_genesis'
@@ -29,7 +27,6 @@ def print_log(value_color="", value_noncolor=""):
     HEADER = '\033[92m'
     ENDC = '\033[0m'
     print(HEADER + value_color + ENDC + str(value_noncolor))
-
 
 
 async def write_schema_and_cred_def():

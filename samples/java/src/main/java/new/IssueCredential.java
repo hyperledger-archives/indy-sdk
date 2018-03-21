@@ -57,7 +57,6 @@ public class IssueCredential {
 		String nymResponseJson = signAndSubmitRequest(pool, walletHandle, defautStewardDid, nymRequest).get();
 		System.out.println("NYM transaction response:\n" + nymResponseJson);
 
-
 		// 9
 		System.out.println("\n9. Build the SCHEMA request to add new schema to the ledger as a Steward\n");
 		String name = "gvt";

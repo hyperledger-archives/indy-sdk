@@ -2,7 +2,7 @@
 Example demonstrating Proof Verification.
 
 First Issuer creates Claim Definition for existing Schema.
-After that, it issues a Claim to Prover (as in issue_claim.py example)
+After that, it issues a Claim to Prover (as in issue_credential.py example)
 
 Once Prover has successfully stored its Claim, it uses Proof Request that he
 received, to get Claims which satisfy the Proof Request from his wallet.
@@ -20,7 +20,6 @@ sys.path.insert(0, '/home/vagrant/code/evernym/indy-sdk/wrappers/python')
 from indy import pool, ledger, wallet, did, anoncreds, crypto
 from indy.error import IndyError
 
-# TODO - fix printing (make it same as in rotate key)
 
 seq_no = 1
 pool_name = 'pool'
@@ -36,8 +35,6 @@ def print_log(value_color="", value_noncolor=""):
     ENDC = '\033[0m'
     print(HEADER + value_color + ENDC + str(value_noncolor))
 
-
-# NOTE - this overlaps with issuing claim example
 
 async def proof_negotiation():
     try:
@@ -107,7 +104,7 @@ async def proof_negotiation():
 
         # 9.
         print_log('\n9. Prover gets Claims for Proof Request\n')
-        proof_req_json = json.dumps({
+        proof_request = {
             'nonce': '123432421212',
             'name': 'proof_req_1',
             'version': '0.1',
@@ -128,9 +125,10 @@ async def proof_negotiation():
                     'restrictions': [{'issuer_did': issuer_did}]
                 }
             }
-        })
+        }
         print_log('Proof Request: ')
-        pprint.pprint(proof_req_json)
+        pprint.pprint(proof_request)
+        proof_req_json = json.dumps(proof_request)
         claims_for_proof_request_json = await anoncreds.prover_get_claims_for_proof_req(prover_wallet_handle, proof_req_json)
         claims_for_proof_request = json.loads(claims_for_proof_request_json)
         print_log('Claims for Proof Request: ')
@@ -151,6 +149,7 @@ async def proof_negotiation():
                 'predicate1_referent': referent
             }
         })
+        pprint.pprint(json.loads(requested_claims_json))
         schemas_json = json.dumps({referent: schema})
         claim_defs_json = json.dumps({referent: json.loads(claim_def_json)})
         revoc_regs_json = json.dumps({})
@@ -161,16 +160,16 @@ async def proof_negotiation():
         assert 'Alex' == proof['requested_proof']['revealed_attrs']['attr1_referent'][1]
 
         # 11.
-        print_log('\nVerifier is verifying proof from Prover\n')
+        print_log('\n11.Verifier is verifying proof from Prover\n')
         assert await anoncreds.verifier_verify_proof(proof_req_json, proof_json, schemas_json, claim_defs_json, revoc_regs_json)
 
-        # 18..
-        print_log('\n13. Closing both wallet_handles\n')
+        # 12
+        print_log('\n12. Closing both wallet_handles\n')
         await wallet.close_wallet(issuer_wallet_handle)
         await wallet.close_wallet(prover_wallet_handle)
 
-        # 13.
-        print_log('\n14. Deleting created wallet_handles\n')
+        # 13
+        print_log('\n13. Deleting created wallet_handles\n')
         await wallet.delete_wallet(prover_wallet_name, None)
         await wallet.delete_wallet(issuer_wallet_name, None)
 
