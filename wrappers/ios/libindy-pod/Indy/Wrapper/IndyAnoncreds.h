@@ -180,6 +180,10 @@
                                 walletHandle:(IndyHandle)walletHandle
                                   completion:(void (^)(NSError *error, NSString *revocRegDeltaJSON))completion;
 
++ (void)issuerMergerRevocationRegistryDelta:(NSString *)revRegDelta
+                                  withDelta:(NSString *)otherRevRegDelta
+                                 completion:(void (^)(NSError *error, NSString *credOfferJSON))completion;
+
 /**
  Creates a master secret with a given name and stores it in the wallet.
  The name must be unique.
@@ -191,7 +195,7 @@
  */
 + (void)proverCreateMasterSecret:(NSString *)masterSecretID
                     walletHandle:(IndyHandle)walletHandle
-                      completion:(void (^)(NSError *error))completion;
+                      completion:(void (^)(NSError *error, NSString *outMasterSecretId))completion;
 
 /**
  
@@ -247,7 +251,6 @@
           credReqMetadataJSON:(NSString *)credReqMetadataJSON
                   credDefJSON:(NSString *)credDefJSON
                 revRegDefJSON:(NSString *)revRegDefJSON
-                 revStateJSON:(NSString *)revStateJSON
                  walletHandle:(IndyHandle)walletHandle
                    completion:(void (^)(NSError *error, NSString *outCredID))completion;
 
@@ -259,7 +262,7 @@
  @param filterJSON: filter for credentials
         {
             "schema_id": string, (Optional)
-            "schema_did": string, (Optional)
+            "schema_issuer_did": string, (Optional)
             "schema_name": string, (Optional)
             "schema_version": string, (Optional)
             "issuer_did": string, (Optional)

@@ -12,7 +12,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr(wall
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {
                 "name": "name"
             }
@@ -36,7 +36,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_in_u
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {
                 "name": "NAME"
             }
@@ -60,7 +60,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_cont
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {
                 "name": "    name "
             }
@@ -85,7 +85,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {
                 "name": "name",
                 "restrictions": [{"schema_id": gvt_schema_id}]
@@ -110,7 +110,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {
                 "name": "name",
                 "restrictions": [{"schema_name": "gvt"}]
@@ -136,7 +136,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {
                 "name": "name",
                 "restrictions": [{"issuer_did": issuer_did}]
@@ -162,7 +162,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {
                 "name": "name",
                 "restrictions": [{"cred_def_id": issuer_1_gvt_cred_def_id}]
@@ -189,7 +189,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {
                 "name": "name",
                 "restrictions": [{"schema_id": gvt_schema_id}, {"schema_id": xyz_schema_id}]
@@ -214,7 +214,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {
                 "name": "name",
                 "restrictions": [{"issuer_did": issuer_did_2}, {"schema_id": gvt_schema_id}]
@@ -238,7 +238,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_not_found_attribut
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {
                 "name": "some_attr"
             }
@@ -263,7 +263,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {
                 "name": "status",
                 "restrictions": [{"issuer_did": issuer_did_2}]
@@ -287,13 +287,13 @@ async def test_prover_get_credentials_for_proof_req_works_for_predicate(wallet_h
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {},
+        "requested_attributes": {},
         "requested_predicates": {
             "predicate1_referent":
                 {
-                    "attr_name": "age",
+                    "name": "age",
                     "p_type": ">=",
-                    "value": 18
+                    "p_value": 18
                 }
         }
     }
@@ -314,13 +314,13 @@ async def test_prover_get_credentials_for_proof_req_works_for_predicate_attr_in_
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {},
+        "requested_attributes": {},
         "requested_predicates": {
             "predicate1_referent":
                 {
-                    "attr_name": "AGE",
+                    "name": "AGE",
                     "p_type": ">=",
-                    "value": 18
+                    "p_value": 18
                 }
         }
     }
@@ -341,13 +341,13 @@ async def test_prover_get_credentials_for_proof_req_works_for_predicate_attr_con
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {},
+        "requested_attributes": {},
         "requested_predicates": {
             "predicate1_referent":
                 {
-                    "attr_name": " age ",
+                    "name": " age ",
                     "p_type": ">=",
-                    "value": 18
+                    "p_value": 18
                 }
         }
     }
@@ -368,13 +368,13 @@ async def test_prover_get_credentials_for_proof_req_works_for_predicate_for_sche
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {},
+        "requested_attributes": {},
         "requested_predicates": {
             "predicate1_referent":
                 {
-                    "attr_name": "age",
+                    "name": "age",
                     "p_type": ">=",
-                    "value": 18,
+                    "p_value": 18,
                     "restrictions": [{"schema_id": gvt_schema_id}]
                 }
         }
@@ -395,13 +395,13 @@ async def test_prover_get_credentials_for_proof_req_works_for_predicate_for_issu
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {},
+        "requested_attributes": {},
         "requested_predicates": {
             "predicate1_referent":
                 {
-                    "attr_name": "age",
+                    "name": "age",
                     "p_type": ">=",
-                    "value": 18,
+                    "p_value": 18,
                     "restrictions": [{"issuer_did": issuer_did}]
                 }
         }
@@ -423,13 +423,13 @@ async def test_prover_get_credentials_for_proof_req_works_for_predicate_for_cred
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {},
+        "requested_attributes": {},
         "requested_predicates": {
             "predicate1_referent":
                 {
-                    "attr_name": "age",
+                    "name": "age",
                     "p_type": ">=",
-                    "value": 18,
+                    "p_value": 18,
                     "restrictions": [{"cred_def_id": issuer_1_gvt_cred_def_id}]
                 }
         }
@@ -452,13 +452,13 @@ async def test_prover_get_credentials_for_proof_req_works_for_predicate_for_mult
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {},
+        "requested_attributes": {},
         "requested_predicates": {
             "predicate1_referent":
                 {
-                    "attr_name": "age",
+                    "name": "age",
                     "p_type": ">=",
-                    "value": 18,
+                    "p_value": 18,
                     "restrictions": [{"issuer_did": issuer_did}, {"issuer_did": issuer_did_2}]
                 }
         }
@@ -478,13 +478,13 @@ async def test_prover_get_credentials_for_proof_req_works_for_not_found_predicat
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {},
+        "requested_attributes": {},
         "requested_predicates": {
             "predicate1_referent":
                 {
-                    "attr_name": "some_attr",
+                    "name": "some_attr",
                     "p_type": ">=",
-                    "value": 58
+                    "p_value": 58
                 }
         }
     }
@@ -502,13 +502,13 @@ async def test_prover_get_credentials_for_proof_req_works_for_not_satisfy_predic
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {},
+        "requested_attributes": {},
         "requested_predicates": {
             "predicate1_referent":
                 {
-                    "attr_name": "age",
+                    "name": "age",
                     "p_type": ">=",
-                    "value": 58
+                    "p_value": 58
                 }
         }
     }
@@ -529,13 +529,13 @@ async def test_prover_get_credentials_for_proof_req_works_for_multiply_attribute
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {
+        "requested_attributes": {
             "attr1_referent": {"name": "name"},
             "attr2_referent": {"name": "sex"}
         },
         "requested_predicates": {
-            "predicate1_referent": {"attr_name": "age", "p_type": ">=", "value": 18},
-            "predicate2_referent": {"attr_name": "height", "p_type": ">=", "value": 160}
+            "predicate1_referent": {"name": "age", "p_type": ">=", "p_value": 18},
+            "predicate2_referent": {"name": "height", "p_type": ">=", "p_value": 160}
         }
     }
 
@@ -557,13 +557,13 @@ async def test_prover_get_credentials_for_proof_req_works_for_invalid_wallet_han
         "nonce": "123432421212",
         "name": "proof_req_1",
         "version": "0.1",
-        "requested_attrs": {},
+        "requested_attributes": {},
         "requested_predicates": {
             "predicate1_referent":
                 {
-                    "attr_name": "age",
+                    "name": "age",
                     "p_type": ">=",
-                    "value": 58
+                    "p_value": 58
                 }
         }
     }

@@ -193,9 +193,29 @@
     }
 }
 
++ (void)issuerMergerRevocationRegistryDelta:(NSString *)revRegDelta
+                                  withDelta:(NSString *)otherRevRegDelta
+                                 completion:(void (^)(NSError *error, NSString *credOfferJSON))completion; {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_issuer_merge_revocation_registry_deltas(handle,
+            [revRegDelta UTF8String],
+            [otherRevRegDelta UTF8String],
+            IndyWrapperCommon3PSCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 + (void)proverCreateMasterSecret:(NSString *)masterSecretID
                     walletHandle:(IndyHandle)walletHandle
-                      completion:(void (^)(NSError *error))completion {
+                      completion:(void (^)(NSError *error, NSString *outMasterSecretId))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -203,14 +223,14 @@
     ret = indy_prover_create_master_secret(handle,
             walletHandle,
             [masterSecretID UTF8String],
-            IndyWrapperCommon2PCallback
+            IndyWrapperCommon3PSCallback
     );
 
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
 
         dispatch_async(dispatch_get_main_queue(), ^{
-            completion([NSError errorFromIndyError:ret]);
+            completion([NSError errorFromIndyError:ret], nil);
         });
     }
 }
@@ -249,7 +269,6 @@
           credReqMetadataJSON:(NSString *)credReqMetadataJSON
                   credDefJSON:(NSString *)credDefJSON
                 revRegDefJSON:(NSString *)revRegDefJSON
-                 revStateJSON:(NSString *)revStateJSON
                  walletHandle:(IndyHandle)walletHandle
                    completion:(void (^)(NSError *error, NSString *outCredID))completion {
     indy_error_t ret;
@@ -264,7 +283,6 @@
             [credJson UTF8String],
             [credDefJSON UTF8String],
             [revRegDefJSON UTF8String],
-            [revStateJSON UTF8String],
             IndyWrapperCommon3PSCallback
     );
     if (ret != Success) {

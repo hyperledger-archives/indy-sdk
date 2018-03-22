@@ -48,7 +48,7 @@ fn anoncreds_demo_works() {
     let (issuer_create_credential_offer_receiver, issuer_create_credential_offer_command_handle, issuer_create_credential_offer_callback) = CallbackUtils::_closure_to_cb_ec_string();
     let (create_wallet_receiver, create_wallet_command_handle, create_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
     let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = CallbackUtils::_closure_to_cb_ec_i32();
-    let (prover_create_master_secret_receiver, prover_create_master_secret_command_handle, prover_create_master_secret_callback) = CallbackUtils::_closure_to_cb_ec();
+    let (prover_create_master_secret_receiver, prover_create_master_secret_command_handle, prover_create_master_secret_callback) = CallbackUtils::_closure_to_cb_ec_string();
     let (prover_create_credential_req_receiver, prover_create_credential_req_command_handle, prover_create_credential_req_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
     let (issuer_create_credential_receiver, issuer_create_credential_command_handle, issuer_create_credential_callback) = CallbackUtils::_closure_to_cb_ec_string_opt_string_opt_string();
     let (prover_store_credential_receiver, prover_store_credential_command_handle, prover_store_credential_callback) = CallbackUtils::_closure_to_cb_ec_string();
@@ -104,7 +104,7 @@ fn anoncreds_demo_works() {
                                   issuer_create_schema_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, _, schema_json) = issuer_create_schema_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, schema_id, schema_json) = issuer_create_schema_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 4. Issuer create Credential Definition for Schema
@@ -134,7 +134,7 @@ fn anoncreds_demo_works() {
                                          prover_create_master_secret_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let err = prover_create_master_secret_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, _) = prover_create_master_secret_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 6. Issuer create Credential Offer
@@ -194,7 +194,6 @@ fn anoncreds_demo_works() {
                                      CString::new(credential_json).unwrap().as_ptr(),
                                      CString::new(credential_def_json.clone()).unwrap().as_ptr(),
                                      null(),
-                                     null(),
                                      prover_store_credential_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -205,16 +204,16 @@ fn anoncreds_demo_works() {
                                        "nonce":"123432421212",
                                        "name":"proof_req_1",
                                        "version":"0.1",
-                                       "requested_attrs":{
+                                       "requested_attributes":{
                                             "attr1_referent":{
                                                 "name":"name"
                                             }
                                        },
                                        "requested_predicates":{
                                            "predicate1_referent":{
-                                               "attr_name":"age",
+                                               "name":"age",
                                                "p_type":">=",
-                                               "value":18
+                                               "p_value":18
                                            }
                                        }
                                    }"#;
@@ -238,7 +237,7 @@ fn anoncreds_demo_works() {
 
     let requested_credentials_json = format!(r#"{{
                                                   "self_attested_attributes":{{}},
-                                                  "requested_attrs":{{
+                                                  "requested_attributes":{{
                                                         "attr1_referent":{{ "cred_id":"{}", "revealed":true }}
                                                   }},
                                                   "requested_predicates":{{
@@ -246,8 +245,8 @@ fn anoncreds_demo_works() {
                                                   }}
                                                 }}"#, credential.referent, credential.referent);
 
-    let schemas_json = format!(r#"{{"{}":{}}}"#, credential.referent, schema_json);
-    let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential.referent, credential_def_json);
+    let schemas_json = format!(r#"{{"{}":{}}}"#, schema_id, schema_json);
+    let credential_defs_json = format!(r#"{{"{}":{}}}"#, credential_def_id, credential_def_json);
     let revoc_infos_jsons = "{}";
 
     // 11. Prover create Proof for Proof Request
@@ -272,10 +271,6 @@ fn anoncreds_demo_works() {
     let revealed_attr_1 = proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap();
     assert_eq!("Alex", revealed_attr_1.raw);
 
-    let id = revealed_attr_1.referent.clone();
-
-    let schemas_json = format!(r#"{{"{}":{}}}"#, id, schema_json);
-    let credential_defs_json = format!(r#"{{"{}":{}}}"#, id, credential_def_json);
     let rev_reg_defs_json = "{}";
     let rev_regs_json = "{}";
 

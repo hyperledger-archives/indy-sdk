@@ -67,7 +67,7 @@ extern "C" {
                                                       void           (*cb)(indy_handle_t xcommand_handle,
                                                                            indy_error_t  err,
                                                                            const char*   cred_json,
-                                                                           const char*   revoc_id,
+                                                                           const char*   cred_revoc_id,
                                                                            const char*   revoc_reg_delta_json)
                                                       );
     
@@ -93,12 +93,23 @@ extern "C" {
                                                                             const char*   revoc_reg_delta_json)
                                                        );
 
+
+    extern indy_error_t indy_issuer_merge_revocation_registry_deltas(indy_handle_t command_handle,
+                                                                     const char *  rev_reg_delta_json,
+                                                                     const char *  other_rev_reg_delta_json,
+
+                                                                     void           (*cb)(indy_handle_t xcommand_handle,
+                                                                                          indy_error_t  err,
+                                                                                          const char*   merged_rev_reg_delta)
+                                                                     );
+
     extern indy_error_t indy_prover_create_master_secret(indy_handle_t command_handle,
                                                          indy_handle_t wallet_handle,
                                                          const char *  master_secret_id,
 
                                                          void           (*cb)(indy_handle_t xcommand_handle,
-                                                                              indy_error_t  err)
+                                                                              indy_error_t  err,
+                                                                              const char*   out_master_secret_id)
                                                          );
     
     
@@ -123,7 +134,6 @@ extern "C" {
                                                      const char *  cred_json,
                                                      const char *  cred_def_json,
                                                      const char *  rev_reg_def_json,
-                                                     const char *  rev_state_json,
 
                                                      void           (*cb)(indy_handle_t xcommand_handle,
                                                                           indy_error_t  err,

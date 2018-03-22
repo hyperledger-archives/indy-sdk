@@ -61,11 +61,11 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		String credentialOffer = Anoncreds.issuerCreateCredentialOffer(wallet, credentialDefId).get();
 
 		// 5. Issuer creates Master Secret
-		String masterSecretId = "master_secret_name";
+		String masterSecretId = "master_secret";
 		Anoncreds.proverCreateMasterSecret(wallet, masterSecretId).get();
 
 		// 6. Prover creates Credential Request
-		AnoncredsResults.ProverCreateCredentialRequestResult createCredReqResult = Anoncreds.proverCreateAndStoreCredentialReq(wallet, DID_MY1, credentialOffer, credentialDef, masterSecretId).get();
+		AnoncredsResults.ProverCreateCredentialRequestResult createCredReqResult = Anoncreds.proverCreateCredentialReq(wallet, DID_MY1, credentialOffer, credentialDef, masterSecretId).get();
 		String credentialRequest = createCredReqResult.getCredentialRequestJson();
 		String credentialRequestMetadata = createCredReqResult.getCredentialRequestMetadataJson();
 
@@ -81,7 +81,7 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		String credential = createCredentialResult.getCredentialJson();
 
 		// 8. Prover stores Credential
-		Anoncreds.proverStoreCredential(wallet, "id1", credentialRequest, credentialRequestMetadata, credential, credentialDef, null, null).get();
+		Anoncreds.proverStoreCredential(wallet, "id1", credentialRequest, credentialRequestMetadata, credential, credentialDef, null).get();
 
 		// 9. Prover gets Credential
 		String credentials = Anoncreds.proverGetCredentials(wallet, String.format("{\"issuer_did\":\"%s\"}", DID)).get();

@@ -19,7 +19,7 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{" +
+				"              \"requested_attributes\":{" +
 				"                   \"attr1_referent\":{\"name\":\"name\"}" +
 				"               }," +
 				"              \"requested_predicates\":{}" +
@@ -40,7 +40,7 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{" +
+				"              \"requested_attributes\":{" +
 				"                   \"attr1_referent\":{\"name\":\"NAME\"}" +
 				"               }," +
 				"              \"requested_predicates\":{}" +
@@ -61,7 +61,7 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{" +
+				"              \"requested_attributes\":{" +
 				"                   \"attr1_referent\":{\"name\":\" name \"}" +
 				"               }," +
 				"              \"requested_predicates\":{}" +
@@ -82,7 +82,7 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{" +
+				"              \"requested_attributes\":{" +
 				"                   \"attr1_referent\":{\"name\":\"attribute\"}" +
 				"              }," +
 				"              \"requested_predicates\":{}" +
@@ -103,10 +103,10 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{}," +
+				"              \"requested_attributes\":{}," +
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
-				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18" +
+				"                       \"name\":\"age\",\"p_type\":\">=\",\"p_value\":18" +
 				"                   }" +
 				"              }" +
 				"          }";
@@ -126,10 +126,10 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{}," +
+				"              \"requested_attributes\":{}," +
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
-				"                       \"attr_name\":\"AGE\",\"p_type\":\">=\",\"value\":18" +
+				"                       \"name\":\"AGE\",\"p_type\":\">=\",\"p_value\":18" +
 				"                   }" +
 				"              }" +
 				"          }";
@@ -149,10 +149,10 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{}," +
+				"              \"requested_attributes\":{}," +
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
-				"                       \"attr_name\":\" age \",\"p_type\":\">=\",\"value\":18" +
+				"                       \"name\":\" age \",\"p_type\":\">=\",\"p_value\":18" +
 				"                   }" +
 				"              }" +
 				"          }";
@@ -172,10 +172,10 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{}," +
+				"              \"requested_attributes\":{}," +
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
-				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":58" +
+				"                       \"name\":\"age\",\"p_type\":\">=\",\"p_value\":58" +
 				"                   }" +
 				"               }" +
 				"         }";
@@ -195,13 +195,13 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"               \"nonce\":\"123432421212\"," +
 				"               \"name\":\"proof_req_1\"," +
 				"               \"version\":\"0.1\"," +
-				"               \"requested_attrs\":{" +
+				"               \"requested_attributes\":{" +
 				"                     \"attr1_referent\":{ \"name\":\"name\"}," +
 				"                     \"attr2_referent\":{\"name\":\"sex\"}" +
 				"               }," +
 				"               \"requested_predicates\":{" +
-				"                     \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18}," +
-				"                     \"predicate2_referent\":{\"attr_name\":\"height\",\"p_type\":\">=\",\"value\":160}" +
+				"                     \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}," +
+				"                     \"predicate2_referent\":{\"name\":\"height\",\"p_type\":\">=\",\"p_value\":160}" +
 				"               }" +
 				"            }";
 
@@ -229,7 +229,7 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{}," +
+				"              \"requested_attributes\":{}," +
 				"              \"requested_predicates\":{}" +
 				"         }";
 
@@ -248,7 +248,7 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{" +
+				"              \"requested_attributes\":{" +
 				"                   \"attr1_referent\":{" +
 				"                       \"name\":\"name\"," +
 				"                       \"restrictions\":[{\"issuer_did\":\"%s\"}]" +
@@ -272,7 +272,7 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{" +
+				"              \"requested_attributes\":{" +
 				"                   \"attr1_referent\":{" +
 				"                       \"name\":\"name\"," +
 				"                       \"restrictions\":[{\"schema_id\":\"%s\"}]" +
@@ -296,7 +296,7 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"               \"nonce\":\"123432421212\"," +
 				"               \"name\":\"proof_req_1\"," +
 				"               \"version\":\"0.1\"," +
-				"               \"requested_attrs\":{" +
+				"               \"requested_attributes\":{" +
 				"                    \"attr1_referent\":{" +
 				"                        \"name\":\"name\"," +
 				"                        \"restrictions\":[{\"schema_name\":\"gvt\"}]" +
@@ -320,7 +320,7 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{" +
+				"              \"requested_attributes\":{" +
 				"                   \"attr1_referent\":{" +
 				"                       \"name\":\"name\"," +
 				"                       \"restrictions\":[{\"schema_id\":\"%s\"}, {\"schema_id\":\"%s\"}]" +
@@ -344,7 +344,7 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{" +
+				"              \"requested_attributes\":{" +
 				"                   \"attr1_referent\":{" +
 				"                       \"name\":\"name\"," +
 				"                       \"restrictions\":[{\"cred_def_id\":\"%s\"}]" +
@@ -368,7 +368,7 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{" +
+				"              \"requested_attributes\":{" +
 				"                   \"attr1_referent\":{" +
 				"                       \"name\":\"name\"," +
 				"                       \"restrictions\":[{\"schema_id\":\"%s\"}, {\"issuer_did\":\"%s\"}]" +
@@ -392,10 +392,10 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{}," +
+				"              \"requested_attributes\":{}," +
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
-				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
+				"                       \"name\":\"age\",\"p_type\":\">=\",\"p_value\":18," +
 				"                       \"restrictions\":[{\"issuer_did\":\"%s\"}]" +
 				"                   }" +
 				"              }" +
@@ -416,10 +416,10 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{}," +
+				"              \"requested_attributes\":{}," +
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
-				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
+				"                       \"name\":\"age\",\"p_type\":\">=\",\"p_value\":18," +
 				"                       \"restrictions\":[{\"schema_id\":\"%s\"}]" +
 				"                   }" +
 				"              }" +
@@ -440,10 +440,10 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{}," +
+				"              \"requested_attributes\":{}," +
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
-				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
+				"                       \"name\":\"age\",\"p_type\":\">=\",\"p_value\":18," +
 				"                       \"restrictions\":[{\"schema_id\":\"%s\"}, {\"schema_id\":\"%s\"}]" +
 				"                   }" +
 				"              }" +
@@ -464,10 +464,10 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{}," +
+				"              \"requested_attributes\":{}," +
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
-				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
+				"                       \"name\":\"age\",\"p_type\":\">=\",\"p_value\":18," +
 				"                       \"restrictions\":[{\"cred_def_id\":\"%s\"}]" +
 				"                   }" +
 				"              }" +
@@ -488,10 +488,10 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{}," +
+				"              \"requested_attributes\":{}," +
 				"              \"requested_predicates\":{" +
 				"                   \"predicate1_referent\":{" +
-				"                       \"attr_name\":\"age\",\"p_type\":\">=\",\"value\":18," +
+				"                       \"name\":\"age\",\"p_type\":\">=\",\"p_value\":18," +
 				"                       \"restrictions\":[{\"schema_id\":\"%s\"}, {\"issuer_did\":\"%s\"}]" +
 				"                   }" +
 				"              }" +
@@ -531,9 +531,9 @@ public class ProverGetCredentialsForProofRequestTest extends AnoncredsIntegratio
 				"              \"nonce\":\"123432421212\"," +
 				"              \"name\":\"proof_req_1\"," +
 				"              \"version\":\"0.1\"," +
-				"              \"requested_attrs\":{}," +
+				"              \"requested_attributes\":{}," +
 				"              \"requested_predicates\":{" +
-				"                    \"predicate1_referent\":{\"attr_name\":\"age\",\"p_type\":\"LE\",\"value\":18}" +
+				"                    \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\"LE\",\"p_value\":18}" +
 				"              }" +
 				"          }";
 

@@ -12,7 +12,7 @@ public class ProverCreateCredentialRequestTest extends AnoncredsIntegrationTest 
 
 	@Test
 	public void testProverCreateAndStoreCredentialReqWorks() throws Exception {
-		Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretId).get();
+		Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretId).get();
 	}
 
 	@Test
@@ -21,7 +21,7 @@ public class ProverCreateCredentialRequestTest extends AnoncredsIntegrationTest 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, issuer2GvtCredOffer, issuer1gvtCredDef, masterSecretId).get();
+		Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer2GvtCredOffer, issuer1gvtCredDef, masterSecretId).get();
 	}
 
 	@Test
@@ -32,7 +32,7 @@ public class ProverCreateCredentialRequestTest extends AnoncredsIntegrationTest 
 
 		String credentialOffer = String.format("{\"issuer_did\":\"%s\"}", issuerDid);
 
-		Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, credentialOffer, issuer1gvtCredDef, masterSecretId).get();
+		Anoncreds.proverCreateCredentialReq(wallet, proverDid, credentialOffer, issuer1gvtCredDef, masterSecretId).get();
 	}
 
 	@Test
@@ -41,6 +41,6 @@ public class ProverCreateCredentialRequestTest extends AnoncredsIntegrationTest 
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletValueNotFoundException.class));
 
-		Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretId + "a").get();
+		Anoncreds.proverCreateCredentialReq(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretId + "a").get();
 	}
 }

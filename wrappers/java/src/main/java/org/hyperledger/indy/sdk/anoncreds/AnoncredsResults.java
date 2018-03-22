@@ -160,7 +160,7 @@ public final class AnoncredsResults {
 	}
 
 	/**
-	 * Result from calling proverCreateAndStoreCredentialReq.
+	 * Result from calling proverCreateCredentialReq.
 	 */
 	public static class ProverCreateCredentialRequestResult extends IndyJava.Result {
 

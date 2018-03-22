@@ -48,7 +48,7 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 
 		//7. Prover create Credential Request
 		AnoncredsResults.ProverCreateCredentialRequestResult createCredReqResult =
-				Anoncreds.proverCreateAndStoreCredentialReq(wallet, proverDid, credOfferJson, credDefJson, masterSecretId).get();
+				Anoncreds.proverCreateCredentialReq(wallet, proverDid, credOfferJson, credDefJson, masterSecretId).get();
 		String credentialReqJson = createCredReqResult.getCredentialRequestJson();
 		String credentialReqMetadataJson = createCredReqResult.getCredentialRequestMetadataJson();
 
@@ -68,7 +68,7 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 		String revStateJson = Anoncreds.createRevocationState(blobStorageReaderHandleCfg, revRegDef, revRegDelta, timestamp, credRevocId).get();
 
 		//11. Prover store received Credential
-		Anoncreds.proverStoreCredential(wallet, credentialId1, credentialReqJson, credentialReqMetadataJson, credJson, credDefJson, revRegDef, revStateJson).get();
+		Anoncreds.proverStoreCredential(wallet, credentialId1, credentialReqJson, credentialReqMetadataJson, credJson, credDefJson, revRegDef).get();
 
 		//12. Prover gets Credentials for Proof Request
 		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
@@ -80,13 +80,13 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 		//13. Prover create Proof
 		String requestedCredentialsJson = String.format("{" +
 				"\"self_attested_attributes\":{}," +
-				"\"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true, \"timestamp\":%d }}," +
+				"\"requested_attributes\":{\"attr1_referent\":{\"cred_id\":\"%s\", \"revealed\":true, \"timestamp\":%d }}," +
 				"\"requested_predicates\":{\"predicate1_referent\":{\"cred_id\":\"%s\", \"timestamp\":%d}}" +
 				"}", credentialUuid, timestamp, credentialUuid, timestamp);
 
-		String schemasJson = String.format("{\"%s\":%s}", credentialUuid, schemaJson);
-		String credentialDefsJson = String.format("{\"%s\":%s}", credentialUuid, credDefJson);
-		String revStatesJson = String.format("{\"%s\": { \"%s\":%s }}", credentialUuid, timestamp, revStateJson);
+		String schemasJson = String.format("{\"%s\":%s}", gvtSchemaId, schemaJson);
+		String credentialDefsJson = String.format("{\"%s\":%s}", credDefId, credDefJson);
+		String revStatesJson = String.format("{\"%s\": { \"%s\":%s }}", revRegId, timestamp, revStateJson);
 
 		String proofJson = Anoncreds.proverCreateProof(wallet, proofRequest, requestedCredentialsJson, masterSecretId, schemasJson,
 				credentialDefsJson, revStatesJson).get();
@@ -99,12 +99,8 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 		JSONObject revealedAttr1 = proof.getJSONObject("requested_proof").getJSONObject("revealed_attrs").getJSONObject("attr1_referent");
 		assertEquals("Alex", revealedAttr1.getString("raw"));
 
-		String id = revealedAttr1.getString("referent");
-
-		schemasJson = String.format("{\"%s\":%s}", id, schemaJson);
-		credentialDefsJson = String.format("{\"%s\":%s}", id, credDefJson);
-		String revRegDefsJson = String.format("{\"%s\":%s}", id, revRegDef);
-		String revRegs = String.format("{\"%s\": { \"%s\":%s }}", id, timestamp, revRegDelta);
+		String revRegDefsJson = String.format("{\"%s\":%s}", revRegId, revRegDef);
+		String revRegs = String.format("{\"%s\": { \"%s\":%s }}", revRegId, timestamp, revRegDelta);
 
 		boolean valid = Anoncreds.verifierVerifyProof(proofRequest, proofJson, schemasJson, credentialDefsJson, revRegDefsJson, revRegs).get();
 		assertFalse(valid);
