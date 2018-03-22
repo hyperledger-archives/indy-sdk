@@ -167,6 +167,20 @@ impl AnoncredsUtils {
         super::results::result_to_string(err, receiver)
     }
 
+    pub fn issuer_merge_revocation_registry_deltas(rev_reg_delta: &str, other_rev_reg_delta: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let rev_reg_delta = CString::new(rev_reg_delta).unwrap();
+        let other_rev_reg_delta = CString::new(other_rev_reg_delta).unwrap();
+
+        let err = indy_issuer_merge_revocation_registry_deltas(command_handle,
+                                                               rev_reg_delta.as_ptr(),
+                                                               other_rev_reg_delta.as_ptr(),
+                                                               cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
     pub fn prover_create_master_secret(wallet_handle: i32, master_secret_id: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 

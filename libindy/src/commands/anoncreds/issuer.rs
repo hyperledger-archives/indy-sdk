@@ -475,8 +475,10 @@ impl IssuerCommandExecutor {
 
         let cred_rev_id = cred_rev_id.map(|rev_id| rev_id.to_string());
 
-        if let (Some(r_reg_def), Some(r_reg), Some(r_reg_id)) = (rev_reg_def, credential.rev_reg, rev_reg_id) {
+        if let (Some(r_reg_def), Some(r_reg), Some(r_reg_id), Some(cred_r_id)) = (rev_reg_def, credential.rev_reg, rev_reg_id, cred_rev_id.clone()) {
             self.wallet_service.set_object(wallet_handle, &format!("revocation_registry::{}", r_reg_id), &r_reg, "RevocationRegistry")?;
+            self.wallet_service.set(wallet_handle, &format!("current_credential_id::{}", r_reg_id), &cred_r_id)?;
+
             match r_reg_def.value.issuance_type {
                 IssuanceTypes::ISSUANCE_ON_DEMAND =>
                     self.wallet_service.set(wallet_handle, &format!("issued_credential_ids::{}", r_reg_id), &issued)?,
