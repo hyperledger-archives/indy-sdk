@@ -33,6 +33,10 @@
 
 - (NSString *)getGvtCredentialDef;
 
+- (NSString *)gvtCredDef;
+
+- (NSString *)proofJSON;
+
 - (NSError *)issuerCreateSchemaWithName:(NSString *)name
                                 version:(NSString *)version
                                   attrs:(NSString *)attrs
@@ -73,6 +77,10 @@
                                      walletHandle:(IndyHandle)walletHandle
                                 revocRegDeltaJson:(NSString **)revocRegDeltaJson;
 
+- (NSError *)issuerMergerRevocationRegistryDelta:(NSString *)revRegDelta
+                                       withDelta:(NSString *)otherRevRegDelta
+                               mergedRevRegDelta:(NSString **)mergedRevRegDelta;
+
 - (NSError *)issuerCreateCredentialOfferForCredDefId:(NSString *)credDefID
                                         walletHandle:(IndyHandle)walletHandle
                                        credOfferJson:(NSString **)credOfferJson;
@@ -104,7 +112,6 @@
                credReqMetadataJSON:(NSString *)credReqMetadataJSON
                        credDefJSON:(NSString *)credDefJSON
                      revRegDefJSON:(NSString *)revRegDefJSON
-                      revStateJSON:(NSString *)revStateJSON
                       walletHandle:(IndyHandle)walletHandle
                          outCredId:(NSString **)outCredId;
 

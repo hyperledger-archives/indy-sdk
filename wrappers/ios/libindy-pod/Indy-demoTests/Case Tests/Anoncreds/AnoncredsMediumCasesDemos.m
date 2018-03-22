@@ -121,7 +121,6 @@
                                              credReqMetadataJSON:credentialRequestMetadata
                                                      credDefJSON:credentialDefJson
                                                    revRegDefJSON:nil
-                                                    revStateJSON:nil
                                                     walletHandle:walletHandle
                                                        outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredentialWithWalletHandle failed");
@@ -159,8 +158,8 @@
                                      \"requested_attrs\":{\"attr1_referent\":{\"cred_id\":\"%@\",\"revealed\":true}},\
                                      \"requested_predicates\":{}\
                                      }", credentialReferent];
-    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialReferent, schemaJson];
-    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialReferent, credentialDefJson];
+    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", schemaId, schemaJson];
+    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialDefId, credentialDefJson];
     NSString *revocStatesJson = @"{}";
 
     NSString *proofJson;
@@ -200,11 +199,6 @@
     XCTAssertTrue(proof, @"serialization failed");
 
     NSDictionary *revealedAttr1 = proof[@"requested_proof"][@"revealed_attrs"][@"attr1_referent"];
-    NSString *id = revealedAttr1[@"referent"];
-
-    schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, schemaJson];
-
-    credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, credentialDefJson];
 
     NSString *revocRegDefsJson = @"{}";
     NSString *revocRegsJson = @"{}";
@@ -318,7 +312,6 @@
                                              credReqMetadataJSON:credentialReqMetadata
                                                      credDefJSON:credentialDefJSON
                                                    revRegDefJSON:nil
-                                                    revStateJSON:nil
                                                     walletHandle:proverWalletHandle
                                                        outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredential() failed");
@@ -368,9 +361,8 @@
                                      }", credentialReferent, credentialReferent];
 
 
-    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialReferent, schemaJson];
-
-    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialReferent, credentialDefJSON];
+    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", schemaId, schemaJson];
+    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialDefId, credentialDefJSON];
     NSString *revocStatesJson = @"{}";
 
     NSString *proofJson;
@@ -388,16 +380,12 @@
     NSDictionary *proof = [NSDictionary fromString:proofJson];
     NSDictionary *revealedAttr1 = proof[@"requested_proof"][@"revealed_attrs"][@"attr1_referent"];
     NSString *raw = revealedAttr1[@"raw"];
-    NSString *id = revealedAttr1[@"referent"];
 
     XCTAssertTrue([raw isEqualToString:@"Alex"]);
 
     NSString *attestedAttrUUID = proof[@"requested_proof"][@"self_attested_attrs"][@"attr2_referent"];
     XCTAssertTrue([attestedAttrUUID isEqualToString:@"value"]);
 
-    schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, schemaJson];
-
-    credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, credentialDefJSON];
 
     NSString *revocRegDefsJson = @"{}";
     NSString *revocRegsJson = @"{}";
@@ -558,7 +546,6 @@
                                              credReqMetadataJSON:issuer1GvtCredentialReqMetadata
                                                      credDefJSON:issuer1GvtCredentialDefJson
                                                    revRegDefJSON:nil
-                                                    revStateJSON:nil
                                                     walletHandle:proverWalletHandle
                                                        outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredential() failed");
@@ -595,7 +582,6 @@
                                              credReqMetadataJSON:issuer2XyzCredentialReqMetadata
                                                      credDefJSON:issuer2XyzCredentialDefJson
                                                    revRegDefJSON:nil
-                                                    revStateJSON:nil
                                                     walletHandle:proverWalletHandle
                                                        outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredential() failed on step 16");
@@ -669,13 +655,13 @@
     NSString *schemasJson = [NSString stringWithFormat:@"{"\
                              " \"%@\": %@, "\
                              " \"%@\": %@}",
-                                                       [[AnoncredsUtils sharedInstance] credentialId1], gvtSchemaJson,
-                                                       [[AnoncredsUtils sharedInstance] credentialId2], xyzSchemaJson];
+                                                       gvtSchemaId, gvtSchemaJson,
+                                                       xyzSchemaId, xyzSchemaJson];
 
     NSString *credentialDefsJson = [NSString stringWithFormat:@"{"\
                                " \"%@\": %@, \"%@\": %@}",
-                                                              [[AnoncredsUtils sharedInstance] credentialId1], issuer1GvtCredentialDefJson,
-                                                              [[AnoncredsUtils sharedInstance] credentialId2], issuer2XyzCredentialDefJson];
+                                                              issuer1GvtCredentialDefId, issuer1GvtCredentialDefJson,
+                                                              issuer2XyzCredentialDefId, issuer2XyzCredentialDefJson];
 
     NSString *revocStatesJson = @"{}";
 
@@ -695,21 +681,7 @@
     XCTAssertTrue(proof, @"serialization failed");
 
     NSDictionary *revealedAttr1 = proof[@"requested_proof"][@"revealed_attrs"][@"attr1_referent"];
-    NSString *gvtSubProofId = revealedAttr1[@"referent"];
-
     NSDictionary *revealedAttr2 = proof[@"requested_proof"][@"revealed_attrs"][@"attr2_referent"];
-    NSString *xyzSubProofId = revealedAttr2[@"referent"];
-
-    schemasJson = [NSString stringWithFormat:@"{"\
-                             " \"%@\": %@, "\
-                             " \"%@\": %@}",
-                                             gvtSubProofId, gvtSchemaJson,
-                                             xyzSubProofId, xyzSchemaJson];
-
-    credentialDefsJson = [NSString stringWithFormat:@"{"\
-                               " \"%@\": %@, \"%@\": %@}",
-                                                    gvtSubProofId, issuer1GvtCredentialDefJson,
-                                                    xyzSubProofId, issuer2XyzCredentialDefJson];
 
     NSString *revocRegDefsJson = @"{}";
     NSString *revocRegsJson = @"{}";
@@ -858,7 +830,6 @@
                                              credReqMetadataJSON:gvtCredentialReqMetadata
                                                      credDefJSON:gvtCredentialDefJson
                                                    revRegDefJSON:nil
-                                                    revStateJSON:nil
                                                     walletHandle:proverWalletHandle
                                                        outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredential() failed");
@@ -895,7 +866,6 @@
                                              credReqMetadataJSON:xyzCredentialReqMetadata
                                                      credDefJSON:xyzCredentialDefJson
                                                    revRegDefJSON:nil
-                                                    revStateJSON:nil
                                                     walletHandle:proverWalletHandle
                                                        outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredential() failed on step 16");
@@ -969,13 +939,13 @@
     NSString *schemasJson = [NSString stringWithFormat:@"{"\
                              " \"%@\": %@, "\
                              " \"%@\": %@}",
-                                                       [[AnoncredsUtils sharedInstance] credentialId1], gvtSchemaJson,
-                                                       [[AnoncredsUtils sharedInstance] credentialId2], xyzSchemaJson];
+                                                       gvtSchemaId, gvtSchemaJson,
+                                                       xyzSchemaId, xyzSchemaJson];
 
     NSString *credentialDefsJson = [NSString stringWithFormat:@"{"\
                                " \"%@\": %@, \"%@\": %@}",
-                                                              [[AnoncredsUtils sharedInstance] credentialId1], gvtCredentialDefJson,
-                                                              [[AnoncredsUtils sharedInstance] credentialId2], xyzCredentialDefJson];
+                                                              gvtCredentialDefId, gvtCredentialDefJson,
+                                                              xyzCredentialDefId, xyzCredentialDefJson];
 
     NSString *revocStatesJson = @"{}";
 
@@ -995,21 +965,8 @@
     XCTAssertTrue(proof, @"serialization failed");
 
     NSDictionary *revealedAttr1 = proof[@"requested_proof"][@"revealed_attrs"][@"attr1_referent"];
-    NSString *gvtSubProofId = revealedAttr1[@"referent"];
 
     NSDictionary *revealedAttr2 = proof[@"requested_proof"][@"revealed_attrs"][@"attr2_referent"];
-    NSString *xyzSubProofId = revealedAttr2[@"referent"];
-
-    schemasJson = [NSString stringWithFormat:@"{"\
-                             " \"%@\": %@, "\
-                             " \"%@\": %@}",
-                                             gvtSubProofId, gvtSchemaJson,
-                                             xyzSubProofId, xyzSchemaJson];
-
-    credentialDefsJson = [NSString stringWithFormat:@"{"\
-                               " \"%@\": %@, \"%@\": %@}",
-                                                    gvtSubProofId, gvtCredentialDefJson,
-                                                    xyzSubProofId, xyzCredentialDefJson];
 
     NSString *revocRegDefsJson = @"{}";
     NSString *revocRegsJson = @"{}";
@@ -1172,7 +1129,6 @@
                                              credReqMetadataJSON:credentialReqMetadata
                                                      credDefJSON:credentialDefJSON
                                                    revRegDefJSON:revocRegDefJson
-                                                    revStateJSON:revocStateJson
                                                     walletHandle:proverWalletHandle
                                                        outCredId:nil];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverStoreCredential() failed");
@@ -1222,11 +1178,11 @@
                                      }", credentialReferent, timestamp, credentialReferent, timestamp];
 
 
-    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialReferent, schemaJson];
+    NSString *schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", schemaId, schemaJson];
 
-    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialReferent, credentialDefJSON];
+    NSString *credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", credentialDefId, credentialDefJSON];
 
-    NSString *revocStatesJson = [NSString stringWithFormat:@"{\"%@\": {\"%@\": %@}}", credentialReferent, timestamp, revocStateJson];
+    NSString *revocStatesJson = [NSString stringWithFormat:@"{\"%@\": {\"%@\": %@}}", revocRefId, timestamp, revocStateJson];
 
     NSString *proofJson;
     ret = [[AnoncredsUtils sharedInstance] proverCreateProofForRequest:proofReqJson
@@ -1243,19 +1199,14 @@
     NSDictionary *proof = [NSDictionary fromString:proofJson];
     NSDictionary *revealedAttr1 = proof[@"requested_proof"][@"revealed_attrs"][@"attr1_referent"];
     NSString *raw = revealedAttr1[@"raw"];
-    NSString *id = revealedAttr1[@"referent"];
 
     XCTAssertTrue([raw isEqualToString:@"Alex"]);
 
     NSString *attestedAttrUUID = proof[@"requested_proof"][@"self_attested_attrs"][@"attr2_referent"];
     XCTAssertTrue([attestedAttrUUID isEqualToString:@"value"]);
 
-    schemasJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, schemaJson];
-
-    credentialDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, credentialDefJSON];
-
-    NSString *revocRegDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", id, revocRegDefJson];
-    NSString *revocRegsJson = [NSString stringWithFormat:@"{\"%@\": {\"%@\": %@}}", id, timestamp, revocRegDeltaJson];
+    NSString *revocRegDefsJson = [NSString stringWithFormat:@"{\"%@\":%@}", revocRefId, revocRegDefJson];
+    NSString *revocRegsJson = [NSString stringWithFormat:@"{\"%@\": {\"%@\": %@}}", revocRefId, timestamp, revocRegDeltaJson];
 
     // 13. Verifier verify proof
     BOOL isValid = NO;

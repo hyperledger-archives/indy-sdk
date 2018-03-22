@@ -134,7 +134,6 @@ extern "C" {
                                                      const char *  cred_json,
                                                      const char *  cred_def_json,
                                                      const char *  rev_reg_def_json,
-                                                     const char *  rev_state_json,
 
                                                      void           (*cb)(indy_handle_t xcommand_handle,
                                                                           indy_error_t  err,
