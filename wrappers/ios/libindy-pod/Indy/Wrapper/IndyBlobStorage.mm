@@ -13,7 +13,7 @@
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_blob_storage_open_reader(handle,
+    ret = indy_open_blob_storage_reader(handle,
             [type_ UTF8String],
             [config UTF8String],
             IndyWrapperCommon3TRHCallback
@@ -34,7 +34,7 @@
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_blob_storage_open_writer(handle,
+    ret = indy_open_blob_storage_writer(handle,
             [type_ UTF8String],
             [config UTF8String],
             IndyWrapperCommon3TRHCallback

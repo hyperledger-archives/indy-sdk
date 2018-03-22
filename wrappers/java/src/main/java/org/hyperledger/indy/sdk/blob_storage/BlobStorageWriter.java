@@ -69,7 +69,7 @@ public class BlobStorageWriter extends IndyJava.API {
 		CompletableFuture<BlobStorageWriter> future = new CompletableFuture<BlobStorageWriter>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_blob_storage_open_writer(
+		int result = LibIndy.api.indy_open_blob_storage_writer(
 				commandHandle,
 				type,
 				config,

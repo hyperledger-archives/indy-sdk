@@ -69,7 +69,7 @@ public class BlobStorageReader extends IndyJava.API {
 		CompletableFuture<BlobStorageReader> future = new CompletableFuture<BlobStorageReader>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_blob_storage_open_reader(
+		int result = LibIndy.api.indy_open_blob_storage_reader(
 				commandHandle,
 				type,
 				config,

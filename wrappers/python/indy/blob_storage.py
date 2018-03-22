@@ -19,7 +19,7 @@ async def open_reader(type_: str, config: str) -> int:
     c_type = c_char_p(type_.encode('utf-8'))
     c_config = c_char_p(config.encode('utf-8'))
 
-    res = await do_call('indy_blob_storage_open_reader',
+    res = await do_call('indy_open_blob_storage_reader',
                         c_type,
                         c_config,
                         open_reader.cb)
@@ -41,7 +41,7 @@ async def open_writer(type_: str, config: str) -> int:
     c_type = c_char_p(type_.encode('utf-8'))
     c_config = c_char_p(config.encode('utf-8'))
 
-    res = await do_call('indy_blob_storage_open_writer',
+    res = await do_call('indy_open_blob_storage_writer',
                         c_type,
                         c_config,
                         open_writer.cb)

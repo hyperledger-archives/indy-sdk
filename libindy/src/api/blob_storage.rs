@@ -9,7 +9,7 @@ use utils::cstring::CStringUtils;
 use self::libc::c_char;
 
 #[no_mangle]
-pub extern fn indy_blob_storage_open_reader(command_handle: i32,
+pub extern fn indy_open_blob_storage_reader(command_handle: i32,
                                             type_: *const c_char,
                                             config_json: *const c_char,
                                             cb: Option<extern fn(command_handle_: i32, err: ErrorCode, handle: i32)>) -> ErrorCode {
@@ -31,7 +31,7 @@ pub extern fn indy_blob_storage_open_reader(command_handle: i32,
 }
 
 #[no_mangle]
-pub extern fn indy_blob_storage_open_writer(command_handle: i32,
+pub extern fn indy_open_blob_storage_writer(command_handle: i32,
                                             type_: *const c_char,
                                             config_json: *const c_char,
                                             cb: Option<extern fn(command_handle_: i32, err: ErrorCode, handle: i32)>) -> ErrorCode {

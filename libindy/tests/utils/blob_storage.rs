@@ -16,7 +16,7 @@ impl BlobStorageUtils {
         let type_ = CString::new(type_).unwrap();
         let config_json = CString::new(config_json).unwrap();
 
-        let err = indy_blob_storage_open_reader(command_handle,
+        let err = indy_open_blob_storage_reader(command_handle,
                                                 type_.as_ptr(),
                                                 config_json.as_ptr(),
                                                 cb);
@@ -30,7 +30,7 @@ impl BlobStorageUtils {
         let type_ = CString::new(type_).unwrap();
         let config_json = CString::new(config_json).unwrap();
 
-        let err = indy_blob_storage_open_writer(command_handle,
+        let err = indy_open_blob_storage_writer(command_handle,
                                                 type_.as_ptr(),
                                                 config_json.as_ptr(),
                                                 cb);
